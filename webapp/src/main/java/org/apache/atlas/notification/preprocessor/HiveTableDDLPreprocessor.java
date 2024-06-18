@@ -47,6 +47,9 @@ public class HiveTableDDLPreprocessor extends EntityPreprocessor {
         }
 
         setObjectIdWithGuid(tableObject, guid);
-        LOG.info("{}: Preprocessor: Updated: {} -> {}", getTypeName(), qualifiedName, guid);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("{}: Preprocessor: Updated: {} -> {}", getTypeName(), qualifiedName, guid);
+        }
     }
 }

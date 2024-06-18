@@ -84,6 +84,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+import javax.ws.rs.core.Response;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -932,18 +933,34 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                         RequestContext.get().resetEntityGuidUpdates();
                         exceptionClassName = e.getClass().getSimpleName();
 
-                        if (numRetries == (maxRetries - 1)) {
-                            String strMessage = AbstractNotification.getMessageJson(message);
+                        // don't retry in following conditions:
+                        //  1. number of retry attempts reached configured count
+                        //  2. notification processing failed due to invalid data (non-existing type, entity, ..)
+                        boolean        maxRetriesReached    = numRetries == (maxRetries - 1);
+                        AtlasErrorCode errorCode            = (e instanceof AtlasBaseException) ? ((AtlasBaseException) e).getAtlasErrorCode() : null;
+                        boolean        unrecoverableFailure = errorCode != null && (Response.Status.NOT_FOUND.equals(errorCode.getHttpCode()) || Response.Status.BAD_REQUEST.equals(errorCode.getHttpCode()));
 
-                            LOG.warn("Max retries exceeded for message {}", strMessage, e);
+                        if (maxRetriesReached || unrecoverableFailure) {
+                            try {
+                                String strMessage = AbstractNotification.getMessageJson(message);
 
-                            stats.isFailedMsg = true;
+                                if (unrecoverableFailure) {
+                                    LOG.warn("Unrecoverable failure while processing message {}", strMessage, e);
+                                } else {
+                                    LOG.warn("Max retries exceeded for message {}", strMessage, e);
+                                }
 
-                            failedMessages.add(strMessage);
+                                stats.isFailedMsg = true;
 
-                            if (failedMessages.size() >= failedMsgCacheSize) {
-                                recordFailedMessages();
+                                failedMessages.add(strMessage);
+
+                                if (failedMessages.size() >= failedMsgCacheSize) {
+                                    recordFailedMessages();
+                                }
+                            } catch (Throwable t) {
+                                LOG.warn("error while recording failed message: type={}, topic={}, partition={}, offset={}", message.getType(), kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset(), t);
                             }
+
                             return;
                         } else if (e instanceof org.apache.atlas.repository.graphdb.AtlasSchemaViolationException) {
                             LOG.warn("{}: Continuing: {}", exceptionClassName, e.getMessage());
@@ -978,10 +995,14 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 metricsUtil.onNotificationProcessingComplete(kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset(), stats);
 
                 if (stats.timeTakenMs > largeMessageProcessingTimeThresholdMs) {
-                    String strMessage = AbstractNotification.getMessageJson(message);
+                    try {
+                        String strMessage = AbstractNotification.getMessageJson(message);
 
-                    LOG.warn("msgProcessingTime={}, msgSize={}, topicOffset={}}", stats.timeTakenMs, strMessage.length(), kafkaMsg.getOffset());
-                    LARGE_MESSAGES_LOG.warn("{\"msgProcessingTime\":{},\"msgSize\":{},\"topicOffset\":{},\"data\":{}}", stats.timeTakenMs, strMessage.length(), kafkaMsg.getOffset(), strMessage);
+                        LOG.warn("msgProcessingTime={}, msgSize={}, topicOffset={}}", stats.timeTakenMs, strMessage.length(), kafkaMsg.getOffset());
+                        LARGE_MESSAGES_LOG.warn("{\"msgProcessingTime\":{},\"msgSize\":{},\"topicOffset\":{},\"data\":{}}", stats.timeTakenMs, strMessage.length(), kafkaMsg.getOffset(), strMessage);
+                    } catch (Throwable t) {
+                        LOG.warn("error while recording large message: msgProcessingTime={}, type={}, topic={}, partition={}, offset={}", stats.timeTakenMs, message.getType(), kafkaMsg.getTopic(), kafkaMsg.getPartition(), kafkaMsg.getOffset(), t);
+                    }
                 }
 
                 if (auditLog != null) {

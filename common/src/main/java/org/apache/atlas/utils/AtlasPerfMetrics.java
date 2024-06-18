@@ -25,6 +25,7 @@ import java.util.Set;
 
 public class AtlasPerfMetrics {
     private final Map<String, Metric> metrics = new LinkedHashMap<>();
+    private long startTimeMs = -1;
 
 
     public MetricRecorder getMetricRecorder(String name) {
@@ -35,6 +36,10 @@ public class AtlasPerfMetrics {
         if (recorder != null) {
             final String name      = recorder.name;
             final long   timeTaken = recorder.getElapsedTime();
+
+            if (startTimeMs == -1) {
+                startTimeMs = System.currentTimeMillis();
+            }
 
             Metric metric = metrics.get(name);
 
@@ -51,6 +56,8 @@ public class AtlasPerfMetrics {
 
     public void clear() {
         metrics.clear();
+
+        startTimeMs = -1;
     }
 
     public boolean isEmpty() {
@@ -76,7 +83,7 @@ public class AtlasPerfMetrics {
                 sb.append("\"").append(metric.getName()).append("\":{\"count\":").append(metric.getInvocations()).append(",\"timeTaken\":").append(metric.getTotalTimeMSecs()).append("},");
             }
 
-            sb.setLength(sb.length() - 1); // remove last ","
+            sb.append("\"totalTime\":").append(System.currentTimeMillis() - startTimeMs);
         }
 
         sb.append("}");
