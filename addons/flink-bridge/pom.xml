@@ -21,7 +21,7 @@
     <parent>
         <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
-        <version>2.1.0-SNAPSHOT</version>
+        <version>3.0.0-SNAPSHOT</version>
         <relativePath>../../</relativePath>
     </parent>
     <artifactId>flink-bridge</artifactId>
@@ -30,8 +30,8 @@
     <packaging>jar</packaging>
 
     <properties>
-  		<flink.version>1.11-SNAPSHOT</flink.version>
-  		<scala.binary.version>2.11</scala.binary.version>
+  		<flink.version>1.18.1-SNAPSHOT</flink.version>
+  		<scala.binary.version>2.12</scala.binary.version>
 	 </properties>
 
     <dependencies>
