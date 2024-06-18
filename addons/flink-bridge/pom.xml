@@ -69,12 +69,12 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-notification</artifactId>
         </dependency>
-
+<!--
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>hdfs-model</artifactId>
         </dependency>
-
+-->
         <dependency>
             <groupId>org.apache.hbase</groupId>
             <artifactId>hbase-common</artifactId>
