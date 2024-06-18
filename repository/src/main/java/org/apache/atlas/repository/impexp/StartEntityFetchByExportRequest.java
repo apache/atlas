@@ -189,7 +189,7 @@ public class StartEntityFetchByExportRequest {
         try {
             return (List<String>) atlasGraph.executeGremlinScript(getScriptEngine(), bindings, query, false);
         } catch (ScriptException e) {
-            LOG.error("Script execution failed for query: ", query, e);
+            LOG.error("Script execution failed for query: {}, {} ", query, e);
             return null;
         }
     }
