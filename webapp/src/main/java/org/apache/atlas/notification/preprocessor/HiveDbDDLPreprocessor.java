@@ -47,6 +47,9 @@ public class HiveDbDDLPreprocessor extends EntityPreprocessor {
         }
 
         setObjectIdWithGuid(dbObject, guid);
-        LOG.info("{}: Preprocessor: Updated: {} -> {}", getTypeName(), qualifiedName, guid);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("{}: Preprocessor: Updated: {} -> {}", getTypeName(), qualifiedName, guid);
+        }
     }
 }

@@ -173,7 +173,9 @@ public class HivePreprocessor {
                 Object qualifiedName = entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
 
                 if (!Objects.equals(name, qualifiedName)) {
-                    LOG.info("setting {}.name={}. topic-offset={}, partition={}", entity.getTypeName(), qualifiedName, context.getKafkaMessageOffset(), context.getKafkaPartition());
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("setting {}.name={}. topic-offset={}, partition={}", entity.getTypeName(), qualifiedName, context.getKafkaMessageOffset(), context.getKafkaPartition());
+                    }
 
                     entity.setAttribute(ATTRIBUTE_NAME, qualifiedName);
                 }
