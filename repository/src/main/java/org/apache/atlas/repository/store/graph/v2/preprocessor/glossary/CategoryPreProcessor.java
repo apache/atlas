@@ -40,7 +40,6 @@ import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.util.lexoRank.LexoRank;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -170,6 +169,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
         if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
             isValidLexoRank(entity.getTypeName(), lexicographicalSortOrder, newGlossaryQualifiedName, parentQname, this.discovery);
         } else {
+            entity.removeAttribute(LEXICOGRAPHICAL_SORT_ORDER);
             lexicographicalSortOrder = (String) storedCategory.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
             entity.setAttribute(LEXICOGRAPHICAL_SORT_ORDER, lexicographicalSortOrder);
         }
