@@ -519,7 +519,7 @@ public class QuickStartV2 {
 
         // set attributes
         tblEntity.setAttribute("name", name);
-        tblEntity.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, name + CLUSTER_SUFFIX);
+        tblEntity.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, database.getAttribute("name") + "." + name + CLUSTER_SUFFIX);
         tblEntity.setAttribute("description", description);
         tblEntity.setAttribute("owner", owner);
         tblEntity.setAttribute("tableType", tableType);
@@ -544,8 +544,8 @@ public class QuickStartV2 {
         entityWithExtInfo.addReferredEntity(storageDesc);
 
         for (AtlasEntity column : columns) {
+            column.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, database.getAttribute("name") + "." + name + "." + column.getAttribute("name") + CLUSTER_SUFFIX);
             column.setRelationshipAttribute("table", toAtlasRelatedObjectId(tblEntity));
-
             entityWithExtInfo.addReferredEntity(column);
         }
 

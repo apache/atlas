@@ -79,6 +79,8 @@ public class QuickStartV2IT extends BaseResourceIT {
 
         verifyColumnsAreAddedToTable(table);
 
+        verifyQualifiedNames(table);
+
         verifyTrait(table);
     }
 
@@ -153,6 +155,25 @@ public class QuickStartV2IT extends BaseResourceIT {
 
         assertEquals(SALES_FACT_TABLE, tableAttributes.get("name"));
         assertEquals("sales fact table", tableAttributes.get("description"));
+    }
+
+    private void verifyQualifiedNames(AtlasEntity table) {
+        Map<String, Object> tableAttributes = table.getRelationshipAttributes();
+        Map                 dbFromTable     = (Map) tableAttributes.get("db");
+        String              tableName       = (String) tableAttributes.get("name");
+        String              dbName          = (String) dbFromTable.get("name");
+        assertEquals(
+                tableAttributes.get("qualifiedName"),
+                dbName+"."+tableName+CLUSTER_SUFFIX);
+
+        List<Map>           columns         = (List<Map>) tableAttributes.get("columns");
+        for (Map colMap : columns) {
+            String qualifiedName = (String) colMap.get("qualifiedName");
+            String columnName = (String) colMap.get("name");
+            assertEquals(
+                    qualifiedName,
+                    dbName+"."+tableName+"."+columnName+CLUSTER_SUFFIX);
+        }
     }
 
     @Test
