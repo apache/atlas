@@ -233,10 +233,10 @@ public class ActiveServerFilter implements Filter {
             requestURI = "/";
         }
         String redirectLocation = activeServerAddress + requestURI;
-        LOG.info("Not active. Redirecting to {}", redirectLocation);
+        String sanitizedLocation = sanitizeRedirectLocation(redirectLocation);
+        LOG.info("Not active. Redirecting to {}", sanitizedLocation);
         // A POST/PUT/DELETE require special handling by sending HTTP 307 instead of the regular 301/302.
         // Reference: http://stackoverflow.com/questions/2068418/whats-the-difference-between-a-302-and-a-307-redirect
-        String sanitizedLocation = sanitizeRedirectLocation(redirectLocation);
         if (isUnsafeHttpMethod(servletRequest)) {
             httpServletResponse.setHeader(HttpHeaders.LOCATION, sanitizedLocation);
             httpServletResponse.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
