@@ -215,9 +215,10 @@ public class ESAliasStore implements IndexAliasStore {
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_DOMAIN)) {
 
                     for (String asset : assets) {
-                        asset = validateAndConvertAsset(asset);
-                        if(!asset.equals(NEW_WILDCARD_DOMAIN_SUPER)) {
+                        if(!isAllDomain(asset)) {
                             terms.add(asset);
+                        } else {
+                            asset = NEW_WILDCARD_DOMAIN_SUPER;
                         }
                         allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "*")));
                     }
@@ -250,10 +251,8 @@ public class ESAliasStore implements IndexAliasStore {
         allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, terms)));
     }
 
-    private String validateAndConvertAsset(String asset) {
-        if(asset.equals("*/super") || asset.equals("*"))
-            asset = NEW_WILDCARD_DOMAIN_SUPER;
-        return asset;
+    private boolean isAllDomain(String asset) {
+        return asset.equals("*/super") || asset.equals("*") || asset.equals(NEW_WILDCARD_DOMAIN_SUPER);
     }
     private Map<String, Object> esClausesToFilter(List<Map<String, Object>> allowClauseList) {
         if (CollectionUtils.isNotEmpty(allowClauseList)) {

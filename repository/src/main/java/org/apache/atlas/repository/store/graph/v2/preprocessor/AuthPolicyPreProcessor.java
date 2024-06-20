@@ -165,33 +165,18 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void validateAndReduce(AtlasEntity policy) {
-        ArrayList<String> resources = (ArrayList<String>) policy.getAttribute(ATTR_POLICY_RESOURCES);
-        boolean hasAllDomainPattern = false;
 
-        for (int i = 0; i < resources.size(); i++) {
-            String[] resourceParts = resources.get(i).split(":");
-            String resource = resourceParts[resourceParts.length - 1];
-            if (resource.equals("*") || resource.equals("*/super") || resource.equals("default/domain/*/super")) {
-                resources.remove(i);
-                hasAllDomainPattern = true;
-                i--;
-            }
-        }
+    private void validateAndReduce(AtlasEntity policy) {
+        List<String> resources = (List<String>) policy.getAttribute(ATTR_POLICY_RESOURCES);
+        boolean hasAllDomainPattern = resources.stream().anyMatch(resource ->
+                resource.equals("entity:*") ||
+                        resource.equals("entity:*/super") ||
+                        resource.equals("entity:default/domain/*/super")
+        );
 
         if (hasAllDomainPattern) {
-            for (int i = 0; i < resources.size(); i++) {
-                String[] resourceParts = resources.get(i).split(":");
-                String resource = resourceParts[resourceParts.length - 1];
-                if (resource.matches("default/domain/.+/super(/.+)?")) {
-                    resources.remove(i);
-                    i--;
-                }
-            }
-            resources.add(ENTITY_DEFAULT_DOMAIN_SUPER);
+            policy.setAttribute(ATTR_POLICY_RESOURCES, Collections.singletonList("entity:default/domain/*/super"));
         }
-
-        policy.setAttribute(ATTR_POLICY_RESOURCES, resources);
     }
 
 
