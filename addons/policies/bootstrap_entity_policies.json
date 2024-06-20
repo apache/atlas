@@ -3108,6 +3108,188 @@
                     "entity-read"
                 ]
             }
+        },
+
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "CUD_BUSINESS_POLICY",
+                "qualifiedName": "CUD_BUSINESS_POLICY",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources": [
+                    "entity-type:BusinessPolicy",
+                    "entity-type:BusinessPolicyException",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "READ_BUSINESS_POLICY",
+                "qualifiedName": "READ_BUSINESS_POLICY",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$guest",
+                    "$member",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources": [
+                    "entity-type:BusinessPolicy",
+                    "entity-type:BusinessPolicyException",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-read"
+                ]
+            }
+        },
+
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "CUD_INCIDENT",
+                "qualifiedName": "CUD_INCIDENT",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources": [
+                    "entity-type:Incident",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "READ_INCIDENT" ,
+                "qualifiedName": "READ_INCIDENT",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$guest",
+                    "$member",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources": [
+                    "entity-type:Incident",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "CRUD_BUSINESS_POLICY_LOG",
+                "qualifiedName": "CRUD_BUSINESS_POLICY_LOG",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources": [
+                    "entity-type:BusinessPolicyLog",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-create",
+                    "entity-read",
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes": {
+                "name": "CRUD_TASK",
+                "qualifiedName": "CRUD_TASK",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers": [],
+                "policyGroups": [],
+                "policyRoles": [
+                    "$admin",
+                    "$guest",
+                    "$member",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources": [
+                    "entity-type:Task",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions": [
+                    "entity-create",
+                    "entity-read",
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
         }
     ]
 }

@@ -760,6 +760,82 @@
                     "remove-relationship"
                 ]
             }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "LINK_BUSINESS_POLICY_BUSINESS_POLICY",
+                "qualifiedName": "LINK_BUSINESS_POLICY_BUSINESS_POLICY",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "RELATIONSHIP",
+                "policyResources":
+                [
+                    "end-one-entity-classification:*",
+                    "end-two-entity-classification:*",
+                    "end-one-entity:*",
+                    "end-two-entity:*",
+                    "end-one-entity-type:BusinessPolicy",
+                    "end-two-entity-type:BusinessPolicy",
+                    "relationship-type:RelatedBusinessPolicy"
+                ],
+                "policyActions":
+                [
+                    "add-relationship",
+                    "update-relationship",
+                    "remove-relationship"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "LINK_BUSINESS_POLICY_BUSINESS_POLICY_EXCEPTION",
+                "qualifiedName": "LINK_BUSINESS_POLICY_BUSINESS_POLICY_EXCEPTION",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "RELATIONSHIP",
+                "policyResources":
+                [
+                    "end-one-entity-classification:*",
+                    "end-two-entity-classification:*",
+                    "end-one-entity:*",
+                    "end-two-entity:*",
+                    "end-one-entity-type:BusinessPolicy",
+                    "end-two-entity-type:BusinessPolicyException",
+                    "relationship-type:BusinessPolicy_BusinessPolicyException"
+                ],
+                "policyActions":
+                [
+                    "add-relationship",
+                    "update-relationship",
+                    "remove-relationship"
+                ]
+            }
         }
     ]
 }
