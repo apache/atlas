@@ -117,10 +117,7 @@ public class GlossaryPreProcessor implements PreProcessor {
         if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
             isValidLexoRank(entity.getTypeName(), lexicographicalSortOrder, "", "", this.discovery);
         } else {
-            AtlasEntity storedGlossary = entityRetriever.toAtlasEntity(vertex);
             entity.removeAttribute(LEXICOGRAPHICAL_SORT_ORDER);
-            lexicographicalSortOrder = (String) storedGlossary.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
-            entity.setAttribute(LEXICOGRAPHICAL_SORT_ORDER, lexicographicalSortOrder);
         }
 
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);

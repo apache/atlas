@@ -17,7 +17,6 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.atlas.util.lexoRank.LexoRank;
 import org.apache.atlas.utils.AtlasEntityUtil;
-import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -99,13 +98,9 @@ public class PreProcessorUtils {
     public static final int PRE_DELIMITER_LENGTH = 9;
     public static final String LEXORANK_HARD_LIMIT = "" + (256 - PRE_DELIMITER_LENGTH);
     public static final String LEXORANK_VALID_REGEX = "^0\\|[0-9a-z]{6}:(?:[0-9a-z]{0," + LEXORANK_HARD_LIMIT + "})?$";
-    public static final Set<String> ATTRIBUTES;
-    public static final Pattern LEXORANK_VALIDITY_PATTERN;
-    static {
-        ATTRIBUTES = new HashSet<>();
-        ATTRIBUTES.add(LEXICOGRAPHICAL_SORT_ORDER);
-        LEXORANK_VALIDITY_PATTERN = Pattern.compile(LEXORANK_VALID_REGEX);
-    }
+    public static final Set<String> ATTRIBUTES = new HashSet<>(Arrays.asList("LEXICOGRAPHICAL_SORT_ORDER"));
+
+    public static final Pattern LEXORANK_VALIDITY_PATTERN = Pattern.compile(LEXORANK_VALID_REGEX);
 
     public static String getUUID(){
         return NanoIdUtils.randomNanoId();
@@ -341,7 +336,7 @@ public class PreProcessorUtils {
             if(StringUtils.isEmpty(parentQualifiedName)) {
                 boolFilter.put("must_not", Arrays.asList(mapOf("exists", mapOf("field", parentAttribute))));
             } else {
-                mustArray.add(mapOf("bool",mapOf("term", mapOf(parentAttribute, parentQualifiedName))));
+                mustArray.add(mapOf("term", mapOf(parentAttribute, parentQualifiedName)));
             }
         } else{
             mustArray.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList(ATLAS_GLOSSARY_ENTITY_TYPE))));
@@ -351,6 +346,7 @@ public class PreProcessorUtils {
 
         return boolFilter;
     }
+
     public static Map<String, Object> generateDSLQueryForLastChild(String glossaryQualifiedName, String parentQualifiedName, boolean isTerm) {
 
         Map<String, Object> sortKeyOrder = mapOf(LEXICOGRAPHICAL_SORT_ORDER, mapOf("order", "desc"));
@@ -371,8 +367,6 @@ public class PreProcessorUtils {
     private static Map<String, Object> buildBoolQuery(String glossaryQualifiedName, String parentQualifiedName, boolean isTerm) {
         Map<String, Object> boolFilter = new HashMap<>();
         List<Map<String, Object>> mustArray = new ArrayList<>();
-        List<Map<String, Object>> mustNotArray = new ArrayList<>();
-
         mustArray.add(mapOf("term", mapOf("__state", "ACTIVE")));
         if(StringUtils.isNotEmpty(glossaryQualifiedName)) {
             String typeName = isTerm ? ATLAS_GLOSSARY_TERM_TYPENAME : ATLAS_GLOSSARY_CATEGORY_TYPENAME;
@@ -380,13 +374,10 @@ public class PreProcessorUtils {
             mustArray.add(mapOf("term", mapOf("__glossary", glossaryQualifiedName)));
             String parentAttribute = isTerm ? "__categories" : "__parentCategory";
             if(StringUtils.isEmpty(parentQualifiedName)) {
-                mustNotArray.add(mapOf("exists", mapOf("field", parentAttribute)));
-                boolFilter.put("must_not", mustNotArray);
+                boolFilter.put("must_not", Arrays.asList(mapOf("exists", mapOf("field", parentAttribute))));
             }
             else {
-                List<Map<String, Object>> shouldParentArray = new ArrayList<>();
-                shouldParentArray.add(mapOf("term", mapOf(parentAttribute, parentQualifiedName)));
-                mustArray.add(mapOf("bool",mapOf("should", shouldParentArray)));
+                mustArray.add(mapOf("term", mapOf(parentAttribute, parentQualifiedName)));
             }
         } else{
             mustArray.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossary"))));
