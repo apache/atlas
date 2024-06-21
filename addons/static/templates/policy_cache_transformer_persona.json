@@ -692,24 +692,6 @@
         "end-two-entity:{entity}/*domain/*"
       ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
-    },
-    {
-      "policyResourceCategory": "RELATIONSHIP",
-      "policyType": "ACCESS",
-      "description": "Unlink any domain-sub-domain relationship in within this DataDomain",
-      "resources": [
-        "relationship-type:parent_domain_sub_domains",
-
-        "end-one-entity:{entity}/*",
-        "end-one-entity:{entity}",
-        "end-one-entity-type:DataDomain",
-        "end-one-entity-classification:*",
-
-        "end-two-entity:*",
-        "end-two-entity-type:DataDomain",
-        "end-two-entity-classification:*"
-      ],
-      "actions": ["update-relationship", "remove-relationship"]
     }
   ],
   "persona-domain-sub-domain-delete": [

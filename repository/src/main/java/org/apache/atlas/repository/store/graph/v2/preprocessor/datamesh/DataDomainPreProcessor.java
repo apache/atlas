@@ -28,6 +28,8 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -219,6 +221,11 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
                 domain.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
                 domain.setAttribute(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
                 domain.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
+            }
+
+            Iterator<AtlasEdge> existingParentEdges = domainVertex.getEdges(AtlasEdgeDirection.IN, DOMAIN_PARENT_EDGE_LABEL).iterator();
+            if (existingParentEdges.hasNext()) {
+                graph.removeEdge(existingParentEdges.next());
             }
 
             String currentQualifiedName = domainVertex.getProperty(QUALIFIED_NAME, String.class);
