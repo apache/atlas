@@ -60,6 +60,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractDomainPreProcessor.class);
 
 
+    protected final AtlasGraph graph;
     protected final AtlasTypeRegistry typeRegistry;
     protected final EntityGraphRetriever entityRetriever;
     protected EntityGraphRetriever entityRetrieverNoRelations;
@@ -78,6 +79,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
     }
 
     AbstractDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
+        this.graph = graph;
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
         this.preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever);
