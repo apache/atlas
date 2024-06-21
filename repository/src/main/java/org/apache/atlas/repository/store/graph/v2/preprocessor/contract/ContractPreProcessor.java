@@ -81,7 +81,10 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         resetAllRelationshipAttributes(entity);
         DataContract contract = DataContract.deserialize(contractString);
         String existingContractString = getContractString(existingContractEntity);
-        if (!StringUtils.isEmpty(contractString) && !contract.equals(DataContract.deserialize(existingContractString))) {
+        boolean requestFromMigration = RequestContext.get().getRequestContextHeaders().getOrDefault(
+                "x-atlan-request-id", "").contains("json-to-yaml-migration");
+        if (!requestFromMigration && !StringUtils.isEmpty(contractString) &&
+                !contract.equals(DataContract.deserialize(existingContractString))) {
             // Update the same asset(entity)
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can't update a specific version of contract");
         }
