@@ -170,12 +170,6 @@ public class ESAliasStore implements IndexAliasStore {
         return esClausesToFilter(allowClauseList);
     }
 
-//    private Map<String, Object> getFilterForPersona (AtlasEntity persona) throws AtlasBaseException {
-//        Map<String, Object> matchAll = mapOf("match_all", Collections.emptyMap());
-//        Map<String, Object> mustNot = mapOf("must_not", matchAll);
-//        return mapOf("bool", mustNot);
-//    }
-
     private void personaPolicyToESDslClauses(List<AtlasEntity> policies,
                                              List<Map<String, Object>> allowClauseList) throws AtlasBaseException {
         List<String> terms = new ArrayList<>();
