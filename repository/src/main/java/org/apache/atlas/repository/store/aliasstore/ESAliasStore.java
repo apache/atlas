@@ -38,12 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.ADD;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
@@ -90,7 +85,7 @@ public class ESAliasStore implements IndexAliasStore {
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
 
         if (PERSONA_ENTITY_TYPE.equals(entity.getTypeName())) {
-            requestBuilder.addAction(ADD, new AliasAction(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName));
+            requestBuilder.addAction(ADD, new AliasAction(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName, getFilterForPersona(null, null)));
         } else {
             requestBuilder.addAction(ADD, new AliasAction(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName, getFilterForPurpose(entity)));
         }
@@ -150,6 +145,10 @@ public class ESAliasStore implements IndexAliasStore {
     private Map<String, Object> getFilterForPersona(AtlasEntity.AtlasEntityWithExtInfo persona, AtlasEntity policy) throws AtlasBaseException {
         List<Map<String, Object>> allowClauseList = new ArrayList<>();
 
+        if (policy == null && persona == null){
+            return getEmptyFilter();
+        }
+
         List<AtlasEntity> policies = getPolicies(persona);
         if (policy != null) {
             policies.add(policy);
@@ -170,6 +169,12 @@ public class ESAliasStore implements IndexAliasStore {
 
         return esClausesToFilter(allowClauseList);
     }
+
+//    private Map<String, Object> getFilterForPersona (AtlasEntity persona) throws AtlasBaseException {
+//        Map<String, Object> matchAll = mapOf("match_all", Collections.emptyMap());
+//        Map<String, Object> mustNot = mapOf("must_not", matchAll);
+//        return mapOf("bool", mustNot);
+//    }
 
     private void personaPolicyToESDslClauses(List<AtlasEntity> policies,
                                              List<Map<String, Object>> allowClauseList) throws AtlasBaseException {
