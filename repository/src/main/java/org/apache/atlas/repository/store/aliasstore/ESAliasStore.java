@@ -124,6 +124,9 @@ public class ESAliasStore implements IndexAliasStore {
 
         if (PERSONA_ENTITY_TYPE.equals(accessControl.getEntity().getTypeName())) {
             filter = getFilterForPersona(accessControl, policy);
+            if (filter == null || filter.isEmpty()) {
+                filter = getEmptyFilter();
+            }
         } else {
             filter = getFilterForPurpose(accessControl.getEntity());
         }
