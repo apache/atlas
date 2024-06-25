@@ -5,6 +5,8 @@ import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -18,7 +20,6 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,8 +37,6 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private static final String PROTECTED = "Protected";
     private static final String PUBLIC = "Public";
     private static final String DATA_PRODUCT = "dataProduct";
-
-
 
     private EntityMutationContext context;
     private AtlasEntityStore entityStore;
@@ -147,14 +146,14 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             }
 
             //Auth check
-            isAuthorized(currentParentDomainHeader, newParentDomainHeader);
+            isAuthorizedToMove(DATA_PRODUCT_ENTITY_TYPE, currentParentDomainHeader, newParentDomainHeader);
 
             String newSuperDomainQualifiedName = (String) newParentDomainHeader.getAttribute(SUPER_DOMAIN_QN_ATTR);
             if(StringUtils.isEmpty(newSuperDomainQualifiedName)){
                 newSuperDomainQualifiedName = newParentDomainQualifiedName;
             }
 
-            processMoveDataProductToAnotherDomain(entity, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, newSuperDomainQualifiedName);
+            processMoveDataProductToAnotherDomain(entity, vertex, currentParentDomainQualifiedName, newParentDomainQualifiedName, vertexQnName, newSuperDomainQualifiedName);
 
             updatePolicies(this.updatedPolicyResources, this.context);
 
@@ -182,6 +181,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     }
 
     private void processMoveDataProductToAnotherDomain(AtlasEntity product,
+                                                       AtlasVertex productVertex,
                                                        String sourceDomainQualifiedName,
                                                        String targetDomainQualifiedName,
                                                        String currentDataProductQualifiedName,
@@ -205,6 +205,11 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             product.setAttribute(QUALIFIED_NAME, updatedQualifiedName);
             product.setAttribute(PARENT_DOMAIN_QN_ATTR, targetDomainQualifiedName);
             product.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
+
+            Iterator<AtlasEdge> existingParentEdges = productVertex.getEdges(AtlasEdgeDirection.IN, DATA_PRODUCT_EDGE_LABEL).iterator();
+            if (existingParentEdges.hasNext()) {
+                graph.removeEdge(existingParentEdges.next());
+            }
 
             //Store domainPolicies and resources to be updated
             String currentResource = "entity:"+ currentDataProductQualifiedName;

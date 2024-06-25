@@ -60,6 +60,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractDomainPreProcessor.class);
 
 
+    protected final AtlasGraph graph;
     protected final AtlasTypeRegistry typeRegistry;
     protected final EntityGraphRetriever entityRetriever;
     protected EntityGraphRetriever entityRetrieverNoRelations;
@@ -78,6 +79,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
     }
 
     AbstractDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
+        this.graph = graph;
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
         this.preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever);
@@ -90,24 +92,27 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         }
     }
 
-    protected void isAuthorized(AtlasEntityHeader sourceDomain, AtlasEntityHeader targetDomain) throws AtlasBaseException {
+    protected void isAuthorizedToMove(String typeName, AtlasEntityHeader sourceDomain, AtlasEntityHeader targetDomain) throws AtlasBaseException {
 
-       if(sourceDomain != null){
-           // source -> CREATE + UPDATE + DELETE
-           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, sourceDomain),
-                   "create on source Domain: ", sourceDomain.getAttribute(NAME));
+        String qualifiedNameToAuthSuffix = DATA_DOMAIN_ENTITY_TYPE.equals(typeName) ? "/*domain/*" : "/*product/*";
+        AtlasEntityHeader headerToAuth = new AtlasEntityHeader(typeName);
 
-           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceDomain),
-                   "update on source Domain: ", sourceDomain.getAttribute(NAME));
+        if (sourceDomain != null) {
+           //Update sub-domains/product on source parent
+           String qualifiedNameToAuth = sourceDomain.getAttribute(QUALIFIED_NAME) + qualifiedNameToAuthSuffix;
+           headerToAuth.setAttribute(QUALIFIED_NAME, qualifiedNameToAuth);
+
+           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, headerToAuth),
+                   AtlasPrivilege.ENTITY_UPDATE.name(), " " , typeName, " : ", qualifiedNameToAuth);
        }
 
-       if(targetDomain != null){
-           // target -> CREATE + UPDATE + DELETE
-           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, targetDomain),
-                   "create on target Domain: ", targetDomain.getAttribute(NAME));
+       if (targetDomain != null) {
+           //Create sub-domains/product on target parent
+           String qualifiedNameToAuth = targetDomain.getAttribute(QUALIFIED_NAME) + qualifiedNameToAuthSuffix;
+           headerToAuth.setAttribute(QUALIFIED_NAME, qualifiedNameToAuth);
 
-           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetDomain),
-                   "update on target Domain: ", targetDomain.getAttribute(NAME));
+           AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, headerToAuth),
+                   AtlasPrivilege.ENTITY_CREATE.name(), " " , typeName, " : ", qualifiedNameToAuth);
        }
     }
 
