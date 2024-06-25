@@ -24,16 +24,20 @@ import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.SearchParameters;
+import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.impexp.ExportImportAuditEntry;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.repository.audit.EntityAuditRepository;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.ogm.ExportImportAuditEntryDTO;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 import javax.inject.Inject;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -44,12 +48,14 @@ public class ExportImportAuditService {
     private static final String ENTITY_TYPE_NAME = "__ExportImportAuditEntry";
 
     private final DataAccess dataAccess;
+    private final EntityAuditRepository  auditRepository;
     private AtlasDiscoveryService discoveryService;
 
     @Inject
-    public ExportImportAuditService(DataAccess dataAccess, AtlasDiscoveryService discoveryService) {
+    public ExportImportAuditService(DataAccess dataAccess, AtlasDiscoveryService discoveryService, EntityAuditRepository auditRepository) {
         this.dataAccess = dataAccess;
         this.discoveryService = discoveryService;
+        this.auditRepository = auditRepository;
     }
 
     @GraphTransaction
@@ -163,6 +169,26 @@ public class ExportImportAuditService {
         entry.setResultSummary(result);
         entry.setStartTime(startTime);
         entry.setEndTime(endTime);
+
+        if (operation == ExportImportAuditEntry.OPERATION_IMPORT) {
+
+            String auditString = AtlasType.toJson(entry);
+            byte[] auditBytes  = auditString.getBytes(StandardCharsets.UTF_8);
+            long auditSize     = auditBytes != null ? auditBytes.length : 0;
+            long auditMaxSize  = auditRepository.repositoryMaxSize();
+
+            if (auditMaxSize >= 0 && auditSize > auditMaxSize) {
+
+                AtlasImportResult importResult = AtlasType.fromJson(result, AtlasImportResult.class);
+                if (importResult != null && !CollectionUtils.isEmpty(importResult.getProcessedEntities())) {
+                    LOG.warn("audit record too long: user={}, operation={}, size={}, maxSize={}, processedEntityCount={}, processed entities guids in resultSummary not stored in audit",
+                            entry.getUserName(), entry.getOperation(), auditSize, auditMaxSize, importResult.getProcessedEntities().size());
+
+                    importResult.getProcessedEntities().clear();
+                    entry.setResultSummary(AtlasType.toJson(importResult));
+                }
+            }
+        }
 
         save(entry);
         LOG.info("addAuditEntry: user: {}, source: {}, target: {}, operation: {}", entry.getUserName(),
