@@ -98,7 +98,7 @@ public class PreProcessorUtils {
     public static final int PRE_DELIMITER_LENGTH = 9;
     public static final String LEXORANK_HARD_LIMIT = "" + (256 - PRE_DELIMITER_LENGTH);
     public static final String LEXORANK_VALID_REGEX = "^0\\|[0-9a-z]{6}:(?:[0-9a-z]{0," + LEXORANK_HARD_LIMIT + "})?$";
-    public static final Set<String> ATTRIBUTES = new HashSet<>(Arrays.asList("LEXICOGRAPHICAL_SORT_ORDER"));
+    public static final Set<String> ATTRIBUTES = new HashSet<>(Arrays.asList("lexicographicalSortOrder"));
 
     public static final Pattern LEXORANK_VALIDITY_PATTERN = Pattern.compile(LEXORANK_VALID_REGEX);
 
