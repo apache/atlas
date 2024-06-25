@@ -81,9 +81,9 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
     }
 
     public AtlasClassification(AtlasClassification other) {
+        super(other);
+
         if (other != null) {
-            setTypeName(other.getTypeName());
-            setAttributes(other.getAttributes());
             setEntityGuid(other.getEntityGuid());
             setEntityStatus(other.getEntityStatus());
             setPropagate(other.isPropagate());
