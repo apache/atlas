@@ -22,6 +22,7 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.annotation.AtlasService;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.GraphDBMigrator;
@@ -55,7 +56,7 @@ public class MigrationProgressService {
     private boolean zipFileBasedMigrationImport;
 
     @Inject
-    public MigrationProgressService(Configuration configuration, GraphDBMigrator migrator) {
+    public MigrationProgressService(Configuration configuration, GraphDBMigrator migrator) throws AtlasBaseException {
         this.migrator      = migrator;
         this.cacheValidity = (configuration != null) ? configuration.getLong(MIGRATION_QUERY_CACHE_TTL, DEFAULT_CACHE_TTL_IN_SECS) : DEFAULT_CACHE_TTL_IN_SECS;
 
@@ -63,7 +64,7 @@ public class MigrationProgressService {
         initConditionallyZipFileBasedMigrator();
     }
 
-    private void initConditionallyZipFileBasedMigrator() {
+    private void initConditionallyZipFileBasedMigrator() throws AtlasBaseException {
         if (!zipFileBasedMigrationImport) {
             return;
         }

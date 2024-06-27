@@ -42,6 +42,8 @@ import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.HashMap;
 
 /**
@@ -231,14 +233,31 @@ public class ActiveServerFilter implements Filter {
             requestURI = "/";
         }
         String redirectLocation = activeServerAddress + requestURI;
-        LOG.info("Not active. Redirecting to {}", redirectLocation);
+        String sanitizedLocation = sanitizeRedirectLocation(redirectLocation);
+        LOG.info("Not active. Redirecting to {}", sanitizedLocation);
         // A POST/PUT/DELETE require special handling by sending HTTP 307 instead of the regular 301/302.
         // Reference: http://stackoverflow.com/questions/2068418/whats-the-difference-between-a-302-and-a-307-redirect
         if (isUnsafeHttpMethod(servletRequest)) {
-            httpServletResponse.setHeader(HttpHeaders.LOCATION, redirectLocation);
+            httpServletResponse.setHeader(HttpHeaders.LOCATION, sanitizedLocation);
             httpServletResponse.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
         } else {
-            httpServletResponse.sendRedirect(redirectLocation);
+            httpServletResponse.sendRedirect(sanitizedLocation);
+        }
+    }
+    public static String sanitizeRedirectLocation(String redirectLocation) {
+        if (redirectLocation == null) return null;
+        try {
+            String preProcessedUrl = redirectLocation.replace("\r", "").replace("\n", "");
+
+            preProcessedUrl = preProcessedUrl.replaceAll("%(?![0-9a-fA-F]{2})", "%25");
+
+            String encodedUrl = URLEncoder.encode(preProcessedUrl, "UTF-8");
+
+            encodedUrl = encodedUrl.replaceAll("%25([0-9a-fA-F]{2})", "%$1");
+
+            return encodedUrl;
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("UTF-8 encoding not supported", e);
         }
     }
 

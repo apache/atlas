@@ -31,6 +31,7 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.store.graph.BulkImporter;
 import org.apache.atlas.repository.store.graph.v2.EntityImportStream;
+import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -47,6 +48,8 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 import static org.apache.atlas.model.impexp.AtlasImportRequest.TRANSFORMERS_KEY;
@@ -191,7 +194,9 @@ public class ImportService {
         if (StringUtils.isBlank(fileName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "FILENAME parameter not found");
         }
-
+        if(!FilterUtil.validateFilePath(fileName)){
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "FILENAME IS INVALID");
+        }
         AtlasImportResult result = null;
         try {
             LOG.info("==> import(user={}, from={}, fileName={})", userName, requestingIP, fileName);
@@ -296,4 +301,5 @@ public class ImportService {
     private boolean isMigrationMode(AtlasImportRequest request) {
         return request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION);
     }
+
 }
