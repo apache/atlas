@@ -119,11 +119,13 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
                 if (domainQualifiedNames.size() > 1) {
 
                     domainQualifiedNames.clear();
-                    domainQualifiedNames.add(NEW_STAR);
+                    // TODO : convert this to NEW_STAR after FE release
+                    domainQualifiedNames.add(STAR);
                     entity.setAttribute(ATTR_DOMAIN_QUALIFIED_NAMES, domainQualifiedNames);
-                } else {
-                    domainQualifiedNames.replaceAll(s -> s.equals(STAR) ? NEW_STAR : s);
-                }
+                } // TODO : uncomment this after FE release
+//                else {
+//                    domainQualifiedNames.replaceAll(s -> s.equals(STAR) ? NEW_STAR : s);
+//                }
 
                 String qualifiedName = format(PATTERN_QUALIFIED_NAME_ALL_DOMAINS, getUUID());
                 entity.setAttribute(QUALIFIED_NAME, qualifiedName);
@@ -214,7 +216,8 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
             String domainQualifiedNameToAuth;
 
             if (domainQualifiedNames.contains(STAR) || domainQualifiedNames.contains(NEW_STAR)) {
-                domainQualifiedNameToAuth = NEW_STAR;
+                //TODO : Convert this to NEW_STAR
+                domainQualifiedNameToAuth = STAR;
             } else {
                 domainQualifiedNameToAuth = domainQualifiedName;
             }
