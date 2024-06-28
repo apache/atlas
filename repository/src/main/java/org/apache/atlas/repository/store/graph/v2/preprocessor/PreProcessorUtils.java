@@ -236,7 +236,7 @@ public class PreProcessorUtils {
             lexoRankCache = new HashMap<>();
         }
         String cacheKey = entityType + "-" + glossaryQualifiedName + "-" + parentQualifiedName;
-        if(lexoRankCache.containsKey(cacheKey)){
+        if(lexoRankCache.containsKey(cacheKey) && lexoRankCache.get(cacheKey).equals(inputLexorank)){
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Duplicate value for the attribute :" + LEXICOGRAPHICAL_SORT_ORDER +" found");
         }
         Map<String, Object> dslQuery = createDSLforCheckingPreExistingLexoRank(entityType.equals(ATLAS_GLOSSARY_TERM_TYPENAME), inputLexorank, glossaryQualifiedName, parentQualifiedName);
