@@ -60,6 +60,8 @@ public class PreProcessorUtils {
     public static  final String DAAP_VISIBILITY_GROUPS_ATTR = "daapVisibilityGroups";
     public static final String OUTPUT_PORT_GUIDS_ATTR = "daapOutputPortGuids";
     public static final String INPUT_PORT_GUIDS_ATTR = "daapInputPortGuids";
+    public static final String DAAP_STATUS_ATTR = "daapStatus";
+    public static final String DAAP_ARCHIVED_STATUS = "Archived";
 
     //Migration Constants
     public static final String MIGRATION_TYPE_PREFIX = "MIGRATION:";

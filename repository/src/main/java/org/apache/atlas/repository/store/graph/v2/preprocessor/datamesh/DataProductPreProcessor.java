@@ -427,6 +427,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         try{
             if(RequestContext.get().getDeleteType() != DeleteType.SOFT){
+                vertex.setProperty(DAAP_STATUS_ATTR, DAAP_ARCHIVED_STATUS);
                 String productGuid = vertex.getProperty("__guid", String.class);
                 AtlasObjectId atlasObjectId = new AtlasObjectId();
                 atlasObjectId.setTypeName(POLICY_ENTITY_TYPE);
