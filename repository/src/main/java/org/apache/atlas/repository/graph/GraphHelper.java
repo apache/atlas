@@ -540,12 +540,11 @@ public final class GraphHelper {
     }
 
     public static boolean hasEntityReferences(AtlasVertex classificationVertex) {
-        boolean ret = false;
         Iterator edgeIterator = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL).edges(1).iterator();
         if (edgeIterator != null && edgeIterator.hasNext()) {
-            ret = true;
+            return true;
         }
-        return ret;
+        return false;
     }
 
     public static List<AtlasVertex> getAllPropagatedEntityVertices(AtlasVertex classificationVertex) {
