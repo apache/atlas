@@ -4514,5 +4514,27 @@ public class EntityGraphMapper {
         }
         RequestContext.get().endMetricRecord(metricRecorder);
     }
+    public void linkBusinessPolicy(String policyId, List<String> linkGuids) {
+        for (String guid : linkGuids) {
+            AtlasVertex ev = AtlasGraphUtilsV2.findByGuid(graph, guid);
+            if (ev != null) {
+                Set<String> existingValues = ev.getMultiValuedSetProperty("assetPolicyGUIDs", String.class);
+                ev.setProperty("assetPolicyGUIDs", policyId);
+                ev.setProperty("assetPoliciesCount", existingValues.size() + 1);
+                updateModificationMetadata(ev);
+            }
+        }
+    }
 
+    public void unlinkBusinessPolicy(String policyId, List<String> unlinkGuids) {
+        for (String guid : unlinkGuids) {
+            AtlasVertex ev = AtlasGraphUtilsV2.findByGuid(graph, guid);
+            if (ev != null) {
+                Set<String> existingValues = ev.getMultiValuedSetProperty("assetPolicyGUIDs", String.class);
+                ev.removePropertyValue("assetPolicyGUIDs", policyId);
+                ev.setProperty("assetPoliciesCount", existingValues.size() - 1);
+                updateModificationMetadata(ev);
+            }
+        }
+    }
 }

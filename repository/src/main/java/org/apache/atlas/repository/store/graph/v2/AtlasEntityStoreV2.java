@@ -1550,8 +1550,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
 
             // Notify the change listeners
-            entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
-            atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
+           // entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
+           // atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== createOrUpdate()");
             }
@@ -2735,6 +2735,23 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         // Rebuild alias
         this.esAliasStore.updateAlias(accesscontrolEntity, null);
 
+        RequestContext.get().endMetricRecord(metric);
+    }
+
+    @Override
+    @GraphTransaction
+    public void linkBusinessPolicy(String guid, List<String> linkGuids) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkBusinessPolicy");
+        this.entityGraphMapper.linkBusinessPolicy(guid, linkGuids);
+        RequestContext.get().endMetricRecord(metric);
+    }
+
+
+    @Override
+    @GraphTransaction
+    public void unlinkBusinessPolicy(String guid, List<String> unlinkGuids) {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkBusinessPolicy");
+        this.entityGraphMapper.unlinkBusinessPolicy(guid, unlinkGuids);
         RequestContext.get().endMetricRecord(metric);
     }
 }
