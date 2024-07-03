@@ -18,6 +18,7 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.GraphTransactionInterceptor;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
@@ -95,10 +96,12 @@ public class EntityNotificationSender<T> {
                 notificationHook = new PostCommitNotificationHook(operationType, notifications);
                 postCommitNotificationHooks.set(notificationHook);
             } else {
-                if (isRelationshipEvent(operationType))
-                    notificationHook.addRelationshipNotifications(notifications);
-                else
-                    notificationHook.addNotifications(notifications);
+                if (isRelationshipEvent(operationType)) notificationHook.addRelationshipNotifications(notifications);
+                else notificationHook.addNotifications(notifications);
+            }
+
+            if (RequestContext.get().isAlternatePath()) {
+                notificationHook.onComplete(true);
             }
         }
 

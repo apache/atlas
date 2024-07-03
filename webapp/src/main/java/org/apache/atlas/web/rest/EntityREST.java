@@ -1955,46 +1955,4 @@ public class EntityREST {
               AtlasPerfTracer.log(perf);
        }
     }
-
-
-    @POST
-    @Path("/{policyId}/link-business-policy")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Timed
-    public void linkBusinessPolicy(@PathParam("policyId") final String policyId, final LinkBusinessPolicyRequest request) throws AtlasBaseException {
-        if (ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
-            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Policy linking");
-        }
-        AtlasPerfTracer perf = null;
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.linkBusinessPolicy(" + policyId + ")");
-            }
-            entitiesStore.linkBusinessPolicy(policyId, request.getLinkGuids());
-        } finally {
-            AtlasPerfTracer.log(perf);
-        }
-    }
-
-
-    @POST
-    @Path("/{policyId}/unlink-business-policy")
-    @Produces(Servlets.JSON_MEDIA_TYPE)
-    @Consumes(Servlets.JSON_MEDIA_TYPE)
-    @Timed
-    public void unlinkBusinessPolicy(@PathParam("policyId") final String policyId, final LinkBusinessPolicyRequest request) throws AtlasBaseException {
-        if (ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
-            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Policy unlinking");
-        }
-        AtlasPerfTracer perf = null;
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.unlinkBusinessPolicy(" + policyId + ")");
-            }
-            entitiesStore.unlinkBusinessPolicy(policyId, request.getUnlinkGuids());
-        } finally {
-            AtlasPerfTracer.log(perf);
-        }
-    }
 }
