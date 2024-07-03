@@ -4,27 +4,28 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
-import static org.apache.atlas.AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND;
 import static org.apache.atlas.AtlasErrorCode.TYPE_NAME_INVALID;
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public abstract class AbstractContractPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractContractPreProcessor.class);
@@ -32,19 +33,21 @@ public abstract class AbstractContractPreProcessor implements PreProcessor {
     public final AtlasTypeRegistry typeRegistry;
     public final EntityGraphRetriever entityRetriever;
     public final AtlasGraph graph;
+    private final EntityDiscoveryService discovery;
 
 
     AbstractContractPreProcessor(AtlasGraph graph, AtlasTypeRegistry typeRegistry,
-                                 EntityGraphRetriever entityRetriever) {
+                                 EntityGraphRetriever entityRetriever, EntityDiscoveryService discovery) {
         this.graph = graph;
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
+        this.discovery = discovery;
     }
 
-    void authorizeContractCreateOrUpdate(AtlasEntity contractEntity, AtlasEntity.AtlasEntityWithExtInfo associatedAsset) throws AtlasBaseException {
+    void authorizeContractCreateOrUpdate(AtlasEntity contractEntity, AtlasEntity associatedAsset) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("authorizeContractUpdate");
         try {
-            AtlasEntityHeader entityHeader = new AtlasEntityHeader(associatedAsset.getEntity());
+            AtlasEntityHeader entityHeader = new AtlasEntityHeader(associatedAsset);
 
             //First authorize entity update access
             verifyAssetAccess(entityHeader, AtlasPrivilege.ENTITY_UPDATE, contractEntity, AtlasPrivilege.ENTITY_UPDATE);
@@ -70,16 +73,39 @@ public abstract class AbstractContractPreProcessor implements PreProcessor {
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, privilege, entityHeader), errorMessage);
     }
 
-    AtlasEntity.AtlasEntityWithExtInfo getAssociatedAsset(String datasetQName, String typeName) throws AtlasBaseException {
+    public AtlasEntity getAssociatedAsset(String datasetQName, DataContract contract) throws AtlasBaseException {
+        IndexSearchParams indexSearchParams = new IndexSearchParams();
+        Map<String, Object> dsl = new HashMap<>();
+        int size = 2;
 
-        Map<String, Object> uniqAttributes = new HashMap<>();
-        uniqAttributes.put(QUALIFIED_NAME, datasetQName);
+        List<Map<String, Object>> mustClauseList = new ArrayList<>();
+        mustClauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, datasetQName)));
+        if (contract.getType() != null) {
+            mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", contract.getType().name())));
+        } else {
+            mustClauseList.add(mapOf("term", mapOf("__superTypeNames.keyword", SQL_ENTITY_TYPE)));
+        }
 
-        AtlasEntityType entityType = ensureEntityType(typeName);
+        dsl.put("query", mapOf("bool", mapOf("must", mustClauseList)));
+        dsl.put("sort", Collections.singletonList(mapOf(ATTR_CONTRACT_VERSION, mapOf("order", "desc"))));
+        dsl.put("size", size);
 
-        AtlasVertex entityVertex = AtlasGraphUtilsV2.getVertexByUniqueAttributes(graph, entityType, uniqAttributes);
+        indexSearchParams.setDsl(dsl);
+        indexSearchParams.setSuppressLogs(true);
 
-        return entityRetriever.toAtlasEntityWithExtInfo(entityVertex);
+        AtlasSearchResult result = discovery.directIndexSearch(indexSearchParams);
+        if (result == null || CollectionUtils.isEmpty(result.getEntities())) {
+            throw new AtlasBaseException("Dataset doesn't exist for given qualified name.");
+
+        } else if (result.getEntities().size() >1 ) {
+            throw new AtlasBaseException("Multiple dataset exists for given qualified name. " +
+                    "Please specify the `type` attribute in contract.");
+        } else {
+            AtlasEntityHeader datasetEntity = result.getEntities().get(0);
+            contract.setType(datasetEntity.getTypeName());
+            return new AtlasEntity(datasetEntity);
+        }
+
     }
 
     AtlasEntityType ensureEntityType(String typeName) throws AtlasBaseException {
