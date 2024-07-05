@@ -133,7 +133,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
         if(StringUtils.isEmpty(lexicographicalSortOrder)){
             assignNewLexicographicalSortOrder(entity,glossaryQualifiedName, parentQname, this.discovery);
         } else {
-            isValidLexoRank(entity.getTypeName(), lexicographicalSortOrder, glossaryQualifiedName, parentQname, this.discovery);
+            isValidLexoRank(lexicographicalSortOrder, glossaryQualifiedName, parentQname, this.discovery);
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(vertex));
@@ -167,7 +167,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
             parentQname = (String) parentCategory.getAttribute(QUALIFIED_NAME);
         }
         if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
-            isValidLexoRank(entity.getTypeName(), lexicographicalSortOrder, newGlossaryQualifiedName, parentQname, this.discovery);
+            isValidLexoRank(lexicographicalSortOrder, newGlossaryQualifiedName, parentQname, this.discovery);
         } else {
             entity.removeAttribute(LEXICOGRAPHICAL_SORT_ORDER);
         }

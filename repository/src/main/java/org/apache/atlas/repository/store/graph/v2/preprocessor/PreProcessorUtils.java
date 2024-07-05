@@ -219,7 +219,7 @@ public class PreProcessorUtils {
         }
     }
 
-    public static void isValidLexoRank(String entityType, String inputLexorank, String glossaryQualifiedName, String parentQualifiedName, EntityDiscoveryService discovery) throws AtlasBaseException {
+    public static void isValidLexoRank(String inputLexorank, String glossaryQualifiedName, String parentQualifiedName, EntityDiscoveryService discovery) throws AtlasBaseException {
 
         Matcher matcher = LEXORANK_VALIDITY_PATTERN.matcher(inputLexorank);
 
@@ -235,11 +235,11 @@ public class PreProcessorUtils {
         if(Objects.isNull(lexoRankCache)) {
             lexoRankCache = new HashMap<>();
         }
-        String cacheKey = entityType + "-" + glossaryQualifiedName + "-" + parentQualifiedName;
+        String cacheKey = glossaryQualifiedName + "-" + parentQualifiedName;
         if(lexoRankCache.containsKey(cacheKey) && lexoRankCache.get(cacheKey).equals(inputLexorank)){
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Duplicate value for the attribute :" + LEXICOGRAPHICAL_SORT_ORDER +" found");
         }
-        Map<String, Object> dslQuery = createDSLforCheckingPreExistingLexoRank(entityType.equals(ATLAS_GLOSSARY_TERM_TYPENAME), inputLexorank, glossaryQualifiedName, parentQualifiedName);
+        Map<String, Object> dslQuery = createDSLforCheckingPreExistingLexoRank(inputLexorank, glossaryQualifiedName, parentQualifiedName);
         List<AtlasEntityHeader> assetsWithDuplicateRank = new ArrayList<>();
         try {
             IndexSearchParams searchParams = new IndexSearchParams();
@@ -271,15 +271,14 @@ public class PreProcessorUtils {
         }
         String lexoRank = "";
         String lastLexoRank = "";
-        boolean isTerm = entity.getTypeName().equals(ATLAS_GLOSSARY_TERM_TYPENAME);
-        String cacheKey = entity.getTypeName() + "-" + glossaryQualifiedName + "-" + parentQualifiedName;
+        String cacheKey = glossaryQualifiedName + "-" + parentQualifiedName;
 
         if(lexoRankCache.containsKey(cacheKey)) {
             lastLexoRank = lexoRankCache.get(cacheKey);
         } else {
 
             List<AtlasEntityHeader> categories = null;
-            Map<String, Object> dslQuery = generateDSLQueryForLastChild(glossaryQualifiedName, parentQualifiedName, isTerm);
+            Map<String, Object> dslQuery = generateDSLQueryForLastChild(glossaryQualifiedName, parentQualifiedName);
             try {
                 IndexSearchParams searchParams = new IndexSearchParams();
                 searchParams.setAttributes(ATTRIBUTES);
@@ -296,10 +295,10 @@ public class PreProcessorUtils {
                 if (StringUtils.isNotEmpty(lexicographicalSortOrder)) {
                     lastLexoRank = lexicographicalSortOrder;
                 } else {
-                    lastLexoRank = isTerm ? INIT_TERM_LEXORANK_OFFSET : INIT_LEXORANK_OFFSET;
+                    lastLexoRank = INIT_LEXORANK_OFFSET;
                 }
             } else {
-                lastLexoRank = isTerm ? INIT_TERM_LEXORANK_OFFSET : INIT_LEXORANK_OFFSET;
+                lastLexoRank = INIT_LEXORANK_OFFSET;
             }
         }
 
@@ -312,9 +311,9 @@ public class PreProcessorUtils {
         RequestContext.get().setLexoRankCache(lexoRankCache);
     }
 
-    public static Map<String, Object> createDSLforCheckingPreExistingLexoRank(boolean isTerm, String lexoRank, String glossaryQualifiedName, String parentQualifiedName) {
+    public static Map<String, Object> createDSLforCheckingPreExistingLexoRank(String lexoRank, String glossaryQualifiedName, String parentQualifiedName) {
 
-        Map<String, Object> boolMap = buildBoolQueryDuplicateLexoRank(isTerm, lexoRank, glossaryQualifiedName, parentQualifiedName);
+        Map<String, Object> boolMap = buildBoolQueryDuplicateLexoRank(lexoRank, glossaryQualifiedName, parentQualifiedName);
 
         Map<String, Object> dsl = new HashMap<>();
         dsl.put("from", 0);
@@ -324,7 +323,7 @@ public class PreProcessorUtils {
         return dsl;
     }
 
-    private static Map<String, Object> buildBoolQueryDuplicateLexoRank(boolean isTerm, String lexoRank, String glossaryQualifiedName, String parentQualifiedName) {
+    private static Map<String, Object> buildBoolQueryDuplicateLexoRank(String lexoRank, String glossaryQualifiedName, String parentQualifiedName) {
         Map<String, Object> boolFilter = new HashMap<>();
         List<Map<String, Object>> mustArray = new ArrayList<>();
         mustArray.add(mapOf("term", mapOf("__state", "ACTIVE")));
@@ -332,11 +331,13 @@ public class PreProcessorUtils {
         if(StringUtils.isNotEmpty(glossaryQualifiedName)) {
             mustArray.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList(ATLAS_GLOSSARY_TERM_TYPENAME, ATLAS_GLOSSARY_CATEGORY_TYPENAME))));
             mustArray.add(mapOf("term", mapOf("__glossary", glossaryQualifiedName)));
-            String parentAttribute = isTerm ? "__categories" : "__parentCategory";
             if(StringUtils.isEmpty(parentQualifiedName)) {
-                boolFilter.put("must_not", Arrays.asList(mapOf("exists", mapOf("field", parentAttribute))));
+                boolFilter.put("must_not", Arrays.asList(mapOf("exists", mapOf("field", "__categories")),mapOf("exists", mapOf("field", "__parentCategory"))));
             } else {
-                mustArray.add(mapOf("term", mapOf(parentAttribute, parentQualifiedName)));
+                List<Map<String, Object>> shouldParentArray = new ArrayList<>();
+                shouldParentArray.add(mapOf("term", mapOf("__categories", parentQualifiedName)));
+                shouldParentArray.add(mapOf("term", mapOf("__parentCategory", parentQualifiedName)));
+                mustArray.add(mapOf("bool",mapOf("should", shouldParentArray)));
             }
         } else{
             mustArray.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList(ATLAS_GLOSSARY_ENTITY_TYPE))));
@@ -347,13 +348,13 @@ public class PreProcessorUtils {
         return boolFilter;
     }
 
-    public static Map<String, Object> generateDSLQueryForLastChild(String glossaryQualifiedName, String parentQualifiedName, boolean isTerm) {
+    public static Map<String, Object> generateDSLQueryForLastChild(String glossaryQualifiedName, String parentQualifiedName) {
 
         Map<String, Object> sortKeyOrder = mapOf(LEXICOGRAPHICAL_SORT_ORDER, mapOf("order", "desc"));
 
         Object[] sortArray = {sortKeyOrder};
 
-        Map<String, Object> boolMap = buildBoolQuery(glossaryQualifiedName, parentQualifiedName, isTerm);
+        Map<String, Object> boolMap = buildBoolQuery(glossaryQualifiedName, parentQualifiedName);
 
         Map<String, Object> dsl = new HashMap<>();
         dsl.put("from", 0);
@@ -364,20 +365,20 @@ public class PreProcessorUtils {
         return dsl;
     }
 
-    private static Map<String, Object> buildBoolQuery(String glossaryQualifiedName, String parentQualifiedName, boolean isTerm) {
+    private static Map<String, Object> buildBoolQuery(String glossaryQualifiedName, String parentQualifiedName) {
         Map<String, Object> boolFilter = new HashMap<>();
         List<Map<String, Object>> mustArray = new ArrayList<>();
         mustArray.add(mapOf("term", mapOf("__state", "ACTIVE")));
         if(StringUtils.isNotEmpty(glossaryQualifiedName)) {
-            String typeName = isTerm ? ATLAS_GLOSSARY_TERM_TYPENAME : ATLAS_GLOSSARY_CATEGORY_TYPENAME;
-            mustArray.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
+            mustArray.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossaryTerm", "AtlasGlossaryCategory"))));
             mustArray.add(mapOf("term", mapOf("__glossary", glossaryQualifiedName)));
-            String parentAttribute = isTerm ? "__categories" : "__parentCategory";
             if(StringUtils.isEmpty(parentQualifiedName)) {
-                boolFilter.put("must_not", Arrays.asList(mapOf("exists", mapOf("field", parentAttribute))));
-            }
-            else {
-                mustArray.add(mapOf("term", mapOf(parentAttribute, parentQualifiedName)));
+                boolFilter.put("must_not", Arrays.asList(mapOf("exists", mapOf("field", "__categories")),mapOf("exists", mapOf("field", "__parentCategory"))));
+            } else {
+                List<Map<String, Object>> shouldParentArray = new ArrayList<>();
+                shouldParentArray.add(mapOf("term", mapOf("__categories", parentQualifiedName)));
+                shouldParentArray.add(mapOf("term", mapOf("__parentCategory", parentQualifiedName)));
+                mustArray.add(mapOf("bool",mapOf("should", shouldParentArray)));
             }
         } else{
             mustArray.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList("AtlasGlossary"))));
