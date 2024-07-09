@@ -1,0 +1,9 @@
+version: '3.7'
+
+services:
+  atlas:
+    image: atlas:latest
+    build: .
+
+  cassandra:
+    image: cassandra
