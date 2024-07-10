@@ -42,10 +42,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
@@ -67,6 +64,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCa
 
 public class AuthPolicyPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AuthPolicyPreProcessor.class);
+    public static final String ENTITY_DEFAULT_DOMAIN_SUPER = "entity:default/domain/*/super";
 
     private final AtlasGraph graph;
     private final AtlasTypeRegistry typeRegistry;
@@ -128,6 +126,10 @@ public class AuthPolicyPreProcessor implements PreProcessor {
                 validator.validate(policy, null, parentEntity, CREATE);
                 validateConnectionAdmin(policy);
             }
+            // TODO : uncomment after FE release
+//            else {
+//                validateAndReduce(policy);
+//            }
 
             policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
 
@@ -165,6 +167,21 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
+
+    private void validateAndReduce(AtlasEntity policy) {
+        List<String> resources = (List<String>) policy.getAttribute(ATTR_POLICY_RESOURCES);
+        boolean hasAllDomainPattern = resources.stream().anyMatch(resource ->
+                resource.equals("entity:*") ||
+                        resource.equals("entity:*/super") ||
+                        resource.equals("entity:default/domain/*/super")
+        );
+
+        if (hasAllDomainPattern) {
+            policy.setAttribute(ATTR_POLICY_RESOURCES, Collections.singletonList("entity:default/domain/*/super"));
+        }
+    }
+
+
     private void processUpdatePolicy(AtlasStruct entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdatePolicy");
         AtlasEntity policy = (AtlasEntity) entity;
@@ -183,6 +200,10 @@ public class AuthPolicyPreProcessor implements PreProcessor {
                 validator.validate(policy, existingPolicy, parentEntity, UPDATE);
                 validateConnectionAdmin(policy);
             }
+            // TODO : uncomment after FE release
+//            else {
+//                validateAndReduce(policy);
+//            }
 
             String qName = getEntityQualifiedName(existingPolicy);
             policy.setAttribute(QUALIFIED_NAME, qName);

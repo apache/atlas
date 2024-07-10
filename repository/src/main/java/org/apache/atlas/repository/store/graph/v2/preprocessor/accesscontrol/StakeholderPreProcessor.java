@@ -58,8 +58,7 @@ import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.STAKEHOLDER_ENTITY_TYPE;
 import static org.apache.atlas.repository.Constants.STAKEHOLDER_TITLE_ENTITY_TYPE;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.indexSearchPaginated;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.StakeholderTitlePreProcessor.ATTR_DOMAIN_QUALIFIED_NAMES;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.StakeholderTitlePreProcessor.STAR;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.StakeholderTitlePreProcessor.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_ACCESS_CONTROL_ENABLED;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_PERSONA_ROLE_ID;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
@@ -290,7 +289,7 @@ public class StakeholderPreProcessor extends PersonaPreProcessor {
 
             List<String> domainQualifiedNames = (List<String>) stakeholderTitleHeader.getAttribute(ATTR_DOMAIN_QUALIFIED_NAMES);
 
-            if (!domainQualifiedNames.contains(STAR)) {
+            if (!domainQualifiedNames.contains(STAR) && !domainQualifiedNames.contains(NEW_STAR)) {
                 Optional parentDomain = domainQualifiedNames.stream().filter(x -> domainQualifiedName.startsWith(x)).findFirst();
 
                 if (!parentDomain.isPresent()) {

@@ -48,6 +48,7 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
 
 
     public static final String STAR = "*/super";
+    public static final String NEW_STAR = "default/domain/*/super";
     public static final String ATTR_DOMAIN_QUALIFIED_NAMES = "stakeholderTitleDomainQualifiedNames";
 
     public static final String REL_ATTR_STAKEHOLDERS = "stakeholders";
@@ -114,14 +115,17 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
             if (CollectionUtils.isEmpty(domainQualifiedNames)) {
                 throw new AtlasBaseException(BAD_REQUEST, "Please provide attribute " + ATTR_DOMAIN_QUALIFIED_NAMES);
             }
-
-            if (domainQualifiedNames.contains(STAR)) {
+            if (domainQualifiedNames.contains(NEW_STAR) || domainQualifiedNames.contains(STAR)) {
                 if (domainQualifiedNames.size() > 1) {
 
                     domainQualifiedNames.clear();
+                    // TODO : convert this to NEW_STAR after FE release
                     domainQualifiedNames.add(STAR);
                     entity.setAttribute(ATTR_DOMAIN_QUALIFIED_NAMES, domainQualifiedNames);
-                }
+                } // TODO : uncomment this after FE release
+//                else {
+//                    domainQualifiedNames.replaceAll(s -> s.equals(STAR) ? NEW_STAR : s);
+//                }
 
                 String qualifiedName = format(PATTERN_QUALIFIED_NAME_ALL_DOMAINS, getUUID());
                 entity.setAttribute(QUALIFIED_NAME, qualifiedName);
@@ -211,8 +215,9 @@ public class StakeholderTitlePreProcessor implements PreProcessor {
         for (String domainQualifiedName: domainQualifiedNames) {
             String domainQualifiedNameToAuth;
 
-            if (domainQualifiedNames.contains(STAR)) {
-                domainQualifiedNameToAuth = "*/super";
+            if (domainQualifiedNames.contains(STAR) || domainQualifiedNames.contains(NEW_STAR)) {
+                //TODO : Convert this to NEW_STAR
+                domainQualifiedNameToAuth = STAR;
             } else {
                 domainQualifiedNameToAuth = domainQualifiedName;
             }
