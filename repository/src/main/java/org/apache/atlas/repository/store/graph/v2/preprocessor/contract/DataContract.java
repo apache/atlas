@@ -40,7 +40,6 @@ public class DataContract {
     public Status                               status = Status.DRAFT;
     @JsonProperty(value = "template_version")
     public String                               templateVersion = "0.0.1";
-    @Valid @NotNull
     public String                               data_source;
     @Valid @NotNull
     public String                               dataset;
