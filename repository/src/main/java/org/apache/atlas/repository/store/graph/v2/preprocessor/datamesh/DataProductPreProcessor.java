@@ -442,6 +442,9 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                     }
                 }
             }
+            if(RequestContext.get().getDeleteType() == DeleteType.SOFT || RequestContext.get().getDeleteType() == DeleteType.DEFAULT){
+                vertex.setProperty(DAAP_STATUS_ATTR, DAAP_ARCHIVED_STATUS);
+            }
         }
         finally {
             RequestContext.get().endMetricRecord(metricRecorder);
