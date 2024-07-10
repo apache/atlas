@@ -125,11 +125,9 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             if (!POLICY_SUB_CATEGORY_DOMAIN.equals(policySubCategory)) {
                 validator.validate(policy, null, parentEntity, CREATE);
                 validateConnectionAdmin(policy);
+            } else {
+                validateAndReduce(policy);
             }
-            // TODO : uncomment after FE release
-//            else {
-//                validateAndReduce(policy);
-//            }
 
             policy.setAttribute(QUALIFIED_NAME, String.format("%s/%s", getEntityQualifiedName(parentEntity), getUUID()));
 
@@ -173,11 +171,11 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         boolean hasAllDomainPattern = resources.stream().anyMatch(resource ->
                 resource.equals("entity:*") ||
                         resource.equals("entity:*/super") ||
-                        resource.equals("entity:default/domain/*/super")
+                        resource.equals(ENTITY_DEFAULT_DOMAIN_SUPER)
         );
 
         if (hasAllDomainPattern) {
-            policy.setAttribute(ATTR_POLICY_RESOURCES, Collections.singletonList("entity:default/domain/*/super"));
+            policy.setAttribute(ATTR_POLICY_RESOURCES, Collections.singletonList(ENTITY_DEFAULT_DOMAIN_SUPER));
         }
     }
 
@@ -199,11 +197,9 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             if (!POLICY_SUB_CATEGORY_DOMAIN.equals(policySubCategory)) {
                 validator.validate(policy, existingPolicy, parentEntity, UPDATE);
                 validateConnectionAdmin(policy);
+            } else {
+                validateAndReduce(policy);
             }
-            // TODO : uncomment after FE release
-//            else {
-//                validateAndReduce(policy);
-//            }
 
             String qName = getEntityQualifiedName(existingPolicy);
             policy.setAttribute(QUALIFIED_NAME, qName);
