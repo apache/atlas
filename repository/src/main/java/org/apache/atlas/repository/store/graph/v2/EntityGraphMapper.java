@@ -3590,6 +3590,7 @@ public class EntityGraphMapper {
         if (CollectionUtils.isEmpty(classifications)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_CLASSIFICATION_PARAMS, "update", guid);
         }
+        entityRetriever.verifyClassificationsPropagationMode(classifications);
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
 
@@ -3711,7 +3712,21 @@ public class EntityGraphMapper {
             Boolean updatedRestrictPropagationThroughLineage = classification.getRestrictPropagationThroughLineage();
             Boolean currentRestrictPropagationThroughHierarchy = currentClassification.getRestrictPropagationThroughHierarchy();
             Boolean updatedRestrictPropagationThroughHierarchy = classification.getRestrictPropagationThroughHierarchy();
-            String propagationMode = entityRetriever.determinePropagationMode(updatedRestrictPropagationThroughLineage, updatedRestrictPropagationThroughHierarchy);
+            if (updatedRestrictPropagationThroughLineage == null) {
+                updatedRestrictPropagationThroughLineage = currentRestrictPropagationThroughLineage;
+                classification.setRestrictPropagationThroughLineage(updatedRestrictPropagationThroughLineage);
+            }
+            if (updatedRestrictPropagationThroughHierarchy == null) {
+                updatedRestrictPropagationThroughHierarchy = currentRestrictPropagationThroughHierarchy;
+                classification.setRestrictPropagationThroughHierarchy(updatedRestrictPropagationThroughHierarchy);
+            }
+
+            String propagationMode = CLASSIFICATION_PROPAGATION_MODE_DEFAULT;
+            if (updatedTagPropagation) {
+                // determinePropagationMode also validates the propagation restriction option values
+                propagationMode = entityRetriever.determinePropagationMode(updatedRestrictPropagationThroughLineage, updatedRestrictPropagationThroughHierarchy);
+            }
+
             if ((!Objects.equals(updatedRemovePropagations, currentRemovePropagations) ||
                     !Objects.equals(currentTagPropagation, updatedTagPropagation) ||
                     !Objects.equals(currentRestrictPropagationThroughLineage, updatedRestrictPropagationThroughLineage)) &&
@@ -3733,7 +3748,6 @@ public class EntityGraphMapper {
                 if (updatedTagPropagation) {
                     if (updatedRestrictPropagationThroughLineage != null && !currentRestrictPropagationThroughLineage && updatedRestrictPropagationThroughLineage) {
                         deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
-
                     }
                     if (updatedRestrictPropagationThroughHierarchy != null && !currentRestrictPropagationThroughHierarchy && updatedRestrictPropagationThroughHierarchy) {
                         deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
