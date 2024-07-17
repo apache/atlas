@@ -196,4 +196,4 @@ jobs:
           ${{ steps.login-ecr.outputs.registry }}/atlanhq/${{ github.event.repository.name }}:${{ steps.get_branch.outputs.branch }}-${{ steps.semver_tag.outputs.new_tag }}
         build-args: |
           ACCESS_TOKEN_USR=$GITHUB_ACTOR
-          ACCESS_TOKEN_PWD=${{ secrets.my_pat }}  
+          ACCESS_TOKEN_PWD=${{ secrets.ORG_PAT_GITHUB }}  
