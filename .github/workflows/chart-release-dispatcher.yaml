@@ -29,7 +29,7 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v3
         with:
-          token: ${{ secrets.my_pat }}
+          token: ${{ secrets.ORG_PAT_GITHUB }}
           ref: ${{ steps.extract_branch.outputs.branch }}
           fetch-depth: 0
       
@@ -50,10 +50,10 @@ jobs:
       - name: Get PR url and PR User
         id: get_pr_url_user
         run: |
-          head_sha=$(curl -s -H "Authorization: Bearer ${{ secrets.my_pat }}" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/jobs" | jq -r '.jobs[0].head_sha')
+          head_sha=$(curl -s -H "Authorization: Bearer ${{ secrets.ORG_PAT_GITHUB }}" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/jobs" | jq -r '.jobs[0].head_sha')
           echo "Head SHA: $head_sha"
-          pr_url=$(curl -s -H "Authorization: Bearer ${{ secrets.my_pat }}" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/search/issues?q=sha:$head_sha+type:pr" | jq -r '.items[0].html_url')
-          pr_user=$(curl -s -H "Authorization: Bearer ${{ secrets.my_pat }}" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/search/issues?q=sha:$head_sha+type:pr" | jq -r '.items[0].user.login')
+          pr_url=$(curl -s -H "Authorization: Bearer ${{ secrets.ORG_PAT_GITHUB }}" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/search/issues?q=sha:$head_sha+type:pr" | jq -r '.items[0].html_url')
+          pr_user=$(curl -s -H "Authorization: Bearer ${{ secrets.ORG_PAT_GITHUB }}" -H "Accept: application/vnd.github.v3+json" "https://api.github.com/search/issues?q=sha:$head_sha+type:pr" | jq -r '.items[0].user.login')
           echo "pr_url=$pr_url" >> $GITHUB_OUTPUT
           echo "pr_user=$pr_user" >> $GITHUB_OUTPUT
 
@@ -65,7 +65,7 @@ jobs:
       - name: Repository Dispatch
         uses: peter-evans/repository-dispatch@v2
         with:
-          token: ${{ secrets.my_pat }}
+          token: ${{ secrets.ORG_PAT_GITHUB }}
           repository: ${{ matrix.repo }}
           event-type: dispatch_chart_release_workflow
           client-payload: |-

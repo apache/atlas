@@ -58,7 +58,7 @@ jobs:
             [{
                 "id": "github",
                 "username": "atlan-ci",
-                "password": "${{ secrets.my_pat }}"
+                "password": "${{ secrets.ORG_PAT_GITHUB }}"
             }]
 
       - name: Build with Maven
@@ -77,7 +77,7 @@ jobs:
         shell: bash
 
       - name: Get version tag
-        run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.my_pat }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7`)abcd"
+        run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7`)abcd"
         id: get_version
 
       - name: Set up Buildx 
@@ -89,7 +89,7 @@ jobs:
         with:
           registry: ghcr.io
           username: $GITHUB_ACTOR
-          password: ${{ secrets.my_pat }}
+          password: ${{ secrets.ORG_PAT_GITHUB }}
 
       - name: Build and push
         id: docker_build
