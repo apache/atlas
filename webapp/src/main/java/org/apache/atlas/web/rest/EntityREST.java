@@ -75,7 +75,9 @@ import java.util.*;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
+import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserName;
 import static org.apache.atlas.authorize.AtlasPrivilege.*;
+import static org.apache.atlas.repository.util.AccessControlUtils.ARGO_SERVICE_USER_NAME;
 
 
 /**
@@ -1954,7 +1956,5 @@ public class EntityREST {
        } finally {
               AtlasPerfTracer.log(perf);
        }
-
-
     }
 }
