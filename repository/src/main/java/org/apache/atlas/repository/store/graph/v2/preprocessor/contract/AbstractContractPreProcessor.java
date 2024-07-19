@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.TYPE_NAME_INVALID;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
@@ -98,7 +99,7 @@ public abstract class AbstractContractPreProcessor implements PreProcessor {
             throw new AtlasBaseException("Dataset doesn't exist for given qualified name.");
 
         } else if (result.getEntities().size() >1 ) {
-            throw new AtlasBaseException("Multiple dataset exists for given qualified name. " +
+            throw new AtlasBaseException(BAD_REQUEST, "Multiple dataset exists for given qualified name. " +
                     "Please specify the `type` attribute in contract.");
         } else {
             AtlasEntityHeader datasetEntity = result.getEntities().get(0);

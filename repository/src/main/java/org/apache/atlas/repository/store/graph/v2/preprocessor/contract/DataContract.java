@@ -88,7 +88,7 @@ public class DataContract {
                 case "materialisedview":
                     return MaterialisedView;
                 default:
-                    throw new AtlasBaseException(String.format("type: %s value not supported yet.", s));
+                    throw new AtlasBaseException(BAD_REQUEST, String.format("type: %s value not supported yet.", s));
             }
         }
     }
