@@ -93,7 +93,7 @@ public class RequestContext {
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
-    private  Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = new HashMap<>();
+    private final Map<AtlasObjectId, Object> relationshipEndToVertexIdMap = new HashMap<>();
     private boolean     allowDuplicateDisplayName;
     private MetricsRegistry metricsRegistry;
     private boolean skipAuthorizationCheck = false;
@@ -104,75 +104,11 @@ public class RequestContext {
     private boolean delayTagNotifications = false;
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
     private Map<AtlasClassification, Collection<Object>> addedClassificationAndVertices = new HashMap<>();
-
-    private boolean isCloned = false;
     private boolean alternatePath  = false;
 
 
     private RequestContext() {
 
-    }
-
-    private RequestContext(RequestContext other) {
-        this.user = other.user;
-        this.userGroups = other.userGroups != null ? new HashSet<>(other.userGroups) : null;
-        this.clientIPAddress = other.clientIPAddress;
-        this.forwardedAddresses = other.forwardedAddresses != null ? new ArrayList<>(other.forwardedAddresses) : null;
-        this.deleteType = other.deleteType;
-        this.isPurgeRequested = other.isPurgeRequested;
-        this.maxAttempts = other.maxAttempts;
-        this.attemptCount = other.attemptCount;
-        this.isImportInProgress = other.isImportInProgress;
-        this.isInNotificationProcessing = other.isInNotificationProcessing;
-        this.isInTypePatching = other.isInTypePatching;
-        this.createShellEntityForNonExistingReference = other.createShellEntityForNonExistingReference;
-        this.skipFailedEntities = other.skipFailedEntities;
-        this.allowDeletedRelationsIndexsearch = other.allowDeletedRelationsIndexsearch;
-        this.includeMeanings = other.includeMeanings;
-        this.includeClassifications = other.includeClassifications;
-        this.includeClassificationNames = other.includeClassificationNames;
-        this.currentTypePatchAction = other.currentTypePatchAction;
-        this.currentTask = other.currentTask;
-        this.traceId = other.traceId;
-        this.relationshipEndToVertexIdMap = new HashMap<>(other.relationshipEndToVertexIdMap);
-        this.allowDuplicateDisplayName = other.allowDuplicateDisplayName;
-        this.metricsRegistry = other.metricsRegistry;
-        this.skipAuthorizationCheck = other.skipAuthorizationCheck;
-        this.deletedEdgesIdsForResetHasLineage = new HashSet<>(other.deletedEdgesIdsForResetHasLineage);
-        this.requestUri = other.requestUri;
-        this.cacheEnabled = other.cacheEnabled;
-        this.delayTagNotifications = other.delayTagNotifications;
-        this.deletedClassificationAndVertices = new HashMap<>(other.deletedClassificationAndVertices);
-        this.addedClassificationAndVertices = new HashMap<>(other.addedClassificationAndVertices);
-
-        this.updatedEntities.putAll(other.updatedEntities);
-        this.deletedEntities.putAll(other.deletedEntities);
-        this.restoreEntities.putAll(other.restoreEntities);
-        this.entityCache.putAll(other.entityCache);
-        this.entityHeaderCache.putAll(other.entityHeaderCache);
-        this.entityExtInfoCache.putAll(other.entityExtInfoCache);
-        this.diffEntityCache.putAll(other.diffEntityCache);
-        this.addedPropagations.putAll(other.addedPropagations);
-        this.removedPropagations.putAll(other.removedPropagations);
-        this.requestContextHeaders.putAll(other.requestContextHeaders);
-        this.deletedEdgesIds.addAll(other.deletedEdgesIds);
-        this.processGuidIds.addAll(other.processGuidIds);
-        this.entitiesToSkipUpdate.addAll(other.entitiesToSkipUpdate);
-        this.onlyCAUpdateEntities.addAll(other.onlyCAUpdateEntities);
-        this.onlyBAUpdateEntities.addAll(other.onlyBAUpdateEntities);
-        this.queuedTasks.addAll(other.queuedTasks);
-        this.relationAttrsForSearch.addAll(other.relationAttrsForSearch);
-        this.removedElementsMap.putAll(other.removedElementsMap);
-        this.newElementsCreatedMap.putAll(other.newElementsCreatedMap);
-        this.relationshipMutationMap.putAll(other.relationshipMutationMap);
-    }
-
-
-    public static RequestContext cloneCurrentContext() {
-        RequestContext currentContext = get();
-        RequestContext requestContext = new RequestContext(currentContext);
-        requestContext.isCloned = true;
-        return requestContext;
     }
 
     public static void set(RequestContext context) {
@@ -861,9 +797,6 @@ public class RequestContext {
         return relationshipMutationMap;
     }
 
-    public boolean isCloned() {
-        return isCloned;
-    }
 
     public boolean isAlternatePath() {
         return alternatePath;
