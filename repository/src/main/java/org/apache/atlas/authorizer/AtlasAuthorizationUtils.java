@@ -205,6 +205,7 @@ public class AtlasAuthorizationUtils {
                         if (atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
                             //3
                             return !(!abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE);
+                            // abacPoliciesResult.isAllowed() || abacPoliciesResult.getPolicyPriority() != RangerPolicy.POLICY_PRIORITY_OVERRIDE;
                         } else {
                             //4
                             if (abacPoliciesResult.isExplicitDeny()) {
