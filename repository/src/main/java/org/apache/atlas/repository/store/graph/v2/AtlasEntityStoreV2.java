@@ -2734,6 +2734,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (CollectionUtils.isEmpty(vertices)) {
                 return;
             }
+
             handleBusinessPolicyMutation(vertices);
         } catch (Exception e) {
             LOG.error("Error during linkBusinessPolicy for policyGuid: {}", policyGuid, e);
@@ -2754,6 +2755,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (CollectionUtils.isEmpty(vertices)) {
                 return;
             }
+
             handleBusinessPolicyMutation(vertices);
         } catch (Exception e) {
             LOG.error("Error during unlinkBusinessPolicy for policyGuid: {}", policyGuid, e);
