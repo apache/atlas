@@ -2765,15 +2765,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private void handleBusinessPolicyMutation(List<AtlasVertex> vertices) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleBusinessPolicyMutation");
-        Map<String, Map<String, Object>> attributesByGuid = new HashMap<>(0);
         vertices.forEach(vertex -> {
-            String guid = vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
             Map<String, Object> attributes = new HashMap<>(0);
             attributes.put(ASSET_POLICY_GUIDS, vertex.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class));
             attributes.put(ASSET_POLICIES_COUNT, vertex.getPropertyValues(ASSET_POLICIES_COUNT, Long.class));
-            attributesByGuid.put(guid, attributes);
         });
-        this.atlasAlternateChangeNotifier.onEntitiesMutation(vertices, attributesByGuid);
+        this.atlasAlternateChangeNotifier.onEntitiesMutation(vertices);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 

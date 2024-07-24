@@ -30,8 +30,7 @@ public class BusinessPolicyNotifierImpl implements IAtlasAlternateChangeNotifier
     }
 
     @Override
-    public void onEntitiesMutation(final List<AtlasVertex> vertices,
-                                   final Map<String, Map<String, Object>> attributesByGuid) throws AtlasBaseException {
+    public void onEntitiesMutation(final List<AtlasVertex> vertices) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("onEntitiesMutation");
         final List<AtlasEntity> entities = new ArrayList<>(0);
         vertices.forEach(item -> entities.add(createAtlasEntity(item)));
