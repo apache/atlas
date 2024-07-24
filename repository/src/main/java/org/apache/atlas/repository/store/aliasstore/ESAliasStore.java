@@ -39,6 +39,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.ADD;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
@@ -60,6 +61,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyAsset
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyConnectionQN;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPurposeTags;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
+import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 
 
 @Component
@@ -207,13 +209,11 @@ public class ESAliasStore implements IndexAliasStore {
                     terms.add(connectionQName);
 
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
-
-                    for (String glossaryQName : assets) {
-                        terms.add(glossaryQName);
-                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + glossaryQName)));
+                    if (CollectionUtils.isNotEmpty(assets)) {
+                        terms.addAll(assets);
+                        allowClauseList.add(mapOf("terms", mapOf(GLOSSARY_PROPERTY_KEY, assets)));
                     }
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_DOMAIN)) {
-
                     for (String asset : assets) {
                         if(!isAllDomain(asset)) {
                             terms.add(asset);
