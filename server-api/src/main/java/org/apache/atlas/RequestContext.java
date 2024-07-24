@@ -107,7 +107,6 @@ public class RequestContext {
 
 
     private RequestContext() {
-
     }
 
     //To handle gets from background threads where createContext() is not called
@@ -789,5 +788,4 @@ public class RequestContext {
     public Map<String, Set<AtlasRelationship>> getRelationshipMutationMap() {
         return relationshipMutationMap;
     }
-
 }
