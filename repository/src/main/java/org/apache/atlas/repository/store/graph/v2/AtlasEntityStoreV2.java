@@ -2754,6 +2754,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (CollectionUtils.isEmpty(vertices)) {
                 return;
             }
+            handleBusinessPolicyMutation(vertices);
         } catch (Exception e) {
             LOG.error("Error during unlinkBusinessPolicy for policyGuid: {}", policyGuid, e);
             throw new AtlasBaseException("Failed to unlink business policy", e);
