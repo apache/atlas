@@ -39,6 +39,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.ADD;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
@@ -51,6 +52,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PE
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_GLOSSARY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_PRODUCT;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_SUB_DOMAIN;
+import static org.apache.atlas.repository.util.AccessControlUtils.GLOSSARY_QUALIFIED_NAME_ATTRIBUTE;
 import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionQualifiedNameFromPolicyAssets;
 import static org.apache.atlas.repository.util.AccessControlUtils.getESAliasName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsAllowPolicy;
@@ -207,10 +209,11 @@ public class ESAliasStore implements IndexAliasStore {
                     terms.add(connectionQName);
 
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
-
-                    for (String glossaryQName : assets) {
-                        terms.add(glossaryQName);
-                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + glossaryQName)));
+                    List<String> glossaryQualifiedNames = assets.stream()
+                            .peek(terms::add)
+                            .collect(Collectors.toList());
+                    if (!glossaryQualifiedNames.isEmpty()) {
+                        allowClauseList.add(mapOf("terms", mapOf(GLOSSARY_QUALIFIED_NAME_ATTRIBUTE, glossaryQualifiedNames)));
                     }
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_DOMAIN)) {
 
