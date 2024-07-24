@@ -6,6 +6,7 @@ import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.LinkBusinessPolicyRequest;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.slf4j.Logger;
@@ -47,6 +48,7 @@ public class BusinessPolicyREST {
     @Path("/{policyId}/link-business-policy")
     @Timed
     public void linkBusinessPolicy(@PathParam("policyId") final String policyGuid, final LinkBusinessPolicyRequest request) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkBusinessPolicy");
         // Ensure the current user is authorized to link policies
         if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
             throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Policy linking");
@@ -68,6 +70,7 @@ public class BusinessPolicyREST {
         } finally {
             // Log performance metrics
             AtlasPerfTracer.log(perf);
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
@@ -82,6 +85,7 @@ public class BusinessPolicyREST {
     @Path("/{policyId}/unlink-business-policy")
     @Timed
     public void unlinkBusinessPolicy(@PathParam("policyId") final String policyGuid, final LinkBusinessPolicyRequest request) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkBusinessPolicy");
         // Ensure the current user is authorized to unlink policies
         if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
             throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Policy unlinking");
@@ -103,6 +107,7 @@ public class BusinessPolicyREST {
         } finally {
             // Log performance metrics
             AtlasPerfTracer.log(perf);
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 }
