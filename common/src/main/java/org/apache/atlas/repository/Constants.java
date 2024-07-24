@@ -159,6 +159,8 @@ public final class Constants {
     /**
      * SQL property keys.
      */
+
+    public static final String SQL_ENTITY_TYPE              = "SQL";
     public static final String CONNECTION_ENTITY_TYPE       = "Connection";
     public static final String QUERY_ENTITY_TYPE            = "Query";
     public static final String QUERY_FOLDER_ENTITY_TYPE     = "Folder";

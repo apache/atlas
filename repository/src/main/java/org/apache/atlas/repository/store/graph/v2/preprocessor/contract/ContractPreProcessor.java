@@ -6,7 +6,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -52,7 +51,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
                                 EntityGraphRetriever entityRetriever,
                                 boolean storeDifferentialAudits, EntityDiscoveryService discovery) {
 
-        super(graph, typeRegistry, entityRetriever);
+        super(graph, typeRegistry, entityRetriever, discovery);
         this.storeDifferentialAudits = storeDifferentialAudits;
         this.discovery = discovery;
         this.entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, null, true, true);
@@ -104,8 +103,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         String contractString = getContractString(entity);
         DataContract contract = DataContract.deserialize(contractString);
         String datasetQName = contractQName.substring(0, contractQName.lastIndexOf('/'));
-        contractQName = String.format("%s/%s/%s", datasetQName, contract.getType().name(), CONTRACT_QUALIFIED_NAME_SUFFIX);
-        AtlasEntityWithExtInfo associatedAsset = getAssociatedAsset(datasetQName, contract.getType().name());
+        AtlasEntity associatedAsset = getAssociatedAsset(datasetQName, contract);
+        contractQName = String.format("%s/%s/%s", datasetQName, associatedAsset.getTypeName(), CONTRACT_QUALIFIED_NAME_SUFFIX);
 
         authorizeContractCreateOrUpdate(entity, associatedAsset);
 
@@ -115,7 +114,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         String contractStringJSON = DataContract.serializeJSON(contract);
         entity.setAttribute(ATTR_CONTRACT_JSON, contractStringJSON);
 
-        AtlasEntity currentVersionEntity = getCurrentVersion(associatedAsset.getEntity().getGuid());
+        AtlasEntity currentVersionEntity = getCurrentVersion(associatedAsset.getGuid());
         Long newVersionNumber = 1L;
         if (currentVersionEntity == null && contract.getStatus() == DataContract.Status.VERIFIED) {
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can't create a new published version");
@@ -151,9 +150,9 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         }
         entity.setAttribute(QUALIFIED_NAME, String.format("%s/V%s", contractQName, newVersionNumber));
         entity.setAttribute(ATTR_CONTRACT_VERSION, newVersionNumber);
-        entity.setAttribute(ATTR_ASSET_GUID, associatedAsset.getEntity().getGuid());
+        entity.setAttribute(ATTR_ASSET_GUID, associatedAsset.getGuid());
 
-        datasetAttributeSync(context, associatedAsset.getEntity(), entity);
+        datasetAttributeSync(context, associatedAsset, entity);
 
     }
 
