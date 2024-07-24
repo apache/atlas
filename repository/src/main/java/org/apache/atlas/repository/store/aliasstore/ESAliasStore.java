@@ -211,7 +211,7 @@ public class ESAliasStore implements IndexAliasStore {
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
                     if (CollectionUtils.isNotEmpty(assets)) {
                         terms.addAll(assets);
-                        allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, assets)));
+                        allowClauseList.add(mapOf("terms", mapOf(GLOSSARY_PROPERTY_KEY, assets)));
                     }
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_DOMAIN)) {
                     for (String asset : assets) {
