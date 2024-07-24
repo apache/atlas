@@ -85,8 +85,6 @@ public final class AccessControlUtils {
     public static final String ACCESS_READ_PERSONA_METADATA = "persona-asset-read";
     public static final String ACCESS_READ_PERSONA_GLOSSARY = "persona-glossary-read";
     public static final String ACCESS_READ_PERSONA_DOMAIN = "persona-domain-read";
-
-    public static final String GLOSSARY_QUALIFIED_NAME_ATTRIBUTE = "__glossary";
     public static final String ACCESS_READ_PERSONA_SUB_DOMAIN = "persona-domain-sub-domain-read";
     public static final String ACCESS_READ_PERSONA_PRODUCT = "persona-domain-product-read";
 

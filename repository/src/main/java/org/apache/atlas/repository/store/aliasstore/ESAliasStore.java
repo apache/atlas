@@ -52,7 +52,6 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PE
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_GLOSSARY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_PRODUCT;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_SUB_DOMAIN;
-import static org.apache.atlas.repository.util.AccessControlUtils.GLOSSARY_QUALIFIED_NAME_ATTRIBUTE;
 import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionQualifiedNameFromPolicyAssets;
 import static org.apache.atlas.repository.util.AccessControlUtils.getESAliasName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsAllowPolicy;
@@ -62,6 +61,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyAsset
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyConnectionQN;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPurposeTags;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
+import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 
 
 @Component
@@ -209,14 +209,11 @@ public class ESAliasStore implements IndexAliasStore {
                     terms.add(connectionQName);
 
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
-                    List<String> glossaryQualifiedNames = assets.stream()
-                            .peek(terms::add)
-                            .collect(Collectors.toList());
-                    if (!glossaryQualifiedNames.isEmpty()) {
-                        allowClauseList.add(mapOf("terms", mapOf(GLOSSARY_QUALIFIED_NAME_ATTRIBUTE, glossaryQualifiedNames)));
+                    if (CollectionUtils.isNotEmpty(assets)) {
+                        terms.addAll(assets);
+                        allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, assets)));
                     }
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_DOMAIN)) {
-
                     for (String asset : assets) {
                         if(!isAllDomain(asset)) {
                             terms.add(asset);
