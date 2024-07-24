@@ -21,8 +21,10 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 
+import java.util.List;
 import java.util.Map;
 
 public interface IAtlasAlternateChangeNotifier {
-    void onEntitiesMutation(final EntityMutationResponse entityMutationResponse, final Map<String, AtlasVertex> entityByGuid) throws AtlasBaseException;
+    void onEntitiesMutation(final List<AtlasVertex> vertices,
+                            final Map<String, Map<String, Object>> attributesByGuid) throws AtlasBaseException;
 }

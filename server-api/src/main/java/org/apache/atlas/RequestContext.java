@@ -104,18 +104,11 @@ public class RequestContext {
     private boolean delayTagNotifications = false;
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
     private Map<AtlasClassification, Collection<Object>> addedClassificationAndVertices = new HashMap<>();
-    private boolean alternatePath  = false;
 
 
     private RequestContext() {
 
     }
-
-    public static void set(RequestContext context) {
-        CURRENT_CONTEXT.set(context);
-    }
-
-
 
     //To handle gets from background threads where createContext() is not called
     //createContext called for every request in the filter
@@ -797,12 +790,4 @@ public class RequestContext {
         return relationshipMutationMap;
     }
 
-
-    public boolean isAlternatePath() {
-        return alternatePath;
-    }
-
-    public void setAlternatePath(boolean alternatePath) {
-        this.alternatePath = alternatePath;
-    }
 }

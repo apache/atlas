@@ -2725,48 +2725,56 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     @Override
-    public void linkBusinessPolicy(String guid, List<String> linkGuids) throws AtlasBaseException {
-        processBusinessPolicy(guid, linkGuids, true);
+    @GraphTransaction
+    public void linkBusinessPolicy(String policyGuid, Set<String> linkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkBusinessPolicy.GraphTransaction");
+
+        try {
+            List<AtlasVertex> vertices = this.entityGraphMapper.linkBusinessPolicy(policyGuid, linkGuids);
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+            handleBusinessPolicyMutation(vertices);
+        } catch (Exception e) {
+            LOG.error("Error during linkBusinessPolicy for policyGuid: {}", policyGuid, e);
+            throw new AtlasBaseException("Failed to link business policy", e);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
     }
 
     @Override
-    public void unlinkBusinessPolicy(String guid, List<String> unlinkGuids) throws AtlasBaseException {
-        processBusinessPolicy(guid, unlinkGuids, false);
+    @GraphTransaction
+    public void unlinkBusinessPolicy(String policyGuid, Set<String> unlinkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkBusinessPolicy.GraphTransaction");
+
+        try {
+            List<AtlasVertex> vertices = this.entityGraphMapper.unlinkBusinessPolicy(policyGuid, unlinkGuids);
+
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+        } catch (Exception e) {
+            LOG.error("Error during unlinkBusinessPolicy for policyGuid: {}", policyGuid, e);
+            throw new AtlasBaseException("Failed to unlink business policy", e);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
     }
 
-    private void processBusinessPolicy(String guid, List<String> guids, boolean isLink) throws AtlasBaseException {
-        // Start recording the performance metrics for the operation
-        String operation = isLink ? "linkBusinessPolicy" : "unlinkBusinessPolicy";
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord(operation);
-
-        // Link or unlink the business policy to/from entities and retrieve the affected vertices
-        List<AtlasVertex> vertices = isLink ? this.entityGraphMapper.linkBusinessPolicy(guid, guids)
-                : this.entityGraphMapper.unlinkBusinessPolicy(guid, guids);
-
-        // If no vertices are returned, exit the method early
-        if (CollectionUtils.isEmpty(vertices)) {
-            return;
-        }
-
-        // Prepare the response for the entity mutations
-        EntityMutationResponse entityMutationResponse = new EntityMutationResponse();
-        for (AtlasVertex vertex : vertices) {
-            // Convert each vertex to an AtlasEntityHeader and add it to the response
-            AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(vertex);
-            entityMutationResponse.addEntity(UPDATE, entityHeader);
-        }
-
-        // Collect the vertices into a map for easier access by their GUID property
-        Map<String, AtlasVertex> vertexMap = vertices.stream()
-                .collect(Collectors.toMap(vertex -> vertex.getProperty("__guid", String.class), vertex -> vertex));
-
-        // Notify the policy change notifier about the entities that were mutated
-        this.atlasAlternateChangeNotifier.onEntitiesMutation(entityMutationResponse, vertexMap);
-
-        // End the performance metrics recording
-        RequestContext.get().endMetricRecord(metric);
+    private void handleBusinessPolicyMutation(List<AtlasVertex> vertices) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleBusinessPolicyMutation");
+        Map<String, Map<String, Object>> attributesByGuid = new HashMap<>(0);
+        vertices.forEach(vertex -> {
+            String guid = vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+            Map<String, Object> attributes = new HashMap<>(0);
+            attributes.put(ASSET_POLICY_GUIDS, vertex.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class));
+            attributes.put(ASSET_POLICIES_COUNT, vertex.getPropertyValues(ASSET_POLICIES_COUNT, Long.class));
+            attributesByGuid.put(guid, attributes);
+        });
+        this.atlasAlternateChangeNotifier.onEntitiesMutation(vertices, attributesByGuid);
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
-
 
 
 }

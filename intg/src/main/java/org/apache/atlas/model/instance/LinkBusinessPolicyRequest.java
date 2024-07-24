@@ -27,6 +27,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 import java.util.List;
+import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -43,22 +44,22 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class LinkBusinessPolicyRequest implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private List<String> linkGuids;
-    private List<String> unlinkGuids;
+    private Set<String> linkGuids;
+    private Set<String> unlinkGuids;
 
-    public List<String> getLinkGuids() {
+    public Set<String> getLinkGuids() {
         return linkGuids;
     }
 
-    public void setLinkGuids(List<String> linkGuids) {
+    public void setLinkGuids(Set<String> linkGuids) {
         this.linkGuids = linkGuids;
     }
 
-    public List<String> getUnlinkGuids() {
+    public Set<String> getUnlinkGuids() {
         return unlinkGuids;
     }
 
-    public void setUnlinkGuids(List<String> unlinkGuids) {
+    public void setUnlinkGuids(Set<String> unlinkGuids) {
         this.unlinkGuids = unlinkGuids;
     }
 

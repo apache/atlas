@@ -99,10 +99,6 @@ public class EntityNotificationSender<T> {
                 if (isRelationshipEvent(operationType)) notificationHook.addRelationshipNotifications(notifications);
                 else notificationHook.addNotifications(notifications);
             }
-
-            if (RequestContext.get().isAlternatePath()) {
-                notificationHook.onComplete(true);
-            }
         }
 
         class PostCommitNotificationHook<T> extends GraphTransactionInterceptor.PostTransactionHook {
