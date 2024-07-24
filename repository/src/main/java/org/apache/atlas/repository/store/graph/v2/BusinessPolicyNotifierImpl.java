@@ -47,13 +47,13 @@ public class BusinessPolicyNotifierImpl implements IAtlasAlternateChangeNotifier
         atlasEntity.setAttributes(attributes);
         atlasEntity.setGuid(vertex.getProperty(GUID_PROPERTY_KEY, String.class));
         atlasEntity.setTypeName(vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
-        atlasEntity.setStatus(vertex.getProperty(ATTR_CERTIFICATE_STATUS, AtlasEntity.Status.class));
         atlasEntity.setCreatedBy(vertex.getProperty(CREATED_BY_KEY, String.class));
         atlasEntity.setUpdatedBy(vertex.getProperty(MODIFIED_BY_KEY, String.class));
         atlasEntity.setCreateTime(new Date(vertex.getProperty(TIMESTAMP_PROPERTY_KEY, Long.class)));
         atlasEntity.setUpdateTime(new Date(vertex.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class)));
         atlasEntity.setIsProxy(vertex.getProperty(IS_PROXY_KEY, Boolean.class));
         atlasEntity.setIsIncomplete(vertex.getProperty(IS_INCOMPLETE_PROPERTY_KEY, Boolean.class));
+        atlasEntity.setStatus(getStatus(vertex));
         atlasEntity.setProvenanceType(getProvenanceType(vertex));
         atlasEntity.setCustomAttributes(getCustomAttributes(vertex));
         atlasEntity.setHomeId(getHomeId(vertex));

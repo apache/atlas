@@ -2738,7 +2738,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             handleBusinessPolicyMutation(vertices);
         } catch (Exception e) {
             LOG.error("Error during linkBusinessPolicy for policyGuid: {}", policyGuid, e);
-            throw new AtlasBaseException("Failed to link business policy", e);
+            throw e;
         } finally {
             RequestContext.get().endMetricRecord(metric);
         }
@@ -2748,10 +2748,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @GraphTransaction
     public void unlinkBusinessPolicy(String policyGuid, Set<String> unlinkGuids) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkBusinessPolicy.GraphTransaction");
-
         try {
             List<AtlasVertex> vertices = this.entityGraphMapper.unlinkBusinessPolicy(policyGuid, unlinkGuids);
-
             if (CollectionUtils.isEmpty(vertices)) {
                 return;
             }
@@ -2759,7 +2757,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             handleBusinessPolicyMutation(vertices);
         } catch (Exception e) {
             LOG.error("Error during unlinkBusinessPolicy for policyGuid: {}", policyGuid, e);
-            throw new AtlasBaseException("Failed to unlink business policy", e);
+            throw e;
         } finally {
             RequestContext.get().endMetricRecord(metric);
         }

@@ -40,7 +40,7 @@ public class BusinessPolicyREST {
      * Links a business policy to entities.
      *
      * @param policyGuid the ID of the policy to be linked
-     * @param request  the request containing the GUIDs of the assets to link the policy to
+     * @param request    the request containing the GUIDs of the assets to link the policy to
      * @throws AtlasBaseException if there is an error during the linking process
      */
     @POST
@@ -65,9 +65,6 @@ public class BusinessPolicyREST {
 
             // Link the business policy to the specified entities
             entitiesStore.linkBusinessPolicy(policyGuid, request.getLinkGuids());
-        } catch (AtlasBaseException abe) {
-            LOG.error("Error in policy linking: ", abe);
-            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "During Policy linking");
         } finally {
             // Log performance metrics
             AtlasPerfTracer.log(perf);
@@ -78,7 +75,7 @@ public class BusinessPolicyREST {
      * Unlinks a business policy from entities.
      *
      * @param policyGuid the ID of the policy to be unlinked
-     * @param request  the request containing the GUIDs of the assets to unlink the policy from
+     * @param request    the request containing the GUIDs of the assets to unlink the policy from
      * @throws AtlasBaseException if there is an error during the unlinking process
      */
     @POST
@@ -103,9 +100,6 @@ public class BusinessPolicyREST {
 
             // Unlink the business policy from the specified entities
             entitiesStore.unlinkBusinessPolicy(policyGuid, request.getUnlinkGuids());
-        } catch (AtlasBaseException abe) {
-            LOG.error("Error in policy unlinking: ", abe);
-            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "During Policy unlinking");
         } finally {
             // Log performance metrics
             AtlasPerfTracer.log(perf);
