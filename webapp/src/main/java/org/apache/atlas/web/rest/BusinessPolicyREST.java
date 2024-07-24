@@ -85,7 +85,7 @@ public class BusinessPolicyREST {
     @Path("/{policyId}/unlink-business-policy")
     @Timed
     public void unlinkBusinessPolicy(@PathParam("policyId") final String policyGuid, final LinkBusinessPolicyRequest request) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkBusinessPolicy");
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkBusinessPolicy");
         // Ensure the current user is authorized to unlink policies
         if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
             throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Policy unlinking");
