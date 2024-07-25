@@ -1954,5 +1954,7 @@ public class EntityREST {
        } finally {
               AtlasPerfTracer.log(perf);
        }
+
+
     }
 }
