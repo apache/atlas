@@ -178,7 +178,8 @@ public class ESAliasStore implements IndexAliasStore {
 
     private void personaPolicyToESDslClauses(List<AtlasEntity> policies,
                                              List<Map<String, Object>> allowClauseList) throws AtlasBaseException {
-        List<String> terms = new ArrayList<>();
+        Set<String> terms = new HashSet<>();
+        Set<String> glossaryQualifiedNames =new HashSet<>();
         
         for (AtlasEntity policy: policies) {
 
@@ -211,7 +212,7 @@ public class ESAliasStore implements IndexAliasStore {
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
                     if (CollectionUtils.isNotEmpty(assets)) {
                         terms.addAll(assets);
-                        allowClauseList.add(mapOf("terms", mapOf(GLOSSARY_PROPERTY_KEY, assets)));
+                        glossaryQualifiedNames.addAll(assets);
                     }
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_DOMAIN)) {
                     for (String asset : assets) {
@@ -248,7 +249,11 @@ public class ESAliasStore implements IndexAliasStore {
             }
         }
 
-        allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, terms)));
+        allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, new ArrayList<>(terms))));
+        
+        if (CollectionUtils.isNotEmpty(glossaryQualifiedNames)) {
+            allowClauseList.add(mapOf("terms", mapOf(GLOSSARY_PROPERTY_KEY, new ArrayList<>(glossaryQualifiedNames))));
+        }
     }
 
     private boolean isAllDomain(String asset) {
