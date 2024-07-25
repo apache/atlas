@@ -135,12 +135,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private final ESAliasStore esAliasStore;
 
-    private final IAtlasAlternateChangeNotifier atlasAlternateChangeNotifier;
+    private final IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier;
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
                               AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore,
-                              IAtlasAlternateChangeNotifier atlasAlternateChangeNotifier) {
+                              IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier) {
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
         this.restoreHandlerV1     = restoreHandlerV1;
@@ -2765,11 +2765,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private void handleBusinessPolicyMutation(List<AtlasVertex> vertices) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleBusinessPolicyMutation");
-        vertices.forEach(vertex -> {
-            Map<String, Object> attributes = new HashMap<>(0);
-            attributes.put(ASSET_POLICY_GUIDS, vertex.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class));
-            attributes.put(ASSET_POLICIES_COUNT, vertex.getPropertyValues(ASSET_POLICIES_COUNT, Long.class));
-        });
         this.atlasAlternateChangeNotifier.onEntitiesMutation(vertices);
         RequestContext.get().endMetricRecord(metricRecorder);
     }

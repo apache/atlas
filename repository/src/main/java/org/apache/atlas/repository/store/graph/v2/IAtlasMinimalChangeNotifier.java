@@ -18,12 +18,10 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 
 import java.util.List;
-import java.util.Map;
 
-public interface IAtlasAlternateChangeNotifier {
+public interface IAtlasMinimalChangeNotifier {
     void onEntitiesMutation(final List<AtlasVertex> vertices) throws AtlasBaseException;
 }

@@ -28,7 +28,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ARGO_SERVICE_U
 public class BusinessPolicyREST {
 
     private static final Logger LOG = LoggerFactory.getLogger(BusinessPolicyREST.class);
-    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.AlternateREST");
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.BusinessPolicyREST");
 
     private final AtlasEntityStore entitiesStore;
 
@@ -62,7 +62,7 @@ public class BusinessPolicyREST {
         try {
             // Start performance tracing if enabled
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AlternateREST.linkBusinessPolicy(" + policyGuid + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BusinessPolicyREST.linkBusinessPolicy(" + policyGuid + ")");
             }
 
             // Link the business policy to the specified entities
@@ -99,7 +99,7 @@ public class BusinessPolicyREST {
         try {
             // Start performance tracing if enabled
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AlternateREST.unlinkBusinessPolicy(" + policyGuid + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BusinessPolicyREST.unlinkBusinessPolicy(" + policyGuid + ")");
             }
 
             // Unlink the business policy from the specified entities

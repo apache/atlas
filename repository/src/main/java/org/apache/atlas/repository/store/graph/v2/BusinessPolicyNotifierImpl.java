@@ -4,22 +4,19 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListenerV2;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 
 
 @Component
-public class BusinessPolicyNotifierImpl implements IAtlasAlternateChangeNotifier {
+public class BusinessPolicyNotifierImpl implements IAtlasMinimalChangeNotifier {
 
     private final Set<EntityChangeListenerV2> entityChangeListenersV2;
 
@@ -56,14 +53,9 @@ public class BusinessPolicyNotifierImpl implements IAtlasAlternateChangeNotifier
         atlasEntity.setIsIncomplete(vertex.getProperty(IS_INCOMPLETE_PROPERTY_KEY, Boolean.class));
         atlasEntity.setStatus(getStatus(vertex));
         atlasEntity.setProvenanceType(getProvenanceType(vertex));
-        atlasEntity.setCustomAttributes(getCustomAttributes(vertex));
         atlasEntity.setHomeId(getHomeId(vertex));
         atlasEntity.setVersion(getVersion(vertex));
 
-        atlasEntity.setAttribute(NAME, vertex.getProperty(NAME, String.class));
-        atlasEntity.setAttribute(EntityGraphRetriever.DESCRIPTION, vertex.getProperty(EntityGraphRetriever.DESCRIPTION, String.class));
-        atlasEntity.setAttribute(OWNER_ATTRIBUTE, vertex.getProperty(OWNER_ATTRIBUTE, String.class));
-        atlasEntity.setAttribute(EntityGraphRetriever.CREATE_TIME, new Date(vertex.getProperty(TIMESTAMP_PROPERTY_KEY, Long.class)));
 
         return atlasEntity;
     }
