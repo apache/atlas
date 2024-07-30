@@ -2737,6 +2737,51 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         RequestContext.get().endMetricRecord(metric);
     }
+
+    @Override
+    @GraphTransaction
+    public void linkProductToAsset(String productGuid, Set<String> linkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkProductToAsset.GraphTransaction");
+
+        try {
+            List<AtlasVertex> vertices = this.entityGraphMapper.linkProductToAsset(productGuid, linkGuids);
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+
+            handleProductMutation(vertices);
+        } catch (Exception e) {
+            LOG.error("Error during linkBusinessPolicy for policyGuid: {}", productGuid, e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
+    @GraphTransaction
+    public void unlinkProductFromAsset(String productGuid, Set<String> unlinkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkProductFromAsset.GraphTransaction");
+        try {
+            List<AtlasVertex> vertices = this.entityGraphMapper.unlinkProductFromAsset(policyGuid, unlinkGuids);
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+
+//            handleProductMutation(vertices);
+        } catch (Exception e) {
+            LOG.error("Error during unlinkProduct for productGuid: {}", productGuid, e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+//    private void handleProductMutation(List<AtlasVertex> vertices) throws AtlasBaseException {
+//        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleBusinessPolicyMutation");
+//        this.atlasAlternateChangeNotifier.onEntitiesMutation(vertices);
+//        RequestContext.get().endMetricRecord(metricRecorder);
+//    }
 }
 
 
