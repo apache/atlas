@@ -2749,7 +2749,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 return;
             }
 
-            handleProductMutation(vertices);
+//            handleProductMutation(vertices);
         } catch (Exception e) {
             LOG.error("Error during linkBusinessPolicy for policyGuid: {}", productGuid, e);
             throw e;
@@ -2763,7 +2763,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     public void unlinkProductFromAsset(String productGuid, Set<String> unlinkGuids) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkProductFromAsset.GraphTransaction");
         try {
-            List<AtlasVertex> vertices = this.entityGraphMapper.unlinkProductFromAsset(policyGuid, unlinkGuids);
+            List<AtlasVertex> vertices = this.entityGraphMapper.unlinkProductFromAsset(productGuid, unlinkGuids);
             if (CollectionUtils.isEmpty(vertices)) {
                 return;
             }
