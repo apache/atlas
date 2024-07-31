@@ -369,4 +369,6 @@ public interface AtlasEntityStore {
 
     void unlinkProductFromAsset(String productId, Set<String> unlinkGuids) throws AtlasBaseException;
 
+    void linkProductWithNotification(String productId, Set<String> unlinkGuids) throws AtlasBaseException;
+
 }

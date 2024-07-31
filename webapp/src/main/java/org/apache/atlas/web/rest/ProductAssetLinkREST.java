@@ -76,6 +76,37 @@ public class ProductAssetLinkREST {
         }
     }
 
+    @POST
+    @Path("/{productId}/link-product-with-notification")
+    @Timed
+    public void linkProductWithNotification(@PathParam("productId") final String productGuid, final LinkDataProductRequest request) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkDataProductToAsset");
+        // Ensure the current user is authorized to link policies
+//        if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
+//            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Policy linking");
+//        }
+
+        // Set request context parameters
+        RequestContext.get().setIncludeClassifications(false);
+        RequestContext.get().setIncludeMeanings(false);
+        RequestContext.get().getRequestContextHeaders().put("route", "product-asset-link");
+
+        AtlasPerfTracer perf = null;
+        try {
+            // Start performance tracing if enabled
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "ProductAssetLinkREST.linkProductWithNotification(" + productGuid + ")");
+            }
+
+            // Link the product to the specified entities
+            entitiesStore.linkProductWithNotification(productGuid, request.getLinkGuids());
+        } finally {
+            // Log performance metrics
+            AtlasPerfTracer.log(perf);
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
     /**
      * Unlinks a product from entities.
      *

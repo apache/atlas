@@ -4592,6 +4592,21 @@ public class EntityGraphMapper {
 
             updateModificationMetadata(ev);
 
+            //cacheDifferentialEntity(ev, existingValues);
+        }).collect(Collectors.toList());
+    }
+
+    public List<AtlasVertex> linkProductWithNotification(String productId, Set<String> linkGuids) {
+        return linkGuids.stream().map(guid -> findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
+            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_PRODUCT_GUIDS, String.class);
+            return !existingValues.contains(productId);
+        }).peek(ev -> {
+            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_PRODUCT_GUIDS, String.class);
+            existingValues.add(productId);
+            ev.setProperty(ASSET_PRODUCT_GUIDS, productId);
+
+            updateModificationMetadata(ev);
+
             cacheDifferentialEntity(ev, existingValues);
         }).collect(Collectors.toList());
     }

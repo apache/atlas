@@ -150,11 +150,12 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final FeatureFlagStore featureFlagStore;
 
     private final ESAliasStore esAliasStore;
+    private final IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier;
 
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
-                              AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore) {
+                              AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore, IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier) {
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
         this.restoreHandlerV1     = restoreHandlerV1;
@@ -168,6 +169,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.atlasRelationshipStore = atlasRelationshipStore;
         this.featureFlagStore = featureFlagStore;
         this.esAliasStore = new ESAliasStore(graph, entityRetriever);
+        this.atlasAlternateChangeNotifier = atlasAlternateChangeNotifier;
 
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
@@ -2749,9 +2751,31 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 return;
             }
 
-//            handleProductMutation(vertices);
+            LOG.info("linkProductToAsset: productGuid={}, linkGuids={}", productGuid, linkGuids);
+
+            //handleProductMutation(vertices);
         } catch (Exception e) {
-            LOG.error("Error during linkBusinessPolicy for policyGuid: {}", productGuid, e);
+            LOG.error("Error during linkProduct for productGuid: {}", productGuid, e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
+    @GraphTransaction
+    public void linkProductWithNotification(String productGuid, Set<String> linkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkProductToAsset.GraphTransaction");
+
+        try {
+            List<AtlasVertex> vertices = this.entityGraphMapper.linkProductWithNotification(productGuid, linkGuids);
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+
+            handleProductMutation(vertices);
+        } catch (Exception e) {
+            LOG.error("Error during linkProduct for productGuid: {}", productGuid, e);
             throw e;
         } finally {
             RequestContext.get().endMetricRecord(metric);
@@ -2768,7 +2792,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 return;
             }
 
-//            handleProductMutation(vertices);
+            handleProductMutation(vertices);
         } catch (Exception e) {
             LOG.error("Error during unlinkProduct for productGuid: {}", productGuid, e);
             throw e;
@@ -2777,11 +2801,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
-//    private void handleProductMutation(List<AtlasVertex> vertices) throws AtlasBaseException {
-//        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleBusinessPolicyMutation");
-//        this.atlasAlternateChangeNotifier.onEntitiesMutation(vertices);
-//        RequestContext.get().endMetricRecord(metricRecorder);
-//    }
+    private void handleProductMutation(List<AtlasVertex> vertices) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleBusinessPolicyMutation");
+        this.atlasAlternateChangeNotifier.onEntitiesMutation(vertices);
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
 }
 
 
