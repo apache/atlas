@@ -35,7 +35,7 @@ public class LineageListRequest {
 
     public LineageListRequest(String guid, Integer size, Integer from, Integer depth, LineageDirection direction, SearchParameters.FilterCriteria entityFilters,
                               SearchParameters.FilterCriteria entityTraversalFilters, SearchParameters.FilterCriteria relationshipTraversalFilters,
-                              Set<String> attributes, boolean excludeMeanings, boolean excludeClassifications, Set<String> relationAttributes) { //Set<String> relationAttributes)
+                              Set<String> attributes, boolean excludeMeanings, boolean excludeClassifications, Set<String> relationAttributes) {
         this.guid = guid;
         this.size = size;
         this.from = from;
