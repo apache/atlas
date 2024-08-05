@@ -2255,8 +2255,18 @@ public class EntityGraphMapper {
     }
 
     private boolean classificationHasPendingTask(AtlasTask task, String classificationVertexId, String entityGuid) {
-        return task.getParameters().get(ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID).equals(classificationVertexId)
-                && task.getParameters().get(ClassificationTask.PARAM_ENTITY_GUID).equals(entityGuid);
+        if (task.getParameters() != null) {
+            if (classificationVertexId != null && entityGuid != null) {
+                return task.getParameters().get(ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID).equals(classificationVertexId)
+                        && task.getParameters().get(ClassificationTask.PARAM_ENTITY_GUID).equals(entityGuid);
+            } else {
+                LOG.warn("ClassificationVertexId and EntityGuid not found!");
+                return false;
+            }
+        } else {
+            LOG.warn("No task parameters found!");
+            return false;
+        }
     }
 
     private AtlasEntity updateClassificationText(AtlasVertex vertex) throws AtlasBaseException {
