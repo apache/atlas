@@ -2670,6 +2670,8 @@ public class EntityGraphMapper {
             if (relationshipStruct instanceof Map) {
                 return AtlasTypeUtil.toStructAttributes(((Map) relationshipStruct));
             }
+        } else if (val instanceof AtlasObjectId) {
+            return ((AtlasObjectId) val).getAttributes();
         }
 
         return null;

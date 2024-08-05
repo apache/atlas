@@ -100,6 +100,7 @@ public class RequestContext {
     private Set<String> deletedEdgesIdsForResetHasLineage = new HashSet<>(0);
     private String requestUri;
     private boolean cacheEnabled;
+    private boolean requestRelationshipAttrsForSearch;
 
     private boolean delayTagNotifications = false;
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
@@ -153,6 +154,7 @@ public class RequestContext {
         this.onlyCAUpdateEntities.clear();
         this.onlyBAUpdateEntities.clear();
         this.relationAttrsForSearch.clear();
+        this.requestRelationshipAttrsForSearch = false;
         this.queuedTasks.clear();
         this.newElementsCreatedMap.clear();
         this.removedElementsMap.clear();
@@ -204,6 +206,14 @@ public class RequestContext {
         if (CollectionUtils.isNotEmpty(relationAttrsForSearch)){
             this.relationAttrsForSearch.addAll(relationAttrsForSearch);
         }
+    }
+
+    public boolean isRequestRelationshipAttrsForSearch() {
+        return requestRelationshipAttrsForSearch;
+    }
+
+    public void setRequestRelationshipAttrsForSearch(boolean requestRelationshipAttrsForSearch) {
+        this.requestRelationshipAttrsForSearch = requestRelationshipAttrsForSearch;
     }
 
     public Map<String, List<Object>> getRemovedElementsMap() {

@@ -1658,6 +1658,14 @@ public class EntityGraphRetriever {
                     ret = toAtlasObjectId(referenceVertex);
                 }
             }
+
+            if (RequestContext.get().isRequestRelationshipAttrsForSearch()) {
+                boolean isRelationshipAttribute = typeRegistry.getRelationshipDefByName(GraphHelper.getTypeName(edge)) != null;
+                if (isRelationshipAttribute) {
+                    AtlasRelationship relationship = mapEdgeToAtlasRelationship(edge);
+                    ret.getAttributes().put("relationshipAttributes", relationship.getAttributes());
+                }
+            }
         }
 
         return ret;

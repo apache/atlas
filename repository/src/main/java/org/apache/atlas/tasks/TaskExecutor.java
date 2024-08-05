@@ -115,6 +115,7 @@ public class TaskExecutor {
                     TASK_LOG.info("Task not scheduled as it was not found");
                     return;
                 }
+                RequestContext.get().setTraceId(task.getGuid());
 
                 TASK_LOG.info("Task guid = "+task.getGuid());
                 taskVertex = registry.getVertex(task.getGuid());

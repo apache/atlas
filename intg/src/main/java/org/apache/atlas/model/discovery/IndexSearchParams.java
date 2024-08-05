@@ -28,6 +28,7 @@ public class IndexSearchParams extends SearchParams {
     * */
     private boolean allowDeletedRelations;
     private boolean accessControlExclusive;
+    private boolean requestRelationshipAttrsForSearch;
 
     @Override
     public String getQuery() {
@@ -79,6 +80,14 @@ public class IndexSearchParams extends SearchParams {
         this.relationAttributes = relationAttributes;
     }
 
+    public boolean isRequestRelationshipAttrsForSearch() {
+        return requestRelationshipAttrsForSearch;
+    }
+
+    public void setRequestRelationshipAttrsForSearch(boolean requestRelationshipAttrsForSearch) {
+        this.requestRelationshipAttrsForSearch = requestRelationshipAttrsForSearch;
+    }
+
     @Override
     public String toString() {
         return "IndexSearchParams{" +
@@ -88,6 +97,7 @@ public class IndexSearchParams extends SearchParams {
                 ", queryString='" + queryString + '\'' +
                 ", allowDeletedRelations=" + allowDeletedRelations +
                 ", accessControlExclusive=" + accessControlExclusive +
+                ", requestRelationshipAttrsForSearch=" + requestRelationshipAttrsForSearch +
                 ", utmTags="+ getUtmTags() +
                 '}';
     }
