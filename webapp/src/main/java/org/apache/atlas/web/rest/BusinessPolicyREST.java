@@ -57,7 +57,7 @@ public class BusinessPolicyREST {
         // Set request context parameters
         RequestContext.get().setIncludeClassifications(false);
         RequestContext.get().setIncludeMeanings(false);
-        RequestContext.get().getRequestContextHeaders().put("route", "business-policy-rest");
+        RequestContext.get().getRequestContextHeaders().put("x-atlan-route", "business-policy-rest");
 
         AtlasPerfTracer perf = null;
         try {
@@ -95,7 +95,7 @@ public class BusinessPolicyREST {
         // Set request context parameters
         RequestContext.get().setIncludeClassifications(false);
         RequestContext.get().setIncludeMeanings(false);
-        RequestContext.get().getRequestContextHeaders().put("route", "business-policy-rest");
+        RequestContext.get().getRequestContextHeaders().put("x-atlan-route", "business-policy-rest");
 
         AtlasPerfTracer perf = null;
         try {
