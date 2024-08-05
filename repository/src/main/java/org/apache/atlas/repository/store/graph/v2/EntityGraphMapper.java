@@ -4581,4 +4581,51 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
+
+    public List<AtlasVertex> linkBusinessPolicy(String policyId, Set<String> linkGuids) {
+        return linkGuids.stream().map(guid -> findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
+            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
+            return !existingValues.contains(policyId);
+        }).peek(ev -> {
+            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
+            existingValues.add(policyId);
+            ev.setProperty(ASSET_POLICY_GUIDS, policyId);
+            ev.setProperty(ASSET_POLICIES_COUNT, existingValues.size());
+
+            updateModificationMetadata(ev);
+
+            cacheDifferentialEntity(ev, existingValues);
+        }).collect(Collectors.toList());
+    }
+
+
+    public List<AtlasVertex> unlinkBusinessPolicy(String policyId, Set<String> unlinkGuids) {
+        return unlinkGuids.stream().map(guid -> AtlasGraphUtilsV2.findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
+            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
+            return existingValues.contains(policyId);
+        }).peek(ev -> {
+            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
+            existingValues.remove(policyId);
+            ev.removePropertyValue(ASSET_POLICY_GUIDS, policyId);
+            ev.setProperty(ASSET_POLICIES_COUNT, existingValues.size());
+
+            updateModificationMetadata(ev);
+
+            cacheDifferentialEntity(ev, existingValues);
+        }).collect(Collectors.toList());
+    }
+
+
+    private void cacheDifferentialEntity(AtlasVertex ev, Set<String> existingValues) {
+        AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+        diffEntity.setGuid(ev.getProperty(GUID_PROPERTY_KEY, String.class));
+        diffEntity.setAttribute(ASSET_POLICY_GUIDS, existingValues);
+        diffEntity.setAttribute(ASSET_POLICIES_COUNT, existingValues.size());
+        diffEntity.setUpdatedBy(ev.getProperty(MODIFIED_BY_KEY, String.class));
+        diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
+
+        RequestContext requestContext = RequestContext.get();
+        requestContext.cacheDifferentialEntity(diffEntity);
+    }
+
 }
