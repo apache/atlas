@@ -110,7 +110,9 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
         boolean contractSync = syncContractCertificateStatus(entity, contract);
         contractString = DataContract.serialize(contract);
-        entity.setAttribute(ATTR_CONTRACT, contractString);
+        if (!isContractYaml(entity)) {
+            entity.setAttribute(ATTR_CONTRACT, contractString);
+        }
         String contractStringJSON = DataContract.serializeJSON(contract);
         entity.setAttribute(ATTR_CONTRACT_JSON, contractStringJSON);
 
@@ -297,5 +299,9 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
             contractString = (String) entity.getAttribute(ATTR_CONTRACT_JSON);
         }
         return contractString;
+    }
+
+    private static boolean isContractYaml(AtlasEntity entity) {
+        return !StringUtils.isEmpty((String) entity.getAttribute(ATTR_CONTRACT));
     }
 }
