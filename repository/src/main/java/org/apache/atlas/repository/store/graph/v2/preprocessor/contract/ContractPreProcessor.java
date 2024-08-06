@@ -109,8 +109,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         authorizeContractCreateOrUpdate(entity, associatedAsset);
 
         boolean contractSync = syncContractCertificateStatus(entity, contract);
-        contractString = DataContract.serialize(contract);
         if (!isContractYaml(entity)) {
+            contractString = DataContract.serialize(contract);
             entity.setAttribute(ATTR_CONTRACT, contractString);
         }
         String contractStringJSON = DataContract.serializeJSON(contract);
