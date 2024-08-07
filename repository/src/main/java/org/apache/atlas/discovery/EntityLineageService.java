@@ -193,6 +193,8 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getLineageListInfoOnDemand");
 
         AtlasLineageListInfo ret = new AtlasLineageListInfo(new ArrayList<>());
+        RequestContext.get().setRelationAttrsForSearch(lineageListRequest.getRelationAttributes());
+
         traverseEdgesUsingBFS(guid, new AtlasLineageListContext(lineageListRequest, atlasTypeRegistry), ret);
         ret.setSearchParameters(lineageListRequest);
 
