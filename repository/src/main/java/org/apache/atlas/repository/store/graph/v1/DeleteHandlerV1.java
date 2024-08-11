@@ -185,6 +185,7 @@ public abstract class DeleteHandlerV1 {
         for (AtlasEdge edge : edges) {
             boolean isInternal = isInternalType(edge.getInVertex()) && isInternalType(edge.getOutVertex());
             boolean needToSkip = !isInternal && (!isPurgeRequested && DELETED.equals(getState(edge)));
+            boolean isCustomRelation = isCustomRelationship(edge);
 
             if (needToSkip) {
                 if (LOG.isDebugEnabled()) {
@@ -192,7 +193,7 @@ public abstract class DeleteHandlerV1 {
                 }
                 continue;
             }
-            deleteEdge(edge, isInternal || forceDelete);
+            deleteEdge(edge, isCustomRelation || isInternal || forceDelete);
         }
     }
 
@@ -381,7 +382,7 @@ public abstract class DeleteHandlerV1 {
             // for relationship edges, inverse vertex's relationship attribute doesn't need to be updated.
             // only delete the reference relationship edge
             if (GraphHelper.isRelationshipEdge(edge)) {
-                deleteEdge(edge, isInternalType);
+                deleteEdge(edge, isInternalType || isCustomRelationship(edge));
                 AtlasVertex referencedVertex = entityRetriever.getReferencedEntityVertex(edge, relationshipDirection, entityVertex);
 
                 if (referencedVertex != null) {
@@ -398,7 +399,7 @@ public abstract class DeleteHandlerV1 {
                 //legacy case - not a relationship edge
                 //If deleting just the edge, reverse attribute should be updated for any references
                 //For example, for the department type system, if the person's manager edge is deleted, subordinates of manager should be updated
-                deleteEdge(edge, true, isInternalType);
+                deleteEdge(edge, true, isInternalType || isCustomRelationship(edge));
             }
         }
 
@@ -976,7 +977,8 @@ public abstract class DeleteHandlerV1 {
         }
 
         if (edge != null) {
-            deleteEdge(edge, isInternalType(inVertex) && isInternalType(outVertex));
+            boolean isInternal = isInternalType(inVertex) && isInternalType(outVertex);
+            deleteEdge(edge, isInternal || isCustomRelationship(edge));
 
             final RequestContext requestContext = RequestContext.get();
             final String         outId          = GraphHelper.getGuid(outVertex);
@@ -1057,6 +1059,10 @@ public abstract class DeleteHandlerV1 {
     private boolean isInternalType(final AtlasVertex instanceVertex) {
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(GraphHelper.getTypeName(instanceVertex));
         return Objects.nonNull(entityType) && entityType.isInternalType();
+    }
+
+    private boolean isCustomRelationship(final AtlasEdge edge) {
+        return edge.getLabel().equals(CUSTOM_RELATIONSHIP_EDGE_LABEL);
     }
 
     private void addToPropagatedClassificationNames(AtlasVertex entityVertex, String classificationName) {

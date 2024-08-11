@@ -100,6 +100,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     private static final String END_2_DOC_ID_KEY = "end2DocId";
     private static final String ES_DOC_ID_MAP_KEY = "esDocIdMap";
 
+    private static final String CUSTOM_RELATIONSHIP_TYPE_NAME = "CustomRelationship";
+
     private static Set<String> EXCLUDE_MUTATION_REL_TYPE_NAMES = new HashSet<String>() {{
         add(REL_DOMAIN_TO_DOMAINS);
         add(REL_DOMAIN_TO_PRODUCTS);
@@ -139,6 +141,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         AtlasVertex end1Vertex = getVertexFromEndPoint(relationship.getEnd1());
         AtlasVertex end2Vertex = getVertexFromEndPoint(relationship.getEnd2());
+
+        if (relationship.getTypeName().equals(CUSTOM_RELATIONSHIP_TYPE_NAME)) {
+            EntityGraphMapper.validateCustomRelationship(end1Vertex, end2Vertex);
+        }
 
         AtlasEdge edge = createRelationship(end1Vertex, end2Vertex, relationship);
 

@@ -836,6 +836,45 @@
                     "remove-relationship"
                 ]
             }
+        },
+
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "LINK_ASSETS_CUSTOM_RELATIONSHIP",
+                "qualifiedName": "LINK_ASSETS_CUSTOM_RELATIONSHIP",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "RELATIONSHIP",
+                "policyResources":
+                [
+                    "relationship-type:CustomRelationship",
+                    "end-one-entity-type:Referenceable",
+                    "end-two-entity-type:Referenceable",
+                    "end-one-entity-classification:*",
+                    "end-two-entity-classification:*",
+                    "end-one-entity:*",
+                    "end-two-entity:*"
+                ],
+                "policyActions":
+                [
+                    "add-relationship",
+                    "update-relationship",
+                    "remove-relationship"
+                ]
+            }
         }
     ]
 }

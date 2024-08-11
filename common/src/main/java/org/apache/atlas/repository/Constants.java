@@ -157,6 +157,10 @@ public final class Constants {
     public static final String INPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.inputPortDataProducts";
     public static final String OUTPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.outputPortDataProducts";
 
+    public static final String CUSTOM_RELATIONSHIP_EDGE_LABEL = "__Referenceable.customRelationshipTo";
+    public static final String CUSTOM_RELATIONSHIP_END_NAME_FROM = "customRelationshipFrom";
+    public static final String CUSTOM_RELATIONSHIP_END_NAME_TO = "customRelationshipTo";
+
     /**
      * SQL property keys.
      */
