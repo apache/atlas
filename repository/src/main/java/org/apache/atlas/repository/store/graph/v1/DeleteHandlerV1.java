@@ -185,7 +185,6 @@ public abstract class DeleteHandlerV1 {
         for (AtlasEdge edge : edges) {
             boolean isInternal = isInternalType(edge.getInVertex()) && isInternalType(edge.getOutVertex());
             boolean needToSkip = !isInternal && (!isPurgeRequested && DELETED.equals(getState(edge)));
-            boolean isCustomRelation = isCustomRelationship(edge);
 
             if (needToSkip) {
                 if (LOG.isDebugEnabled()) {
@@ -193,7 +192,7 @@ public abstract class DeleteHandlerV1 {
                 }
                 continue;
             }
-            deleteEdge(edge, isCustomRelation || isInternal || forceDelete);
+            deleteEdge(edge, isInternal || forceDelete || isCustomRelationship(edge));
         }
     }
 

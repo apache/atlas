@@ -113,7 +113,9 @@ public enum AtlasConfiguration {
 
     INDEXSEARCH_ASYNC_SEARCH_KEEP_ALIVE_TIME_IN_SECONDS("atlas.indexsearch.async.search.keep.alive.time.in.seconds", 300),
 
-    ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false);
+    ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false),
+
+    ATLAS_CUSTOM_RELATIONSHIPS_MAX_COUNT("atlas.custom.relationships.max.count", 100);
 
 
     private static final Configuration APPLICATION_PROPERTIES;

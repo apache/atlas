@@ -35,7 +35,6 @@ import org.apache.commons.collections.CollectionUtils;
 import javax.inject.Inject;
 
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.repository.Constants.CUSTOM_RELATIONSHIP_EDGE_LABEL;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;

@@ -88,6 +88,7 @@ public class RequestContext {
     private boolean     allowDeletedRelationsIndexsearch = false;
     private boolean     includeMeanings = true;
     private boolean     includeClassifications = true;
+    private boolean     requestRelationshipAttrsForSearch;
 
     private boolean     includeClassificationNames = false;
     private String      currentTypePatchAction = "";
@@ -100,7 +101,6 @@ public class RequestContext {
     private Set<String> deletedEdgesIdsForResetHasLineage = new HashSet<>(0);
     private String requestUri;
     private boolean cacheEnabled;
-    private boolean requestRelationshipAttrsForSearch;
 
     private boolean delayTagNotifications = false;
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();

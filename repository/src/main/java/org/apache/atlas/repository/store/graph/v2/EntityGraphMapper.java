@@ -2239,7 +2239,6 @@ public class EntityGraphMapper {
             AtlasEdge edge = (AtlasEdge) obj;
 
             AtlasVertex targetVertex;
-            //if (ctx.getVertexProperty().equals(CUSTOM_RELATIONSHIP_END_NAME_FROM)) {
             if (isEdgeDirectionIn) {
                 targetVertex = edge.getOutVertex();
                 LOG.info("{}: {}", direction, "outVertex");
@@ -2267,45 +2266,6 @@ public class EntityGraphMapper {
                     "Custom relationships size is more than " + CUSTOM_REL_THRESHOLD + ", current is " + size + " for " + vertex.getProperty(NAME, String.class));
         }
     }
-
-    /*public static void validateCustomRelationship(AttributeMutationContext ctx, List<Object> newElements, boolean isAppend) throws AtlasBaseException {
-        long currentSize;
-        AtlasVertex targetVertex;
-        boolean isEdgeDirectionIn = ctx.getAttribute().getRelationshipEdgeDirection() == AtlasRelationshipEdgeDirection.IN;
-
-        currentSize = ctx.getReferringVertex().getEdgesCount(isEdgeDirectionIn ? AtlasEdgeDirection.IN : AtlasEdgeDirection.OUT,
-                CUSTOM_RELATIONSHIP_EDGE_LABEL);
-
-        if (CUSTOM_REL_THRESHOLD < currentSize) {
-            throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED,
-                    "Custom relationships size is more than " + CUSTOM_REL_THRESHOLD + ", current is " + currentSize + " for " + ctx.getReferringVertex().getProperty(NAME, String.class));
-        }
-
-        AtlasEdgeDirection direction;
-        if (isEdgeDirectionIn) {
-            direction = AtlasEdgeDirection.OUT;
-        } else {
-            direction = AtlasEdgeDirection.IN;
-        }
-
-        for (Object obj : newElements) {
-            AtlasEdge edge = (AtlasEdge) obj;
-
-            if (isEdgeDirectionIn) {
-                targetVertex = edge.getOutVertex();
-                LOG.info("{}: {}", direction, "outVertex");
-            } else {
-                targetVertex = edge.getInVertex();
-                LOG.info("{}: {}", direction, "inVertex");
-            }
-
-            currentSize = targetVertex.getEdgesCount(direction, CUSTOM_RELATIONSHIP_EDGE_LABEL);
-            if (CUSTOM_REL_THRESHOLD < currentSize) {
-                throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED,
-                        "Custom relationships size is more than " + CUSTOM_REL_THRESHOLD + ", current is " + currentSize + " for " + targetVertex.getProperty(NAME, String.class));
-            }
-        }
-    }*/
 
     private void addInternalProductAttr(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) throws AtlasBaseException {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addInternalProductAttrForAppend");
