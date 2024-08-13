@@ -4731,10 +4731,10 @@ public class EntityGraphMapper {
 
         policyIds.forEach(policyId -> {
             if (isGoverned) {
-                AtlasGraphUtilsV2.addItemToListProperty(assetVertex, ASSET_POLICY_GUIDS, policyId);
+                assetVertex.setProperty(ASSET_POLICY_GUIDS, policyId);
                 AtlasGraphUtilsV2.removeItemFromListPropertyValue(assetVertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
             } else {
-                AtlasGraphUtilsV2.addItemToListProperty(assetVertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
+                assetVertex.setProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
                 AtlasGraphUtilsV2.removeItemFromListPropertyValue(assetVertex, ASSET_POLICY_GUIDS, policyId);
             }
         });
