@@ -184,7 +184,7 @@ public class EntityGraphMapper {
 
     private static final int MAX_NUMBER_OF_RETRIES = AtlasConfiguration.MAX_NUMBER_OF_RETRIES.getInt();
     private static final int CHUNK_SIZE            = AtlasConfiguration.TASKS_GRAPH_COMMIT_CHUNK_SIZE.getInt();
-    private static final int CUSTOM_REL_THRESHOLD  = AtlasConfiguration.ATLAS_CUSTOM_RELATIONSHIPS_MAX_COUNT.getInt();
+    private static final int UD_REL_THRESHOLD = AtlasConfiguration.ATLAS_UD_RELATIONSHIPS_MAX_COUNT.getInt();
 
     private final GraphHelper               graphHelper;
     private final AtlasGraph                graph;
@@ -2009,7 +2009,7 @@ public class EntityGraphMapper {
                 addInternalProductAttr(ctx, newElementsCreated, removedElements);
                 break;
 
-            case CUSTOM_RELATIONSHIP_EDGE_LABEL:
+            case UD_RELATIONSHIP_EDGE_LABEL:
                 validateCustomRelationship(ctx, newElementsCreated, false);
                 break;
         }
@@ -2103,7 +2103,7 @@ public class EntityGraphMapper {
                 addInternalProductAttr(ctx, newElementsCreated, null);
                 break;
 
-            case CUSTOM_RELATIONSHIP_EDGE_LABEL:
+            case UD_RELATIONSHIP_EDGE_LABEL:
                 validateCustomRelationship(ctx, newElementsCreated, true);
                 break;
         }
@@ -2221,7 +2221,7 @@ public class EntityGraphMapper {
 
         if (isAppend) {
             currentSize = ctx.getReferringVertex().getEdgesCount(isEdgeDirectionIn ? AtlasEdgeDirection.IN : AtlasEdgeDirection.OUT,
-                    CUSTOM_RELATIONSHIP_EDGE_LABEL);
+                    UD_RELATIONSHIP_EDGE_LABEL);
         } else {
             currentSize = newElements.size();
         }
@@ -2247,23 +2247,23 @@ public class EntityGraphMapper {
                 LOG.info("{}: {}", direction, "inVertex");
             }
 
-            currentSize = targetVertex.getEdgesCount(direction, CUSTOM_RELATIONSHIP_EDGE_LABEL);
+            currentSize = targetVertex.getEdgesCount(direction, UD_RELATIONSHIP_EDGE_LABEL);
             validateCustomRelationshipCount(currentSize, targetVertex);
         }
     }
 
     public static void validateCustomRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex) throws AtlasBaseException {
-        long currentSize = end1Vertex.getEdgesCount(AtlasEdgeDirection.OUT, CUSTOM_RELATIONSHIP_EDGE_LABEL) + 1;
+        long currentSize = end1Vertex.getEdgesCount(AtlasEdgeDirection.OUT, UD_RELATIONSHIP_EDGE_LABEL) + 1;
         validateCustomRelationshipCount(currentSize, end1Vertex);
 
-        currentSize = end2Vertex.getEdgesCount(AtlasEdgeDirection.IN, CUSTOM_RELATIONSHIP_EDGE_LABEL) + 1;
+        currentSize = end2Vertex.getEdgesCount(AtlasEdgeDirection.IN, UD_RELATIONSHIP_EDGE_LABEL) + 1;
         validateCustomRelationshipCount(currentSize, end2Vertex);
     }
 
     private static void validateCustomRelationshipCount(long size, AtlasVertex vertex) throws AtlasBaseException {
-        if (CUSTOM_REL_THRESHOLD < size) {
+        if (UD_REL_THRESHOLD < size) {
             throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED,
-                    "Custom relationships size is more than " + CUSTOM_REL_THRESHOLD + ", current is " + size + " for " + vertex.getProperty(NAME, String.class));
+                    "Custom relationships size is more than " + UD_REL_THRESHOLD + ", current is " + size + " for " + vertex.getProperty(NAME, String.class));
         }
     }
 

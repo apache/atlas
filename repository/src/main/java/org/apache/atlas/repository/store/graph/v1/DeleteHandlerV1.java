@@ -1061,7 +1061,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     private boolean isCustomRelationship(final AtlasEdge edge) {
-        return edge.getLabel().equals(CUSTOM_RELATIONSHIP_EDGE_LABEL);
+        return edge.getLabel().equals(UD_RELATIONSHIP_EDGE_LABEL);
     }
 
     private void addToPropagatedClassificationNames(AtlasVertex entityVertex, String classificationName) {

@@ -820,6 +820,10 @@ public class AtlasBuiltInTypes {
         private boolean isValidMap(Map map) {
             Object guid = map.get(AtlasObjectId.KEY_GUID);
 
+            if (map.containsKey(AtlasRelatedObjectId.KEY_RELATIONSHIP_ATTRIBUTES) && !map.containsKey(AtlasRelatedObjectId.KEY_RELATIONSHIP_TYPE)) {
+                return false;
+            }
+
             if (guid != null && StringUtils.isNotEmpty(guid.toString())) {
                 return true;
             } else {

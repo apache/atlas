@@ -115,7 +115,7 @@ public enum AtlasConfiguration {
 
     ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false),
 
-    ATLAS_CUSTOM_RELATIONSHIPS_MAX_COUNT("atlas.custom.relationships.max.count", 100);
+    ATLAS_UD_RELATIONSHIPS_MAX_COUNT("atlas.ud.relationship.max.count", 100);
 
 
     private static final Configuration APPLICATION_PROPERTIES;

@@ -121,6 +121,7 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
+import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
@@ -1660,10 +1661,13 @@ public class EntityGraphRetriever {
             }
 
             if (RequestContext.get().isRequestRelationshipAttrsForSearch()) {
-                boolean isRelationshipAttribute = typeRegistry.getRelationshipDefByName(GraphHelper.getTypeName(edge)) != null;
+                String relationshipTypeName = GraphHelper.getTypeName(edge);
+                boolean isRelationshipAttribute = typeRegistry.getRelationshipDefByName(relationshipTypeName) != null;
                 if (isRelationshipAttribute) {
                     AtlasRelationship relationship = mapEdgeToAtlasRelationship(edge);
-                    ret.getAttributes().put("relationshipAttributes", relationship.getAttributes());
+                    Map<String, Object> relationshipAttributes = mapOf("typeName", relationshipTypeName);
+                    relationshipAttributes.put("attributes", relationship.getAttributes());
+                    ret.getAttributes().put("relationshipAttributes", relationshipAttributes);
                 }
             }
         }

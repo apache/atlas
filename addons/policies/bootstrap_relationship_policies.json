@@ -842,8 +842,8 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "LINK_ASSETS_CUSTOM_RELATIONSHIP",
-                "qualifiedName": "LINK_ASSETS_CUSTOM_RELATIONSHIP",
+                "name": "LINK_ASSETS_USER_DEFINED_RELATIONSHIP",
+                "qualifiedName": "LINK_ASSETS_USER_DEFINED_RELATIONSHIP",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
@@ -860,7 +860,7 @@
                 "policyResourceCategory": "RELATIONSHIP",
                 "policyResources":
                 [
-                    "relationship-type:CustomRelationship",
+                    "relationship-type:UserDefRelationship",
                     "end-one-entity-type:Referenceable",
                     "end-two-entity-type:Referenceable",
                     "end-one-entity-classification:*",
