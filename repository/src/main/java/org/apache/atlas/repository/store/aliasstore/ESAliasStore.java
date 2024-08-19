@@ -225,11 +225,7 @@ public class ESAliasStore implements IndexAliasStore {
                         }
                     }
 
-                    if (useHierarchicalQualifiedNameFilter) {
-                        metadataPolicyQualifiedNames.add(connectionQName);
-                    } else {
-                        terms.add(connectionQName);
-                    }
+                    terms.add(connectionQName);
 
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
                     if (CollectionUtils.isNotEmpty(assets)) {
