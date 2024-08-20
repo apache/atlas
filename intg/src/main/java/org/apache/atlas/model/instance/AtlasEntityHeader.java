@@ -77,6 +77,9 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
 
     private Map<String, AtlasSearchResult>  collapse    = null;
 
+    private List<String> immediateUpstream;  // New field
+    private List<String> immediateDownstream;  // New field
+
 
     public AtlasEntityHeader() {
         this(null, null);
@@ -344,6 +347,22 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
 
     public void setMeanings(final List<AtlasTermAssignmentHeader> meanings) {
         this.meanings = meanings;
+    }
+
+    public List<String> getImmediateUpstream() {
+        return immediateUpstream;
+    }
+
+    public void setImmediateUpstream(List<String> immediateUpstream) {
+        this.immediateUpstream = immediateUpstream;
+    }
+
+    public List<String> getImmediateDownstream() {
+        return immediateDownstream;
+    }
+
+    public void setImmediateDownstream(List<String> immediateDownstream) {
+        this.immediateDownstream = immediateDownstream;
     }
 
     /**
