@@ -460,16 +460,18 @@ public class EntityLineageService implements AtlasLineageService {
         Queue<String> traversalQueue = new LinkedList<>();
 
         Map<String, List<String>> parentMapForNeighbours = new HashMap<>();  // New map to track parent nodes
+        Map<String, List<String>> childrenMapForNeighbours = new HashMap<>();  // New map to track parent nodes
+
 
         AtlasVertex baseVertex = AtlasGraphUtilsV2.findByGuid(this.graph, baseGuid);
         boolean isBaseNodeDataset = validateEntityTypeAndCheckIfDataSet(baseGuid);
         // Get the neighbors for the current node
-        List<String> childrens = enqueueNeighbours(baseVertex, isBaseNodeDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices, parentMapForNeighbours);
+        enqueueNeighbours(baseVertex, isBaseNodeDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices, parentMapForNeighbours, childrenMapForNeighbours);
         int currentDepth = 0;
         int currentLevel = isBaseNodeDataset? 0: 1;
 
         // Add the current node and its neighbors to the result
-        appendToResult(baseVertex, lineageListContext, ret, currentLevel, childrens);
+        appendToResult(baseVertex, lineageListContext, ret, currentLevel);
 
         while (!traversalQueue.isEmpty() && !lineageListContext.isEntityLimitReached() && currentDepth < lineageListContext.getDepth()) {
             currentDepth++;
@@ -490,21 +492,21 @@ public class EntityLineageService implements AtlasLineageService {
 
                 boolean isDataset = validateEntityTypeAndCheckIfDataSet(currentGUID);
                 if (!lineageListContext.evaluateVertexFilter(currentVertex)) {
-                    enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices, parentMapForNeighbours);
+                    enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices, parentMapForNeighbours, childrenMapForNeighbours);
                     continue;
                 }
                 if (checkOffsetAndSkipEntity(lineageListContext, ret)) {
                     skippedVertices.add(currentGUID);
-                    enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices, parentMapForNeighbours);
+                    enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices, parentMapForNeighbours, childrenMapForNeighbours);
                     continue;
                 }
 
                 lineageListContext.incrementEntityCount();
                 // Get the neighbors for the current node
-                childrens = enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices, parentMapForNeighbours);
+                enqueueNeighbours(currentVertex, isDataset, lineageListContext, traversalQueue, visitedVertices, skippedVertices, parentMapForNeighbours, childrenMapForNeighbours);
 
                 // Add the current node and its neighbors to the result
-                appendToResult(currentVertex, lineageListContext, ret, currentLevel, childrens);
+                appendToResult(currentVertex, lineageListContext, ret, currentLevel);
 
                 if (isLastEntityInLastDepth(lineageListContext.getDepth(), currentDepth, entitiesInCurrentDepth, i)) {
                     ret.setHasMore(false);
@@ -514,7 +516,7 @@ public class EntityLineageService implements AtlasLineageService {
         }
 
         // update parents for each entity
-        updateParentNodesForEachEntity(lineageListContext, ret, parentMapForNeighbours);
+        updateParentNodesForEachEntity(lineageListContext, ret, parentMapForNeighbours, childrenMapForNeighbours);
 
         if (currentDepth > lineageListContext.getDepth())
             lineageListContext.setDepthLimitReached(true);
@@ -526,7 +528,7 @@ public class EntityLineageService implements AtlasLineageService {
     private List<String> enqueueNeighbours(AtlasVertex currentVertex, boolean isDataset,
                                            AtlasLineageListContext lineageListContext, Queue<String> traversalQueue,
                                            Set<String> visitedVertices, Set<String> skippedVertices,
-                                           Map<String, List<String>> parentMapForNeighbours) {
+                                           Map<String, List<String>> parentMapForNeighbours, Map<String, List<String>> childrenMapForNeighbours) {
         AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdges = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdges");
         Iterator<AtlasEdge> edges;
         if (isDataset)
@@ -558,43 +560,66 @@ public class EntityLineageService implements AtlasLineageService {
             parentMapForNeighbours
                     .computeIfAbsent(vertexGuid, k -> new ArrayList<>())
                     .add(getGuid(currentVertex));
+            childrenMapForNeighbours
+                    .computeIfAbsent(getGuid(currentVertex), k -> new ArrayList<>())
+                    .add(vertexGuid);
             neighbors.add(vertexGuid); // Add neighbor to the list
         }
 
         return neighbors; // Return the list of neighbors
     }
 
-    private void updateParentNodesForEachEntity(AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret, Map<String, List<String>> parentMapForNeighbours){
+    private void updateParentNodesForEachEntity(AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret, Map<String, List<String>> parentMapForNeighbours, Map<String, List<String>> childrenMapForNeighbours){
         List<AtlasEntityHeader> entityList = ret.getEntities();
         for (AtlasEntityHeader entity : entityList) {
             // Check if the entity GUID exists in the parentMapForNeighbours
             if (parentMapForNeighbours.containsKey(entity.getGuid())) {
                 // Get the list of AtlasVertex from the map
                 List<String> parentNodes = parentMapForNeighbours.get(entity.getGuid());
+
+                List<String> parentNodesOfParent = new ArrayList<>();
+                for (String parentNode : parentNodes) {
+                    List<String> parentsOfParentNode = parentMapForNeighbours.get(parentNode);
+                    if (parentsOfParentNode != null) {
+                        parentNodesOfParent.addAll(parentsOfParentNode);
+                    }
+                }
+
                 if(isInputDirection(lineageListContext)){
-                    entity.setImmediateDownstream(parentNodes);
+                    entity.setImmediateDownstream(parentNodesOfParent);
                 }
                 else{
-                    entity.setImmediateUpstream(parentNodes);
+                    entity.setImmediateUpstream(parentNodesOfParent);
+                }
+            }
+
+            if (childrenMapForNeighbours.containsKey(entity.getGuid())) {
+                // Get the list of AtlasVertex from the map
+                List<String> childrenNodes = childrenMapForNeighbours.get(entity.getGuid());
+
+                List<String> childrenNodesOfChildren = new ArrayList<>();
+                for (String childNode : childrenNodes) {
+                    // Add all children for the current childNode
+                    List<String> childrenOfChildNode = childrenMapForNeighbours.get(childNode);
+                    if (childrenOfChildNode != null) {
+                        childrenNodesOfChildren.addAll(childrenOfChildNode);
+                    }
+                }
+
+                if(isInputDirection(lineageListContext)){
+                    entity.setImmediateUpstream(childrenNodesOfChildren);
+                }
+                else{
+                    entity.setImmediateDownstream(childrenNodesOfChildren);
                 }
             }
         }
     }
 
     private void appendToResult(AtlasVertex currentVertex, AtlasLineageListContext lineageListContext,
-                                AtlasLineageListInfo ret, int currentLevel, List<String> childrenNodes) throws AtlasBaseException {
+                                AtlasLineageListInfo ret, int currentLevel) throws AtlasBaseException {
         AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(currentVertex, lineageListContext.getAttributes());
         entity.setDepth(currentLevel);
-
-        // as per the traversal direction set children and parents
-        // INPUT = upstream
-        // OUTPUT = downstream
-        if(isInputDirection(lineageListContext)){
-            entity.setImmediateUpstream(childrenNodes);
-        }
-        else{
-            entity.setImmediateDownstream(childrenNodes);
-        }
         ret.getEntities().add(entity);
     }
 
