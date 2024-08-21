@@ -390,7 +390,7 @@ public class ServicePolicies implements java.io.Serializable {
 		return ret;
 	}
 
-	public static ServicePolicies applyDelta(final ServicePolicies servicePolicies, RangerPolicyEngineImpl policyEngine) {
+	public static ServicePolicies  applyDelta(final ServicePolicies servicePolicies, RangerPolicyEngineImpl policyEngine) {
 		ServicePolicies ret = copyHeader(servicePolicies);
 
 		List<RangerPolicy> oldResourcePolicies = policyEngine.getResourcePolicies();

@@ -74,6 +74,9 @@ public class RangerPolicyDelta implements java.io.Serializable {
     public Long getPolicyId() { return policy != null ? policy.getId() : null; }
 
     @JsonIgnore
+    public String getPolicyGuid() { return policy != null ? policy.getGuid() : null; }
+
+    @JsonIgnore
     public String getZoneName() { return policy != null ? policy.getZoneName() : null; }
 
     public RangerPolicy getPolicy() { return policy; }
@@ -94,6 +97,7 @@ public class RangerPolicyDelta implements java.io.Serializable {
                 + ", serviceType:" + getServiceType()
                 + ", policyType:" + getPolicyType()
                 + ", policyId:[" + getPolicyId() + "]"
+                + ", policyGuid:[" + getPolicyGuid() + "]"
                 + ", policy:[" + policy +"]";
     }
 

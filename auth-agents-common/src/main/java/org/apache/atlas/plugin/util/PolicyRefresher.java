@@ -21,8 +21,12 @@ package org.apache.atlas.plugin.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
+import org.apache.atlas.repository.audit.ESBasedAuditRepository;
+import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -39,6 +43,8 @@ import java.io.Writer;
 import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+
+import static org.apache.atlas.ApplicationProperties.DELTA_BASED_REFRESH;
 
 
 public class PolicyRefresher extends Thread {
@@ -64,6 +70,9 @@ public class PolicyRefresher extends Thread {
 	private       long                           lastActivationTimeInMillis;
 	private       boolean                        policiesSetInPlugin;
 	private       boolean                        serviceDefSetInPlugin;
+	private       Configuration                  atlasConfig;
+	private       boolean                        enableDeltaBasedRefresh;
+	private       ESBasedAuditRepository         auditRepository;
 
 
 	public PolicyRefresher(RangerBasePlugin plugIn) {
@@ -103,6 +112,16 @@ public class PolicyRefresher extends Thread {
 		this.rolesProvider                 = new RangerRolesProvider(getServiceType(), appId, getServiceName(), atlasAuthAdminClient, cacheDir, pluginConfig);
 		this.userStoreProvider             = new RangerUserStoreProvider(getServiceType(), appId, getServiceName(), atlasAuthAdminClient,  cacheDir, pluginConfig);
 		this.pollingIntervalMs             = pluginConfig.getLong(propertyPrefix + ".policy.pollIntervalMs", 30 * 1000);
+
+		try {
+			this.atlasConfig = ApplicationProperties.get();
+			this.auditRepository = new ESBasedAuditRepository(atlasConfig);
+			this.auditRepository.start();
+			this.enableDeltaBasedRefresh = this.atlasConfig.getBoolean(DELTA_BASED_REFRESH, false);
+		} catch (AtlasException e) {
+			LOG.error("PolicyDelta: Error while reading atlas configuration", e);
+			this.enableDeltaBasedRefresh = false;
+		}
 
 		setName("PolicyRefresher(serviceName=" + serviceName + ")-" + getId());
 
@@ -316,13 +335,20 @@ public class PolicyRefresher extends Thread {
 
 		try {
 
-			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null && lastUpdatedTiemInMillis == -1) {
+			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null) {
 				RangerRESTUtils restUtils = new RangerRESTUtils();
-				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry());
-
-				svcPolicies = transformer.getPolicies(serviceName,
-						restUtils.getPluginId(serviceName, plugIn.getAppId()),
-						lastUpdatedTiemInMillis);
+				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry(), auditRepository);
+				if (lastUpdatedTiemInMillis == -1) {
+					svcPolicies = transformer.getPoliciesAll(serviceName,
+							restUtils.getPluginId(serviceName, plugIn.getAppId()),
+							lastUpdatedTiemInMillis, null);
+				} else if (this.enableDeltaBasedRefresh) {
+					svcPolicies = transformer.getPoliciesDelta(serviceName,
+							restUtils.getPluginId(serviceName, plugIn.getAppId()),
+							lastUpdatedTiemInMillis);
+				} else {
+					svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis);
+				}
 			} else {
 				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis);
 			}
