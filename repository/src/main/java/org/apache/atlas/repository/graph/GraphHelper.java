@@ -377,34 +377,36 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static List<AtlasVertex> getAllClassificationVerticesByClassificationName(AtlasGraph graph, String classificationName) {
-        Iterable vertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
-        if (vertices == null) {
-            return Collections.emptyList();
-        }
-        return IteratorUtils.toList(vertices.iterator());
-    }
+//    public static List<AtlasVertex> getAllClassificationVerticesByClassificationName(AtlasGraph graph, String classificationName) {
+//        Iterable vertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
+//        if (vertices == null) {
+//            return Collections.emptyList();
+//        }
+//        return IteratorUtils.toList(vertices.iterator());
+//    }
 
-    public static List<AtlasVertex> getAllAssetsWithClassificationAttached(AtlasGraph graph, String classificationName) {
+    public static List<AtlasVertex> getClassificationVertexes(AtlasGraph graph, String classificationName) {
         Iterable classificationVertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
         if (classificationVertices == null) {
             return Collections.emptyList();
         }
         List<AtlasVertex> classificationVerticesList = IteratorUtils.toList(classificationVertices.iterator());
-            LOG.info("classificationVerticesList size: {}", classificationVerticesList.size());
+        LOG.info("classificationVerticesList size: {}", classificationVerticesList.size());
+    }
+
+    public static List<AtlasVertex> getAllAssetsWithClassificationVertex(AtlasGraph graph, AtlasVertex classificationVertice) {
         HashSet<AtlasVertex> entityVerticesSet = new HashSet<>();
-        for (AtlasVertex classificationVertex : classificationVerticesList) {
-            Iterable attachedVertices =  classificationVertex.query()
-                    .direction(AtlasEdgeDirection.IN)
-                    .label(CLASSIFICATION_LABEL).vertices();
-            if (attachedVertices != null) {
-                Iterator<AtlasVertex> attachedVerticesIterator = attachedVertices.iterator();
-                while (attachedVerticesIterator.hasNext()) {
-                    entityVerticesSet.add(attachedVerticesIterator.next());
-                }
-                LOG.info("entityVerticesSet size: {}", entityVerticesSet.size());
+        Iterable attachedVertices =  classificationVertice.query()
+                .direction(AtlasEdgeDirection.IN)
+                .label(CLASSIFICATION_LABEL).vertices();
+        if (attachedVertices != null) {
+            Iterator<AtlasVertex> attachedVerticesIterator = attachedVertices.iterator();
+            while (attachedVerticesIterator.hasNext()) {
+                entityVerticesSet.add(attachedVerticesIterator.next());
             }
+            LOG.info("entityVerticesSet size: {}", entityVerticesSet.size());
         }
+
 
         return entityVerticesSet.stream().collect(Collectors.toList());
     }
