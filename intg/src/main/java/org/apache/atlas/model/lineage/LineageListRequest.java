@@ -25,7 +25,7 @@ public class LineageListRequest {
     private Set<String>                     relationAttributes;
     private Boolean                         excludeMeanings;
     private Boolean                         excludeClassifications;
-    private Boolean                         immediateNeighbours;
+    private Boolean                         immediateNeighbours=false;
 
     public Boolean getImmediateNeighbours() {
         return immediateNeighbours;
