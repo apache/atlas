@@ -72,8 +72,7 @@ import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_LINEAGE_QUERY_FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*;
-import static org.apache.atlas.repository.Constants.ACTIVE_STATE_VALUE;
-import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.graphdb.AtlasEdgeDirection.IN;
 import static org.apache.atlas.repository.graphdb.AtlasEdgeDirection.OUT;
@@ -525,10 +524,10 @@ public class EntityLineageService implements AtlasLineageService {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private List<String> enqueueNeighbours(AtlasVertex currentVertex, boolean isDataset,
-                                           AtlasLineageListContext lineageListContext, Queue<String> traversalQueue,
-                                           Set<String> visitedVertices, Set<String> skippedVertices,
-                                           Map<String, List<String>> parentMapForNeighbours, Map<String, List<String>> childrenMapForNeighbours) {
+    private void enqueueNeighbours(AtlasVertex currentVertex, boolean isDataset,
+                                   AtlasLineageListContext lineageListContext, Queue<String> traversalQueue,
+                                   Set<String> visitedVertices, Set<String> skippedVertices,
+                                   Map<String, List<String>> parentMapForNeighbours, Map<String, List<String>> childrenMapForNeighbours) {
         AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdges = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdges");
         Iterator<AtlasEdge> edges;
         if (isDataset)
@@ -557,25 +556,23 @@ public class EntityLineageService implements AtlasLineageService {
                 traversalQueue.add(vertexGuid);
                 addEntitiesToCache(neighbourVertex);
             }
+            String vertexDisplayName = getQalifiedName(neighbourVertex);
             parentMapForNeighbours
-                    .computeIfAbsent(vertexGuid, k -> new ArrayList<>())
-                    .add(getGuid(currentVertex));
+                    .computeIfAbsent(vertexDisplayName, k -> new ArrayList<>())
+                    .add(getQalifiedName(currentVertex));
             childrenMapForNeighbours
-                    .computeIfAbsent(getGuid(currentVertex), k -> new ArrayList<>())
-                    .add(vertexGuid);
-            neighbors.add(vertexGuid); // Add neighbor to the list
+                    .computeIfAbsent(getQalifiedName(currentVertex), k -> new ArrayList<>())
+                    .add(vertexDisplayName);
         }
-
-        return neighbors; // Return the list of neighbors
     }
 
     private void updateParentNodesForEachEntity(AtlasLineageListContext lineageListContext, AtlasLineageListInfo ret, Map<String, List<String>> parentMapForNeighbours, Map<String, List<String>> childrenMapForNeighbours){
         List<AtlasEntityHeader> entityList = ret.getEntities();
         for (AtlasEntityHeader entity : entityList) {
             // Check if the entity GUID exists in the parentMapForNeighbours
-            if (parentMapForNeighbours.containsKey(entity.getGuid())) {
+            if (parentMapForNeighbours.containsKey(entity.getAttribute(QUALIFIED_NAME))) {
                 // Get the list of AtlasVertex from the map
-                List<String> parentNodes = parentMapForNeighbours.get(entity.getGuid());
+                List<String> parentNodes = parentMapForNeighbours.get(entity.getAttribute(QUALIFIED_NAME));
 
                 List<String> parentNodesOfParent = new ArrayList<>();
                 for (String parentNode : parentNodes) {
@@ -593,9 +590,9 @@ public class EntityLineageService implements AtlasLineageService {
                 }
             }
 
-            if (childrenMapForNeighbours.containsKey(entity.getGuid())) {
+            if (childrenMapForNeighbours.containsKey(entity.getAttribute(QUALIFIED_NAME))) {
                 // Get the list of AtlasVertex from the map
-                List<String> childrenNodes = childrenMapForNeighbours.get(entity.getGuid());
+                List<String> childrenNodes = childrenMapForNeighbours.get(entity.getAttribute(QUALIFIED_NAME));
 
                 List<String> childrenNodesOfChildren = new ArrayList<>();
                 for (String childNode : childrenNodes) {

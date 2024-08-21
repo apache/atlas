@@ -1025,6 +1025,10 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static String getQalifiedName(AtlasVertex vertex) {
+        return vertex.<String>getProperty(Constants.QUALIFIED_NAME, String.class);
+    }
+
     public static String getHomeId(AtlasElement element) {
         return element.getProperty(Constants.HOME_ID_KEY, String.class);
     }
