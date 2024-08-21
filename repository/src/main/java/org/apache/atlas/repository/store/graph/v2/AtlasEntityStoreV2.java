@@ -1456,7 +1456,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
                                 "create entity: type=", entity.getTypeName());
                     }
-                    createQualifiedNameHierarchyField(entity, context.getVertex(entity.getGuid()));
                 }
             }
             // for existing entities, skip update if incoming entity doesn't have any change
@@ -1476,10 +1475,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     AtlasEntityDiffResult diffResult   = entityComparator.getDiffResult(entity, storedVertex, !storeDifferentialAudits);
 
                     if (diffResult.hasDifference()) {
-                        if (diffResult.getDiffEntity().hasAttribute(QUALIFIED_NAME)) {
-                            createQualifiedNameHierarchyField(entity, storedVertex);
-                        }
-
                         if (storeDifferentialAudits) {
                             diffResult.getDiffEntity().setGuid(entity.getGuid());
                             reqContext.cacheDifferentialEntity(diffResult.getDiffEntity());
@@ -1533,6 +1528,20 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
 
             executePreProcessor(context);
+
+            // Updating hierarchy after preprocessor is executed so that qualifiedName update during preprocessor is considered
+            for (AtlasEntity entity : context.getCreatedEntities()) {
+                createQualifiedNameHierarchyField(entity, context.getVertex(entity.getGuid()));
+            }
+
+            for (AtlasEntity entity : context.getUpdatedEntities()) {
+                // If qualifiedName update is part of the update, update the qualifiedName hierarchy field
+                AtlasEntity diffEntity = RequestContext.get().getDifferentialEntitiesMap().get(entity.getGuid());
+                if (diffEntity != null && diffEntity.hasAttribute(QUALIFIED_NAME)) {
+                    createQualifiedNameHierarchyField(entity, context.getVertex(entity.getGuid()));
+                }
+            }
+
 
             EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate,
                     replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttribute);
@@ -1808,28 +1817,36 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     private void createQualifiedNameHierarchyField(AtlasEntity entity, AtlasVertex vertex) {
-        if (entity.hasAttribute(QUALIFIED_NAME)) {
-            String qualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
-            if (StringUtils.isNotEmpty(qualifiedName)) {
-                vertex.removeProperty(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY);
-                String[] parts = qualifiedName.split("/");
-                StringBuilder currentPath = new StringBuilder();
+        MetricRecorder metric = RequestContext.get().startMetricRecord("createQualifiedNameHierarchyField");
+        try {
+            if (vertex == null) {
+                vertex = AtlasGraphUtilsV2.findByGuid(graph, entity.getGuid());
+            }
+            if (entity.hasAttribute(QUALIFIED_NAME)) {
+                String qualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
+                if (StringUtils.isNotEmpty(qualifiedName)) {
+                    vertex.removeProperty(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY);
+                    String[] parts = qualifiedName.split("/");
+                    StringBuilder currentPath = new StringBuilder();
 
-                for (int i = 0; i < parts.length; i++) {
-                    String part = parts[i];
-                    if (StringUtils.isNotEmpty(part)) {
-                        if (i > 0) {
-                            currentPath.append("/");
-                        }
-                        currentPath.append(part);
-                        // i>1 reason: we don't want to add the first part of the qualifiedName as it is the entity name
-                        // Example qualifiedName : default/snowflake/123/db_name we only want `default/snowflake/123` and `default/snowflake/123/db_name`
-                        if (i > 1) {
-                            AtlasGraphUtilsV2.addEncodedProperty(vertex, QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, currentPath.toString());
+                    for (int i = 0; i < parts.length; i++) {
+                        String part = parts[i];
+                        if (StringUtils.isNotEmpty(part)) {
+                            if (i > 0) {
+                                currentPath.append("/");
+                            }
+                            currentPath.append(part);
+                            // i>1 reason: we don't want to add the first part of the qualifiedName as it is the entity name
+                            // Example qualifiedName : default/snowflake/123/db_name we only want `default/snowflake/123` and `default/snowflake/123/db_name`
+                            if (i > 1) {
+                                AtlasGraphUtilsV2.addEncodedProperty(vertex, QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, currentPath.toString());
+                            }
                         }
                     }
                 }
             }
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 

@@ -210,8 +210,12 @@ public class ESAliasStore implements IndexAliasStore {
                         * This will be dictated by the feature flag ENABLE_PERSONA_HIERARCHY_FILTER
                         */
 
+                        // If asset resource ends with /* then add it in hierarchical filter
+                        boolean isHierarchical = asset.endsWith("/*");
+                        if (isHierarchical) {
+                            asset = asset.substring(0, asset.length() - 2);
+                        }
                         boolean isWildcard = asset.contains("*") || asset.contains("?");
-
                         if (isWildcard) {
                             allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset)));
                         } else if (useHierarchicalQualifiedNameFilter) {
