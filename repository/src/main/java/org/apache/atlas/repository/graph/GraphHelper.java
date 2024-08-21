@@ -392,6 +392,7 @@ public final class GraphHelper {
         }
         List<AtlasVertex> classificationVerticesList = IteratorUtils.toList(classificationVertices.iterator());
         LOG.info("classificationVerticesList size: {}", classificationVerticesList.size());
+        return classificationVerticesList;
     }
 
     public static List<AtlasVertex> getAllAssetsWithClassificationVertex(AtlasGraph graph, AtlasVertex classificationVertice) {
@@ -406,8 +407,6 @@ public final class GraphHelper {
             }
             LOG.info("entityVerticesSet size: {}", entityVerticesSet.size());
         }
-
-
         return entityVerticesSet.stream().collect(Collectors.toList());
     }
     public static AtlasEdge getClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
