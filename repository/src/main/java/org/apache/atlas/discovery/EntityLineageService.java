@@ -514,8 +514,10 @@ public class EntityLineageService implements AtlasLineageService {
             }
         }
 
-        // update parents for each entity
-        updateParentNodesForEachEntity(lineageListContext, ret, parentMapForNeighbours, childrenMapForNeighbours);
+        if(lineageListContext.getImmediateNeighbours()){
+            // update parents for each entity
+            updateParentNodesForEachEntity(lineageListContext, ret, parentMapForNeighbours, childrenMapForNeighbours);
+        }
 
         if (currentDepth > lineageListContext.getDepth())
             lineageListContext.setDepthLimitReached(true);
@@ -556,13 +558,16 @@ public class EntityLineageService implements AtlasLineageService {
                 traversalQueue.add(vertexGuid);
                 addEntitiesToCache(neighbourVertex);
             }
-            String vertexDisplayName = getQalifiedName(neighbourVertex);
-            parentMapForNeighbours
-                    .computeIfAbsent(vertexDisplayName, k -> new ArrayList<>())
-                    .add(getQalifiedName(currentVertex));
-            childrenMapForNeighbours
-                    .computeIfAbsent(getQalifiedName(currentVertex), k -> new ArrayList<>())
-                    .add(vertexDisplayName);
+
+            if(lineageListContext.getImmediateNeighbours()){
+                String vertexDisplayName = getQalifiedName(neighbourVertex);
+                parentMapForNeighbours
+                        .computeIfAbsent(vertexDisplayName, k -> new ArrayList<>())
+                        .add(getQalifiedName(currentVertex));
+                childrenMapForNeighbours
+                        .computeIfAbsent(getQalifiedName(currentVertex), k -> new ArrayList<>())
+                        .add(vertexDisplayName);
+            }
         }
     }
 
