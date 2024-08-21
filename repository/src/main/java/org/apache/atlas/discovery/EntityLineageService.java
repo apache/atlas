@@ -560,13 +560,12 @@ public class EntityLineageService implements AtlasLineageService {
             }
 
             if(lineageListContext.getImmediateNeighbours()){
-                String vertexDisplayName = getQalifiedName(neighbourVertex);
                 parentMapForNeighbours
-                        .computeIfAbsent(vertexDisplayName, k -> new ArrayList<>())
-                        .add(getQalifiedName(currentVertex));
+                        .computeIfAbsent(vertexGuid, k -> new ArrayList<>())
+                        .add(getGuid(currentVertex));
                 childrenMapForNeighbours
-                        .computeIfAbsent(getQalifiedName(currentVertex), k -> new ArrayList<>())
-                        .add(vertexDisplayName);
+                        .computeIfAbsent(getGuid(currentVertex), k -> new ArrayList<>())
+                        .add(vertexGuid);
             }
         }
     }
@@ -575,44 +574,44 @@ public class EntityLineageService implements AtlasLineageService {
         List<AtlasEntityHeader> entityList = ret.getEntities();
         for (AtlasEntityHeader entity : entityList) {
             // Check if the entity GUID exists in the parentMapForNeighbours
-            if (parentMapForNeighbours.containsKey(entity.getAttribute(QUALIFIED_NAME))) {
+            if (parentMapForNeighbours.containsKey(entity.getGuid())) {
                 // Get the list of AtlasVertex from the map
-                List<String> parentNodes = parentMapForNeighbours.get(entity.getAttribute(QUALIFIED_NAME));
+                List<String> parentNodes = parentMapForNeighbours.get(entity.getGuid());
 
-                List<String> parentNodesOfParent = new ArrayList<>();
+                List<List<String>> parentNodesOfParentWithDetails = new ArrayList<>();
                 for (String parentNode : parentNodes) {
-                    List<String> parentsOfParentNode = parentMapForNeighbours.get(parentNode);
-                    if (parentsOfParentNode != null) {
-                        parentNodesOfParent.addAll(parentsOfParentNode);
+                    List<String> parentsOfParentNodes = parentMapForNeighbours.get(parentNode);
+                    for (String parentOfParent : parentsOfParentNodes) {
+                        parentNodesOfParentWithDetails.add(getNodeDetails(AtlasGraphUtilsV2.findByGuid(this.graph, parentOfParent)));
                     }
                 }
 
                 if(isInputDirection(lineageListContext)){
-                    entity.setImmediateDownstream(parentNodesOfParent);
+                    entity.setImmediateDownstream(parentNodesOfParentWithDetails);
                 }
                 else{
-                    entity.setImmediateUpstream(parentNodesOfParent);
+                    entity.setImmediateUpstream(parentNodesOfParentWithDetails);
                 }
             }
 
-            if (childrenMapForNeighbours.containsKey(entity.getAttribute(QUALIFIED_NAME))) {
+            if (childrenMapForNeighbours.containsKey(entity.getGuid())) {
                 // Get the list of AtlasVertex from the map
-                List<String> childrenNodes = childrenMapForNeighbours.get(entity.getAttribute(QUALIFIED_NAME));
+                List<String> childrenNodes = childrenMapForNeighbours.get(entity.getGuid());
 
-                List<String> childrenNodesOfChildren = new ArrayList<>();
+                List<List<String>> childrenNodesOfChildrenWithDetails = new ArrayList<>();
                 for (String childNode : childrenNodes) {
                     // Add all children for the current childNode
                     List<String> childrenOfChildNode = childrenMapForNeighbours.get(childNode);
-                    if (childrenOfChildNode != null) {
-                        childrenNodesOfChildren.addAll(childrenOfChildNode);
+                    for (String childOfChild : childrenOfChildNode) {
+                        childrenNodesOfChildrenWithDetails.add(getNodeDetails(AtlasGraphUtilsV2.findByGuid(this.graph, childOfChild)));
                     }
                 }
 
                 if(isInputDirection(lineageListContext)){
-                    entity.setImmediateUpstream(childrenNodesOfChildren);
+                    entity.setImmediateUpstream(childrenNodesOfChildrenWithDetails);
                 }
                 else{
-                    entity.setImmediateDownstream(childrenNodesOfChildren);
+                    entity.setImmediateDownstream(childrenNodesOfChildrenWithDetails);
                 }
             }
         }
