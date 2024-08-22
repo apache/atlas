@@ -411,9 +411,15 @@ public final class GraphHelper {
     }
 
     public static long getAssetsCountOfClassificationVertex(AtlasVertex classificationVertice) {
-        long count =  classificationVertice.query()
-                .direction(AtlasEdgeDirection.IN)
-                .label(CLASSIFICATION_LABEL).count();
+        long count = 0;
+        try {
+            count = classificationVertice.query()
+                    .direction(AtlasEdgeDirection.IN)
+                    .label(CLASSIFICATION_LABEL).count();
+        }
+        catch (IllegalStateException e){
+            e.printStackTrace();
+        }
         return count;
     }
     public static AtlasEdge getClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
