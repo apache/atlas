@@ -578,7 +578,7 @@ public class EntityLineageService implements AtlasLineageService {
                 // Get the list of AtlasVertex from the map
                 List<String> parentNodes = parentMapForNeighbours.get(entity.getGuid());
 
-                List<List<String>> parentNodesOfParentWithDetails = new ArrayList<>();
+                List<Map<String,String>> parentNodesOfParentWithDetails = new ArrayList<>();
                 for (String parentNode : parentNodes) {
                     List<String> parentsOfParentNodes = parentMapForNeighbours.get(parentNode);
                     for (String parentOfParent : parentsOfParentNodes) {
@@ -598,7 +598,7 @@ public class EntityLineageService implements AtlasLineageService {
                 // Get the list of AtlasVertex from the map
                 List<String> childrenNodes = childrenMapForNeighbours.get(entity.getGuid());
 
-                List<List<String>> childrenNodesOfChildrenWithDetails = new ArrayList<>();
+                List<Map<String,String>> childrenNodesOfChildrenWithDetails = new ArrayList<>();
                 for (String childNode : childrenNodes) {
                     // Add all children for the current childNode
                     List<String> childrenOfChildNode = childrenMapForNeighbours.get(childNode);

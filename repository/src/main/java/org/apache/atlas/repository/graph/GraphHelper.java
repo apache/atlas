@@ -1029,12 +1029,12 @@ public final class GraphHelper {
         return vertex.<String>getProperty(Constants.QUALIFIED_NAME, String.class);
     }
 
-    public static List<String> getNodeDetails(AtlasVertex vertex) {
-        List<String> stringList = new ArrayList<>();
+    public static Map<String,String> getNodeDetails(AtlasVertex vertex) {
+        Map<String,String> stringList = new HashMap<>();
         // Add strings to the list
-        stringList.add(getGuid(vertex));
-        stringList.add(vertex.<String>getProperty(QUALIFIED_NAME, String.class));
-        stringList.add(vertex.<String>getProperty(NAME, String.class));
+        stringList.put(ATTRIBUTE_NAME_GUID, getGuid(vertex));
+        stringList.put(QUALIFIED_NAME, vertex.<String>getProperty(QUALIFIED_NAME, String.class));
+        stringList.put(NAME, vertex.<String>getProperty(NAME, String.class));
         // Return the ArrayList
         return stringList;
     }
