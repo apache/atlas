@@ -1025,18 +1025,20 @@ public final class GraphHelper {
         return ret;
     }
 
-    public static String getQalifiedName(AtlasVertex vertex) {
-        return vertex.<String>getProperty(Constants.QUALIFIED_NAME, String.class);
-    }
+    public static Map<String,String> fetchAttributes(AtlasVertex vertex, List<String> attributes) {
+        Map<String,String> attributesList = new HashMap<>();
 
-    public static Map<String,String> getNodeDetails(AtlasVertex vertex) {
-        Map<String,String> stringList = new HashMap<>();
-        // Add strings to the list
-        stringList.put(ATTRIBUTE_NAME_GUID, getGuid(vertex));
-        stringList.put(QUALIFIED_NAME, vertex.<String>getProperty(QUALIFIED_NAME, String.class));
-        stringList.put(NAME, vertex.<String>getProperty(NAME, String.class));
+        for (String attr: attributes){
+            if (Objects.equals(attr, ATTRIBUTE_NAME_GUID)){
+                // always add guid to the list from cache
+                attributesList.put(ATTRIBUTE_NAME_GUID, getGuid(vertex));
+            }
+            else{
+                attributesList.put(attr, vertex.<String>getProperty(attr, String.class));
+            }
+        }
         // Return the ArrayList
-        return stringList;
+        return attributesList;
     }
 
     public static String getHomeId(AtlasElement element) {
