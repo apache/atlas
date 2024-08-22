@@ -397,15 +397,20 @@ public final class GraphHelper {
 
     public static List<AtlasVertex> getAllAssetsWithClassificationVertex(AtlasVertex classificationVertice, int availableSlots) {
         HashSet<AtlasVertex> entityVerticesSet = new HashSet<>();
-        Iterable attachedVertices =  classificationVertice.query()
-                .direction(AtlasEdgeDirection.IN)
-                .label(CLASSIFICATION_LABEL).vertices(availableSlots);
-        if (attachedVertices != null) {
-            Iterator<AtlasVertex> attachedVerticesIterator = attachedVertices.iterator();
-            while (attachedVerticesIterator.hasNext()) {
-                entityVerticesSet.add(attachedVerticesIterator.next());
+        try {
+            Iterable attachedVertices = classificationVertice.query()
+                    .direction(AtlasEdgeDirection.IN)
+                    .label(CLASSIFICATION_LABEL).vertices(availableSlots);
+            if (attachedVertices != null) {
+                Iterator<AtlasVertex> attachedVerticesIterator = attachedVertices.iterator();
+                while (attachedVerticesIterator.hasNext()) {
+                    entityVerticesSet.add(attachedVerticesIterator.next());
+                }
+                LOG.info("entityVerticesSet size: {}", entityVerticesSet.size());
             }
-            LOG.info("entityVerticesSet size: {}", entityVerticesSet.size());
+        }
+        catch (IllegalStateException e){
+            e.printStackTrace();
         }
         return entityVerticesSet.stream().collect(Collectors.toList());
     }
