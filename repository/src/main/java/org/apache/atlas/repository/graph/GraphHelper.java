@@ -1025,6 +1025,22 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static Map<String,String> fetchAttributes(AtlasVertex vertex, List<String> attributes) {
+        Map<String,String> attributesList = new HashMap<>();
+
+        for (String attr: attributes){
+            if (Objects.equals(attr, ATTRIBUTE_NAME_GUID)){
+                // always add guid to the list from cache
+                attributesList.put(ATTRIBUTE_NAME_GUID, getGuid(vertex));
+            }
+            else{
+                attributesList.put(attr, vertex.<String>getProperty(attr, String.class));
+            }
+        }
+        // Return the ArrayList
+        return attributesList;
+    }
+
     public static String getHomeId(AtlasElement element) {
         return element.getProperty(Constants.HOME_ID_KEY, String.class);
     }

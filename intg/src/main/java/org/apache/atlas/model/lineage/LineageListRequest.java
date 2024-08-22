@@ -25,6 +25,15 @@ public class LineageListRequest {
     private Set<String>                     relationAttributes;
     private Boolean                         excludeMeanings;
     private Boolean                         excludeClassifications;
+    private Boolean                         immediateNeighbours=false;
+
+    public Boolean getImmediateNeighbours() {
+        return immediateNeighbours;
+    }
+
+    public void setImmediateNeighbours(Boolean immediateNeighbours) {
+        this.immediateNeighbours = immediateNeighbours;
+    }
 
     public enum LineageDirection {INPUT, OUTPUT}
 
