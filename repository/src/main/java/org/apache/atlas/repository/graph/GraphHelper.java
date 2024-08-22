@@ -395,11 +395,11 @@ public final class GraphHelper {
         return classificationVerticesList;
     }
 
-    public static List<AtlasVertex> getAllAssetsWithClassificationVertex(AtlasGraph graph, AtlasVertex classificationVertice) {
+    public static List<AtlasVertex> getAllAssetsWithClassificationVertex(AtlasVertex classificationVertice, int availableSlots) {
         HashSet<AtlasVertex> entityVerticesSet = new HashSet<>();
         Iterable attachedVertices =  classificationVertice.query()
                 .direction(AtlasEdgeDirection.IN)
-                .label(CLASSIFICATION_LABEL).vertices();
+                .label(CLASSIFICATION_LABEL).vertices(availableSlots);
         if (attachedVertices != null) {
             Iterator<AtlasVertex> attachedVerticesIterator = attachedVertices.iterator();
             while (attachedVerticesIterator.hasNext()) {
@@ -408,6 +408,13 @@ public final class GraphHelper {
             LOG.info("entityVerticesSet size: {}", entityVerticesSet.size());
         }
         return entityVerticesSet.stream().collect(Collectors.toList());
+    }
+
+    public static long getAssetsCountOfClassificationVertex(AtlasVertex classificationVertice) {
+        long count =  classificationVertice.query()
+                .direction(AtlasEdgeDirection.IN)
+                .label(CLASSIFICATION_LABEL).count();
+        return count;
     }
     public static AtlasEdge getClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
         AtlasEdge ret   = null;

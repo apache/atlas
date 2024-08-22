@@ -3039,18 +3039,21 @@ public class EntityGraphMapper {
         List<AtlasVertex> classificationVertices = GraphHelper.getClassificationVertexes(graph, classificationName);
         List<AtlasVertex> assetVertices = new ArrayList<>();
         for(int i = 0 ; i < classificationVertices.size(); i++) {
-            assetVertices = GraphHelper.getAllAssetsWithClassificationVertex(graph, classificationVertices.get(i));
+            long assetCount = GraphHelper.getAssetsCountOfClassificationVertex(classificationVertices.get(i));
             int prevTotalVertexSize = vertices.size();
+            int availableSlots = CLEANUP_BATCH_SIZE - prevTotalVertexSize;
+            assetVertices = GraphHelper.getAllAssetsWithClassificationVertex(classificationVertices.get(i), availableSlots);
             int assetsSize = assetVertices.size();
             LOG.info("Queue size before adding {} asset vertexes to it : {}", assetsSize, prevTotalVertexSize);
-            if(prevTotalVertexSize + assetsSize > CLEANUP_BATCH_SIZE) {
+            if((prevTotalVertexSize + assetsSize > CLEANUP_BATCH_SIZE) || availableSlots < assetCount) {
                 i--;
             }
-
+            // add a check for if assetVertices are already greater than CLEANUP_BATCH_SIZE with queue size = 0
             if(prevTotalVertexSize + assetsSize <= CLEANUP_BATCH_SIZE) {
                 vertices.addAll(assetVertices);
                 assetVertices = new ArrayList<>();
             }
+
             if(prevTotalVertexSize + assetsSize >= CLEANUP_BATCH_SIZE ||
                 (prevTotalVertexSize + assetsSize < CLEANUP_BATCH_SIZE && i == classificationVertices.size() - 1)) {
                 int currentTotalVertexSize = vertices.size();
