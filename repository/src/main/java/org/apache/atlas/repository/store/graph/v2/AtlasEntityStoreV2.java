@@ -1534,11 +1534,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 createQualifiedNameHierarchyField(entity, context.getVertex(entity.getGuid()));
             }
 
-            for (AtlasEntity entity : context.getUpdatedEntities()) {
-                // If qualifiedName update is part of the update, update the qualifiedName hierarchy field
-                AtlasEntity diffEntity = RequestContext.get().getDifferentialEntitiesMap().get(entity.getGuid());
-                if (diffEntity != null && diffEntity.hasAttribute(QUALIFIED_NAME)) {
-                    createQualifiedNameHierarchyField(entity, context.getVertex(entity.getGuid()));
+            for (Map.Entry<String, AtlasEntity> entry : RequestContext.get().getDifferentialEntitiesMap().entrySet()) {
+                if (entry.getValue().hasAttribute(QUALIFIED_NAME)) {
+                    createQualifiedNameHierarchyField(entry.getValue(), context.getVertex(entry.getKey()));
                 }
             }
 
@@ -1818,6 +1816,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private void createQualifiedNameHierarchyField(AtlasEntity entity, AtlasVertex vertex) {
         MetricRecorder metric = RequestContext.get().startMetricRecord("createQualifiedNameHierarchyField");
+        boolean isDataMeshType = entity.getTypeName().equals(DATA_PRODUCT_ENTITY_TYPE) || entity.getTypeName().equals(DATA_DOMAIN_ENTITY_TYPE);
+        int qualifiedNameOffset = isDataMeshType ? 2 : 1;
         try {
             if (vertex == null) {
                 vertex = AtlasGraphUtilsV2.findByGuid(graph, entity.getGuid());
@@ -1838,7 +1838,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                             currentPath.append(part);
                             // i>1 reason: we don't want to add the first part of the qualifiedName as it is the entity name
                             // Example qualifiedName : default/snowflake/123/db_name we only want `default/snowflake/123` and `default/snowflake/123/db_name`
-                            if (i > 1) {
+                            if (i > qualifiedNameOffset) {
+                                if (isDataMeshType && (part.equals("domain") || part.equals("product"))) {
+                                    continue;
+                                }
                                 AtlasGraphUtilsV2.addEncodedProperty(vertex, QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, currentPath.toString());
                             }
                         }
