@@ -585,16 +585,18 @@ public class EntityLineageService implements AtlasLineageService {
                             Set<String> seenGuids = new HashSet<>();
                             List<Map<String,String>> parentNodesOfParentWithDetails = new ArrayList<>();
                             for (String parentNode : parentNodes) {
-                                List<String> parentsOfParentNodes = lineageParentsForEntityMap.get(parentNode);
-                                if (parentsOfParentNodes != null){
-                                    for (String parentOfParent : parentsOfParentNodes) {
-                                        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(this.graph, parentOfParent);
-                                        if (vertex != null) {
-                                            Map<String, String> details = fetchAttributes(vertex, FETCH_ENTITY_ATTRIBUTES);
-                                            // Check if the guid is already in the set
-                                            if (!seenGuids.contains(parentOfParent)) {
-                                                parentNodesOfParentWithDetails.add(details);
-                                                seenGuids.add(parentOfParent); // Add the guid to the set
+                                if(lineageParentsForEntityMap.containsKey(parentNode)){
+                                    List<String> parentsOfParentNodes = lineageParentsForEntityMap.get(parentNode);
+                                    if (parentsOfParentNodes != null){
+                                        for (String parentOfParent : parentsOfParentNodes) {
+                                            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(this.graph, parentOfParent);
+                                            if (vertex != null) {
+                                                Map<String, String> details = fetchAttributes(vertex, FETCH_ENTITY_ATTRIBUTES);
+                                                // Check if the guid is already in the set
+                                                if (!seenGuids.contains(parentOfParent)) {
+                                                    parentNodesOfParentWithDetails.add(details);
+                                                    seenGuids.add(parentOfParent); // Add the guid to the set
+                                                }
                                             }
                                         }
                                     }
@@ -617,16 +619,18 @@ public class EntityLineageService implements AtlasLineageService {
                             Set<String> seenGuids = new HashSet<>();
                             List<Map<String,String>> childrenNodesOfChildrenWithDetails = new ArrayList<>();
                             for (String childNode : childrenNodes) {
-                                // Add all children for the current childNode
-                                List<String> childrenOfChildNode = lineageChildrenForEntityMap.get(childNode);
-                                if (childrenOfChildNode != null){
-                                    for (String childOfChild : childrenOfChildNode) {
-                                        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(this.graph, childOfChild);
-                                        if (vertex != null) {
-                                            Map<String, String> details = fetchAttributes(vertex, FETCH_ENTITY_ATTRIBUTES);
-                                            if (!seenGuids.contains(childOfChild)) {
-                                                childrenNodesOfChildrenWithDetails.add(details);
-                                                seenGuids.add(childOfChild); // Add the guid to the set
+                                if(lineageChildrenForEntityMap.containsKey(childNode)){
+                                    // Add all children for the current childNode
+                                    List<String> childrenOfChildNode = lineageChildrenForEntityMap.get(childNode);
+                                    if (childrenOfChildNode != null){
+                                        for (String childOfChild : childrenOfChildNode) {
+                                            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(this.graph, childOfChild);
+                                            if (vertex != null) {
+                                                Map<String, String> details = fetchAttributes(vertex, FETCH_ENTITY_ATTRIBUTES);
+                                                if (!seenGuids.contains(childOfChild)) {
+                                                    childrenNodesOfChildrenWithDetails.add(details);
+                                                    seenGuids.add(childOfChild); // Add the guid to the set
+                                                }
                                             }
                                         }
                                     }
