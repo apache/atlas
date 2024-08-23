@@ -591,9 +591,9 @@ public class EntityLineageService implements AtlasLineageService {
                                         for (String parentOfParent : parentsOfParentNodes) {
                                             AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(this.graph, parentOfParent);
                                             if (vertex != null) {
-                                                Map<String, String> details = fetchAttributes(vertex, FETCH_ENTITY_ATTRIBUTES);
                                                 // Check if the guid is already in the set
                                                 if (!seenGuids.contains(parentOfParent)) {
+                                                    Map<String, String> details = fetchAttributes(vertex, FETCH_ENTITY_ATTRIBUTES);
                                                     parentNodesOfParentWithDetails.add(details);
                                                     seenGuids.add(parentOfParent); // Add the guid to the set
                                                 }
@@ -626,8 +626,8 @@ public class EntityLineageService implements AtlasLineageService {
                                         for (String childOfChild : childrenOfChildNode) {
                                             AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(this.graph, childOfChild);
                                             if (vertex != null) {
-                                                Map<String, String> details = fetchAttributes(vertex, FETCH_ENTITY_ATTRIBUTES);
                                                 if (!seenGuids.contains(childOfChild)) {
+                                                    Map<String, String> details = fetchAttributes(vertex, FETCH_ENTITY_ATTRIBUTES);
                                                     childrenNodesOfChildrenWithDetails.add(details);
                                                     seenGuids.add(childOfChild); // Add the guid to the set
                                                 }
