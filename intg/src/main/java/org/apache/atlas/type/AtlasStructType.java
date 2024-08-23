@@ -421,6 +421,9 @@ public class AtlasStructType extends AtlasType {
                                 AtlasEntity entityObj = (AtlasEntity) structObj;
 
                                 if (entityObj.getRelationshipAttribute(attrName) == null) {
+                                    if (entityObj.getIsIncomplete() != null && entityObj.getIsIncomplete()) { // In case of import shell entities, avoid checking of mandatory attributes
+                                        continue;
+                                    }
                                     ret = false;
                                     messages.add(fieldName + ": mandatory attribute value missing in type " + getTypeName());
                                 }

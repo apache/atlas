@@ -1190,6 +1190,9 @@ public class AtlasEntityType extends AtlasStructType {
                             }
 
                             if (value == null) {
+                                if (entityObj.getIsIncomplete() != null && entityObj.getIsIncomplete()) {// In case of import shell entities, avoid checking of mandatory attributes
+                                    continue;
+                                }
                                 ret = false;
                                 messages.add(objName + "." + attributeName + ": mandatory attribute value missing in type " + getTypeName());
                             }
