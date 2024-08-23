@@ -3091,7 +3091,12 @@ public class EntityGraphMapper {
         }
         // Fetch all classificationVertex by classificationName and delete them if remaining
         for (AtlasVertex classificationVertex : classificationVertices) {
-            deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+            try {
+                deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+            }
+            catch (IllegalStateException e){
+                e.printStackTrace();
+            }
         }
         transactionInterceptHelper.intercept();
         LOG.info("Completed cleaning up classification {}", classificationName);
