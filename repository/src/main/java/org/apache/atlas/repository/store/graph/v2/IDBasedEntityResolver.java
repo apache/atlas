@@ -38,10 +38,16 @@ public class IDBasedEntityResolver implements EntityResolver {
 
     private final AtlasGraph        graph;
     private final AtlasTypeRegistry typeRegistry;
+    private final EntityGraphMapper entityGraphMapper;
 
     public IDBasedEntityResolver(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
+        this(graph, typeRegistry, null);
+    }
+
+    public IDBasedEntityResolver(AtlasGraph graph, AtlasTypeRegistry typeRegistry, EntityGraphMapper entityGraphMapper) {
         this.graph             = graph;
         this.typeRegistry      = typeRegistry;
+        this.entityGraphMapper = entityGraphMapper;
     }
 
     public EntityGraphDiscoveryContext resolveEntityReferences(EntityGraphDiscoveryContext context) throws AtlasBaseException {
@@ -55,19 +61,25 @@ public class IDBasedEntityResolver implements EntityResolver {
             boolean isAssignedGuid = AtlasTypeUtil.isAssignedGuid(guid);
             AtlasVertex vertex = isAssignedGuid ? AtlasGraphUtilsV2.findByGuid(this.graph, guid) : null;
 
-            if (vertex == null && !RequestContext.get().isImportInProgress()) { // if not found in the store, look if the entity is present in the stream
+            if (vertex == null) { // if not found in the store, look if the entity is present in the stream
                 AtlasEntity entity = entityStream.getByGuid(guid);
+                if (!RequestContext.get().isImportInProgress()) {
 
-                if (entity != null) { // look for the entity in the store using unique-attributes
-                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+                    if (entity != null) { // look for the entity in the store using unique-attributes
+                        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 
-                    if (entityType == null) {
-                        throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
+                        if (entityType == null) {
+                            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
+                        }
+
+                        vertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, entity.getAttributes());
+                    } else if (!isAssignedGuid) { // for local-guids, entity must be in the stream
+                        throw new AtlasBaseException(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid);
                     }
-
-                    vertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, entity.getAttributes());
-                } else if (!isAssignedGuid) { // for local-guids, entity must be in the stream
-                    throw new AtlasBaseException(AtlasErrorCode.REFERENCED_ENTITY_NOT_FOUND, guid);
+                } else if (entity != null && entity.getIsIncomplete() != null && entity.getIsIncomplete()) {
+                    if (entityGraphMapper != null) {
+                        vertex = entityGraphMapper.createShellEntityVertex(entity, context);
+                    }
                 }
             }
 

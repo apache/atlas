@@ -192,7 +192,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
     protected void resolveReferences() throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("resolveReferences");
 
-        EntityResolver[] entityResolvers = new EntityResolver[] { new IDBasedEntityResolver(this.graph, typeRegistry),
+        EntityResolver[] entityResolvers = new EntityResolver[] { new IDBasedEntityResolver(this.graph, typeRegistry, entityGraphMapper),
                                                                   new UniqAttrBasedEntityResolver(this.graph, typeRegistry, entityGraphMapper)
                                                                 };
 

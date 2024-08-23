@@ -194,7 +194,10 @@ public class EntityGraphMapper {
             LOG.debug("==> createShellEntityVertex({})", objectId.getTypeName());
         }
 
-        final String    guid       = UUID.randomUUID().toString();
+        String guid = objectId.getGuid();
+        if (!AtlasTypeUtil.isAssignedGuid(guid)) {
+            guid = UUID.randomUUID().toString();
+        }
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(objectId.getTypeName());
         AtlasVertex     ret        = createStructVertex(objectId);
 
@@ -223,6 +226,11 @@ public class EntityGraphMapper {
         GraphTransactionInterceptor.addToVertexCache(guid, ret);
 
         return ret;
+    }
+
+    public AtlasVertex createShellEntityVertex(AtlasEntity entity, EntityGraphDiscoveryContext context) throws AtlasBaseException {
+        AtlasObjectId objectId = new AtlasObjectId(entity.getGuid(), entity.getTypeName(), entity.getAttributes());
+        return createShellEntityVertex(objectId, context);
     }
 
     public AtlasVertex createVertexWithGuid(AtlasEntity entity, String guid) throws AtlasBaseException {

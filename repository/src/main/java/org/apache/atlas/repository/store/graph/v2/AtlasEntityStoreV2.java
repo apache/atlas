@@ -1254,6 +1254,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                         // change entity 'isInComplete' to 'false' during full update
                         if (isEntityIncomplete(vertex)) {
+                            if (RequestContext.get().isImportInProgress() && (entity.getIsIncomplete() != null && entity.getIsIncomplete())) {
+                                continue;
+                            }
+
                             vertex.removeProperty(IS_INCOMPLETE_PROPERTY_KEY);
 
                             entity.setIsIncomplete(FALSE);
@@ -1269,8 +1273,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                         requestContext.recordEntityGuidUpdate(entity, guid);
                     }
-
-                    context.addUpdated(guid, entity, entityType, vertex);
+                    if (!isEntityIncomplete(vertex)) { // In case of an import shell entities, skip updating to entitiesCreated, to avoid mapAttributesAndClassification // In case of hook shell entities, it will not reach to this case
+                        context.addUpdated(guid, entity, entityType, vertex);
+                    }
                 } else {
                     graphDiscoverer.validateAndNormalize(entity);
 
@@ -1291,7 +1296,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                     requestContext.recordEntityGuidUpdate(entity, guid);
 
-                    context.addCreated(guid, entity, entityType, vertex);
+                    if (!isEntityIncomplete(vertex)) { // In case of an import shell entities, skip adding to entitiesUpdated, to avoid mapAttributesAndClassification // In case of hook shell entities, it will not reach to this case
+                        context.addCreated(guid, entity, entityType, vertex);
+                    }
                 }
 
                 // during import, update the system attributes
