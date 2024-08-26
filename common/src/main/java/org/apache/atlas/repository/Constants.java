@@ -269,6 +269,7 @@ public final class Constants {
     public static final String INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH  = "atlas.graph.index.search.tags.max-query-str-length";
     public static final String INDEX_SEARCH_VERTEX_PREFIX_PROPERTY     = "atlas.graph.index.search.vertex.prefix";
     public static final String INDEX_SEARCH_VERTEX_PREFIX_DEFAULT      = "$v$";
+    public static final String DOMAIN_GUIDS                            = "domainGUIDs";
 
     public static final String ATTR_TENANT_ID = "tenantId";
     public static final String DEFAULT_TENANT_ID = "default";

@@ -53,6 +53,7 @@ import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.AssetPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.ConnectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
@@ -1552,25 +1553,25 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private void executePreProcessor(EntityMutationContext context) throws AtlasBaseException {
         AtlasEntityType entityType;
-        PreProcessor preProcessor;
+        List<PreProcessor> preProcessors;
 
         List<AtlasEntity> copyOfCreated = new ArrayList<>(context.getCreatedEntities());
         for (AtlasEntity entity : copyOfCreated) {
             entityType = context.getType(entity.getGuid());
-            preProcessor = getPreProcessor(entityType.getTypeName());
-
-            if (preProcessor != null) {
-                preProcessor.processAttributes(entity, context, CREATE);
+            preProcessors = getPreProcessor(entityType.getTypeName());
+            for(PreProcessor processor : preProcessors){
+                processor.processAttributes(entity, context, CREATE);
             }
+
+
         }
 
         List<AtlasEntity> copyOfUpdated = new ArrayList<>(context.getUpdatedEntities());
         for (AtlasEntity entity: copyOfUpdated) {
             entityType = context.getType(entity.getGuid());
-            preProcessor = getPreProcessor(entityType.getTypeName());
-
-            if (preProcessor != null) {
-                preProcessor.processAttributes(entity, context, UPDATE);
+            preProcessors = getPreProcessor(entityType.getTypeName());
+            for(PreProcessor processor : preProcessors){
+                processor.processAttributes(entity, context, UPDATE);
             }
         }
     }
@@ -1802,80 +1803,83 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return starredDetails;
     }
 
-    public PreProcessor getPreProcessor(String typeName) {
-        PreProcessor preProcessor = null;
+    public List<PreProcessor> getPreProcessor(String typeName) {
+        LinkedList<PreProcessor> preProcessors = new LinkedList<>();
 
         switch (typeName) {
             case ATLAS_GLOSSARY_ENTITY_TYPE:
-                preProcessor = new GlossaryPreProcessor(typeRegistry, entityRetriever);
+                preProcessors.addFirst(new GlossaryPreProcessor(typeRegistry, entityRetriever));
                 break;
 
             case ATLAS_GLOSSARY_TERM_ENTITY_TYPE:
-                preProcessor = new TermPreProcessor(typeRegistry, entityRetriever, graph, taskManagement);
+                preProcessors.addFirst(new TermPreProcessor(typeRegistry, entityRetriever, graph, taskManagement));
                 break;
 
             case ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE:
-                preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever, graph, taskManagement, entityGraphMapper);
+                preProcessors.addFirst(new CategoryPreProcessor(typeRegistry, entityRetriever, graph, taskManagement, entityGraphMapper));
                 break;
 
             case DATA_DOMAIN_ENTITY_TYPE:
-                preProcessor = new DataDomainPreProcessor(typeRegistry, entityRetriever, graph);
+                preProcessors.addFirst(new DataDomainPreProcessor(typeRegistry, entityRetriever, graph));
                 break;
 
             case DATA_PRODUCT_ENTITY_TYPE:
-                preProcessor = new DataProductPreProcessor(typeRegistry, entityRetriever, graph, this);
+                preProcessors.addFirst(new DataProductPreProcessor(typeRegistry, entityRetriever, graph, this));
                 break;
 
             case QUERY_ENTITY_TYPE:
-                preProcessor = new QueryPreProcessor(typeRegistry, entityRetriever);
+                preProcessors.addFirst(new QueryPreProcessor(typeRegistry, entityRetriever));
                 break;
 
             case QUERY_FOLDER_ENTITY_TYPE:
-                preProcessor = new QueryFolderPreProcessor(typeRegistry, entityRetriever);
+                preProcessors.addFirst(new QueryFolderPreProcessor(typeRegistry, entityRetriever));
                 break;
 
             case QUERY_COLLECTION_ENTITY_TYPE:
-                preProcessor = new QueryCollectionPreProcessor(typeRegistry, discovery, entityRetriever, featureFlagStore, this);
+                preProcessors.addFirst(new QueryCollectionPreProcessor(typeRegistry, discovery, entityRetriever, featureFlagStore, this));
                 break;
 
             case PERSONA_ENTITY_TYPE:
-                preProcessor = new PersonaPreProcessor(graph, typeRegistry, entityRetriever, this);
+                preProcessors.addFirst(new PersonaPreProcessor(graph, typeRegistry, entityRetriever, this));
                 break;
 
             case PURPOSE_ENTITY_TYPE:
-                preProcessor = new PurposePreProcessor(graph, typeRegistry, entityRetriever, this);
+                preProcessors.addFirst(new PurposePreProcessor(graph, typeRegistry, entityRetriever, this));
                 break;
 
             case POLICY_ENTITY_TYPE:
-                preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever);
+                preProcessors.addFirst(new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever));
                 break;
 
             case STAKEHOLDER_ENTITY_TYPE:
-                preProcessor = new StakeholderPreProcessor(graph, typeRegistry, entityRetriever, this);
+                preProcessors.addFirst(new StakeholderPreProcessor(graph, typeRegistry, entityRetriever, this));
                 break;
 
             case CONNECTION_ENTITY_TYPE:
-                preProcessor = new ConnectionPreProcessor(graph, discovery, entityRetriever, featureFlagStore, deleteDelegate, this);
+                preProcessors.addFirst(new ConnectionPreProcessor(graph, discovery, entityRetriever, featureFlagStore, deleteDelegate, this));
                 break;
 
             case LINK_ENTITY_TYPE:
-                preProcessor = new LinkPreProcessor(typeRegistry, entityRetriever);
+                preProcessors.addFirst(new LinkPreProcessor(typeRegistry, entityRetriever));
                 break;
 
             case README_ENTITY_TYPE:
-                preProcessor = new ReadmePreProcessor(typeRegistry, entityRetriever);
+                preProcessors.addFirst(new ReadmePreProcessor(typeRegistry, entityRetriever));
                 break;
 
             case CONTRACT_ENTITY_TYPE:
-                preProcessor = new ContractPreProcessor(graph, typeRegistry, entityRetriever, storeDifferentialAudits, discovery);
+                preProcessors.addFirst(new ContractPreProcessor(graph, typeRegistry, entityRetriever, storeDifferentialAudits, discovery));
                 break;
 
             case STAKEHOLDER_TITLE_ENTITY_TYPE:
-                preProcessor = new StakeholderTitlePreProcessor(graph, typeRegistry, entityRetriever);
+                preProcessors.addFirst(new StakeholderTitlePreProcessor(graph, typeRegistry, entityRetriever));
                 break;
         }
 
-        return preProcessor;
+        //  The default global pre-processor for all AssetTypes
+        preProcessors.addLast(new AssetPreProcessor(typeRegistry, entityRetriever));
+
+        return preProcessors;
     }
 
     private AtlasVertex getResolvedEntityVertex(EntityGraphDiscoveryContext context, AtlasEntity entity) throws AtlasBaseException {
@@ -1921,9 +1925,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             for (AtlasVertex vertex : deletionCandidates) {
                 String typeName = getTypeName(vertex);
 
-                PreProcessor preProcessor = getPreProcessor(typeName);
-                if (preProcessor != null) {
-                    preProcessor.processDelete(vertex);
+                List<PreProcessor> preProcessors = getPreProcessor(typeName);
+                for(PreProcessor processor : preProcessors){
+                    processor.processDelete(vertex);
                 }
 
                 if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.equals(typeName)) {
