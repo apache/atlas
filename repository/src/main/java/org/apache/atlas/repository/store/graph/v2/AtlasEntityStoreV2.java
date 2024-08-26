@@ -1529,6 +1529,18 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             executePreProcessor(context);
 
+            // Updating hierarchy after preprocessor is executed so that qualifiedName update during preprocessor is considered
+            for (AtlasEntity entity : context.getCreatedEntities()) {
+                createQualifiedNameHierarchyField(entity, context.getVertex(entity.getGuid()));
+            }
+
+            for (Map.Entry<String, AtlasEntity> entry : RequestContext.get().getDifferentialEntitiesMap().entrySet()) {
+                if (entry.getValue().hasAttribute(QUALIFIED_NAME)) {
+                    createQualifiedNameHierarchyField(entry.getValue(), context.getVertex(entry.getKey()));
+                }
+            }
+
+
             EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate,
                     replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttribute);
 
@@ -1801,6 +1813,46 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         starredDetails.setAttribute(ATTR_ASSET_STARRED_AT, assetStarredAt);
         return starredDetails;
     }
+
+    private void createQualifiedNameHierarchyField(AtlasEntity entity, AtlasVertex vertex) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("createQualifiedNameHierarchyField");
+        boolean isDataMeshType = entity.getTypeName().equals(DATA_PRODUCT_ENTITY_TYPE) || entity.getTypeName().equals(DATA_DOMAIN_ENTITY_TYPE);
+        int qualifiedNameOffset = isDataMeshType ? 2 : 1;
+        try {
+            if (vertex == null) {
+                vertex = AtlasGraphUtilsV2.findByGuid(graph, entity.getGuid());
+            }
+            if (entity.hasAttribute(QUALIFIED_NAME)) {
+                String qualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
+                if (StringUtils.isNotEmpty(qualifiedName)) {
+                    vertex.removeProperty(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY);
+                    String[] parts = qualifiedName.split("/");
+                    StringBuilder currentPath = new StringBuilder();
+
+                    for (int i = 0; i < parts.length; i++) {
+                        String part = parts[i];
+                        if (StringUtils.isNotEmpty(part)) {
+                            if (i > 0) {
+                                currentPath.append("/");
+                            }
+                            currentPath.append(part);
+                            // i>1 reason: we don't want to add the first part of the qualifiedName as it is the entity name
+                            // Example qualifiedName : default/snowflake/123/db_name we only want `default/snowflake/123` and `default/snowflake/123/db_name`
+                            if (i > qualifiedNameOffset) {
+                                if (isDataMeshType && (part.equals("domain") || part.equals("product"))) {
+                                    continue;
+                                }
+                                AtlasGraphUtilsV2.addEncodedProperty(vertex, QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, currentPath.toString());
+                            }
+                        }
+                    }
+                }
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
 
     public PreProcessor getPreProcessor(String typeName) {
         PreProcessor preProcessor = null;
