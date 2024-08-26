@@ -114,6 +114,7 @@ public final class AccessControlUtils {
     public static final String CONN_NAME_PATTERN = "connection_admins_%s";
     public static final String ARGO_SERVICE_USER_NAME = "service-account-atlan-argo";
     public static final String BACKEND_SERVICE_USER_NAME = "service-account-atlan-backend";
+    public static final String GOVERNANCE_WORKFLOWS_SERVICE_USER_NAME = "atlan-governance-workflows";
 
     public static final String INSTANCE_DOMAIN_KEY = "instance";
 

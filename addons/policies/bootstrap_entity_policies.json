@@ -2120,7 +2120,8 @@
                 [
                     "admin",
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2185,7 +2186,8 @@
                 [
                     "admin",
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2221,7 +2223,8 @@
                 [
                     "admin",
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2441,7 +2444,8 @@
                 "policyUsers":
                 [
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2551,7 +2555,8 @@
                 "policyUsers":
                 [
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2587,7 +2592,8 @@
                 "policyUsers":
                 [
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2622,7 +2628,8 @@
                 "policyUsers":
                 [
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
@@ -2657,7 +2664,8 @@
                 "policyUsers":
                 [
                     "service-account-atlan-argo",
-                    "service-account-atlan-backend"
+                    "service-account-atlan-backend",
+                    "atlan-governance-workflows"
                 ],
                 "policyGroups":
                 [],
