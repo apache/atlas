@@ -90,7 +90,7 @@ public class AssetPreProcessor implements PreProcessor {
 
         if(CollectionUtils.isNotEmpty(domainGuids)) {
             for(String domainGuid : domainGuids) {
-                AtlasVertex domainVertex = context.getVertex(domainGuid);
+                AtlasVertex domainVertex = entityRetriever.getEntityVertex(domainGuid);
                   if(domainVertex == null) {
                         throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, domainGuid);
                   }
