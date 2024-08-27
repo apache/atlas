@@ -105,10 +105,10 @@ public class AssetPreProcessor implements PreProcessor {
 
         // source -> CREATE + UPDATE + READ
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceEntity),
-                "update not allowed on source Entity: ", sourceEntity.getAttribute(NAME));
+                "update on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, sourceEntity),
-                "read not allowed on source Entity: ", sourceEntity.getAttribute(NAME));
+                "read on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
 
     }
 
