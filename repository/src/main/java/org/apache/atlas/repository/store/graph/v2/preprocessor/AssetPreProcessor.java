@@ -104,9 +104,6 @@ public class AssetPreProcessor implements PreProcessor {
     private void isAuthorized(AtlasEntityHeader sourceEntity) throws AtlasBaseException {
 
         // source -> CREATE + UPDATE + READ
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, sourceEntity),
-                "create not allowed on source Entity: ", sourceEntity.getAttribute(NAME));
-
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceEntity),
                 "update not allowed on source Entity: ", sourceEntity.getAttribute(NAME));
 
