@@ -377,14 +377,6 @@ public final class GraphHelper {
         return ret;
     }
 
-//    public static List<AtlasVertex> getAllClassificationVerticesByClassificationName(AtlasGraph graph, String classificationName) {
-//        Iterable vertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
-//        if (vertices == null) {
-//            return Collections.emptyList();
-//        }
-//        return IteratorUtils.toList(vertices.iterator());
-//    }
-
     public static List<AtlasVertex> getClassificationVertexes(AtlasGraph graph, String classificationName) {
         Iterable classificationVertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
         if (classificationVertices == null) {

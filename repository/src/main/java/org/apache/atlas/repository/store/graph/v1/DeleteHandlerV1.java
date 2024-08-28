@@ -428,7 +428,7 @@ public abstract class DeleteHandlerV1 {
 
         if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
             for (AtlasVertex classificationVertex : classificationVertices) {
-                createAndQueueTask(CLASSIFICATION_PROPAGATION_ADD, toVertex, classificationVertex.getIdForDisplay(), relationshipGuid);
+                createAndQueueTask(CLASSIFICATION_PROPAGATION_ADD, toVertex, classificationVertex.getIdForDisplay(), getTypeName(classificationVertex), relationshipGuid);
             }
         } else {
             final List<AtlasVertex> propagatedEntityVertices = CollectionUtils.isNotEmpty(classificationVertices) ? entityRetriever.getIncludedImpactedVerticesV2(toVertex, relationshipGuid) : null;
@@ -1119,7 +1119,7 @@ public abstract class DeleteHandlerV1 {
 
             if (isClassificationEdge && removePropagations) {
                 if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
-                    createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, instanceVertex, classificationVertex.getIdForDisplay(), null);
+                    createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, instanceVertex, classificationVertex.getIdForDisplay(),getTypeName(classificationVertex) , null);
                 } else {
                     removeTagPropagation(classificationVertex);
                 }
@@ -1292,31 +1292,31 @@ public abstract class DeleteHandlerV1 {
             }
         }
     }
-    public void createAndQueueTaskWithoutCheck(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid) throws AtlasBaseException {
+    public void createAndQueueTaskWithoutCheck(String taskType, AtlasVertex entityVertex, String classificationVertexId, String classificationName, String relationshipGuid) throws AtlasBaseException {
         String              currentUser = RequestContext.getCurrentUser();
         String              entityGuid  = GraphHelper.getGuid(entityVertex);
         Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid);
-        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams, classificationVertexId, entityGuid);
+        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams, classificationVertexId, classificationName, entityGuid);
 
         AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
 
         RequestContext.get().queueTask(task);
     }
 
-    public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid) throws AtlasBaseException {
+    public void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String classificationName, String relationshipGuid) throws AtlasBaseException {
         if (!CLASSIFICATION_PROPAGATION_DELETE.equals(taskType) && skipClassificationTaskCreation(classificationVertexId)) {
             LOG.info("Task is already scheduled for classification id {}, no need to schedule task for vertex {}", classificationVertexId, entityVertex.getIdForDisplay());
             return;
         }
 
-        createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, relationshipGuid);
+        createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, classificationName, relationshipGuid);
     }
 
-    public void createAndQueueTaskWithoutCheck(String taskType, AtlasVertex entityVertex, String classificationVertexId, String relationshipGuid, Boolean currentRestrictPropagationThroughLineage,Boolean currentRestrictPropogationThroughHierarchy) throws AtlasBaseException {
+    public void createAndQueueTaskWithoutCheck(String taskType, AtlasVertex entityVertex, String classificationVertexId,String classificationName, String relationshipGuid, Boolean currentRestrictPropagationThroughLineage,Boolean currentRestrictPropogationThroughHierarchy) throws AtlasBaseException {
         String              currentUser = RequestContext.getCurrentUser();
         String              entityGuid  = GraphHelper.getGuid(entityVertex);
         Map<String, Object> taskParams  = ClassificationTask.toParameters(entityGuid, classificationVertexId, relationshipGuid, currentRestrictPropagationThroughLineage,currentRestrictPropogationThroughHierarchy);
-        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams, classificationVertexId, entityGuid);
+        AtlasTask           task        = taskManagement.createTask(taskType, currentUser, taskParams, classificationVertexId, classificationName, entityGuid);
 
         AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
 
@@ -1360,6 +1360,7 @@ public abstract class DeleteHandlerV1 {
         List<AtlasVertex> currentClassificationVertices = GraphHelper.getPropagatableClassifications(edge);
         for (AtlasVertex currentClassificationVertex : currentClassificationVertices) {
             String currentClassificationId = currentClassificationVertex.getIdForDisplay();
+            String classificationName      = getTypeName(currentClassificationVertex);
             boolean removePropagationOnEntityDelete = GraphHelper.getRemovePropagations(currentClassificationVertex);
 
             if (!(isTermEntityEdge || removePropagationOnEntityDelete)) {
@@ -1373,7 +1374,7 @@ public abstract class DeleteHandlerV1 {
             }
 
             Map<String, Object> taskParams = ClassificationTask.toParameters(currentClassificationVertex.getIdForDisplay());
-            AtlasTask task  =  taskManagement.createTask(CLASSIFICATION_REFRESH_PROPAGATION, currentUser, taskParams, currentClassificationId, GraphHelper.getGuid(referenceVertex));
+            AtlasTask task  =  taskManagement.createTask(CLASSIFICATION_REFRESH_PROPAGATION, currentUser, taskParams, currentClassificationId, classificationName,GraphHelper.getGuid(referenceVertex));
 
             RequestContext.get().queueTask(task);
         }

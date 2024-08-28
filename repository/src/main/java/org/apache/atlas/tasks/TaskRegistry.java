@@ -428,6 +428,14 @@ public class TaskRegistry {
         return ret;
     }
 
+    public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters, String classificationId,String classificationName, String entityGuid) {
+        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, entityGuid);
+        ret.setClassificationName(classificationName);
+        createVertex(ret);
+
+        return ret;
+    }
+
     private void deleteVertex(AtlasVertex taskVertex) {
         if (taskVertex == null) {
             return;
