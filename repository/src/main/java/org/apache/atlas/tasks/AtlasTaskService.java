@@ -233,6 +233,11 @@ public class AtlasTaskService implements TaskService {
         setEncodedProperty(ret, Constants.TASK_CREATED_BY, task.getCreatedBy());
         setEncodedProperty(ret, Constants.TASK_CREATED_TIME, task.getCreatedTime());
         setEncodedProperty(ret, Constants.TASK_UPDATED_TIME, task.getUpdatedTime());
+
+        if (task.getClassificationName() != null) {
+            setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_NAME, task.getClassificationName());
+        }
+
         if (task.getClassificationId() != null) {
             setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_ID, task.getClassificationId());
         }
