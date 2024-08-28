@@ -1,6 +1,9 @@
 package org.apache.atlas.web.rest;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
@@ -9,6 +12,7 @@ import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
+import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.searchlog.SearchLoggingManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -28,10 +32,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+
+import static org.apache.commons.collections.MapUtils.getMap;
 
 @Path("model")
 @Singleton
@@ -144,5 +147,79 @@ public class ModelREST {
             AtlasPerfTracer.log(perf);
         }
     }
+
+//    private void addBusinessFiltersToSearchQuery(final String namespace, final Date businessDate, SearchParams searchParams){
+//        try {
+//            AtlasPerfMetrics.MetricRecorder addBusinessFiltersToSearchQueryMetric = RequestContext.get().startMetricRecord("addPreFiltersToSearchQuery");
+//            ObjectMapper mapper = new ObjectMapper();
+//            List<Map<String, Object>> mustClauseList = new ArrayList<>();
+//            Map<String, Object> allPreFiltersBoolClause = NewAuthorizerUtils.getPreFilterDsl(persona, purpose, actions);
+//            mustClauseList.add(allPreFiltersBoolClause);
+//
+//            mustClauseList.add((Map<String, Object>) ((IndexSearchParams) searchParams).getDsl().get("query"));
+//
+//            String dslString = searchParams.getQuery();
+//            JsonNode node = mapper.readTree(dslString);
+//            /*JsonNode userQueryNode = node.get("query");
+//            if (userQueryNode != null) {
+//
+//                String userQueryString = userQueryNode.toString();
+//
+//                String userQueryBase64 = Base64.getEncoder().encodeToString(userQueryString.getBytes());
+//                mustClauseList.add(getMap("wrapper", getMap("query", userQueryBase64)));
+//            }*/
+//
+//            JsonNode updateQueryNode = mapper.valueToTree(getMap("bool", getMap("must", mustClauseList)));
+//
+//            ((ObjectNode) node).set("query", updateQueryNode);
+//            searchParams.setQuery(node.toString());
+//
+//
+//            RequestContext.get().endMetricRecord(addBusinessFiltersToSearchQueryMetric);
+//
+//        }catch (Exception e){
+//            LOG.error("Error -> addBusinessFiltersToSearchQuery!", e);
+//        }
+//    }
+
+//    private void addPreFiltersToSearchQuery(SearchParams searchParams) {
+//        try {
+//            String persona = ((IndexSearchParams) searchParams).getPersona();
+//            String purpose = ((IndexSearchParams) searchParams).getPurpose();
+//
+//            AtlasPerfMetrics.MetricRecorder addPreFiltersToSearchQueryMetric = RequestContext.get().startMetricRecord("addPreFiltersToSearchQuery");
+//            ObjectMapper mapper = new ObjectMapper();
+//            List<Map<String, Object>> mustClauseList = new ArrayList<>();
+//
+//            List<String> actions = new ArrayList<>();
+//            actions.add("entity-read");
+//
+//            Map<String, Object> allPreFiltersBoolClause = NewAuthorizerUtils.getPreFilterDsl(persona, purpose, actions);
+//            mustClauseList.add(allPreFiltersBoolClause);
+//
+//            mustClauseList.add((Map<String, Object>) ((IndexSearchParams) searchParams).getDsl().get("query"));
+//
+//            String dslString = searchParams.getQuery();
+//            JsonNode node = mapper.readTree(dslString);
+//            /*JsonNode userQueryNode = node.get("query");
+//            if (userQueryNode != null) {
+//
+//                String userQueryString = userQueryNode.toString();
+//
+//                String userQueryBase64 = Base64.getEncoder().encodeToString(userQueryString.getBytes());
+//                mustClauseList.add(getMap("wrapper", getMap("query", userQueryBase64)));
+//            }*/
+//
+//            JsonNode updateQueryNode = mapper.valueToTree(getMap("bool", getMap("must", mustClauseList)));
+//
+//            ((ObjectNode) node).set("query", updateQueryNode);
+//            searchParams.setQuery(node.toString());
+//
+//            RequestContext.get().endMetricRecord(addPreFiltersToSearchQueryMetric);
+//
+//        } catch (Exception e) {
+//            LOG.error("Error -> addPreFiltersToSearchQuery!", e);
+//        }
+//    }
 
 }
