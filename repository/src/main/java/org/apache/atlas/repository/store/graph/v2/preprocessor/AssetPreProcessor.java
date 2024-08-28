@@ -83,11 +83,11 @@ public class AssetPreProcessor implements PreProcessor {
     private void validateDomainAssetLinks(AtlasEntity entity) throws AtlasBaseException {
         List<String> domainGuids = ( List<String>) entity.getAttribute(DOMAIN_GUIDS);
 
-        if(domainGuids.size() > 1) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Asset can be linked to only one domain");
-        }
+        if(CollectionUtils.isNotEmpty(domainGuids)){
+            if(domainGuids.size() > 1) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Asset can be linked to only one domain");
+            }
 
-        if(CollectionUtils.isNotEmpty(domainGuids)) {
             for(String domainGuid : domainGuids) {
                 AtlasVertex domainVertex = entityRetriever.getEntityVertex(domainGuid);
                 if(domainVertex == null) {
