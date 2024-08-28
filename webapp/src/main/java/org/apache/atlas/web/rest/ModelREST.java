@@ -1,8 +1,8 @@
 package org.apache.atlas.web.rest;
 
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
@@ -12,7 +12,6 @@ import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
-import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.searchlog.SearchLoggingManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -25,6 +24,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.RequestBody;
+
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -33,8 +34,6 @@ import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.*;
-
-import static org.apache.commons.collections.MapUtils.getMap;
 
 @Path("model")
 @Singleton
@@ -73,29 +72,39 @@ public class ModelREST {
     @Path("/namespace/{namespace}/businessDate/{businessDate}")
     @POST
     @Timed
-    public AtlasSearchResult dataSearch(@PathParam("namespace") String namespace, @PathParam("businessDate") Date businessDate,
-                                        @Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
+    public AtlasSearchResult dataSearch(@PathParam("namespace") String namespace, @PathParam("businessDate") String businessDate,
+                                        @Context HttpServletRequest servletRequest, @RequestBody Optional<IndexSearchParams> indexParameters) throws AtlasBaseException {
 
         Servlets.validateQueryParamLength("namespace", namespace);
-        Servlets.validateQueryParamLength("businessDate", String.valueOf(businessDate));
+        Servlets.validateQueryParamLength("businessDate", businessDate);
         AtlasPerfTracer perf = null;
         long startTime = System.currentTimeMillis();
+        IndexSearchParams parameters = null;
+        String userQuery= null;
 
-        RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
-        RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
-        RequestContext.get().setIncludeClassificationNames(parameters.isIncludeClassificationNames());
         try     {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "ModelREST.dataSearch(" + parameters + ")");
             }
 
-            if (StringUtils.isEmpty(parameters.getQuery())) {
-                AtlasBaseException abe = new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
-                if (enableSearchLogging && parameters.isSaveSearchLog()) {
-                    //logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
-                }
+
+            if (indexParameters.isPresent()) {
+                parameters = indexParameters.get();
+                RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
+                RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
+                RequestContext.get().setIncludeClassificationNames(parameters.isIncludeClassificationNames());
+                userQuery = parameters.getQuery();
+            } else {
+                parameters = new IndexSearchParams();
+            }
+
+            String queryStringUsingFiltersAndUserDSL= createQueryStringUsingFiltersAndUserDSL(namespace, businessDate,  userQuery);
+            if (StringUtils.isEmpty(queryStringUsingFiltersAndUserDSL)){
+                AtlasBaseException abe = new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid model search query");
                 throw abe;
             }
+
+            parameters.setQuery(queryStringUsingFiltersAndUserDSL);
 
             if(LOG.isDebugEnabled()){
                 LOG.debug("Performing indexsearch for the params ({})", parameters);
@@ -148,78 +157,131 @@ public class ModelREST {
         }
     }
 
-//    private void addBusinessFiltersToSearchQuery(final String namespace, final Date businessDate, SearchParams searchParams){
-//        try {
-//            AtlasPerfMetrics.MetricRecorder addBusinessFiltersToSearchQueryMetric = RequestContext.get().startMetricRecord("addPreFiltersToSearchQuery");
-//            ObjectMapper mapper = new ObjectMapper();
-//            List<Map<String, Object>> mustClauseList = new ArrayList<>();
-//            Map<String, Object> allPreFiltersBoolClause = NewAuthorizerUtils.getPreFilterDsl(persona, purpose, actions);
-//            mustClauseList.add(allPreFiltersBoolClause);
-//
-//            mustClauseList.add((Map<String, Object>) ((IndexSearchParams) searchParams).getDsl().get("query"));
-//
-//            String dslString = searchParams.getQuery();
-//            JsonNode node = mapper.readTree(dslString);
-//            /*JsonNode userQueryNode = node.get("query");
-//            if (userQueryNode != null) {
-//
-//                String userQueryString = userQueryNode.toString();
-//
-//                String userQueryBase64 = Base64.getEncoder().encodeToString(userQueryString.getBytes());
-//                mustClauseList.add(getMap("wrapper", getMap("query", userQueryBase64)));
-//            }*/
-//
-//            JsonNode updateQueryNode = mapper.valueToTree(getMap("bool", getMap("must", mustClauseList)));
-//
-//            ((ObjectNode) node).set("query", updateQueryNode);
-//            searchParams.setQuery(node.toString());
-//
-//
-//            RequestContext.get().endMetricRecord(addBusinessFiltersToSearchQueryMetric);
-//
-//        }catch (Exception e){
-//            LOG.error("Error -> addBusinessFiltersToSearchQuery!", e);
-//        }
-//    }
+    private String createQueryStringUsingFiltersAndUserDSL(final String namespace, final String businessDate,  final String userQuery) {
+        try {
+            AtlasPerfMetrics.MetricRecorder addBusinessFiltersToSearchQueryMetric = RequestContext.get().startMetricRecord("createQueryStringUsingFiltersAndUserDSL");
+            // Create an ObjectMapper instance
+            ObjectMapper objectMapper = new ObjectMapper();
 
-//    private void addPreFiltersToSearchQuery(SearchParams searchParams) {
-//        try {
-//            String persona = ((IndexSearchParams) searchParams).getPersona();
-//            String purpose = ((IndexSearchParams) searchParams).getPurpose();
-//
-//            AtlasPerfMetrics.MetricRecorder addPreFiltersToSearchQueryMetric = RequestContext.get().startMetricRecord("addPreFiltersToSearchQuery");
-//            ObjectMapper mapper = new ObjectMapper();
-//            List<Map<String, Object>> mustClauseList = new ArrayList<>();
-//
-//            List<String> actions = new ArrayList<>();
-//            actions.add("entity-read");
-//
-//            Map<String, Object> allPreFiltersBoolClause = NewAuthorizerUtils.getPreFilterDsl(persona, purpose, actions);
-//            mustClauseList.add(allPreFiltersBoolClause);
-//
-//            mustClauseList.add((Map<String, Object>) ((IndexSearchParams) searchParams).getDsl().get("query"));
-//
-//            String dslString = searchParams.getQuery();
-//            JsonNode node = mapper.readTree(dslString);
-//            /*JsonNode userQueryNode = node.get("query");
-//            if (userQueryNode != null) {
-//
-//                String userQueryString = userQueryNode.toString();
-//
-//                String userQueryBase64 = Base64.getEncoder().encodeToString(userQueryString.getBytes());
-//                mustClauseList.add(getMap("wrapper", getMap("query", userQueryBase64)));
-//            }*/
-//
-//            JsonNode updateQueryNode = mapper.valueToTree(getMap("bool", getMap("must", mustClauseList)));
-//
-//            ((ObjectNode) node).set("query", updateQueryNode);
-//            searchParams.setQuery(node.toString());
-//
-//            RequestContext.get().endMetricRecord(addPreFiltersToSearchQueryMetric);
-//
-//        } catch (Exception e) {
-//            LOG.error("Error -> addPreFiltersToSearchQuery!", e);
-//        }
-//    }
+            // Create the root 'query' node
+            ObjectNode rootNode = objectMapper.createObjectNode();
+            ObjectNode queryNode = objectMapper.createObjectNode();
+            ObjectNode boolNode = objectMapper.createObjectNode();
+            ArrayNode mustArray = objectMapper.createArrayNode();
+
+            // Create the first 'bool' object inside 'must'
+            ObjectNode firstBoolNode = objectMapper.createObjectNode();
+            ObjectNode filterBoolNode = objectMapper.createObjectNode();
+            ArrayNode filterArray = objectMapper.createArrayNode();
+
+            // Create 'match' object
+            ObjectNode matchNode = objectMapper.createObjectNode();
+            matchNode.put("namespace", namespace);
+
+            // Add 'match' object to filter
+            ObjectNode matchWrapper = objectMapper.createObjectNode();
+            matchWrapper.set("match", matchNode);
+            filterArray.add(matchWrapper);
+
+            // Create the nested 'bool' object inside filter
+            ObjectNode nestedBoolNode = objectMapper.createObjectNode();
+            ArrayNode nestedMustArray = objectMapper.createArrayNode();
+
+            // Create 'range' object for 'businessDate'
+            ObjectNode rangeBusinessDateNode = objectMapper.createObjectNode();
+            rangeBusinessDateNode.put("lte", businessDate);
+
+            // Add 'range' object to nestedMust
+            ObjectNode rangeBusinessDateWrapper = objectMapper.createObjectNode();
+            rangeBusinessDateWrapper.set("range", objectMapper.createObjectNode().set("businessDate", rangeBusinessDateNode));
+            nestedMustArray.add(rangeBusinessDateWrapper);
+
+            // Create 'bool' object for 'should'
+            ObjectNode shouldBoolNode = objectMapper.createObjectNode();
+            ArrayNode shouldArray = objectMapper.createArrayNode();
+
+            // Create 'range' object for 'expiredAtBusinessDate'
+            ObjectNode rangeExpiredAtNode = objectMapper.createObjectNode();
+            rangeExpiredAtNode.put("gt", businessDate);
+
+            // Add 'range' object to should array
+            ObjectNode rangeExpiredAtWrapper = objectMapper.createObjectNode();
+            rangeExpiredAtWrapper.set("range", objectMapper.createObjectNode().set("expiredAtBusinessDate", rangeExpiredAtNode));
+            shouldArray.add(rangeExpiredAtWrapper);
+
+            // Create 'bool' object for 'must_not'
+            ObjectNode mustNotBoolNode = objectMapper.createObjectNode();
+            ArrayNode mustNotArray = objectMapper.createArrayNode();
+
+            // Create 'exists' object
+            ObjectNode existsNode = objectMapper.createObjectNode();
+            existsNode.put("field", "expiredAtBusinessDate");
+
+            // Add 'exists' object to must_not
+            ObjectNode existsWrapper = objectMapper.createObjectNode();
+            existsWrapper.set("exists", existsNode);
+            mustNotArray.add(existsWrapper);
+
+            // Add 'must_not' to should array
+            shouldBoolNode.set("must_not", mustNotArray);
+
+            // Add 'should' to should array
+            shouldBoolNode.set("should", shouldArray);
+            shouldBoolNode.put("minimum_should_match", 1);
+
+            // Add shouldBoolNode to nestedMust
+            nestedMustArray.add(shouldBoolNode);
+
+            // Add nestedMust to nestedBool
+            nestedBoolNode.set("must", nestedMustArray);
+
+            // Add nestedBool to filter
+            ObjectNode nestedBoolWrapper = objectMapper.createObjectNode();
+            nestedBoolWrapper.set("bool", nestedBoolNode);
+            filterArray.add(nestedBoolWrapper);
+
+            // Add filter to firstBool
+            filterBoolNode.set("filter", filterArray);
+            firstBoolNode.set("bool", filterBoolNode);
+
+            // Add firstBool to must array
+            mustArray.add(firstBoolNode);
+
+
+            if (userQuery != null) {
+                // Create the 'wrapper' object with base64-encoded query
+                ObjectNode wrapperNode = objectMapper.createObjectNode();
+                String encodedQuery = Base64.getEncoder().encodeToString(userQuery.getBytes());
+                wrapperNode.put("query", encodedQuery);
+
+                // Add wrapper to must array
+                ObjectNode wrapperWrapper = objectMapper.createObjectNode();
+                wrapperWrapper.set("wrapper", wrapperNode);
+                mustArray.add(wrapperWrapper);
+            }
+
+
+            // Add must array to bool node
+            boolNode.set("must", mustArray);
+
+            // Add bool to query
+            queryNode.set("bool", boolNode);
+
+            rootNode.set("query", queryNode);
+
+            // Print the JSON representation of the query
+            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
+            System.out.println(jsonString);
+            return jsonString;
+        } catch (Exception e) {
+            LOG.error("Error -> createQueryStringUsingFiltersAndUserDSL!", e);
+        }
+        return "";
+    }
+    private Map<String, Object> getMap(String key, Object value) {
+        Map<String, Object> map = new HashMap<>();
+        map.put(key, value);
+        return map;
+    }
 
 }
