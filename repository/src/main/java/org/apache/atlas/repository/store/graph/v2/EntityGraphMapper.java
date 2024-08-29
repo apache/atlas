@@ -4581,29 +4581,15 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    public List<AtlasVertex> linkProductToAsset(String productId, Set<String> linkGuids) {
+    public List<AtlasVertex> linkMeshEntityToAsset(String meshEntityId, Set<String> linkGuids) {
         return linkGuids.stream().map(guid -> findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
-            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_PRODUCT_GUIDS, String.class);
-            return !existingValues.contains(productId);
+            Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+            return !existingValues.contains(meshEntityId);
         }).peek(ev -> {
-            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_PRODUCT_GUIDS, String.class);
-            existingValues.add(productId);
-            ev.setProperty(ASSET_PRODUCT_GUIDS, productId);
-
-            updateModificationMetadata(ev);
-
-            //cacheDifferentialEntity(ev, existingValues);
-        }).collect(Collectors.toList());
-    }
-
-    public List<AtlasVertex> linkProductWithNotification(String productId, Set<String> linkGuids) {
-        return linkGuids.stream().map(guid -> findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
-            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_PRODUCT_GUIDS, String.class);
-            return !existingValues.contains(productId);
-        }).peek(ev -> {
-            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_PRODUCT_GUIDS, String.class);
-            existingValues.add(productId);
-            ev.setProperty(ASSET_PRODUCT_GUIDS, productId);
+            Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+            updateDomainAttribute(ev, existingValues, meshEntityId);
+            existingValues.clear();
+            existingValues.add(meshEntityId);
 
             updateModificationMetadata(ev);
 
@@ -4611,15 +4597,14 @@ public class EntityGraphMapper {
         }).collect(Collectors.toList());
     }
 
-
-    public List<AtlasVertex> unlinkProductFromAsset(String productId, Set<String> unlinkGuids) {
+    public List<AtlasVertex> unlinkMeshEntityFromAsset(String meshEntityId, Set<String> unlinkGuids) {
         return unlinkGuids.stream().map(guid -> AtlasGraphUtilsV2.findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
-            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_PRODUCT_GUIDS, String.class);
-            return existingValues.contains(productId);
+            Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+            return existingValues.contains(meshEntityId);
         }).peek(ev -> {
-            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_PRODUCT_GUIDS, String.class);
-            existingValues.remove(productId);
-            ev.removePropertyValue(ASSET_PRODUCT_GUIDS, productId);
+            Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+            existingValues.remove(meshEntityId);
+            ev.removePropertyValue(DOMAIN_GUIDS_ATTR, meshEntityId);
 
             updateModificationMetadata(ev);
 
@@ -4627,11 +4612,15 @@ public class EntityGraphMapper {
         }).collect(Collectors.toList());
     }
 
+    private void updateDomainAttribute(AtlasVertex vertex, Set<String> existingValues, String meshEntityId){
+        existingValues.forEach(existingValue -> vertex.removePropertyValue(DOMAIN_GUIDS_ATTR, existingValue));
+        vertex.setProperty(DOMAIN_GUIDS_ATTR, meshEntityId);
+    }
 
     private void cacheDifferentialEntity(AtlasVertex ev, Set<String> existingValues) {
         AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
         diffEntity.setGuid(ev.getProperty(GUID_PROPERTY_KEY, String.class));
-        diffEntity.setAttribute(ASSET_PRODUCT_GUIDS, existingValues);
+        diffEntity.setAttribute(DOMAIN_GUIDS_ATTR, existingValues);
         diffEntity.setUpdatedBy(ev.getProperty(MODIFIED_BY_KEY, String.class));
         diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
 
