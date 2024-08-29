@@ -4631,7 +4631,7 @@ public class EntityGraphMapper {
         }).collect(Collectors.toList());
     }
 
-    public List<AtlasVertex> linkMeshEntityToAsset(String meshEntityId, Set<String> linkGuids) {
+    public List<AtlasVertex> linkMeshEntityToAssets(String meshEntityId, Set<String> linkGuids) {
         return linkGuids.stream().map(guid -> findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
             Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
             return !existingValues.contains(meshEntityId);
@@ -4652,7 +4652,7 @@ public class EntityGraphMapper {
         }).collect(Collectors.toList());
     }
 
-    public List<AtlasVertex> unlinkMeshEntityFromAsset(String meshEntityId, Set<String> unlinkGuids) throws AtlasBaseException {
+    public List<AtlasVertex> unlinkMeshEntityFromAssets(String meshEntityId, Set<String> unlinkGuids) throws AtlasBaseException {
         return unlinkGuids.stream().map(guid -> AtlasGraphUtilsV2.findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
             Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
             return existingValues.contains(meshEntityId);

@@ -2818,16 +2818,16 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public void linkMeshEntityToAsset(String meshEntityGuid, Set<String> linkGuids) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkProductToAsset.GraphTransaction");
+    public void linkMeshEntityToAssets(String meshEntityGuid, Set<String> linkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkMeshEntityToAssets.GraphTransaction");
 
         try {
-            List<AtlasVertex> vertices = this.entityGraphMapper.linkMeshEntityToAsset(meshEntityGuid, linkGuids);
+            List<AtlasVertex> vertices = this.entityGraphMapper.linkMeshEntityToAssets(meshEntityGuid, linkGuids);
             if (CollectionUtils.isEmpty(vertices)) {
                 return;
             }
 
-            LOG.info("linkMeshEntityToAsset: entityGuid={}, linkGuids={}", meshEntityGuid, linkGuids);
+            LOG.info("linkMeshEntityToAsset: entityGuid={}", meshEntityGuid);
 
             handleEntityMutation(vertices);
         } catch (Exception e) {
@@ -2840,15 +2840,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public void unlinkMeshEntityFromAsset(String meshEntityGuid, Set<String> unlinkGuids) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkMeshEntityFromAsset.GraphTransaction");
+    public void unlinkMeshEntityFromAssets(String meshEntityGuid, Set<String> unlinkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkMeshEntityFromAssets.GraphTransaction");
         try {
-            List<AtlasVertex> vertices = this.entityGraphMapper.unlinkMeshEntityFromAsset(meshEntityGuid, unlinkGuids);
+            List<AtlasVertex> vertices = this.entityGraphMapper.unlinkMeshEntityFromAssets(meshEntityGuid, unlinkGuids);
             if (CollectionUtils.isEmpty(vertices)) {
                 return;
             }
 
-            LOG.info("unlinkMeshEntityFromAsset: entityGuid={}, unlinkGuids={}", meshEntityGuid, unlinkGuids);
+            LOG.info("unlinkMeshEntityFromAsset: entityGuid={}", meshEntityGuid);
 
             handleEntityMutation(vertices);
         } catch (Exception e) {
@@ -2860,13 +2860,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     private void handleEntityMutation(List<AtlasVertex> vertices) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleBusinessPolicyMutation");
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleEntityMutation");
         this.atlasAlternateChangeNotifier.onEntitiesMutation(vertices);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
-
-
-
 
 }
 
