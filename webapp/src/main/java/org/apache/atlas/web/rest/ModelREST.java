@@ -47,8 +47,8 @@ public class ModelREST {
     private static final Logger LOG = LoggerFactory.getLogger(DiscoveryREST.class);
     @Context
     private HttpServletRequest httpServletRequest;
-    private final int maxFullTextQueryLength;
-    private final int maxDslQueryLength;
+    // private final int maxFullTextQueryLength;
+    //  private final int maxDslQueryLength;
     private final boolean enableSearchLogging;
 
     private final AtlasTypeRegistry typeRegistry;
@@ -61,12 +61,12 @@ public class ModelREST {
 
     @Inject
     public ModelREST(AtlasTypeRegistry typeRegistry, AtlasDiscoveryService discoveryService,
-                     SearchLoggingManagement loggerManagement, Configuration configuration) {
+                     SearchLoggingManagement loggerManagement) {
         this.typeRegistry = typeRegistry;
         this.discoveryService = discoveryService;
         this.loggerManagement = loggerManagement;
-        this.maxFullTextQueryLength = configuration.getInt(Constants.MAX_FULLTEXT_QUERY_STR_LENGTH, 4096);
-        this.maxDslQueryLength = configuration.getInt(Constants.MAX_DSL_QUERY_STR_LENGTH, 4096);
+        //  this.maxFullTextQueryLength = configuration.getInt(Constants.MAX_FULLTEXT_QUERY_STR_LENGTH, 4096);
+        //  this.maxDslQueryLength = configuration.getInt(Constants.MAX_DSL_QUERY_STR_LENGTH, 4096);
         this.enableSearchLogging = AtlasConfiguration.ENABLE_SEARCH_LOGGER.getBoolean();
     }
 
@@ -74,7 +74,7 @@ public class ModelREST {
     @POST
     @Timed
     public AtlasSearchResult dataSearch(@QueryParam("namespace") String namespace, @QueryParam("businessDate") String businessDate,
-                                        @Context HttpServletRequest servletRequest, @RequestBody(required = false) IndexSearchParams parameters) throws AtlasBaseException {
+                                        @Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
 
         Servlets.validateQueryParamLength("namespace", namespace);
         Servlets.validateQueryParamLength("businessDate", businessDate);
@@ -86,12 +86,11 @@ public class ModelREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "ModelREST.dataSearch(" + parameters + ")");
             }
 
-            RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
-            RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
-            RequestContext.get().setIncludeClassificationNames(parameters.isIncludeClassificationNames());
+            if (parameters == null) {
+                parameters = new IndexSearchParams();
+            }
 
-
-            String queryStringUsingFiltersAndUserDSL = createQueryStringUsingFiltersAndUserDSL(namespace, businessDate, parameters);
+            String queryStringUsingFiltersAndUserDSL = createQueryStringUsingFiltersAndUserDSL(namespace, businessDate, parameters.getQuery());
             if (StringUtils.isEmpty(queryStringUsingFiltersAndUserDSL)) {
                 AtlasBaseException abe = new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid model search query");
                 throw abe;
@@ -110,18 +109,20 @@ public class ModelREST {
             long endTime = System.currentTimeMillis();
 
             if (enableSearchLogging && parameters.isSaveSearchLog()) {
-                // logSearchLog(parameters, result, servletRequest, endTime - startTime);
+                //logSearchLog(parameters, result, servletRequest, endTime - startTime);
             }
 
             return result;
         } catch (AtlasBaseException abe) {
-            if (enableSearchLogging && parameters.isSaveSearchLog()) {
+            if (enableSearchLogging && parameters.isSaveSearchLog()
+            ) {
                 // logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
             }
             throw abe;
         } catch (Exception e) {
             AtlasBaseException abe = new AtlasBaseException(e.getMessage(), e.getCause());
-            if (enableSearchLogging && parameters.isSaveSearchLog()) {
+            if (enableSearchLogging && parameters.isSaveSearchLog()
+            ) {
                 //logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
             }
             throw abe;
@@ -154,10 +155,10 @@ public class ModelREST {
      * {"query":{"bool":{"must":[{"bool":{"filter":[{"match":{"namespace":"{namespace}"}},{"bool":{"must":[{"range":{"businessDate":{"lte":"businessDate"}}},{"bool":{"should":[{"range":{"expiredAtBusinessDate":{"gt":"{businessDate}"}}},{"bool":{"must_not":[{"exists":{"field":"expiredAtBusiness"}}]}}],"minimum_should_match":1}}]}}]}},{"wrapper":{"query":"user query"}}]}}}
      * @param namespace
      * @param businessDate
-     * @param searchParams
+     * @param dslString
      * @return
      */
-    private String createQueryStringUsingFiltersAndUserDSL(final String namespace, final String businessDate, IndexSearchParams searchParams) {
+    private String createQueryStringUsingFiltersAndUserDSL(final String namespace, final String businessDate, final String dslString) {
         try {
             AtlasPerfMetrics.MetricRecorder addBusinessFiltersToSearchQueryMetric = RequestContext.get().startMetricRecord("createQueryStringUsingFiltersAndUserDSL");
             // Create an ObjectMapper instance
@@ -254,18 +255,19 @@ public class ModelREST {
             mustArray.add(firstBoolNode);
 
             // process user query
-            String dslString = searchParams.getQuery();
-            JsonNode node = new ObjectMapper().readTree(dslString);
-            JsonNode userQueryNode = node.get("query");
-            ObjectNode wrapperNode = objectMapper.createObjectNode();
-            String userQueryString = userQueryNode.toString();
-            String userQueryBase64 = Base64.getEncoder().encodeToString(userQueryString.getBytes());
-            wrapperNode.put("query", userQueryBase64);
+            if (!StringUtils.isEmpty(dslString)) {
+                JsonNode node = new ObjectMapper().readTree(dslString);
+                JsonNode userQueryNode = node.get("query");
+                ObjectNode wrapperNode = objectMapper.createObjectNode();
+                String userQueryString = userQueryNode.toString();
+                String userQueryBase64 = Base64.getEncoder().encodeToString(userQueryString.getBytes());
+                wrapperNode.put("query", userQueryBase64);
+                // Add wrapper to must array
+                ObjectNode wrapperWrapper = objectMapper.createObjectNode();
+                wrapperWrapper.set("wrapper", wrapperNode);
+                mustArray.add(wrapperWrapper);
+            }
 
-            // Add wrapper to must array
-            ObjectNode wrapperWrapper = objectMapper.createObjectNode();
-            wrapperWrapper.set("wrapper", wrapperNode);
-            mustArray.add(wrapperWrapper);
 
             // Add must array to bool node
             boolNode.set("must", mustArray);
@@ -278,6 +280,7 @@ public class ModelREST {
             // Print the JSON representation of the query
             String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
             ;
+            System.out.println(jsonString);
             return jsonString;
         } catch (Exception e) {
             LOG.error("Error -> createQueryStringUsingFiltersAndUserDSL!", e);
