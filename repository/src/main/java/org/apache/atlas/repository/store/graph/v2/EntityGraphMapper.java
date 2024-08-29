@@ -4639,8 +4639,7 @@ public class EntityGraphMapper {
             try {
                 isAuthorizedToLink(ev);
             } catch (AtlasBaseException e) {
-                LOG.error("Permission error while linking mesh entity to asset {}", ev.getProperty(GUID_PROPERTY_KEY, String.class), e);
-                return;
+                throw new RuntimeException("Permission denied to link entity to asset", e);
             }
             Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
             updateDomainAttribute(ev, existingValues, meshEntityId);
@@ -4653,7 +4652,7 @@ public class EntityGraphMapper {
         }).collect(Collectors.toList());
     }
 
-    public List<AtlasVertex> unlinkMeshEntityFromAsset(String meshEntityId, Set<String> unlinkGuids) {
+    public List<AtlasVertex> unlinkMeshEntityFromAsset(String meshEntityId, Set<String> unlinkGuids) throws AtlasBaseException {
         return unlinkGuids.stream().map(guid -> AtlasGraphUtilsV2.findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
             Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
             return existingValues.contains(meshEntityId);
@@ -4661,8 +4660,7 @@ public class EntityGraphMapper {
             try {
                 isAuthorizedToLink(ev);
             } catch (AtlasBaseException e) {
-                LOG.error("Permission error while unlinking mesh entity from asset {}", ev.getProperty(GUID_PROPERTY_KEY, String.class), e);
-                return;
+                throw new RuntimeException("Permission denied to unlink entity from asset", e);
             }
             Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
             existingValues.remove(meshEntityId);
