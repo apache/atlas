@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.lang.reflect.Field;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
@@ -235,7 +234,7 @@ public class AtlasTaskService implements TaskService {
         setEncodedProperty(ret, Constants.TASK_UPDATED_TIME, task.getUpdatedTime());
 
         if (task.getClassificationName() != null) {
-            setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_NAME, task.getClassificationName());
+            setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_TYPENAME, task.getClassificationName());
         }
 
         if (task.getClassificationId() != null) {

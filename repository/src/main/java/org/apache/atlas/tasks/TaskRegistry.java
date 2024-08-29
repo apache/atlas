@@ -502,6 +502,11 @@ public class TaskRegistry {
             ret.setClassificationId(classificationId);
         }
 
+        String classificationName = v.getProperty(Constants.TASK_CLASSIFICATION_TYPENAME, String.class);
+        if (classificationName != null) {
+            ret.setClassificationName(classificationName);
+        }
+
         String entityGuid = v.getProperty(Constants.TASK_ENTITY_GUID, String.class);
         if(entityGuid != null) {
             ret.setEntityGuid(entityGuid);
