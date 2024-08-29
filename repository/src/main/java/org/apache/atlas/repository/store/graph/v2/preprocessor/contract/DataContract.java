@@ -45,12 +45,12 @@ public class DataContract {
     public String                               dataset;
     public DatasetType                          type;
     public String                               description;
-    public List<String>                         owners;
+    public Object                               owners;
     public List<BusinessTag>                    tags;
     public String                               certificate;
     @Valid
     public List<Column>                         columns;
-    private final Map<String, Object>            unknownFields = new HashMap<>();
+    private final Map<String, Object>           unknownFields = new HashMap<>();
 
     public enum Status {
         @JsonProperty("DRAFT") DRAFT,
@@ -146,7 +146,7 @@ public class DataContract {
         }
     }
 
-    public void setOwners(List<String> owners) {
+    public void setOwners(Object owners) {
         this.owners = owners;
     }
 

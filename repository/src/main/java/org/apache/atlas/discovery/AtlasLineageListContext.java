@@ -18,10 +18,12 @@ public final class AtlasLineageListContext {
     private Predicate                           vertexTraversalPredicate;
     private Predicate                           edgeTraversalPredicate;
     private Set<String>                         attributes;
+    private Set<String>                         relationAttributes;
     private int                                 currentFromCounter;
     private int                                 currentEntityCounter;
     private boolean                             depthLimitReached;
     private boolean                             hasMoreUpdated;
+    private Boolean                             immediateNeighbours;
 
     public AtlasLineageListContext(LineageListRequest lineageListRequest, AtlasTypeRegistry typeRegistry) {
         this.guid = lineageListRequest.getGuid();
@@ -33,6 +35,8 @@ public final class AtlasLineageListContext {
         this.vertexTraversalPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getEntityTraversalFilters());
         this.edgeTraversalPredicate = constructInMemoryPredicate(typeRegistry, lineageListRequest.getRelationshipTraversalFilters());
         this.attributes = lineageListRequest.getAttributes();
+        this.relationAttributes = lineageListRequest.getRelationAttributes();
+        this.immediateNeighbours = lineageListRequest.getImmediateNeighbours();
     }
 
     public String getGuid() {
@@ -111,6 +115,14 @@ public final class AtlasLineageListContext {
         this.attributes = attributes;
     }
 
+    public Set<String> getRelationAttributes() {
+        return relationAttributes;
+    }
+
+    public void setRelationAttributes(Set<String> relationAttributes) {
+        this.relationAttributes = relationAttributes;
+    }
+
     public int getCurrentFromCounter() {
         return currentFromCounter;
     }
@@ -179,5 +191,13 @@ public final class AtlasLineageListContext {
 
     public void setHasMoreUpdated(boolean hasMoreUpdated) {
         this.hasMoreUpdated = hasMoreUpdated;
+    }
+
+    public Boolean getImmediateNeighbours() {
+        return immediateNeighbours;
+    }
+
+    public void setImmediateNeighbours(Boolean immediateNeighbours) {
+        this.immediateNeighbours = immediateNeighbours;
     }
 }

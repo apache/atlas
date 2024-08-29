@@ -20,16 +20,12 @@ package org.apache.atlas.repository.store.graph.v2;
 
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.DeleteType;
-import org.apache.atlas.GraphTransactionInterceptor;
-import org.apache.atlas.RequestContext;
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.*;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder;
-import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.bulkimport.BulkImportResponse;
+import org.apache.atlas.bulkimport.BulkImportResponse.ImportInfo;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
@@ -55,40 +51,31 @@ import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.ConnectionPreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.StakeholderPreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.contract.ContractPreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.StakeholderTitlePreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PersonaPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PurposePreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.DataProductPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.StakeholderPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.contract.ContractPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.DataDomainPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.DataProductPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.StakeholderTitlePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.ReadmePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryFolderPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTask;
 import org.apache.atlas.tasks.TaskManagement;
-import org.apache.atlas.type.AtlasArrayType;
-import org.apache.atlas.type.AtlasBusinessMetadataType;
+import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
-import org.apache.atlas.type.AtlasClassificationType;
-import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.atlas.bulkimport.BulkImportResponse;
-import org.apache.atlas.bulkimport.BulkImportResponse.ImportInfo;
 import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -111,18 +98,15 @@ import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
+import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
-import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
-import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.*;
+import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE;
+import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
-import static org.apache.atlas.type.Constants.HAS_LINEAGE;
-import static org.apache.atlas.type.Constants.HAS_LINEAGE_VALID;
-import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANING_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.*;
 
 
 
@@ -155,7 +139,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
-                              AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore, IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier) {
+                              AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore,
+                              IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier) {
+
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
         this.restoreHandlerV1     = restoreHandlerV1;
@@ -170,7 +156,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.featureFlagStore = featureFlagStore;
         this.esAliasStore = new ESAliasStore(graph, entityRetriever);
         this.atlasAlternateChangeNotifier = atlasAlternateChangeNotifier;
-
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
         } catch (AtlasException e) {
@@ -1545,6 +1530,18 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             executePreProcessor(context);
 
+            // Updating hierarchy after preprocessor is executed so that qualifiedName update during preprocessor is considered
+            for (AtlasEntity entity : context.getCreatedEntities()) {
+                createQualifiedNameHierarchyField(entity, context.getVertex(entity.getGuid()));
+            }
+
+            for (Map.Entry<String, AtlasEntity> entry : RequestContext.get().getDifferentialEntitiesMap().entrySet()) {
+                if (entry.getValue().hasAttribute(QUALIFIED_NAME)) {
+                    createQualifiedNameHierarchyField(entry.getValue(), context.getVertex(entry.getKey()));
+                }
+            }
+
+
             EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate,
                     replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttribute);
 
@@ -1817,6 +1814,46 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         starredDetails.setAttribute(ATTR_ASSET_STARRED_AT, assetStarredAt);
         return starredDetails;
     }
+
+    private void createQualifiedNameHierarchyField(AtlasEntity entity, AtlasVertex vertex) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("createQualifiedNameHierarchyField");
+        boolean isDataMeshType = entity.getTypeName().equals(DATA_PRODUCT_ENTITY_TYPE) || entity.getTypeName().equals(DATA_DOMAIN_ENTITY_TYPE);
+        int qualifiedNameOffset = isDataMeshType ? 2 : 1;
+        try {
+            if (vertex == null) {
+                vertex = AtlasGraphUtilsV2.findByGuid(graph, entity.getGuid());
+            }
+            if (entity.hasAttribute(QUALIFIED_NAME)) {
+                String qualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
+                if (StringUtils.isNotEmpty(qualifiedName)) {
+                    vertex.removeProperty(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY);
+                    String[] parts = qualifiedName.split("/");
+                    StringBuilder currentPath = new StringBuilder();
+
+                    for (int i = 0; i < parts.length; i++) {
+                        String part = parts[i];
+                        if (StringUtils.isNotEmpty(part)) {
+                            if (i > 0) {
+                                currentPath.append("/");
+                            }
+                            currentPath.append(part);
+                            // i>1 reason: we don't want to add the first part of the qualifiedName as it is the entity name
+                            // Example qualifiedName : default/snowflake/123/db_name we only want `default/snowflake/123` and `default/snowflake/123/db_name`
+                            if (i > qualifiedNameOffset) {
+                                if (isDataMeshType && (part.equals("domain") || part.equals("product"))) {
+                                    continue;
+                                }
+                                AtlasGraphUtilsV2.addEncodedProperty(vertex, QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, currentPath.toString());
+                            }
+                        }
+                    }
+                }
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
 
     public PreProcessor getPreProcessor(String typeName) {
         PreProcessor preProcessor = null;
@@ -2742,6 +2779,45 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
+    public void linkBusinessPolicy(String policyGuid, Set<String> linkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkBusinessPolicy.GraphTransaction");
+
+        try {
+            List<AtlasVertex> vertices = this.entityGraphMapper.linkBusinessPolicy(policyGuid, linkGuids);
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+
+            handleEntityMutation(vertices);
+        } catch (Exception e) {
+            LOG.error("Error during linkBusinessPolicy for policyGuid: {}", policyGuid, e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
+    @GraphTransaction
+    public void unlinkBusinessPolicy(String policyGuid, Set<String> unlinkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkBusinessPolicy.GraphTransaction");
+        try {
+            List<AtlasVertex> vertices = this.entityGraphMapper.unlinkBusinessPolicy(policyGuid, unlinkGuids);
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+
+            handleEntityMutation(vertices);
+        } catch (Exception e) {
+            LOG.error("Error during unlinkBusinessPolicy for policyGuid: {}", policyGuid, e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
+    @GraphTransaction
     public void linkMeshEntityToAsset(String meshEntityGuid, Set<String> linkGuids) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkProductToAsset.GraphTransaction");
 
@@ -2753,7 +2829,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             LOG.info("linkMeshEntityToAsset: entityGuid={}, linkGuids={}", meshEntityGuid, linkGuids);
 
-            handleMeshEntityMutation(vertices);
+            handleEntityMutation(vertices);
         } catch (Exception e) {
             LOG.error("Error during linkMeshEntity for entityGuid: {}", meshEntityGuid, e);
             throw e;
@@ -2772,7 +2848,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 return;
             }
 
-            handleMeshEntityMutation(vertices);
+            LOG.info("unlinkMeshEntityFromAsset: entityGuid={}, unlinkGuids={}", meshEntityGuid, unlinkGuids);
+
+            handleEntityMutation(vertices);
         } catch (Exception e) {
             LOG.error("Error during unlinkMeshEntity for entityGuid: {}", meshEntityGuid, e);
             throw e;
@@ -2781,11 +2859,17 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
-    private void handleMeshEntityMutation(List<AtlasVertex> vertices) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleMeshEntityMutation");
+    private void handleEntityMutation(List<AtlasVertex> vertices) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleBusinessPolicyMutation");
         this.atlasAlternateChangeNotifier.onEntitiesMutation(vertices);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
+
+
+
+
 }
+
+
 
 

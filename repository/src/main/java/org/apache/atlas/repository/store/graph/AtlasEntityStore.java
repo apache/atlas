@@ -369,4 +369,8 @@ public interface AtlasEntityStore {
 
     void unlinkMeshEntityFromAsset(String meshEntityId, Set<String> unlinkGuids) throws AtlasBaseException;
 
+    void linkBusinessPolicy(String policyId, Set<String> linkGuids) throws AtlasBaseException;
+
+    void unlinkBusinessPolicy(String policyId, Set<String> unlinkGuids) throws AtlasBaseException;
+
 }

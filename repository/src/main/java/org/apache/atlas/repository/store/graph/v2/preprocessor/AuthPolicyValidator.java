@@ -307,8 +307,10 @@ public class AuthPolicyValidator {
             //only allow argo & backend
             if (!RequestContext.get().isSkipAuthorizationCheck()) {
                 String userName = RequestContext.getCurrentUser();
-                validateOperation (!ARGO_SERVICE_USER_NAME.equals(userName) && !BACKEND_SERVICE_USER_NAME.equals(userName),
-                        "Create/Update AuthPolicy with policyCategory other than persona, purpose and datamesh");
+                validateOperation (!ARGO_SERVICE_USER_NAME.equals(userName) && 
+                !BACKEND_SERVICE_USER_NAME.equals(userName) && 
+                !GOVERNANCE_WORKFLOWS_SERVICE_USER_NAME.equals(userName),
+                    "Create/Update AuthPolicy with policyCategory other than persona, purpose and datamesh");
             }
         }
     }
