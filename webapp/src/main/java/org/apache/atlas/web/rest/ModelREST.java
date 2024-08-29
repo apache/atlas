@@ -70,11 +70,11 @@ public class ModelREST {
         this.enableSearchLogging = AtlasConfiguration.ENABLE_SEARCH_LOGGER.getBoolean();
     }
 
-    @Path("/namespace/{namespace}/businessDate/{businessDate}")
+    @Path("/indexsearch")
     @POST
     @Timed
-    public AtlasSearchResult dataSearch(@PathParam("namespace") String namespace, @PathParam("businessDate") String businessDate,
-                                        @Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
+    public AtlasSearchResult dataSearch(@QueryParam("namespace") String namespace, @QueryParam("businessDate") String businessDate,
+                                        @Context HttpServletRequest servletRequest, @RequestBody(required = false) IndexSearchParams parameters) throws AtlasBaseException {
 
         Servlets.validateQueryParamLength("namespace", namespace);
         Servlets.validateQueryParamLength("businessDate", businessDate);
@@ -276,7 +276,8 @@ public class ModelREST {
             rootNode.set("query", queryNode);
 
             // Print the JSON representation of the query
-            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);;
+            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
+            ;
             return jsonString;
         } catch (Exception e) {
             LOG.error("Error -> createQueryStringUsingFiltersAndUserDSL!", e);
