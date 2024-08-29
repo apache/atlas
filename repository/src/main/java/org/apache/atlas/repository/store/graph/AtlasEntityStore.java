@@ -365,8 +365,8 @@ public interface AtlasEntityStore {
 
     void repairAccesscontrolAlias(String guid) throws AtlasBaseException;
 
-    void linkMeshEntityToAsset(String productId, Set<String> linkGuids) throws AtlasBaseException;
+    void linkMeshEntityToAsset(String meshEntityId, Set<String> linkGuids) throws AtlasBaseException;
 
-    void unlinkMeshEntityFromAsset(String productId, Set<String> unlinkGuids) throws AtlasBaseException;
+    void unlinkMeshEntityFromAsset(String meshEntityId, Set<String> unlinkGuids) throws AtlasBaseException;
 
 }
