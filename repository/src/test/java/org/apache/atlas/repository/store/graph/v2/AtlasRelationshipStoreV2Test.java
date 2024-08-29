@@ -135,7 +135,7 @@ public abstract class AtlasRelationshipStoreV2Test extends AtlasTestBase {
     @BeforeTest
     public void init() throws Exception {
         relationshipStore = new AtlasRelationshipStoreV2(atlasGraph, typeRegistry, deleteDelegate, entityNotifier);
-        entityStore       = new AtlasEntityStoreV2(atlasGraph, deleteDelegate, restoreHandlerV1, typeRegistry, mockChangeNotifier, graphMapper, null, relationshipStore, null);
+        entityStore       = new AtlasEntityStoreV2(atlasGraph, deleteDelegate, restoreHandlerV1, typeRegistry, mockChangeNotifier, graphMapper, null, relationshipStore, null, null);
 
         RequestContext.clear();
         RequestContext.get().setUser(TestUtilsV2.TEST_USER, null);
