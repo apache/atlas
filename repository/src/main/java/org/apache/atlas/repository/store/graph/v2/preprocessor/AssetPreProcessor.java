@@ -94,7 +94,9 @@ public class AssetPreProcessor implements PreProcessor {
                     throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, domainGuid);
                 }
 
-                if (!Objects.equals(entity.getTypeName(), DATA_DOMAIN_ENTITY_TYPE)){
+                String domainEntityType = domainVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
+
+                if (!Objects.equals(domainEntityType, DATA_DOMAIN_ENTITY_TYPE)){
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Asset can be linked to only domain");
                 }
             }
