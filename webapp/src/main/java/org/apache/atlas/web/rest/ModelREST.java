@@ -46,9 +46,9 @@ public class ModelREST {
     private static final Logger LOG = LoggerFactory.getLogger(DiscoveryREST.class);
     @Context
     private HttpServletRequest httpServletRequest;
-    private final int                maxFullTextQueryLength;
-    private final int                maxDslQueryLength;
-    private final boolean            enableSearchLogging;
+    private final int maxFullTextQueryLength;
+    private final int maxDslQueryLength;
+    private final boolean enableSearchLogging;
 
     private final AtlasTypeRegistry typeRegistry;
     private final AtlasDiscoveryService discoveryService;
@@ -60,53 +60,47 @@ public class ModelREST {
 
     @Inject
     public ModelREST(AtlasTypeRegistry typeRegistry, AtlasDiscoveryService discoveryService,
-                         SearchLoggingManagement loggerManagement, Configuration configuration) {
-        this.typeRegistry           = typeRegistry;
-        this.discoveryService       = discoveryService;
-        this.loggerManagement       = loggerManagement;
+                     SearchLoggingManagement loggerManagement, Configuration configuration) {
+        this.typeRegistry = typeRegistry;
+        this.discoveryService = discoveryService;
+        this.loggerManagement = loggerManagement;
         this.maxFullTextQueryLength = configuration.getInt(Constants.MAX_FULLTEXT_QUERY_STR_LENGTH, 4096);
-        this.maxDslQueryLength      = configuration.getInt(Constants.MAX_DSL_QUERY_STR_LENGTH, 4096);
-        this.enableSearchLogging    = AtlasConfiguration.ENABLE_SEARCH_LOGGER.getBoolean();
+        this.maxDslQueryLength = configuration.getInt(Constants.MAX_DSL_QUERY_STR_LENGTH, 4096);
+        this.enableSearchLogging = AtlasConfiguration.ENABLE_SEARCH_LOGGER.getBoolean();
     }
 
     @Path("/namespace/{namespace}/businessDate/{businessDate}")
     @POST
     @Timed
     public AtlasSearchResult dataSearch(@PathParam("namespace") String namespace, @PathParam("businessDate") String businessDate,
-                                        @Context HttpServletRequest servletRequest, @RequestBody Optional<IndexSearchParams> indexParameters) throws AtlasBaseException {
+                                        @Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
 
         Servlets.validateQueryParamLength("namespace", namespace);
         Servlets.validateQueryParamLength("businessDate", businessDate);
         AtlasPerfTracer perf = null;
         long startTime = System.currentTimeMillis();
-        IndexSearchParams parameters = null;
-        String userQuery= null;
+        String userQuery = null;
 
-        try     {
+        try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "ModelREST.dataSearch(" + parameters + ")");
             }
 
+            RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
+            RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
+            RequestContext.get().setIncludeClassificationNames(parameters.isIncludeClassificationNames());
+            userQuery = parameters.getQuery();
 
-            if (indexParameters.isPresent()) {
-                parameters = indexParameters.get();
-                RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
-                RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
-                RequestContext.get().setIncludeClassificationNames(parameters.isIncludeClassificationNames());
-                userQuery = parameters.getQuery();
-            } else {
-                parameters = new IndexSearchParams();
-            }
 
-            String queryStringUsingFiltersAndUserDSL= createQueryStringUsingFiltersAndUserDSL(namespace, businessDate,  userQuery);
-            if (StringUtils.isEmpty(queryStringUsingFiltersAndUserDSL)){
+            String queryStringUsingFiltersAndUserDSL = createQueryStringUsingFiltersAndUserDSL(namespace, businessDate, userQuery);
+            if (StringUtils.isEmpty(queryStringUsingFiltersAndUserDSL)) {
                 AtlasBaseException abe = new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid model search query");
                 throw abe;
             }
 
             parameters.setQuery(queryStringUsingFiltersAndUserDSL);
 
-            if(LOG.isDebugEnabled()){
+            if (LOG.isDebugEnabled()) {
                 LOG.debug("Performing indexsearch for the params ({})", parameters);
             }
 
@@ -120,13 +114,13 @@ public class ModelREST {
             long endTime = System.currentTimeMillis();
 
             if (enableSearchLogging && parameters.isSaveSearchLog()) {
-               // logSearchLog(parameters, result, servletRequest, endTime - startTime);
+                // logSearchLog(parameters, result, servletRequest, endTime - startTime);
             }
 
             return result;
         } catch (AtlasBaseException abe) {
             if (enableSearchLogging && parameters.isSaveSearchLog()) {
-               // logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
+                // logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
             }
             throw abe;
         } catch (Exception e) {
@@ -136,7 +130,7 @@ public class ModelREST {
             }
             throw abe;
         } finally {
-            if(CollectionUtils.isNotEmpty(parameters.getUtmTags())) {
+            if (CollectionUtils.isNotEmpty(parameters.getUtmTags())) {
                 AtlasPerfMetrics.Metric indexsearchMetric = new AtlasPerfMetrics.Metric(INDEXSEARCH_TAG_NAME);
                 indexsearchMetric.addTag("utmTag", "other");
                 indexsearchMetric.addTag("source", "other");
@@ -157,7 +151,7 @@ public class ModelREST {
         }
     }
 
-    private String createQueryStringUsingFiltersAndUserDSL(final String namespace, final String businessDate,  final String userQuery) {
+    private String createQueryStringUsingFiltersAndUserDSL(final String namespace, final String businessDate, final String userQuery) {
         try {
             AtlasPerfMetrics.MetricRecorder addBusinessFiltersToSearchQueryMetric = RequestContext.get().startMetricRecord("createQueryStringUsingFiltersAndUserDSL");
             // Create an ObjectMapper instance
@@ -196,7 +190,10 @@ public class ModelREST {
             rangeBusinessDateWrapper.set("range", objectMapper.createObjectNode().set("businessDate", rangeBusinessDateNode));
             nestedMustArray.add(rangeBusinessDateWrapper);
 
+            //////////
+
             // Create 'bool' object for 'should'
+            ObjectNode shouldBoolNodeWrapper = objectMapper.createObjectNode();
             ObjectNode shouldBoolNode = objectMapper.createObjectNode();
             ArrayNode shouldArray = objectMapper.createArrayNode();
 
@@ -210,6 +207,7 @@ public class ModelREST {
             shouldArray.add(rangeExpiredAtWrapper);
 
             // Create 'bool' object for 'must_not'
+            ObjectNode mustNodeBoolNodeWrapper = objectMapper.createObjectNode();
             ObjectNode mustNotBoolNode = objectMapper.createObjectNode();
             ArrayNode mustNotArray = objectMapper.createArrayNode();
 
@@ -223,14 +221,17 @@ public class ModelREST {
             mustNotArray.add(existsWrapper);
 
             // Add 'must_not' to should array
-            shouldBoolNode.set("must_not", mustNotArray);
+            mustNotBoolNode.set("must_not", mustNotArray);
+            mustNodeBoolNodeWrapper.set("bool", mustNotBoolNode);
+            shouldArray.add(mustNodeBoolNodeWrapper);
 
             // Add 'should' to should array
             shouldBoolNode.set("should", shouldArray);
             shouldBoolNode.put("minimum_should_match", 1);
+            shouldBoolNodeWrapper.set("bool", shouldBoolNode);
 
-            // Add shouldBoolNode to nestedMust
-            nestedMustArray.add(shouldBoolNode);
+            // Add shouldBoolNodeWrapper to nestedMust
+            nestedMustArray.add(shouldBoolNodeWrapper);
 
             // Add nestedMust to nestedBool
             nestedBoolNode.set("must", nestedMustArray);
@@ -278,6 +279,7 @@ public class ModelREST {
         }
         return "";
     }
+
     private Map<String, Object> getMap(String key, Object value) {
         Map<String, Object> map = new HashMap<>();
         map.put(key, value);
