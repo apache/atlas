@@ -38,12 +38,12 @@ public class AtlasTask {
     @JsonIgnore
     public static final int MAX_ATTEMPT_COUNT = 3;
 
-    public String getClassificationName() {
-        return classificationName;
+    public String getClassificationTypeName() {
+        return classificationTypeName;
     }
 
-    public void setClassificationName(String classificationName) {
-        this.classificationName = classificationName;
+    public void setClassificationTypeName(String classificationTypeName) {
+        this.classificationTypeName = classificationTypeName;
     }
 
     public enum Status {
@@ -94,7 +94,7 @@ public class AtlasTask {
     private Status              status;
     private String              classificationId;
     private String              entityGuid;
-    private String              classificationName;
+    private String              classificationTypeName;
 
     public AtlasTask() {
     }
