@@ -43,8 +43,15 @@ import java.util.*;
 @Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class ModelREST {
 
+    private static final String BUSINESS_DATE = "businessDate";
+    private static final String EXPIRED_BUSINESS_DATE = "expiredBusinessDate";
+    private static final String GREATER_THAN_EQUAL_TO = "gte";
+    private static final String LESSER_THAN_EQUAL_TO = "lte";
+    private static final String SYSTEM_DATE = "systemDate";
+    private static final String EXPIRED_SYSTEM_DATE = "expiredSystemDate";
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.DiscoveryREST");
     private static final Logger LOG = LoggerFactory.getLogger(DiscoveryREST.class);
+
     @Context
     private HttpServletRequest httpServletRequest;
     // private final int maxFullTextQueryLength;
@@ -73,7 +80,9 @@ public class ModelREST {
     @Path("/indexsearch")
     @POST
     @Timed
-    public AtlasSearchResult dataSearch(@QueryParam("namespace") String namespace, @QueryParam("businessDate") String businessDate,
+    public AtlasSearchResult dataSearch(@QueryParam("namespace") String namespace,
+                                        @QueryParam("businessDate") String businessDate,
+                                        @QueryParam("systemDate") String systemDate,
                                         @Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
 
         Servlets.validateQueryParamLength("namespace", namespace);
@@ -86,11 +95,13 @@ public class ModelREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "ModelREST.dataSearch(" + parameters + ")");
             }
 
-            if (parameters == null) {
-                parameters = new IndexSearchParams();
-            }
+            parameters = parameters == null ? new IndexSearchParams() : parameters;
 
-            String queryStringUsingFiltersAndUserDSL = createQueryStringUsingFiltersAndUserDSL(namespace, businessDate, parameters.getQuery());
+            String queryStringUsingFiltersAndUserDSL = createQueryStringUsingFiltersAndUserDSL(namespace,
+                    businessDate,
+                    systemDate,
+                    parameters.getQuery());
+
             if (StringUtils.isEmpty(queryStringUsingFiltersAndUserDSL)) {
                 AtlasBaseException abe = new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid model search query");
                 throw abe;
@@ -158,7 +169,10 @@ public class ModelREST {
      * @param dslString
      * @return
      */
-    private String createQueryStringUsingFiltersAndUserDSL(final String namespace, final String businessDate, final String dslString) {
+    private String createQueryStringUsingFiltersAndUserDSL(final String namespace,
+                                                           final String businessDate,
+                                                           final String systemDate,
+                                                           final String dslString) {
         try {
             AtlasPerfMetrics.MetricRecorder addBusinessFiltersToSearchQueryMetric = RequestContext.get().startMetricRecord("createQueryStringUsingFiltersAndUserDSL");
             // Create an ObjectMapper instance
@@ -184,68 +198,15 @@ public class ModelREST {
             matchWrapper.set("match", matchNode);
             filterArray.add(matchWrapper);
 
-            // Create the nested 'bool' object inside filter
-            ObjectNode nestedBoolNode = objectMapper.createObjectNode();
-            ArrayNode nestedMustArray = objectMapper.createArrayNode();
+            // add 'businessDateValidation'
+            ObjectNode businessDateWrapper = dateValidation(businessDate, true, objectMapper);
+            filterArray.add(businessDateWrapper);
 
-            // Create 'range' object for 'businessDate'
-            ObjectNode rangeBusinessDateNode = objectMapper.createObjectNode();
-            rangeBusinessDateNode.put("lte", businessDate);
-
-            // Add 'range' object to nestedMust
-            ObjectNode rangeBusinessDateWrapper = objectMapper.createObjectNode();
-            rangeBusinessDateWrapper.set("range", objectMapper.createObjectNode().set("businessDate", rangeBusinessDateNode));
-            nestedMustArray.add(rangeBusinessDateWrapper);
-
-
-            // Create 'bool' object for 'should'
-            ObjectNode shouldBoolNodeWrapper = objectMapper.createObjectNode();
-            ObjectNode shouldBoolNode = objectMapper.createObjectNode();
-            ArrayNode shouldArray = objectMapper.createArrayNode();
-
-            // Create 'range' object for 'expiredAtBusinessDate'
-            ObjectNode rangeExpiredAtNode = objectMapper.createObjectNode();
-            rangeExpiredAtNode.put("gt", businessDate);
-
-            // Add 'range' object to should array
-            ObjectNode rangeExpiredAtWrapper = objectMapper.createObjectNode();
-            rangeExpiredAtWrapper.set("range", objectMapper.createObjectNode().set("expiredAtBusinessDate", rangeExpiredAtNode));
-            shouldArray.add(rangeExpiredAtWrapper);
-
-            // Create 'bool' object for 'must_not'
-            ObjectNode mustNodeBoolNodeWrapper = objectMapper.createObjectNode();
-            ObjectNode mustNotBoolNode = objectMapper.createObjectNode();
-            ArrayNode mustNotArray = objectMapper.createArrayNode();
-
-            // Create 'exists' object
-            ObjectNode existsNode = objectMapper.createObjectNode();
-            existsNode.put("field", "expiredAtBusinessDate");
-
-            // Add 'exists' object to must_not
-            ObjectNode existsWrapper = objectMapper.createObjectNode();
-            existsWrapper.set("exists", existsNode);
-            mustNotArray.add(existsWrapper);
-
-            // Add 'must_not' to should array
-            mustNotBoolNode.set("must_not", mustNotArray);
-            mustNodeBoolNodeWrapper.set("bool", mustNotBoolNode);
-            shouldArray.add(mustNodeBoolNodeWrapper);
-
-            // Add 'should' to should array
-            shouldBoolNode.set("should", shouldArray);
-            shouldBoolNode.put("minimum_should_match", 1);
-            shouldBoolNodeWrapper.set("bool", shouldBoolNode);
-
-            // Add shouldBoolNodeWrapper to nestedMust
-            nestedMustArray.add(shouldBoolNodeWrapper);
-
-            // Add nestedMust to nestedBool
-            nestedBoolNode.set("must", nestedMustArray);
-
-            // Add nestedBool to filter
-            ObjectNode nestedBoolWrapper = objectMapper.createObjectNode();
-            nestedBoolWrapper.set("bool", nestedBoolNode);
-            filterArray.add(nestedBoolWrapper);
+            // add 'systemDateValidation'
+            if (!StringUtils.isEmpty(systemDate)) {
+                ObjectNode systemDateWrapper = dateValidation(systemDate, false, objectMapper);
+                filterArray.add(systemDateWrapper);
+            }
 
             // Add filter to firstBool
             filterBoolNode.set("filter", filterArray);
@@ -279,8 +240,6 @@ public class ModelREST {
 
             // Print the JSON representation of the query
             String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
-            ;
-            System.out.println(jsonString);
             return jsonString;
         } catch (Exception e) {
             LOG.error("Error -> createQueryStringUsingFiltersAndUserDSL!", e);
@@ -288,4 +247,62 @@ public class ModelREST {
         return "";
     }
 
+    private ObjectNode dateValidation(final String date, final boolean isBusinessDate, ObjectMapper objectMapper) {
+
+        String condition = LESSER_THAN_EQUAL_TO, dateType = BUSINESS_DATE, expiredDateType = EXPIRED_BUSINESS_DATE;
+
+        if (!isBusinessDate) {
+            condition = GREATER_THAN_EQUAL_TO;
+            dateType = SYSTEM_DATE;
+            expiredDateType = EXPIRED_SYSTEM_DATE;
+        }
+        // Create the nested 'bool' object inside filter
+        ObjectNode nestedBoolNode = objectMapper.createObjectNode();
+        ArrayNode nestedMustArray = objectMapper.createArrayNode();
+        ObjectNode rangeBusinessDateNode = objectMapper.createObjectNode();
+        rangeBusinessDateNode.put(condition, date);
+
+        // Add 'range' object to nestedMust
+        ObjectNode rangeBusinessDateWrapper = objectMapper.createObjectNode();
+        rangeBusinessDateWrapper.set("range", objectMapper.createObjectNode().set(dateType, rangeBusinessDateNode));
+        nestedMustArray.add(rangeBusinessDateWrapper);
+
+
+        // Create 'bool' object for 'should'
+        ObjectNode shouldBoolNodeWrapper = objectMapper.createObjectNode();
+        ObjectNode shouldBoolNode = objectMapper.createObjectNode();
+        ArrayNode shouldArray = objectMapper.createArrayNode();
+
+        // Create 'range' object for 'expiredAtBusinessDate'
+        ObjectNode rangeExpiredAtNode = objectMapper.createObjectNode();
+        rangeExpiredAtNode.put("gt", date);
+
+        // Add 'range' object to should array
+        ObjectNode rangeExpiredAtWrapper = objectMapper.createObjectNode();
+        rangeExpiredAtWrapper.set("range", objectMapper.createObjectNode().set(expiredDateType, rangeExpiredAtNode));
+        shouldArray.add(rangeExpiredAtWrapper);
+
+        // add 'term' object to should array
+        ObjectNode termNode = objectMapper.createObjectNode();
+        termNode.put(expiredDateType, 0);
+        ObjectNode termNodeWrapper = objectMapper.createObjectNode();
+        termNodeWrapper.set("term", termNode);
+        shouldArray.add(termNodeWrapper);
+
+        // Add 'should' to should array
+        shouldBoolNode.set("should", shouldArray);
+        shouldBoolNode.put("minimum_should_match", 1);
+        shouldBoolNodeWrapper.set("bool", shouldBoolNode);
+
+        // Add shouldBoolNodeWrapper to nestedMust
+        nestedMustArray.add(shouldBoolNodeWrapper);
+
+        // Add nestedMust to nestedBool
+        nestedBoolNode.set("must", nestedMustArray);
+
+        // Add nestedBool to filter
+        ObjectNode nestedBoolWrapper = objectMapper.createObjectNode();
+        nestedBoolWrapper.set("bool", nestedBoolNode);
+        return nestedBoolWrapper;
+    }
 }
