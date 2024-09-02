@@ -1,6 +1,5 @@
 package org.apache.atlas.web.rest;
 
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
@@ -13,20 +12,16 @@ import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.searchlog.SearchLoggingManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.RequestBody;
-
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -34,7 +29,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Base64;
+import java.util.HashSet;
+import java.util.Set;
 
 @Path("model")
 @Singleton
@@ -45,7 +43,6 @@ public class ModelREST {
 
     private static final String BUSINESS_DATE = "businessDate";
     private static final String EXPIRED_BUSINESS_DATE = "expiredBusinessDate";
-    private static final String GREATER_THAN_EQUAL_TO = "gte";
     private static final String LESSER_THAN_EQUAL_TO = "lte";
     private static final String SYSTEM_DATE = "systemDate";
     private static final String EXPIRED_SYSTEM_DATE = "expiredSystemDate";
@@ -252,7 +249,6 @@ public class ModelREST {
         String condition = LESSER_THAN_EQUAL_TO, dateType = BUSINESS_DATE, expiredDateType = EXPIRED_BUSINESS_DATE;
 
         if (!isBusinessDate) {
-            condition = GREATER_THAN_EQUAL_TO;
             dateType = SYSTEM_DATE;
             expiredDateType = EXPIRED_SYSTEM_DATE;
         }
