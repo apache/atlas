@@ -93,6 +93,7 @@ public class DiscoveryREST {
     private final SearchLoggingManagement loggerManagement;
 
     private static final String INDEXSEARCH_TAG_NAME = "indexsearch";
+    private static final String RELATIONSHIP_INDEXSEARCH_TAG_NAME = "relationshipIndexsearch";
     private static final Set<String> TRACKING_UTM_TAGS = new HashSet<>(Arrays.asList("ui_main_list", "ui_popup_searchbar"));
     private static final String UTM_TAG_FROM_PRODUCT = "project_webapp";
 
@@ -448,6 +449,66 @@ public class DiscoveryREST {
                     indexsearchMetric.addTag("source", UTM_TAG_FROM_PRODUCT);
                 }
                 indexsearchMetric.addTag("name", INDEXSEARCH_TAG_NAME);
+                indexsearchMetric.setTotalTimeMSecs(System.currentTimeMillis() - startTime);
+                RequestContext.get().addApplicationMetrics(indexsearchMetric);
+            }
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+
+    /**
+     * Index based search for query direct on Elasticsearch Edge index
+     *
+     * @param parameters Index Search parameters @IndexSearchParams.java
+     * @return Atlas search result
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful search
+     */
+    @Path("/relationship/indexsearch")
+    @POST
+    @Timed
+    public AtlasSearchResult relationshipIndexSearch(@Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        long startTime = System.currentTimeMillis();
+
+        RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
+        RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
+        RequestContext.get().setIncludeClassificationNames(parameters.isIncludeClassificationNames());
+        try     {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relationshipIndexSearch(" + parameters + ")");
+            }
+
+            if (StringUtils.isEmpty(parameters.getQuery())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
+            }
+
+            if(LOG.isDebugEnabled()){
+                LOG.debug("Performing relationship indexsearch for the params ({})", parameters);
+            }
+            return discoveryService.directRelationshipIndexSearch(parameters);
+
+        } catch (AtlasBaseException abe) {
+            throw abe;
+        } catch (Exception e) {
+            AtlasBaseException abe = new AtlasBaseException(e.getMessage(), e.getCause());
+            throw abe;
+        } finally {
+            if(CollectionUtils.isNotEmpty(parameters.getUtmTags())) {
+                AtlasPerfMetrics.Metric indexsearchMetric = new AtlasPerfMetrics.Metric(RELATIONSHIP_INDEXSEARCH_TAG_NAME);
+                indexsearchMetric.addTag("utmTag", "other");
+                indexsearchMetric.addTag("source", "other");
+                for (String utmTag : parameters.getUtmTags()) {
+                    if (TRACKING_UTM_TAGS.contains(utmTag)) {
+                        indexsearchMetric.addTag("utmTag", utmTag);
+                        break;
+                    }
+                }
+                if (parameters.getUtmTags().contains(UTM_TAG_FROM_PRODUCT)) {
+                    indexsearchMetric.addTag("source", UTM_TAG_FROM_PRODUCT);
+                }
+                indexsearchMetric.addTag("name", RELATIONSHIP_INDEXSEARCH_TAG_NAME);
                 indexsearchMetric.setTotalTimeMSecs(System.currentTimeMillis() - startTime);
                 RequestContext.get().addApplicationMetrics(indexsearchMetric);
             }

@@ -1015,6 +1015,38 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     @Override
+    public AtlasSearchResult directRelationshipIndexSearch(SearchParams searchParams) throws AtlasBaseException {
+        AtlasSearchResult ret = new AtlasSearchResult();
+        AtlasIndexQuery indexQuery;
+
+        ret.setSearchParameters(searchParams);
+        ret.setQueryType(AtlasQueryType.INDEX);
+
+        try {
+            if(LOG.isDebugEnabled()){
+                LOG.debug("Performing ES relationship search for the params ({})", searchParams);
+            }
+
+            indexQuery = graph.elasticsearchQuery(EDGE_INDEX_NAME);
+            AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQueryEdge");
+            DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
+            if (indexQueryResult == null) {
+                return null;
+            }
+            RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
+
+            //Note: AtlasSearchResult.entities are not supported yet
+
+            ret.setAggregations(indexQueryResult.getAggregationMap());
+            ret.setApproximateCount(indexQuery.vertexTotals());
+        } catch (Exception e) {
+            LOG.error("Error while performing direct relationship search for the params ({}), {}", searchParams, e.getMessage());
+            throw e;
+        }
+        return ret;
+    }
+
+    @Override
     public SearchLogSearchResult searchLogs(SearchLogSearchParams searchParams) throws AtlasBaseException {
         SearchLogSearchResult ret = new SearchLogSearchResult();
         ret.setSearchParameters(searchParams);

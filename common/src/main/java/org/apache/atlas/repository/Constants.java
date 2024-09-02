@@ -265,6 +265,7 @@ public final class Constants {
     public static final String INDEX_PREFIX = "janusgraph_";
 
     public static final String VERTEX_INDEX_NAME = INDEX_PREFIX + VERTEX_INDEX;
+    public static final String EDGE_INDEX_NAME = INDEX_PREFIX + EDGE_INDEX;
 
     public static final String NAME                                    = "name";
     public static final String QUALIFIED_NAME                          = "qualifiedName";
