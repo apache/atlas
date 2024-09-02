@@ -972,8 +972,9 @@ public class DiscoveryREST {
     private void logSearchLog(IndexSearchParams parameters, HttpServletRequest servletRequest,
                               SearchRequestLogDataBuilder builder, long requestTime) {
 
-        if (StringUtils.isNotEmpty(parameters.getPersona())) {
-            builder.setPersona(parameters.getPersona());
+        String persona = StringUtils.isNotEmpty(parameters.getPersona()) ? parameters.getPersona() : parameters.getRequestMetadataPersona();
+        if (StringUtils.isNotEmpty(persona)) {
+            builder.setPersona(persona);
         } else {
             builder.setPurpose(parameters.getPurpose());
         }
