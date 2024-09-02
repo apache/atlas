@@ -3034,71 +3034,79 @@ public class EntityGraphMapper {
     }
 
 
-    public void cleanUpClassificationPropagation(String classificationName) throws AtlasBaseException {
+    public void cleanUpClassificationPropagation(String classificationName, int batchLimit) throws AtlasBaseException {
         List<AtlasVertex> vertices = new ArrayList<>();
-        List<AtlasVertex> classificationVertices = GraphHelper.getClassificationVertexes(graph, classificationName);
-        List<AtlasVertex> assetVertices = new ArrayList<>();
-        for(int i = 0 ; i < classificationVertices.size(); i++) {
-            long assetCount = GraphHelper.getAssetsCountOfClassificationVertex(classificationVertices.get(i));
-            int prevTotalVertexSize = vertices.size();
-            int availableSlots = CLEANUP_BATCH_SIZE - prevTotalVertexSize;
-            assetVertices = GraphHelper.getAllAssetsWithClassificationVertex(classificationVertices.get(i), availableSlots);
-            int assetsSize = assetVertices.size();
-            LOG.info("Queue size before adding {} asset vertexes to it : {}", assetsSize, prevTotalVertexSize);
-            if((prevTotalVertexSize + assetsSize > CLEANUP_BATCH_SIZE) || availableSlots < assetCount) {
-                i--;
-            }
-            // add a check for if assetVertices are already greater than CLEANUP_BATCH_SIZE with queue size = 0
-            if(prevTotalVertexSize + assetsSize <= CLEANUP_BATCH_SIZE) {
-                vertices.addAll(assetVertices);
-                assetVertices = new ArrayList<>();
-            }
+        int batchesExecuted = 0;
+        List<AtlasVertex> classificationVertices = GraphHelper.getClassificationVertexes(graph, classificationName, CLEANUP_BATCH_SIZE);
+        while(!classificationVertices.isEmpty()) {
+            List<AtlasVertex> assetVertices = new ArrayList<>();
+            int i;
+            for (i = 0; i < classificationVertices.size(); i++) {
+                if(batchesExecuted >= batchLimit){
+                    break;
+                }
+                long assetCount = GraphHelper.getAssetsCountOfClassificationVertex(classificationVertices.get(i));
+                int prevTotalVertexSize = vertices.size();
+                int availableSlots = CLEANUP_BATCH_SIZE - prevTotalVertexSize;
+                assetVertices = GraphHelper.getAllAssetsWithClassificationVertex(classificationVertices.get(i), availableSlots);
+                int assetsSize = assetVertices.size();
+                LOG.info("Queue size before adding {} asset vertexes to it : {}", assetsSize, prevTotalVertexSize);
+                if ((prevTotalVertexSize + assetsSize > CLEANUP_BATCH_SIZE) || availableSlots < assetCount) {
+                    i--;
+                }
+                if (prevTotalVertexSize + assetsSize <= CLEANUP_BATCH_SIZE) {
+                    vertices.addAll(assetVertices);
+                    assetVertices = new ArrayList<>();
+                }
 
-            if(prevTotalVertexSize + assetsSize >= CLEANUP_BATCH_SIZE ||
-                (prevTotalVertexSize + assetsSize < CLEANUP_BATCH_SIZE && i == classificationVertices.size() - 1)) {
-                int currentTotalVertexSize = vertices.size();
-                LOG.info("To clean up tag {} from {} entities", classificationName, currentTotalVertexSize);
-                int toIndex;
-                int offset = 0;
-                do {
-                    toIndex = Math.min((offset + CHUNK_SIZE), currentTotalVertexSize);
-                    List<AtlasVertex> entityVertices = vertices.subList(offset, toIndex);
-                    List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
-                    try {
-                        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
-                        for (AtlasVertex vertex : entityVertices) {
-                            List<AtlasClassification> deletedClassifications = new ArrayList<>();
-                            List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
-                            for (AtlasEdge edge : classificationEdges) {
-                                AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
-                                deletedClassifications.add(classification);
-                                deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                if (prevTotalVertexSize + assetsSize >= CLEANUP_BATCH_SIZE ||
+                        (prevTotalVertexSize + assetsSize < CLEANUP_BATCH_SIZE && i == classificationVertices.size() - 1)) {
+                    batchesExecuted++;
+                    int currentTotalVertexSize = vertices.size();
+                    LOG.info("To clean up tag {} from {} entities", classificationName, currentTotalVertexSize);
+                    int toIndex;
+                    int offset = 0;
+                    do {
+                        toIndex = Math.min((offset + CHUNK_SIZE), currentTotalVertexSize);
+                        List<AtlasVertex> entityVertices = vertices.subList(offset, toIndex);
+                        List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
+                        try {
+                            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
+                            for (AtlasVertex vertex : entityVertices) {
+                                List<AtlasClassification> deletedClassifications = new ArrayList<>();
+                                List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
+                                for (AtlasEdge edge : classificationEdges) {
+                                    AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
+                                    deletedClassifications.add(classification);
+                                    deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                                }
+
+                                AtlasEntity entity = repairClassificationMappings(vertex);
+
+                                entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
                             }
-
-                            AtlasEntity entity = repairClassificationMappings(vertex);
-
-                            entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
+                            offset += CHUNK_SIZE;
+                        } finally {
+                            transactionInterceptHelper.intercept();
+                            LOG.info("Cleaned up {} entities for classification {}", offset, classificationName);
                         }
-                        offset += CHUNK_SIZE;
-                    } finally {
-                        transactionInterceptHelper.intercept();
-                        LOG.info("Cleaned up {} entities for classification {}", offset, classificationName);
-                    }
 
-                } while (offset < currentTotalVertexSize);
-                vertices = new ArrayList<>();
+                    } while (offset < currentTotalVertexSize);
+                    vertices = new ArrayList<>();
+                }
+
             }
+            // Fetch all classificationVertex by classificationName and delete them if remaining
+            for (AtlasVertex classificationVertex : classificationVertices.subList(0,i)) {
+                try {
+                    deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+                } catch (IllegalStateException e) {
+                    e.printStackTrace();
+                }
+            }
+            transactionInterceptHelper.intercept();
+            classificationVertices = GraphHelper.getClassificationVertexes(graph, classificationName, CLEANUP_BATCH_SIZE);
         }
-        // Fetch all classificationVertex by classificationName and delete them if remaining
-        for (AtlasVertex classificationVertex : classificationVertices) {
-            try {
-                deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
-            }
-            catch (IllegalStateException e){
-                e.printStackTrace();
-            }
-        }
-        transactionInterceptHelper.intercept();
         LOG.info("Completed cleaning up classification {}", classificationName);
     }
 
