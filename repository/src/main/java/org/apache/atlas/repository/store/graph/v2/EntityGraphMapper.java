@@ -3092,7 +3092,13 @@ public class EntityGraphMapper {
 
                 } while (offset < currentAssetsBatchSize);
 
-                tagVerticesProcessed.forEach(x -> deleteDelegate.getHandler().deleteClassificationVertex(x, true));
+                for (AtlasVertex classificationVertex : tagVerticesProcessed) {
+                    try {
+                        deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+                    } catch (IllegalStateException e) {
+                        e.printStackTrace();
+                    }
+                }
                 transactionInterceptHelper.intercept();
 
                 cleanedUpCount += currentAssetsBatchSize;
