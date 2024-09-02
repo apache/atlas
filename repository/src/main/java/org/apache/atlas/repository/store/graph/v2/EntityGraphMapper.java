@@ -3105,6 +3105,9 @@ public class EntityGraphMapper {
                 }
             }
             transactionInterceptHelper.intercept();
+            if(batchLimit > 0 && batchesExecuted >= batchLimit){
+                break;
+            }
             classificationVertices = GraphHelper.getClassificationVertexes(graph, classificationName, CLEANUP_BATCH_SIZE);
         }
         LOG.info("Completed cleaning up classification {}", classificationName);
