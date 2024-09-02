@@ -2215,7 +2215,12 @@ public class EntityGraphMapper {
         }
     }
 
-    public static void validateCustomRelationship(AttributeMutationContext ctx, List<Object> newElements, boolean isAppend) throws AtlasBaseException {
+    public void validateCustomRelationship(AttributeMutationContext ctx, List<Object> newElements, boolean isAppend) throws AtlasBaseException {
+        validateCustomRelationshipCount(ctx, newElements, isAppend);
+        validateCustomRelationshipAttributes(ctx, newElements, isAppend);
+    }
+
+    public void validateCustomRelationshipCount(AttributeMutationContext ctx, List<Object> newElements, boolean isAppend) throws AtlasBaseException {
         long currentSize;
         boolean isEdgeDirectionIn = ctx.getAttribute().getRelationshipEdgeDirection() == AtlasRelationshipEdgeDirection.IN;
 
@@ -2249,6 +2254,29 @@ public class EntityGraphMapper {
 
             currentSize = targetVertex.getEdgesCount(direction, UD_RELATIONSHIP_EDGE_LABEL);
             validateCustomRelationshipCount(currentSize, targetVertex);
+        }
+    }
+
+    public void validateCustomRelationshipAttributes(AttributeMutationContext ctx, List<Object> newElements, boolean isAppend) throws AtlasBaseException {
+        List<AtlasRelatedObjectId> customRelationships = (List<AtlasRelatedObjectId>) ctx.getValue();
+        AtlasEntityType glossaryTermType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
+        Set<String> glossaryRelationshipNames = glossaryTermType.getRelationshipAttributes().keySet();
+        LOG.info("restricted values {}", StringUtils.join(glossaryRelationshipNames));
+
+        for (AtlasRelatedObjectId relatedObjectId : customRelationships) {
+            Map<String, Object> relationshipAttributes = relatedObjectId.getRelationshipAttributes().getAttributes();
+            validateCustomRelationshipAttributeValue(glossaryRelationshipNames, relationshipAttributes);
+        }
+    }
+
+    public static void validateCustomRelationshipAttributeValue(Set<String> restrictedValues, Map<String, Object> attributes) throws AtlasBaseException {
+        for (String key : attributes.keySet()) {
+            if (key.equals("toType") || key.equals("fromType")) {
+                String value = (String) attributes.get(key);
+                if (restrictedValues.stream().anyMatch(value::equalsIgnoreCase)) {
+                    throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, String.format("Value %s is not supported for attribute on relationship %s", value, key));
+                }
+            }
         }
     }
 
