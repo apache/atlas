@@ -3042,7 +3042,7 @@ public class EntityGraphMapper {
             List<AtlasVertex> assetVertices = new ArrayList<>();
             int i;
             for (i = 0; i < classificationVertices.size(); i++) {
-                if(batchesExecuted >= batchLimit){
+                if(batchLimit > 0 && batchesExecuted >= batchLimit){
                     break;
                 }
                 long assetCount = GraphHelper.getAssetsCountOfClassificationVertex(classificationVertices.get(i));
