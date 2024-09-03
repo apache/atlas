@@ -3103,6 +3103,7 @@ public class EntityGraphMapper {
 
                 cleanedUpCount += currentAssetsBatchSize;
                 currentAssetVerticesBatch.clear();
+                tagVerticesProcessed.clear();
             }
             tagVertices = GraphHelper.getClassificationVertices(graph, classificationName, CLEANUP_BATCH_SIZE);
         }
