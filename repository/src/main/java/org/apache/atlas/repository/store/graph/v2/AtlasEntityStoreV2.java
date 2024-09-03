@@ -2827,7 +2827,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 return;
             }
 
-            LOG.info("linkMeshEntityToAsset: entityGuid={}", meshEntityGuid);
+            LOG.info("linkMeshEntityToAssets: entityGuid={}", meshEntityGuid);
 
             handleEntityMutation(vertices);
         } catch (Exception e) {
@@ -2848,7 +2848,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 return;
             }
 
-            LOG.info("unlinkMeshEntityFromAsset: entityGuid={}", meshEntityGuid);
+            LOG.info("unlinkMeshEntityFromAssets: entityGuid={}", meshEntityGuid);
 
             handleEntityMutation(vertices);
         } catch (Exception e) {
