@@ -3046,7 +3046,7 @@ public class EntityGraphMapper {
                 return;
             }
 
-            while (tagVertices.hasNext() && currentAssetVerticesBatch.size() <= CLEANUP_BATCH_SIZE) {
+            while (tagVertices.hasNext() && currentAssetVerticesBatch.size() < CLEANUP_BATCH_SIZE) {
                 AtlasVertex tagVertex = tagVertices.next();
 
                 int availableSlots = CLEANUP_BATCH_SIZE - currentAssetVerticesBatch.size();

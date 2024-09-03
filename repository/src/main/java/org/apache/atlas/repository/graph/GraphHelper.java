@@ -379,6 +379,7 @@ public final class GraphHelper {
     public static Iterator<AtlasVertex> getClassificationVertices(AtlasGraph graph, String classificationName, int size) {
         Iterable classificationVertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices(size);
         if (classificationVertices == null) {
+            LOG.info("classificationVertices are null");
             return null;
         }
         return classificationVertices.iterator();
