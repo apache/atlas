@@ -2217,7 +2217,7 @@ public class EntityGraphMapper {
 
     public void validateCustomRelationship(AttributeMutationContext ctx, List<Object> newElements, boolean isAppend) throws AtlasBaseException {
         validateCustomRelationshipCount(ctx, newElements, isAppend);
-        validateCustomRelationshipAttributes(ctx, newElements, isAppend);
+        validateCustomRelationshipAttributes(ctx, newElements);
     }
 
     public void validateCustomRelationshipCount(AttributeMutationContext ctx, List<Object> newElements, boolean isAppend) throws AtlasBaseException {
@@ -2257,19 +2257,15 @@ public class EntityGraphMapper {
         }
     }
 
-    public void validateCustomRelationshipAttributes(AttributeMutationContext ctx, List<Object> newElements, boolean isAppend) throws AtlasBaseException {
+    public void validateCustomRelationshipAttributes(AttributeMutationContext ctx, List<Object> newElements) throws AtlasBaseException {
         List<AtlasRelatedObjectId> customRelationships = (List<AtlasRelatedObjectId>) ctx.getValue();
-        AtlasEntityType glossaryTermType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
-        Set<String> glossaryRelationshipNames = glossaryTermType.getRelationshipAttributes().keySet();
-        LOG.info("restricted values {}", StringUtils.join(glossaryRelationshipNames));
 
         for (AtlasRelatedObjectId relatedObjectId : customRelationships) {
-            Map<String, Object> relationshipAttributes = relatedObjectId.getRelationshipAttributes().getAttributes();
-            validateCustomRelationshipAttributeValue(glossaryRelationshipNames, relationshipAttributes);
+            validateCustomRelationshipAttributeValueCase(relatedObjectId.getRelationshipAttributes().getAttributes());
         }
     }
 
-    public static void validateCustomRelationshipAttributeValue(Set<String> restrictedValues, Map<String, Object> attributes) throws AtlasBaseException {
+    public static void validateCustomRelationshipAttributeValueCase(Map<String, Object> attributes) throws AtlasBaseException {
         if (MapUtils.isEmpty(attributes)) {
             return;
         }
@@ -2277,9 +2273,9 @@ public class EntityGraphMapper {
         for (String key : attributes.keySet()) {
             if (key.equals("toType") || key.equals("fromType")) {
                 String value = (String) attributes.get(key);
-                if (restrictedValues.stream().anyMatch(value::equalsIgnoreCase)) {
-                    throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, String.format("Value %s is not supported for attribute on relationship %s", value, key));
-                }
+                char init = value.charAt(0);
+                String sub = value.substring(1);
+                attributes.put(key, Character.toUpperCase(init) + sub.toLowerCase());
             }
         }
     }

@@ -683,12 +683,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         relationshipType.getNormalizedValue(relationship);
 
         Map<String, Object> relAttrs = relationship.getAttributes();
-        if (MapUtils.isNotEmpty(relAttrs)) {
-            AtlasEntityType glossaryTermType = typeRegistry.getEntityTypeByName(ATLAS_GLOSSARY_TERM_ENTITY_TYPE);
-            Set<String> glossaryRelationshipNames = glossaryTermType.getRelationshipAttributes().keySet();
-
-            EntityGraphMapper.validateCustomRelationshipAttributeValue(glossaryRelationshipNames, relAttrs);
-        }
+        EntityGraphMapper.validateCustomRelationshipAttributeValueCase(relAttrs);
     }
 
 
