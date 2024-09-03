@@ -141,6 +141,10 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         return this.registry.createVertex(taskType, createdBy, parameters, classificationId, entityGuid);
     }
 
+    public AtlasTask createTask(String taskType, String createdBy, Map<String, Object> parameters, String classificationId, String classificationName, String entityGuid) {
+        return this.registry.createVertex(taskType, createdBy, parameters, classificationId, classificationName, entityGuid);
+    }
+
     public List<AtlasTask> getAll() {
         return this.registry.getAll();
     }

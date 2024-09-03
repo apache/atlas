@@ -428,6 +428,14 @@ public class TaskRegistry {
         return ret;
     }
 
+    public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters, String classificationId,String classificationTypeName, String entityGuid) {
+        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, entityGuid);
+        ret.setClassificationTypeName(classificationTypeName);
+        createVertex(ret);
+
+        return ret;
+    }
+
     private void deleteVertex(AtlasVertex taskVertex) {
         if (taskVertex == null) {
             return;
@@ -492,6 +500,11 @@ public class TaskRegistry {
         String classificationId = v.getProperty(Constants.TASK_CLASSIFICATION_ID, String.class);
         if (classificationId != null) {
             ret.setClassificationId(classificationId);
+        }
+
+        String classificationName = v.getProperty(Constants.TASK_CLASSIFICATION_TYPENAME, String.class);
+        if (classificationName != null) {
+            ret.setClassificationTypeName(classificationName);
         }
 
         String entityGuid = v.getProperty(Constants.TASK_ENTITY_GUID, String.class);

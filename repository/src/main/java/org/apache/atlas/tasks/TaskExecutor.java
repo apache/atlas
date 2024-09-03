@@ -110,6 +110,7 @@ public class TaskExecutor {
             int         attemptCount;
 
             try {
+                RequestContext.get().setTraceId("task-"+task.getGuid());
                 if (task == null) {
                     TASK_LOG.info("Task not scheduled as it was not found");
                     return;
