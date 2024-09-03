@@ -43,7 +43,7 @@ public class MeshEntityAssetLinkREST {
      */
 
     @POST
-    @Path("/{domainId}/link-domain")
+    @Path("/{domainGuid}/link-domain")
     @Timed
     public void linkDomainToAssets(@PathParam("domainGuid") final String domainGuid, final LinkMeshEntityRequest request) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkDomainToAssets");
@@ -83,7 +83,7 @@ public class MeshEntityAssetLinkREST {
      * @throws AtlasBaseException if there is an error during the unlinking process
      */
     @POST
-    @Path("/{meshEntityId}/unlink-domain")
+    @Path("/{domainGuid}/unlink-domain")
     @Timed
     public void unlinkDomainFromAssets(@PathParam("domainGuid") final String domainGuid, final LinkMeshEntityRequest request) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkDomainFromAssets");
