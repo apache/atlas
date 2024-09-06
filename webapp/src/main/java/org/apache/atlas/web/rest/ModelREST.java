@@ -52,8 +52,6 @@ public class ModelREST {
 
     @Context
     private HttpServletRequest httpServletRequest;
-    // private final int maxFullTextQueryLength;
-    //  private final int maxDslQueryLength;
     private final boolean enableSearchLogging;
 
     private final AtlasTypeRegistry typeRegistry;
@@ -70,8 +68,6 @@ public class ModelREST {
         this.typeRegistry = typeRegistry;
         this.discoveryService = discoveryService;
         this.loggerManagement = loggerManagement;
-        //  this.maxFullTextQueryLength = configuration.getInt(Constants.MAX_FULLTEXT_QUERY_STR_LENGTH, 4096);
-        //  this.maxDslQueryLength = configuration.getInt(Constants.MAX_DSL_QUERY_STR_LENGTH, 4096);
         this.enableSearchLogging = AtlasConfiguration.ENABLE_SEARCH_LOGGER.getBoolean();
     }
 
