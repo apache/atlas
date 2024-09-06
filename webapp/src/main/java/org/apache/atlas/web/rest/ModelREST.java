@@ -41,11 +41,12 @@ import java.util.Set;
 @Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class ModelREST {
 
-    private static final String BUSINESS_DATE = "businessDate";
-    private static final String EXPIRED_BUSINESS_DATE = "expiredBusinessDate";
+    private static final String BUSINESS_DATE = "dMDataModelBusinessDate";
+    private static final String EXPIRED_BUSINESS_DATE = "dMDataModelExpiredAtBusinessDate";
     private static final String LESSER_THAN_EQUAL_TO = "lte";
-    private static final String SYSTEM_DATE = "systemDate";
-    private static final String EXPIRED_SYSTEM_DATE = "expiredSystemDate";
+    private static final String SYSTEM_DATE = "dMDataModelSystemDate";
+    private static final String EXPIRED_SYSTEM_DATE = "dMDataModelExpiredAtSystemDate";
+    private static final String NAMESPACE = "dMDataModelNamespace";
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.DiscoveryREST");
     private static final Logger LOG = LoggerFactory.getLogger(DiscoveryREST.class);
 
@@ -74,7 +75,7 @@ public class ModelREST {
         this.enableSearchLogging = AtlasConfiguration.ENABLE_SEARCH_LOGGER.getBoolean();
     }
 
-    @Path("/indexsearch")
+    @Path("/search")
     @POST
     @Timed
     public AtlasSearchResult dataSearch(@QueryParam("namespace") String namespace,
@@ -114,11 +115,7 @@ public class ModelREST {
             if (result == null) {
                 return null;
             }
-            long endTime = System.currentTimeMillis();
 
-            if (enableSearchLogging && parameters.isSaveSearchLog()) {
-                //logSearchLog(parameters, result, servletRequest, endTime - startTime);
-            }
 
             return result;
         } catch (AtlasBaseException abe) {
@@ -188,11 +185,11 @@ public class ModelREST {
 
             // Create 'match' object
             ObjectNode matchNode = objectMapper.createObjectNode();
-            matchNode.put("namespace", namespace);
+            matchNode.put(NAMESPACE.concat(".keyword"), namespace);
 
             // Add 'match' object to filter
             ObjectNode matchWrapper = objectMapper.createObjectNode();
-            matchWrapper.set("match", matchNode);
+            matchWrapper.set("term", matchNode);
             filterArray.add(matchWrapper);
 
             // add 'businessDateValidation'
@@ -236,8 +233,7 @@ public class ModelREST {
             rootNode.set("query", queryNode);
 
             // Print the JSON representation of the query
-            String jsonString = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
-            return jsonString;
+            return objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(rootNode);
         } catch (Exception e) {
             LOG.error("Error -> createQueryStringUsingFiltersAndUserDSL!", e);
         }
