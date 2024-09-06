@@ -1660,7 +1660,7 @@ public class EntityGraphRetriever {
                 }
             }
 
-            if (RequestContext.get().isRequestRelationshipAttrsForSearch()) {
+            if (RequestContext.get().isIncludeRelationshipAttributes()) {
                 String relationshipTypeName = GraphHelper.getTypeName(edge);
                 boolean isRelationshipAttribute = typeRegistry.getRelationshipDefByName(relationshipTypeName) != null;
                 if (isRelationshipAttribute) {
