@@ -4663,8 +4663,13 @@ public class EntityGraphMapper {
                 throw new RuntimeException("Permission denied to unlink entity from asset", e);
             }
             Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
-            existingValues.remove(meshEntityId);
-            ev.removePropertyValue(DOMAIN_GUIDS_ATTR, meshEntityId);
+            if (meshEntityId.isEmpty() || meshEntityId == null){
+                existingValues.clear();
+                ev.removeProperty(DOMAIN_GUIDS_ATTR);
+            } else {
+                existingValues.remove(meshEntityId);
+                ev.removePropertyValue(DOMAIN_GUIDS_ATTR, meshEntityId);
+            }
 
             updateModificationMetadata(ev);
 

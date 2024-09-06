@@ -43,30 +43,31 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class LinkMeshEntityRequest implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private Set<String> linkGuids;
-    private Set<String> unlinkGuids;
+    private Set<String> assetGuids;
+    private String domainGuid; 
 
-    public Set<String> getLinkGuids() {
-        return linkGuids;
+
+    public Set<String> getAssetGuids() {
+        return assetGuids;
     }
 
-    public void setLinkGuids(Set<String> linkGuids) {
-        this.linkGuids = linkGuids;
+    public void setAssetGuids(Set<String> assetGuids) {
+        this.assetGuids = assetGuids;
     }
 
-    public Set<String> getUnlinkGuids() {
-        return unlinkGuids;
+    public String getDomainGuid() {
+        return domainGuid;
     }
 
-    public void setUnlinkGuids(Set<String> unlinkGuids) {
-        this.unlinkGuids = unlinkGuids;
+    public void setDomainGuid(String domainGuid) {
+        this.domainGuid = domainGuid;
     }
 
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("LinkBusinessPolicyRequest{");
-        sb.append("linkGuids=").append(linkGuids);
-        sb.append(", unlinkGuids=").append(unlinkGuids);
+        sb.append("assetGuids=").append(assetGuids);
+        sb.append(", domainGuid='").append(domainGuid).append('\'');
         sb.append('}');
         return sb.toString();
     }
