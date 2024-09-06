@@ -94,7 +94,7 @@ public class MeshEntityAssetLinkREST {
 //            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Policy unlinking");
 //        }
 
-        String domainGuid = "";
+        String domainGuid = request.getDomainGuid();
 
         LOG.info("Unlinking Domain {} to Asset", domainGuid);
 

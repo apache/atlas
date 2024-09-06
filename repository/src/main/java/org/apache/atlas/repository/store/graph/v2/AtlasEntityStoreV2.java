@@ -2852,11 +2852,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 return;
             }
 
-            LOG.info("unlinkMeshEntityFromAssets: entityGuid={}", meshEntityGuid);
+            LOG.info("unlinkMeshEntityFromAssets: assetGuids={}", unlinkGuids);
 
             handleEntityMutation(vertices);
         } catch (Exception e) {
-            LOG.error("Error during unlinkMeshEntity for entityGuid: {}", meshEntityGuid, e);
+            LOG.error("Error during unlinkMeshEntity for assetGuids: {}", unlinkGuids, e);
             throw e;
         } finally {
             RequestContext.get().endMetricRecord(metric);

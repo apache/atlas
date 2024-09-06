@@ -4655,7 +4655,7 @@ public class EntityGraphMapper {
     public List<AtlasVertex> unlinkMeshEntityFromAssets(String meshEntityId, Set<String> unlinkGuids) {
         return unlinkGuids.stream().map(guid -> AtlasGraphUtilsV2.findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
             Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
-            return existingValues.contains(meshEntityId);
+            return meshEntityId.isEmpty() != existingValues.contains(meshEntityId);
         }).peek(ev -> {
             try {
                 isAuthorizedToLink(ev);
