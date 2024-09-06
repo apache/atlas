@@ -2822,6 +2822,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkMeshEntityToAssets.GraphTransaction");
 
         try {
+            List<String> assetGuids = new ArrayList<>(linkGuids);
+            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(assetGuids);
             List<AtlasVertex> vertices = this.entityGraphMapper.linkMeshEntityToAssets(meshEntityGuid, linkGuids);
             if (CollectionUtils.isEmpty(vertices)) {
                 return;
@@ -2843,6 +2845,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     public void unlinkMeshEntityFromAssets(String meshEntityGuid, Set<String> unlinkGuids) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkMeshEntityFromAssets.GraphTransaction");
         try {
+            List<String> assetGuids = new ArrayList<>(unlinkGuids);
+            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(assetGuids);
             List<AtlasVertex> vertices = this.entityGraphMapper.unlinkMeshEntityFromAssets(meshEntityGuid, unlinkGuids);
             if (CollectionUtils.isEmpty(vertices)) {
                 return;
