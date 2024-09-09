@@ -376,27 +376,21 @@ public final class GraphHelper {
 
         return ret;
     }
-
-    public static List<AtlasVertex> getAllClassificationVerticesByClassificationName(AtlasGraph graph, String classificationName) {
-        Iterable vertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
-        if (vertices == null) {
-            return Collections.emptyList();
+    public static Iterator<AtlasVertex> getClassificationVertices(AtlasGraph graph, String classificationName, int size) {
+        Iterable classificationVertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices(size);
+        if (classificationVertices == null) {
+            LOG.info("classificationVertices are null");
+            return null;
         }
-        return IteratorUtils.toList(vertices.iterator());
+        return classificationVertices.iterator();
     }
 
-    public static List<AtlasVertex> getAllAssetsWithClassificationAttached(AtlasGraph graph, String classificationName) {
-        Iterable classificationVertices = graph.query().has(TYPE_NAME_PROPERTY_KEY, classificationName).vertices();
-        if (classificationVertices == null) {
-            return Collections.emptyList();
-        }
-        List<AtlasVertex> classificationVerticesList = IteratorUtils.toList(classificationVertices.iterator());
-            LOG.info("classificationVerticesList size: {}", classificationVerticesList.size());
+    public static List<AtlasVertex> getAllAssetsWithClassificationVertex(AtlasVertex classificationVertice, int availableSlots) {
         HashSet<AtlasVertex> entityVerticesSet = new HashSet<>();
-        for (AtlasVertex classificationVertex : classificationVerticesList) {
-            Iterable attachedVertices =  classificationVertex.query()
+        try {
+            Iterable attachedVertices = classificationVertice.query()
                     .direction(AtlasEdgeDirection.IN)
-                    .label(CLASSIFICATION_LABEL).vertices();
+                    .label(CLASSIFICATION_LABEL).vertices(availableSlots);
             if (attachedVertices != null) {
                 Iterator<AtlasVertex> attachedVerticesIterator = attachedVertices.iterator();
                 while (attachedVerticesIterator.hasNext()) {
@@ -405,8 +399,23 @@ public final class GraphHelper {
                 LOG.info("entityVerticesSet size: {}", entityVerticesSet.size());
             }
         }
-
+        catch (IllegalStateException e){
+            e.printStackTrace();
+        }
         return entityVerticesSet.stream().collect(Collectors.toList());
+    }
+
+    public static long getAssetsCountOfClassificationVertex(AtlasVertex classificationVertice) {
+        long count = 0;
+        try {
+            count = classificationVertice.query()
+                    .direction(AtlasEdgeDirection.IN)
+                    .label(CLASSIFICATION_LABEL).count();
+        }
+        catch (IllegalStateException e){
+            e.printStackTrace();
+        }
+        return count;
     }
     public static AtlasEdge getClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex) {
         AtlasEdge ret   = null;

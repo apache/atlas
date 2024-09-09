@@ -130,8 +130,11 @@ public class ClassificationPropagationTasks {
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
             String            classificationName      = (String) parameters.get(PARAM_CLASSIFICATION_NAME);
-
-            entityGraphMapper.cleanUpClassificationPropagation(classificationName);
+            int batchLimit = -1;
+            if(parameters.containsKey(PARAM_BATCH_LIMIT)) {
+                batchLimit = (int) parameters.get(PARAM_BATCH_LIMIT);
+            }
+            entityGraphMapper.cleanUpClassificationPropagation(classificationName, batchLimit);
         }
     }
 }

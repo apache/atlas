@@ -177,6 +177,7 @@ public class EntityGraphMapper {
     private static final boolean RESTRICT_PROPAGATION_THROUGH_LINEAGE_DEFAULT        = false;
 
     private static final boolean RESTRICT_PROPAGATION_THROUGH_HIERARCHY_DEFAULT        = false;
+    public static final int CLEANUP_BATCH_SIZE = 200000;
     private              boolean DEFERRED_ACTION_ENABLED                             = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
     private              boolean DIFFERENTIAL_AUDITS                                 = STORE_DIFFERENTIAL_AUDITS.getBoolean();
 
@@ -3033,44 +3034,82 @@ public class EntityGraphMapper {
         }
     }
 
-    public void cleanUpClassificationPropagation(String classificationName) throws AtlasBaseException {
-        List<AtlasVertex> vertices = GraphHelper.getAllAssetsWithClassificationAttached(graph, classificationName);
-        int totalVertexSize = vertices.size();
-        LOG.info("To clean up tag {} from {} entities", classificationName, totalVertexSize);
-        int toIndex;
-        int offset = 0;
-        do {
-            toIndex = Math.min((offset + CHUNK_SIZE), totalVertexSize);
-            List<AtlasVertex> entityVertices = vertices.subList(offset, toIndex);
-            List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
-            try {
-                GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
-                for (AtlasVertex vertex : entityVertices) {
-                    List<AtlasClassification> deletedClassifications = new ArrayList<>();
-                    List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
-                    for (AtlasEdge edge : classificationEdges) {
-                        AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
-                        deletedClassifications.add(classification);
-                        deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
-                    }
 
-                    AtlasEntity entity = repairClassificationMappings(vertex);
+    public void cleanUpClassificationPropagation(String classificationName, int batchLimit) throws AtlasBaseException {
+        int CLEANUP_MAX = batchLimit <= 0 ? CLEANUP_BATCH_SIZE : batchLimit * CLEANUP_BATCH_SIZE;
+        int cleanedUpCount = 0;
 
-                    entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
-                }
-                offset += CHUNK_SIZE;
-            } finally {
-                transactionInterceptHelper.intercept();
-                LOG.info("Cleaned up {} entities for classification {}", offset, classificationName);
+        Iterator<AtlasVertex> tagVertices = GraphHelper.getClassificationVertices(graph, classificationName, CLEANUP_BATCH_SIZE);
+        List<AtlasVertex> tagVerticesProcessed = new ArrayList<>(0);
+        List<AtlasVertex> currentAssetVerticesBatch = new ArrayList<>(0);
+
+        while (tagVertices != null && tagVertices.hasNext()) {
+            if (cleanedUpCount >= CLEANUP_MAX){
+                return;
             }
 
-        } while (offset < totalVertexSize);
-        // Fetch all classificationVertex by classificationName and delete them if remaining
-        List<AtlasVertex> classificationVertices = GraphHelper.getAllClassificationVerticesByClassificationName(graph, classificationName);
-        for (AtlasVertex classificationVertex : classificationVertices) {
-            deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+            while (tagVertices.hasNext() && currentAssetVerticesBatch.size() < CLEANUP_BATCH_SIZE) {
+                AtlasVertex tagVertex = tagVertices.next();
+
+                int availableSlots = CLEANUP_BATCH_SIZE - currentAssetVerticesBatch.size();
+                long assetCountForCurrentTagVertex = GraphHelper.getAssetsCountOfClassificationVertex(tagVertex);
+                currentAssetVerticesBatch.addAll(GraphHelper.getAllAssetsWithClassificationVertex(tagVertex, availableSlots));
+                LOG.info("Available slots : {}, assetCountForCurrentTagVertex : {}, queueSize : {}",availableSlots, assetCountForCurrentTagVertex, currentAssetVerticesBatch.size());
+                if (assetCountForCurrentTagVertex <= availableSlots) {
+                    tagVerticesProcessed.add(tagVertex);
+                }
+            }
+
+            int currentAssetsBatchSize = currentAssetVerticesBatch.size();
+            if (currentAssetsBatchSize > 0) {
+                LOG.info("To clean up tag {} from {} entities", classificationName, currentAssetsBatchSize);
+                int offset = 0;
+                do {
+                    try {
+                        int toIndex = Math.min((offset + CHUNK_SIZE), currentAssetsBatchSize);
+                        List<AtlasVertex> entityVertices = currentAssetVerticesBatch.subList(offset, toIndex);
+                        List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
+                        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
+
+                        for (AtlasVertex vertex : entityVertices) {
+                            List<AtlasClassification> deletedClassifications = new ArrayList<>();
+                            List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
+                            for (AtlasEdge edge : classificationEdges) {
+                                AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
+                                deletedClassifications.add(classification);
+                                deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                            }
+
+                            AtlasEntity entity = repairClassificationMappings(vertex);
+
+                            entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
+                        }
+
+                        transactionInterceptHelper.intercept();
+
+                        offset += CHUNK_SIZE;
+                    } finally {
+                        LOG.info("Cleaned up {} entities for classification {}", offset, classificationName);
+                    }
+
+                } while (offset < currentAssetsBatchSize);
+
+                for (AtlasVertex classificationVertex : tagVerticesProcessed) {
+                    try {
+                        deleteDelegate.getHandler().deleteClassificationVertex(classificationVertex, true);
+                    } catch (IllegalStateException e) {
+                        e.printStackTrace();
+                    }
+                }
+                transactionInterceptHelper.intercept();
+
+                cleanedUpCount += currentAssetsBatchSize;
+                currentAssetVerticesBatch.clear();
+                tagVerticesProcessed.clear();
+            }
+            tagVertices = GraphHelper.getClassificationVertices(graph, classificationName, CLEANUP_BATCH_SIZE);
         }
-        transactionInterceptHelper.intercept();
+
         LOG.info("Completed cleaning up classification {}", classificationName);
     }
 
@@ -3192,7 +3231,7 @@ public class EntityGraphMapper {
                 if (propagateTags && taskManagement != null && DEFERRED_ACTION_ENABLED) {
                     propagateTags = false;
 
-                    createAndQueueTask(CLASSIFICATION_PROPAGATION_ADD, entityVertex, classificationVertex.getIdForDisplay());
+                    createAndQueueTask(CLASSIFICATION_PROPAGATION_ADD, entityVertex, classificationVertex.getIdForDisplay(), getTypeName(classificationVertex));
                 }
 
                 // add the attributes for the trait instance
@@ -3467,7 +3506,7 @@ public class EntityGraphMapper {
                 }
 
                 if (propagateDelete) {
-                    createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertex.getIdForDisplay());
+                    createAndQueueTask(CLASSIFICATION_PROPAGATION_DELETE, entityVertex, classificationVertex.getIdForDisplay(), classificationName);
                 }
 
                 entityVertices = new ArrayList<>();
@@ -3745,7 +3784,7 @@ public class EntityGraphMapper {
                 if (removePropagation || !updatedTagPropagation) {
                     propagationType = CLASSIFICATION_PROPAGATION_DELETE;
                 }
-                createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), currentRestrictPropagationThroughLineage, currentRestrictPropagationThroughHierarchy);
+                createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), classificationName, currentRestrictPropagationThroughLineage,currentRestrictPropagationThroughHierarchy);
                 updatedTagPropagation = null;
             }
 
@@ -4503,13 +4542,13 @@ public class EntityGraphMapper {
         attributes.put(bmAttribute.getName(), attrValue);
     }
 
-    private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, Boolean currentPropagateThroughLineage, Boolean currentRestrictPropagationThroughHierarchy) throws AtlasBaseException {
+    private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String classificationName, Boolean currentPropagateThroughLineage, Boolean currentRestrictPropagationThroughHierarchy) throws AtlasBaseException{
 
-        deleteDelegate.getHandler().createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, null, currentPropagateThroughLineage, currentRestrictPropagationThroughHierarchy);
+        deleteDelegate.getHandler().createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId,classificationName, null, currentPropagateThroughLineage,currentRestrictPropagationThroughHierarchy);
     }
 
-    private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId) throws AtlasBaseException {
-        deleteDelegate.getHandler().createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, null);
+    private void createAndQueueTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String classificationName) throws AtlasBaseException {
+        deleteDelegate.getHandler().createAndQueueTaskWithoutCheck(taskType, entityVertex, classificationVertexId, classificationName, null);
     }
 
     public void removePendingTaskFromEntity(String entityGuid, String taskGuid) throws EntityNotFoundException {

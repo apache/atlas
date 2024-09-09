@@ -23,7 +23,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.lang.reflect.Field;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
@@ -149,7 +148,7 @@ public class AtlasTaskService implements TaskService {
                     throw new AtlasBaseException(AtlasErrorCode.TASK_TYPE_NOT_SUPPORTED, task.getType());
                 }
                 if (isClassificationTaskType(taskType) && !taskType.equals(ClassificationPropagateTaskFactory.CLEANUP_CLASSIFICATION_PROPAGATION)) {
-                    String classificationName = task.getClassificationName();
+                    String classificationName = task.getClassificationTypeName();
                     String entityGuid = task.getEntityGuid();
                     String classificationId = StringUtils.isEmpty(task.getClassificationId()) ? resolveAndReturnClassificationId(classificationName, entityGuid) : task.getClassificationId();
                     if (StringUtils.isEmpty(classificationId)) {
@@ -233,6 +232,11 @@ public class AtlasTaskService implements TaskService {
         setEncodedProperty(ret, Constants.TASK_CREATED_BY, task.getCreatedBy());
         setEncodedProperty(ret, Constants.TASK_CREATED_TIME, task.getCreatedTime());
         setEncodedProperty(ret, Constants.TASK_UPDATED_TIME, task.getUpdatedTime());
+
+        if (task.getClassificationTypeName() != null) {
+            setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_TYPENAME, task.getClassificationTypeName());
+        }
+
         if (task.getClassificationId() != null) {
             setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_ID, task.getClassificationId());
         }

@@ -91,4 +91,10 @@ public class IndexSearchParams extends SearchParams {
                 ", utmTags="+ getUtmTags() +
                 '}';
     }
+
+    @Override
+    public void setQuery(String query) {
+        this.queryString = query;
+    }
+
 }
