@@ -407,6 +407,19 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Managing Stakeholders while creating/updating a domain");
         }
     }
+
+    @Override
+    public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
+        String domainGuid = GraphHelper.getGuid(vertex);
+
+        if(LOG.isDebugEnabled()) {
+            LOG.debug("DataDomainPreProcessor.processDelete: pre processing {}", domainGuid);
+        }
+
+        if (isAssetLinked(domainGuid)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot delete domain as it has linked assets");
+        }
+    }
 }
 
 

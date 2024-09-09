@@ -264,7 +264,7 @@ public class StakeholderPreProcessor extends PersonaPreProcessor {
         Map<String, Object> bool = mapOf("must", mustClauseList);
         Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, this.discovery);
+        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, this.discovery, 100);
 
         if (CollectionUtils.isNotEmpty(assets)) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
@@ -282,7 +282,7 @@ public class StakeholderPreProcessor extends PersonaPreProcessor {
         Map<String, Object> bool = mapOf("must", mustClauseList);
         Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, Collections.singleton(ATTR_DOMAIN_QUALIFIED_NAMES), this.discovery);
+        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, Collections.singleton(ATTR_DOMAIN_QUALIFIED_NAMES), this.discovery, 100);
 
         if (CollectionUtils.isNotEmpty(assets)) {
             AtlasEntityHeader stakeholderTitleHeader = assets.get(0);
@@ -311,7 +311,7 @@ public class StakeholderPreProcessor extends PersonaPreProcessor {
         Map<String, Object> bool = mapOf("must", mustClauseList);
         Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, discovery);
+        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, discovery, 100);
 
         if (CollectionUtils.isNotEmpty(assets)) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST,
