@@ -45,11 +45,6 @@ public class MeshEntityAssetLinkREST {
     @Path("/link-domain")
     @Timed
     public void linkDomainToAssets(final LinkMeshEntityRequest request) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkDomainToAssets");
-        // Ensure the current user is authorized to link domain
-//        if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
-//            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Domain linking");
-//        }
         String domainGuid = request.getDomainGuid();
         if(domainGuid == null || domainGuid.isEmpty()) {
             throw new AtlasBaseException("Domain GUID is required for linking domain to assets");
@@ -74,7 +69,6 @@ public class MeshEntityAssetLinkREST {
         } finally {
             // Log performance metrics
             AtlasPerfTracer.log(perf);
-            RequestContext.get().endMetricRecord(metric);
         }
     }
 
@@ -88,12 +82,6 @@ public class MeshEntityAssetLinkREST {
     @Path("/unlink-domain")
     @Timed
     public void unlinkDomainFromAssets(final LinkMeshEntityRequest request) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkDomainFromAssets");
-        // Ensure the current user is authorized to unlink policies
-//        if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
-//            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Policy unlinking");
-//        }
-
         String domainGuid = request.getDomainGuid();
 
         LOG.info("Unlinking Domain {} to Asset", domainGuid);
@@ -115,7 +103,6 @@ public class MeshEntityAssetLinkREST {
         } finally {
             // Log performance metrics
             AtlasPerfTracer.log(perf);
-            RequestContext.get().endMetricRecord(metric);
         }
     }
 }
