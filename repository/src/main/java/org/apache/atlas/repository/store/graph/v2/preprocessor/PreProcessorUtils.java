@@ -149,7 +149,7 @@ public class PreProcessorUtils {
         return newCollectionQualifiedName;
     }
 
-    public static List<AtlasEntityHeader> indexSearchPaginated(Map<String, Object> dsl, Set<String> attributes, EntityDiscoveryService discovery, int size) throws AtlasBaseException {
+    public static List<AtlasEntityHeader> indexSearchPaginated(Map<String, Object> dsl, Set<String> attributes, EntityDiscoveryService discovery) throws AtlasBaseException {
         IndexSearchParams searchParams = new IndexSearchParams();
         List<AtlasEntityHeader> ret = new ArrayList<>();
 
@@ -163,6 +163,7 @@ public class PreProcessorUtils {
         dsl.put("sort", sortList);
 
         int from = 0;
+        int size = 100;
         boolean hasMore = true;
         do {
             dsl.put("from", from);
@@ -195,7 +196,7 @@ public class PreProcessorUtils {
 
         Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, discovery, 100);
+        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, discovery);
 
         if (CollectionUtils.isNotEmpty(assets)) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, errorMessage);

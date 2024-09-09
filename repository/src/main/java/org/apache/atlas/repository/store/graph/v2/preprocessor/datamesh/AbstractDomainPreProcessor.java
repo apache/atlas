@@ -248,7 +248,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         }
         Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, this.discovery, 100);
+        List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, this.discovery);
 
         if (CollectionUtils.isNotEmpty(assets)) {
             for (AtlasEntityHeader asset : assets) {
@@ -279,32 +279,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            return indexSearchPaginated(dsl, POLICY_ATTRIBUTES_FOR_SEARCH, discovery, 100);
-        } finally {
-            RequestContext.get().endMetricRecord(metricRecorder);
-        }
-    }
-
-    protected Boolean isAssetLinked(String domainGuid) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("isAssetLinked");
-        boolean exists = false;
-        try {
-            List<Map<String, Object>> mustClauseList = new ArrayList<>();
-            mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
-            mustClauseList.add(mapOf("terms", mapOf(DOMAIN_GUIDS, domainGuid)));
-
-            Map<String, Object> bool = new HashMap<>();
-            bool.put("must", mustClauseList);
-
-            Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
-
-            List<AtlasEntityHeader> assets = indexSearchPaginated(dsl, null, this.discovery, 1);
-            if (CollectionUtils.isNotEmpty(assets)) {
-                exists = true;
-            }
-
-            return exists;
-
+            return indexSearchPaginated(dsl, POLICY_ATTRIBUTES_FOR_SEARCH, discovery);
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
@@ -327,7 +302,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            return indexSearchPaginated(dsl, STAKEHOLDER_ATTRIBUTES_FOR_SEARCH, discovery, 100);
+            return indexSearchPaginated(dsl, STAKEHOLDER_ATTRIBUTES_FOR_SEARCH, discovery);
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }

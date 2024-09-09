@@ -356,7 +356,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            List<AtlasEntityHeader> categories = indexSearchPaginated(dsl, null, this.discovery, 100);
+            List<AtlasEntityHeader> categories = indexSearchPaginated(dsl, null, this.discovery);
 
             if (CollectionUtils.isNotEmpty(categories)) {
                 for (AtlasEntityHeader category : categories) {
