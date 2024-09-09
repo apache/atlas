@@ -160,6 +160,7 @@ public class EntityGraphMapper {
     private static final String TYPE_CATEGORY= "AtlasGlossaryCategory";
     private static final String TYPE_TERM = "AtlasGlossaryTerm";
     private static final String TYPE_PRODUCT = "DataProduct";
+    private static final String TYPE_DOMAIN = "DataDomain";
     private static final String TYPE_PROCESS = "Process";
     private static final String ATTR_MEANINGS = "meanings";
     private static final String ATTR_ANCHOR = "anchor";
@@ -196,6 +197,9 @@ public class EntityGraphMapper {
     private final IFullTextMapper           fullTextMapperV2;
     private final TaskManagement            taskManagement;
     private final TransactionInterceptHelper   transactionInterceptHelper;
+    private final EntityGraphRetriever       retrieverNoRelation;
+
+    private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
 
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
@@ -211,6 +215,7 @@ public class EntityGraphMapper {
         this.entityChangeNotifier = entityChangeNotifier;
         this.instanceConverter    = instanceConverter;
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
+        this.retrieverNoRelation  = new EntityGraphRetriever(graph, typeRegistry, true);
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
         this.transactionInterceptHelper = transactionInterceptHelper;}
@@ -4644,7 +4649,6 @@ public class EntityGraphMapper {
 
     public List<AtlasVertex> linkMeshEntityToAssets(String meshEntityId, Set<String> linkGuids) throws AtlasBaseException {
         List<AtlasVertex> linkedVertices = new ArrayList<>();
-        Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT));
 
         for (String guid : linkGuids) {
             AtlasVertex ev = findByGuid(graph, guid);
@@ -4652,6 +4656,7 @@ public class EntityGraphMapper {
             if (ev != null) {
                 String typeName = ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
                 if (excludedTypes.contains(typeName)){
+                    LOG.warn("Type {} is not allowed to link with mesh entity", typeName);
                     continue;
                 }
                 Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
@@ -4677,7 +4682,6 @@ public class EntityGraphMapper {
 
     public List<AtlasVertex> unlinkMeshEntityFromAssets(String meshEntityId, Set<String> unlinkGuids) throws AtlasBaseException {
         List<AtlasVertex> unlinkedVertices = new ArrayList<>();
-        Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT));
 
         for (String guid : unlinkGuids) {
             AtlasVertex ev = AtlasGraphUtilsV2.findByGuid(graph, guid);
@@ -4685,7 +4689,7 @@ public class EntityGraphMapper {
             if (ev != null) {
                 String typeName = ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
                 if (excludedTypes.contains(typeName)){
-                    LOG.debug("Type {} is not allowed to link with mesh entity", typeName);
+                    LOG.warn("Type {} is not allowed to unlink with mesh entity", typeName);
                     continue;
                 }
 
@@ -4744,7 +4748,7 @@ public class EntityGraphMapper {
     }
 
     private void isAuthorizedToLink(AtlasVertex vertex) throws AtlasBaseException {
-        AtlasEntityHeader sourceEntity = entityRetriever.toAtlasEntityHeader(vertex);
+        AtlasEntityHeader sourceEntity = retrieverNoRelation.toAtlasEntityHeader(vertex);
 
         // source -> UPDATE + READ
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceEntity),
