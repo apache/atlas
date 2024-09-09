@@ -156,8 +156,8 @@ public class EntityGraphMapper {
     private static final int     CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH   = AtlasConfiguration.CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH.getInt();
     private static final int     CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH = AtlasConfiguration.CUSTOM_ATTRIBUTE_VALUE_MAX_LENGTH.getInt();
 
-    private static final String TYPE_GLOSSARY = "AtlasGlossary";
-    private static final String TYPE_CATEGORY = "AtlasGlossaryCategory";
+    private static final String TYPE_GLOSSARY= "AtlasGlossary";
+    private static final String TYPE_CATEGORY= "AtlasGlossaryCategory";
     private static final String TYPE_TERM = "AtlasGlossaryTerm";
     private static final String TYPE_PRODUCT = "DataProduct";
     private static final String TYPE_PROCESS = "Process";
@@ -4276,7 +4276,7 @@ public class EntityGraphMapper {
     }
 
     private String getIdFromBothVertex(AtlasEdge currentEdge, AtlasVertex parentEntityVertex) {
-        String parentEntityId = getIdFromVertex(parentEntityVertex);
+        String parentEntityId  = getIdFromVertex(parentEntityVertex);
         String currentEntityId = getIdFromVertex(currentEdge.getInVertex());
 
         if (StringUtils.equals(currentEntityId, parentEntityId)) {
@@ -4377,13 +4377,13 @@ public class EntityGraphMapper {
             }
 
             Map<String, AtlasBusinessAttribute> entityTypeBusinessAttributes = entityTypeBusinessMetadata.get(bmName);
-            Map<String, Object> entityBusinessAttributes = businessAttributes.get(bmName);
+            Map<String, Object>                         entityBusinessAttributes     = businessAttributes.get(bmName);
 
             for (AtlasBusinessAttribute bmAttribute : entityTypeBusinessAttributes.values()) {
-                AtlasType attrType = bmAttribute.getAttributeType();
-                String attrName = bmAttribute.getName();
-                Object attrValue = entityBusinessAttributes == null ? null : entityBusinessAttributes.get(attrName);
-                String fieldName = entityType.getTypeName() + "." + bmName + "." + attrName;
+                AtlasType attrType  = bmAttribute.getAttributeType();
+                String    attrName  = bmAttribute.getName();
+                Object    attrValue = entityBusinessAttributes == null ? null : entityBusinessAttributes.get(attrName);
+                String    fieldName = entityType.getTypeName() + "." + bmName + "." + attrName;
 
                 if (attrValue != null) {
                     attrType.validateValue(attrValue, fieldName, messages);
@@ -4420,7 +4420,7 @@ public class EntityGraphMapper {
 
         if (MapUtils.isNotEmpty(customAttributes)) {
             for (Map.Entry<String, String> entry : customAttributes.entrySet()) {
-                String key = entry.getKey();
+                String key   = entry.getKey();
                 String value = entry.getValue();
 
                 if (key.length() > CUSTOM_ATTRIBUTE_KEY_MAX_LENGTH) {
@@ -4491,6 +4491,7 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metricRecorder);
         return propagatedEntities;
     }
+
 
 
     private void updateLabels(AtlasVertex vertex, Set<String> labels) {
@@ -4606,6 +4607,7 @@ public class EntityGraphMapper {
         }
         RequestContext.get().endMetricRecord(metricRecorder);
     }
+
 
     public List<AtlasVertex> linkBusinessPolicy(String policyId, Set<String> linkGuids) {
         return linkGuids.stream().map(guid -> findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
