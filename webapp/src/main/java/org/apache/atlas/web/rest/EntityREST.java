@@ -1871,6 +1871,29 @@ public class EntityREST {
         }
     }
 
+    @POST
+    @Path("/guid/bulk/repairindex")
+    public void repairEntityIndexBulk(Set<String> guids) throws AtlasBaseException {
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_REPAIR_INDEX), "Admin Repair Index");
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairEntityIndexBulk(" + guids.size() + ")");
+            }
+            RepairIndex repairIndex = new RepairIndex();
+            repairIndex.setupGraph();
+
+            repairIndex.restoreByIds(guids);
+        } catch (Exception e) {
+            LOG.error("Exception while repairEntityIndexBulk ", e);
+            throw new AtlasBaseException(e);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
 
     @POST
     @Path("/repairindex/{typename}")
