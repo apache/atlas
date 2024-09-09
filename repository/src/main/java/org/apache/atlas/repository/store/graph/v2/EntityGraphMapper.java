@@ -4685,6 +4685,7 @@ public class EntityGraphMapper {
             if (ev != null) {
                 String typeName = ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
                 if (excludedTypes.contains(typeName)){
+                    LOG.debug("Type {} is not allowed to link with mesh entity", typeName);
                     continue;
                 }
 
