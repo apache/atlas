@@ -91,7 +91,7 @@ public class AssetPreProcessor implements PreProcessor {
             }
 
             if (excludedTypes.contains(entity.getTypeName())) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Asset Type {} is not allowed to link with Domain", entity.getTypeName());
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "This AssetType is not allowed to link with Domain", entity.getTypeName());
             }
 
             for(String domainGuid : domainGuids) {
