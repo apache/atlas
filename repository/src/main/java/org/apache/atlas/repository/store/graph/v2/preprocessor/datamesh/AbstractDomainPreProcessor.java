@@ -293,7 +293,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         try {
             List<Map<String, Object>> mustClauseList = new ArrayList<>();
             mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
-            mustClauseList.add(mapOf("terms", mapOf(DOMAIN_GUIDS, domainGuid)));
+            mustClauseList.add(mapOf("term", mapOf(DOMAIN_GUIDS, domainGuid)));
 
             Map<String, Object> bool = new HashMap<>();
             bool.put("must", mustClauseList);
