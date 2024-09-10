@@ -313,7 +313,6 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
     protected static Boolean fetchLinkedAssets(Map<String, Object> dsl, Set<String> attributes, EntityDiscoveryService discovery) throws AtlasBaseException {
         IndexSearchParams searchParams = new IndexSearchParams();
-        List<AtlasEntityHeader> ret = new ArrayList<>();
         boolean exists = false;
 
         searchParams.setAttributes(attributes);
