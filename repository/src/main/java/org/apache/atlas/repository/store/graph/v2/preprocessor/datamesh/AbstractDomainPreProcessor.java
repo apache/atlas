@@ -289,7 +289,6 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
     protected Boolean hasLinkedAssets(String domainGuid) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("isAssetLinked");
-        boolean exists = false;
         try {
             List<Map<String, Object>> mustClauseList = new ArrayList<>();
             mustClauseList.add(mapOf("term", mapOf(DOMAIN_GUIDS, domainGuid)));
@@ -299,19 +298,14 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            boolean hasLinkedAsset = fetchLinkedAssets(dsl, DOMAIN_GUID_ATTR, this.discovery);
-            if (hasLinkedAsset) {
-                exists = true;
-            }
-
-            return exists;
+            return hasLinkedAssets(dsl, DOMAIN_GUID_ATTR, this.discovery);
 
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 
-    protected static Boolean fetchLinkedAssets(Map<String, Object> dsl, Set<String> attributes, EntityDiscoveryService discovery) throws AtlasBaseException {
+    protected static Boolean hasLinkedAssets(Map<String, Object> dsl, Set<String> attributes, EntityDiscoveryService discovery) throws AtlasBaseException {
         IndexSearchParams searchParams = new IndexSearchParams();
         boolean exists = false;
 
