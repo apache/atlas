@@ -4698,7 +4698,7 @@ public class EntityGraphMapper {
                 if (meshEntityId.isEmpty() || existingValues.contains(meshEntityId)) {
                     isAuthorizedToLink(ev);
 
-                    if (meshEntityId.isEmpty() || meshEntityId == null) {
+                    if (StringUtils.isEmpty(meshEntityId)) {
                         existingValues.clear();
                         ev.removeProperty(DOMAIN_GUIDS_ATTR);
                     } else {
