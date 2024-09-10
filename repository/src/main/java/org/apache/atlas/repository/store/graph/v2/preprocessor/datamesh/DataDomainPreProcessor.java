@@ -416,7 +416,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             LOG.debug("DataDomainPreProcessor.processDelete: pre processing {}", domainGuid);
         }
 
-        if (isAssetLinked(domainGuid)) {
+        if (hasLinkedAssets(domainGuid)) {
             throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Domain cannot be deleted because some assets are linked to this domain");
         }
     }

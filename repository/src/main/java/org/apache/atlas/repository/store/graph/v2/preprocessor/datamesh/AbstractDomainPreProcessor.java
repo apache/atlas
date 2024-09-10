@@ -287,12 +287,11 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         }
     }
 
-    protected Boolean isAssetLinked(String domainGuid) throws AtlasBaseException {
+    protected Boolean hasLinkedAssets(String domainGuid) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("isAssetLinked");
         boolean exists = false;
         try {
             List<Map<String, Object>> mustClauseList = new ArrayList<>();
-            mustClauseList.add(mapOf("term", mapOf("__state", "ACTIVE")));
             mustClauseList.add(mapOf("term", mapOf(DOMAIN_GUIDS, domainGuid)));
 
             Map<String, Object> bool = new HashMap<>();
@@ -300,8 +299,8 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            List<AtlasEntityHeader> assets = fetchLinkedAssets(dsl, DOMAIN_GUID_ATTR, this.discovery);
-            if (CollectionUtils.isNotEmpty(assets)) {
+            boolean hasLinkedAsset = fetchLinkedAssets(dsl, DOMAIN_GUID_ATTR, this.discovery);
+            if (hasLinkedAsset) {
                 exists = true;
             }
 
@@ -312,31 +311,22 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         }
     }
 
-    protected static List<AtlasEntityHeader> fetchLinkedAssets(Map<String, Object> dsl, Set<String> attributes, EntityDiscoveryService discovery) throws AtlasBaseException {
+    protected static Boolean fetchLinkedAssets(Map<String, Object> dsl, Set<String> attributes, EntityDiscoveryService discovery) throws AtlasBaseException {
         IndexSearchParams searchParams = new IndexSearchParams();
         List<AtlasEntityHeader> ret = new ArrayList<>();
+        boolean exists = false;
 
-        if (CollectionUtils.isNotEmpty(attributes)) {
-            searchParams.setAttributes(attributes);
-        }
-
-        List<Map> sortList = new ArrayList<>(0);
-        sortList.add(mapOf("__timestamp", mapOf("order", "asc")));
-        sortList.add(mapOf("__guid", mapOf("order", "asc")));
-        dsl.put("sort", sortList);
-
-        int from = 0;
-        int size = 1;
-        dsl.put("from", from);
-        dsl.put("size", size);
+        searchParams.setAttributes(attributes);
+        dsl.put("from", 0);
+        dsl.put("size", 1);
         searchParams.setDsl(dsl);
 
         List<AtlasEntityHeader> headers = discovery.directIndexSearch(searchParams).getEntities();
 
         if (CollectionUtils.isNotEmpty(headers)) {
-            ret.addAll(headers);
+            exists = true;
         }
-        return ret;
+        return exists;
     }
 
     protected List<AtlasEntityHeader> getStakeholderTitlesAndStakeholders(Set<String> qualifiedNames) throws AtlasBaseException {
