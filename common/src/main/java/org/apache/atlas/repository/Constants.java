@@ -373,7 +373,7 @@ public final class Constants {
     public static final String DOMAIN_GUIDS_ATTR = "domainGUIDs";
     public static final String ASSET_POLICY_GUIDS  = "assetPolicyGUIDs";
 
-    public static final String NON_COMPLIANT_ASSET_POLICY_GUIDS  = "nonComplaintAssetPolicyGUIDs";
+    public static final String NON_COMPLIANT_ASSET_POLICY_GUIDS  = "nonCompliantAssetPolicyGUIDs";
     public static final String ASSET_POLICIES_COUNT  = "assetPoliciesCount";
 
     /*

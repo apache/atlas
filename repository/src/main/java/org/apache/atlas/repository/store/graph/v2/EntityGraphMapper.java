@@ -4718,9 +4718,13 @@ public class EntityGraphMapper {
         existingValues.forEach(existingValue -> vertex.removePropertyValue(DOMAIN_GUIDS_ATTR, existingValue));
         vertex.setProperty(DOMAIN_GUIDS_ATTR, meshEntityId);
     }
-    public AtlasVertex moveBusinessPolicy(Set<String> policyIds, String assetId, String type) {
+    public AtlasVertex moveBusinessPolicy(Set<String> policyIds, String assetId, String type) throws AtlasBaseException {
         // Retrieve the AtlasVertex for the given assetId
         AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(graph, assetId);
+
+        if(assetVertex == null){
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "assetId not found");
+        }
 
         // Get the sets of governed and non-compliant policy GUIDs
         Set<String> governedPolicies = assetVertex.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
@@ -4753,11 +4757,9 @@ public class EntityGraphMapper {
 
         // Create a differential AtlasEntity to reflect the changes
         AtlasEntity diffEntity = new AtlasEntity(assetVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
-        diffEntity.setGuid(assetVertex.getProperty(GUID_PROPERTY_KEY, String.class));
+        setEntityCommonAttributes(assetVertex, diffEntity);
         diffEntity.setAttribute(ASSET_POLICY_GUIDS, governedPolicies);
         diffEntity.setAttribute(NON_COMPLIANT_ASSET_POLICY_GUIDS, nonCompliantPolicies);
-        diffEntity.setUpdatedBy(assetVertex.getProperty(MODIFIED_BY_KEY, String.class));
-        diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
 
         // Cache the differential entity for further processing
         RequestContext.get().cacheDifferentialEntity(diffEntity);
