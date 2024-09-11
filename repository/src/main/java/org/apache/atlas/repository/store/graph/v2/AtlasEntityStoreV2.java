@@ -2870,7 +2870,30 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.atlasAlternateChangeNotifier.onEntitiesMutation(vertices);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
+    @Override
+    @GraphTransaction
+    public void moveBusinessPolicy(Set<String> policyIds, String assetId, String type) throws AtlasBaseException {
+        // Start performance metric recording
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("moveBusinessPolicy.GraphTransaction");
 
+        try {
+            // Attempt to move the business policy using the entityGraphMapper
+            AtlasVertex vertex = entityGraphMapper.moveBusinessPolicy(policyIds, assetId, type);
+
+            if (vertex == null) {
+                LOG.warn("No vertex found for assetId: {}", assetId);
+                return;
+            }
+            handleEntityMutation(Collections.singletonList(vertex));
+        } catch (Exception e) {
+            // Log the error with context and rethrow it wrapped in an AtlasBaseException
+            LOG.error("Error during moveBusinessPolicy for assetId: {}", assetId, e);
+            throw new AtlasBaseException(e);
+        } finally {
+            // End the performance metric recording
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
 }
 
 

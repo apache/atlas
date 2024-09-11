@@ -28,15 +28,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.model.instance.AtlasRelationship;
-import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -4725,6 +4717,39 @@ public class EntityGraphMapper {
     private void updateDomainAttribute(AtlasVertex vertex, Set<String> existingValues, String meshEntityId){
         existingValues.forEach(existingValue -> vertex.removePropertyValue(DOMAIN_GUIDS_ATTR, existingValue));
         vertex.setProperty(DOMAIN_GUIDS_ATTR, meshEntityId);
+    }
+    public AtlasVertex moveBusinessPolicy(Set<String> policyIds, String assetId, String type) {
+        // Retrieve the AtlasVertex for the given assetId
+        AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(graph, assetId);
+
+        // Get the sets of governed and non-compliant policy GUIDs
+        Set<String> governedPolicies = assetVertex.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
+        Set<String> nonCompliantPolicies = assetVertex.getMultiValuedSetProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, String.class);
+
+        // Move the policy between governed and non-compliant sets based on the type
+        if (MoveBusinessPolicyRequest.Type.GOVERNED.getDescription().equals(type)) {
+            nonCompliantPolicies.removeAll(policyIds);
+            governedPolicies.addAll(policyIds);
+        } else if (MoveBusinessPolicyRequest.Type.NON_COMPLIANT.getDescription().equals(type)) {
+            governedPolicies.removeAll(policyIds);
+            nonCompliantPolicies.addAll(policyIds);
+        }
+
+        // Update the modification metadata
+        updateModificationMetadata(assetVertex);
+
+        // Create a differential AtlasEntity to reflect the changes
+        AtlasEntity diffEntity = new AtlasEntity(assetVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+        diffEntity.setGuid(assetVertex.getProperty(GUID_PROPERTY_KEY, String.class));
+        diffEntity.setAttribute(ASSET_POLICY_GUIDS, governedPolicies);
+        diffEntity.setAttribute(NON_COMPLIANT_ASSET_POLICY_GUIDS, nonCompliantPolicies);
+        diffEntity.setUpdatedBy(assetVertex.getProperty(MODIFIED_BY_KEY, String.class));
+        diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
+
+        // Cache the differential entity for further processing
+        RequestContext.get().cacheDifferentialEntity(diffEntity);
+
+        return assetVertex;
     }
 
     private void cacheDifferentialEntity(AtlasVertex ev, Set<String> existingValues) {

@@ -5,6 +5,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.LinkBusinessPolicyRequest;
+import org.apache.atlas.model.instance.MoveBusinessPolicyRequest;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -112,4 +113,45 @@ public class BusinessPolicyREST {
             RequestContext.get().endMetricRecord(metric);
         }
     }
+
+
+    @POST
+    @Path("/move/{assetId}")
+    @Timed
+    public void moveBusinessPolicy(
+            @PathParam("assetId") String assetId,
+            final MoveBusinessPolicyRequest request
+    ) throws AtlasBaseException {
+        // Start performance metric recording
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("moveBusinessPolicy");
+
+        // Ensure the current user is authorized to move the policy
+        String currentUser = RequestContext.getCurrentUser();
+        if (!ARGO_SERVICE_USER_NAME.equals(currentUser)) {
+            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, currentUser, "moveBusinessPolicy");
+        }
+
+        // Set request context parameters for the current operation
+        RequestContext requestContext = RequestContext.get();
+        requestContext.setIncludeClassifications(false);
+        requestContext.setIncludeMeanings(false);
+        requestContext.getRequestContextHeaders().put("x-atlan-route", "business-policy-rest");
+
+        AtlasPerfTracer perf = null;
+        try {
+            // Start performance tracing if enabled
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BusinessPolicyREST.moveBusinessPolicy(" + assetId + ")");
+            }
+
+            // Move the business policy using the entitiesStore
+            entitiesStore.moveBusinessPolicy(request.getPolicyIds(), assetId, request.getType());
+        } finally {
+            // Log performance trace and end metric recording
+            AtlasPerfTracer.log(perf);
+            requestContext.endMetricRecord(metric);
+        }
+    }
+
 }
+
