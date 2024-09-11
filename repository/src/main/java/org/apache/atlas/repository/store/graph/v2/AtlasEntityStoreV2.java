@@ -1927,7 +1927,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         //  The default global pre-processor for all AssetTypes
-        preProcessors.add(new AssetPreProcessor(typeRegistry, entityRetriever));
+        preProcessors.add(new AssetPreProcessor(typeRegistry, entityRetriever, graph));
 
         return preProcessors;
     }

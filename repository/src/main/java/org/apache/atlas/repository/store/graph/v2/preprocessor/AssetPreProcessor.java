@@ -7,6 +7,7 @@ import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
@@ -26,12 +27,15 @@ public class AssetPreProcessor implements PreProcessor {
     private EntityMutationContext context;
     private AtlasTypeRegistry typeRegistry;
     private EntityGraphRetriever entityRetriever;
+    private EntityGraphRetriever retrieverNoRelation = null;
+
 
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(ATLAS_GLOSSARY_ENTITY_TYPE, ATLAS_GLOSSARY_TERM_ENTITY_TYPE, ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE, DATA_PRODUCT_ENTITY_TYPE, DATA_DOMAIN_ENTITY_TYPE));
 
-    public AssetPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever) {
+    public AssetPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
+        this.retrieverNoRelation = new EntityGraphRetriever(graph, typeRegistry, true);
     }
 
     @Override
@@ -60,7 +64,7 @@ public class AssetPreProcessor implements PreProcessor {
     private void processCreateAsset(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateAsset");
 
-        processDomainLinkAttribute(entity);
+        processDomainLinkAttribute(entity, vertex);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
@@ -69,16 +73,16 @@ public class AssetPreProcessor implements PreProcessor {
     private void processUpdateAsset(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateAsset");
 
-        processDomainLinkAttribute(entity);
+        processDomainLinkAttribute(entity, vertex);
 
         RequestContext.get().endMetricRecord(metricRecorder);
 
     }
 
-    private void processDomainLinkAttribute(AtlasEntity entity) throws AtlasBaseException {
+    private void processDomainLinkAttribute(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         if(entity.hasAttribute(DOMAIN_GUIDS)){
             validateDomainAssetLinks(entity);
-            isAuthorized(entity);
+            isAuthorized(vertex);
         }
     }
 
@@ -109,8 +113,8 @@ public class AssetPreProcessor implements PreProcessor {
         }
     }
 
-    private void isAuthorized(AtlasEntity entity) throws AtlasBaseException {
-        AtlasEntityHeader sourceEntity = new AtlasEntityHeader(entity);
+    private void isAuthorized(AtlasVertex vertex) throws AtlasBaseException {
+        AtlasEntityHeader sourceEntity = retrieverNoRelation.toAtlasEntityHeader(vertex);
 
         // source -> UPDATE + READ
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceEntity),
