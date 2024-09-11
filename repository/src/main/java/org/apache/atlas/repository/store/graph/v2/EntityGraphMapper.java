@@ -85,19 +85,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
-import java.util.Date;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -172,6 +160,7 @@ public class EntityGraphMapper {
     private static final String TYPE_CATEGORY= "AtlasGlossaryCategory";
     private static final String TYPE_TERM = "AtlasGlossaryTerm";
     private static final String TYPE_PRODUCT = "DataProduct";
+    private static final String TYPE_DOMAIN = "DataDomain";
     private static final String TYPE_PROCESS = "Process";
     private static final String ATTR_MEANINGS = "meanings";
     private static final String ATTR_ANCHOR = "anchor";
@@ -208,6 +197,9 @@ public class EntityGraphMapper {
     private final IFullTextMapper           fullTextMapperV2;
     private final TaskManagement            taskManagement;
     private final TransactionInterceptHelper   transactionInterceptHelper;
+    private final EntityGraphRetriever       retrieverNoRelation;
+
+    private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
 
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
@@ -223,6 +215,7 @@ public class EntityGraphMapper {
         this.entityChangeNotifier = entityChangeNotifier;
         this.instanceConverter    = instanceConverter;
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
+        this.retrieverNoRelation  = new EntityGraphRetriever(graph, typeRegistry, true);
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
         this.transactionInterceptHelper = transactionInterceptHelper;}
@@ -4654,17 +4647,115 @@ public class EntityGraphMapper {
         }).collect(Collectors.toList());
     }
 
+    public List<AtlasVertex> linkMeshEntityToAssets(String meshEntityId, Set<String> linkGuids) throws AtlasBaseException {
+        List<AtlasVertex> linkedVertices = new ArrayList<>();
+
+        for (String guid : linkGuids) {
+            AtlasVertex ev = findByGuid(graph, guid);
+
+            if (ev != null) {
+                String typeName = ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
+                if (excludedTypes.contains(typeName)){
+                    LOG.warn("Type {} is not allowed to link with mesh entity", typeName);
+                    continue;
+                }
+                Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+
+                if (!existingValues.contains(meshEntityId)) {
+                    isAuthorizedToLink(ev);
+
+                    updateDomainAttribute(ev, existingValues, meshEntityId);
+                    existingValues.clear();
+                    existingValues.add(meshEntityId);
+
+                    updateModificationMetadata(ev);
+
+                    cacheDifferentialMeshEntity(ev, existingValues);
+
+                    linkedVertices.add(ev);
+                }
+            }
+        }
+
+        return linkedVertices;
+    }
+
+    public List<AtlasVertex> unlinkMeshEntityFromAssets(String meshEntityId, Set<String> unlinkGuids) throws AtlasBaseException {
+        List<AtlasVertex> unlinkedVertices = new ArrayList<>();
+
+        for (String guid : unlinkGuids) {
+            AtlasVertex ev = AtlasGraphUtilsV2.findByGuid(graph, guid);
+
+            if (ev != null) {
+                String typeName = ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
+                if (excludedTypes.contains(typeName)){
+                    LOG.warn("Type {} is not allowed to unlink with mesh entity", typeName);
+                    continue;
+                }
+
+                Set<String> existingValues = ev.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+
+                if (meshEntityId.isEmpty() || existingValues.contains(meshEntityId)) {
+                    isAuthorizedToLink(ev);
+
+                    if (StringUtils.isEmpty(meshEntityId)) {
+                        existingValues.clear();
+                        ev.removeProperty(DOMAIN_GUIDS_ATTR);
+                    } else {
+                        existingValues.remove(meshEntityId);
+                        ev.removePropertyValue(DOMAIN_GUIDS_ATTR, meshEntityId);
+                    }
+
+                    updateModificationMetadata(ev);
+                    cacheDifferentialMeshEntity(ev, existingValues);
+
+                    unlinkedVertices.add(ev);
+                }
+            }
+        }
+
+        return unlinkedVertices;
+    }
+
+    private void updateDomainAttribute(AtlasVertex vertex, Set<String> existingValues, String meshEntityId){
+        existingValues.forEach(existingValue -> vertex.removePropertyValue(DOMAIN_GUIDS_ATTR, existingValue));
+        vertex.setProperty(DOMAIN_GUIDS_ATTR, meshEntityId);
+    }
 
     private void cacheDifferentialEntity(AtlasVertex ev, Set<String> existingValues) {
         AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
-        diffEntity.setGuid(ev.getProperty(GUID_PROPERTY_KEY, String.class));
+        setEntityCommonAttributes(ev, diffEntity);
         diffEntity.setAttribute(ASSET_POLICY_GUIDS, existingValues);
         diffEntity.setAttribute(ASSET_POLICIES_COUNT, existingValues.size());
-        diffEntity.setUpdatedBy(ev.getProperty(MODIFIED_BY_KEY, String.class));
-        diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
 
         RequestContext requestContext = RequestContext.get();
         requestContext.cacheDifferentialEntity(diffEntity);
     }
 
+    private void cacheDifferentialMeshEntity(AtlasVertex ev, Set<String> existingValues) {
+        AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+        setEntityCommonAttributes(ev, diffEntity);
+        diffEntity.setAttribute(DOMAIN_GUIDS_ATTR, existingValues);
+
+        RequestContext requestContext = RequestContext.get();
+        requestContext.cacheDifferentialEntity(diffEntity);
+    }
+
+    private void setEntityCommonAttributes(AtlasVertex ev, AtlasEntity diffEntity) {
+        diffEntity.setGuid(ev.getProperty(GUID_PROPERTY_KEY, String.class));
+        diffEntity.setUpdatedBy(ev.getProperty(MODIFIED_BY_KEY, String.class));
+        diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
+    }
+
+    private void isAuthorizedToLink(AtlasVertex vertex) throws AtlasBaseException {
+        AtlasEntityHeader sourceEntity = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(vertex);
+
+        // source -> UPDATE + READ
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceEntity),
+                "update on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, sourceEntity),
+                "read on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
+
+    }
 }

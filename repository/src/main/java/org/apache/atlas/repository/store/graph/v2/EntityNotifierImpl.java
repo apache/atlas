@@ -16,12 +16,12 @@ import static org.apache.atlas.repository.graph.GraphHelper.*;
 
 
 @Component
-public class BusinessPolicyNotifierImpl implements IAtlasMinimalChangeNotifier {
+public class EntityNotifierImpl implements IAtlasMinimalChangeNotifier {
 
     private final Set<EntityChangeListenerV2> entityChangeListenersV2;
 
     @Inject
-    public BusinessPolicyNotifierImpl(Set<EntityChangeListenerV2> entityChangeListenersV2) {
+    public EntityNotifierImpl(Set<EntityChangeListenerV2> entityChangeListenersV2) {
         this.entityChangeListenersV2 = entityChangeListenersV2;
 
     }
