@@ -2870,10 +2870,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.atlasAlternateChangeNotifier.onEntitiesMutation(vertices);
         RequestContext.get().endMetricRecord(metricRecorder);
     }
-<<<<<<< HEAD
-=======
 
->>>>>>> 0724d62c5 (POLICY-139 API endpoint to move the policy)
     @Override
     @GraphTransaction
     public void moveBusinessPolicy(Set<String> policyIds, String assetId, String type) throws AtlasBaseException {
@@ -2899,10 +2896,3 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 }
-
-<<<<<<< HEAD
-
-
-
-=======
->>>>>>> 0724d62c5 (POLICY-139 API endpoint to move the policy)

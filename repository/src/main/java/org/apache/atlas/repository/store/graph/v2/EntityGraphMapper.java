@@ -4765,12 +4765,6 @@ public class EntityGraphMapper {
         return assetVertex;
     }
 
-<<<<<<< HEAD
-=======
-
-
-
->>>>>>> 90294f49a (Adding new API for shifting)
     private void cacheDifferentialEntity(AtlasVertex ev, Set<String> existingValues) {
         AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
         setEntityCommonAttributes(ev, diffEntity);
