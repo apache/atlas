@@ -87,7 +87,6 @@ public class MeshEntityAssetLinkREST {
         LOG.info("Unlinking Domain {} to Asset", domainGuid);
 
         // Set request context parameters
-        RequestContext.get().setIncludeClassifications(true);
         RequestContext.get().setIncludeMeanings(false);
         RequestContext.get().getRequestContextHeaders().put("route", "domain-asset-unlink");
 
