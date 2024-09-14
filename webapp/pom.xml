@@ -152,18 +152,6 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-janusgraph-hbase2</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-              <exclusion>
-                <groupId>org.noggit</groupId>
-                <artifactId>noggit</artifactId>
-              </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
             <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-common</artifactId>
             <exclusions>

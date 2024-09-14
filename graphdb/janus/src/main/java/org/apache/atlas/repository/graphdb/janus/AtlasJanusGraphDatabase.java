@@ -39,6 +39,7 @@ import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.diskstorage.StandardIndexProvider;
 import org.janusgraph.diskstorage.StandardStoreManager;
 import org.janusgraph.diskstorage.es.ElasticSearch7Index;
+import org.janusgraph.diskstorage.hbase.HBaseStoreManager;
 import org.janusgraph.diskstorage.solr.Solr6Index;
 import org.janusgraph.graphdb.database.serialize.attribute.SerializableSerializer;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
@@ -85,7 +86,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
     public AtlasJanusGraphDatabase() {
         //update registry
-        GraphSONMapper.build().addRegistry(JanusGraphIoRegistry.getInstance()).create();
+        GraphSONMapper.build().addRegistry(JanusGraphIoRegistry.instance()).create();
     }
 
     public static Configuration getConfiguration() throws AtlasException {
@@ -136,11 +137,11 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
             modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
 
             Map<String, String> customMap = new HashMap<>(StandardStoreManager.getAllManagerClasses());
-            customMap.put("hbase2", org.janusgraph.diskstorage.hbase2.HBaseStoreManager.class.getName());
+            customMap.put("hbase2", HBaseStoreManager.class.getName());
             ImmutableMap<String, String> immap = ImmutableMap.copyOf(customMap);
             field.set(null, immap);
 
-            LOG.debug("Injected HBase2 support - {}", org.janusgraph.diskstorage.hbase2.HBaseStoreManager.class.getName());
+            LOG.debug("Injected HBase2 support - {}", HBaseStoreManager.class.getName());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

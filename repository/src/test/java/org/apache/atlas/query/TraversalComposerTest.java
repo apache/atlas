@@ -53,7 +53,7 @@ public class TraversalComposerTest extends BaseDSLComposer {
                 "[JanusGraphStep([],[__typeName.eq(DB)]), DedupGlobalStep(null,null)@[d], RangeGlobalStep(0,25)]");
 
         verify("Table groupby(owner) select name, owner, clusterName orderby name",
-                "[JanusGraphStep([],[__typeName.eq(Table), Table.owner.neq]), GroupStep(value([CoalesceStep([value(Table.owner), (null)])]),[FoldStep]), DedupGlobalStep(null,null), RangeGlobalStep(0,25)]");
+                "[JanusGraphStep([],[__typeName.eq(Table), Table.owner.neq]), GroupStep(value(Table.owner),[FoldStep]), DedupGlobalStep(null,null), RangeGlobalStep(0,25)]");
 
         verify("hive_column where name = 'test'",
                 "[JanusGraphStep([],[__typeName.eq(hive_column), hive_column.name.eq(test)]), DedupGlobalStep(null,null), RangeGlobalStep(0,25)]");
@@ -71,7 +71,7 @@ public class TraversalComposerTest extends BaseDSLComposer {
                 "[JanusGraphStep([],[__typeName.eq(hive_column), hive_column.name.eq(test_limit)]), DedupGlobalStep(null,null), DedupGlobalStep(null,null), RangeGlobalStep(4,6)]");
 
         verify("hive_db where owner != 'hdfs'",
-                "[JanusGraphStep([],[__typeName.eq(hive_db)]), OrStep([[HasStep([hive_db.owner.neq(hdfs)])], [NotStep([JanusGraphPropertiesStep([hive_db.owner],property)])]]), DedupGlobalStep(null,null), RangeGlobalStep(0,25)]");
+                "[JanusGraphStep([],[__typeName.eq(hive_db)]), JanusGraphMultiQueryStep, NoOpBarrierStep(2500), OrStep([[JanusGraphHasStep([hive_db.owner.neq(hdfs)])], [NotStep([JanusGraphPropertiesStep([hive_db.owner],property)])]]), DedupGlobalStep(null,null), RangeGlobalStep(0,25)]");
     }
 
     private void verify(String dsl, String expected) {

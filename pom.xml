@@ -628,7 +628,7 @@
                 <entity.repository.impl>org.apache.atlas.repository.audit.HBaseBasedAuditRepository
                 </entity.repository.impl>
                 <graph.index.backend>solr</graph.index.backend>
-                <graph.storage.backend>hbase2</graph.storage.backend>
+                <graph.storage.backend>hbase</graph.storage.backend>
                 <graph.storage.hostname>localhost</graph.storage.hostname>
                 <solr.zk.address>localhost:9983</solr.zk.address>
             </properties>
@@ -730,7 +730,7 @@
         <curator.version>4.3.0</curator.version>
         <doxia.version>1.8</doxia.version>
         <dropwizard-metrics>3.2.2</dropwizard-metrics>
-        <elasticsearch.version>7.6.0</elasticsearch.version>
+        <elasticsearch.version>7.17.8</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
         <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
         <failsafe.version>2.18.1</failsafe.version>
@@ -742,17 +742,18 @@
         <guava.version>25.1-jre</guava.version>
         <guice.version>4.1.0</guice.version>
         <hadoop.hdfs-client.version>${hadoop.version}</hadoop.hdfs-client.version>
-        <hadoop.version>3.3.0</hadoop.version>
-        <hbase.version>2.3.3</hbase.version>
-        <hive.version>3.1.2</hive.version>
+        <hadoop.version>3.3.6</hadoop.version>
+        <hbase.version>2.6.0</hbase.version>
+        <hive.version>3.1.3</hive.version>
         <hppc.version>0.8.1</hppc.version>
         <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
         <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
         <ivy.version>2.5.2</ivy.version>
-        <jackson.databind.version>2.11.3</jackson.databind.version>
-        <jackson.version>2.11.3</jackson.version>
-        <janusgraph.version>0.6.4</janusgraph.version>
+        <jackson.databind.version>2.12.7</jackson.databind.version>
+        <jackson.version>2.12.7</jackson.version>
+        <janusgraph.version>1.0.0</janusgraph.version>
         <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
+        <jaxb.api.version>2.3.1</jaxb.api.version>
         <javax-inject.version>1</javax-inject.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <java.version.required>1.8</java.version.required>
@@ -762,18 +763,18 @@
         <jersey.version>1.19</jersey.version>
         <jettison.version>1.5.4</jettison.version>
         <jetty-maven-plugin.stopWait>10</jetty-maven-plugin.stopWait>
-        <jetty.version>9.4.31.v20200723</jetty.version>
+        <jetty.version>9.4.53.v20231009</jetty.version>
         <joda-time.version>2.10.6</joda-time.version>
         <json.version>3.2.11</json.version>
         <json-simple.version>1.1.1</json-simple.version>
         <jsr.version>1.1</jsr.version>
         <junit.version>4.13.2</junit.version>
         <kafka.scala.binary.version>2.12</kafka.scala.binary.version>
-        <kafka.version>2.8.1</kafka.version>
+        <kafka.version>2.8.2</kafka.version>
         <keycloak.version>6.0.1</keycloak.version>
         <log4j.version>1.2.17</log4j.version>
         <log4j2.version>2.17.1</log4j2.version>
-        <lucene-solr.version>8.6.3</lucene-solr.version>
+        <lucene-solr.version>8.11.3</lucene-solr.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <MaxPermGen>512m</MaxPermGen>
         <netty.version>4.1.100.Final</netty.version>
@@ -798,8 +799,8 @@
         <skipTests>false</skipTests>
         <skipUTs>false</skipUTs>
         <slf4j.version>1.7.30</slf4j.version>
-        <solr-test-framework.version>8.6.3</solr-test-framework.version>
-        <solr.version>8.6.3</solr.version>
+        <solr-test-framework.version>8.11.3</solr-test-framework.version>
+        <solr.version>8.11.3</solr.version>
         <spray.version>1.3.1</spray.version>
         <spring.security.version>5.8.11</spring.security.version>
         <spring.version>5.3.27</spring.version>
@@ -808,9 +809,9 @@
         <surefire.forkCount>2C</surefire.forkCount>
         <surefire.version>3.0.0-M5</surefire.version>
         <testng.version>7.0.0</testng.version>
-        <tinkerpop.version>3.5.7</tinkerpop.version>
+        <tinkerpop.version>3.7.0</tinkerpop.version>
         <woodstox-core.version>5.0.3</woodstox-core.version>
-        <zookeeper.version>3.5.7</zookeeper.version>
+        <zookeeper.version>3.9.2</zookeeper.version>
     </properties>
 
     <modules>
@@ -947,6 +948,12 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>jul-to-slf4j</artifactId>
                 <version>${slf4j.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>javax.xml.bind</groupId>
+                <artifactId>jaxb-api</artifactId>
+                <version>${jaxb.api.version}</version>
             </dependency>
 
             <dependency>

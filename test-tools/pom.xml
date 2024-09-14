@@ -68,7 +68,16 @@
                     <groupId>org.apache.commons</groupId>
                     <artifactId>commons-configuration2</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.apache.zookeeper</groupId>
+                    <artifactId>zookeeper-jute</artifactId>
+                </exclusion>
             </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper-jute</artifactId>
+            <version>${zookeeper.version}</version>
         </dependency>
 
         <dependency>
