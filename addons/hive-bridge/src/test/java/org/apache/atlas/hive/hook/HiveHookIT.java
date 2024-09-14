@@ -611,7 +611,7 @@ public class HiveHookIT extends HiveITBase {
     }
 
     private String createTestDFSFile(String path) throws Exception {
-        return "pfile://" + file(path);
+        return "file://" + file(path);
     }
 
     @Test
@@ -1213,7 +1213,7 @@ public class HiveHookIT extends HiveITBase {
         Assert.assertNotNull(ddlQueries);
         Assert.assertEquals(ddlQueries.size(), 1);
 
-        String filename = "pfile://" + mkdir("export");
+        String filename = "file://" + mkdir("export");
 
         query = "export table " + tableName + " to \"" + filename + "\"";
 
@@ -1272,7 +1272,7 @@ public class HiveHookIT extends HiveITBase {
         Assert.assertNotEquals(processEntity1.getGuid(), processEntity2.getGuid());
 
         //Export should update same process
-        filename = "pfile://" + mkdir("export2");
+        filename = "file://" + mkdir("export2");
         query    = "export table " + tableName + " to \"" + filename + "\"";
 
         runCommand(query);

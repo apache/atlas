@@ -374,22 +374,25 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         params.setTypeName(HIVE_TABLE_TYPE);
         params.setExcludeDeletedEntities(true);
         params.setMarker(SearchContext.MarkerUtil.MARKER_START);
+
+        int totalCount = discoveryService.searchWithParameters(params).getEntities().size();
+
+        params.setMarker(SearchContext.MarkerUtil.MARKER_START);
         params.setLimit(5);
-        AtlasSearchResult searchResult        = discoveryService.searchWithParameters(params);
+
+        AtlasSearchResult       searchResult  = discoveryService.searchWithParameters(params);
         List<AtlasEntityHeader> entityHeaders = searchResult.getEntities();
 
         Assert.assertTrue(CollectionUtils.isNotEmpty(entityHeaders));
         assertEquals(entityHeaders.size(), 5);
         Assert.assertTrue(StringUtils.isNotEmpty(searchResult.getNextMarker()));
 
-        long maxEntities = searchResult.getApproximateCount();
-
         //get next marker and set in marker of subsequent request
         params.setMarker(SearchContext.MarkerUtil.MARKER_START);
-        params.setLimit((int)maxEntities + 10);
+        params.setLimit(totalCount + 10);
         AtlasSearchResult nextsearchResult = discoveryService.searchWithParameters(params);
 
-        Assert.assertTrue(nextsearchResult.getNextMarker().equals("-1"));
+        Assert.assertEquals(nextsearchResult.getNextMarker(), "-1");
     }
 
 

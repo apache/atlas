@@ -45,7 +45,7 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
 
     @Override
     public Iterator<Result<AtlasJanusVertex, AtlasJanusEdge>> vertices() {
-        Iterator<JanusGraphIndexQuery.Result<JanusGraphVertex>> results = query.vertices().iterator();
+        Iterator<JanusGraphIndexQuery.Result<JanusGraphVertex>> results = query.vertexStream().iterator();
 
         Function<JanusGraphIndexQuery.Result<JanusGraphVertex>, Result<AtlasJanusVertex, AtlasJanusEdge>> function =
             new Function<JanusGraphIndexQuery.Result<JanusGraphVertex>, Result<AtlasJanusVertex, AtlasJanusEdge>>() {
@@ -66,7 +66,7 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
         Iterator<JanusGraphIndexQuery.Result<JanusGraphVertex>> results = query
                 .offset(offset)
                 .limit(limit)
-                .vertices().iterator();
+                .vertexStream().iterator();
 
         Function<JanusGraphIndexQuery.Result<JanusGraphVertex>, Result<AtlasJanusVertex, AtlasJanusEdge>> function =
                 new Function<JanusGraphIndexQuery.Result<JanusGraphVertex>, Result<AtlasJanusVertex, AtlasJanusEdge>>() {
@@ -89,7 +89,7 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
                 .orderBy(sortBy, sortOrder)
                 .offset(offset)
                 .limit(limit)
-                .vertices().iterator();
+                .vertexStream().iterator();
 
         Function<JanusGraphIndexQuery.Result<JanusGraphVertex>, Result<AtlasJanusVertex, AtlasJanusEdge>> function =
                 new Function<JanusGraphIndexQuery.Result<JanusGraphVertex>, Result<AtlasJanusVertex, AtlasJanusEdge>>() {
@@ -115,7 +115,7 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
 
     @Override
     public Iterator<Result<AtlasJanusVertex, AtlasJanusEdge>> edges() {
-        Iterator<JanusGraphIndexQuery.Result<JanusGraphEdge>> results = query.edges().iterator();
+        Iterator<JanusGraphIndexQuery.Result<JanusGraphEdge>> results = query.edgeStream().iterator();
 
         Function<JanusGraphIndexQuery.Result<JanusGraphEdge>, Result<AtlasJanusVertex, AtlasJanusEdge>> function =
                 new Function<JanusGraphIndexQuery.Result<JanusGraphEdge>, Result<AtlasJanusVertex, AtlasJanusEdge>>() {
@@ -136,7 +136,7 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
         Iterator<JanusGraphIndexQuery.Result<JanusGraphEdge>> results = query
                 .offset(offset)
                 .limit(limit)
-                .edges().iterator();
+                .edgeStream().iterator();
 
         Function<JanusGraphIndexQuery.Result<JanusGraphEdge>, Result<AtlasJanusVertex, AtlasJanusEdge>> function =
                 new Function<JanusGraphIndexQuery.Result<JanusGraphEdge>, Result<AtlasJanusVertex, AtlasJanusEdge>>() {
@@ -159,7 +159,7 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
                 .orderBy(sortBy, sortOrder)
                 .offset(offset)
                 .limit(limit)
-                .edges().iterator();
+                .edgeStream().iterator();
 
         Function<JanusGraphIndexQuery.Result<JanusGraphEdge>, Result<AtlasJanusVertex, AtlasJanusEdge>> function =
                 new Function<JanusGraphIndexQuery.Result<JanusGraphEdge>, Result<AtlasJanusVertex, AtlasJanusEdge>>() {

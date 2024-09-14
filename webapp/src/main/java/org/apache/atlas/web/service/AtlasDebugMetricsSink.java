@@ -19,6 +19,7 @@ package org.apache.atlas.web.service;
 
 import org.apache.atlas.web.model.DebugMetrics;
 import org.apache.commons.lang.StringUtils;
+import org.apache.hadoop.hbase.shaded.org.apache.commons.configuration2.SubsetConfiguration;
 import org.apache.hadoop.metrics2.AbstractMetric;
 import org.apache.hadoop.metrics2.MetricsRecord;
 import org.apache.hadoop.metrics2.MetricsSink;
@@ -59,7 +60,7 @@ public class AtlasDebugMetricsSink implements MetricsSink {
     }
 
     @Override
-    public void init(org.apache.commons.configuration2.SubsetConfiguration subsetConfiguration) {
+    public void init(SubsetConfiguration subsetConfiguration) {
     }
 
     @Override

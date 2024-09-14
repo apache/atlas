@@ -59,6 +59,10 @@
                     <groupId>com.rabbitmq</groupId>
                     <artifactId>amqp-client</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.noggit</groupId>
+                    <artifactId>noggit</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
 

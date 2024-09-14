@@ -36,7 +36,6 @@
         <module>api</module>
         <module>common</module>
         <module>graphdb-impls</module>
-        <module>janus-hbase2</module>
         <module>janus</module>
     </modules>
 

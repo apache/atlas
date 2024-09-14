@@ -53,12 +53,6 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-janusgraph-hbase2</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-testtools</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -105,6 +99,10 @@
                 <exclusion>
                     <groupId>org.apache.tinkerpop</groupId>
                     <artifactId>gremlin-driver</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.noggit</groupId>
+                    <artifactId>noggit</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -220,6 +218,10 @@
                     <groupId>org.codehaus.woodstox</groupId>
                     <artifactId>woodstox-core-asl</artifactId>
                 </exclusion>
+                <exclusion>
+                    <groupId>org.apache.zookeeper</groupId>
+                    <artifactId>zookeeper-jute</artifactId>
+                </exclusion>
             </exclusions>
         </dependency>
         <!-- CVE Overrides for Lucene -->
@@ -260,6 +262,12 @@
                     <artifactId>commons-configuration2</artifactId>
                 </exclusion>
             </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.tinkerpop</groupId>
+            <artifactId>gremlin-util</artifactId>
+            <version>${tinkerpop.version}</version>
         </dependency>
 
         <dependency>

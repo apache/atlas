@@ -14,4 +14,4 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-FROM zookeeper:3.5.9
+FROM zookeeper:3.9.2
