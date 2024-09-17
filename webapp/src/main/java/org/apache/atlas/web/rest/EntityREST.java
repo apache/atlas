@@ -76,6 +76,8 @@ import java.util.*;
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
 import static org.apache.atlas.authorize.AtlasPrivilege.*;
+import static org.apache.atlas.repository.Constants.ATTR_CONTRACT;
+import static org.apache.atlas.repository.Constants.ATTR_CONTRACT_JSON;
 
 
 /**
@@ -99,6 +101,8 @@ public class EntityREST {
         add("rawQueryText");
         add("variablesSchemaBase64");
         add("visualBuilderSchemaBase64");
+        add(ATTR_CONTRACT);
+        add(ATTR_CONTRACT_JSON);
     }};
 
 
