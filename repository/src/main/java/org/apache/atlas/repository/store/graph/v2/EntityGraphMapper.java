@@ -2273,7 +2273,7 @@ public class EntityGraphMapper {
         }
 
         for (String key : attributes.keySet()) {
-            if (key.equals("toType") || key.equals("fromType")) {
+            if (key.equals("toTypeLabel") || key.equals("fromTypeLabel")) {
                 String value = (String) attributes.get(key);
 
                 if (StringUtils.isNotEmpty(value)) {
