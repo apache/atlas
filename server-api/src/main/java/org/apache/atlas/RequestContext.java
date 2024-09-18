@@ -74,6 +74,7 @@ public class RequestContext {
     private int         maxAttempts  = 1;
     private int         attemptCount = 1;
     private boolean     isImportInProgress = false;
+    private boolean     isMigrationInProgress = false;
     private boolean     isInNotificationProcessing = false;
     private boolean     isInTypePatching           = false;
     private boolean     createShellEntityForNonExistingReference = false;
@@ -200,6 +201,14 @@ public class RequestContext {
 
     public boolean isImportInProgress() {
         return isImportInProgress;
+    }
+
+    public boolean isMigrationInProgress() {
+        return isMigrationInProgress;
+    }
+
+    public void setMigrationInProgress(boolean migrationInProgress) {
+        isMigrationInProgress = migrationInProgress;
     }
 
     public void setImportInProgress(boolean importInProgress) {

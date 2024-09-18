@@ -21,7 +21,6 @@ import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.pc.WorkItemConsumer;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -33,8 +32,8 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,6 +56,7 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
     private final AtlasEntityStore entityStoreBulk;
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetrieverBulk;
+    private final boolean isMigrationImport;
 
     private List<AtlasEntity.AtlasEntityWithExtInfo> entityBuffer = new ArrayList<>();
     private List<String> localResults = new ArrayList<>();
@@ -64,7 +64,7 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
     public EntityConsumer(AtlasTypeRegistry typeRegistry,
                           AtlasGraph atlasGraph, AtlasEntityStore entityStore,
                           AtlasGraph atlasGraphBulk, AtlasEntityStore entityStoreBulk, EntityGraphRetriever entityRetrieverBulk,
-                          BlockingQueue queue, int batchSize) {
+                          BlockingQueue queue, int batchSize , boolean isMigrationImport) {
         super(queue);
         this.typeRegistry = typeRegistry;
 
@@ -76,6 +76,7 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
         this.entityRetrieverBulk = entityRetrieverBulk;
 
         this.batchSize = batchSize;
+        this.isMigrationImport = isMigrationImport;
     }
 
     @Override
@@ -98,6 +99,7 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
     private void processEntity(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, long currentCount) {
         RequestContext.get().setImportInProgress(true);
         RequestContext.get().setCreateShellEntityForNonExistingReference(true);
+        RequestContext.get().setMigrationInProgress(this.isMigrationImport);
 
         try {
             LOG.debug("Processing: {}", currentCount);

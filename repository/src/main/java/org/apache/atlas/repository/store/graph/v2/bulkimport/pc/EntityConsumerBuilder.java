@@ -37,10 +37,11 @@ public class EntityConsumerBuilder implements WorkItemBuilder<EntityConsumer, At
     private final AtlasTypeRegistry typeRegistry;
     private EntityGraphRetriever entityRetrieverBulk;
     private int batchSize;
+    private final boolean isMigrationImport;
 
     public EntityConsumerBuilder(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, AtlasEntityStoreV2 entityStore, EntityGraphRetriever entityRetriever,
                                  AtlasGraph atlasGraphBulk, AtlasEntityStoreV2 entityStoreBulk, EntityGraphRetriever entityRetrieverBulk,
-                                 int batchSize) {
+                                 int batchSize, boolean isMigrationImport) {
         this.typeRegistry = typeRegistry;
 
         this.atlasGraph = atlasGraph;
@@ -52,12 +53,13 @@ public class EntityConsumerBuilder implements WorkItemBuilder<EntityConsumer, At
         this.entityRetrieverBulk = entityRetrieverBulk;
 
         this.batchSize = batchSize;
+        this.isMigrationImport = isMigrationImport;
     }
 
     @Override
     public EntityConsumer build(BlockingQueue<AtlasEntity.AtlasEntityWithExtInfo> queue) {
         return new EntityConsumer(typeRegistry, atlasGraph, entityStore,
                 atlasGraphBulk, entityStoreBulk, entityRetrieverBulk,
-                queue, this.batchSize);
+                queue, this.batchSize, this.isMigrationImport);
     }
 }

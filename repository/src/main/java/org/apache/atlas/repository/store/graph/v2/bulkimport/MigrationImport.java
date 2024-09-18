@@ -106,10 +106,13 @@ public class MigrationImport extends ImportStrategy {
 
         int batchSize = importResult.getRequest().getOptionKeyBatchSize();
         int numWorkers = getNumWorkers(importResult.getRequest().getOptionKeyNumWorkers());
-
+        boolean isMigrationImport = false;
+        if (importResult.getRequest().getOptions().get("migration")!=null) {
+            isMigrationImport = Boolean.valueOf(importResult.getRequest().getOptions().get("migration"));
+        }
         EntityConsumerBuilder consumerBuilder =
                 new EntityConsumerBuilder(typeRegistry, this.graph, entityStore, entityGraphRetriever, graphBulk,
-                        entityStoreBulk, entityGraphRetrieverBulk, batchSize);
+                        entityStoreBulk, entityGraphRetrieverBulk, batchSize, isMigrationImport);
 
         LOG.info("MigrationImport: EntityCreationManager: Created!");
         return new EntityCreationManager(consumerBuilder, batchSize, numWorkers, importResult, dataMigrationStatusService);

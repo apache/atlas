@@ -1458,7 +1458,7 @@ public class EntityGraphMapper {
         }
 
         if (isReference && !isSoftReference) {
-            boolean isAppendOnPartialUpdate = getAppendOptionForRelationship(ctx.getReferringVertex(), attribute.getName());
+            boolean isAppendOnPartialUpdate = RequestContext.get().isMigrationInProgress() || getAppendOptionForRelationship(ctx.getReferringVertex(), attribute.getName());
 
             if (isAppendOnPartialUpdate) {
                 allArrayElements = unionCurrentAndNewElements(attribute, (List) currentElements, (List) newElementsCreated);
