@@ -83,7 +83,8 @@ define(['require',
                     searchType: this.searchType,
                     fromView: this.fromView,
                     isGlossaryView: this.fromView == "glossary",
-                    isSearchTab: Utils.getUrlState.isSearchTab()
+                    isSearchTab: Utils.getUrlState.isSearchTab(),
+                    isProfileDBView: this.options.profileDBView
                 };
             },
             /** ui events hash */

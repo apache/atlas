@@ -532,7 +532,7 @@ define(['require',
                     termData = "";
                 _.each(data, function(val) {
                     var glossaryName = val.qualifiedName ? val.qualifiedName : val.displayText;
-                    termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick" title= "' + glossaryName + '"><span>' + _.escape(glossaryName) + '</span><i class="' + (val.relationshipStatus == "ACTIVE" ? 'fa fa-close' : "") + '" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
+                    termData += '<span class="btn btn-action btn-sm btn-icon btn-blue" data-id="termClick" title= "' + _.escape(glossaryName) + '"><span>' + _.escape(glossaryName) + '</span><i class="' + (val.relationshipStatus == "ACTIVE" ? 'fa fa-close' : "") + '" data-id="deleteTerm" data-guid="' + val.guid + '" data-type="term" title="Remove Term"></i></span>';
                 });
                 this.ui.termList.find("span.btn").remove();
                 this.ui.termList.prepend(termData);

@@ -88,7 +88,7 @@ public class GlossaryService {
     private final AtlasEntityChangeNotifier entityChangeNotifier;
     private final AtlasGlossaryDTO          glossaryDTO;
 
-    private static final char[] invalidNameChars = { '@', '.' };
+    private static final char[] invalidNameChars = { '@', '.', '<', '>'};
 
     private static final Map<String, String> glossaryGuidQualifiedNameCache = new HashMap<>();
     private static final Map<String, String> categoryGuidNameCache          = new HashMap<>();
