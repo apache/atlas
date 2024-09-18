@@ -66,6 +66,7 @@
                                 <input type="checkbox" data-id="checkDeletedEntity" data-value="includeDE" id="historicalentities" />
                                 <b>Show historical entities</b></label>
                         </div>
+                        {{#unless isProfileDBView}}
                         <div class="inline exclude-subclassifications" data-id="containerCheckBox" style="display: none;">
                             <label class="checkbox-inline btn" for="subclassifications">
                                 <input type="checkbox" data-id="checkSubClassification" data-value="excludeSC" id="subclassifications" />
@@ -76,6 +77,7 @@
                                 <input type="checkbox" data-id="checkSubType" data-value="excludeST" id="subtypes" />
                                 <b>Exclude sub-types</b></label>
                         </div>
+                        {{/unless}}
                     </div>
                 </div>
             </div>

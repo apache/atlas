@@ -569,7 +569,7 @@ define(['require',
                                         uniqueAttributesValue = obj.end1.uniqueAttributes[key];
                                     }
                                     uniqueAttributesValue  = uniqueAttributesValue ? uniqueAttributesValue : obj.end1.guid;
-                                    return '<a title="' + uniqueAttributesValue + '" href="#!/detailPage/' + obj.end1.guid  + '?from=relationshipSearch">' + uniqueAttributesValue + '</a>';
+                                    return '<a title="' + _.escape(uniqueAttributesValue) + '" href="#!/detailPage/' + obj.end1.guid  + '?from=relationshipSearch">' + _.escape(uniqueAttributesValue) + '</a>';
                                 }
                             }
                         })
@@ -591,7 +591,7 @@ define(['require',
                                         uniqueAttributesValue = obj.end2.uniqueAttributes[key];
                                     }
                                     uniqueAttributesValue  = uniqueAttributesValue ? uniqueAttributesValue : obj.end2.guid;
-                                    return '<a title="' + uniqueAttributesValue + '" href="#!/detailPage/' + obj.end2.guid  + '?from=relationshipSearch">' + uniqueAttributesValue + '</a>';
+                                    return '<a title="' + _.escape(uniqueAttributesValue) + '" href="#!/detailPage/' + obj.end2.guid  + '?from=relationshipSearch">' + _.escape(uniqueAttributesValue) + '</a>';
                                 }
                             }
                         })
@@ -618,14 +618,14 @@ define(['require',
                         var def = this.relationshipDefCollection.fullCollection.find({ name: this.value.relationshipName });
                         if (def) {
                             var attrObj = def ? Utils.getNestedSuperTypeObj({ data: def.toJSON(), collection: this.relationshipDefCollection, attrMerge: true }) : [];
-                            _.each(attrObj, function(obj, key) {
-                                var key = obj.name,
+                            _.each(attrObj, function(obj) {
+                                var key = _.escape(obj.name),
                                     isRenderable = _.contains(columnToShow, key),
                                     // isSortable = obj.typeName.search(/(array|map)/i) == -1;
                                     isSortable = obj.typeName.search(/(string|date|boolean|int|number|byte|float|long|double|short)/i) == 0; // commented : as sorting is required for all the columns except non-primitive types
 
-                                col[obj.name] = {
-                                    label: obj.name.capitalize(),
+                                col[key] = {
+                                    label: key.capitalize(),
                                     cell: "Html",
                                     // headerCell: Backgrid.HeaderHTMLDecodeCell,
                                     editable: false,

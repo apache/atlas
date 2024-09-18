@@ -146,7 +146,7 @@ public enum AtlasErrorCode {
     INVALID_TERM_DISSOCIATION(400, "ATLAS-400-00-080", "Given relationshipGuid({0}) is invalid for term (guid={1}) and entity(guid={2})"),
     ATTRIBUTE_TYPE_INVALID(400, "ATLAS-400-00-081", "{0}.{1}: invalid attribute type. Attribute cannot be of type classification"),
     MISSING_CATEGORY_DISPLAY_NAME(400, "ATLAS-400-00-082", "Category name is empty/null"),
-    INVALID_DISPLAY_NAME(400, "ATLAS-400-00-083", "name cannot contain following special chars ('@', '.')"),
+    INVALID_DISPLAY_NAME(400, "ATLAS-400-00-083", "name cannot contain following special chars ('@', '.', '<', '>')"),
     TERM_HAS_ENTITY_ASSOCIATION(400, "ATLAS-400-00-084", "Term (guid={0}) cannot be deleted as it has been assigned to {1} entities."),
     INVALID_TIMEBOUNDRY_TIMEZONE(400, "ATLAS-400-00-085", "Invalid timezone {0}"),
     INVALID_TIMEBOUNDRY_START_TIME(400, "ATLAS-400-00-086", "Invalid startTime {0}"),

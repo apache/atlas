@@ -89,9 +89,9 @@ public class GlossaryServiceTest {
     @Inject
     private AtlasEntityStore entityStore;
 
-    private AtlasGlossary     bankGlossary, creditUnionGlossary;
-    private AtlasGlossaryTerm checkingAccount, savingsAccount, fixedRateMortgage, adjustableRateMortgage;
-    private AtlasGlossaryCategory customerCategory, accountCategory, mortgageCategory;
+    private AtlasGlossary     bankGlossary, creditUnionGlossary, debitUnionGlossary;
+    private AtlasGlossaryTerm checkingAccount, savingsAccount, fixedRateMortgage, adjustableRateMortgage, currentAccount;
+    private AtlasGlossaryCategory customerCategory, accountCategory, mortgageCategory, loanCategory;
 
     private AtlasRelatedObjectId relatedObjectId;
     @Inject
@@ -104,9 +104,9 @@ public class GlossaryServiceTest {
     public static Object[][] getGlossaryTermsProvider() {
         return new Object[][]{
                 // offset, limit, expected
-                {0, -1, 7},
+                {0, -1, 8},
                 {0, 2, 2},
-                {2, 6, 5},
+                {2, 6, 6},
         };
     }
 
@@ -144,6 +144,13 @@ public class GlossaryServiceTest {
         creditUnionGlossary.setUsage("N/A");
         creditUnionGlossary.setLanguage("en-US");
 
+        debitUnionGlossary = new AtlasGlossary();
+        debitUnionGlossary.setName("<Debit union glossary");
+        debitUnionGlossary.setShortDescription("Short description");
+        debitUnionGlossary.setLongDescription("Long description");
+        debitUnionGlossary.setUsage("N/A");
+        debitUnionGlossary.setLanguage("en-US");
+
         // Category
         accountCategory = new AtlasGlossaryCategory();
         accountCategory.setName("Account categorization");
@@ -160,6 +167,11 @@ public class GlossaryServiceTest {
         mortgageCategory.setName("Mortgage categorization");
         mortgageCategory.setShortDescription("Short description");
         mortgageCategory.setLongDescription("Long description");
+
+        loanCategory = new AtlasGlossaryCategory();
+        loanCategory.setName("Loan categorization>");
+        loanCategory.setShortDescription("Short description");
+        loanCategory.setLongDescription("Long description");
 
         // Terms
         checkingAccount = new AtlasGlossaryTerm();
@@ -196,6 +208,13 @@ public class GlossaryServiceTest {
         adjustableRateMortgage.setExamples(Arrays.asList("5/1", "7/1", "10/1"));
         adjustableRateMortgage.setUsage("N/A");
 
+        currentAccount = new AtlasGlossaryTerm();
+        currentAccount.setName("current@account");
+        currentAccount.setShortDescription("Short description");
+        currentAccount.setLongDescription("Long description");
+        currentAccount.setAbbreviation("CURR");
+        currentAccount.setExamples(Arrays.asList("Personal", "Joint"));
+        currentAccount.setUsage("N/A");
 
     }
 
@@ -222,6 +241,14 @@ public class GlossaryServiceTest {
             fail("Glossary duplicate creation should've failed");
         } catch (AtlasBaseException e) {
             assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.GLOSSARY_ALREADY_EXISTS);
+        }
+
+        //Validate glossary creation
+        try {
+            glossaryService.createGlossary(debitUnionGlossary);
+            fail("Invalid glossary creation should've failed");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
 
         // Retrieve the glossary and see ensure no terms or categories are linked
@@ -260,11 +287,13 @@ public class GlossaryServiceTest {
         fixedRateMortgage.setAnchor(glossaryId);
 
         adjustableRateMortgage.setAnchor(glossaryId);
+        currentAccount.setAnchor(glossaryId);
 
         // Create glossary categories
         accountCategory.setAnchor(glossaryId);
         customerCategory.setAnchor(glossaryId);
         mortgageCategory.setAnchor(glossaryId);
+        loanCategory.setAnchor(glossaryId);
     }
 
     @Test(groups = "Glossary.CREATE" , dependsOnMethods = "testCategoryCreation")
@@ -275,6 +304,14 @@ public class GlossaryServiceTest {
             assertNotNull(checkingAccount.getGuid());
         } catch (AtlasBaseException e) {
             fail("Term creation should've succeeded", e);
+        }
+
+        //validating term creation
+        try {
+            glossaryService.createTerm(currentAccount);
+            fail("Invalid term creation should've failed");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
     }
 
@@ -375,6 +412,15 @@ public class GlossaryServiceTest {
         } catch (AtlasBaseException e) {
             fail("Category creation should've succeeded", e);
         }
+
+        // Validate category creation
+        try {
+            glossaryService.createCategory(loanCategory);
+            fail("Invalid category creation should've failed");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_DISPLAY_NAME);
+        }
+
     }
 
 
@@ -424,6 +470,18 @@ public class GlossaryServiceTest {
             assertEquals(a, b);
         } catch (AtlasBaseException e) {
             fail("Glossary fetch/update should've succeeded", e);
+        }
+
+        //Validate glossary update
+        try {
+            debitUnionGlossary.setName("Test Glossary Update");
+            debitUnionGlossary = glossaryService.createGlossary(debitUnionGlossary);
+            assertNotNull(debitUnionGlossary);
+            debitUnionGlossary.setName("<test glossary create>");
+            glossaryService.updateGlossary(debitUnionGlossary);
+            fail("Invalid glossary update should've failed");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
     }
 
@@ -529,6 +587,17 @@ public class GlossaryServiceTest {
                 fail("Glossary term fetch/update should've succeeded", e);
             }
         }
+        //Validate term update
+        try {
+            currentAccount.setName("Test term update");
+            currentAccount = glossaryService.createTerm(currentAccount);
+            currentAccount.setName("<Test term update>");
+            glossaryService.updateTerm(currentAccount);
+            fail("Invalid term update should've failed");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_DISPLAY_NAME);
+        }
+
     }
 
     @Test(groups = "Glossary.UPDATE", dependsOnGroups = "Glossary.CREATE")
@@ -575,6 +644,16 @@ public class GlossaryServiceTest {
 
         } catch (AtlasBaseException e) {
             fail("Customer category fetch should've succeeded");
+        }
+        //Validate category update
+        try {
+            loanCategory.setName("Test category update");
+            loanCategory = glossaryService.createCategory(loanCategory);
+            loanCategory.setName("<Test category update>");
+            glossaryService.updateCategory(loanCategory);
+            fail("Invalid category update should've failed");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
     }
 
@@ -921,9 +1000,9 @@ public class GlossaryServiceTest {
     public Object[][] getGlossaryCategoriesProvider() {
         return new Object[][]{
                 // offset, limit, expected
-                {0, -1, 3},
+                {0, -1, 4},
                 {0, 2, 2},
-                {2, 5, 1},
+                {2, 5, 2},
         };
     }
 

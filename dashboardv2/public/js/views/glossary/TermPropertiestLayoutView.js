@@ -92,10 +92,10 @@ define(['require',
                         var tableBody = '',
                             enums = obj.enums;
                         _.each(obj.data, function(value, key, list) {
-                            tableBody += '<tr><td>' + key + '</td><td class="">' + that.getValue({
+                            tableBody += '<tr><td>' + _.escape(key) + '</td><td class="">' + _.escape(that.getValue({
                                 "value": value,
                                 "type": enums[key]
-                            }) + '</td></tr>';
+                            })) + '</td></tr>';
                         });
                         return tableBody;
                     };
