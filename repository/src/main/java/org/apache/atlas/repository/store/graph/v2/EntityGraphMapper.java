@@ -3071,8 +3071,7 @@ public class EntityGraphMapper {
                                 deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
                             }
 
-                            AtlasEntity entity = new AtlasEntity();
-                            entity = repairClassificationMappings(vertex);
+                            AtlasEntity entity = repairClassificationMappings(vertex);
 
                             entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
                         }
