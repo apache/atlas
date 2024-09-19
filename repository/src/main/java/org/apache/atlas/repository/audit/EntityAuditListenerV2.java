@@ -294,7 +294,14 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                         Objects.isNull(classification) ||
                         Objects.isNull(entity.getGuid()) ||
                         Objects.isNull(classification.getEntityGuid()))
+                {
+                    LOG.info("Probable NPE prevented onClassificationDeleted : Entity {}, classification : {}, entity.Guid : {}, classification.getEntityGuid : {}",
+                            entity != null ? entity.toString() : "null",
+                            classification != null ? classification.toString() : "null",
+                            entity != null && entity.getGuid() != null ? entity.getGuid() : "null",
+                            classification != null && classification.getEntityGuid() != null ? classification.getEntityGuid() : "null");
                     continue;
+                }
                 if (StringUtils.equals(entity.getGuid(), classification.getEntityGuid())) {
                     createEvent(events.next(), entity, CLASSIFICATION_DELETE, "Deleted classification: " + getDeleteClassificationString(classification.getTypeName()));
                 } else {
