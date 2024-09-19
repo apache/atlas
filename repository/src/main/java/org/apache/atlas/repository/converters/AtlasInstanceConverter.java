@@ -51,12 +51,7 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @Singleton
 @Component
@@ -329,7 +324,7 @@ public class AtlasInstanceConverter {
         } else {
             entity = entityGraphRetriever.toAtlasEntity(guid);
         }
-        return entity;
+        return Objects.isNull(entity) ? new AtlasEntity() : entity;
     }
 
 
