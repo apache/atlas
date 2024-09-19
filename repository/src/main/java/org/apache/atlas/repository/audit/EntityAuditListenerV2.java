@@ -290,6 +290,11 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
 
             for (AtlasClassification classification : classifications) {
+                if(Objects.isNull(entity) ||
+                        Objects.isNull(classification) ||
+                        Objects.isNull(entity.getGuid()) ||
+                        Objects.isNull(classification.getEntityGuid()))
+                    continue;
                 if (StringUtils.equals(entity.getGuid(), classification.getEntityGuid())) {
                     createEvent(events.next(), entity, CLASSIFICATION_DELETE, "Deleted classification: " + getDeleteClassificationString(classification.getTypeName()));
                 } else {
