@@ -324,7 +324,7 @@ public class AtlasInstanceConverter {
         } else {
             entity = entityGraphRetriever.toAtlasEntity(guid);
         }
-        return Objects.isNull(entity) ? new AtlasEntity() : entity;
+        return entity;
     }
 
 
