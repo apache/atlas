@@ -503,5 +503,21 @@
 	],
 	"options": {
 		"enableDenyAndExceptionsInPolicies": "true"
-	}
+	},
+	"policyConditions": [
+		{
+			"itemId": 1,
+			"name": "excludeRoles",
+			"evaluator": "org.apache.ranger.plugin.conditionevaluator.RangerRoleConditionEvaluator",
+			"description": "Roles to exclude for given policy"
+		},
+		{
+			"itemId": 2,
+			"name": "expressions",
+			"evaluator": "org.apache.ranger.plugin.conditionevaluator.RangerScriptConditionEvaluator",
+			"evaluatorOptions" : {"engineName":"JavaScript", "ui.isMultiline":"true"},
+			"label":"Enter boolean expression",
+			"description": "Boolean expression"
+		}
+	]
 }
