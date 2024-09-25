@@ -55,7 +55,7 @@ public class AtlanHasAnyRole extends RangerAbstractConditionEvaluator {
     @Override
     public boolean isMatched(RangerAccessRequest request) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlanHasAnyRolePrefix.isMatched(" + condition + ")");
+            LOG.debug("==> AtlanHasAnyRole.isMatched(" + condition + ")");
         }
 
         boolean ret = false;
@@ -68,7 +68,7 @@ public class AtlanHasAnyRole extends RangerAbstractConditionEvaluator {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlanHasAnyRolePrefix.isMatched(" + condition + "): " + ret);
+            LOG.debug("<== AtlanHasAnyRole.isMatched(" + condition + "): " + ret);
         }
 
         return ret;
