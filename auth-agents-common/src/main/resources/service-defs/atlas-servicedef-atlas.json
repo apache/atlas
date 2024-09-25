@@ -508,13 +508,13 @@
 		{
 			"itemId": 1,
 			"name": "excludeRoles",
-			"evaluator": "org.apache.ranger.plugin.conditionevaluator.RangerRoleConditionEvaluator",
+			"evaluator": "org.apache.ranger.plugin.conditionevaluator.AtlanHasAnyRole",
 			"description": "Roles to exclude for given policy"
 		},
 		{
 			"itemId": 2,
 			"name": "expressions",
-			"evaluator": "org.apache.ranger.plugin.conditionevaluator.RangerScriptConditionEvaluator",
+			"evaluator": "org.apache.ranger.plugin.conditionevaluator.AtlanHasAnyRole",
 			"evaluatorOptions" : {"engineName":"JavaScript", "ui.isMultiline":"true"},
 			"label":"Enter boolean expression",
 			"description": "Boolean expression"
