@@ -2255,6 +2255,12 @@ public class EntityGraphMapper {
     }
 
     private boolean classificationHasPendingTask(AtlasTask task, String classificationVertexId, String entityGuid) {
+        if (task.getParameters() == null
+                || task.getParameters().get(ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID) == null
+                || task.getParameters().get(ClassificationTask.PARAM_ENTITY_GUID) == null) {
+            return false;
+        }
+
         return task.getParameters().get(ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID).equals(classificationVertexId)
                 && task.getParameters().get(ClassificationTask.PARAM_ENTITY_GUID).equals(entityGuid);
     }
