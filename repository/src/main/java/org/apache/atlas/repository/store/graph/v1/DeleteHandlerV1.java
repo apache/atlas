@@ -376,7 +376,7 @@ public abstract class DeleteHandlerV1 {
             try {
                 deleteTypeVertex(vertexForDelete, typeCategory, forceDelete);
             }
-            catch (IllegalStateException e){
+            catch (IllegalStateException | AtlasBaseException e){
                 e.printStackTrace();
             }
         } else {
