@@ -3066,9 +3066,14 @@ public class EntityGraphMapper {
                             List<AtlasClassification> deletedClassifications = new ArrayList<>();
                             List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
                             for (AtlasEdge edge : classificationEdges) {
-                                AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
-                                deletedClassifications.add(classification);
-                                deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                                try {
+                                    AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
+                                    deletedClassifications.add(classification);
+                                    deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                                }
+                                catch (IllegalStateException e){
+                                    e.printStackTrace();
+                                }
                             }
 
                             AtlasEntity entity = repairClassificationMappings(vertex);
