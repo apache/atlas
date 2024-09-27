@@ -33,7 +33,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
- * Request to link/unlink policies from asset.
+ * Request to move policies from asset to compliant and non-compliant.
  */
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
@@ -84,7 +84,4 @@ public class MoveBusinessPolicyRequest implements Serializable {
             return description;
         }
     }
-
-
-
 }

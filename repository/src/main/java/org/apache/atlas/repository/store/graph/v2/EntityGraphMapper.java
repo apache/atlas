@@ -4718,11 +4718,11 @@ public class EntityGraphMapper {
         existingValues.forEach(existingValue -> vertex.removePropertyValue(DOMAIN_GUIDS_ATTR, existingValue));
         vertex.setProperty(DOMAIN_GUIDS_ATTR, meshEntityId);
     }
-    public AtlasVertex moveBusinessPolicy(Set<String> policyIds, String assetId, String type) throws AtlasBaseException {
+    public AtlasVertex moveBusinessPolicies(Set<String> policyIds, String assetId, String type) throws AtlasBaseException {
         // Retrieve the AtlasVertex for the given assetId
         AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(graph, assetId);
 
-        if(assetVertex == null){
+        if (assetVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "assetId not found");
         }
 
@@ -4730,16 +4730,23 @@ public class EntityGraphMapper {
         Set<String> governedPolicies = assetVertex.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
         Set<String> nonCompliantPolicies = assetVertex.getMultiValuedSetProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, String.class);
 
-        // Determine if the type is governed or non-compliant and move policies accordingly
+        // Determine if the type is governed or non-compliant
         boolean isGoverned = MoveBusinessPolicyRequest.Type.GOVERNED.getDescription().equals(type);
+        Set<String> currentPolicies = isGoverned ? governedPolicies : nonCompliantPolicies;
 
+        // Check if the asset already has the given policy IDs
+        if (currentPolicies.equals(policyIds)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Asset already has the given policy id");
+        }
+
+        // Move policies to the appropriate set
         policyIds.forEach(policyId -> {
             if (isGoverned) {
                 assetVertex.setProperty(ASSET_POLICY_GUIDS, policyId);
-                AtlasGraphUtilsV2.removeItemFromListPropertyValue(assetVertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
+                removeItemFromListPropertyValue(assetVertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
             } else {
                 assetVertex.setProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
-                AtlasGraphUtilsV2.removeItemFromListPropertyValue(assetVertex, ASSET_POLICY_GUIDS, policyId);
+                removeItemFromListPropertyValue(assetVertex, ASSET_POLICY_GUIDS, policyId);
             }
         });
 

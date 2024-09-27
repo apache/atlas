@@ -10,6 +10,7 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -18,6 +19,8 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.ws.rs.*;
 import javax.ws.rs.core.MediaType;
+
+import java.util.Objects;
 
 import static org.apache.atlas.repository.util.AccessControlUtils.ARGO_SERVICE_USER_NAME;
 
@@ -118,10 +121,13 @@ public class BusinessPolicyREST {
     @POST
     @Path("/move/{assetId}")
     @Timed
-    public void moveBusinessPolicy(
+    public void moveBusinessPolicies(
             @PathParam("assetId") String assetId,
             final MoveBusinessPolicyRequest request
     ) throws AtlasBaseException {
+        if (isInvalidRequest(request, assetId)) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Request is missing required parameters.");
+        }
         // Start performance metric recording
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("moveBusinessPolicy");
 
@@ -145,12 +151,19 @@ public class BusinessPolicyREST {
             }
 
             // Move the business policy using the entitiesStore
-            entitiesStore.moveBusinessPolicy(request.getPolicyIds(), assetId, request.getType());
+            entitiesStore.moveBusinessPolicies(request.getPolicyIds(), assetId, request.getType());
         } finally {
             // Log performance trace and end metric recording
             AtlasPerfTracer.log(perf);
             requestContext.endMetricRecord(metric);
         }
+    }
+
+    private boolean isInvalidRequest(MoveBusinessPolicyRequest request, String assetId) {
+        return Objects.isNull(request) ||
+                CollectionUtils.isEmpty(request.getPolicyIds()) ||
+                Objects.isNull(request.getType()) ||
+                Objects.isNull(assetId);
     }
 
 }

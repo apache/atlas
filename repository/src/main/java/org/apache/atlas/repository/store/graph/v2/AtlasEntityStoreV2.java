@@ -2873,13 +2873,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public void moveBusinessPolicy(Set<String> policyIds, String assetId, String type) throws AtlasBaseException {
+    public void moveBusinessPolicies(Set<String> policyIds, String assetId, String type) throws AtlasBaseException {
         // Start performance metric recording
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("moveBusinessPolicy.GraphTransaction");
 
         try {
             // Attempt to move the business policy using the entityGraphMapper
-            AtlasVertex vertex = entityGraphMapper.moveBusinessPolicy(policyIds, assetId, type);
+            AtlasVertex vertex = entityGraphMapper.moveBusinessPolicies(policyIds, assetId, type);
 
             if (vertex == null) {
                 LOG.warn("No vertex found for assetId: {}", assetId);
