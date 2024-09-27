@@ -373,7 +373,12 @@ public abstract class DeleteHandlerV1 {
 
             //If deleting the edge and then the in vertex, reverse attribute shouldn't be updated
             deleteEdge(edge, false, forceDelete);
-            deleteTypeVertex(vertexForDelete, typeCategory, forceDelete);
+            try {
+                deleteTypeVertex(vertexForDelete, typeCategory, forceDelete);
+            }
+            catch (IllegalStateException | AtlasBaseException e){
+                e.printStackTrace();
+            }
         } else {
             //If the vertex is of type class, and its not a composite attributes, the reference AtlasVertex' lifecycle is not controlled
             //through this delete. Hence just remove the reference edge. Leave the reference AtlasVertex as is
