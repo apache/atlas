@@ -4723,7 +4723,7 @@ public class EntityGraphMapper {
         AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(graph, assetId);
 
         if (assetVertex == null) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "assetId not found");
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Asset with guid not found");
         }
 
         // Get the sets of governed and non-compliant policy GUIDs
