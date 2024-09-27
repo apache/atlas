@@ -4732,10 +4732,11 @@ public class EntityGraphMapper {
 
         // Determine if the type is governed or non-compliant
         boolean isGoverned = MoveBusinessPolicyRequest.Type.GOVERNED.getDescription().equals(type);
-        Set<String> currentPolicies = isGoverned ? governedPolicies : nonCompliantPolicies;
+        Set<String> currentPolicies = isGoverned ? new HashSet<>(governedPolicies) : new HashSet<>(nonCompliantPolicies);
+        policyIds.removeAll(currentPolicies);
 
         // Check if the asset already has the given policy IDs
-        if (currentPolicies.equals(policyIds)) {
+        if (policyIds.isEmpty()) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Asset already has the given policy id");
         }
 
