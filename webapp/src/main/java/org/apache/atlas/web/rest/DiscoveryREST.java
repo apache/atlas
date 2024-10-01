@@ -93,7 +93,6 @@ public class DiscoveryREST {
     private final SearchLoggingManagement loggerManagement;
 
     private static final String INDEXSEARCH_TAG_NAME = "indexsearch";
-    private static final String RELATIONSHIP_INDEXSEARCH_TAG_NAME = "relationshipIndexsearch";
     private static final Set<String> TRACKING_UTM_TAGS = new HashSet<>(Arrays.asList("ui_main_list", "ui_popup_searchbar"));
     private static final String UTM_TAG_FROM_PRODUCT = "project_webapp";
 

@@ -2246,10 +2246,8 @@ public class EntityGraphMapper {
             AtlasVertex targetVertex;
             if (isEdgeDirectionIn) {
                 targetVertex = edge.getOutVertex();
-                LOG.info("{}: {}", direction, "outVertex");
             } else {
                 targetVertex = edge.getInVertex();
-                LOG.info("{}: {}", direction, "inVertex");
             }
 
             currentSize = targetVertex.getEdgesCount(direction, UD_RELATIONSHIP_EDGE_LABEL);
