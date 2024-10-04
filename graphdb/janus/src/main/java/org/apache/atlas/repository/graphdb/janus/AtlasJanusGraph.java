@@ -25,6 +25,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.ESAliasRequestBuilder;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.groovy.GroovyExpression;
 import org.apache.atlas.model.discovery.SearchParams;
@@ -45,6 +46,7 @@ import org.apache.atlas.repository.graphdb.GremlinVersion;
 import org.apache.atlas.repository.graphdb.janus.query.AtlasJanusGraphQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.configuration.Configuration;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
@@ -199,12 +201,17 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     @Override
     public AtlasEdge getEdgeBetweenVertices(AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) {
-        GraphTraversal gt = V(fromVertex.getId()).outE(edgeLabel).where(__.otherV().hasId(toVertex.getId()));
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getEdgeBetweenVertices");
+        try {
+            GraphTraversal gt = V(fromVertex.getId()).outE(edgeLabel).where(__.otherV().hasId(toVertex.getId()));
 
-        Edge gremlinEdge = getFirstActiveEdge(gt);
-        return (gremlinEdge != null)
-                ? GraphDbObjectFactory.createEdge(this, gremlinEdge)
-                : null;
+            Edge gremlinEdge = getFirstActiveEdge(gt);
+            return (gremlinEdge != null)
+                    ? GraphDbObjectFactory.createEdge(this, gremlinEdge)
+                    : null;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
     }
 
     @Override
