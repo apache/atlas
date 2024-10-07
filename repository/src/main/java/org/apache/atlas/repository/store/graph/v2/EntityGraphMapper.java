@@ -171,6 +171,7 @@ public class EntityGraphMapper {
 
     private static final boolean RESTRICT_PROPAGATION_THROUGH_HIERARCHY_DEFAULT        = false;
     public static final int CLEANUP_BATCH_SIZE = 200000;
+    public static final int CLASSIFICATION_EDGE_BATCH_LIMIT = 10000;
     private              boolean DEFERRED_ACTION_ENABLED                             = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
     private              boolean DIFFERENTIAL_AUDITS                                 = STORE_DIFFERENTIAL_AUDITS.getBoolean();
 
@@ -3054,32 +3055,36 @@ public class EntityGraphMapper {
                         List<AtlasVertex> entityVertices = currentAssetVerticesBatch.subList(offset, toIndex);
                         List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
                         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
-
+//                        commitCnandidateCount
                         for (AtlasVertex vertex : entityVertices) {
                             List<AtlasClassification> deletedClassifications = new ArrayList<>();
                             List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
                             classificationEdgeCount += classificationEdges.size();
-                            for (AtlasEdge edge : classificationEdges) {
-                                try {
-                                    AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
-                                    deletedClassifications.add(classification);
-                                    deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                            int batchSize = CLASSIFICATION_EDGE_BATCH_LIMIT;
+                            for (int i = 0; i < classificationEdges.size(); i += batchSize) {
+                                int end = Math.min(i + batchSize, classificationEdges.size());
+                                List<AtlasEdge> batch = classificationEdges.subList(i, end);
+                                for (AtlasEdge edge : batch) {
+                                    try {
+                                        AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
+                                        deletedClassifications.add(classification);
+                                        deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                                    } catch (IllegalStateException | AtlasBaseException e) {
+                                        e.printStackTrace();
+                                    }
                                 }
-                                catch (IllegalStateException | AtlasBaseException e){
+
+                                try {
+                                    AtlasEntity entity = repairClassificationMappings(vertex);
+                                    entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
+                                } catch (IllegalStateException | AtlasBaseException e) {
                                     e.printStackTrace();
                                 }
+
                             }
 
-                            try {
-                                AtlasEntity entity = repairClassificationMappings(vertex);
-                                entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
-                            } catch (IllegalStateException | AtlasBaseException e) {
-                                e.printStackTrace();
-                            }
-
+                            transactionInterceptHelper.intercept();
                         }
-
-                        transactionInterceptHelper.intercept();
 
                         offset += CHUNK_SIZE_TEMP;
                     } finally {
