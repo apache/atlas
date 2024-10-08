@@ -3645,14 +3645,12 @@ public class EntityGraphMapper {
         String                    entityTypeName         = AtlasGraphUtilsV2.getTypeName(entityVertex);
         AtlasEntityType           entityType             = typeRegistry.getEntityTypeByName(entityTypeName);
         List<AtlasClassification> updatedClassifications = new ArrayList<>();
-        HashMap<String, String>         updatedClassificationsVertices = new HashMap<>();
         List<AtlasVertex>         entitiesToPropagateTo  = new ArrayList<>();
         Set<AtlasVertex>          notificationVertices   = new HashSet<AtlasVertex>() {{ add(entityVertex); }};
 
         Map<AtlasVertex, List<AtlasClassification>> addedPropagations   = null;
         Map<AtlasClassification, List<AtlasVertex>> removedPropagations = new HashMap<>();
         String propagationType = null;
-        Queue<StaggeredTask> tasksToBeCreated = new LinkedList<>();
 
         for (AtlasClassification classification : classifications) {
             String classificationName       = classification.getTypeName();
@@ -3722,10 +3720,7 @@ public class EntityGraphMapper {
             }
 
             if (isClassificationUpdated) {
-                List<AtlasVertex> propagatedEntityVertices = graphHelper.getAllPropagatedEntityVertices(classificationVertex);
-
-                notificationVertices.addAll(propagatedEntityVertices);
-                updatedClassificationsVertices.put(classificationName, classificationVertex.getIdForDisplay());
+                createAndQueueTask(CLASSIFICATION_PROPAGATION_TEXT_UPDATE, entityVertex, classificationVertex.getIdForDisplay(), classification.getTypeName());
             }
 
             if (LOG.isDebugEnabled()) {
@@ -3781,7 +3776,7 @@ public class EntityGraphMapper {
                 if (removePropagation || !updatedTagPropagation) {
                     propagationType = CLASSIFICATION_PROPAGATION_DELETE;
                 }
-                tasksToBeCreated.add(new StaggeredTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), classificationName, currentRestrictPropagationThroughLineage,currentRestrictPropagationThroughHierarchy));
+                createAndQueueTask(propagationType, entityVertex, classificationVertex.getIdForDisplay(), classificationName, currentRestrictPropagationThroughLineage,currentRestrictPropagationThroughHierarchy);
                 updatedTagPropagation = null;
             }
 
@@ -3850,15 +3845,9 @@ public class EntityGraphMapper {
             AtlasEntity entity     = instanceConverter.getAndCacheEntity(entityGuid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
 
             if (entity != null) {
+                vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
                 entityChangeNotifier.onClassificationUpdatedToEntity(entity, updatedClassifications);
             }
-        }
-        for(String classification : updatedClassificationsVertices.keySet()){
-            createAndQueueTask(CLASSIFICATION_PROPAGATION_TEXT_UPDATE, entityVertex, updatedClassificationsVertices.get(classification), classification);
-        }
-        while (!tasksToBeCreated.isEmpty()){
-            StaggeredTask task = tasksToBeCreated.poll();
-            createAndQueueTask(task.taskType, task.entityVertex, task.classificationVertexId, task.classificationName, task.currentPropagateThroughLineage, task.currentRestrictPropagationThroughHierarchy);
         }
 
         if (MapUtils.isNotEmpty(removedPropagations)) {
@@ -3937,6 +3926,7 @@ public class EntityGraphMapper {
             }
 
             AtlasVertex classificationVertex = graph.getVertex(classificationVertexId);
+            AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
             List<AtlasVertex> impactedVertices = graphHelper.getAllPropagatedEntityVertices(classificationVertex);
             int batchSize = 100;
             for (int i = 0; i < impactedVertices.size(); i += batchSize) {
@@ -3948,6 +3938,7 @@ public class EntityGraphMapper {
 
                     if (entity != null) {
                         vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
+                        entityChangeNotifier.onClassificationUpdatedToEntity(entity, Collections.singletonList(classification));
                     }
                 }
                 transactionInterceptHelper.intercept();
@@ -4857,23 +4848,5 @@ public class EntityGraphMapper {
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, sourceEntity),
                 "read on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
 
-    }
-
-    class StaggeredTask {
-        String taskType;
-        AtlasVertex entityVertex;
-        String classificationVertexId;
-        String classificationName;
-        Boolean currentPropagateThroughLineage;
-        Boolean currentRestrictPropagationThroughHierarchy;
-
-        public StaggeredTask(String taskType, AtlasVertex entityVertex, String classificationVertexId, String classificationName, Boolean currentPropagateThroughLineage, Boolean currentRestrictPropagationThroughHierarchy) {
-            this.taskType = taskType;
-            this.entityVertex = entityVertex;
-            this.classificationVertexId = classificationVertexId;
-            this.classificationName = classificationName;
-            this.currentPropagateThroughLineage = currentPropagateThroughLineage;
-            this.currentRestrictPropagationThroughHierarchy = currentRestrictPropagationThroughHierarchy;
-        }
     }
 }
