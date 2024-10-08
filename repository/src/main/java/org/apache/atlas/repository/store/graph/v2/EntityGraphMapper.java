@@ -3924,10 +3924,11 @@ public class EntityGraphMapper {
                 LOG.warn("updateClassificationTextPropagation(classificationVertexId={}): classification vertex id is empty", classificationVertexId);
                 return;
             }
-
             AtlasVertex classificationVertex = graph.getVertex(classificationVertexId);
             AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
+            LOG.info("Fetched classification : {} ", classification.toString());
             List<AtlasVertex> impactedVertices = graphHelper.getAllPropagatedEntityVertices(classificationVertex);
+            LOG.info("impactedVertices : {}", impactedVertices.size());
             int batchSize = 100;
             for (int i = 0; i < impactedVertices.size(); i += batchSize) {
                 int end = Math.min(i + batchSize, impactedVertices.size());
@@ -3942,6 +3943,7 @@ public class EntityGraphMapper {
                     }
                 }
                 transactionInterceptHelper.intercept();
+                LOG.info("Updated classificationText from {} for {}", i, batchSize);
             }
         } catch (Exception e){
             e.printStackTrace();
