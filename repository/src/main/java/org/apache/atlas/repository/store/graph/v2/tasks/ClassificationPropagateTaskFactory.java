@@ -36,6 +36,7 @@ import java.util.List;
 public class ClassificationPropagateTaskFactory implements TaskFactory {
     private static final Logger LOG = LoggerFactory.getLogger(ClassificationPropagateTaskFactory.class);
 
+    public static final String CLASSIFICATION_PROPAGATION_TEXT_UPDATE                 = "CLASSIFICATION_PROPAGATION_TEXT_UPDATE";
     public static final String CLASSIFICATION_PROPAGATION_ADD                 = "CLASSIFICATION_PROPAGATION_ADD";
 
     //This should be used when referencing vertex to which classification is directly attached
@@ -89,6 +90,9 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
         switch (taskType) {
             case CLASSIFICATION_PROPAGATION_ADD:
                 return new ClassificationPropagationTasks.Add(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+
+            case CLASSIFICATION_PROPAGATION_TEXT_UPDATE:
+                return new ClassificationPropagationTasks.UpdateText(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
 
             case CLASSIFICATION_PROPAGATION_DELETE:
                 return new ClassificationPropagationTasks.Delete(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
