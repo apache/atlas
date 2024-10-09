@@ -45,7 +45,6 @@ public class PreProcessorUtils {
     public static final String GLOSSARY_TERM_REL_TYPE = "AtlasGlossaryTermAnchor";
     public static final String GLOSSARY_CATEGORY_REL_TYPE = "AtlasGlossaryCategoryAnchor";
     public static final String INIT_LEXORANK_OFFSET = "0|100000:";
-    public static final String INIT_TERM_LEXORANK_OFFSET = "0|500000:";
 
     //DataMesh models constants
     public static final String PARENT_DOMAIN_REL_TYPE = "parentDomain";
