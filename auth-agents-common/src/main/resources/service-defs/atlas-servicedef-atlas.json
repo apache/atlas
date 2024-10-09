@@ -503,5 +503,13 @@
 	],
 	"options": {
 		"enableDenyAndExceptionsInPolicies": "true"
-	}
+	},
+	"policyConditions": [
+		{
+			"itemId": 1,
+			"name": "excludeRoles",
+			"evaluator": "org.apache.atlas.plugin.conditionevaluator.AtlanHasAnyRole",
+			"description": "Roles to exclude for given policy"
+		}
+	]
 }
