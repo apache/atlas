@@ -1447,7 +1447,7 @@ public abstract class DeleteHandlerV1 {
     }
 
 
-    public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) {
+    public void removeHasLineageOnDelete(Collection<AtlasVertex> vertices) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("removeHasLineageOnDelete");
 
         for (AtlasVertex vertexToBeDeleted : vertices) {
@@ -1493,7 +1493,7 @@ public abstract class DeleteHandlerV1 {
 
             if (getStatus(processVertex) == ACTIVE && !processVertex.equals(deletedVertex)) {
                 String edgeLabel = isOutputEdge ? PROCESS_OUTPUTS : PROCESS_INPUTS;
-                
+
                 Iterator<AtlasEdge> edgeIterator = GraphHelper.getActiveEdges(processVertex, edgeLabel, AtlasEdgeDirection.BOTH);
 
                 boolean activeEdgeFound = false;
