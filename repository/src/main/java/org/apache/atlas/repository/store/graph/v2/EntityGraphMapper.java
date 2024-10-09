@@ -84,6 +84,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.LABEL_MAX_LENGTH;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
+import static org.apache.atlas.AtlasErrorCode.CLASSIFICATION_NOT_FOUND;
 import static org.apache.atlas.model.TypeCategory.ARRAY;
 import static org.apache.atlas.model.TypeCategory.CLASSIFICATION;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
@@ -3649,6 +3650,7 @@ public class EntityGraphMapper {
 
         Map<AtlasVertex, List<AtlasClassification>> addedPropagations   = null;
         Map<AtlasClassification, List<AtlasVertex>> removedPropagations = new HashMap<>();
+        String propagationType = null;
 
         for (AtlasClassification classification : classifications) {
             String classificationName       = classification.getTypeName();
@@ -3690,7 +3692,7 @@ public class EntityGraphMapper {
                     currentClassification.setAttribute(attributeName, updatedAttributes.get(attributeName));
                 }
 
-                isClassificationUpdated = true;
+                createAndQueueTask(CLASSIFICATION_PROPAGATION_TEXT_UPDATE, entityVertex, classificationVertex.getIdForDisplay(), classification.getTypeName());
             }
 
             // check for validity period update
@@ -3719,7 +3721,6 @@ public class EntityGraphMapper {
 
             if (isClassificationUpdated) {
                 List<AtlasVertex> propagatedEntityVertices = graphHelper.getAllPropagatedEntityVertices(classificationVertex);
-
                 notificationVertices.addAll(propagatedEntityVertices);
             }
 
@@ -3769,7 +3770,7 @@ public class EntityGraphMapper {
                     !Objects.equals(currentRestrictPropagationThroughLineage, updatedRestrictPropagationThroughLineage)) &&
                     taskManagement != null && DEFERRED_ACTION_ENABLED) {
 
-                String propagationType = CLASSIFICATION_PROPAGATION_ADD;
+                propagationType = CLASSIFICATION_PROPAGATION_ADD;
                 if(currentRestrictPropagationThroughLineage != updatedRestrictPropagationThroughLineage || currentRestrictPropagationThroughHierarchy != updatedRestrictPropagationThroughHierarchy){
                     propagationType = CLASSIFICATION_REFRESH_PROPAGATION;
                 }
@@ -3915,6 +3916,34 @@ public class EntityGraphMapper {
             for (String traitName : traitNames) {
                 deleteClassification(guid, traitName);
             }
+        }
+    }
+
+    public void updateClassificationTextPropagation(String classificationVertexId) throws AtlasBaseException {
+        if (StringUtils.isEmpty(classificationVertexId)) {
+            LOG.warn("updateClassificationTextPropagation(classificationVertexId={}): classification vertex id is empty", classificationVertexId);
+            return;
+        }
+        AtlasVertex classificationVertex = graph.getVertex(classificationVertexId);
+        AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
+        LOG.info("Fetched classification : {} ", classification.toString());
+        List<AtlasVertex> impactedVertices = graphHelper.getAllPropagatedEntityVertices(classificationVertex);
+        LOG.info("impactedVertices : {}", impactedVertices.size());
+        int batchSize = 100;
+        for (int i = 0; i < impactedVertices.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, impactedVertices.size());
+            List<AtlasVertex> batch = impactedVertices.subList(i, end);
+            for (AtlasVertex vertex : batch) {
+                String entityGuid = graphHelper.getGuid(vertex);
+                AtlasEntity entity = instanceConverter.getAndCacheEntity(entityGuid, true);
+
+                if (entity != null) {
+                    vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
+                    entityChangeNotifier.onClassificationUpdatedToEntity(entity, Collections.singletonList(classification));
+                }
+            }
+            transactionInterceptHelper.intercept();
+            LOG.info("Updated classificationText from {} for {}", i, batchSize);
         }
     }
 
