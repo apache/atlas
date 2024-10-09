@@ -157,6 +157,10 @@ public final class Constants {
     public static final String INPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.inputPortDataProducts";
     public static final String OUTPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.outputPortDataProducts";
 
+    public static final String UD_RELATIONSHIP_EDGE_LABEL = "__Referenceable.userDefRelationshipTo";
+    public static final String UD_RELATIONSHIP_END_NAME_FROM = "userDefRelationshipFrom";
+    public static final String UD_RELATIONSHIP_END_NAME_TO = "userDefRelationshipTo";
+
     /**
      * SQL property keys.
      */
@@ -261,6 +265,7 @@ public final class Constants {
     public static final String INDEX_PREFIX = "janusgraph_";
 
     public static final String VERTEX_INDEX_NAME = INDEX_PREFIX + VERTEX_INDEX;
+    public static final String EDGE_INDEX_NAME = INDEX_PREFIX + EDGE_INDEX;
 
     public static final String NAME                                    = "name";
     public static final String QUALIFIED_NAME                          = "qualifiedName";

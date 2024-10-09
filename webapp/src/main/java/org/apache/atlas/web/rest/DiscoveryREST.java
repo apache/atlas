@@ -455,6 +455,44 @@ public class DiscoveryREST {
         }
     }
 
+
+    /**
+     * Index based search for query direct on Elasticsearch Edge index
+     *
+     * @param parameters Index Search parameters @IndexSearchParams.java
+     * @return Atlas search result
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful search
+     */
+    @Path("/relationship/indexsearch")
+    @POST
+    @Timed
+    public AtlasSearchResult relationshipIndexSearch(@Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        
+        try     {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relationshipIndexSearch(" + parameters + ")");
+            }
+
+            if (StringUtils.isEmpty(parameters.getQuery())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
+            }
+
+            if(LOG.isDebugEnabled()){
+                LOG.debug("Performing relationship indexsearch for the params ({})", parameters);
+            }
+            return discoveryService.directRelationshipIndexSearch(parameters);
+
+        } catch (AtlasBaseException abe) {
+            throw abe;
+        } catch (Exception e) {
+            throw new AtlasBaseException(e.getMessage(), e.getCause());
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
     /**
      * Index based search for query direct on ES search-logs index
      *

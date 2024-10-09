@@ -46,7 +46,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.JanusUtils;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
-import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -100,6 +99,8 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     private static final String END_2_DOC_ID_KEY = "end2DocId";
     private static final String ES_DOC_ID_MAP_KEY = "esDocIdMap";
 
+    private static final String UD_RELATIONSHIP_TYPE_NAME = "UserDefRelationship";
+
     private static Set<String> EXCLUDE_MUTATION_REL_TYPE_NAMES = new HashSet<String>() {{
         add(REL_DOMAIN_TO_DOMAINS);
         add(REL_DOMAIN_TO_PRODUCTS);
@@ -139,6 +140,10 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
         AtlasVertex end1Vertex = getVertexFromEndPoint(relationship.getEnd1());
         AtlasVertex end2Vertex = getVertexFromEndPoint(relationship.getEnd2());
+
+        if (relationship.getTypeName().equals(UD_RELATIONSHIP_TYPE_NAME)) {
+            EntityGraphMapper.validateCustomRelationship(end1Vertex, end2Vertex);
+        }
 
         AtlasEdge edge = createRelationship(end1Vertex, end2Vertex, relationship);
 
@@ -676,6 +681,9 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         relationshipType.getNormalizedValue(relationship);
+
+        Map<String, Object> relAttrs = relationship.getAttributes();
+        EntityGraphMapper.validateCustomRelationshipAttributeValueCase(relAttrs);
     }
 
 

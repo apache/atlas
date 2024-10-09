@@ -417,9 +417,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createVertexCentricIndex(management, CLASSIFICATION_LABEL, AtlasEdgeDirection.BOTH, Arrays.asList(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY));
 
             // create edge indexes
-            createEdgeIndex(management, RELATIONSHIP_GUID_PROPERTY_KEY, String.class, SINGLE, true);
-            createEdgeIndex(management, EDGE_ID_IN_IMPORT_KEY, String.class, SINGLE, true);
-            createEdgeIndex(management, ATTRIBUTE_INDEX_PROPERTY_KEY, Integer.class, SINGLE, true);
+            createEdgeIndex(management, RELATIONSHIP_GUID_PROPERTY_KEY, String.class, SINGLE, true, false);
+            createEdgeIndex(management, EDGE_ID_IN_IMPORT_KEY, String.class, SINGLE, true, false);
+            createEdgeIndex(management, ATTRIBUTE_INDEX_PROPERTY_KEY, Integer.class, SINGLE, true, false);
 
             // create fulltext indexes
             createFullTextIndex(management, ENTITY_TEXT_PROPERTY_KEY, String.class, SINGLE);
@@ -649,21 +649,22 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 createEdgeLabel(management, propertyName);
 
             } else if (isBuiltInType || isArrayOfPrimitiveType || isArrayOfEnum) {
-                if (isRelationshipType(atlasType)) {
-                    createEdgeIndex(management, propertyName, getPrimitiveClass(attribTypeName), cardinality, false);
+                Class primitiveClassType;
+                boolean isStringField = false;
+
+                if (isArrayOfEnum) {
+                    primitiveClassType = String.class;
                 } else {
-                    Class primitiveClassType;
-                    boolean isStringField = false;
+                    primitiveClassType = isArrayOfPrimitiveType ? getPrimitiveClass(arrayElementType.getTypeName()): getPrimitiveClass(attribTypeName);
+                }
 
-                    if (isArrayOfEnum) {
-                        primitiveClassType = String.class;
-                    } else {
-                        primitiveClassType = isArrayOfPrimitiveType ? getPrimitiveClass(arrayElementType.getTypeName()): getPrimitiveClass(attribTypeName);
-                    }
+                if(primitiveClassType == String.class) {
+                    isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
+                }
 
-                    if(primitiveClassType == String.class) {
-                        isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
-                    }
+                if (isRelationshipType(atlasType)) {
+                    createEdgeIndex(management, propertyName, getPrimitiveClass(attribTypeName), cardinality, false, isStringField);
+                } else {
 
                     createVertexIndex(management, propertyName, UniqueKind.NONE, primitiveClassType, cardinality, isIndexable, false, isStringField, indexTypeESConfig, indexTypeESFields);
 
@@ -673,10 +674,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
                 }
             } else if (isEnumType(attributeType)) {
+                boolean isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
                 if (isRelationshipType(atlasType)) {
-                    createEdgeIndex(management, propertyName, String.class, cardinality, false);
+                    createEdgeIndex(management, propertyName, String.class, cardinality, false, isStringField);
                 } else {
-                    boolean isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
                     createVertexIndex(management, propertyName, UniqueKind.NONE, String.class, cardinality, isIndexable, false, isStringField, indexTypeESConfig, indexTypeESFields);
 
                     if (uniqPropName != null) {
@@ -910,21 +911,32 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
 
     private void createEdgeIndex(AtlasGraphManagement management, String propertyName, Class propertyClass,
-                                 AtlasCardinality cardinality, boolean createCompositeIndex) {
+                                 AtlasCardinality cardinality, boolean createCompositeIndex, boolean isStringField) {
         if (propertyName != null) {
             AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
+            boolean enforceMixedIndex = false;
+            //management.getGraphIndex("edge_index").getFieldKeys().stream().map(x -> x.getName()).collect(Collectors.toSet());
 
-            if (propertyKey == null) {
-                propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
+            if (propertyKey != null) {
+                // validate property present for EDGE_INDEX or not
+                // there are properties like __typeName, __state which might have been added as MixedIndex for VERTEX_INDEX but not for EDGE_INDEX
+                // in such case, enforceMixedIndex will ensure creation of nixed index for EDDGE_INDEX for the property
+                enforceMixedIndex = !management.getGraphIndex(EDGE_INDEX).getFieldKeys().contains(propertyKey);
+            }
+
+            if (propertyKey == null || enforceMixedIndex) {
+                if (propertyKey == null) {
+                    propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
+                }
 
                 if (isIndexApplicable(propertyClass, cardinality)) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Creating backing index for edge property {} of type {} ", propertyName, propertyClass.getName());
                     }
 
-                    management.addMixedIndex(EDGE_INDEX, propertyKey, false);
+                    management.addMixedIndex(EDGE_INDEX, propertyKey, isStringField);
 
-                    LOG.info("Created backing index for edge property {} of type {} ", propertyName, propertyClass.getName());
+                    LOG.info("Created backing index for edge property {} of type {} on index {}", propertyName, propertyClass.getName(), EDGE_INDEX);
                 }
             }
 

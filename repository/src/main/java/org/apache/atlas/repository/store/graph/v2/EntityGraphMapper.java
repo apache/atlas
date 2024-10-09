@@ -175,8 +175,9 @@ public class EntityGraphMapper {
     private              boolean DEFERRED_ACTION_ENABLED                             = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
     private              boolean DIFFERENTIAL_AUDITS                                 = STORE_DIFFERENTIAL_AUDITS.getBoolean();
 
-    private static final int     MAX_NUMBER_OF_RETRIES = AtlasConfiguration.MAX_NUMBER_OF_RETRIES.getInt();
-    private static final int     CHUNK_SIZE            = AtlasConfiguration.TASKS_GRAPH_COMMIT_CHUNK_SIZE.getInt();
+    private static final int MAX_NUMBER_OF_RETRIES = AtlasConfiguration.MAX_NUMBER_OF_RETRIES.getInt();
+    private static final int CHUNK_SIZE            = AtlasConfiguration.TASKS_GRAPH_COMMIT_CHUNK_SIZE.getInt();
+    private static final int UD_REL_THRESHOLD = AtlasConfiguration.ATLAS_UD_RELATIONSHIPS_MAX_COUNT.getInt();
 
     private final GraphHelper               graphHelper;
     private final AtlasGraph                graph;
@@ -1756,8 +1757,11 @@ public class EntityGraphMapper {
 
                 AtlasEdge edge = null;
 
+                Map<String, Object> relationshipAttributes = getRelationshipAttributes(ctx.getValue());
+                AtlasRelationship relationship = new AtlasRelationship(relationshipName, relationshipAttributes);
+
                 if (createEdge) {
-                    edge = relationshipStore.getOrCreate(fromVertex, toVertex, new AtlasRelationship(relationshipName));
+                    edge = relationshipStore.getOrCreate(fromVertex, toVertex, relationship);
                     boolean isCreated = graphHelper.getCreatedTime(edge) == RequestContext.get().getRequestTime();
 
                     if (isCreated) {
@@ -1768,7 +1772,7 @@ public class EntityGraphMapper {
                     }
 
                 } else {
-                    edge = relationshipStore.getRelationship(fromVertex, toVertex, new AtlasRelationship(relationshipName));
+                    edge = relationshipStore.getRelationship(fromVertex, toVertex, relationship);
                 }
                 ret = edge;
             }
@@ -1997,6 +2001,10 @@ public class EntityGraphMapper {
             case OUTPUT_PORT_PRODUCT_EDGE_LABEL:
                 addInternalProductAttr(ctx, newElementsCreated, removedElements);
                 break;
+
+            case UD_RELATIONSHIP_EDGE_LABEL:
+                validateCustomRelationship(ctx, newElementsCreated, false);
+                break;
         }
 
         if (LOG.isDebugEnabled()) {
@@ -2086,6 +2094,10 @@ public class EntityGraphMapper {
             case INPUT_PORT_PRODUCT_EDGE_LABEL:
             case OUTPUT_PORT_PRODUCT_EDGE_LABEL:
                 addInternalProductAttr(ctx, newElementsCreated, null);
+                break;
+
+            case UD_RELATIONSHIP_EDGE_LABEL:
+                validateCustomRelationship(ctx, newElementsCreated, true);
                 break;
         }
 
@@ -2193,6 +2205,100 @@ public class EntityGraphMapper {
                 removedElement.addAll(removedElements);
                 (RequestContext.get().getRemovedElementsMap()).put(guid, removedElement);
             }
+        }
+    }
+
+    public void validateCustomRelationship(AttributeMutationContext ctx, List<Object> newElements, boolean isAppend) throws AtlasBaseException {
+        validateCustomRelationshipCount(ctx, newElements, isAppend);
+        validateCustomRelationshipAttributes(ctx, newElements);
+    }
+
+    public void validateCustomRelationshipCount(AttributeMutationContext ctx, List<Object> newElements, boolean isAppend) throws AtlasBaseException {
+        long currentSize;
+        boolean isEdgeDirectionIn = ctx.getAttribute().getRelationshipEdgeDirection() == AtlasRelationshipEdgeDirection.IN;
+
+        if (isAppend) {
+            currentSize = ctx.getReferringVertex().getEdgesCount(isEdgeDirectionIn ? AtlasEdgeDirection.IN : AtlasEdgeDirection.OUT,
+                    UD_RELATIONSHIP_EDGE_LABEL);
+        } else {
+            currentSize = newElements.size();
+        }
+
+        validateCustomRelationshipCount(currentSize, ctx.getReferringVertex());
+
+        AtlasEdgeDirection direction;
+        if (isEdgeDirectionIn) {
+            direction = AtlasEdgeDirection.OUT;
+        } else {
+            direction = AtlasEdgeDirection.IN;
+        }
+
+        for (Object obj : newElements) {
+            AtlasEdge edge = (AtlasEdge) obj;
+
+            AtlasVertex targetVertex;
+            if (isEdgeDirectionIn) {
+                targetVertex = edge.getOutVertex();
+            } else {
+                targetVertex = edge.getInVertex();
+            }
+
+            currentSize = targetVertex.getEdgesCount(direction, UD_RELATIONSHIP_EDGE_LABEL);
+            validateCustomRelationshipCount(currentSize, targetVertex);
+        }
+    }
+
+    public void validateCustomRelationshipAttributes(AttributeMutationContext ctx, List<Object> newElements) throws AtlasBaseException {
+        List<AtlasRelatedObjectId> customRelationships = (List<AtlasRelatedObjectId>) ctx.getValue();
+
+        if (CollectionUtils.isNotEmpty(customRelationships)) {
+            for (AtlasObjectId objectId : customRelationships) {
+                if (objectId instanceof AtlasRelatedObjectId) {
+                    AtlasRelatedObjectId relatedObjectId = (AtlasRelatedObjectId) objectId;
+                    if (relatedObjectId.getRelationshipAttributes() != null) {
+                        validateCustomRelationshipAttributeValueCase(relatedObjectId.getRelationshipAttributes().getAttributes());
+                    }
+                }
+            }
+        }
+    }
+
+    public static void validateCustomRelationshipAttributeValueCase(Map<String, Object> attributes) throws AtlasBaseException {
+        if (MapUtils.isEmpty(attributes)) {
+            return;
+        }
+
+        for (String key : attributes.keySet()) {
+            if (key.equals("toTypeLabel") || key.equals("fromTypeLabel")) {
+                String value = (String) attributes.get(key);
+
+                if (StringUtils.isNotEmpty(value)) {
+                    StringBuilder finalValue = new StringBuilder();
+
+                    finalValue.append(Character.toUpperCase(value.charAt(0)));
+                    String sub = value.substring(1);
+                    if (StringUtils.isNotEmpty(sub)) {
+                        finalValue.append(sub.toLowerCase());
+                    }
+
+                    attributes.put(key, finalValue.toString());
+                }
+            }
+        }
+    }
+
+    public static void validateCustomRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex) throws AtlasBaseException {
+        long currentSize = end1Vertex.getEdgesCount(AtlasEdgeDirection.OUT, UD_RELATIONSHIP_EDGE_LABEL) + 1;
+        validateCustomRelationshipCount(currentSize, end1Vertex);
+
+        currentSize = end2Vertex.getEdgesCount(AtlasEdgeDirection.IN, UD_RELATIONSHIP_EDGE_LABEL) + 1;
+        validateCustomRelationshipCount(currentSize, end2Vertex);
+    }
+
+    private static void validateCustomRelationshipCount(long size, AtlasVertex vertex) throws AtlasBaseException {
+        if (UD_REL_THRESHOLD < size) {
+            throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED,
+                    "Custom relationships size is more than " + UD_REL_THRESHOLD + ", current is " + size + " for " + vertex.getProperty(NAME, String.class));
         }
     }
 
@@ -2663,6 +2769,8 @@ public class EntityGraphMapper {
             if (relationshipStruct instanceof Map) {
                 return AtlasTypeUtil.toStructAttributes(((Map) relationshipStruct));
             }
+        } else if (val instanceof AtlasObjectId) {
+            return ((AtlasObjectId) val).getAttributes();
         }
 
         return null;
