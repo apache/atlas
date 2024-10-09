@@ -1967,6 +1967,31 @@ public final class GraphHelper {
         return getActiveVertices(vertex, childrenEdgeLabel, AtlasEdgeDirection.OUT);
     }
 
+    /**
+     * Get all the active edges
+     * @param vertex entity vertex
+     * @param childrenEdgeLabel Edge label of children
+     * @return Iterator of children edges
+     */
+    public static Iterator<AtlasEdge> getActiveEdges(AtlasVertex vertex, String childrenEdgeLabel, AtlasEdgeDirection direction) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.getActiveEdges");
+
+        try {
+            return vertex.query()
+                    .direction(direction)
+                    .label(childrenEdgeLabel)
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                    .edges()
+                    .iterator();
+        } catch (Exception e) {
+            LOG.error("Error while getting active edges of vertex for edge label " + childrenEdgeLabel, e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        }
+        finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
     public static Iterator<AtlasVertex> getActiveVertices(AtlasVertex vertex, String childrenEdgeLabel, AtlasEdgeDirection direction) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("CategoryPreProcessor.getEdges");
 
@@ -1985,7 +2010,6 @@ public final class GraphHelper {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
-
     public static Iterator<AtlasVertex> getAllChildrenVertices(AtlasVertex vertex, String childrenEdgeLabel) throws AtlasBaseException {
         return getAllVertices(vertex, childrenEdgeLabel, AtlasEdgeDirection.OUT);
     }
