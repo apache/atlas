@@ -3692,7 +3692,7 @@ public class EntityGraphMapper {
                     currentClassification.setAttribute(attributeName, updatedAttributes.get(attributeName));
                 }
 
-                isClassificationUpdated = true;
+                createAndQueueTask(CLASSIFICATION_PROPAGATION_TEXT_UPDATE, entityVertex, classificationVertex.getIdForDisplay(), classification.getTypeName());
             }
 
             // check for validity period update
@@ -3720,7 +3720,8 @@ public class EntityGraphMapper {
             }
 
             if (isClassificationUpdated) {
-                createAndQueueTask(CLASSIFICATION_PROPAGATION_TEXT_UPDATE, entityVertex, classificationVertex.getIdForDisplay(), classification.getTypeName());
+                List<AtlasVertex> propagatedEntityVertices = graphHelper.getAllPropagatedEntityVertices(classificationVertex);
+                notificationVertices.addAll(propagatedEntityVertices);
             }
 
             if (LOG.isDebugEnabled()) {
@@ -3918,35 +3919,31 @@ public class EntityGraphMapper {
         }
     }
 
-    public void updateClassificationTextPropagation(String classificationVertexId) {
-        try {
-            if (StringUtils.isEmpty(classificationVertexId)) {
-                LOG.warn("updateClassificationTextPropagation(classificationVertexId={}): classification vertex id is empty", classificationVertexId);
-                return;
-            }
-            AtlasVertex classificationVertex = graph.getVertex(classificationVertexId);
-            AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
-            LOG.info("Fetched classification : {} ", classification.toString());
-            List<AtlasVertex> impactedVertices = graphHelper.getAllPropagatedEntityVertices(classificationVertex);
-            LOG.info("impactedVertices : {}", impactedVertices.size());
-            int batchSize = 100;
-            for (int i = 0; i < impactedVertices.size(); i += batchSize) {
-                int end = Math.min(i + batchSize, impactedVertices.size());
-                List<AtlasVertex> batch = impactedVertices.subList(i, end);
-                for (AtlasVertex vertex : batch) {
-                    String entityGuid = graphHelper.getGuid(vertex);
-                    AtlasEntity entity = instanceConverter.getAndCacheEntity(entityGuid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
+    public void updateClassificationTextPropagation(String classificationVertexId) throws AtlasBaseException {
+        if (StringUtils.isEmpty(classificationVertexId)) {
+            LOG.warn("updateClassificationTextPropagation(classificationVertexId={}): classification vertex id is empty", classificationVertexId);
+            return;
+        }
+        AtlasVertex classificationVertex = graph.getVertex(classificationVertexId);
+        AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
+        LOG.info("Fetched classification : {} ", classification.toString());
+        List<AtlasVertex> impactedVertices = graphHelper.getAllPropagatedEntityVertices(classificationVertex);
+        LOG.info("impactedVertices : {}", impactedVertices.size());
+        int batchSize = 100;
+        for (int i = 0; i < impactedVertices.size(); i += batchSize) {
+            int end = Math.min(i + batchSize, impactedVertices.size());
+            List<AtlasVertex> batch = impactedVertices.subList(i, end);
+            for (AtlasVertex vertex : batch) {
+                String entityGuid = graphHelper.getGuid(vertex);
+                AtlasEntity entity = instanceConverter.getAndCacheEntity(entityGuid, true);
 
-                    if (entity != null) {
-                        vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
-                        entityChangeNotifier.onClassificationUpdatedToEntity(entity, Collections.singletonList(classification));
-                    }
+                if (entity != null) {
+                    vertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
+                    entityChangeNotifier.onClassificationUpdatedToEntity(entity, Collections.singletonList(classification));
                 }
-                transactionInterceptHelper.intercept();
-                LOG.info("Updated classificationText from {} for {}", i, batchSize);
             }
-        } catch (Exception e){
-            e.printStackTrace();
+            transactionInterceptHelper.intercept();
+            LOG.info("Updated classificationText from {} for {}", i, batchSize);
         }
     }
 
