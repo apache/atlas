@@ -675,12 +675,14 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         }
     }
     private Edge getFirstActiveEdge(GraphTraversal gt) {
-        while (gt.hasNext()) {
-            Edge gremlinEdge = (Edge) gt.next();
-            if (gremlinEdge != null && gremlinEdge.property(STATE_PROPERTY_KEY).isPresent() &&
-                    gremlinEdge.property(STATE_PROPERTY_KEY).value().equals(AtlasEntity.Status.ACTIVE.toString())
-            ) {
-                return gremlinEdge;
+        if (gt != null) {
+            while (gt.hasNext()) {
+                Edge gremlinEdge = (Edge) gt.next();
+                if (gremlinEdge != null && gremlinEdge.property(STATE_PROPERTY_KEY).isPresent() &&
+                        gremlinEdge.property(STATE_PROPERTY_KEY).value().equals(AtlasEntity.Status.ACTIVE.toString())
+                ) {
+                    return gremlinEdge;
+                }
             }
         }
 
