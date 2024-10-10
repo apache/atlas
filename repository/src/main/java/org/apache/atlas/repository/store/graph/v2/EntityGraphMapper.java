@@ -3022,6 +3022,7 @@ public class EntityGraphMapper {
         int CLEANUP_MAX = batchLimit <= 0 ? CLEANUP_BATCH_SIZE : batchLimit * CLEANUP_BATCH_SIZE;
         int cleanedUpCount = 0;
         long classificationEdgeCount = 0;
+        long classificationEdgeInMemoryCount = 0;
         Iterator<AtlasVertex> tagVertices = GraphHelper.getClassificationVertices(graph, classificationName, CLEANUP_BATCH_SIZE);
         List<AtlasVertex> tagVerticesProcessed = new ArrayList<>(0);
         List<AtlasVertex> currentAssetVerticesBatch = new ArrayList<>(0);
@@ -3066,12 +3067,15 @@ public class EntityGraphMapper {
                                         AtlasClassification classification = entityRetriever.toAtlasClassification(edge.getInVertex());
                                         deletedClassifications.add(classification);
                                         deleteDelegate.getHandler().deleteEdgeReference(edge, TypeCategory.CLASSIFICATION, false, true, null, vertex);
+                                        classificationEdgeInMemoryCount++;
                                     } catch (IllegalStateException | AtlasBaseException e) {
                                         e.printStackTrace();
                                     }
                                 }
-                                transactionInterceptHelper.intercept();
-
+                                if(classificationEdgeInMemoryCount >= CHUNK_SIZE){
+                                    transactionInterceptHelper.intercept();
+                                    classificationEdgeInMemoryCount = 0;
+                                }
                             }
                             try {
                                 AtlasEntity entity = repairClassificationMappings(vertex);
@@ -3079,9 +3083,9 @@ public class EntityGraphMapper {
                             } catch (IllegalStateException | AtlasBaseException e) {
                                 e.printStackTrace();
                             }
-
-                            transactionInterceptHelper.intercept();
                         }
+
+                        transactionInterceptHelper.intercept();
 
                         offset += CHUNK_SIZE;
                     } finally {
