@@ -171,7 +171,7 @@ public class EntityGraphMapper {
 
     private static final boolean RESTRICT_PROPAGATION_THROUGH_HIERARCHY_DEFAULT        = false;
     public static final int CLEANUP_BATCH_SIZE = 200000;
-    public static final int CLASSIFICATION_EDGE_BATCH_LIMIT = 10000;
+    public static final int CLASSIFICATION_EDGE_BATCH_LIMIT = 100;
     private              boolean DEFERRED_ACTION_ENABLED                             = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
     private              boolean DIFFERENTIAL_AUDITS                                 = STORE_DIFFERENTIAL_AUDITS.getBoolean();
 
@@ -3073,14 +3073,14 @@ public class EntityGraphMapper {
                                         e.printStackTrace();
                                     }
                                 }
+                                transactionInterceptHelper.intercept();
 
-                                try {
-                                    AtlasEntity entity = repairClassificationMappings(vertex);
-                                    entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
-                                } catch (IllegalStateException | AtlasBaseException e) {
-                                    e.printStackTrace();
-                                }
-
+                            }
+                            try {
+                                AtlasEntity entity = repairClassificationMappings(vertex);
+                                entityChangeNotifier.onClassificationDeletedFromEntity(entity, deletedClassifications);
+                            } catch (IllegalStateException | AtlasBaseException e) {
+                                e.printStackTrace();
                             }
 
                             transactionInterceptHelper.intercept();
