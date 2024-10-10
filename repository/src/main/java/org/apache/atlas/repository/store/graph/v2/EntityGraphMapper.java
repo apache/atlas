@@ -171,7 +171,6 @@ public class EntityGraphMapper {
 
     private static final boolean RESTRICT_PROPAGATION_THROUGH_HIERARCHY_DEFAULT        = false;
     public static final int CLEANUP_BATCH_SIZE = 200000;
-    public static final int CLASSIFICATION_EDGE_BATCH_LIMIT = 100;
     private              boolean DEFERRED_ACTION_ENABLED                             = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
     private              boolean DIFFERENTIAL_AUDITS                                 = STORE_DIFFERENTIAL_AUDITS.getBoolean();
 
@@ -3022,7 +3021,6 @@ public class EntityGraphMapper {
     public void cleanUpClassificationPropagation(String classificationName, int batchLimit) {
         int CLEANUP_MAX = batchLimit <= 0 ? CLEANUP_BATCH_SIZE : batchLimit * CLEANUP_BATCH_SIZE;
         int cleanedUpCount = 0;
-        final int CHUNK_SIZE_TEMP = 50;
         long classificationEdgeCount = 0;
         Iterator<AtlasVertex> tagVertices = GraphHelper.getClassificationVertices(graph, classificationName, CLEANUP_BATCH_SIZE);
         List<AtlasVertex> tagVerticesProcessed = new ArrayList<>(0);
@@ -3051,16 +3049,15 @@ public class EntityGraphMapper {
                 int offset = 0;
                 do {
                     try {
-                        int toIndex = Math.min((offset + CHUNK_SIZE_TEMP), currentAssetsBatchSize);
+                        int toIndex = Math.min((offset + CHUNK_SIZE), currentAssetsBatchSize);
                         List<AtlasVertex> entityVertices = currentAssetVerticesBatch.subList(offset, toIndex);
                         List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
                         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
-//                        commitCnandidateCount
                         for (AtlasVertex vertex : entityVertices) {
                             List<AtlasClassification> deletedClassifications = new ArrayList<>();
                             List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
                             classificationEdgeCount += classificationEdges.size();
-                            int batchSize = CLASSIFICATION_EDGE_BATCH_LIMIT;
+                            int batchSize = CHUNK_SIZE;
                             for (int i = 0; i < classificationEdges.size(); i += batchSize) {
                                 int end = Math.min(i + batchSize, classificationEdges.size());
                                 List<AtlasEdge> batch = classificationEdges.subList(i, end);
@@ -3086,7 +3083,7 @@ public class EntityGraphMapper {
                             transactionInterceptHelper.intercept();
                         }
 
-                        offset += CHUNK_SIZE_TEMP;
+                        offset += CHUNK_SIZE;
                     } finally {
                         LOG.info("For offset {} , classificationEdge were : {}", offset, classificationEdgeCount);
                         classificationEdgeCount = 0;
