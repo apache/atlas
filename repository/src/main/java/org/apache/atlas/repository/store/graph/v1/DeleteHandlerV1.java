@@ -1487,6 +1487,8 @@ public abstract class DeleteHandlerV1 {
 
         for (AtlasEdge atlasEdge : removedEdges) {
 
+            AtlasPerfMetrics.MetricRecorder metricRecorder1 = RequestContext.get().startMetricRecord("resetHasLineageDeletedEdges");
+
             boolean isOutputEdge = PROCESS_OUTPUTS.equals(atlasEdge.getLabel());
 
             AtlasVertex processVertex = atlasEdge.getOutVertex();
@@ -1504,6 +1506,7 @@ public abstract class DeleteHandlerV1 {
                 boolean activeEdgeFound = false;
 
                 while (edgeIterator.hasNext()) {
+                    AtlasPerfMetrics.MetricRecorder metricRecorder2 = RequestContext.get().startMetricRecord("resetHasLineageActiveEdges"+edgeLabel);
                     AtlasEdge edge = edgeIterator.next();
                     if (!removedEdges.contains(edge)) {
                         AtlasVertex relatedAssetVertex = edge.getInVertex();
@@ -1513,6 +1516,7 @@ public abstract class DeleteHandlerV1 {
                             break;
                         }
                     }
+                    RequestContext.get().endMetricRecord(metricRecorder2);
                 }
 
                 if (!activeEdgeFound) {
@@ -1523,15 +1527,18 @@ public abstract class DeleteHandlerV1 {
                     Iterator<AtlasEdge> processEdgeIterator = GraphHelper.getActiveEdges(processVertex, oppositeEdgeLabel, AtlasEdgeDirection.BOTH);
 
                     while (processEdgeIterator.hasNext()) {
+                        AtlasPerfMetrics.MetricRecorder metricRecorder2 = RequestContext.get().startMetricRecord("resetHasLineageActiveEdges"+edgeLabel);
                         AtlasEdge edge = processEdgeIterator.next();
 
                         if (!removedEdges.contains(edge)) {
                             AtlasVertex relatedAssetVertex = edge.getInVertex();
                             updateAssetHasLineageStatus(relatedAssetVertex, edge, removedEdges);
                         }
+                        RequestContext.get().endMetricRecord(metricRecorder2);
                     }
                 }
             }
+            RequestContext.get().endMetricRecord(metricRecorder1);
         }
         RequestContext.get().endMetricRecord(metricRecorder);
     }
