@@ -3074,6 +3074,7 @@ public class EntityGraphMapper {
                                 }
                                 if(classificationEdgeInMemoryCount >= CHUNK_SIZE){
                                     transactionInterceptHelper.intercept();
+                                    GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
                                     classificationEdgeInMemoryCount = 0;
                                 }
                             }
