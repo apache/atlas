@@ -3052,10 +3052,9 @@ public class EntityGraphMapper {
                     try {
                         int toIndex = Math.min((offset + CHUNK_SIZE), currentAssetsBatchSize);
                         List<AtlasVertex> entityVertices = currentAssetVerticesBatch.subList(offset, toIndex);
-                        List<String> impactedGuids = entityVertices.stream().map(GraphHelper::getGuid).collect(Collectors.toList());
-                        GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
                         for (AtlasVertex vertex : entityVertices) {
                             List<AtlasClassification> deletedClassifications = new ArrayList<>();
+                            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(graphHelper.getGuid(vertex));
                             List<AtlasEdge> classificationEdges = GraphHelper.getClassificationEdges(vertex, null, classificationName);
                             classificationEdgeCount += classificationEdges.size();
                             int batchSize = CHUNK_SIZE;
@@ -3074,7 +3073,6 @@ public class EntityGraphMapper {
                                 }
                                 if(classificationEdgeInMemoryCount >= CHUNK_SIZE){
                                     transactionInterceptHelper.intercept();
-                                    GraphTransactionInterceptor.lockObjectAndReleasePostCommit(impactedGuids);
                                     classificationEdgeInMemoryCount = 0;
                                 }
                             }
