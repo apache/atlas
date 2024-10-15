@@ -20,10 +20,12 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.glossary;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -37,18 +39,24 @@ import org.slf4j.LoggerFactory;
 
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.getUUID;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.isNameInvalid;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
+import static org.apache.atlas.type.Constants.LEXICOGRAPHICAL_SORT_ORDER;
 
 public class GlossaryPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(GlossaryPreProcessor.class);
 
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphRetriever entityRetriever;
+    protected EntityDiscoveryService discovery;
 
-    public GlossaryPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever) {
+    public GlossaryPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
+        try{
+            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -77,9 +85,17 @@ public class GlossaryPreProcessor implements PreProcessor {
         if (StringUtils.isEmpty(glossaryName) || isNameInvalid(glossaryName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
         }
+        String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+
 
         if (glossaryExists(glossaryName)) {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_ALREADY_EXISTS,glossaryName);
+        }
+
+        if(StringUtils.isEmpty(lexicographicalSortOrder)) {
+            assignNewLexicographicalSortOrder((AtlasEntity) entity, null, null, this.discovery);
+        } else {
+            isValidLexoRank(lexicographicalSortOrder, "", "", this.discovery);
         }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName());
@@ -90,13 +106,18 @@ public class GlossaryPreProcessor implements PreProcessor {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateGlossary");
         String glossaryName = (String) entity.getAttribute(NAME);
         String vertexName = vertex.getProperty(NAME, String.class);
-
         if (!vertexName.equals(glossaryName) && glossaryExists(glossaryName)) {
             throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_ALREADY_EXISTS,glossaryName);
         }
 
         if (StringUtils.isEmpty(glossaryName) || isNameInvalid(glossaryName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
+        }
+        String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+        if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
+            isValidLexoRank(lexicographicalSortOrder, "", "", this.discovery);
+        } else {
+            entity.removeAttribute(LEXICOGRAPHICAL_SORT_ORDER);
         }
 
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
