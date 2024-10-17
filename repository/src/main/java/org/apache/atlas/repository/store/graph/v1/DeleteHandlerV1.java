@@ -1496,14 +1496,10 @@ public abstract class DeleteHandlerV1 {
             AtlasVertex assetVertex = atlasEdge.getInVertex();
             String assetEdgeLabel = getLabel(AtlasGraphUtilsV2.getIdFromVertex(assetVertex), atlasEdge.getLabel());
 
-            if (context.isAssetEdgeLabelAlreadyProcessed(assetEdgeLabel)) {
-                continue;
-            }else {
-                context.addAssetEdgeLabel(assetEdgeLabel);
-            }
-
-            if (getStatus(assetVertex) == ACTIVE && !assetVertex.equals(deletedVertex)) {
+            if (!context.isAssetEdgeLabelAlreadyProcessed(assetEdgeLabel) && getStatus(assetVertex) == ACTIVE && !assetVertex.equals(deletedVertex)) {
                 updateAssetHasLineageStatus(assetVertex, atlasEdge, removedEdges);
+            } else if (!context.isAssetEdgeLabelAlreadyProcessed(assetEdgeLabel)){
+                context.addAssetEdgeLabel(assetEdgeLabel);
             }
 
                 if (getStatus(processVertex) == ACTIVE && !processVertex.equals(deletedVertex)) {
