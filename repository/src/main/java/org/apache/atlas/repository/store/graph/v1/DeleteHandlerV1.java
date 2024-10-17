@@ -1503,7 +1503,7 @@ public abstract class DeleteHandlerV1 {
             }
 
             if (getStatus(assetVertex) == ACTIVE && !assetVertex.equals(deletedVertex)) {
-                updateAssetHasLineageStatus(assetVertex, atlasEdge, removedEdges);;
+                updateAssetHasLineageStatus(assetVertex, atlasEdge, removedEdges);
             }
 
                 if (getStatus(processVertex) == ACTIVE && !processVertex.equals(deletedVertex)) {
