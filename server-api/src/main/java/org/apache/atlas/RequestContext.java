@@ -47,6 +47,9 @@ public class RequestContext {
     private final Map<String, AtlasEntityHeader>         updatedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         deletedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         restoreEntities      = new HashMap<>();
+
+
+    private       Map<String, String>                    lexoRankCache        = null;
     private final Map<String, AtlasEntity>               entityCache          = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         entityHeaderCache    = new HashMap<>();
     private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache   = new HashMap<>();
@@ -69,6 +72,7 @@ public class RequestContext {
     private static String USERNAME = "";
     private final Map<String, List<Object>> removedElementsMap = new HashMap<>();
     private final Map<String, List<Object>> newElementsCreatedMap = new HashMap<>();
+
     private final Map<String, Set<AtlasRelationship>> relationshipMutationMap = new HashMap<>();
     private final Set<String> edgeLabels = new HashSet<>();
 
@@ -164,6 +168,7 @@ public class RequestContext {
         this.requestContextHeaders.clear();
         this.relationshipEndToVertexIdMap.clear();
         this.relationshipMutationMap.clear();
+        this.lexoRankCache = null;
         this.currentTask = null;
         this.skipAuthorizationCheck = false;
         this.delayTagNotifications = false;
@@ -797,6 +802,14 @@ public class RequestContext {
 
     public Map<String, Set<AtlasRelationship>> getRelationshipMutationMap() {
         return relationshipMutationMap;
+    }
+
+    public Map<String, String> getLexoRankCache() {
+        return lexoRankCache;
+    }
+
+    public void setLexoRankCache(Map<String, String> lexoRankCache) {
+        this.lexoRankCache = lexoRankCache;
     }
 
     public void addEdgeLabel(String processEdgeLabel) {

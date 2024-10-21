@@ -47,6 +47,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.*;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -70,9 +71,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_UPDATE;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
-import static org.apache.atlas.type.Constants.CATEGORIES_PARENT_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.CATEGORIES_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.*;
 
 public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(CategoryPreProcessor.class);
@@ -117,6 +116,7 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
     private void processCreateCategory(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateCategory");
         String catName = (String) entity.getAttribute(NAME);
+        String parentQname = null;
 
         if (StringUtils.isEmpty(catName) || isNameInvalid(catName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
@@ -125,6 +125,16 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
         String glossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
         categoryExists(catName, glossaryQualifiedName);
         validateParent(glossaryQualifiedName);
+
+        if (parentCategory != null) {
+            parentQname = (String) parentCategory.getAttribute(QUALIFIED_NAME);
+        }
+        String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+        if(StringUtils.isEmpty(lexicographicalSortOrder)){
+            assignNewLexicographicalSortOrder(entity,glossaryQualifiedName, parentQname, this.discovery);
+        } else {
+            isValidLexoRank(lexicographicalSortOrder, glossaryQualifiedName, parentQname, this.discovery);
+        }
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(vertex));
         AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
@@ -150,6 +160,17 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
         String currentGlossaryQualifiedName = (String) currentGlossaryHeader.getAttribute(QUALIFIED_NAME);
 
         String newGlossaryQualifiedName = (String) anchor.getAttribute(QUALIFIED_NAME);
+
+        String lexicographicalSortOrder = (String) entity.getAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+        String parentQname = "";
+        if(Objects.nonNull(parentCategory)) {
+            parentQname = (String) parentCategory.getAttribute(QUALIFIED_NAME);
+        }
+        if(StringUtils.isNotEmpty(lexicographicalSortOrder)) {
+            isValidLexoRank(lexicographicalSortOrder, newGlossaryQualifiedName, parentQname, this.discovery);
+        } else {
+            entity.removeAttribute(LEXICOGRAPHICAL_SORT_ORDER);
+        }
 
         if (!currentGlossaryQualifiedName.equals(newGlossaryQualifiedName)){
             //Auth check
@@ -489,4 +510,5 @@ public class CategoryPreProcessor extends AbstractGlossaryPreProcessor {
 
         return getUUID() + "@" + anchor.getAttribute(QUALIFIED_NAME);
     }
+
 }

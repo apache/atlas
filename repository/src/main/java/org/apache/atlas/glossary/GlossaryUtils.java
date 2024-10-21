@@ -55,8 +55,8 @@ public abstract class GlossaryUtils {
     public static final String TERM_ASSIGNMENT_ATTR_SOURCE      = "source";
 
     static final String ATLAS_GLOSSARY_TYPENAME          = "AtlasGlossary";
-    static final String ATLAS_GLOSSARY_TERM_TYPENAME     = "AtlasGlossaryTerm";
-    static final String ATLAS_GLOSSARY_CATEGORY_TYPENAME = "AtlasGlossaryCategory";
+    public static final String ATLAS_GLOSSARY_TERM_TYPENAME     = "AtlasGlossaryTerm";
+    public static final String ATLAS_GLOSSARY_CATEGORY_TYPENAME = "AtlasGlossaryCategory";
 
     public static final String NAME                         = "name";
     public static final String QUALIFIED_NAME               = "qualifiedName";
