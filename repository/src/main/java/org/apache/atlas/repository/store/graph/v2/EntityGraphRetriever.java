@@ -1684,7 +1684,14 @@ public class EntityGraphRetriever {
 
         if (GraphHelper.elementExists(edge)) {
             final AtlasVertex referenceVertex = edge.getInVertex();
-            ret = new AtlasStruct(getTypeName(referenceVertex));
+
+            String typeName = getTypeName(referenceVertex);
+
+            if (StringUtils.isEmpty(typeName)) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, typeName);
+            }
+
+            ret = new AtlasStruct(typeName);
 
             mapAttributes(referenceVertex, ret, entityExtInfo, isMinExtInfo);
         }
