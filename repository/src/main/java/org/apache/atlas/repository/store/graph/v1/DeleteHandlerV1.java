@@ -1495,12 +1495,12 @@ public abstract class DeleteHandlerV1 {
 
             boolean assetLabelPairAlreadyProcessed = RequestContext.get().isEdgeLabelAlreadyProcessed(assetEdgeLabel);
 
-            if (!assetLabelPairAlreadyProcessed && getStatus(assetVertex) == ACTIVE && !assetVertex.equals(deletedVertex)) {
-                updateAssetHasLineageStatus(assetVertex, atlasEdge, removedEdges);
-            } else if (!assetLabelPairAlreadyProcessed){
+            if (!assetLabelPairAlreadyProcessed) {
                 RequestContext.get().addEdgeLabel(assetEdgeLabel);
+                if (getStatus(assetVertex) == ACTIVE && !assetVertex.equals(deletedVertex)) {
+                    updateAssetHasLineageStatus(assetVertex, atlasEdge, removedEdges);
+                }
             }
-
                 if (getStatus(processVertex) == ACTIVE && !processVertex.equals(deletedVertex)) {
                 String edgeLabel = isOutputEdge ? PROCESS_OUTPUTS : PROCESS_INPUTS;
 
