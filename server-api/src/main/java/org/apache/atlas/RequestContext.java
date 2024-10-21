@@ -70,8 +70,7 @@ public class RequestContext {
     private final Map<String, List<Object>> removedElementsMap = new HashMap<>();
     private final Map<String, List<Object>> newElementsCreatedMap = new HashMap<>();
     private final Map<String, Set<AtlasRelationship>> relationshipMutationMap = new HashMap<>();
-    private final Set<String> processEdgeLabels = new HashSet<>();
-    private final Set<String> assetEdgeLabels = new HashSet<>();
+    private final Set<String> edgeLabels = new HashSet<>();
 
     private String user;
     private Set<String> userGroups;
@@ -800,19 +799,12 @@ public class RequestContext {
         return relationshipMutationMap;
     }
 
-    public void addProcessEdgeLabel(String processEdgeLabel) {
-        processEdgeLabels.add(processEdgeLabel);
+    public void addEdgeLabel(String processEdgeLabel) {
+        edgeLabels.add(processEdgeLabel);
     }
 
-    public void addAssetEdgeLabel(String assetEdgeLabel) {
-        assetEdgeLabels.add(assetEdgeLabel);
+    public boolean isEdgeLabelAlreadyProcessed(String processEdgeLabel) {
+        return edgeLabels.contains(processEdgeLabel);
     }
 
-    public boolean isProcessEdgeLabelAlreadyProcessed(String processEdgeLabel) {
-        return processEdgeLabels.contains(processEdgeLabel);
-    }
-
-    public boolean isAssetEdgeLabelAlreadyProcessed(String assetEdgeLabel) {
-        return assetEdgeLabels.add(assetEdgeLabel);
-    }
 }
