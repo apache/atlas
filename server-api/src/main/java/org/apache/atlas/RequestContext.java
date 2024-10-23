@@ -74,6 +74,7 @@ public class RequestContext {
     private final Map<String, List<Object>> newElementsCreatedMap = new HashMap<>();
 
     private final Map<String, Set<AtlasRelationship>> relationshipMutationMap = new HashMap<>();
+    private final Set<String> edgeLabels = new HashSet<>();
 
     private String user;
     private Set<String> userGroups;
@@ -810,4 +811,13 @@ public class RequestContext {
     public void setLexoRankCache(Map<String, String> lexoRankCache) {
         this.lexoRankCache = lexoRankCache;
     }
+
+    public void addEdgeLabel(String processEdgeLabel) {
+        edgeLabels.add(processEdgeLabel);
+    }
+
+    public boolean isEdgeLabelAlreadyProcessed(String processEdgeLabel) {
+        return edgeLabels.contains(processEdgeLabel);
+    }
+
 }

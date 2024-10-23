@@ -1489,16 +1489,31 @@ public abstract class DeleteHandlerV1 {
 
             boolean isOutputEdge = PROCESS_OUTPUTS.equals(atlasEdge.getLabel());
 
-            AtlasVertex processVertex = atlasEdge.getOutVertex();
             AtlasVertex assetVertex = atlasEdge.getInVertex();
+            String assetEdgeLabel = getLabel(getGuid(assetVertex), atlasEdge.getLabel());
 
-            if (getStatus(assetVertex) == ACTIVE && !assetVertex.equals(deletedVertex)) {
-                updateAssetHasLineageStatus(assetVertex, atlasEdge, removedEdges);
+            boolean assetLabelPairAlreadyProcessed = RequestContext.get().isEdgeLabelAlreadyProcessed(assetEdgeLabel);
+
+            if (!assetLabelPairAlreadyProcessed) {
+                RequestContext.get().addEdgeLabel(assetEdgeLabel);
+                if (getStatus(assetVertex) == ACTIVE && !assetVertex.equals(deletedVertex)) {
+                    updateAssetHasLineageStatus(assetVertex, atlasEdge, removedEdges);
+                }
             }
 
-            if (getStatus(processVertex) == ACTIVE && !processVertex.equals(deletedVertex)) {
-                String edgeLabel = isOutputEdge ? PROCESS_OUTPUTS : PROCESS_INPUTS;
+            AtlasVertex processVertex = atlasEdge.getOutVertex();
+            String processId = getGuid(processVertex);
+            String edgeLabel = isOutputEdge ? PROCESS_OUTPUTS : PROCESS_INPUTS;
+            String processEdgeLabel = getLabel(processId, edgeLabel);
+            boolean processLabelPairAlreadyProcessed = RequestContext.get().isEdgeLabelAlreadyProcessed(processEdgeLabel);
 
+            if (processLabelPairAlreadyProcessed) {
+                continue;
+            }
+
+            RequestContext.get().addEdgeLabel(processEdgeLabel);
+
+                if (getStatus(processVertex) == ACTIVE && !processVertex.equals(deletedVertex)) {
                 Iterator<AtlasEdge> edgeIterator = GraphHelper.getActiveEdges(processVertex, edgeLabel, AtlasEdgeDirection.BOTH);
 
                 boolean activeEdgeFound = false;
@@ -1520,6 +1535,14 @@ public abstract class DeleteHandlerV1 {
 
                     String oppositeEdgeLabel = isOutputEdge ? PROCESS_INPUTS : PROCESS_OUTPUTS;
 
+                    processEdgeLabel = getLabel(processId, oppositeEdgeLabel);
+                    processLabelPairAlreadyProcessed = RequestContext.get().isEdgeLabelAlreadyProcessed(processEdgeLabel);
+
+                    if (processLabelPairAlreadyProcessed) {
+                        continue;
+                    }
+                    RequestContext.get().addEdgeLabel(processEdgeLabel);
+
                     Iterator<AtlasEdge> processEdgeIterator = GraphHelper.getActiveEdges(processVertex, oppositeEdgeLabel, AtlasEdgeDirection.BOTH);
 
                     while (processEdgeIterator.hasNext()) {
@@ -1534,6 +1557,10 @@ public abstract class DeleteHandlerV1 {
             }
         }
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private String getLabel(String guid, String label){
+       return  guid + ":" + label;
     }
 
     private void updateAssetHasLineageStatus(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
