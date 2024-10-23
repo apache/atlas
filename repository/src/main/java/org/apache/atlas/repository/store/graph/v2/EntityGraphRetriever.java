@@ -1688,8 +1688,9 @@ public class EntityGraphRetriever {
             String typeName = getTypeName(referenceVertex);
 
             if (StringUtils.isEmpty(typeName)) {
-                LOG.error("typeName not found for vertex {}", getGuid(referenceVertex) );
-                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, typeName);
+                LOG.error("typeName not found for in-vertex {} on edge {} from vertex {} ",
+                        getGuid(referenceVertex), edge.getId(), getGuid(entityVertex));
+                return ret;
             }
 
             ret = new AtlasStruct(typeName);
