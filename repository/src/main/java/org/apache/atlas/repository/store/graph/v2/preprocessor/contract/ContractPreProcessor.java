@@ -35,12 +35,14 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     public static final String CONTRACT_QUALIFIED_NAME_SUFFIX = "contract";
     public static final String CONTRACT_ATTR_STATUS = "status";
     private static final Set<String> contractAttributes = new HashSet<>();
+
     static {
         contractAttributes.add(ATTR_CONTRACT);
         contractAttributes.add(ATTR_CONTRACT_JSON);
         contractAttributes.add(ATTR_CERTIFICATE_STATUS);
         contractAttributes.add(ATTR_CONTRACT_VERSION);
     }
+
     private final boolean storeDifferentialAudits;
     private final EntityDiscoveryService discovery;
 
@@ -83,6 +85,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can't update published version of contract.");
         }
     }
+
     private void processCreateContract(AtlasEntity entity, EntityMutationContext context) throws AtlasBaseException {
         /*
           Low-level Design
@@ -111,7 +114,6 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         boolean contractSync = syncContractCertificateStatus(entity, contract);
         contractString = DataContract.serialize(contract);
         entity.setAttribute(ATTR_CONTRACT, contractString);
-
         String contractStringJSON = DataContract.serializeJSON(contract);
         entity.setAttribute(ATTR_CONTRACT_JSON, contractStringJSON);
 
@@ -138,7 +140,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
                 if (contract.getStatus() == DataContract.Status.VERIFIED) {
                     throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can't create a new published version");
                 }
-                newVersionNumber =  currentVersionNumber + 1;
+                newVersionNumber = currentVersionNumber + 1;
 
                 resetAllRelationshipAttributes(entity);
                 // Attach previous version via rel
@@ -265,7 +267,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
         // Update relationship with contract
         entity.setRelationshipAttribute(REL_ATTR_LATEST_CONTRACT, getAtlasObjectId(contractAsset));
-        if (Objects.equals(contractAsset.getAttribute(ATTR_CERTIFICATE_STATUS), DataContract.Status.VERIFIED.name()) ) {
+        if (Objects.equals(contractAsset.getAttribute(ATTR_CERTIFICATE_STATUS), DataContract.Status.VERIFIED.name())) {
             entity.setRelationshipAttribute(REL_ATTR_GOVERNED_ASSET_CERTIFIED, getAtlasObjectId(contractAsset));
         }
 
@@ -277,8 +279,8 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
 
     private void recordEntityMutatedDetails(EntityMutationContext context, AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasEntityComparator entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, context.getGuidAssignments(), true, true);
-        AtlasEntityComparator.AtlasEntityDiffResult diffResult   = entityComparator.getDiffResult(entity, vertex, !storeDifferentialAudits);
-        RequestContext        reqContext           = RequestContext.get();
+        AtlasEntityComparator.AtlasEntityDiffResult diffResult = entityComparator.getDiffResult(entity, vertex, !storeDifferentialAudits);
+        RequestContext reqContext = RequestContext.get();
         if (diffResult.hasDifference()) {
             if (storeDifferentialAudits) {
                 diffResult.getDiffEntity().setGuid(entity.getGuid());
@@ -298,9 +300,5 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
             contractString = (String) entity.getAttribute(ATTR_CONTRACT_JSON);
         }
         return contractString;
-    }
-
-    private static boolean isContractYaml(AtlasEntity entity) {
-        return !StringUtils.isEmpty((String) entity.getAttribute(ATTR_CONTRACT));
     }
 }
