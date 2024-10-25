@@ -1154,11 +1154,6 @@ public class EntityGraphRetriever {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapAttributes");
         AtlasType objType = typeRegistry.getType(struct.getTypeName());
 
-        if (objType == null) {
-            LOG.error("typeName not found for struct {}", struct.getAttribute(Constants.GUID_PROPERTY_KEY));
-            return;
-        }
-
         if (!(objType instanceof AtlasStructType)) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, struct.getTypeName());
         }
