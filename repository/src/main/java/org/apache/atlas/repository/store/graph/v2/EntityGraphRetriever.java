@@ -1685,11 +1685,15 @@ public class EntityGraphRetriever {
         if (GraphHelper.elementExists(edge)) {
             final AtlasVertex referenceVertex = edge.getInVertex();
 
+            if (referenceVertex == null) {
+                LOG.error("reference vertex not found  on edge {} from vertex {} ", edge.getId(), getGuid(entityVertex));
+                return ret;
+            }
+
             String typeName = getTypeName(referenceVertex);
 
             if (StringUtils.isEmpty(typeName)) {
-                LOG.error("typeName not found for in-vertex {} on edge {} from vertex {} ",
-                        getGuid(referenceVertex), edge.getId(), getGuid(entityVertex));
+                LOG.error("typeName not found on edge {} from vertex {} ", edge.getId(), getGuid(entityVertex));
                 return ret;
             }
 
