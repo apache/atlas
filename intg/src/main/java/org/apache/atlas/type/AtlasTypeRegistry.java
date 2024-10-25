@@ -90,14 +90,14 @@ public class AtlasTypeRegistry {
 
         AtlasType ret = registryData.allTypes.getTypeByName(typeName);
 
-        if (ret == null && !StringUtils.isEmpty(typeName)) {
-            if (typeName.startsWith(ATLAS_TYPE_ARRAY_PREFIX) && typeName.endsWith(ATLAS_TYPE_ARRAY_SUFFIX)) {
+        if (ret == null ) {
+            if (!StringUtils.isEmpty(typeName) && typeName.startsWith(ATLAS_TYPE_ARRAY_PREFIX) && typeName.endsWith(ATLAS_TYPE_ARRAY_SUFFIX)) {
                 int    startIdx        = ATLAS_TYPE_ARRAY_PREFIX.length();
                 int    endIdx          = typeName.length() - ATLAS_TYPE_ARRAY_SUFFIX.length();
                 String elementTypeName = typeName.substring(startIdx, endIdx);
 
                 ret = new AtlasArrayType(elementTypeName, this);
-            } else if (typeName.startsWith(ATLAS_TYPE_MAP_PREFIX) && typeName.endsWith(ATLAS_TYPE_MAP_SUFFIX)) {
+            } else if (!StringUtils.isEmpty(typeName) && typeName.startsWith(ATLAS_TYPE_MAP_PREFIX) && typeName.endsWith(ATLAS_TYPE_MAP_SUFFIX)) {
                 int      startIdx      = ATLAS_TYPE_MAP_PREFIX.length();
                 int      endIdx        = typeName.length() - ATLAS_TYPE_MAP_SUFFIX.length();
                 String[] keyValueTypes = typeName.substring(startIdx, endIdx).split(ATLAS_TYPE_MAP_KEY_VAL_SEP, 2);
