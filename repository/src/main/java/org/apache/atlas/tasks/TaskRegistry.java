@@ -50,8 +50,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.repository.Constants.TASK_GUID;
-import static org.apache.atlas.repository.Constants.TASK_STATUS;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
 @Component
@@ -123,6 +122,36 @@ public class TaskRegistry {
             }
         } catch (Exception exception) {
             LOG.error("Error fetching in progress tasks!", exception);
+        }
+
+        return ret;
+    }
+
+    public List<AtlasTask> getInProgressTasksES() {
+        List<AtlasTask> ret = new ArrayList<>();
+        int size = 100;
+        try {
+            int from = 0;
+            while(true) {
+                List statusClauseList = new ArrayList();
+                statusClauseList.add(mapOf("match", mapOf(TASK_STATUS, AtlasTask.Status.IN_PROGRESS.toString())));
+
+                Map<String, Object> dsl = mapOf("query", mapOf("bool", mapOf("must", statusClauseList)));
+                dsl.put("sort", Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc"))));
+                dsl.put("size", size);
+                dsl.put("from", from);
+                TaskSearchParams taskSearchParams = new TaskSearchParams();
+                taskSearchParams.setDsl(dsl);
+                List<AtlasTask> results = taskService.getTasks(taskSearchParams).getTasks();
+                if (results.isEmpty()){
+                    break;
+                }
+                ret.addAll(results);
+                from+=size;
+            }
+        } catch (Exception exception) {
+            LOG.error("Error fetching in progress tasks!", exception);
+            exception.printStackTrace();
         }
 
         return ret;

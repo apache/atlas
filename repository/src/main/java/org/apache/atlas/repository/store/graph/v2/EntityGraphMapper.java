@@ -3567,12 +3567,12 @@ public class EntityGraphMapper {
         AtlasVertex         classificationVertex = getClassificationVertex(entityVertex, classificationName);
 
         // Get in progress task to see if there already is a propagation for this particular vertex
-//        List<AtlasTask> inProgressTasks = taskManagement.getInProgressTasks();
-//        for (AtlasTask task : inProgressTasks) {
-//            if (isTaskMatchingWithVertexIdAndEntityGuid(task, classificationVertex.getIdForDisplay(), entityGuid)) {
-//                throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_CURRENTLY_BEING_PROPAGATED, classificationName);
-//            }
-//        }
+        List<AtlasTask> inProgressTasks = taskManagement.getInProgressTasks();
+        for (AtlasTask task : inProgressTasks) {
+            if (isTaskMatchingWithVertexIdAndEntityGuid(task, classificationVertex.getIdForDisplay(), entityGuid)) {
+                throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_CURRENTLY_BEING_PROPAGATED, classificationName);
+            }
+        }
 
         AtlasClassification classification       = entityRetriever.toAtlasClassification(classificationVertex);
 
