@@ -94,6 +94,7 @@ import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.CR
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.DELETE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.PARTIAL_UPDATE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.UPDATE;
+import static org.apache.atlas.model.tasks.AtlasTask.Status.IN_PROGRESS;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
@@ -3669,7 +3670,7 @@ public class EntityGraphMapper {
 
     private boolean isTaskMatchingWithVertexIdAndEntityGuid(AtlasTask task, String classificationVertexId, String entityGuid) {
         try {
-            if (CLASSIFICATION_PROPAGATION_ADD.equals(task.getType())) {
+            if (CLASSIFICATION_PROPAGATION_ADD.equals(task.getType()) && IN_PROGRESS.equals(task.getStatus())) {
                 return task.getParameters().get(ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID).equals(classificationVertexId)
                         && task.getParameters().get(ClassificationTask.PARAM_ENTITY_GUID).equals(entityGuid);
             }
