@@ -127,6 +127,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private static final String ATTR_MEANINGS = "meanings";
 
+    private static final String PROCESS_TYPE_NAME = "Process";
+
     private final AtlasGraph                graph;
     private final DeleteHandlerDelegate     deleteDelegate;
     private final RestoreHandlerV1          restoreHandlerV1;
@@ -1678,7 +1680,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             ret.setGuidAssignments(context.getGuidAssignments());
 
-
+            for (AtlasEntity entity: context.getCreatedEntities()) {
+                if(PROCESS_TYPE_NAME.equals(entity.getTypeName()) || typeRegistry.getEntityTypeByName(entity.getTypeName()).isSubTypeOf(PROCESS_TYPE_NAME)) {
+                    RequestContext.get().cacheDifferentialEntity(entity);
+                }
+            }
             // Notify the change listeners
             entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
             atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());

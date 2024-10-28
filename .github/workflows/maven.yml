@@ -27,7 +27,7 @@ on:
       - development
       - master
       - lineageondemand
-      - makerlogic
+      - mlh-170-create-diff
 
 jobs:
   build:
