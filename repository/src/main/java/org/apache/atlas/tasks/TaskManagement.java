@@ -208,7 +208,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     }
 
     public List<AtlasTask> getInProgressTasks() {
-        if(AtlasConfiguration.TASKS_REQUEUE_GRAPH_QUERY.getBoolean()) {
+        if(AtlasConfiguration.TASKS_IN_PROGRESS_GRAPH_QUERY.getBoolean()) {
             return registry.getInProgressTasks();
         } else {
             return registry.getInProgressTasksES();

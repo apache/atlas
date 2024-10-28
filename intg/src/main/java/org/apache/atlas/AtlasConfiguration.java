@@ -84,6 +84,7 @@ public enum AtlasConfiguration {
     DEBUG_METRICS_ENABLED("atlas.debug.metrics.enabled", false),
     TASKS_USE_ENABLED("atlas.tasks.enabled", true),
     TASKS_REQUEUE_GRAPH_QUERY("atlas.tasks.requeue.graph.query", false),
+    TASKS_IN_PROGRESS_GRAPH_QUERY("atlas.tasks.inprogress.graph.query", false),
     TASKS_REQUEUE_POLL_INTERVAL("atlas.tasks.requeue.poll.interval.millis", 60000),
     TASKS_QUEUE_SIZE("atlas.tasks.queue.size", 1000),
     SESSION_TIMEOUT_SECS("atlas.session.timeout.secs", -1),
