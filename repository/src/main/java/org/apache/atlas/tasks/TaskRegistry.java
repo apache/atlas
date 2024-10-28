@@ -130,8 +130,7 @@ public class TaskRegistry {
     public List<AtlasTask> getInProgressTasksES() {
         List<AtlasTask> ret = new ArrayList<>();
         int size = 100;
-        try {
-            int from = 0;
+        int from = 0;
             while(true) {
                 List statusClauseList = new ArrayList();
                 statusClauseList.add(mapOf("match", mapOf(TASK_STATUS, AtlasTask.Status.IN_PROGRESS.toString())));
@@ -142,17 +141,20 @@ public class TaskRegistry {
                 dsl.put("from", from);
                 TaskSearchParams taskSearchParams = new TaskSearchParams();
                 taskSearchParams.setDsl(dsl);
-                List<AtlasTask> results = taskService.getTasks(taskSearchParams).getTasks();
-                if (results.isEmpty()){
-                    break;
+                try {
+                    List<AtlasTask> results = taskService.getTasks(taskSearchParams).getTasks();
+                    if (results.isEmpty()){
+                        break;
+                    }
+                    ret.addAll(results);
+                    from+=size;
+                } catch (AtlasBaseException exception) {
+                    LOG.error("Error fetching in progress tasks from ES, redirecting to GraphQuery", exception);
+                    exception.printStackTrace();
+                    ret = getInProgressTasks();
+                    return ret;
                 }
-                ret.addAll(results);
-                from+=size;
             }
-        } catch (Exception exception) {
-            LOG.error("Error fetching in progress tasks!", exception);
-            exception.printStackTrace();
-        }
 
         return ret;
     }
