@@ -60,6 +60,7 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEn
 public class TaskRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(TaskRegistry.class);
     public static final int TASK_FETCH_BATCH_SIZE = 100;
+    public static final List<Map<String, Object>> SORT_ARRAY = Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc")));
 
     private AtlasGraph graph;
     private TaskService taskService;
@@ -137,11 +138,11 @@ public class TaskRegistry {
     public List<AtlasTask> getInProgressTasksES() {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getInProgressTasksES");
         List<AtlasTask> ret = new ArrayList<>();
+        Map<String, Object> dsl = mapOf("query", QUERY_MAP);
+        dsl.put("sort", SORT_ARRAY);
+        dsl.put("size", TASK_FETCH_BATCH_SIZE);
         int from = 0;
             while(true) {
-                Map<String, Object> dsl = mapOf("query", QUERY_MAP);
-                dsl.put("sort", Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc"))));
-                dsl.put("size", TASK_FETCH_BATCH_SIZE);
                 dsl.put("from", from);
                 TaskSearchParams taskSearchParams = new TaskSearchParams();
                 taskSearchParams.setDsl(dsl);
