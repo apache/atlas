@@ -4773,25 +4773,55 @@ public class EntityGraphMapper {
 
             updateModificationMetadata(ev);
 
-            cacheDifferentialEntity(ev, existingValues);
+            cacheDifferentialEntity(ev, existingValues, ev.getMultiValuedSetProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, String.class));
         }).collect(Collectors.toList());
     }
 
 
     public List<AtlasVertex> unlinkBusinessPolicy(String policyId, Set<String> unlinkGuids) {
-        return unlinkGuids.stream().map(guid -> AtlasGraphUtilsV2.findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
-            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
-            return existingValues.contains(policyId);
-        }).peek(ev -> {
-            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
-            existingValues.remove(policyId);
-            ev.removePropertyValue(ASSET_POLICY_GUIDS, policyId);
-            ev.setProperty(ASSET_POLICIES_COUNT, existingValues.size());
+        if (policyId == null || unlinkGuids == null || unlinkGuids.isEmpty()) {
+            throw new IllegalArgumentException("PolicyId and unlinkGuids must not be null or empty");
+        }
 
-            updateModificationMetadata(ev);
+        return unlinkGuids.stream()
+                .map(guid -> AtlasGraphUtilsV2.findByGuid(graph, guid))
+                .filter(Objects::nonNull)
+                .filter(vertex -> isPolicyLinked(vertex, policyId))
+                .map(vertex -> updateVertexPolicy(vertex, policyId))
+                .collect(Collectors.toList());
+    }
 
-            cacheDifferentialEntity(ev, existingValues);
-        }).collect(Collectors.toList());
+    private boolean isPolicyLinked(AtlasVertex vertex, String policyId) {
+        Set<String> compliantPolicies = getMultiValuedSetProperty(vertex, ASSET_POLICY_GUIDS);
+        Set<String> nonCompliantPolicies = getMultiValuedSetProperty(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS);
+        return compliantPolicies.contains(policyId) || nonCompliantPolicies.contains(policyId);
+    }
+
+    private AtlasVertex updateVertexPolicy(AtlasVertex vertex, String policyId) {
+        Set<String> compliantPolicies = getMultiValuedSetProperty(vertex, ASSET_POLICY_GUIDS);
+        Set<String> nonCompliantPolicies = getMultiValuedSetProperty(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS);
+
+        boolean removed = compliantPolicies.remove(policyId);
+        removed |= nonCompliantPolicies.remove(policyId);
+
+        if (removed) {
+            vertex.removePropertyValue(ASSET_POLICY_GUIDS, policyId);
+            vertex.removePropertyValue(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
+
+            int totalPolicies = compliantPolicies.size() + nonCompliantPolicies.size();
+            vertex.setProperty(ASSET_POLICIES_COUNT, totalPolicies);
+
+            updateModificationMetadata(vertex);
+            cacheDifferentialEntity(vertex, compliantPolicies, nonCompliantPolicies);
+        }
+
+        return vertex;
+    }
+
+    private Set<String> getMultiValuedSetProperty(AtlasVertex vertex, String propertyName) {
+        return Optional.ofNullable(vertex.getMultiValuedSetProperty(propertyName, String.class))
+                .map(HashSet::new)
+                .orElseGet(HashSet::new);
     }
 
     public List<AtlasVertex> linkMeshEntityToAssets(String meshEntityId, Set<String> linkGuids) throws AtlasBaseException {
@@ -4925,11 +4955,12 @@ public class EntityGraphMapper {
         return assetVertex;
     }
 
-    private void cacheDifferentialEntity(AtlasVertex ev, Set<String> existingValues) {
+    private void cacheDifferentialEntity(AtlasVertex ev, Set<String> complaint, Set<String> nonComplaint) {
         AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
         setEntityCommonAttributes(ev, diffEntity);
-        diffEntity.setAttribute(ASSET_POLICY_GUIDS, existingValues);
-        diffEntity.setAttribute(ASSET_POLICIES_COUNT, existingValues.size());
+        diffEntity.setAttribute(ASSET_POLICY_GUIDS, complaint);
+        diffEntity.setAttribute(NON_COMPLIANT_ASSET_POLICY_GUIDS, nonComplaint);
+        diffEntity.setAttribute(ASSET_POLICIES_COUNT, complaint.size() + nonComplaint.size());
 
         RequestContext requestContext = RequestContext.get();
         requestContext.cacheDifferentialEntity(diffEntity);
