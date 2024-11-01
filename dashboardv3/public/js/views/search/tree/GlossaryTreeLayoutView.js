@@ -620,7 +620,7 @@ define([
                             term: null
                         };
                         that.glossaryTermId = null;
-                        if (that.options.value.gType == "category") {
+                        if (that.options.value && that.options.value.gType == "category") {
                             that.showDefaultPage();
                         } else {
                             searchParam = _.extend({}, that.options.value, params);
