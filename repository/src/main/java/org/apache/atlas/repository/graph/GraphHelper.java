@@ -34,6 +34,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.TransactionInterceptHelper;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -359,18 +360,31 @@ public final class GraphHelper {
         return getRestrictPropagation(classificationVertex,CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
     }
 
-    public static AtlasVertex getClassificationVertex(AtlasVertex entityVertex, String classificationName) {
+    public void repairTagVertex(AtlasEdge edge, AtlasVertex classificationVertex) {
+        LOG.info("Repairing corrupt tag-vertex");
+        removeEdge(edge);
+        removeVertex(classificationVertex);
+    }
+
+    public static AtlasVertex getClassificationVertex(GraphHelper graphHelper, AtlasVertex entityVertex, String classificationName) {
         AtlasVertex ret   = null;
         Iterable    edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL)
                                                 .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, false)
                                                 .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, classificationName).edges();
+
         if (edges != null) {
             Iterator<AtlasEdge> iterator = edges.iterator();
 
-            if (iterator.hasNext()) {
+            while (iterator.hasNext()) {
                 AtlasEdge edge = iterator.next();
-
-                ret = (edge != null) ? edge.getInVertex() : null;
+                if(Objects.nonNull(edge))
+                {
+                    if(Objects.nonNull(edge.getInVertex())) {
+                        return edge.getInVertex();
+                    } else if(graphHelper != null) {
+                        graphHelper.repairTagVertex(edge, edge.getInVertex());
+                    }
+                }
             }
         }
 

@@ -160,7 +160,7 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
         entityStore.addClassification(Collections.singletonList(HDFS_PATH_EMPLOYEES), tagY);
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(hdfs_employees.getGuid());
-        AtlasVertex classificationVertex = GraphHelper.getClassificationVertex(entityVertex, TAG_NAME_X);
+        AtlasVertex classificationVertex = GraphHelper.getClassificationVertex(null, entityVertex, TAG_NAME_X);
 
         assertNotNull(entityVertex);
         assertNotNull(classificationVertex);
@@ -183,7 +183,7 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
         entityStore.updateClassifications(hdfs_employees.getGuid(), Collections.singletonList(tagY));
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(hdfs_employees.getGuid());
-        AtlasVertex classificationVertex = GraphHelper.getClassificationVertex(entityVertex, TAG_NAME_Y);
+        AtlasVertex classificationVertex = GraphHelper.getClassificationVertex(null, entityVertex, TAG_NAME_Y);
 
         assertNotNull(RequestContext.get().getQueuedTasks());
         assertTrue(RequestContext.get().getQueuedTasks().size() > 0, "No tasks were queued!");
@@ -204,7 +204,7 @@ public class ClassificationPropagationWithTasksTest extends AtlasTestBase {
         tagX.setPropagate(false);
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(hdfs_employees.getGuid());
-        AtlasVertex classificationVertex = GraphHelper.getClassificationVertex(entityVertex, TAG_NAME);
+        AtlasVertex classificationVertex = GraphHelper.getClassificationVertex(null, entityVertex, TAG_NAME);
 
         try {
             entityStore.deleteClassification(HDFS_PATH_EMPLOYEES, tagX.getTypeName());

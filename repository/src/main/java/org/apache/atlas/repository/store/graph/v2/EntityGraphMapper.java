@@ -3565,7 +3565,7 @@ public class EntityGraphMapper {
 
         validateClassificationExists(traitNames, classificationName);
 
-        AtlasVertex         classificationVertex = getClassificationVertex(entityVertex, classificationName);
+        AtlasVertex         classificationVertex = getClassificationVertex(graphHelper, entityVertex, classificationName);
 
         // Get in progress task to see if there already is a propagation for this particular vertex
         List<AtlasTask> inProgressTasks = taskManagement.getInProgressTasks();
@@ -3778,7 +3778,7 @@ public class EntityGraphMapper {
                 throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY, classificationName);
             }
 
-            AtlasVertex classificationVertex = getClassificationVertex(entityVertex, classificationName);
+            AtlasVertex classificationVertex = getClassificationVertex(graphHelper, entityVertex, classificationName);
 
             if (classificationVertex == null) {
                 throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, classificationName);
