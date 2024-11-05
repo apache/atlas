@@ -379,7 +379,8 @@ public final class GraphHelper {
                 AtlasEdge edge = iterator.next();
                 if(Objects.nonNull(edge))
                 {
-                    if(Objects.nonNull(edge.getInVertex())) {
+                    AtlasVertex classificationVertex = edge.getInVertex();
+                    if(Objects.nonNull(classificationVertex) && StringUtils.isNotEmpty(classificationVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class))) {
                         return edge.getInVertex();
                     } else if(graphHelper != null) {
                         graphHelper.repairTagVertex(edge, edge.getInVertex());
