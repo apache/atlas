@@ -3565,8 +3565,12 @@ public class EntityGraphMapper {
 
         validateClassificationExists(traitNames, classificationName);
 
-        AtlasVertex         classificationVertex = getClassificationVertex(entityVertex, classificationName);
+        AtlasVertex         classificationVertex = getClassificationVertex(graphHelper, entityVertex, classificationName);
 
+        if (Objects.isNull(classificationVertex)) {
+            LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
+            return;
+        }
         // Get in progress task to see if there already is a propagation for this particular vertex
         List<AtlasTask> inProgressTasks = taskManagement.getInProgressTasks();
         for (AtlasTask task : inProgressTasks) {
@@ -3578,7 +3582,8 @@ public class EntityGraphMapper {
         AtlasClassification classification       = entityRetriever.toAtlasClassification(classificationVertex);
 
         if (classification == null) {
-            throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classificationName);
+            LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
+            return;
         }
 
         // remove classification from propagated entities if propagation is turned on
@@ -3778,10 +3783,11 @@ public class EntityGraphMapper {
                 throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY, classificationName);
             }
 
-            AtlasVertex classificationVertex = getClassificationVertex(entityVertex, classificationName);
+            AtlasVertex classificationVertex = getClassificationVertex(graphHelper, entityVertex, classificationName);
 
             if (classificationVertex == null) {
-                throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, classificationName);
+                LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
+                continue;
             }
 
             if (LOG.isDebugEnabled()) {
