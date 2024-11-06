@@ -35,6 +35,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -358,7 +359,24 @@ public final class Constants {
     public static final String TASK_ENTITY_GUID             = encodePropertyKey(TASK_PREFIX + "entityGuid");
     public static final String TASK_CLASSIFICATION_TYPENAME = encodePropertyKey(TASK_PREFIX + "classificationTypeName");
     public static final String ACTIVE_STATE_VALUE           = "ACTIVE";
-
+    public static final String TASK_HEADER_ATLAN_AGENT      = "x-atlan-agent";
+    public static final String TASK_HEADER_ATLAN_AGENT_ID   = "x-atlan-agent-id";
+    public static final String TASK_HEADER_ATLAN_PKG_NAME   = "x-atlan-package-name";
+    public static final String TASK_HEADER_ATLAN_AGENT_WORKFLOW_ID = "x-atlan-agent-workflow-id";
+    public static final String TASK_HEADER_ATLAN_VIA_UI            = "x-atlan-via-ui";
+    public static final String TASK_HEADER_ATLAN_REQUEST_ID        = "x-atlan-request-id";
+    public static final String TASK_HEADER_ATLAN_GOOGLE_SHEETS_ID  = "x-atlan-google-sheets-id";
+    public static final String TASK_HEADER_ATLAN_MS_EXCEL_ID       = "x-atlan-microsoft-excel-id";
+    public static final Map<String, Boolean> TASK_HEADER_MAP = new HashMap<String, Boolean>(){{
+        put(TASK_HEADER_ATLAN_AGENT, true);
+        put(TASK_HEADER_ATLAN_AGENT_ID, true);
+        put(TASK_HEADER_ATLAN_PKG_NAME, true);
+        put(TASK_HEADER_ATLAN_AGENT_WORKFLOW_ID, true);
+        put(TASK_HEADER_ATLAN_REQUEST_ID, true);
+        put(TASK_HEADER_ATLAN_GOOGLE_SHEETS_ID, true);
+        put(TASK_HEADER_ATLAN_MS_EXCEL_ID, true);
+    }};
+    
     /**
      * Index Recovery vertex property keys.
      */
