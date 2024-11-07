@@ -81,6 +81,8 @@ public final class AccessControlUtils {
     public static final String POLICY_TYPE_ALLOW  = "allow";
     public static final String POLICY_TYPE_DENY  = "deny";
 
+    public static final String ATTR_CHANNEL_LINK = "channelLink";
+
     public static final String ACCESS_READ_PURPOSE_METADATA = "entity-read";
     public static final String ACCESS_READ_PERSONA_METADATA = "persona-asset-read";
     public static final String ACCESS_READ_PERSONA_GLOSSARY = "persona-glossary-read";
