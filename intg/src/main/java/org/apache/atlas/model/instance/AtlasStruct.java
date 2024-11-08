@@ -102,7 +102,9 @@ public class AtlasStruct implements Serializable {
     public AtlasStruct(AtlasStruct other) {
         if (other != null) {
             setTypeName(other.getTypeName());
-            setAttributes(new HashMap<>(other.getAttributes()));
+            if (other.getAttributes() != null) {
+                setAttributes(new HashMap<>(other.getAttributes()));
+            }
         }
     }
 
