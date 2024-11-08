@@ -35,7 +35,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -367,14 +366,15 @@ public final class Constants {
     public static final String TASK_HEADER_ATLAN_REQUEST_ID        = "x-atlan-request-id";
     public static final String TASK_HEADER_ATLAN_GOOGLE_SHEETS_ID  = "x-atlan-google-sheets-id";
     public static final String TASK_HEADER_ATLAN_MS_EXCEL_ID       = "x-atlan-microsoft-excel-id";
-    public static final Map<String, Boolean> TASK_HEADER_MAP = new HashMap<String, Boolean>(){{
-        put(TASK_HEADER_ATLAN_AGENT, true);
-        put(TASK_HEADER_ATLAN_AGENT_ID, true);
-        put(TASK_HEADER_ATLAN_PKG_NAME, true);
-        put(TASK_HEADER_ATLAN_AGENT_WORKFLOW_ID, true);
-        put(TASK_HEADER_ATLAN_REQUEST_ID, true);
-        put(TASK_HEADER_ATLAN_GOOGLE_SHEETS_ID, true);
-        put(TASK_HEADER_ATLAN_MS_EXCEL_ID, true);
+    public static final Set<String> TASK_HEADER_SET = new HashSet<String>() {{
+        add(TASK_HEADER_ATLAN_AGENT);
+        add(TASK_HEADER_ATLAN_AGENT_ID);
+        add(TASK_HEADER_ATLAN_VIA_UI);
+        add(TASK_HEADER_ATLAN_PKG_NAME);
+        add(TASK_HEADER_ATLAN_AGENT_WORKFLOW_ID);
+        add(TASK_HEADER_ATLAN_REQUEST_ID);
+        add(TASK_HEADER_ATLAN_GOOGLE_SHEETS_ID);
+        add(TASK_HEADER_ATLAN_MS_EXCEL_ID);
     }};
     
     /**

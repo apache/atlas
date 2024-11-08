@@ -398,7 +398,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, TASK_GUID, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, TASK_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, TASK_CREATED_TIME, UniqueKind.NONE, Long.class, SINGLE, true, false);
-            createCommonVertexIndex(management, TASK_STATUS, UniqueKind.NONE, String.class, SINGLE, true, false, true, new HashMap<>(), KEYWORD_FIELD);
+            createCommonVertexIndex(management, TASK_STATUS, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), KEYWORD_FIELD);
 
             createCommonVertexIndex(management, TASK_TYPE, UniqueKind.NONE, String.class, SINGLE, true, false, true);
             createCommonVertexIndex(management, TASK_CREATED_BY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
@@ -412,14 +412,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, TASK_TIME_TAKEN_IN_SECONDS, UniqueKind.NONE, Long.class, SINGLE, false, false);
             createCommonVertexIndex(management, TASK_START_TIME, UniqueKind.NONE, Long.class, SINGLE, false, false);
             createCommonVertexIndex(management, TASK_END_TIME, UniqueKind.NONE, Long.class, SINGLE, false, false);
-            createCommonVertexIndex(management, TASK_HEADER_ATLAN_AGENT, UniqueKind.NONE, String.class, SINGLE, true, false, true);
-            createCommonVertexIndex(management, TASK_HEADER_ATLAN_AGENT_ID, UniqueKind.NONE, String.class, SINGLE, true, false, true);
-            createCommonVertexIndex(management, TASK_HEADER_ATLAN_PKG_NAME, UniqueKind.NONE, String.class, SINGLE, true, false, true);
-            createCommonVertexIndex(management, TASK_HEADER_ATLAN_AGENT_WORKFLOW_ID, UniqueKind.NONE, String.class, SINGLE, true, false, true);
-            createCommonVertexIndex(management, TASK_HEADER_ATLAN_VIA_UI, UniqueKind.NONE, String.class, SINGLE, true, false, true);
-            createCommonVertexIndex(management, TASK_HEADER_ATLAN_REQUEST_ID, UniqueKind.NONE, String.class, SINGLE, true, false, true);
-            createCommonVertexIndex(management, TASK_HEADER_ATLAN_GOOGLE_SHEETS_ID, UniqueKind.NONE, String.class, SINGLE, true, false, true);
-            createCommonVertexIndex(management, TASK_HEADER_ATLAN_MS_EXCEL_ID, UniqueKind.NONE, String.class, SINGLE, true, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_AGENT, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_AGENT_ID, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_PKG_NAME, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_AGENT_WORKFLOW_ID, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_VIA_UI, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_REQUEST_ID, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_GOOGLE_SHEETS_ID, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_MS_EXCEL_ID, UniqueKind.NONE, String.class, SINGLE, false, false, true);
             
             // index recovery
             createCommonVertexIndex(management, PROPERTY_KEY_INDEX_RECOVERY_NAME, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
