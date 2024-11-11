@@ -44,6 +44,10 @@ public class IndexSearchParams extends SearchParams {
         queryString = AtlasType.toJson(dsl);
     }
 
+    public long getQuerySize() {
+        return dsl.get("size") != null ? ((Number)dsl.get("size")).longValue() : 10;
+    }
+
     public boolean isAllowDeletedRelations() {
         return allowDeletedRelations;
     }
