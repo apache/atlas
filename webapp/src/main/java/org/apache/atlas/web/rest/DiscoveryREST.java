@@ -400,6 +400,10 @@ public class DiscoveryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearch(" + parameters + ")");
             }
 
+            if (parameters.getQuerySize() > AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong() && CollectionUtils.isEmpty(parameters.getUtmTags())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_SIZE, String.valueOf(AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getInt()));
+            }
+
             if (StringUtils.isEmpty(parameters.getQuery())) {
                 AtlasBaseException abe = new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
                 if (enableSearchLogging && parameters.isSaveSearchLog()) {
