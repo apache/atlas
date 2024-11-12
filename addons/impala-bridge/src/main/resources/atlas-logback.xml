@@ -17,26 +17,25 @@
   ~ limitations under the License.
   -->
 
-<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<configuration>
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>/var/log/hive/impala-bridge.log</file>
+    <append>true</append>
+    <encoder>
+      <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>/var/log/hive/impala-bridge-%d.log</fileNamePattern>
+      <maxHistory>20</maxHistory>
+      <cleanHistoryOnStart>true</cleanHistoryOnStart>
+    </rollingPolicy>
+  </appender>
 
-<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
-    <appender name="FILE" class="org.apache.log4j.RollingFileAppender">
-        <param name="File" value="/var/log/atlas/atlas-index-janus-repair.log"/>
-        <param name="Append" value="true"/>
-        <param name="maxFileSize" value="100MB" />
-        <param name="maxBackupIndex" value="20" />
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="%d %-5p - [%t:%x] ~ %m (%C{1}:%L)%n"/>
-        </layout>
-    </appender>
+  <logger name="org.apache.atlas.impala.ImpalaLineageTool" additivity="false" level="info">
+    <appender-ref ref="FILE"/>
+  </logger>
 
-    <logger name="org.apache.atlas.tools.RepairIndex" additivity="false">
-        <level value="info"/>
-        <appender-ref ref="FILE"/>
-    </logger>
-
-    <root>
-        <priority value="warn"/>
-        <appender-ref ref="FILE"/>
-    </root>
-</log4j:configuration>
+  <root level="warn">
+    <appender-ref ref="FILE"/>
+  </root>
+</configuration>

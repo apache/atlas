@@ -164,14 +164,14 @@
         <developer>
             <id>bstortz</id>
             <name>Barbara Stortz</name>
-            <email>bstortz@sap.com</email>
+            <email>barbara.stortz@gmail.com</email>
             <timezone>America/Los_Angeles</timezone>
             <roles>
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>SAP Inc.</organization>
-            <!--<organizationUrl>https://www.sap.com</organizationUrl>-->
+            <organization>Microsoft</organization>
+            <!--<organizationUrl>https://www.microsoft.com</organizationUrl>-->
         </developer>
         <developer>
             <id>chyzer</id>
@@ -384,6 +384,16 @@
             <!--<organizationUrl>https://www.privacera.com</organizationUrl>-->
         </developer>
         <developer>
+            <id>mandarambawane</id>
+            <name>Mandar Ambawane</name>
+            <email>mandarambawane@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
             <id>mandy</id>
             <name>Mandy Chessell</name>
             <email>mandy@apache.org</email>
@@ -448,6 +458,37 @@
                 <role>committer</role>
             </roles>
             <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
+            <id>ppawar</id>
+            <name>Prasad Pawar</name>
+            <email>ppawar@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
+            <id>chaitalithombare</id>
+            <name>Chaitali Borole</name>
+            <email>chaitalithombare@apache.org</email>
+            <timezone>Asia/Kolkata</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Freestone Infotech</organization>
+        </developer>
+        <developer>
+            <id>radhikakundam</id>
+            <name>Radhika Kundam</name>
+            <email>radhikakundam@apache.org</email>
+            <timezone>America/Los_Angeles</timezone>
+            <roles>
+                <role>committer</role>
+            </roles>
+            <organization>Cloudera Inc.</organization>
+            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>rmani</id>
@@ -634,7 +675,7 @@
                 </property>
             </activation>
             <properties>
-                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/solr-test-framework-*.jar, WEB-INF/lib/jts-*.jar,WEB-INF/lib/logback-*.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/ant-*.jar</distro.exclude.packages>
+                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/solr-test-framework-*.jar, WEB-INF/lib/jts-*.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/ant-*.jar</distro.exclude.packages>
                 <graph.index.backend>solr</graph.index.backend>
                 <graphArtifact>atlas-graphdb-janus</graphArtifact>
                 <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
@@ -653,7 +694,7 @@
                 </property>
             </activation>
             <properties>
-                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/solr-test-framework-*.jar, WEB-INF/lib/jts-*.jar,WEB-INF/lib/logback-*.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/ant-*.jar</distro.exclude.packages>
+                <distro.exclude.packages>WEB-INF/lib/je-*.jar,WEB-INF/lib/solr-test-framework-*.jar, WEB-INF/lib/jts-*.jar,WEB-INF/lib/dom4j-*.jar,WEB-INF/lib/ant-*.jar</distro.exclude.packages>
                 <graph.index.backend>solr</graph.index.backend>
                 <graphArtifact>atlas-graphdb-janus</graphArtifact>
                 <graphdb.backend.impl>org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase</graphdb.backend.impl>
@@ -680,6 +721,7 @@
         <aopalliance.version>1.0</aopalliance.version>
         <aspectj.runtime.version>1.8.7</aspectj.runtime.version>
         <atlas.surefire.options></atlas.surefire.options>
+        <avro.version>1.7.5</avro.version>
         <calcite.version>1.16.0</calcite.version>
         <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
         <codehaus.woodstox.stax2-api.version>3.1.4</codehaus.woodstox.stax2-api.version>
@@ -719,8 +761,12 @@
         <jackson.version>2.12.4</jackson.version>
         <janusgraph.version>0.6.03</janusgraph.version>
         <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
+        <jaxb.api.version>2.3.1</jaxb.api.version>
         <javax-inject.version>1</javax-inject.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
+        <java.version.required>1.8</java.version.required>
+        <javac.source.version>1.8</javac.source.version>
+        <javac.target.version>1.8</javac.target.version>
         <jersey-spring.version>1.19.4</jersey-spring.version>
         <jersey.version>1.19</jersey.version>
         <jettison.version>1.3.7</jettison.version>
@@ -737,8 +783,7 @@
         <keycloak.version>15.0.2.1</keycloak.version>
         <owasp-html-sanitizer.version>20220608.1</owasp-html-sanitizer.version>
         <launch-darkly.version>6.0.5</launch-darkly.version>
-        <reload4j.version>1.2.19</reload4j.version>
-        <log4j2.version>2.17.1</log4j2.version>
+        <logback.version>1.3.14</logback.version>
         <lucene-solr.version>8.8.2</lucene-solr.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <MaxPermGen>512m</MaxPermGen>
@@ -761,8 +806,8 @@
         <skipSite>true</skipSite>
         <skipTests>false</skipTests>
         <skipUTs>false</skipUTs>
+        <slf4j.version>2.0.16</slf4j.version>
         <skipOverlay>false</skipOverlay>
-        <slf4j.version>1.7.30</slf4j.version>
         <solr-test-framework.version>8.6.3</solr-test-framework.version>
         <solr.version>8.6.3</solr.version>
         <spray.version>1.3.1</spray.version>
@@ -926,43 +971,44 @@
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-api</artifactId>
                 <version>${slf4j.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>log4j</groupId>
-                        <artifactId>log4j</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
 
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-log4j12</artifactId>
                 <version>${slf4j.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>log4j</groupId>
-                        <artifactId>log4j</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
 
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>jul-to-slf4j</artifactId>
                 <version>${slf4j.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <groupId>log4j</groupId>
-                        <artifactId>log4j</artifactId>
-                    </exclusion>
-                </exclusions>
             </dependency>
 
             <dependency>
-                <groupId>ch.qos.reload4j</groupId>
-                <artifactId>reload4j</artifactId>
-                <version>${reload4j.version}</version>
+                <groupId>javax.xml.bind</groupId>
+                <artifactId>jaxb-api</artifactId>
+                <version>${jaxb.api.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>log4j-over-slf4j</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-core</artifactId>
+                <version>${logback.version}</version>
+            </dependency>
+
             <!-- hadoop -->
             <dependency>
                 <groupId>org.apache.hadoop</groupId>
@@ -1006,11 +1052,18 @@
                         <artifactId>junit</artifactId>
                     </exclusion>
                     <exclusion>
-                        <groupId>log4j</groupId>
-                        <artifactId>log4j</artifactId>
+                        <groupId>org.apache.commons</groupId>
+                        <artifactId>commons-configuration2</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.apache.commons</groupId>
+                        <artifactId>commons-text</artifactId>
+                    </exclusion>
+                    <exclusion>
+                        <groupId>org.slf4j</groupId>
+                        <artifactId>slf4j-reload4j</artifactId>
                     </exclusion>
                 </exclusions>
-
             </dependency>
 
             <dependency>
@@ -1973,7 +2026,7 @@
                         <atlas.data>${project.build.directory}/data</atlas.data>
                         <atlas.log.dir>${project.build.directory}/logs</atlas.log.dir>
                         <atlas.log.file>application.log</atlas.log.file>
-                        <log4j.configuration>atlas-log4j.xml</log4j.configuration>
+                        <logback.configurationFile>atlas-logback.xml</logback.configurationFile>
                         <embedded.solr.directory>${project.basedir}/target</embedded.solr.directory>
                     </systemProperties>
                     <skipTests>${skipTests}</skipTests>
@@ -2005,7 +2058,7 @@
                         <atlas.data>${project.build.directory}/data</atlas.data>
                         <atlas.log.dir>${project.build.directory}/logs</atlas.log.dir>
                         <atlas.log.file>application.log</atlas.log.file>
-                        <log4j.configuration>atlas-log4j.xml</log4j.configuration>
+                        <logback.configurationFile>atlas-logback.xml</logback.configurationFile>
                         <embedded.solr.directory>${project.basedir}/target</embedded.solr.directory>
                     </systemPropertyVariables>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -2139,7 +2192,7 @@
                         <exclude>**/docz-lib/**</exclude>
                         <exclude>**/.docz/**</exclude>
                         <exclude>**/*.svg</exclude>
-
+                        
                     </excludes>
                 </configuration>
                 <executions>

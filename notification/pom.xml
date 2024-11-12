@@ -56,15 +56,9 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-            <version>${log4j2.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-            <version>${log4j2.version}</version>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
         </dependency>
 
         <dependency>
@@ -87,13 +81,6 @@
             <artifactId>atlas-intg</artifactId>
             <classifier>tests</classifier>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.qos.reload4j</groupId>
-            <artifactId>reload4j</artifactId>
-            <version>${reload4j.version}</version>
-            <scope>compile</scope>
         </dependency>
 
     </dependencies>
@@ -165,11 +152,6 @@
                                     <groupId>org.slf4j</groupId>
                                     <artifactId>slf4j-log4j12</artifactId>
                                     <version>${slf4j.version}</version>
-                                </artifactItem>
-                                <artifactItem>
-                                    <groupId>ch.qos.reload4j</groupId>
-                                    <artifactId>reload4j</artifactId>
-                                    <version>${reload4j.version}</version>
                                 </artifactItem>
                                 <artifactItem>
                                     <groupId>org.apache.kafka</groupId>

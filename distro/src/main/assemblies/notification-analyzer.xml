@@ -19,12 +19,12 @@
 *
 -->
 <assembly>
-    <id>classification-updater</id>
+    <id>notification-analyzer</id>
     <formats>
         <format>zip</format>
     </formats>
 
-    <baseDirectory>atlas-classification-updater</baseDirectory>
+    <baseDirectory>notification-analyzer</baseDirectory>
 
     <fileSets>
         <fileSet>
@@ -33,20 +33,38 @@
             </includes>
         </fileSet>
         <fileSet>
-            <directory>../tools/classification-updater/src/main/resources</directory>
+            <directory>../tools/notification-analyzer/target/dependency</directory>
+            <outputDirectory>.</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>../tools/notification-analyzer/scripts</directory>
             <outputDirectory>.</outputDirectory>
             <includes>
                 <include>*.sh</include>
-                <include>atlas-logback.xml</include>
             </includes>
             <fileMode>0755</fileMode>
             <directoryMode>0755</directoryMode>
         </fileSet>
         <fileSet>
-            <directory>../tools/classification-updater/target</directory>
+            <directory>../tools/notification-analyzer/src/main/resources</directory>
             <outputDirectory>.</outputDirectory>
             <includes>
-                <include>atlas-classification-updater-${project.version}.jar</include>
+                <include>atlas-logback.xml</include>
+                <include>atlas-application.properties</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>../tools/notification-analyzer</directory>
+            <outputDirectory>.</outputDirectory>
+            <includes>
+                <include>README</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>../tools/notification-analyzer/target</directory>
+            <outputDirectory>.</outputDirectory>
+            <includes>
+                <include>atlas-notification-analyzer-${project.version}.jar</include>
             </includes>
         </fileSet>
     </fileSets>
