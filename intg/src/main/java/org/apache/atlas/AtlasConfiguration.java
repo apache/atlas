@@ -94,7 +94,7 @@ public enum AtlasConfiguration {
     GRAPH_TRAVERSAL_PARALLELISM("atlas.graph.traverse.bucket.size",10),
     LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", true),
     LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT("atlas.lineage.on.demand.default.node.count", 3),
-    LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 100),
+    LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 1000),
 
     SUPPORTED_RELATIONSHIP_EVENTS("atlas.notification.relationships.filter", "asset_readme,asset_links"),
 
