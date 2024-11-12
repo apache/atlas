@@ -81,7 +81,7 @@ import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.
 @Service
 public class EntityLineageService implements AtlasLineageService {
     private static final Logger LOG = LoggerFactory.getLogger(EntityLineageService.class);
-
+    private static final long LINEAGE_TRAVERSAL_TIMEOUT_MILLIS = 15000;
     private static final String PROCESS_INPUTS_EDGE = "__Process.inputs";
     private static final String PROCESS_OUTPUTS_EDGE = "__Process.outputs";
     private static final String COLUMNS = "columns";
@@ -298,7 +298,7 @@ public class EntityLineageService implements AtlasLineageService {
         AtomicInteger inputEntitiesTraversed = new AtomicInteger(0);
         AtomicInteger outputEntitiesTraversed = new AtomicInteger(0);
         AtomicInteger traversalOrder = new AtomicInteger(1);
-        TimeoutTracker tracker = new TimeoutTracker(50); // 20 seconds timeout
+        TimeoutTracker tracker = new TimeoutTracker(LINEAGE_TRAVERSAL_TIMEOUT_MILLIS);
         if (isDataSet) {
             AtlasVertex datasetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
             if (direction == AtlasLineageOnDemandInfo.LineageDirection.INPUT || direction == AtlasLineageOnDemandInfo.LineageDirection.BOTH)
@@ -722,6 +722,7 @@ public class EntityLineageService implements AtlasLineageService {
 
         LineageInfoOnDemand inLineageInfo = ret.getRelationsOnDemand().containsKey(inGuid) ? ret.getRelationsOnDemand().get(inGuid) : new LineageInfoOnDemand(inGuidLineageConstraints);
         LineageInfoOnDemand outLineageInfo = ret.getRelationsOnDemand().containsKey(outGuid) ? ret.getRelationsOnDemand().get(outGuid) : new LineageInfoOnDemand(outGuidLineageConstraints);
+
 
         setHorizontalPaginationFlags(isInput, atlasLineageOnDemandContext, depth, entitiesTraversed, inVertex, outVertex, inLineageInfo, outLineageInfo, visitedVertices, timeoutTracker);
 
