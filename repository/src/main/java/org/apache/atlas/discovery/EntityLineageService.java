@@ -543,6 +543,7 @@ public class EntityLineageService implements AtlasLineageService {
         RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdges);
 
         while (edges.hasNext()) {
+
             AtlasEdge currentEdge = edges.next();
             if (!lineageListContext.evaluateTraversalFilter(currentEdge))
                 continue;
