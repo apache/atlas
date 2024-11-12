@@ -366,7 +366,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     private void traverseEdgesOnDemand(AtlasVertex datasetVertex, boolean isInput, int depth, int level, Set<String> visitedVertices, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, String baseGuid, AtomicInteger entitiesTraversed, AtomicInteger traversalOrder, TimeoutTracker timeoutTracker) throws AtlasBaseException {
-        if (isEntityTraversalLimitReached(entitiesTraversed))
+        if (isEntityTraversalLimitReached(entitiesTraversed) || timeoutTracker.hasTimedOut())
             return;
         if (depth != 0) { // base condition of recursion for depth
             AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("traverseEdgesOnDemand");
@@ -461,6 +461,10 @@ public class EntityLineageService implements AtlasLineageService {
                             AtlasEntityHeader traversedEntity = ret.getGuidEntityMap().get(AtlasGraphUtilsV2.getIdFromVertex(entityVertex));
                             if (traversedEntity != null)
                                 traversedEntity.setFinishTime(traversalOrder.get());
+                            if (timeoutTracker.hasTimedOut()) {
+                                ret.setTraversalTimedOut(true);
+                                return;
+                            }
                         }
                     }
                 }
@@ -470,12 +474,6 @@ public class EntityLineageService implements AtlasLineageService {
         }
     }
 
-
-    private void executeCircuitBreaker(AtlasEdge atlasEdge, boolean isInput, AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasLineageOnDemandInfo ret, int depth, AtomicInteger entitiesTraversed, Set<String> visitedVertices, TimeoutTracker timeoutTracker) {
-        // Set timeout flags on the entity
-        handleHorizontalAndVerticalPagination(atlasEdge, !isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, visitedVertices, timeoutTracker);
-        ret.setTraversalTimedOut(true);
-    }
 
     private static void setEntityLimitReachedFlag(boolean isInput, AtlasLineageOnDemandInfo ret) {
         if (isInput)
