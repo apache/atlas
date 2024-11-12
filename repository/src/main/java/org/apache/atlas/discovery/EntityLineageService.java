@@ -387,17 +387,18 @@ public class EntityLineageService implements AtlasLineageService {
                         continue;
                     }
 
-                    if (timeoutTracker.hasTimedOut()) {
-                        executeCircuitBreaker(incomingEdge, !isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, visitedVertices, timeoutTracker);
-                        return;
-                    }
-
                     if (checkForOffset(incomingEdge, datasetVertex, atlasLineageOnDemandContext, ret)) {
                         continue;
                     }
 
-                    boolean isRelationsLimitReached = handleHorizontalAndVerticalPagination(incomingEdge, !isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, visitedVertices, timeoutTracker);
-                    if (isRelationsLimitReached) {
+                    boolean stopProcessIteration = handleHorizontalAndVerticalPagination(incomingEdge, !isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, visitedVertices, timeoutTracker);
+                    // If timeout occurred or entity limit reached, set pagination flags again for consistency and stop
+                    if (timeoutTracker.hasTimedOut()) {
+                        handleHorizontalAndVerticalPagination(incomingEdge, !isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, visitedVertices, timeoutTracker);
+                        break;
+                    }
+
+                    if (stopProcessIteration) {
                         LineageInfoOnDemand entityOnDemandInfo = ret.getRelationsOnDemand().get(baseGuid);
                         if (entityOnDemandInfo == null)
                             continue;
@@ -424,13 +425,15 @@ public class EntityLineageService implements AtlasLineageService {
                         if (checkForOffset(outgoingEdge, processVertex, atlasLineageOnDemandContext, ret)) {
                             continue;
                         }
-                        boolean stopTraversal = handleHorizontalAndVerticalPagination(outgoingEdge, isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, visitedVertices, timeoutTracker);
-                        // If timeout occurred or entity limit reached, set pagination flags again for consistency and stop
+                        boolean stopDatasetIteration = handleHorizontalAndVerticalPagination(outgoingEdge, isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, visitedVertices, timeoutTracker);
+                        // If timeout occurred or entity limit reached, set pagination flags again for consistency
                         if (timeoutTracker.hasTimedOut()) {
                             handleHorizontalAndVerticalPagination(outgoingEdge, isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, visitedVertices, timeoutTracker);
-                            break;
+                            ret.setTraversalTimedOut(true);
+                            return;
                         }
-                        if (stopTraversal) {
+
+                        if (stopDatasetIteration) {
                             String processGuid = AtlasGraphUtilsV2.getIdFromVertex(processVertex);
                             LineageInfoOnDemand entityOnDemandInfo = ret.getRelationsOnDemand().get(processGuid);
 
@@ -447,6 +450,11 @@ public class EntityLineageService implements AtlasLineageService {
 
                             if (isEntityTraversalLimitReached(entitiesTraversed))
                                 setEntityLimitReachedFlag(isInput, ret);
+                            if (timeoutTracker.hasTimedOut()) {
+                                handleHorizontalAndVerticalPagination(outgoingEdge, isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, visitedVertices, timeoutTracker);
+                                ret.setTraversalTimedOut(true);
+                                return;
+                            }
                         }
                         if (entityVertex != null && !visitedVertices.contains(getId(entityVertex))) {
                             traverseEdgesOnDemand(entityVertex, isInput, depth - 1, nextLevel, visitedVertices, atlasLineageOnDemandContext, ret, baseGuid, entitiesTraversed, traversalOrder, timeoutTracker); // execute inner depth
