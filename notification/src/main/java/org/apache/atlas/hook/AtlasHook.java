@@ -98,13 +98,10 @@ public abstract class AtlasHook {
             LOG.info("Failed to load application properties", e);
         }
 
-        String failedMessageFile = atlasProperties.getString(ATLAS_NOTIFICATION_FAILED_MESSAGES_FILENAME_KEY, ATLAS_HOOK_FAILED_MESSAGES_LOG_DEFAULT_NAME);
-
-        logFailedMessages = atlasProperties.getBoolean(ATLAS_NOTIFICATION_LOG_FAILED_MESSAGES_ENABLED_KEY, false);
+        logFailedMessages = atlasProperties.getBoolean(ATLAS_NOTIFICATION_LOG_FAILED_MESSAGES_ENABLED_KEY, true);
 
         if (logFailedMessages) {
-            failedMessagesLogger = new FailedMessagesLogger(failedMessageFile);
-            failedMessagesLogger.init();
+            failedMessagesLogger = new FailedMessagesLogger();
         } else {
             failedMessagesLogger = null;
         }

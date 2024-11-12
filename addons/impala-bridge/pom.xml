@@ -65,16 +65,11 @@
       <version>${project.version}</version>
       <scope>test</scope>
     </dependency>
+
     <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <version>${log4j2.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-api</artifactId>
-      <version>${log4j2.version}</version>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>${logback.version}</version>
       <scope>test</scope>
     </dependency>
 
@@ -409,8 +404,8 @@
               <value>application.log</value>
             </systemProperty>
             <systemProperty>
-              <name>log4j.configuration</name>
-              <value>file:///${project.build.directory}/test-classes/atlas-log4j.xml</value>
+              <name>logback.configurationFile</name>
+              <value>file:///${project.build.directory}/test-classes/atlas-logback.xml</value>
             </systemProperty>
             <systemProperty>
               <name>atlas.graphdb.backend</name>

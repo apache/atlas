@@ -49,7 +49,7 @@
             <directory>../tools/notification-analyzer/src/main/resources</directory>
             <outputDirectory>.</outputDirectory>
             <includes>
-                <include>atlas-log4j.xml</include>
+                <include>atlas-logback.xml</include>
                 <include>atlas-application.properties</include>
             </includes>
         </fileSet>

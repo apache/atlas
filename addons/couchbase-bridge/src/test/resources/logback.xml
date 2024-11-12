@@ -17,19 +17,22 @@
   ~ limitations under the License.
   -->
 
-<!DOCTYPE log4j:configuration SYSTEM "log4j.dtd">
+<configuration>
+  <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+    <param name="Target" value="System.out"/>
+    <encoder>
+      <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+    </encoder>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>INFO</level>
+    </filter>
+  </appender>
 
-<log4j:configuration xmlns:log4j="http://jakarta.apache.org/log4j/">
-    <appender name="console" class="org.apache.log4j.ConsoleAppender">
-        <param name="Target" value="System.out"/>
-        <layout class="org.apache.log4j.PatternLayout">
-            <param name="ConversionPattern" value="%d %-5p - [%t:%x] ~ %m (%C{1}:%L)%n"/>
-        </layout>
-    </appender>
+  <logger name="org.apache.atlas" additivity="false" level="info">
+    <appender-ref ref="console"/>
+  </logger>
 
-    <root>
-        <level value="DEBUG"/>
-        <appender-ref ref="console"/>
-    </root>
-
-</log4j:configuration>
+  <root level="DEBUG">
+    <appender-ref ref="console"/>
+  </root>
+</configuration>

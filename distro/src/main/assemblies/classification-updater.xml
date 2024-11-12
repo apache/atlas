@@ -37,7 +37,7 @@
             <outputDirectory>.</outputDirectory>
             <includes>
                 <include>*.sh</include>
-                <include>atlas-log4j.xml</include>
+                <include>atlas-logback.xml</include>
             </includes>
             <fileMode>0755</fileMode>
             <directoryMode>0755</directoryMode>
