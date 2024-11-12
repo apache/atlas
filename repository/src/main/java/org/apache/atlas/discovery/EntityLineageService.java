@@ -381,6 +381,11 @@ public class EntityLineageService implements AtlasLineageService {
 
                 while (incomingEdges.hasNext()) {
                     AtlasEdge incomingEdge = incomingEdges.next();
+
+                    if (checkForOffset(incomingEdge, datasetVertex, atlasLineageOnDemandContext, ret)) {
+                        continue;
+                    }
+
                     boolean isTimedOut = timeoutTracker.hasTimedOut();
                     if (isTimedOut) {
                         handleHorizontalAndVerticalPagination(incomingEdge, !isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, visitedVertices, isTimedOut);
@@ -390,10 +395,6 @@ public class EntityLineageService implements AtlasLineageService {
 
                     AtlasVertex processVertex = incomingEdge.getOutVertex();
                     if (!vertexMatchesEvaluation(processVertex, atlasLineageOnDemandContext) || !edgeMatchesEvaluation(incomingEdge, atlasLineageOnDemandContext)) {
-                        continue;
-                    }
-
-                    if (checkForOffset(incomingEdge, datasetVertex, atlasLineageOnDemandContext, ret)) {
                         continue;
                     }
 
@@ -417,6 +418,11 @@ public class EntityLineageService implements AtlasLineageService {
 
                     while (outgoingEdges.hasNext()) {
                         AtlasEdge outgoingEdge = outgoingEdges.next();
+
+                        if (checkForOffset(outgoingEdge, processVertex, atlasLineageOnDemandContext, ret)) {
+                            continue;
+                        }
+
                         isTimedOut = timeoutTracker.hasTimedOut();
                         if (isTimedOut) {
                             handleHorizontalAndVerticalPagination(incomingEdge, !isInput, atlasLineageOnDemandContext, ret, depth, entitiesTraversed, visitedVertices, isTimedOut);
@@ -426,10 +432,6 @@ public class EntityLineageService implements AtlasLineageService {
 
                         AtlasVertex entityVertex = outgoingEdge.getInVertex();
                         if (!vertexMatchesEvaluation(entityVertex, atlasLineageOnDemandContext) || !edgeMatchesEvaluation(outgoingEdge, atlasLineageOnDemandContext)) {
-                            continue;
-                        }
-
-                        if (checkForOffset(outgoingEdge, processVertex, atlasLineageOnDemandContext, ret)) {
                             continue;
                         }
 
