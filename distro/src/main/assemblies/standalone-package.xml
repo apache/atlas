@@ -201,7 +201,7 @@
             <includes>
                 <include>README</include>
                 <include>*.py</include>
-                <include>atlas-log4j.xml</include>
+                <include>atlas-logback.xml</include>
                 <include>atlas-migration-*.jar</include>
                 <include>migrationContext.xml</include>
             </includes>

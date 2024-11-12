@@ -156,19 +156,9 @@
                                             <version>${jackson.databind.version}</version>
                                         </artifactItem>
                                         <artifactItem>
-                                            <groupId>log4j</groupId>
-                                            <artifactId>log4j</artifactId>
-                                            <version>${log4j.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.apache.logging.log4j</groupId>
-                                            <artifactId>log4j-core</artifactId>
-                                            <version>${log4j2.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.apache.logging.log4j</groupId>
-                                            <artifactId>log4j-api</artifactId>
-                                            <version>${log4j2.version}</version>
+                                            <groupId>ch.qos.logback</groupId>
+                                            <artifactId>logback-classic</artifactId>
+                                            <version>${logback.version}</version>
                                         </artifactItem>
                                         <artifactItem>
                                             <groupId>org.slf4j</groupId>

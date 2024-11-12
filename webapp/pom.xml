@@ -33,7 +33,7 @@
 
     <properties>
         <debug.jetty.daemon>true</debug.jetty.daemon>
-        <log4j.configuration.url>file:///${project.build.directory}/../../distro/src/conf/atlas-log4j.xml</log4j.configuration.url>
+        <logback.configurationFile>file:///${project.build.directory}/../../distro/src/conf/atlas-logback.xml</logback.configurationFile>
         <projectBaseDir>${project.basedir}/..</projectBaseDir>
     </properties>
 
@@ -86,7 +86,7 @@
                 </os>
             </activation>
             <properties>
-                <log4j.configuration.url>file:/${project.build.directory}/../../distro/src/conf/atlas-log4j.xml</log4j.configuration.url>
+                <logback.configurationFile>file:/${project.build.directory}/../../distro/src/conf/atlas-logback.xml</logback.configurationFile>
             </properties>
         </profile>
 
@@ -527,22 +527,19 @@
         </dependency>
 
         <dependency>
-          <groupId>org.apache.logging.log4j</groupId>
-          <artifactId>log4j-core</artifactId>
-          <version>${log4j2.version}</version>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
         </dependency>
 
         <dependency>
-          <groupId>org.apache.logging.log4j</groupId>
-          <artifactId>log4j-web</artifactId>
-          <version>${log4j2.version}</version>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
         </dependency>
 
-       <dependency>
-         <groupId>org.apache.logging.log4j</groupId>
-         <artifactId>log4j-api</artifactId>
-         <version>${log4j2.version}</version>
-       </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+        </dependency>
 
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -752,8 +749,8 @@
                             <value>application.log</value>
                         </systemProperty>
                         <systemProperty>
-                            <name>log4j.configuration</name>
-                            <value>${log4j.configuration.url}</value>
+                            <name>logback.configurationFile</name>
+                            <value>${logback.configurationFile}</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.graphdb.backend</name>
