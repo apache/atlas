@@ -81,7 +81,7 @@ import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.
 @Service
 public class EntityLineageService implements AtlasLineageService {
     private static final Logger LOG = LoggerFactory.getLogger(EntityLineageService.class);
-    private static final long LINEAGE_TRAVERSAL_TIMEOUT_MILLIS = 4;
+    private static final long LINEAGE_TRAVERSAL_TIMEOUT_MILLIS = 4000;
     private static final String PROCESS_INPUTS_EDGE = "__Process.inputs";
     private static final String PROCESS_OUTPUTS_EDGE = "__Process.outputs";
     private static final String COLUMNS = "columns";
