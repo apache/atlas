@@ -43,13 +43,11 @@ public class BusinessPolicyREST {
 
     /**
      * Links a business policy to entities.
-     *
-     * @param policyGuid the ID of the policy to be linked
      * @param request    the request containing the GUIDs of the assets to link the policy to
      * @throws AtlasBaseException if there is an error during the linking process
      */
     @POST
-    @Path("/{policyId}/link-business-policy")
+    @Path("/link-business-policy")
     @Timed
     public void linkBusinessPolicy(final LinkBusinessPolicyRequest request) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkBusinessPolicy");

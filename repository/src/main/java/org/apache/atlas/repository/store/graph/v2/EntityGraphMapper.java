@@ -4804,9 +4804,7 @@ public class EntityGraphMapper {
     private Optional<AtlasVertex> updateAssetPolicies(AtlasVertex vertex, Set<String> currentPolicies, Set<String> policiesToAdd) {
         Set<String> existingPolicies = new HashSet<>(currentPolicies);
         Set<String> updatedPolicies = new HashSet<>(currentPolicies);
-        updatedPolicies.addAll(policiesToAdd);
-
-        vertex.setProperty(ASSET_POLICY_GUIDS, updatedPolicies);
+        updatedPolicies.forEach(policyGuid -> vertex.setProperty(ASSET_POLICY_GUIDS, updatedPolicies));
         vertex.setProperty(ASSET_POLICIES_COUNT, updatedPolicies.size());
         updateModificationMetadata(vertex);
 
