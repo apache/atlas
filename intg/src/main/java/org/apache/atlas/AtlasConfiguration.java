@@ -94,7 +94,8 @@ public enum AtlasConfiguration {
     GRAPH_TRAVERSAL_PARALLELISM("atlas.graph.traverse.bucket.size",10),
     LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", true),
     LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT("atlas.lineage.on.demand.default.node.count", 3),
-    LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 1000),
+    LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 100),
+    LINEAGE_TIMEOUT_MS("atlas.lineage.max.timeout.ms", 15000),
 
     SUPPORTED_RELATIONSHIP_EVENTS("atlas.notification.relationships.filter", "asset_readme,asset_links"),
 
@@ -113,7 +114,6 @@ public enum AtlasConfiguration {
     HERACLES_API_SERVER_URL("atlas.heracles.api.service.url", "http://heracles-service.heracles.svc.cluster.local"),
 
     INDEXSEARCH_ASYNC_SEARCH_KEEP_ALIVE_TIME_IN_SECONDS("atlas.indexsearch.async.search.keep.alive.time.in.seconds", 300),
-    ENABLE_ASYNC_INDEXSEARCH("atlas.indexsearch.async.enable", true),
     ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT("atlas.indexsearch.query.size.max.limit", 100000),
     ATLAS_INDEXSEARCH_LIMIT_UTM_TAGS("atlas.indexsearch.limit.ignore.utm.tags", ""),
     ATLAS_INDEXSEARCH_ENABLE_API_LIMIT("atlas.indexsearch.enable.api.limit", false),
