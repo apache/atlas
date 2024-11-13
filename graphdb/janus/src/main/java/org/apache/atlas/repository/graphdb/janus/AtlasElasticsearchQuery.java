@@ -207,6 +207,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 if (response ==  null) {
                     // Rather than null (if the response is null wil help returning @204 HTTP_NO_CONTENT to the user)
                     // return timeout exception to user
+                    LOG.error("query timeout exceeded {}:", searchParams.getQuery());
                     throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED_DUE_TO_TIMEOUT, KeepAliveTime);
                 }
                 result = getResultFromResponse(response.getFullResponse(), true);
