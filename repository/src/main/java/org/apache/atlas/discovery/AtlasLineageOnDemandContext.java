@@ -23,6 +23,7 @@ public class AtlasLineageOnDemandContext {
     private Set<String>                             attributes;
     private Set<String>                             relationAttributes;
     private LineageOnDemandBaseParams               defaultParams;
+    private TimeoutChecker                          timeoutChecker;
 
     public AtlasLineageOnDemandContext(LineageOnDemandRequest lineageOnDemandRequest, AtlasTypeRegistry typeRegistry) {
         this.constraints        = lineageOnDemandRequest.getConstraints();
@@ -79,6 +80,14 @@ public class AtlasLineageOnDemandContext {
 
     public void setDefaultParams(LineageOnDemandBaseParams defaultParams) {
         this.defaultParams = defaultParams;
+    }
+
+    public TimeoutChecker getTimeoutChecker() {
+        return timeoutChecker;
+    }
+
+    public void setTimeoutChecker(TimeoutChecker timeoutChecker) {
+        this.timeoutChecker = timeoutChecker;
     }
 
     protected Predicate constructInMemoryPredicate(AtlasTypeRegistry typeRegistry, SearchParameters.FilterCriteria filterCriteria) {
