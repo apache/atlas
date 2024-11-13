@@ -132,7 +132,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         DirectIndexQueryResult result = null;
 
         try {
-            if(searchParams.isCallAsync()) {
+            if(searchParams.isCallAsync() || AtlasConfiguration.ENABLE_ASYNC_INDEXSEARCH.getBoolean()) {
                 return performAsyncDirectIndexQuery(searchParams);
             } else{
                 String responseString =  performDirectIndexQuery(searchParams.getQuery(), false);

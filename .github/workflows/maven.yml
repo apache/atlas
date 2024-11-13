@@ -25,7 +25,7 @@ on:
       - beta
       - development
       - master
-      - lineageondemand
+      - dg1908
 
 jobs:
   build:
@@ -64,7 +64,7 @@ jobs:
       - name: Build with Maven
         run: |
           branch_name=${{ steps.get_branch.outputs.branch }} 
-          if [[ $branch_name == 'main' || $branch_name == 'master' || $branch_name == 'lineageondemand' ]]
+          if [[ $branch_name == 'main' || $branch_name == 'master' || $branch_name == 'dg1908' ]]
           then
               echo "build without dashboard"
               chmod +x ./build.sh && ./build.sh build_without_dashboard
@@ -77,7 +77,7 @@ jobs:
         shell: bash
 
       - name: Get version tag
-        run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7`)abcd"
+        run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git refs/heads/${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7`)abcd"
         id: get_version
 
       - name: Set up Buildx 
