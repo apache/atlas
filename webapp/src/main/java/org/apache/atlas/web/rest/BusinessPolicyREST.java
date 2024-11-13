@@ -51,12 +51,18 @@ public class BusinessPolicyREST {
     @POST
     @Path("/{policyId}/link-business-policy")
     @Timed
-    public void linkBusinessPolicy(@PathParam("policyId") final String policyGuid, final LinkBusinessPolicyRequest request) throws AtlasBaseException {
+    public void linkBusinessPolicy(final LinkBusinessPolicyRequest request) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkBusinessPolicy");
+
+        if(Objects.isNull(request) || CollectionUtils.isEmpty(request.getBusinessPolicyGuids()) || CollectionUtils.isEmpty(request.getLinkGuids())){
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, RequestContext.getCurrentUser(), "Policy linking");
+        }
+
         // Ensure the current user is authorized to link policies
         if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
             throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Policy linking");
         }
+
 
         // Set request context parameters
         RequestContext.get().setIncludeClassifications(false);
@@ -67,11 +73,11 @@ public class BusinessPolicyREST {
         try {
             // Start performance tracing if enabled
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BusinessPolicyREST.linkBusinessPolicy(" + policyGuid + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BusinessPolicyREST.linkBusinessPolicy()");
             }
 
             // Link the business policy to the specified entities
-            entitiesStore.linkBusinessPolicy(policyGuid, request.getLinkGuids());
+            entitiesStore.linkBusinessPolicy(request.getBusinessPolicyGuids(), request.getLinkGuids());
         } finally {
             // Log performance metrics
             AtlasPerfTracer.log(perf);

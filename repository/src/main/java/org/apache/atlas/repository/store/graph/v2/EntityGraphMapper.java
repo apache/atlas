@@ -71,6 +71,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -4771,20 +4772,57 @@ public class EntityGraphMapper {
     }
 
 
-    public List<AtlasVertex> linkBusinessPolicy(String policyId, Set<String> linkGuids) {
-        return linkGuids.stream().map(guid -> findByGuid(graph, guid)).filter(Objects::nonNull).filter(ev -> {
-            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
-            return !existingValues.contains(policyId);
-        }).peek(ev -> {
-            Set<String> existingValues = ev.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
-            existingValues.add(policyId);
-            ev.setProperty(ASSET_POLICY_GUIDS, policyId);
-            ev.setProperty(ASSET_POLICIES_COUNT, existingValues.size());
+    public List<AtlasVertex> linkBusinessPolicy(Set<String> policyIds, Set<String> assetGuids) {
+        List<AtlasVertex> updatedVertices = new ArrayList<>();
+        assetGuids.forEach(assetGuid -> processAssetPolicy(assetGuid, policyIds).ifPresent(updatedVertices::add));
+        return updatedVertices;
+    }
 
-            updateModificationMetadata(ev);
+    private Optional<AtlasVertex> processAssetPolicy(String assetGuid, Set<String> newPolicyIds) {
+        if (StringUtils.isEmpty(assetGuid)) {
+            return Optional.empty();
+        }
 
-            cacheDifferentialEntity(ev, existingValues, ev.getMultiValuedSetProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, String.class));
-        }).collect(Collectors.toList());
+        AtlasVertex vertex = findByGuid(graph, assetGuid);
+        if (vertex == null) {
+            LOG.warn("Asset not found with GUID: {}", assetGuid);
+            return Optional.empty();
+        }
+
+        // Get current policies and calculate the difference
+        Set<String> currentPolicies = getVertexPolicies(vertex);
+        Set<String> policiesToAdd = SetUtils.difference(newPolicyIds, currentPolicies);
+
+        if (policiesToAdd.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return updateAssetPolicies(vertex, currentPolicies, policiesToAdd);
+    }
+
+
+    private Optional<AtlasVertex> updateAssetPolicies(AtlasVertex vertex, Set<String> currentPolicies, Set<String> policiesToAdd) {
+        Set<String> existingPolicies = new HashSet<>(currentPolicies);
+        Set<String> updatedPolicies = new HashSet<>(currentPolicies);
+        updatedPolicies.addAll(policiesToAdd);
+
+        vertex.setProperty(ASSET_POLICY_GUIDS, updatedPolicies);
+        vertex.setProperty(ASSET_POLICIES_COUNT, updatedPolicies.size());
+        updateModificationMetadata(vertex);
+
+        // Cache the differential using existing non-compliant policies
+        Set<String> nonCompliantPolicies = vertex.getMultiValuedSetProperty(
+                NON_COMPLIANT_ASSET_POLICY_GUIDS,
+                String.class
+        );
+        cacheDifferentialEntity(vertex, existingPolicies, nonCompliantPolicies);
+
+        return Optional.of(vertex);
+    }
+
+    private Set<String> getVertexPolicies(AtlasVertex vertex) {
+        Set<String> policies = vertex.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
+        return policies != null ? policies : new HashSet<>();
     }
 
 
