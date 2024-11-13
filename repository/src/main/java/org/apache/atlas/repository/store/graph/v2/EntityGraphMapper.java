@@ -4802,10 +4802,10 @@ public class EntityGraphMapper {
 
 
     private Optional<AtlasVertex> updateAssetPolicies(AtlasVertex vertex, Set<String> currentPolicies, Set<String> policiesToAdd) {
-        Set<String> existingPolicies = new HashSet<>(currentPolicies);
-        Set<String> updatedPolicies = new HashSet<>(currentPolicies);
-        updatedPolicies.forEach(policyGuid -> vertex.setProperty(ASSET_POLICY_GUIDS, updatedPolicies));
-        vertex.setProperty(ASSET_POLICIES_COUNT, updatedPolicies.size());
+        Set<String> allPolicies = new HashSet<>(currentPolicies);
+        allPolicies.addAll(policiesToAdd);
+        policiesToAdd.forEach(policyGuid -> vertex.setProperty(ASSET_POLICY_GUIDS, policiesToAdd));
+        vertex.setProperty(ASSET_POLICIES_COUNT, allPolicies.size());
         updateModificationMetadata(vertex);
 
         // Cache the differential using existing non-compliant policies
@@ -4813,7 +4813,8 @@ public class EntityGraphMapper {
                 NON_COMPLIANT_ASSET_POLICY_GUIDS,
                 String.class
         );
-        cacheDifferentialEntity(vertex, existingPolicies, nonCompliantPolicies);
+
+        cacheDifferentialEntityLinking(vertex, allPolicies, nonCompliantPolicies);
 
         return Optional.of(vertex);
     }
@@ -5006,6 +5007,16 @@ public class EntityGraphMapper {
         setEntityCommonAttributes(ev, diffEntity);
         diffEntity.setAttribute(ASSET_POLICY_GUIDS, complaint);
         diffEntity.setAttribute(NON_COMPLIANT_ASSET_POLICY_GUIDS, nonComplaint);
+        diffEntity.setAttribute(ASSET_POLICIES_COUNT, complaint.size() + nonComplaint.size());
+
+        RequestContext requestContext = RequestContext.get();
+        requestContext.cacheDifferentialEntity(diffEntity);
+    }
+
+    private void cacheDifferentialEntityLinking(AtlasVertex ev, Set<String> complaint, Set<String> nonComplaint) {
+        AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+        setEntityCommonAttributes(ev, diffEntity);
+        diffEntity.setAttribute(ASSET_POLICY_GUIDS, complaint);
         diffEntity.setAttribute(ASSET_POLICIES_COUNT, complaint.size() + nonComplaint.size());
 
         RequestContext requestContext = RequestContext.get();
