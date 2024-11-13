@@ -184,6 +184,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 // then we need to delete the previous search context async
                     processRequestWithSameSearchContextId(searchParams);
             }
+
+            String KeepAliveTime = AtlasConfiguration.INDEXSEARCH_ASYNC_SEARCH_KEEP_ALIVE_TIME_IN_SECONDS.getLong() +"s";
+            if (searchParams.getRequestTimeoutInSecs() !=  null) {
+                KeepAliveTime = searchParams.getRequestTimeoutInSecs() +"s";
+            }
             AsyncQueryResult response = submitAsyncSearch(searchParams, false).get();
             if(response.isRunning()) {
                 /*
@@ -200,8 +205,9 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 }
                 response = getAsyncSearchResponse(searchParams, esSearchId).get();
                 if (response ==  null) {
-                    // Return null, if the response is null wil help returning @204 HTTP_NO_CONTENT to the user
-                    return null;
+                    // Rather than null (if the response is null wil help returning @204 HTTP_NO_CONTENT to the user)
+                    // return timeout exception to user
+                    throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED_DUE_TO_TIMEOUT, KeepAliveTime);
                 }
                 result = getResultFromResponse(response.getFullResponse(), true);
             } else {
