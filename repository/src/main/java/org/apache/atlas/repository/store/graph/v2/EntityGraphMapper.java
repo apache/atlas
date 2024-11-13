@@ -877,6 +877,7 @@ public class EntityGraphMapper {
         }
 
         if (MapUtils.isNotEmpty(updatedBusinessAttributes)) {
+            updateModificationMetadata(entityVertex);
             entityChangeNotifier.onBusinessAttributesUpdated(AtlasGraphUtilsV2.getIdFromVertex(entityVertex), updatedBusinessAttributes);
         }
 
