@@ -176,7 +176,6 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
     private DirectIndexQueryResult performAsyncDirectIndexQuery(SearchParams searchParams) throws AtlasBaseException, IOException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("performAsyncDirectIndexQuery");
-        AtlasPerfMetrics.MetricRecorder metricSearchTimeout = RequestContext.get().startMetricRecord("asyncDirectIndexQueryTimeout");
         DirectIndexQueryResult result = null;
         boolean contextIdExists = StringUtils.isNotEmpty(searchParams.getSearchContextId()) && searchParams.getSearchContextSequenceNo() != null;
         try {
@@ -209,7 +208,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                     // Rather than null (if the response is null wil help returning @204 HTTP_NO_CONTENT to the user)
                     // return timeout exception to user
                     LOG.error("timeout exceeded for query {}:", searchParams.getQuery());
-                    RequestContext.get().endMetricRecord(metricSearchTimeout);
+                    RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("elasticQueryTimeout"));
                     throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED_DUE_TO_TIMEOUT, KeepAliveTime);
                 }
                 result = getResultFromResponse(response.getFullResponse(), true);
