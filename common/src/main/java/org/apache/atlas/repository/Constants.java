@@ -358,7 +358,25 @@ public final class Constants {
     public static final String TASK_ENTITY_GUID             = encodePropertyKey(TASK_PREFIX + "entityGuid");
     public static final String TASK_CLASSIFICATION_TYPENAME = encodePropertyKey(TASK_PREFIX + "classificationTypeName");
     public static final String ACTIVE_STATE_VALUE           = "ACTIVE";
-
+    public static final String TASK_HEADER_ATLAN_AGENT      = "x-atlan-agent";
+    public static final String TASK_HEADER_ATLAN_AGENT_ID   = "x-atlan-agent-id";
+    public static final String TASK_HEADER_ATLAN_PKG_NAME   = "x-atlan-package-name";
+    public static final String TASK_HEADER_ATLAN_AGENT_WORKFLOW_ID = "x-atlan-agent-workflow-id";
+    public static final String TASK_HEADER_ATLAN_VIA_UI            = "x-atlan-via-ui";
+    public static final String TASK_HEADER_ATLAN_REQUEST_ID        = "x-atlan-request-id";
+    public static final String TASK_HEADER_ATLAN_GOOGLE_SHEETS_ID  = "x-atlan-google-sheets-id";
+    public static final String TASK_HEADER_ATLAN_MS_EXCEL_ID       = "x-atlan-microsoft-excel-id";
+    public static final Set<String> TASK_HEADER_SET = new HashSet<String>() {{
+        add(TASK_HEADER_ATLAN_AGENT);
+        add(TASK_HEADER_ATLAN_AGENT_ID);
+        add(TASK_HEADER_ATLAN_VIA_UI);
+        add(TASK_HEADER_ATLAN_PKG_NAME);
+        add(TASK_HEADER_ATLAN_AGENT_WORKFLOW_ID);
+        add(TASK_HEADER_ATLAN_REQUEST_ID);
+        add(TASK_HEADER_ATLAN_GOOGLE_SHEETS_ID);
+        add(TASK_HEADER_ATLAN_MS_EXCEL_ID);
+    }};
+    
     /**
      * Index Recovery vertex property keys.
      */
