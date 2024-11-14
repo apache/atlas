@@ -4802,19 +4802,25 @@ public class EntityGraphMapper {
 
 
     private Optional<AtlasVertex> updateAssetPolicies(AtlasVertex vertex, Set<String> currentPolicies, Set<String> policiesToAdd) {
-        Set<String> allPolicies = new HashSet<>(currentPolicies);
-        allPolicies.addAll(policiesToAdd);
-        policiesToAdd.forEach(policyGuid -> vertex.setProperty(ASSET_POLICY_GUIDS, policiesToAdd));
-        vertex.setProperty(ASSET_POLICIES_COUNT, allPolicies.size());
+        Set<String> allGoverned = new HashSet<>(currentPolicies);
+        allGoverned.addAll(policiesToAdd);
+        policiesToAdd.forEach(policyGuid -> vertex.setProperty(ASSET_POLICY_GUIDS, policyGuid));
+        vertex.setProperty(ASSET_POLICIES_COUNT, allGoverned.size());
         updateModificationMetadata(vertex);
 
         // Cache the differential using existing non-compliant policies
-        Set<String> nonCompliantPolicies = vertex.getMultiValuedSetProperty(
+        Set<String> nonCompliant = vertex.getMultiValuedSetProperty(
                 NON_COMPLIANT_ASSET_POLICY_GUIDS,
                 String.class
         );
 
-        cacheDifferentialEntityLinking(vertex, allPolicies, nonCompliantPolicies);
+        AtlasEntity diffEntity = new AtlasEntity(vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+        setEntityCommonAttributes(vertex, diffEntity);
+        diffEntity.setAttribute(ASSET_POLICY_GUIDS, allGoverned);
+        diffEntity.setAttribute(ASSET_POLICIES_COUNT, allGoverned.size() + nonCompliant.size());
+
+        RequestContext requestContext = RequestContext.get();
+        requestContext.cacheDifferentialEntity(diffEntity);
 
         return Optional.of(vertex);
     }
@@ -5007,16 +5013,6 @@ public class EntityGraphMapper {
         setEntityCommonAttributes(ev, diffEntity);
         diffEntity.setAttribute(ASSET_POLICY_GUIDS, complaint);
         diffEntity.setAttribute(NON_COMPLIANT_ASSET_POLICY_GUIDS, nonComplaint);
-        diffEntity.setAttribute(ASSET_POLICIES_COUNT, complaint.size() + nonComplaint.size());
-
-        RequestContext requestContext = RequestContext.get();
-        requestContext.cacheDifferentialEntity(diffEntity);
-    }
-
-    private void cacheDifferentialEntityLinking(AtlasVertex ev, Set<String> complaint, Set<String> nonComplaint) {
-        AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
-        setEntityCommonAttributes(ev, diffEntity);
-        diffEntity.setAttribute(ASSET_POLICY_GUIDS, complaint);
         diffEntity.setAttribute(ASSET_POLICIES_COUNT, complaint.size() + nonComplaint.size());
 
         RequestContext requestContext = RequestContext.get();
