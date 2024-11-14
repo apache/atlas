@@ -132,7 +132,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         DirectIndexQueryResult result = null;
 
         try {
-            if(searchParams.isCallAsync()) {
+            if(searchParams.isCallAsync() || AtlasConfiguration.ENABLE_ASYNC_INDEXSEARCH.getBoolean()) {
                 return performAsyncDirectIndexQuery(searchParams);
             } else{
                 String responseString =  performDirectIndexQuery(searchParams.getQuery(), false);
@@ -176,6 +176,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
     private DirectIndexQueryResult performAsyncDirectIndexQuery(SearchParams searchParams) throws AtlasBaseException, IOException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("performAsyncDirectIndexQuery");
+        AtlasPerfMetrics.MetricRecorder metricSearchTimeout = RequestContext.get().startMetricRecord("asyncDirectIndexQueryTimeout");
         DirectIndexQueryResult result = null;
         boolean contextIdExists = StringUtils.isNotEmpty(searchParams.getSearchContextId()) && searchParams.getSearchContextSequenceNo() != null;
         try {
@@ -184,7 +185,12 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 // then we need to delete the previous search context async
                     processRequestWithSameSearchContextId(searchParams);
             }
-            AsyncQueryResult response = submitAsyncSearch(searchParams, false).get();
+
+            String KeepAliveTime = AtlasConfiguration.INDEXSEARCH_ASYNC_SEARCH_KEEP_ALIVE_TIME_IN_SECONDS.getLong() +"s";
+            if (searchParams.getRequestTimeoutInSecs() !=  null) {
+                KeepAliveTime = searchParams.getRequestTimeoutInSecs() +"s";
+            }
+            AsyncQueryResult response = submitAsyncSearch(searchParams, KeepAliveTime, false).get();
             if(response.isRunning()) {
                 /*
                     * If the response is still running, then we need to wait for the response
@@ -200,8 +206,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 }
                 response = getAsyncSearchResponse(searchParams, esSearchId).get();
                 if (response ==  null) {
-                    // Return null, if the response is null wil help returning @204 HTTP_NO_CONTENT to the user
-                    return null;
+                    // Rather than null (if the response is null wil help returning @204 HTTP_NO_CONTENT to the user)
+                    // return timeout exception to user
+                    LOG.error("timeout exceeded for query {}:", searchParams.getQuery());
+                    RequestContext.get().endMetricRecord(metricSearchTimeout);
+                    throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED_DUE_TO_TIMEOUT, KeepAliveTime);
                 }
                 result = getResultFromResponse(response.getFullResponse(), true);
             } else {
@@ -349,14 +358,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         lowLevelRestClient.performRequestAsync(request, responseListener);
     }
 
-    private Future<AsyncQueryResult> submitAsyncSearch(SearchParams searchParams, boolean source) {
+    private Future<AsyncQueryResult> submitAsyncSearch(SearchParams searchParams, String KeepAliveTime, boolean source) {
         CompletableFuture<AsyncQueryResult> future = new CompletableFuture<>();
         HttpEntity entity = new NStringEntity(searchParams.getQuery(), ContentType.APPLICATION_JSON);
         String endPoint;
-        String KeepAliveTime = AtlasConfiguration.INDEXSEARCH_ASYNC_SEARCH_KEEP_ALIVE_TIME_IN_SECONDS.getLong() +"s";
-        if (searchParams.getRequestTimeoutInSecs() !=  null) {
-            KeepAliveTime = searchParams.getRequestTimeoutInSecs() +"s";
-        }
 
         if (source) {
             endPoint = index + "/_async_search";
