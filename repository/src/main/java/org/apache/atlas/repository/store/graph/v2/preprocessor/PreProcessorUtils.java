@@ -70,6 +70,7 @@ public class PreProcessorUtils {
     public static final String INPUT_PORT_GUIDS_ATTR = "daapInputPortGuids";
     public static final String DAAP_STATUS_ATTR = "daapStatus";
     public static final String DAAP_ARCHIVED_STATUS = "Archived";
+    public static final String DAAP_ASSET_DSL_ATTR = "dataProductAssetsDSL";
 
     //Migration Constants
     public static final String MIGRATION_TYPE_PREFIX = "MIGRATION:";

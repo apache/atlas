@@ -83,6 +83,10 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         entity.removeAttribute(OUTPUT_PORT_GUIDS_ATTR);
         entity.removeAttribute(INPUT_PORT_GUIDS_ATTR);
 
+        if(!entity.hasAttribute(DAAP_ASSET_DSL_ATTR) && entity.getAttribute(DAAP_ASSET_DSL_ATTR) == null){
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProductAssetDSL attribute is mandatory for DataProduct creation");
+        }
+
         if (parentDomainObject == null) {
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot create a Product without a Domain Relationship");
         } else {
