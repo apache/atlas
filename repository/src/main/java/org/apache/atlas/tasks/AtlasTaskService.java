@@ -18,6 +18,7 @@ import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -225,6 +226,7 @@ public class AtlasTaskService implements TaskService {
     @Override
     public AtlasVertex createTaskVertex(AtlasTask task) {
         AtlasVertex ret = graph.addVertex();
+        Map<String, String> requestContextHeaders = RequestContext.get().getRequestContextHeaders();
 
         setEncodedProperty(ret, Constants.TASK_GUID, task.getGuid());
         setEncodedProperty(ret, Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME);
@@ -252,6 +254,16 @@ public class AtlasTaskService implements TaskService {
 
         if (task.getEndTime() != null) {
             setEncodedProperty(ret, Constants.TASK_END_TIME, task.getEndTime().getTime());
+        }
+
+        if (MapUtils.isNotEmpty(requestContextHeaders)) {
+            for (Map.Entry<String, String> entry : requestContextHeaders.entrySet()) {
+                String key = entry.getKey().toLowerCase().trim();
+                if (Constants.TASK_HEADER_SET.contains(key)) {
+                    String val = entry.getValue();
+                    setEncodedProperty(ret, key, val);
+                }
+            }
         }
 
         setEncodedProperty(ret, Constants.TASK_PARAMETERS, AtlasJson.toJson(task.getParameters()));
