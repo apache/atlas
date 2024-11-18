@@ -340,12 +340,10 @@ public class PolicyRefresher extends Thread {
 				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry(), auditRepository);
 				if (lastUpdatedTiemInMillis == -1) {
 					svcPolicies = transformer.getPoliciesAll(serviceName,
-							restUtils.getPluginId(serviceName, plugIn.getAppId()),
-							lastUpdatedTiemInMillis, null);
+							restUtils.getPluginId(serviceName, plugIn.getAppId()), lastUpdatedTiemInMillis);
 				} else if (this.enableDeltaBasedRefresh) {
 					svcPolicies = transformer.getPoliciesDelta(serviceName,
-							restUtils.getPluginId(serviceName, plugIn.getAppId()),
-							lastUpdatedTiemInMillis);
+							restUtils.getPluginId(serviceName, plugIn.getAppId()), lastUpdatedTiemInMillis);
 				} else {
 					svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis);
 				}
