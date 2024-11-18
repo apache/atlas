@@ -86,7 +86,7 @@ public class AtlasElasticsearchDatabase {
                     try {
                         List<HttpHost> httpHosts = getHttpHosts();
 
-                        RestClientBuilder builder = RestClient.builder(httpHosts.get(0));
+                        RestClientBuilder builder = RestClient.builder(httpHosts.toArray(new HttpHost[0]));
                         builder.setHttpClientConfigCallback(httpAsyncClientBuilder -> httpAsyncClientBuilder.setKeepAliveStrategy(((httpResponse, httpContext) -> 3600000)));
                         builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
                                 .setConnectTimeout(AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
