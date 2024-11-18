@@ -29,6 +29,7 @@ import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.plugin.model.RangerPolicyDelta;
 import org.apache.atlas.plugin.util.ServicePolicies;
 import org.apache.atlas.plugin.model.RangerPolicy;
@@ -561,13 +562,13 @@ public class CachePolicyTransformerImpl {
             return null;
         }
 
-        List<HashMap<String, Object>> conditions = (List<HashMap<String, Object>>) atlasPolicy.getAttribute("policyConditions");
+        List<AtlasStruct> conditions = (List<AtlasStruct>) atlasPolicy.getAttribute("policyConditions");
 
-        for (HashMap<String, Object> condition : conditions) {
+        for (AtlasStruct condition : conditions) {
             RangerPolicyItemCondition rangerCondition = new RangerPolicyItemCondition();
 
-            rangerCondition.setType((String) condition.get("policyConditionType"));
-            rangerCondition.setValues((List<String>) condition.get("policyConditionValues"));
+            rangerCondition.setType((String) condition.getAttribute("policyConditionType"));
+            rangerCondition.setValues((List<String>) condition.getAttribute("policyConditionValues"));
 
             ret.add(rangerCondition);
         }
