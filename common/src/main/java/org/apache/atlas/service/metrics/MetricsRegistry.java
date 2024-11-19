@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface MetricsRegistry {
 
-    void collect(String requestId, String requestUri, AtlasPerfMetrics metrics);
+    void collect(String requestId, String requestUri, AtlasPerfMetrics metrics, String clientOrigin);
 
     void collectApplicationMetrics(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics);
 
