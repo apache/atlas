@@ -861,7 +861,8 @@
         <module>addons/impala-bridge-shim</module>
         <module>addons/impala-bridge</module>
         <module>addons/couchbase-bridge</module>
-
+        <module>addons/flink-bridge</module>
+        <module>addons/flink-bridge-shim</module>
         <module>distro</module>
         <module>atlas-examples</module>
     </modules>
