@@ -90,7 +90,6 @@ public class AuditFilter implements Filter {
         final Set<String>         userGroups         = AtlasAuthorizationUtils.getCurrentUserGroups();
         final String              deleteType         = httpRequest.getParameter("deleteType");
         final boolean             skipFailedEntities = Boolean.parseBoolean(httpRequest.getParameter("skipFailedEntities"));
-        final String              clientOrigin       = httpRequest.getHeader("X-Atlan-Client-Origin");
 
         try {
             currentThread.setName(formatName(oldName, internalRequestId));
