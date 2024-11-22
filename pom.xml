@@ -800,6 +800,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <projectBaseDir>${project.basedir}</projectBaseDir>
+        <protobuf-java.version>3.25.5</protobuf-java.version>
         <skipCheck>false</skipCheck>
         <skipDocs>true</skipDocs>
         <skipEnunciate>false</skipEnunciate>
@@ -1735,6 +1736,12 @@
                 <groupId>com.squareup.okio</groupId>
                 <artifactId>okio</artifactId>
                 <version>${okio.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>com.google.protobuf</groupId>
+                <artifactId>protobuf-java</artifactId>
+                <version>${protobuf-java.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
