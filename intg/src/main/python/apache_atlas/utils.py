@@ -54,7 +54,7 @@ def attributes_to_params(attributes, query_params=None):
         query_params = {}
 
     if attributes:
-        for key, value in attributes:
+        for key, value in attributes.items():
             new_key = PREFIX_ATTR + key
             query_params[new_key] = value
 

@@ -233,7 +233,7 @@ class AtlasClassifications(Plist):
     def type_coerce_attrs(self):
         super(AtlasClassifications, self).type_coerce_attrs()
 
-        Plist.list = type_coerce_list(Plist.list, AtlasClassification)
+        self.list = type_coerce_list(self.list, AtlasClassification)
 
 
 class AtlasEntityHeaders(AtlasBase):

@@ -66,6 +66,11 @@ class EntityExample:
 
         LOG.info("Entity(guid=%s): typeName=%s, attr.name=%s", guid, entity.entity.typeName, entity.entity.attributes['name'])
 
+    def get_entity_classifications_by_guid(self, guid):
+        classifications = self.client.entity.get_classifications(guid)
+
+        LOG.info("Entity(guid=%s): classifications=%s", guid, classifications)
+
     def remove_entities(self):
         entity_list = [ self.entity_process.guid, self.entity_table_us.guid, self.entity_table_canada.guid, self.entity_db.guid ]
 
