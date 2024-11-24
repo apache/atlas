@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
   ~ Licensed to the Apache Software Foundation (ASF) under one
   ~ or more contributor license agreements.  See the NOTICE file
@@ -17,19 +16,20 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
-
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>org.apache.atlas</groupId>
         <artifactId>apache-atlas</artifactId>
         <version>2.4.0-SNAPSHOT</version>
     </parent>
+
     <artifactId>atlas-webapp</artifactId>
-    <description>Apache Atlas Web Application</description>
-    <name>Apache Atlas Web Application</name>
     <packaging>war</packaging>
+
+    <name>Apache Atlas Web Application</name>
+    <description>Apache Atlas Web Application</description>
 
     <properties>
         <debug.jetty.daemon>true</debug.jetty.daemon>
@@ -37,65 +37,146 @@
         <projectBaseDir>${project.basedir}/..</projectBaseDir>
     </properties>
 
-    <profiles>
-        <profile>
-            <id>dist</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <packages.to.exclude>${distro.exclude.packages}</packages.to.exclude>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>berkeley-elasticsearch</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <packages.to.exclude>WEB-INF/lib/je-*.jar,WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>cassandra-elasticsearch</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <packages.to.exclude>WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>berkeley-solr</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <properties>
-                <packages.to.exclude>WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
-            </properties>
-        </profile>
-
-        <profile>
-            <id>Windows</id>
-            <activation>
-                <os>
-                    <family>windows</family>
-                </os>
-            </activation>
-            <properties>
-                <logback.configurationFile>file:/${project.build.directory}/../../distro/src/conf/atlas-logback.xml</logback.configurationFile>
-            </properties>
-        </profile>
-
-    </profiles>
-
     <dependencies>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-core</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.nimbusds</groupId>
+            <artifactId>nimbus-jose-jwt</artifactId>
+            <version>9.37.3</version>
+            <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcprov-jdk15on</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-client</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-server</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.sun.jersey</groupId>
+            <artifactId>jersey-servlet</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.sun.jersey.contribs</groupId>
+            <artifactId>jersey-multipart</artifactId>
+        </dependency>
+
+        <!-- Jersey + Spring -->
+        <dependency>
+            <groupId>com.sun.jersey.contribs</groupId>
+            <artifactId>jersey-spring</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.webcohesion.enunciate</groupId>
+            <artifactId>enunciate-core-annotations</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-cli</groupId>
+            <artifactId>commons-cli</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-configuration</groupId>
+            <artifactId>commons-configuration</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>javax.servlet</groupId>
+            <artifactId>javax.servlet-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>javax.servlet.jsp</groupId>
+            <artifactId>jsp-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>joda-time</groupId>
+            <artifactId>joda-time</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>net.java.dev.jna</groupId>
+            <artifactId>jna</artifactId>
+            <version>5.2.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-authorization</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-client-v1</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-client-v2</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-common</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-dashboardv2</artifactId>
+            <type>war</type>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-dashboardv3</artifactId>
+            <type>war</type>
+        </dependency>
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-graphdb-impls</artifactId>
+            <type>pom</type>
             <exclusions>
                 <exclusion>
                     <groupId>io.netty</groupId>
@@ -106,12 +187,16 @@
                     <artifactId>svm</artifactId>
                 </exclusion>
             </exclusions>
-            <type>pom</type>
         </dependency>
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-common</artifactId>
+            <artifactId>atlas-intg</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-notification</artifactId>
         </dependency>
 
         <dependency>
@@ -127,79 +212,28 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-client-v1</artifactId>
+            <artifactId>atlas-server-api</artifactId>
         </dependency>
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-client-v2</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-authorization</artifactId>
+            <artifactId>atlas-testtools</artifactId>
             <version>${project.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-notification</artifactId>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-collections4</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-intg</artifactId>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-common</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.eclipse.jetty</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-configuration2</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-text</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-minikdc</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-hdfs</artifactId>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.eclipse.jetty</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-handler</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>netty-transport-native-epoll</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-client</artifactId>
         </dependency>
 
         <!-- Zookeeper, curator -->
@@ -213,16 +247,67 @@
             <artifactId>curator-recipes</artifactId>
         </dependency>
 
+        <!-- AWS library -->
         <dependency>
-            <groupId>org.apache.curator</groupId>
-            <artifactId>curator-client</artifactId>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-aws</artifactId>
+            <version>${hadoop.version}</version>
         </dependency>
 
         <dependency>
-            <groupId>org.apache.zookeeper</groupId>
-            <artifactId>zookeeper</artifactId>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-configuration2</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-text</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
 
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-hdfs</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-handler</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>io.netty</groupId>
+                    <artifactId>netty-transport-native-epoll</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-hdfs-client</artifactId>
+            <version>${hadoop.version}</version>
+        </dependency>
 
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-minikdc</artifactId>
         </dependency>
         <!-- supports simple auth handler -->
         <dependency>
@@ -231,38 +316,19 @@
         </dependency>
 
         <dependency>
-            <groupId>joda-time</groupId>
-            <artifactId>joda-time</artifactId>
-        </dependency>
+            <groupId>org.apache.zookeeper</groupId>
+            <artifactId>zookeeper</artifactId>
 
-        <dependency>
-            <groupId>commons-configuration</groupId>
-            <artifactId>commons-configuration</artifactId>
         </dependency>
-
         <dependency>
-            <groupId>commons-cli</groupId>
-            <artifactId>commons-cli</artifactId>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjrt</artifactId>
+            <version>1.8.9</version>
         </dependency>
-
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-collections4</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.googlecode.json-simple</groupId>
-            <artifactId>json-simple</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>javax.servlet.jsp</groupId>
-            <artifactId>jsp-api</artifactId>
+            <groupId>org.aspectj</groupId>
+            <artifactId>aspectjweaver</artifactId>
+            <version>1.8.9</version>
         </dependency>
 
         <dependency>
@@ -281,28 +347,89 @@
         </dependency>
 
         <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-core</artifactId>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-high-level-client</artifactId>
+            <version>${elasticsearch.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.elasticsearch</groupId>
+                    <artifactId>elasticsearch</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-server</artifactId>
+            <groupId>org.glassfish</groupId>
+            <artifactId>javax.el</artifactId>
         </dependency>
 
+        <!-- Keycloak -->
         <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-client</artifactId>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-spring-security-adapter</artifactId>
+            <version>${keycloak.version}</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.fasterxml.jackson.core</groupId>
+                    <artifactId>jackson-core</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
-
+        <!-- PAM -->
         <dependency>
-            <groupId>com.sun.jersey.contribs</groupId>
-            <artifactId>jersey-multipart</artifactId>
+            <groupId>org.kohsuke</groupId>
+            <artifactId>libpam4j</artifactId>
+            <version>1.11</version>
         </dependency>
 
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-all</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>log4j-over-slf4j</artifactId>
+        </dependency>
+        <!-- Required for Spring configuration processing -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-aop</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-web</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-config</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-core</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-ldap</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.springframework.security</groupId>
+            <artifactId>spring-security-web</artifactId>
         </dependency>
 
         <dependency>
@@ -319,132 +446,16 @@
 
         <dependency>
             <groupId>com.google.inject.extensions</groupId>
-            <artifactId>guice-throwingproviders</artifactId>
-            <version>${guice.version}</version>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>com.google.inject.extensions</groupId>
             <artifactId>guice-multibindings</artifactId>
             <version>${guice.version}</version>
             <scope>test</scope>
         </dependency>
 
         <dependency>
-            <groupId>org.glassfish</groupId>
-            <artifactId>javax.el</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-        </dependency>
-
-        <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-core</artifactId>
-        </dependency>
-
-        <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-web</artifactId>
-        </dependency>
-
-        <dependency>
-                <groupId>org.springframework</groupId>
-                <artifactId>spring-webmvc</artifactId>
-        </dependency>
-
-        <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-core</artifactId>
-        </dependency>
-
-        <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-web</artifactId>
-        </dependency>
-
-        <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-config</artifactId>
-        </dependency>
-
-        <dependency>
-                <groupId>org.springframework.security</groupId>
-                <artifactId>spring-security-ldap</artifactId>
-        </dependency>
-        <dependency>
-                <groupId>javax.servlet</groupId>
-                <artifactId>javax.servlet-api</artifactId>
-        </dependency>
-
-        <!-- Jersey + Spring -->
-        <dependency>
-            <groupId>com.sun.jersey.contribs</groupId>
-            <artifactId>jersey-spring</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>com.sun.jersey</groupId>
-            <artifactId>jersey-servlet</artifactId>
-        </dependency>
-        <!-- Required for Spring configuration processing -->
-        <dependency>
-            <groupId>org.springframework</groupId>
-            <artifactId>spring-aop</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjrt</artifactId>
-            <version>1.8.9</version>
-        </dependency>
-        <dependency>
-            <groupId>org.aspectj</groupId>
-            <artifactId>aspectjweaver</artifactId>
-            <version>1.8.9</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-dashboardv2</artifactId>
-            <type>war</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-dashboardv3</artifactId>
-            <type>war</type>
-        </dependency>
-        <dependency>
-            <groupId>org.easymock</groupId>
-            <artifactId>easymock</artifactId>
-            <version>3.4</version>
+            <groupId>com.google.inject.extensions</groupId>
+            <artifactId>guice-throwingproviders</artifactId>
+            <version>${guice.version}</version>
             <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-intg</artifactId>
-            <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-repository</artifactId>
-            <classifier>tests</classifier>
-            <scope>test</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.elasticsearch.client</groupId>
-            <artifactId>elasticsearch-rest-high-level-client</artifactId>
-            <version>${elasticsearch.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.elasticsearch</groupId>
-                    <artifactId>elasticsearch</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -461,90 +472,23 @@
         </dependency>
 
         <dependency>
-            <groupId>com.nimbusds</groupId>
-            <artifactId>nimbus-jose-jwt</artifactId>
-            <version>9.37.3</version>
-            <scope>compile</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.bouncycastle</groupId>
-                    <artifactId>bcprov-jdk15on</artifactId>
-                </exclusion>
-            </exclusions>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-intg</artifactId>
+            <classifier>tests</classifier>
+            <scope>test</scope>
         </dependency>
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-server-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.webcohesion.enunciate</groupId>
-            <artifactId>enunciate-core-annotations</artifactId>
-        </dependency>
-        <!-- PAM -->
-        <dependency>
-            <groupId>org.kohsuke</groupId>
-            <artifactId>libpam4j</artifactId>
-            <version>1.11</version>
-        </dependency>
-
-        <dependency>
-            <groupId>net.java.dev.jna</groupId>
-            <artifactId>jna</artifactId>
-            <version>5.2.0</version>
+            <artifactId>atlas-repository</artifactId>
+            <classifier>tests</classifier>
+            <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-hdfs-client</artifactId>
-            <version>${hadoop.version}</version>
-        </dependency>
-
-        <!-- AWS library -->
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-aws</artifactId>
-            <version>${hadoop.version}</version>
-        </dependency>
-
-        <!-- Keycloak -->
-        <dependency>
-            <groupId>org.keycloak</groupId>
-            <artifactId>keycloak-spring-security-adapter</artifactId>
-            <version>${keycloak.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>com.fasterxml.jackson.core</groupId>
-                    <artifactId>jackson-core</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-testtools</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>log4j-over-slf4j</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-core</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>com.fasterxml.jackson.core</groupId>
-            <artifactId>jackson-core</artifactId>
-            <version>${jackson.version}</version>
+            <groupId>org.easymock</groupId>
+            <artifactId>easymock</artifactId>
+            <version>3.4</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -582,9 +526,7 @@
                             <addClasspath>true</addClasspath>
                         </manifest>
                     </archive>
-                    <packagingExcludes>
-                        WEB-INF/lib/dom4j-*.jar,${packages.to.exclude}
-                    </packagingExcludes>
+                    <packagingExcludes>WEB-INF/lib/dom4j-*.jar,${packages.to.exclude}</packagingExcludes>
                 </configuration>
             </plugin>
 
@@ -592,22 +534,6 @@
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>keytool-maven-plugin</artifactId>
                 <version>1.5</version>
-                <executions>
-                    <execution>
-                        <id>clean</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>clean</goal>
-                        </goals>
-                    </execution>
-                    <execution>
-                        <id>generateKeyPair</id>
-                        <phase>generate-resources</phase>
-                        <goals>
-                            <goal>generateKeyPair</goal>
-                        </goals>
-                    </execution>
-                </executions>
                 <configuration>
                     <dname>cn=atlas.apache.org</dname>
                     <keystore>${project.build.directory}/atlas.keystore</keystore>
@@ -617,6 +543,22 @@
                     <keyalg>RSA</keyalg>
                     <validity>100000</validity>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>clean</id>
+                        <goals>
+                            <goal>clean</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                    </execution>
+                    <execution>
+                        <id>generateKeyPair</id>
+                        <goals>
+                            <goal>generateKeyPair</goal>
+                        </goals>
+                        <phase>generate-resources</phase>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>
@@ -631,8 +573,7 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir=${project.build.directory}/tmp-hadoop-${user.name}
-                        -Xmx1024m
-                    </argLine>
+                        -Xmx1024m</argLine>
                 </configuration>
                 <executions>
                     <!-- Needed for explicit separation of UTs, SSL/Kerberos/Secure server tests and ITs-->
@@ -646,10 +587,10 @@
                     <!-- Unit tests don't rely of WAR being built and don't interact with real server -->
                     <execution>
                         <id>unit-tests</id>
-                        <phase>test</phase>
                         <goals>
                             <goal>test</goal>
                         </goals>
+                        <phase>test</phase>
                         <configuration>
                             <includes>
                                 <include>**/*Test.java</include>
@@ -669,10 +610,10 @@
                     <!-- Eventually all these server interaction tests need to move to IT phase -->
                     <execution>
                         <id>secure-tests</id>
-                        <phase>pre-integration-test</phase>
                         <goals>
                             <goal>test</goal>
                         </goals>
+                        <phase>pre-integration-test</phase>
                         <configuration>
                             <includes>
                                 <include>**/*SSL*Test.java</include>
@@ -694,14 +635,14 @@
                 <artifactId>maven-antrun-plugin</artifactId>
                 <executions>
                     <execution>
-                        <phase>pre-integration-test</phase>
                         <goals>
                             <goal>run</goal>
                         </goals>
+                        <phase>pre-integration-test</phase>
                         <configuration>
                             <tasks>
-                                <delete dir="${project.build.directory}/data"/>
-                                <delete dir="${project.build.directory}/logs"/>
+                                <delete dir="${project.build.directory}/data" />
+                                <delete dir="${project.build.directory}/logs" />
                             </tasks>
                         </configuration>
                     </execution>
@@ -779,32 +720,32 @@
                 <executions>
                     <execution>
                         <id>start-jetty</id>
-                        <phase>pre-integration-test</phase>
                         <goals>
                             <!-- stop any previous instance to free up the port -->
                             <goal>stop</goal>
                             <goal>deploy-war</goal>
                         </goals>
+                        <phase>pre-integration-test</phase>
                     </execution>
                     <execution>
                         <id>stop-jetty</id>
-                        <phase>post-integration-test</phase>
                         <goals>
                             <goal>stop</goal>
                         </goals>
+                        <phase>post-integration-test</phase>
                     </execution>
                 </executions>
             </plugin>
-           <plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
                     <execution>
                         <id>copy-resources</id>
-                        <phase>validate</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
+                        <phase>validate</phase>
                         <configuration>
                             <outputDirectory>${basedir}/target/models/</outputDirectory>
                             <resources>
@@ -822,10 +763,10 @@
 
                     <execution>
                         <id>copy-solr-resources</id>
-                        <phase>validate</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
+                        <phase>validate</phase>
                         <configuration>
                             <outputDirectory>${project.build.directory}/solr</outputDirectory>
                             <resources>
@@ -842,15 +783,9 @@
                 <groupId>com.webcohesion.enunciate</groupId>
                 <artifactId>enunciate-maven-plugin</artifactId>
                 <version>${enunciate-maven-plugin.version}</version>
-                <!-- to allow target/api/v2/apidocs/ui to be created before building maven-war-plugin)-->
-                <executions>
-                    <execution>
-                        <phase>generate-resources</phase>
-                    </execution>
-                </executions>
                 <configuration>
                     <configFile>${project.parent.basedir}/build-tools/src/main/resources/enunciate.xml</configFile>
-                    <enunciateArtifactId/>
+                    <enunciateArtifactId />
                     <docsDir>${project.build.directory}/api/v2/</docsDir>
                     <source>1.8</source>
                     <target>1.8</target>
@@ -863,9 +798,69 @@
                         <version>1.3</version>
                     </dependency>
                 </dependencies>
+                <!-- to allow target/api/v2/apidocs/ui to be created before building maven-war-plugin)-->
+                <executions>
+                    <execution>
+                        <phase>generate-resources</phase>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
 
+    <profiles>
+        <profile>
+            <id>dist</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <packages.to.exclude>${distro.exclude.packages}</packages.to.exclude>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>berkeley-elasticsearch</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <packages.to.exclude>WEB-INF/lib/je-*.jar,WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>cassandra-elasticsearch</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <packages.to.exclude>WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>berkeley-solr</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <packages.to.exclude>WEB-INF/lib/dom4j-*.jar</packages.to.exclude>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>Windows</id>
+            <activation>
+                <os>
+                    <family>windows</family>
+                </os>
+            </activation>
+            <properties>
+                <logback.configurationFile>file:/${project.build.directory}/../../distro/src/conf/atlas-logback.xml</logback.configurationFile>
+            </properties>
+        </profile>
+
+    </profiles>
 
 </project>

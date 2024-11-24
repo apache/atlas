@@ -1,5 +1,4 @@
 <?xml version="1.0" encoding="UTF-8"?>
-
 <!--
   ~ Licensed to the Apache Software Foundation (ASF) under one
   ~ or more contributor license agreements.  See the NOTICE file
@@ -17,19 +16,20 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
-
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>org.apache.atlas</groupId>
         <artifactId>atlas-graphdb</artifactId>
         <version>2.4.0-SNAPSHOT</version>
     </parent>
+
     <artifactId>atlas-graphdb-api</artifactId>
-    <description>Apache Atlas Graph Datbase API</description>
-    <name>Apache Atlas Graph Database API</name>
     <packaging>jar</packaging>
+
+    <name>Apache Atlas Graph Database API</name>
+    <description>Apache Atlas Graph Datbase API</description>
 
     <dependencies>
         <dependency>
@@ -41,10 +41,10 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
         </dependency>
-
         <dependency>
-            <groupId>org.codehaus.jettison</groupId>
-            <artifactId>jettison</artifactId>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-text</artifactId>
+            <version>${commons-text.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tinkerpop</groupId>
@@ -66,12 +66,11 @@
             <artifactId>gremlin-util</artifactId>
             <version>${tinkerpop.version}</version>
         </dependency>
+
         <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-text</artifactId>
-            <version>${commons-text.version}</version>
+            <groupId>org.codehaus.jettison</groupId>
+            <artifactId>jettison</artifactId>
         </dependency>
     </dependencies>
-
 
 </project>

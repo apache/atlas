@@ -16,89 +16,23 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
-        <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
+        <artifactId>apache-atlas</artifactId>
         <version>2.4.0-SNAPSHOT</version>
         <relativePath>../../</relativePath>
     </parent>
+
     <artifactId>sqoop-bridge</artifactId>
-    <description>Apache Atlas Sqoop Bridge Module</description>
-    <name>Apache Atlas Sqoop Bridge</name>
     <packaging>jar</packaging>
 
+    <name>Apache Atlas Sqoop Bridge</name>
+    <description>Apache Atlas Sqoop Bridge Module</description>
+
     <dependencies>
-        <!-- Logging -->
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hive</groupId>
-            <artifactId>hive-metastore</artifactId>
-            <version>${hive.version}</version>
-            <scope>provided</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.mortbay.jetty</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>com.github.stephenc.findbugs</groupId>
-                    <artifactId>findbugs-annotations</artifactId>
-                </exclusion>
-            </exclusions>
-
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hive</groupId>
-            <artifactId>hive-exec</artifactId>
-            <version>${hive.version}</version>
-            <scope>provided</scope>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hive</groupId>
-            <artifactId>hive-cli</artifactId>
-            <version>${hive.version}</version>
-            <scope>test</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.ws.rs</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.eclipse.jetty.aggregate</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-            </exclusions>
-
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.sqoop</groupId>
-            <artifactId>sqoop</artifactId>
-            <version>${sqoop.version}</version>
-            <scope>compile</scope>
-        </dependency>
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
@@ -116,17 +50,8 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.hive</groupId>
-            <artifactId>hive-common</artifactId>
-            <version>${hive.version}</version>
-        </dependency>
-
-        <!-- to bring up atlas server for integration tests -->
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-webapp</artifactId>
-            <type>war</type>
-            <scope>test</scope>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-annotations</artifactId>
         </dependency>
 
         <dependency>
@@ -145,8 +70,26 @@
         </dependency>
 
         <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-annotations</artifactId>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-common</artifactId>
+            <version>${hive.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.sqoop</groupId>
+            <artifactId>sqoop</artifactId>
+            <version>${sqoop.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <!-- Logging -->
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-log4j12</artifactId>
         </dependency>
 
         <dependency>
@@ -155,9 +98,28 @@
         </dependency>
 
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-server</artifactId>
-            <scope>test</scope>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-exec</artifactId>
+            <version>${hive.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-metastore</artifactId>
+            <version>${hive.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>com.github.stephenc.findbugs</groupId>
+                    <artifactId>findbugs-annotations</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.mortbay.jetty</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+
         </dependency>
 
         <dependency>
@@ -166,123 +128,47 @@
             <type>pom</type>
             <scope>test</scope>
         </dependency>
-    </dependencies>
 
-    <profiles>
-        <profile>
-            <id>dist</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>copy-hook</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>copy</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${project.build.directory}/dependency/hook/sqoop/atlas-sqoop-plugin-impl</outputDirectory>
-                                    <overWriteReleases>false</overWriteReleases>
-                                    <overWriteSnapshots>false</overWriteSnapshots>
-                                    <overWriteIfNewer>true</overWriteIfNewer>
-                                    <artifactItems>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>${project.artifactId}</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>${project.artifactId}</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>hive-bridge</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-client-common</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-client-v1</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-client-v2</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-intg</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-notification</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-common</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.apache.kafka</groupId>
-                                            <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
-                                            <version>${kafka.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.apache.kafka</groupId>
-                                            <artifactId>kafka-clients</artifactId>
-                                            <version>${kafka.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>com.sun.jersey</groupId>
-                                            <artifactId>jersey-json</artifactId>
-                                            <version>${jersey.version}</version>
-                                        </artifactItem>
-                                    </artifactItems>
-                                </configuration>
-                            </execution>
-                            <execution>
-                                <id>copy-hook-shim</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>copy</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${project.build.directory}/dependency/hook/sqoop</outputDirectory>
-                                    <overWriteReleases>false</overWriteReleases>
-                                    <overWriteSnapshots>false</overWriteSnapshots>
-                                    <overWriteIfNewer>true</overWriteIfNewer>
-                                    <artifactItems>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>sqoop-bridge-shim</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-plugin-classloader</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                    </artifactItems>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
+        <!-- to bring up atlas server for integration tests -->
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-webapp</artifactId>
+            <type>war</type>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hive</groupId>
+            <artifactId>hive-cli</artifactId>
+            <version>${hive.version}</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>javax.ws.rs</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.eclipse.jetty.aggregate</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
     <build>
         <plugins>
             <plugin>
@@ -367,22 +253,22 @@
                 <executions>
                     <execution>
                         <id>start-jetty</id>
-                        <phase>pre-integration-test</phase>
                         <goals>
                             <!-- stop any previous instance to free up the port -->
                             <goal>stop</goal>
                             <goal>deploy-war</goal>
                         </goals>
+                        <phase>pre-integration-test</phase>
                         <configuration>
                             <daemon>true</daemon>
                         </configuration>
                     </execution>
                     <execution>
                         <id>stop-jetty</id>
-                        <phase>post-integration-test</phase>
                         <goals>
                             <goal>stop</goal>
                         </goals>
+                        <phase>post-integration-test</phase>
                     </execution>
                 </executions>
             </plugin>
@@ -390,15 +276,19 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
+                <configuration>
+                    <generateProjectInfo>false</generateProjectInfo>
+                    <generateReports>false</generateReports>
+                </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.maven.doxia</groupId>
-                        <artifactId>doxia-module-twiki</artifactId>
+                        <artifactId>doxia-core</artifactId>
                         <version>${doxia.version}</version>
                     </dependency>
                     <dependency>
                         <groupId>org.apache.maven.doxia</groupId>
-                        <artifactId>doxia-core</artifactId>
+                        <artifactId>doxia-module-twiki</artifactId>
                         <version>${doxia.version}</version>
                     </dependency>
                 </dependencies>
@@ -410,10 +300,6 @@
                         <phase>prepare-package</phase>
                     </execution>
                 </executions>
-                <configuration>
-                    <generateProjectInfo>false</generateProjectInfo>
-                    <generateReports>false</generateReports>
-                </configuration>
             </plugin>
 
             <plugin>
@@ -421,8 +307,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.2.1</version>
                 <inherited>false</inherited>
-                <executions>
-                </executions>
+                <executions />
             </plugin>
 
             <plugin>
@@ -431,10 +316,10 @@
                 <executions>
                     <execution>
                         <id>copy-resources</id>
-                        <phase>validate</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
+                        <phase>validate</phase>
                         <configuration>
                             <outputDirectory>${basedir}/target/models</outputDirectory>
                             <resources>
@@ -450,10 +335,10 @@
                     </execution>
                     <execution>
                         <id>copy-solr-resources</id>
-                        <phase>validate</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
+                        <phase>validate</phase>
                         <configuration>
                             <outputDirectory>${project.build.directory}/solr</outputDirectory>
                             <resources>
@@ -468,4 +353,120 @@
 
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>dist</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-hook</id>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/dependency/hook/sqoop/atlas-sqoop-plugin-impl</outputDirectory>
+                                    <overWriteReleases>false</overWriteReleases>
+                                    <overWriteSnapshots>false</overWriteSnapshots>
+                                    <overWriteIfNewer>true</overWriteIfNewer>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>${project.artifactId}</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>${project.artifactId}</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>hive-bridge</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-client-common</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-client-v1</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-client-v2</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-intg</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-notification</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-common</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.kafka</groupId>
+                                            <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
+                                            <version>${kafka.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.kafka</groupId>
+                                            <artifactId>kafka-clients</artifactId>
+                                            <version>${kafka.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.sun.jersey</groupId>
+                                            <artifactId>jersey-json</artifactId>
+                                            <version>${jersey.version}</version>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>copy-hook-shim</id>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/dependency/hook/sqoop</outputDirectory>
+                                    <overWriteReleases>false</overWriteReleases>
+                                    <overWriteSnapshots>false</overWriteSnapshots>
+                                    <overWriteIfNewer>true</overWriteIfNewer>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>sqoop-bridge-shim</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-plugin-classloader</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>

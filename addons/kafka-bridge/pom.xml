@@ -16,20 +16,34 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
-        <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
+        <artifactId>apache-atlas</artifactId>
         <version>2.4.0-SNAPSHOT</version>
         <relativePath>../../</relativePath>
     </parent>
+
     <artifactId>kafka-bridge</artifactId>
-    <description>Apache Atlas Kafka Bridge Module</description>
-    <name>Apache Atlas Kafka Bridge</name>
     <packaging>jar</packaging>
+
+    <name>Apache Atlas Kafka Bridge</name>
+    <description>Apache Atlas Kafka Bridge Module</description>
+
     <dependencies>
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.json-simple</groupId>
+            <artifactId>json-simple</artifactId>
+            <version>${json-simple.version}</version>
+            <scope>compile</scope>
+        </dependency>
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-client-v1</artifactId>
@@ -38,6 +52,66 @@
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-client-v2</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+            <version>${avro.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-auth</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-common</artifactId>
+            <version>${hadoop.version}</version>
+            <scope>compile</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>javax.servlet</groupId>
+                    <artifactId>servlet-api</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-configuration2</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>org.apache.commons</groupId>
+                    <artifactId>commons-text</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpclient</artifactId>
+            <version>${httpcomponents-httpclient.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.httpcomponents</groupId>
+            <artifactId>httpcore</artifactId>
+            <version>${httpcomponents-httpcore.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-webapp</artifactId>
+            <version>${jetty.version}</version>
+            <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-all</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.testng</groupId>
+            <artifactId>testng</artifactId>
         </dependency>
 
         <!-- to bring up atlas server for integration tests -->
@@ -57,6 +131,12 @@
 
         <dependency>
             <groupId>org.apache.hadoop</groupId>
+            <artifactId>hadoop-annotations</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.hadoop</groupId>
             <artifactId>hadoop-hdfs</artifactId>
             <scope>test</scope>
             <exclusions>
@@ -65,12 +145,6 @@
                     <artifactId>servlet-api</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-annotations</artifactId>
-            <scope>test</scope>
         </dependency>
 
         <dependency>
@@ -95,228 +169,11 @@
         </dependency>
 
         <dependency>
-            <groupId>org.testng</groupId>
-            <artifactId>testng</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.mockito</groupId>
-            <artifactId>mockito-all</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpcore</artifactId>
-            <version>${httpcomponents-httpcore.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.eclipse.jetty</groupId>
-            <artifactId>jetty-webapp</artifactId>
-            <version>${jetty.version}</version>
-            <scope>compile</scope>
-        </dependency>
-
-        <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-server</artifactId>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>${guava.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-common</artifactId>
-            <version>${hadoop.version}</version>
-            <scope>compile</scope>
-            <exclusions>
-                <exclusion>
-                    <groupId>javax.servlet</groupId>
-                    <artifactId>servlet-api</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-configuration2</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>org.apache.commons</groupId>
-                    <artifactId>commons-text</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.hadoop</groupId>
-            <artifactId>hadoop-auth</artifactId>
-            <version>${hadoop.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.avro</groupId>
-            <artifactId>avro</artifactId>
-            <version>${avro.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.httpcomponents</groupId>
-            <artifactId>httpclient</artifactId>
-            <version>${httpcomponents-httpclient.version}</version>
-            <scope>compile</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.googlecode.json-simple</groupId>
-            <artifactId>json-simple</artifactId>
-            <version>${json-simple.version}</version>
-            <scope>compile</scope>
-        </dependency>
     </dependencies>
-
-    <profiles>
-        <profile>
-            <id>dist</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-dependency-plugin</artifactId>
-                        <executions>
-                            <execution>
-                                <id>copy-hook</id>
-                                <phase>package</phase>
-                                <goals>
-                                    <goal>copy</goal>
-                                </goals>
-                                <configuration>
-                                    <outputDirectory>${project.build.directory}/dependency/hook/kafka/atlas-kafka-plugin-impl</outputDirectory>
-                                    <overWriteReleases>false</overWriteReleases>
-                                    <overWriteSnapshots>false</overWriteSnapshots>
-                                    <overWriteIfNewer>true</overWriteIfNewer>
-                                    <artifactItems>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>${project.artifactId}</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-client-v1</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-client-common</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-client-v2</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-intg</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>${project.groupId}</groupId>
-                                            <artifactId>atlas-common</artifactId>
-                                            <version>${project.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>commons-collections</groupId>
-                                            <artifactId>commons-collections</artifactId>
-                                            <version>${commons-collections.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>commons-logging</groupId>
-                                            <artifactId>commons-logging</artifactId>
-                                            <version>${commons-logging.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>commons-lang</groupId>
-                                            <artifactId>commons-lang</artifactId>
-                                            <version>${commons-lang.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.apache.kafka</groupId>
-                                            <artifactId>kafka-clients</artifactId>
-                                            <version>${kafka.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>com.sun.jersey.contribs</groupId>
-                                            <artifactId>jersey-multipart</artifactId>
-                                            <version>${jersey.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                          <groupId>com.fasterxml.jackson.core</groupId>
-                                          <artifactId>jackson-databind</artifactId>
-                                          <version>${jackson.databind.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                          <groupId>com.fasterxml.jackson.core</groupId>
-                                          <artifactId>jackson-core</artifactId>
-                                          <version>${jackson.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                          <groupId>com.fasterxml.jackson.core</groupId>
-                                          <artifactId>jackson-annotations</artifactId>
-                                          <version>${jackson.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                          <groupId>com.fasterxml.jackson.jaxrs</groupId>
-                                          <artifactId>jackson-jaxrs-json-provider</artifactId>
-                                          <version>${jackson.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                          <groupId>com.fasterxml.jackson.jaxrs</groupId>
-                                          <artifactId>jackson-jaxrs-base</artifactId>
-                                          <version>${jackson.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>com.sun.jersey</groupId>
-                                            <artifactId>jersey-bundle</artifactId>
-                                            <version>${jersey.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.apache.hadoop</groupId>
-                                            <artifactId>hadoop-auth</artifactId>
-                                            <version>${hadoop.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>com.google.guava</groupId>
-                                            <artifactId>guava</artifactId>
-                                            <version>${guava.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.apache.httpcomponents</groupId>
-                                            <artifactId>httpclient</artifactId>
-                                            <version>${httpcomponents-httpclient.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>org.apache.httpcomponents</groupId>
-                                            <artifactId>httpcore</artifactId>
-                                            <version>${httpcomponents-httpcore.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>commons-configuration</groupId>
-                                            <artifactId>commons-configuration</artifactId>
-                                            <version>${commons-conf.version}</version>
-                                        </artifactItem>
-                                        <artifactItem>
-                                            <groupId>com.googlecode.json-simple</groupId>
-                                            <artifactId>json-simple</artifactId>
-                                            <version>${json-simple.version}</version>
-                                        </artifactItem>
-                                    </artifactItems>
-                                </configuration>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
     <build>
         <plugins>
             <plugin>
@@ -403,22 +260,22 @@
                 <executions>
                     <execution>
                         <id>start-jetty</id>
-                        <phase>pre-integration-test</phase>
                         <goals>
                             <!-- stop any previous instance to free up the port -->
                             <goal>stop</goal>
                             <goal>deploy-war</goal>
                         </goals>
+                        <phase>pre-integration-test</phase>
                         <configuration>
                             <daemon>true</daemon>
                         </configuration>
                     </execution>
                     <execution>
                         <id>stop-jetty</id>
-                        <phase>post-integration-test</phase>
                         <goals>
                             <goal>stop</goal>
                         </goals>
+                        <phase>post-integration-test</phase>
                     </execution>
                 </executions>
             </plugin>
@@ -426,15 +283,19 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
+                <configuration>
+                    <generateProjectInfo>false</generateProjectInfo>
+                    <generateReports>false</generateReports>
+                </configuration>
                 <dependencies>
                     <dependency>
                         <groupId>org.apache.maven.doxia</groupId>
-                        <artifactId>doxia-module-twiki</artifactId>
+                        <artifactId>doxia-core</artifactId>
                         <version>${doxia.version}</version>
                     </dependency>
                     <dependency>
                         <groupId>org.apache.maven.doxia</groupId>
-                        <artifactId>doxia-core</artifactId>
+                        <artifactId>doxia-module-twiki</artifactId>
                         <version>${doxia.version}</version>
                     </dependency>
                 </dependencies>
@@ -446,10 +307,6 @@
                         <phase>prepare-package</phase>
                     </execution>
                 </executions>
-                <configuration>
-                    <generateProjectInfo>false</generateProjectInfo>
-                    <generateReports>false</generateReports>
-                </configuration>
             </plugin>
 
             <plugin>
@@ -457,8 +314,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.2.1</version>
                 <inherited>false</inherited>
-                <executions>
-                </executions>
+                <executions />
             </plugin>
 
             <plugin>
@@ -467,10 +323,10 @@
                 <executions>
                     <execution>
                         <id>copy-resources</id>
-                        <phase>validate</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
+                        <phase>validate</phase>
                         <configuration>
                             <outputDirectory>${basedir}/target/models</outputDirectory>
                             <resources>
@@ -489,10 +345,10 @@
                 <executions>
                     <execution>
                         <id>copy-solr-resources</id>
-                        <phase>validate</phase>
                         <goals>
                             <goal>copy-resources</goal>
                         </goals>
+                        <phase>validate</phase>
                         <configuration>
                             <outputDirectory>${project.build.directory}/solr</outputDirectory>
                             <resources>
@@ -506,4 +362,150 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <profile>
+            <id>dist</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>copy-hook</id>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <phase>package</phase>
+                                <configuration>
+                                    <outputDirectory>${project.build.directory}/dependency/hook/kafka/atlas-kafka-plugin-impl</outputDirectory>
+                                    <overWriteReleases>false</overWriteReleases>
+                                    <overWriteSnapshots>false</overWriteSnapshots>
+                                    <overWriteIfNewer>true</overWriteIfNewer>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>${project.artifactId}</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-client-v1</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-client-common</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-client-v2</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-intg</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>${project.groupId}</groupId>
+                                            <artifactId>atlas-common</artifactId>
+                                            <version>${project.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>commons-collections</groupId>
+                                            <artifactId>commons-collections</artifactId>
+                                            <version>${commons-collections.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>commons-logging</groupId>
+                                            <artifactId>commons-logging</artifactId>
+                                            <version>${commons-logging.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>commons-lang</groupId>
+                                            <artifactId>commons-lang</artifactId>
+                                            <version>${commons-lang.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.kafka</groupId>
+                                            <artifactId>kafka-clients</artifactId>
+                                            <version>${kafka.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.sun.jersey.contribs</groupId>
+                                            <artifactId>jersey-multipart</artifactId>
+                                            <version>${jersey.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-databind</artifactId>
+                                            <version>${jackson.databind.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-core</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.core</groupId>
+                                            <artifactId>jackson-annotations</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.jaxrs</groupId>
+                                            <artifactId>jackson-jaxrs-json-provider</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.fasterxml.jackson.jaxrs</groupId>
+                                            <artifactId>jackson-jaxrs-base</artifactId>
+                                            <version>${jackson.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.sun.jersey</groupId>
+                                            <artifactId>jersey-bundle</artifactId>
+                                            <version>${jersey.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.hadoop</groupId>
+                                            <artifactId>hadoop-auth</artifactId>
+                                            <version>${hadoop.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.google.guava</groupId>
+                                            <artifactId>guava</artifactId>
+                                            <version>${guava.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.httpcomponents</groupId>
+                                            <artifactId>httpclient</artifactId>
+                                            <version>${httpcomponents-httpclient.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>org.apache.httpcomponents</groupId>
+                                            <artifactId>httpcore</artifactId>
+                                            <version>${httpcomponents-httpcore.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>commons-configuration</groupId>
+                                            <artifactId>commons-configuration</artifactId>
+                                            <version>${commons-conf.version}</version>
+                                        </artifactItem>
+                                        <artifactItem>
+                                            <groupId>com.googlecode.json-simple</groupId>
+                                            <artifactId>json-simple</artifactId>
+                                            <version>${json-simple.version}</version>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
