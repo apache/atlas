@@ -16,26 +16,27 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
-        <artifactId>apache-atlas</artifactId>
         <groupId>org.apache.atlas</groupId>
+        <artifactId>apache-atlas</artifactId>
         <version>3.0.0-SNAPSHOT</version>
     </parent>
 
+    <artifactId>atlas-client</artifactId>
+    <packaging>pom</packaging>
+
+    <name>Apache Atlas Client</name>
+    <description>Apache Atlas Client</description>
+
     <!-- Sub modules -->
     <modules>
-        <module>common</module>
         <module>client-v1</module>
         <module>client-v2</module>
+        <module>common</module>
     </modules>
-
-    <artifactId>atlas-client</artifactId>
-    <description>Apache Atlas Client</description>
-    <name>Apache Atlas Client</name>
-    <packaging>pom</packaging>
 
     <dependencies>
         <dependency>

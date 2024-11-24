@@ -16,18 +16,20 @@
   ~ See the License for the specific language governing permissions and
   ~ limitations under the License.
   -->
-
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <parent>
-    <artifactId>apache-atlas</artifactId>
-    <groupId>org.apache.atlas</groupId>
-    <version>3.0.0-SNAPSHOT</version>
-    <relativePath>../../</relativePath>
-  </parent>
-  <artifactId>impala-hook-api</artifactId>
-  <description>Apache Atlas Impala Hook API Module</description>
-  <name>Apache Atlas Impala Hook API</name>
-  <packaging>jar</packaging>
+    <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>org.apache.atlas</groupId>
+        <artifactId>apache-atlas</artifactId>
+        <version>3.0.0-SNAPSHOT</version>
+        <relativePath>../../</relativePath>
+    </parent>
+
+    <artifactId>impala-hook-api</artifactId>
+    <packaging>jar</packaging>
+
+    <name>Apache Atlas Impala Hook API</name>
+    <description>Apache Atlas Impala Hook API Module</description>
 
 </project>

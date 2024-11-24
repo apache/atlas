@@ -18,14 +18,18 @@
   -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
     <modelVersion>4.0.0</modelVersion>
+
     <parent>
         <groupId>org.apache.atlas</groupId>
         <artifactId>apache-atlas</artifactId>
         <version>3.0.0-SNAPSHOT</version>
     </parent>
+
     <artifactId>atlas-docs</artifactId>
-    <description>Apache Atlas Documentation</description>
+
     <name>Apache Atlas Documentation</name>
+    <description>Apache Atlas Documentation</description>
+
     <properties>
         <skipSite>false</skipSite>
         <skipTests>true</skipTests>
@@ -81,8 +85,8 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
                 <configuration>
-                  <port>8080</port>
-                  <tempWebappDirectory>${basedir}/target/site</tempWebappDirectory>
+                    <port>8080</port>
+                    <tempWebappDirectory>${basedir}/target/site</tempWebappDirectory>
                 </configuration>
             </plugin>
             <plugin>
@@ -132,7 +136,7 @@
                         <goals>
                             <goal>npm</goal>
                         </goals>
-                         <phase>pre-site</phase>
+                        <phase>pre-site</phase>
                         <configuration>
                             <arguments>install --no-package-lock</arguments>
                             <arguments>install</arguments>
