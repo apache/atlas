@@ -22,6 +22,7 @@ package org.apache.atlas.plugin.util;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
@@ -114,10 +115,9 @@ public class PolicyRefresher extends Thread {
 		this.pollingIntervalMs             = pluginConfig.getLong(propertyPrefix + ".policy.pollIntervalMs", 30 * 1000);
 
 		try {
-			this.atlasConfig = ApplicationProperties.get();
+			this.enableDeltaBasedRefresh = AtlasConfiguration.DELTA_BASED_REFRESH_ENABLED.getBoolean();
 			this.auditRepository = new ESBasedAuditRepository(atlasConfig);
 			this.auditRepository.start();
-			this.enableDeltaBasedRefresh = this.atlasConfig.getBoolean(DELTA_BASED_REFRESH, false);
 		} catch (AtlasException e) {
 			LOG.error("PolicyDelta: Error while reading atlas configuration", e);
 			this.enableDeltaBasedRefresh = false;
