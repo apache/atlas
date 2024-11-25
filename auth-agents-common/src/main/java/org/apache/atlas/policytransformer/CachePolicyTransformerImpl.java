@@ -182,9 +182,9 @@ public class CachePolicyTransformerImpl {
 
                         String tagServiceDefName =  String.format(RESOURCE_SERVICE_DEF_PATTERN, tagService.getAttribute(NAME));
                         tagPolicies.setServiceDef(getResourceAsObject(tagServiceDefName, RangerServiceDef.class));
+                        tagPolicies.setPolicies(tagRangerPolicies);
 
                         servicePolicies.setTagPolicies(tagPolicies);
-                        servicePolicies.getTagPolicies().setPolicies(tagRangerPolicies);
                         LOG.info("PolicyDelta: {}: Found tag policies - {}", serviceName, tagRangerPolicies.size());
                     }
                 }
@@ -308,6 +308,7 @@ public class CachePolicyTransformerImpl {
         }
 
         ArrayList<String> policyGuids = new ArrayList<>(policiesWithChangeType.keySet());
+        // this will have less policies as deleted won't be found
         List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName, batchSize, policyGuids);
 
         List<RangerPolicy> rangerPolicies = new ArrayList<>();
@@ -316,7 +317,7 @@ public class CachePolicyTransformerImpl {
         }
 
         for (RangerPolicy policy : rangerPolicies) {
-            Integer changeType = auditEventToDeltaChangeType.get(policiesWithChangeType.get(policy.getGuid()));
+            Integer changeType = auditEventToDeltaChangeType.get(policiesWithChangeType.get(policy.getAtlasGuid()));
             RangerPolicyDelta delta = new RangerPolicyDelta(policy.getId(), changeType, policy.getVersion(), policy);
             policyDeltas.add(delta);
         }

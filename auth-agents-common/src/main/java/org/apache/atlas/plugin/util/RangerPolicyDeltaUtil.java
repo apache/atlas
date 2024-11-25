@@ -222,11 +222,11 @@ public class RangerPolicyDeltaUtil {
 
             if (isPoliciesExist && isPolicyDeltasExist) {
                 LOG.warn("ServicePolicies contain both policies and policy-deltas!! Cannot build policy-engine from these servicePolicies. Please check server-side code!");
-                LOG.warn("Downloaded ServicePolicies are [" + servicePolicies + "]");
+                LOG.warn("Downloaded ServicePolicies for [" + servicePolicies.getServiceName() + "]");
                 ret = null;
             } else if (!isPoliciesExist && !isPolicyDeltasExist) {
                 LOG.warn("ServicePolicies do not contain any policies or policy-deltas!! There are no material changes in the policies.");
-                LOG.warn("Downloaded ServicePolicies are [" + servicePolicies + "]");
+                LOG.warn("Downloaded ServicePolicies for [" + servicePolicies.getServiceName() + "]");
                 ret = null;
             } else {
                 ret = isPolicyDeltasExist;
