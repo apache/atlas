@@ -26,6 +26,7 @@ on:
       - development
       - master
       - lineageondemand
+      - ns/fix/delta-refresh
 
 jobs:
   build:
@@ -48,7 +49,9 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       - name: Get branch name
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        run: |
+          echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+          echo "##[set-output name=branch_lower;]$(echo ${GITHUB_REF#refs/heads/} | awk '{gsub("/", "-"); print tolower($0)}')"
         id: get_branch
 
       - name: Create Maven Settings
@@ -102,8 +105,8 @@ jobs:
           provenance: true
           push: true
           tags: |
-            ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:latest
-            ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:${{ steps.get_version.outputs.version }}
+            ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch_lower }}:latest
+            ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch_lower }}:${{ steps.get_version.outputs.version }}
 
       - name: Scan Image
         uses: aquasecurity/trivy-action@master
