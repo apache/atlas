@@ -154,7 +154,7 @@ public class ClassificationAssociator {
             this(AtlasGraphProvider.getGraphInstance(), typeRegistry, entitiesStore, entityGraphMapper, entityChangeNotifier, instanceConverter);
         }
 
-        public void setClassifications(Map<String, AtlasEntityHeader> map) throws AtlasBaseException {
+        public void setClassifications(Map<String, AtlasEntityHeader> map, boolean overrideClassifications) throws AtlasBaseException {
             RequestContext.get().setDelayTagNotifications(true);
 
             for (String guid  : map.keySet()) {
@@ -178,8 +178,14 @@ public class ClassificationAssociator {
                 if (entityToBeChanged == null) {
                     throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
                 }
-
-                Map<String, List<AtlasClassification>> operationListMap = computeChanges(incomingEntityHeader, entityToBeChanged);
+                Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
+                if(overrideClassifications) {
+                    operationListMap = computeChanges(incomingEntityHeader, entityToBeChanged);
+                } else {
+                    bucket(PROCESS_DELETE, operationListMap, incomingEntityHeader.getRemoveClassifications());
+                    bucket(PROCESS_UPDATE, operationListMap, incomingEntityHeader.getUpdateClassifications());
+                    bucket(PROCESS_ADD, operationListMap, incomingEntityHeader.getAppendClassifications());
+                }
                 try {
                     commitChanges(guid, typeName, operationListMap);
                 } catch (AtlasBaseException e) {
