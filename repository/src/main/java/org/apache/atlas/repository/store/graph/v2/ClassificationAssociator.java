@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -245,12 +246,13 @@ public class ClassificationAssociator {
             Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
 
             Set<String> requiredClassificationKeys = Stream.concat(
-                            incomingEntityHeader.getRemoveClassifications().stream(),
-                            incomingEntityHeader.getUpdateClassifications().stream()
+                            Optional.ofNullable(incomingEntityHeader.getRemoveClassifications()).orElse(Collections.emptyList()).stream(),
+                            Optional.ofNullable(incomingEntityHeader.getUpdateClassifications()).orElse(Collections.emptyList()).stream()
                     ).map(this::generateClassificationComparisonKey)
                     .collect(Collectors.toSet());
 
-            Set<String> preExistingClassificationKeys = entityToBeChanged.getClassifications()
+            Set<String> preExistingClassificationKeys = Optional.ofNullable(entityToBeChanged.getClassifications())
+                    .orElse(Collections.emptyList())
                     .stream()
                     .map(this::generateClassificationComparisonKey)
                     .collect(Collectors.toSet());
@@ -264,7 +266,8 @@ public class ClassificationAssociator {
                 throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, firstTypeName);
             }
 
-            List<AtlasClassification> filteredClassifications = incomingEntityHeader.getAppendClassifications()
+            List<AtlasClassification> filteredClassifications = Optional.ofNullable(incomingEntityHeader.getAppendClassifications())
+                    .orElse(Collections.emptyList())
                     .stream()
                     .filter(appendClassification -> !preExistingClassificationKeys.contains(generateClassificationComparisonKey(appendClassification)))
                     .collect(Collectors.toList());
