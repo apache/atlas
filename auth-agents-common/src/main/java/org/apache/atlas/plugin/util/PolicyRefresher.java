@@ -21,7 +21,6 @@ package org.apache.atlas.plugin.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
@@ -44,8 +43,6 @@ import java.io.Writer;
 import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
-
-import static org.apache.atlas.ApplicationProperties.DELTA_BASED_REFRESH;
 
 
 public class PolicyRefresher extends Thread {
@@ -335,20 +332,15 @@ public class PolicyRefresher extends Thread {
 
 		try {
 
-			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null) {
+			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null && lastUpdatedTiemInMillis == -1) {
 				RangerRESTUtils restUtils = new RangerRESTUtils();
 				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry(), auditRepository);
-				if (lastUpdatedTiemInMillis == -1) {
-					svcPolicies = transformer.getPoliciesAll(serviceName,
-							restUtils.getPluginId(serviceName, plugIn.getAppId()), lastUpdatedTiemInMillis);
-				} else if (this.enableDeltaBasedRefresh) {
-					svcPolicies = transformer.getPoliciesDelta(serviceName,
-							restUtils.getPluginId(serviceName, plugIn.getAppId()), lastUpdatedTiemInMillis);
-				} else {
-					svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis);
-				}
+
+				svcPolicies = transformer.getPoliciesAll(serviceName,
+							restUtils.getPluginId(serviceName, plugIn.getAppId()),
+							lastUpdatedTiemInMillis);
 			} else {
-				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis);
+				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis, this.enableDeltaBasedRefresh);
 			}
 
 			boolean isUpdated = svcPolicies != null;

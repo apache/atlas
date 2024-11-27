@@ -32,6 +32,7 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
 
     private static final String PARAM_LAST_UPDATED_TIME = "lastUpdatedTime";
     private static final String PARAM_PLUGIN_ID         = "pluginId";
+    private static final String PARAM_USE_POLICY_DELTA  = "usePolicyDelta";
 
     @Override
     public void init(RangerPluginConfig config) {
@@ -66,20 +67,20 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
     }
 
     @Override
-    public ServicePolicies getServicePoliciesIfUpdated(long lastUpdatedTimeInMillis) throws Exception {
-        URI uri = buildURI("/download/policies/" + serviceName, lastUpdatedTimeInMillis);
+    public ServicePolicies getServicePoliciesIfUpdated(long lastUpdatedTimeInMillis, boolean usePolicyDelta) throws Exception {
+        URI uri = buildURI("/download/policies/" + serviceName, lastUpdatedTimeInMillis, usePolicyDelta);
         return sendRequestAndGetResponse(uri, ServicePolicies.class);
     }
 
     @Override
     public RangerRoles getRolesIfUpdated(long lastUpdatedTimeInMillis) throws Exception {
-        URI uri = buildURI("/download/roles/" + serviceName, lastUpdatedTimeInMillis);
+        URI uri = buildURI("/download/roles/" + serviceName, lastUpdatedTimeInMillis, false);
         return sendRequestAndGetResponse(uri, RangerRoles.class);
     }
 
     @Override
     public RangerUserStore getUserStoreIfUpdated(long lastUpdatedTimeInMillis) throws Exception {
-        URI uri = buildURI("/download/users/" + serviceName, lastUpdatedTimeInMillis);
+        URI uri = buildURI("/download/users/" + serviceName, lastUpdatedTimeInMillis, false);
         return sendRequestAndGetResponse(uri, RangerUserStore.class);
     }
 
@@ -114,13 +115,14 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
         return null;
     }
 
-    private URI buildURI(String path, long lastUpdatedTimeInMillis) throws URISyntaxException {
+    private URI buildURI(String path, long lastUpdatedTimeInMillis, boolean usePolicyDelta) throws URISyntaxException {
         return new URIBuilder()
                 .setScheme(SCHEME)
                 .setHost(adminUrl)
                 .setPath(path)
                 .setParameter(PARAM_LAST_UPDATED_TIME, String.valueOf(lastUpdatedTimeInMillis))
                 .setParameter(PARAM_PLUGIN_ID, pluginId)
+                .setParameter(PARAM_USE_POLICY_DELTA, String.valueOf(usePolicyDelta))
                 .build();
     }
 

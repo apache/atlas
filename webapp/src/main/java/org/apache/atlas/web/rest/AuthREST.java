@@ -21,6 +21,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.AuditSearchParams;
+import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.plugin.util.KeycloakUserStore;
@@ -51,10 +52,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.atlas.policytransformer.CachePolicyTransformerImpl.ATTR_SERVICE_LAST_SYNC;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
@@ -144,6 +142,7 @@ public class AuthREST {
     @Timed
     public ServicePolicies downloadPolicies(@PathParam("serviceName") final String serviceName,
                                      @QueryParam("pluginId") String pluginId,
+                                     @DefaultValue("false") @QueryParam("usePolicyDelta") boolean usePolicyDelta,
                                      @DefaultValue("0") @QueryParam("lastUpdatedTime") Long lastUpdatedTime) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
@@ -152,18 +151,62 @@ public class AuthREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AuthREST.downloadPolicies(serviceName="+serviceName+", pluginId="+pluginId+", lastUpdatedTime="+lastUpdatedTime+")");
             }
 
-            if (!isPolicyUpdated(serviceName, lastUpdatedTime)) {
-                return null;
+            ServicePolicies ret;
+            if (usePolicyDelta) {
+                List<EntityAuditEventV2> auditEvents = getPolicyAuditLogs(serviceName, lastUpdatedTime);
+                ret = policyTransformer.extractAndTransformPolicyDelta(serviceName, auditEvents);
+            } else {
+                if (!isPolicyUpdated(serviceName, lastUpdatedTime)) {
+                    return null;
+                }
+                ret = policyTransformer.getPoliciesAll(serviceName, pluginId, lastUpdatedTime);
             }
-
-            ServicePolicies ret = policyTransformer.getPoliciesAll(serviceName, pluginId, lastUpdatedTime);
-
             updateLastSync(serviceName);
 
             return ret;
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    private List<EntityAuditEventV2> getPolicyAuditLogs(String serviceName, long lastUpdatedTime) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("AuthREST.getPolicyAuditLogs." + serviceName);
+
+        List<String> entityUpdateToWatch = new ArrayList<>();
+        entityUpdateToWatch.add(POLICY_ENTITY_TYPE);
+        entityUpdateToWatch.add(PERSONA_ENTITY_TYPE);
+        entityUpdateToWatch.add(PURPOSE_ENTITY_TYPE);
+
+        AuditSearchParams parameters = new AuditSearchParams();
+        Map<String, Object> dsl = getMap("size", 100);
+
+        List<Map<String, Object>> mustClauseList = new ArrayList<>();
+        mustClauseList.add(getMap("terms", getMap("typeName", entityUpdateToWatch)));
+
+        lastUpdatedTime = lastUpdatedTime == -1 ? 0 : lastUpdatedTime;
+        mustClauseList.add(getMap("range", getMap("timestamp", getMap("gte", lastUpdatedTime))));
+
+        dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
+
+        parameters.setDsl(dsl);
+        parameters.setAttributes(new HashSet<>(Arrays.asList(
+                "qualifiedName",
+                "name"
+        )));
+
+        List<EntityAuditEventV2> events = new ArrayList<>();
+        try {
+            EntityAuditSearchResult result = auditRepository.searchEvents(parameters.getQueryString());
+            if (result != null && !CollectionUtils.isEmpty(result.getEntityAudits())) {
+                events = result.getEntityAudits();
+            }
+        } catch (AtlasBaseException e) {
+            LOG.error("ERROR in getPolicyAuditLogs while fetching entity audits {}: ", e.getMessage());
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+
+        return events;
     }
 
     private void updateLastSync(String serviceName) {
