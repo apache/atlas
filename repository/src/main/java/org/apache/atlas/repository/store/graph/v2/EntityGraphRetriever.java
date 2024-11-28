@@ -70,7 +70,6 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
-import org.janusgraph.core.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -132,7 +131,6 @@ import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 @Component
 public class EntityGraphRetriever {
     private static final Logger LOG = LoggerFactory.getLogger(EntityGraphRetriever.class);
-    private static final int BATCH_SIZE = 300;
 
     private static final String GLOSSARY_TERM_DISPLAY_NAME_ATTR = "name";
     public  static final String TERM_RELATION_NAME              = "AtlasGlossarySemanticAssignment";
@@ -1036,7 +1034,7 @@ public class EntityGraphRetriever {
             //pre-fetching the properties
             Map<String, Object> properties = preloadProperties(entityVertex);
 
-            String typeName = (String) properties.get(Constants.TYPE_NAME_PROPERTY_KEY);
+            String typeName = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class); //properties.get returns null
             String guid = (String) properties.get(Constants.GUID_PROPERTY_KEY);
 
             Integer value = (Integer)properties.get(Constants.IS_INCOMPLETE_PROPERTY_KEY);
@@ -1044,7 +1042,6 @@ public class EntityGraphRetriever {
 
             ret.setTypeName(typeName);
             ret.setGuid(guid);
-            ret.setStatus(GraphHelper.getStatus(entityVertex));
 
             String state = (String)properties.get(Constants.STATE_PROPERTY_KEY);
             Id.EntityState entityState = state == null ? null : Id.EntityState.valueOf(state);
@@ -1063,8 +1060,8 @@ public class EntityGraphRetriever {
 
             ret.setCreatedBy(properties.get(CREATED_BY_KEY) != null ? (String) properties.get(CREATED_BY_KEY) : null);
             ret.setUpdatedBy(properties.get(MODIFIED_BY_KEY) != null ? (String) properties.get(MODIFIED_BY_KEY) : null);
-            ret.setCreateTime(new Date((Long)properties.get(TIMESTAMP_PROPERTY_KEY)));
-            ret.setUpdateTime(new Date((Long)properties.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY)));
+            ret.setCreateTime(properties.get(TIMESTAMP_PROPERTY_KEY) != null ? new Date((Long)properties.get(TIMESTAMP_PROPERTY_KEY)) : null);
+            ret.setUpdateTime(properties.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY) != null ? new Date((Long)properties.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY)) : null);
 
             if(RequestContext.get().includeMeanings()) {
                 List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
@@ -1077,7 +1074,7 @@ public class EntityGraphRetriever {
 
             if (entityType != null) {
                 for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
-                    Object attrValue = getVertexAttribute(entityVertex, headerAttribute);
+                    Object attrValue = getVertexAttributePreFetchCache(entityVertex, headerAttribute, properties);
 
                     if (attrValue != null) {
                         ret.setAttribute(headerAttribute.getName(), attrValue);
@@ -1111,7 +1108,8 @@ public class EntityGraphRetriever {
                             }
                         }
 
-                            Object attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, properties); //use prefetch cache
+                        //this is a call to cassandra
+                        Object attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, properties); //use prefetch cache
 
                         if (attrValue != null) {
                             ret.setAttribute(attrName, attrValue);
@@ -1747,11 +1745,11 @@ public class EntityGraphRetriever {
             return null;
         }
 
-        if (properties.get(attribute) != null) {
-            return properties.get(attribute);
+        if (properties.get(attribute.getName()) != null) {
+            return properties.get(attribute.getName());
         }
 
-        return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false) : null;
+        return null;
     }
 
     private Object getVertexAttributeIgnoreInactive(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
