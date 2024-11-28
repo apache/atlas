@@ -19,14 +19,72 @@ package org.apache.atlas.web.errors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.ArrayList;
+import java.util.List;
 
 public class ExceptionMapperUtil {
     protected static final Logger LOGGER = LoggerFactory.getLogger(ExceptionMapperUtil.class);
 
     @SuppressWarnings("UnusedParameters")
     protected static String formatErrorMessage(long id, Exception exception) {
-        return String.format("There was an error processing your request. It has been logged (ID %016x).", id);
+        StringBuilder response = new StringBuilder();
+
+        // Add error ID and general error message
+        response.append("{\n")
+                .append(String.format("  \"errorId\": \"%016x\",\n", id))
+                .append("  \"message\": \"There was an error processing your request.\",\n")
+                .append("  \"causes\": [\n");
+
+        // Traverse through the chain of causes
+        List<String> causes = new ArrayList<>();
+        Throwable currentException = exception;
+        while (currentException != null) {
+            causes.add(formatCause(currentException));
+            currentException =currentException .getCause();
+        }
+
+        // Add all formatted causes to the response
+        for (int i = 0; i < causes.size(); i++) {
+            response.append(causes.get(i));
+            if (i < causes.size() - 1) {
+                response.append(",\n");
+            }
+        }
+
+        // Close the JSON structure
+        response.append("\n  ]\n")
+                .append("}");
+
+        return response.toString();
     }
+
+    // Helper method to format a single exception cause
+    private static String formatCause(Throwable exception) {
+        StringBuilder cause = new StringBuilder();
+
+        // Extract location details from the first stack trace element
+        StackTraceElement[] stackTrace = exception.getStackTrace();
+        String location = "Unavailable";
+        if (stackTrace != null && stackTrace.length > 0) {
+            StackTraceElement element = stackTrace[0];
+            location = String.format("%s.%s (%s:%d)",
+                    element.getClassName(),
+                    element.getMethodName(),
+                    element.getFileName(),
+                    element.getLineNumber());
+        }
+
+        // Build JSON object for this cause
+        cause.append("    {\n")
+                .append("      \"errorType\": \"").append(exception.getClass().getName()).append("\",\n")
+                .append("      \"errorMessage\": \"").append(exception.getMessage() != null ? exception.getMessage() : "No additional information provided").append("\",\n")
+                .append("      \"location\": \"").append(location).append("\"\n")
+                .append("    }");
+
+        return cause.toString();
+    }
+
+
 
     protected static void logException(long id, Exception exception) {
         LOGGER.error(formatLogMessage(id, exception), exception);
