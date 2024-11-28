@@ -112,15 +112,13 @@ public class CachePolicyTransformerImpl {
     private PurposeCachePolicyTransformer purposeTransformer;
 
     private AtlasEntityHeader service;
-    private final ESBasedAuditRepository auditRepository;
 
     private final Map<EntityAuditActionV2, Integer> auditEventToDeltaChangeType;
 
     @Inject
-    public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry, ESBasedAuditRepository auditRepository) throws AtlasBaseException {
+    public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         this.graph                = new AtlasJanusGraph();
         this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
-        this.auditRepository      = auditRepository;
 
         personaTransformer = new PersonaCachePolicyTransformer(entityRetriever);
         purposeTransformer = new PurposeCachePolicyTransformer(entityRetriever);
@@ -308,43 +306,6 @@ public class CachePolicyTransformerImpl {
         RequestContext.get().endMetricRecord(recorder);
 
         return policyDeltas;
-    }
-
-    private List<EntityAuditEventV2> queryPoliciesAuditLogs(String serviceName, Long afterTime, int batchSize) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.queryPoliciesAuditLogs." + serviceName);
-
-        List<String> entityUpdateToWatch = new ArrayList<>();
-        entityUpdateToWatch.add(POLICY_ENTITY_TYPE);
-        entityUpdateToWatch.add(PURPOSE_ENTITY_TYPE);
-
-        AuditSearchParams parameters = new AuditSearchParams();
-        Map<String, Object> dsl = getMap("size", batchSize);
-
-        List<Map<String, Object>> mustClauseList = new ArrayList<>();
-        mustClauseList.add(getMap("terms", getMap("typeName", entityUpdateToWatch)));
-        afterTime = afterTime == -1 ? 0 : afterTime;
-        mustClauseList.add(getMap("range", getMap("created", getMap("gte", afterTime))));
-
-        List<Map<String, Object>> sortList = new ArrayList<>(0);
-        sortList.add(getMap("created", getMap("order", "desc")));
-        dsl.put("sort", sortList);
-
-        dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
-
-        parameters.setDsl(dsl);
-
-        List<EntityAuditEventV2> events = new ArrayList<>();
-        try {
-            EntityAuditSearchResult result = auditRepository.searchEvents(parameters.getQueryString());
-            if (result != null && !CollectionUtils.isEmpty(result.getEntityAudits())) {
-                events = result.getEntityAudits();
-            }
-        } catch (AtlasBaseException e) {
-            LOG.error("ERROR in queryPoliciesAuditLogs while fetching entity audits {}: ", e.getMessage(), e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-        return events;
     }
 
     public ServicePolicies extractAndTransformPolicyDelta(String serviceName, List<EntityAuditEventV2> events) {

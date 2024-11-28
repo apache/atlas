@@ -68,9 +68,7 @@ public class PolicyRefresher extends Thread {
 	private       long                           lastActivationTimeInMillis;
 	private       boolean                        policiesSetInPlugin;
 	private       boolean                        serviceDefSetInPlugin;
-	private       Configuration                  atlasConfig;
 	private       boolean                        enableDeltaBasedRefresh;
-	private       ESBasedAuditRepository         auditRepository;
 
 
 	public PolicyRefresher(RangerBasePlugin plugIn) {
@@ -111,14 +109,8 @@ public class PolicyRefresher extends Thread {
 		this.userStoreProvider             = new RangerUserStoreProvider(getServiceType(), appId, getServiceName(), atlasAuthAdminClient,  cacheDir, pluginConfig);
 		this.pollingIntervalMs             = pluginConfig.getLong(propertyPrefix + ".policy.pollIntervalMs", 30 * 1000);
 
-		try {
-			this.enableDeltaBasedRefresh = AtlasConfiguration.DELTA_BASED_REFRESH_ENABLED.getBoolean();
-			this.auditRepository = new ESBasedAuditRepository(atlasConfig);
-			this.auditRepository.start();
-		} catch (AtlasException e) {
-			LOG.error("PolicyDelta: Error while reading atlas configuration", e);
-			this.enableDeltaBasedRefresh = false;
-		}
+		this.enableDeltaBasedRefresh = AtlasConfiguration.DELTA_BASED_REFRESH_ENABLED.getBoolean();
+		LOG.info("PolicyRefresher(serviceName=" + serviceName + ") - delta based policy refresh is enabled");
 
 		setName("PolicyRefresher(serviceName=" + serviceName + ")-" + getId());
 
@@ -334,7 +326,7 @@ public class PolicyRefresher extends Thread {
 
 			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null && lastUpdatedTiemInMillis == -1) {
 				RangerRESTUtils restUtils = new RangerRESTUtils();
-				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry(), auditRepository);
+				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry());
 
 				svcPolicies = transformer.getPoliciesAll(serviceName,
 							restUtils.getPluginId(serviceName, plugIn.getAppId()),
