@@ -37,6 +37,7 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -434,7 +435,8 @@ public class TaskRegistry {
                             }
                             else {
                                 LOG.warn(String.format("There is a mismatch on tasks status between ES and Cassandra for guid: %s", atlasTask.getGuid()));
-                                repairMismatchedTask(atlasTask);
+                                String docId = LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay()));
+                                repairMismatchedTask(atlasTask, docId);
                             }
                         } else {
                             LOG.warn("Null vertex while re-queuing tasks at index {}", fetched);
@@ -457,7 +459,7 @@ public class TaskRegistry {
         return ret;
     }
 
-    private void repairMismatchedTask(AtlasTask atlasTask) {
+    private void repairMismatchedTask(AtlasTask atlasTask, String docId) {
         AtlasElasticsearchQuery indexQuery = null;
 
         try {
@@ -481,8 +483,8 @@ public class TaskRegistry {
                     + "    }"
                     + "},"
                     + "\"query\": {"
-                    + "    \"match\": {"
-                    + "        \"__task_guid\": \"" + atlasTask.getGuid() + "\""
+                    + "    \"term\": {"
+                    + "        \"_id\": \"" + docId + "\""
                     + "    }"
                     + "}"
                     + "}";
