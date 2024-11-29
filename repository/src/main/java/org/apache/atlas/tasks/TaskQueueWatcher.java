@@ -90,7 +90,7 @@ public class TaskQueueWatcher implements Runnable {
             LOG.info("TaskQueueWatcher: Starting a new iteration of task fetching and processing.");
             TasksFetcher fetcher = new TasksFetcher(registry);
             try {
-                LOG.debug("TaskQueueWatcher: Attempting to acquire distributed lock: {}", ATLAS_TASK_LOCK);
+                LOG.info("TaskQueueWatcher: Attempting to acquire distributed lock: {}", ATLAS_TASK_LOCK);
                 if (!redisService.acquireDistributedLock(ATLAS_TASK_LOCK)) {
                     LOG.warn("TaskQueueWatcher: Could not acquire lock: {}. Retrying after {} ms.", ATLAS_TASK_LOCK, AtlasConstants.TASK_WAIT_TIME_MS);
                     Thread.sleep(AtlasConstants.TASK_WAIT_TIME_MS);
@@ -117,15 +117,15 @@ public class TaskQueueWatcher implements Runnable {
                 LOG.info("TaskQueueWatcher: Sleeping for {} ms before the next poll.", pollInterval);
                 Thread.sleep(pollInterval);
             } catch (InterruptedException interruptedException) {
-                LOG.error("TaskQueueWatcher: Interrupted. Thread is terminating. New tasks will not be loaded into the queue until next restart.", interruptedException);
+                LOG.info("TaskQueueWatcher: Interrupted. Thread is terminating. New tasks will not be loaded into the queue until next restart.", interruptedException);
                 break;
             } catch (Exception e) {
-                LOG.error("TaskQueueWatcher: Exception occurred during task processing: {}", e.getMessage(), e);
+                LOG.info("TaskQueueWatcher: Exception occurred during task processing: {}", e.getMessage(), e);
             } finally {
                 LOG.info("TaskQueueWatcher: Releasing distributed lock: {}", ATLAS_TASK_LOCK);
                 redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
                 fetcher.clearTasks();
-                LOG.debug("TaskQueueWatcher: Cleared tasks from the fetcher.");
+                LOG.info("TaskQueueWatcher: Cleared tasks from the fetcher.");
             }
         }
 
