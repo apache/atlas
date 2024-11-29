@@ -49,6 +49,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -1027,8 +1028,127 @@ public class EntityGraphRetriever {
         return propertiesMap;
     }
 
+
+    private boolean isPolicyAttribute(Set<String> attributes) {
+        Set<String> exclusionSet = new HashSet<>(Arrays.asList(AccessControlUtils.ATTR_POLICY_TYPE,
+                AccessControlUtils.ATTR_POLICY_USERS,
+                AccessControlUtils.ATTR_POLICY_GROUPS,
+                AccessControlUtils.ATTR_POLICY_ROLES,
+                AccessControlUtils.ATTR_POLICY_ACTIONS,
+                AccessControlUtils.ATTR_POLICY_CATEGORY,
+                AccessControlUtils.ATTR_POLICY_SUB_CATEGORY,
+                AccessControlUtils.ATTR_POLICY_RESOURCES,
+                AccessControlUtils.ATTR_POLICY_IS_ENABLED,
+                AccessControlUtils.ATTR_POLICY_RESOURCES_CATEGORY,
+                AccessControlUtils.ATTR_POLICY_SERVICE_NAME,
+                AccessControlUtils.ATTR_POLICY_PRIORITY,
+                AccessControlUtils.REL_ATTR_POLICIES,
+                AccessControlUtils.ATTR_SERVICE_SERVICE_TYPE,
+                AccessControlUtils.ATTR_SERVICE_TAG_SERVICE,
+                AccessControlUtils.ATTR_SERVICE_IS_ENABLED,
+                AccessControlUtils.ATTR_SERVICE_LAST_SYNC));
+
+        return exclusionSet.stream().anyMatch(attributes::contains);
+    }
+
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
+        boolean shouldPrefetch = attributes.size() > AtlasConfiguration.ATLAS_INDEXSEARCH_ATTRIBUTES_MIN_LIMIT.getInt()
+                && !isPolicyAttribute(attributes)
+                && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION.getBoolean();
+
+        if (shouldPrefetch) {
+            return mapVertexToAtlasEntityHeaderWithPrefetch(entityVertex, attributes);
+        } else {
+            return mapVertexToAtlasEntityHeaderWithoutPrefetch(entityVertex, attributes);
+        }
+    }
+
+    private AtlasEntityHeader mapVertexToAtlasEntityHeaderWithoutPrefetch(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeader");
+        AtlasEntityHeader ret = new AtlasEntityHeader();
+        try {
+            String  typeName     = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
+            String  guid         = entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
+            Boolean isIncomplete = isEntityIncomplete(entityVertex);
+
+            ret.setTypeName(typeName);
+            ret.setGuid(guid);
+            ret.setStatus(GraphHelper.getStatus(entityVertex));
+            RequestContext context = RequestContext.get();
+            boolean includeClassifications = context.includeClassifications();
+            boolean includeClassificationNames = context.isIncludeClassificationNames();
+            if(includeClassifications){
+                ret.setClassificationNames(getAllTraitNamesFromAttribute(entityVertex));
+            } else if (!includeClassifications && includeClassificationNames) {
+                ret.setClassificationNames(getAllTraitNamesFromAttribute(entityVertex));
+            }
+            ret.setIsIncomplete(isIncomplete);
+            ret.setLabels(getLabels(entityVertex));
+
+            ret.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
+            ret.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
+            ret.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
+            ret.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
+
+            if(RequestContext.get().includeMeanings()) {
+                List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
+                ret.setMeanings(termAssignmentHeaders);
+                ret.setMeaningNames(
+                        termAssignmentHeaders.stream().map(AtlasTermAssignmentHeader::getDisplayText)
+                                .collect(Collectors.toList()));
+            }
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+            if (entityType != null) {
+                for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
+                    Object attrValue = getVertexAttribute(entityVertex, headerAttribute);
+
+                    if (attrValue != null) {
+                        ret.setAttribute(headerAttribute.getName(), attrValue);
+                    }
+                }
+
+                Object displayText = getDisplayText(entityVertex, entityType);
+
+                if (displayText != null) {
+                    ret.setDisplayText(displayText.toString());
+                }
+
+                if (CollectionUtils.isNotEmpty(attributes)) {
+                    for (String attrName : attributes) {
+                        AtlasAttribute attribute = entityType.getAttribute(attrName);
+
+                        if (attribute == null) {
+                            attrName = toNonQualifiedName(attrName);
+
+                            if (ret.hasAttribute(attrName)) {
+                                continue;
+                            }
+
+                            attribute = entityType.getAttribute(attrName);
+
+                            if (attribute == null) {
+                                attribute = entityType.getRelationshipAttribute(attrName, null);
+                            }
+                        }
+
+                        Object attrValue = getVertexAttribute(entityVertex, attribute);
+
+                        if (attrValue != null) {
+                            ret.setAttribute(attrName, attrValue);
+                        }
+                    }
+                }
+            }
+        }
+        finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+        return ret;
+    }
+
+    private AtlasEntityHeader mapVertexToAtlasEntityHeaderWithPrefetch(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("mapVertexToAtlasEntityHeaderWithPrefetch");
         AtlasEntityHeader ret = new AtlasEntityHeader();
         try {
             //pre-fetching the properties

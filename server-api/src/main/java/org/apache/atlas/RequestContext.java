@@ -657,6 +657,13 @@ public class RequestContext {
         }
     }
 
+    public void endMetricRecordWithInvocations(MetricRecorder recorder, long invocationCount) {
+        if (metrics != null && recorder != null) {
+            metrics.recordMetricWithInvocations(recorder, invocationCount);
+        }
+    }
+
+
     public void recordEntityGuidUpdate(AtlasEntity entity, String guidInRequest) {
         recordEntityGuidUpdate(new EntityGuidPair(entity, guidInRequest));
     }
