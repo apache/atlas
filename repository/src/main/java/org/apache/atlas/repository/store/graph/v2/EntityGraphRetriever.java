@@ -1749,6 +1749,13 @@ public class EntityGraphRetriever {
             return properties.get(attribute.getName());
         }
 
+        if (AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean() && !attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE)) {
+            AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
+            Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
+            properties.put(attribute.getName(), mappedVertex);
+            RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
+        }
+
         return null;
     }
 
