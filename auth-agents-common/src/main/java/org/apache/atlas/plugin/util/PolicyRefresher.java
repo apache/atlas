@@ -324,7 +324,9 @@ public class PolicyRefresher extends Thread {
 
 		try {
 
+
 			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null && lastUpdatedTiemInMillis == -1) {
+				LOG.info("PolicyRefresher(serviceName=" + serviceName + "): loading all policies for first time");
 				RangerRESTUtils restUtils = new RangerRESTUtils();
 				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry());
 
@@ -332,6 +334,7 @@ public class PolicyRefresher extends Thread {
 							restUtils.getPluginId(serviceName, plugIn.getAppId()),
 							lastUpdatedTiemInMillis);
 			} else {
+				LOG.info("PolicyRefresher(serviceName=" + serviceName + "): loading delta policies from last known version=" + lastKnownVersion + ", lastUpdatedTime=" + lastUpdatedTiemInMillis);
 				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis, this.enableDeltaBasedRefresh);
 			}
 

@@ -314,7 +314,7 @@ public class RangerBasePlugin {
 				Boolean hasPolicyDeltas = RangerPolicyDeltaUtil.hasPolicyDeltas(policies);
 
 				if (hasPolicyDeltas == null) {
-					LOG.info("Downloaded policies do not require policy change !! [" + policies + "]");
+					LOG.info("Downloaded policies do not require policy change !! [" + (policies.getPolicies() != null ? policies.getPolicies().size() : 0) + "]");
 
 					if (this.policyEngine == null) {
 

@@ -154,7 +154,8 @@ public class AuthREST {
             ServicePolicies ret;
             if (usePolicyDelta) {
                 List<EntityAuditEventV2> auditEvents = getPolicyAuditLogs(serviceName, lastUpdatedTime);
-                ret = policyTransformer.extractAndTransformPolicyDelta(serviceName, auditEvents);
+                Map<String, EntityAuditEventV2.EntityAuditActionV2> policyChanges = policyTransformer.createPolicyChangeMap(serviceName, auditEvents);
+                ret = policyTransformer.getPoliciesDelta(serviceName, policyChanges);
             } else {
                 if (!isPolicyUpdated(serviceName, lastUpdatedTime)) {
                     return null;
@@ -174,8 +175,6 @@ public class AuthREST {
 
         List<String> entityUpdateToWatch = new ArrayList<>();
         entityUpdateToWatch.add(POLICY_ENTITY_TYPE);
-        entityUpdateToWatch.add(PERSONA_ENTITY_TYPE);
-        entityUpdateToWatch.add(PURPOSE_ENTITY_TYPE);
 
         AuditSearchParams parameters = new AuditSearchParams();
         Map<String, Object> dsl = getMap("size", 100);
@@ -187,16 +186,12 @@ public class AuthREST {
         mustClauseList.add(getMap("range", getMap("timestamp", getMap("gte", lastUpdatedTime))));
 
         dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
-
         parameters.setDsl(dsl);
-        parameters.setAttributes(new HashSet<>(Arrays.asList(
-                "qualifiedName",
-                "name"
-        )));
 
         List<EntityAuditEventV2> events = new ArrayList<>();
         try {
-            EntityAuditSearchResult result = auditRepository.searchEvents(parameters.getQueryString());
+            String query = parameters.getQueryString();
+            EntityAuditSearchResult result = auditRepository.searchEvents(query); // attributes are not getting passed in query
             if (result != null && !CollectionUtils.isEmpty(result.getEntityAudits())) {
                 events = result.getEntityAudits();
             }
