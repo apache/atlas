@@ -87,18 +87,12 @@ public class TaskQueueWatcher implements Runnable {
             LOG.debug("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
         }
         while (shouldRun.get()) {
+            TasksFetcher fetcher = new TasksFetcher(registry);
             try {
                 if (!redisService.acquireDistributedLock(ATLAS_TASK_LOCK)) {
                     Thread.sleep(AtlasConstants.TASK_WAIT_TIME_MS);
                     continue;
                 }
-
-                TasksFetcher fetcher = new TasksFetcher(registry);
-
-                Thread tasksFetcherThread = new Thread(fetcher);
-                tasksFetcherThread.start();
-                tasksFetcherThread.join();
-
                 List<AtlasTask> tasks = fetcher.getTasks();
                 if (CollectionUtils.isNotEmpty(tasks)) {
                     final CountDownLatch latch = new CountDownLatch(tasks.size());
@@ -108,7 +102,6 @@ public class TaskQueueWatcher implements Runnable {
                 } else {
                     redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
                 }
-                fetcher.clearTasks();
                 Thread.sleep(pollInterval);
             } catch (InterruptedException interruptedException) {
                 LOG.error("TaskQueueWatcher: Interrupted: thread is terminated, new tasks will not be loaded into the queue until next restart");
@@ -117,6 +110,7 @@ public class TaskQueueWatcher implements Runnable {
                 LOG.error("TaskQueueWatcher: Exception occurred " + e.getMessage(), e);
             } finally {
                 redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
+                fetcher.clearTasks();
             }
         }
     }
@@ -146,7 +140,7 @@ public class TaskQueueWatcher implements Runnable {
         }
     }
 
-    static class TasksFetcher implements Runnable {
+    static class TasksFetcher {
         private TaskRegistry registry;
         private List<AtlasTask> tasks = new ArrayList<>();
 
@@ -154,7 +148,6 @@ public class TaskQueueWatcher implements Runnable {
             this.registry = registry;
         }
 
-        @Override
         public void run() {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("TasksFetcher: Fetching tasks for queuing");
@@ -164,6 +157,7 @@ public class TaskQueueWatcher implements Runnable {
         }
 
         public List<AtlasTask> getTasks() {
+            run();
             return tasks;
         }
 

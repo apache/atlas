@@ -430,6 +430,7 @@ public class TaskRegistry {
                             }
                             else {
                                 LOG.warn(String.format("There is a mismatch on tasks status between ES and Cassandra for guid: %s", atlasTask.getGuid()));
+                                vertex.setProperty(Constants.TASK_STATUS, atlasTask.getStatus().toString());
                             }
                         } else {
                             LOG.warn("Null vertex while re-queuing tasks at index {}", fetched);
@@ -446,6 +447,8 @@ public class TaskRegistry {
                 }
             } catch (Exception e){
                 break;
+            } finally {
+                graph.commit();
             }
         }
 
