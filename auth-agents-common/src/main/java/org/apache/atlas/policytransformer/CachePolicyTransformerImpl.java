@@ -334,6 +334,8 @@ public class CachePolicyTransformerImpl {
 
         List<String> users = (List<String>) atlasPolicy.getAttribute("policyUsers");
         List<String> groups = (List<String>) atlasPolicy.getAttribute("policyGroups");
+
+        LOG.info("PolicyRoles: {}", atlasPolicy.getAttribute("policyRoles"));
         List<String> roles = (List<String>) atlasPolicy.getAttribute("policyRoles");
 
         List<RangerPolicyItemAccess> accesses = new ArrayList<>();
