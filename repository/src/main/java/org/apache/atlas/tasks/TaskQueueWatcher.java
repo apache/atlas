@@ -108,6 +108,7 @@ public class TaskQueueWatcher implements Runnable {
                 } else {
                     redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
                 }
+                fetcher.clearTasks();
                 Thread.sleep(pollInterval);
             } catch (InterruptedException interruptedException) {
                 LOG.error("TaskQueueWatcher: Interrupted: thread is terminated, new tasks will not be loaded into the queue until next restart");
@@ -164,6 +165,10 @@ public class TaskQueueWatcher implements Runnable {
 
         public List<AtlasTask> getTasks() {
             return tasks;
+        }
+
+        public void clearTasks() {
+            this.tasks.clear();
         }
     }
 
