@@ -1754,6 +1754,7 @@ public class EntityGraphRetriever {
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
             properties.put(attribute.getName(), mappedVertex);
             RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
+            return mappedVertex;
         }
 
         return null;
