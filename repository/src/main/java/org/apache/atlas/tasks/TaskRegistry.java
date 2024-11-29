@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.tasks;
 
+import com.datastax.oss.driver.shaded.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
@@ -31,6 +32,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
+import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
@@ -49,6 +51,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -61,6 +64,7 @@ public class TaskRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(TaskRegistry.class);
     public static final int TASK_FETCH_BATCH_SIZE = 100;
     public static final List<Map<String, Object>> SORT_ARRAY = Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc")));
+    public static final String JANUSGRAPH_VERTEX_INDEX = "janusgraph_vertex_index";
 
     private AtlasGraph graph;
     private TaskService taskService;
@@ -430,7 +434,7 @@ public class TaskRegistry {
                             }
                             else {
                                 LOG.warn(String.format("There is a mismatch on tasks status between ES and Cassandra for guid: %s", atlasTask.getGuid()));
-                                vertex.setProperty(Constants.TASK_STATUS, atlasTask.getStatus().toString());
+                                repairMismatchedTask(atlasTask);
                             }
                         } else {
                             LOG.warn("Null vertex while re-queuing tasks at index {}", fetched);
@@ -447,12 +451,54 @@ public class TaskRegistry {
                 }
             } catch (Exception e){
                 break;
-            } finally {
-                graph.commit();
             }
         }
 
         return ret;
+    }
+
+    private void repairMismatchedTask(AtlasTask atlasTask) {
+        AtlasElasticsearchQuery indexQuery = null;
+
+        try {
+            // Create a map for the fields to be updated
+            Map<String, Object> fieldsToUpdate = new HashMap<>();
+            fieldsToUpdate.put("__task_endTime", atlasTask.getEndTime().getTime());
+            fieldsToUpdate.put("__task_timeTakenInSeconds", atlasTask.getTimeTakenInSeconds());
+            fieldsToUpdate.put("__task_status", atlasTask.getStatus().toString());
+            fieldsToUpdate.put("__task_modificationTimestamp", atlasTask.getUpdatedTime().getTime()); // Set current timestamp
+
+            // Convert fieldsToUpdate map to JSON using Jackson
+            ObjectMapper objectMapper = new ObjectMapper();
+            String fieldsToUpdateJson = objectMapper.writeValueAsString(fieldsToUpdate);
+
+            // Construct the Elasticsearch update by query DSL
+            String queryDsl = "{"
+                    + "\"script\": {"
+                    + "    \"source\": \"for (entry in params.fields.entrySet()) { ctx._source[entry.getKey()] = entry.getValue() }\","
+                    + "    \"params\": {"
+                    + "        \"fields\": " + fieldsToUpdateJson
+                    + "    }"
+                    + "},"
+                    + "\"query\": {"
+                    + "    \"match\": {"
+                    + "        \"__task_guid\": \"" + atlasTask.getGuid() + "\""
+                    + "    }"
+                    + "}"
+                    + "}";
+
+            // Execute the Elasticsearch query
+            indexQuery = (AtlasElasticsearchQuery) graph.elasticsearchQuery(JANUSGRAPH_VERTEX_INDEX);
+            Map<String, LinkedHashMap> result = indexQuery.directUpdateByQuery(queryDsl);
+
+            if (result != null) {
+                LOG.info("Elasticsearch UpdateByQuery Result: " + result);
+            } else {
+                LOG.info("No documents updated in Elasticsearch for guid: " + atlasTask.getGuid());
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     public void commit() {
