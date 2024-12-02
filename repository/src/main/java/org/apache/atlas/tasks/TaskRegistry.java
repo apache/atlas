@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.tasks;
 
+import com.datastax.oss.driver.shaded.fasterxml.jackson.core.JsonProcessingException;
 import com.datastax.oss.driver.shaded.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
@@ -498,9 +499,12 @@ public class TaskRegistry {
             } else {
                 LOG.info("No documents updated in Elasticsearch for guid: " + atlasTask.getGuid());
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (JsonProcessingException e) {
+            LOG.error("Error converting fieldsToUpdate to JSON for task with guid: {} and docId: {}. Error: {}", atlasTask.getGuid(), docId, e.getMessage(), e);
         }
+         catch (AtlasBaseException e) {
+             LOG.error("Error executing Elasticsearch query for task with guid: {} and docId: {}. Error: {}", atlasTask.getGuid(), docId, e.getMessage(), e);
+         }
     }
 
     public void commit() {
