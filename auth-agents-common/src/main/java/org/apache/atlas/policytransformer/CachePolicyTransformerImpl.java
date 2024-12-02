@@ -148,7 +148,8 @@ public class CachePolicyTransformerImpl {
             servicePolicies.setServiceName(serviceName);
             servicePolicies.setPolicyVersion(-1L);
 
-            Date policyUpdateTime = lastAuditEventTime > 0 ? new Date(lastAuditEventTime) : new Date();
+            // Date policyUpdateTime = lastAuditEventTime > 0 ? new Date(lastAuditEventTime) : new Date();
+            Date policyUpdateTime = new Date();
             servicePolicies.setPolicyUpdateTime(policyUpdateTime);
 
             if (service != null) {

@@ -37,6 +37,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.Reader;
 import java.io.Writer;
+import java.util.Date;
 import java.util.Timer;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -278,7 +279,7 @@ public class PolicyRefresher extends Thread {
 				serviceDefSetInPlugin = false;
 				setLastActivationTimeInMillis(System.currentTimeMillis());
 				lastKnownVersion = svcPolicies.getPolicyVersion() != null ? svcPolicies.getPolicyVersion() : -1L;
-				lastUpdatedTiemInMillis = svcPolicies.getLatestUpdateTime() != null ? svcPolicies.getLatestUpdateTime().getTime() : -1L;
+				lastUpdatedTiemInMillis = svcPolicies.getPolicyUpdateTime() != null ? svcPolicies.getPolicyUpdateTime().getTime() : -1L;
 			} else {
 				if (!policiesSetInPlugin && !serviceDefSetInPlugin) {
 					plugIn.setPolicies(null);
