@@ -154,8 +154,9 @@ public class AuthREST {
             ServicePolicies ret;
             if (usePolicyDelta) {
                 List<EntityAuditEventV2> auditEvents = getPolicyAuditLogs(serviceName, lastUpdatedTime);
+                long lastEventTime = auditEvents.stream().mapToLong(EntityAuditEventV2::getTimestamp).max().orElse(0);
                 Map<String, EntityAuditEventV2.EntityAuditActionV2> policyChanges = policyTransformer.createPolicyChangeMap(serviceName, auditEvents);
-                ret = policyTransformer.getPoliciesDelta(serviceName, policyChanges);
+                ret = policyTransformer.getPoliciesDelta(serviceName, policyChanges, lastEventTime);
             } else {
                 if (!isPolicyUpdated(serviceName, lastUpdatedTime)) {
                     return null;

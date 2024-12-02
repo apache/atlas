@@ -20,10 +20,11 @@
 package org.apache.atlas.plugin.util;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.htrace.shaded.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.plugin.model.RangerPolicyDelta;
 import org.apache.atlas.plugin.model.RangerServiceDef;
@@ -33,12 +34,7 @@ import org.apache.atlas.plugin.policyengine.RangerPolicyEngineImpl;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @XmlRootElement
@@ -180,6 +176,40 @@ public class ServicePolicies implements java.io.Serializable {
 				+ "securityZones=" + securityZones
 				;
 	}
+
+	@JsonIgnore
+	public Date getLatestUpdateTime() {
+		Date lastestUpdateTime = new Date(0L);
+
+		if (policies != null && !policies.isEmpty()) {
+			for (RangerPolicy policy : policies) {
+				if (policy.getUpdateTime() != null && policy.getUpdateTime().after(lastestUpdateTime)) {
+					lastestUpdateTime = policy.getUpdateTime();
+				}
+			}
+		}
+
+		if (tagPolicies != null && tagPolicies.getPolicies() != null) {
+			for (RangerPolicy policy : tagPolicies.getPolicies()) {
+				if (policy.getUpdateTime() != null && policy.getUpdateTime().after(lastestUpdateTime)) {
+					lastestUpdateTime = policy.getUpdateTime();
+				}
+			}
+		}
+
+		if (policyDeltas != null && !policyDeltas.isEmpty()) {
+			for (RangerPolicyDelta delta : policyDeltas) {
+				if (delta.getPolicy() != null && delta.getPolicy().getUpdateTime() != null && delta.getPolicy().getUpdateTime().after(lastestUpdateTime)) {
+					lastestUpdateTime = delta.getPolicy().getUpdateTime();
+				}
+			}
+		}
+		if (Objects.equals(lastestUpdateTime, new Date(0L))) {
+			lastestUpdateTime = null;
+		}
+		return lastestUpdateTime;
+	}
+
 	public List<RangerPolicyDelta> getPolicyDeltas() { return this.policyDeltas; }
 
 	public void setPolicyDeltas(List<RangerPolicyDelta> policyDeltas) { this.policyDeltas = policyDeltas; }

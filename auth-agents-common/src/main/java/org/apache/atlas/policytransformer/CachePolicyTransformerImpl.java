@@ -138,17 +138,18 @@ public class CachePolicyTransformerImpl {
         return service;
     }
 
-    public ServicePolicies getPoliciesDelta(String serviceName, Map<String, EntityAuditActionV2> policyChanges) {
+    public ServicePolicies getPoliciesDelta(String serviceName, Map<String, EntityAuditActionV2> policyChanges, long lastAuditEventTime) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("CachePolicyTransformerImpl.getPoliciesDelta." + serviceName);
 
         ServicePolicies servicePolicies = new ServicePolicies();
 
         try {
-            servicePolicies.setServiceName(serviceName);
-
             service = getServiceEntity(serviceName);
+            servicePolicies.setServiceName(serviceName);
             servicePolicies.setPolicyVersion(-1L);
-            servicePolicies.setPolicyUpdateTime(new Date());
+
+            Date policyUpdateTime = lastAuditEventTime > 0 ? new Date(lastAuditEventTime) : new Date();
+            servicePolicies.setPolicyUpdateTime(policyUpdateTime);
 
             if (service != null) {
                 servicePolicies.setServiceName(serviceName);
@@ -678,6 +679,8 @@ public class CachePolicyTransformerImpl {
         policy.setGuid(atlasPolicy.getGuid());
         policy.setCreatedBy(atlasPolicy.getCreatedBy());
         policy.setCreateTime(atlasPolicy.getCreateTime());
+        policy.setUpdatedBy(atlasPolicy.getUpdatedBy());
+        policy.setUpdateTime(atlasPolicy.getUpdateTime());
         policy.setIsEnabled(getIsPolicyEnabled(atlasPolicy));
 
         policy.setConditions(getPolicyConditions(atlasPolicy));

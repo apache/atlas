@@ -22,11 +22,8 @@ package org.apache.atlas.plugin.util;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
-import org.apache.atlas.repository.audit.ESBasedAuditRepository;
-import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -281,7 +278,7 @@ public class PolicyRefresher extends Thread {
 				serviceDefSetInPlugin = false;
 				setLastActivationTimeInMillis(System.currentTimeMillis());
 				lastKnownVersion = svcPolicies.getPolicyVersion() != null ? svcPolicies.getPolicyVersion() : -1L;
-				lastUpdatedTiemInMillis = svcPolicies.getPolicyUpdateTime() != null ? svcPolicies.getPolicyUpdateTime().getTime() : -1L;
+				lastUpdatedTiemInMillis = svcPolicies.getLatestUpdateTime() != null ? svcPolicies.getLatestUpdateTime().getTime() : -1L;
 			} else {
 				if (!policiesSetInPlugin && !serviceDefSetInPlugin) {
 					plugIn.setPolicies(null);
@@ -402,7 +399,7 @@ public class PolicyRefresher extends Thread {
 					}
 
 					lastKnownVersion = policies.getPolicyVersion() == null ? -1 : policies.getPolicyVersion().longValue();
-					lastUpdatedTiemInMillis = policies.getPolicyUpdateTime() == null ? -1 : policies.getPolicyUpdateTime().getTime();
+					lastUpdatedTiemInMillis = policies.getLatestUpdateTime() == null ? -1 : policies.getLatestUpdateTime().getTime();
 				}
 			} catch (Exception excp) {
 				LOG.error("failed to load policies from cache file " + cacheFile.getAbsolutePath(), excp);
