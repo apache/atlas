@@ -1871,6 +1871,7 @@ public class EntityGraphRetriever {
 
         if (AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean() && !attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE)) {
             AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
+            LOG.info("Fetching non primitive attributes for entity: {}", attribute.getName());
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
             properties.put(attribute.getName(), mappedVertex);
             RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
