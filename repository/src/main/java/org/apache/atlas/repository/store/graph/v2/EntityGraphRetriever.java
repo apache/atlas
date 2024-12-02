@@ -1885,20 +1885,19 @@ public class EntityGraphRetriever {
         }
         LOG.info("capturing property its category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
 
+        TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
+        TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ?((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
 
-        if (properties.get(attribute.getName()) != null ||
-                attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE)) {
+
+        if (properties.get(attribute.getName()) != null &&
+                (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) || (elementTypeCategory == null || elementTypeCategory.equals(TypeCategory.PRIMITIVE)))) {
+            LOG.info("capturing non null attributes - {} : {} : {} ", attribute.getName(), properties.get(attribute.getName()), attribute.getAttributeType().getTypeCategory());
             return properties.get(attribute.getName());
         }
 
-        if (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ARRAY)) {
+        if (properties.get(attribute.getName()) == null &&  attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ARRAY)) {
             LOG.info("capturing null array attributes - {} : {}", attribute.getName(), properties.get(attribute.getName()));
             return new ArrayList<>();
-        }
-
-        if (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.MAP)) {
-            LOG.info("capturing null map attributes - {}:  {}", attribute.getName(),  properties.get(attribute.getName()));
-            return new HashMap<>();
         }
 
         if (properties.get(attribute.getName()) != null && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
