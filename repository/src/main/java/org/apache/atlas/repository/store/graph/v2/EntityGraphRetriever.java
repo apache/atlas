@@ -1010,7 +1010,7 @@ public class EntityGraphRetriever {
         return mapVertexToAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }
 
-    private Map<String, Object> preloadProperties(AtlasVertex entityVertex) {
+    private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set attributes) {
         Map<String, Object> propertiesMap = new HashMap<>();
 
         // Execute the traversal to fetch properties
@@ -1020,24 +1020,28 @@ public class EntityGraphRetriever {
         while (traversal.hasNext()) {
             VertexProperty<Object> property = traversal.next();
 
-            if (property.isPresent()) { // Ensure the property exists
-                if (propertiesMap.containsKey(property.key())) {
-                    Object prevValue = propertiesMap.get(property.key());
-                    if (prevValue instanceof List) {
-                        ((List) prevValue).add(property.value());
+            AtlasAttribute attribute = entityType.getAttribute(property.key());
+            TypeCategory typeCategory = attribute != null ? attribute.getAttributeType().getTypeCategory() : null;
+            TypeCategory elementTypeCategory = attribute != null && attribute.getAttributeType().getTypeCategory() == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
+
+            if (propertiesMap.get(property.key()) == null) {
+                propertiesMap.put(property.key(), property.value());
+            } else {
+                if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
+                    Object value = propertiesMap.get(property.key());
+                    if (value instanceof List) {
+                        ((List) value).add(property.value());
                     } else {
                         List<Object> values = new ArrayList<>();
-                        values.add(prevValue);
+                        values.add(value);
                         values.add(property.value());
                         propertiesMap.put(property.key(), values);
                     }
-                }else {
+                } else {
                     propertiesMap.put(property.key(), property.value());
                 }
-
             }
         }
-
         return propertiesMap;
     }
 
@@ -1166,9 +1170,10 @@ public class EntityGraphRetriever {
         AtlasEntityHeader ret = new AtlasEntityHeader();
         try {
             //pre-fetching the properties
-            Map<String, Object> properties = preloadProperties(entityVertex);
-
             String typeName = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class); //properties.get returns null
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName); // this is not costly
+            Map<String, Object> properties = preloadProperties(entityVertex, typeRegistry.getEntityTypeByName(GraphHelper.getTypeName(entityVertex)), attributes);
+
             String guid = (String) properties.get(Constants.GUID_PROPERTY_KEY);
 
             Integer value = (Integer)properties.get(Constants.IS_INCOMPLETE_PROPERTY_KEY);
@@ -1204,7 +1209,6 @@ public class EntityGraphRetriever {
                         termAssignmentHeaders.stream().map(AtlasTermAssignmentHeader::getDisplayText)
                                 .collect(Collectors.toList()));
             }
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName); // this is not costly
 
             if (entityType != null) {
                 for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
@@ -1878,13 +1882,21 @@ public class EntityGraphRetriever {
         if (vertex == null || attribute == null) {
             return null;
         }
-
         LOG.info("capturing property its category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
 
-        if (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) ||
-                attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ENUM)||
-                attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ARRAY)) {
+        if ((properties.get(attribute.getName()) != null) &&
+                (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) ||
+                        attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ENUM) ||
+                        attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ARRAY)
+                )) {
             return properties.get(attribute.getName());
+        }
+
+        TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
+        TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
+
+        if (elementTypeCategory == TypeCategory.PRIMITIVE) {
+            return new ArrayList<>();
         }
 
         Set<TypeCategory> ENRICH_PROPERTY_TYPES = new HashSet<>(Arrays.asList(TypeCategory.STRUCT, TypeCategory.OBJECT_ID_TYPE, TypeCategory.MAP));
