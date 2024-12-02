@@ -806,24 +806,24 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         atlasEntityHeaderCache.put(entity.getEntityGuid(), entityHeader);
                     }
 
-                    AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), entityHeader);
-                    if (entities.get(i).getBusinessMetadata() != null) {
-                        requestBuilder.setBusinessMetadata(entities.get(i).getBusinessMetadata());
+                    AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.valueOf(entity.getAction()), entityHeader);
+                    if (entity.getBusinessMetadata() != null) {
+                        requestBuilder.setBusinessMetadata(entity.getBusinessMetadata());
                     }
 
                     AtlasEntityAccessRequest entityAccessRequest = requestBuilder.build();
 
-                    AtlasAuthorizationUtils.verifyAccess(entityAccessRequest, entities.get(i).getAction() + "guid=" + entities.get(i).getEntityGuid());
-                    response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), true, null , entities.get(i).getBusinessMetadata()));
+                    AtlasAuthorizationUtils.verifyAccess(entityAccessRequest, entity.getAction() + "guid=" + entity.getEntityGuid());
+                    response.add(new AtlasEvaluatePolicyResponse(entity.getTypeName(), entity.getEntityGuid(), entity.getAction(), entity.getEntityId(), true, null , entity.getBusinessMetadata()));
                 } catch (AtlasBaseException e) {
                     AtlasErrorCode code = e.getAtlasErrorCode();
                     String errorCode = code.getErrorCode();
-                    response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), false, errorCode, entities.get(i).getBusinessMetadata()));
+                    response.add(new AtlasEvaluatePolicyResponse(entity.getTypeName(), entity.getEntityGuid(), entity.getAction(), entity.getEntityId(), false, errorCode, entity.getBusinessMetadata()));
                 }
 
             } else if (ENTITY_REMOVE_CLASSIFICATION.name().equals(action) || ENTITY_ADD_CLASSIFICATION.name().equals(action) || ENTITY_UPDATE_CLASSIFICATION.name().equals(action)) {
 
-                if (entities.get(i).getClassification() == null) {
+                if (entity.getClassification() == null) {
                     throw new AtlasBaseException(BAD_REQUEST, "classification needed for " + action + " authorization");
                 }
                 try {
@@ -834,18 +834,18 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         atlasEntityHeaderCache.put(entity.getEntityGuid(), entityHeader);
                     }
 
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entities.get(i).getAction()), entityHeader, new AtlasClassification(entities.get(i).getClassification())));
-                    response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), entities.get(i).getClassification(), true, null));
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entity.getAction()), entityHeader, new AtlasClassification(entity.getClassification())));
+                    response.add(new AtlasEvaluatePolicyResponse(entity.getTypeName(), entity.getEntityGuid(), entity.getAction(), entity.getEntityId(), entity.getClassification(), true, null));
 
                 } catch (AtlasBaseException e) {
                     AtlasErrorCode code = e.getAtlasErrorCode();
                     String errorCode = code.getErrorCode();
-                    response.add(new AtlasEvaluatePolicyResponse(entities.get(i).getTypeName(), entities.get(i).getEntityGuid(), entities.get(i).getAction(), entities.get(i).getEntityId(), entities.get(i).getClassification(), false, errorCode));
+                    response.add(new AtlasEvaluatePolicyResponse(entity.getTypeName(), entity.getEntityGuid(), entity.getAction(), entity.getEntityId(), entity.getClassification(), false, errorCode));
                 }
 
             }    else if (RELATIONSHIP_ADD.name().equals(action) || RELATIONSHIP_REMOVE.name().equals(action) || RELATIONSHIP_UPDATE.name().equals(action)) {
 
-                if (entities.get(i).getRelationShipTypeName() == null) {
+                if (entity.getRelationShipTypeName() == null) {
                     throw new AtlasBaseException(BAD_REQUEST, "RelationShip TypeName needed for " + action + " authorization");
                 }
 
@@ -855,21 +855,25 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         end1Entity = atlasEntityHeaderCache.get(entity.getEntityGuidEnd1());
                     } else {
                         end1Entity = getAtlasEntityHeader(entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd1());
-                        atlasEntityHeaderCache.put(entity.getEntityGuidEnd1(), end1Entity);
+                        if (entity.getEntityGuidEnd1() != null) {
+                            atlasEntityHeaderCache.put(entity.getEntityGuidEnd1(), end1Entity);
+                        }
                     }
                     AtlasEntityHeader end2Entity;
                     if (atlasEntityHeaderCache.containsKey(entity.getEntityGuidEnd2())) {
                         end2Entity = atlasEntityHeaderCache.get(entity.getEntityGuidEnd2());
                     } else {
                         end2Entity = getAtlasEntityHeader(entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), entity.getEntityTypeEnd2());
-                        atlasEntityHeaderCache.put(entity.getEntityGuidEnd2(), end2Entity);
+                        if (entity.getEntityGuidEnd2() != null) {
+                            atlasEntityHeaderCache.put(entity.getEntityGuidEnd2(), end2Entity);
+                        }
                     }
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entities.get(i).getRelationShipTypeName(), end1Entity, end2Entity));
-                    response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(), entities.get(i).getEntityIdEnd2(), true, null));
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entity.getRelationShipTypeName(), end1Entity, end2Entity));
+                    response.add(new AtlasEvaluatePolicyResponse(action, entity.getRelationShipTypeName(), entity.getEntityTypeEnd1(), entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd2(), entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), true, null));
                 } catch (AtlasBaseException e) {
                     AtlasErrorCode code = e.getAtlasErrorCode();
                     String errorCode = code.getErrorCode();
-                    response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(), entities.get(i).getEntityIdEnd2(), false, errorCode));
+                    response.add(new AtlasEvaluatePolicyResponse(action, entity.getRelationShipTypeName(), entity.getEntityTypeEnd1(), entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd2(), entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), false, errorCode));
                 }
             }
         }
