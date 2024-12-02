@@ -27,6 +27,7 @@ on:
       - master
       - lineageondemand
       - janusoptimisation
+      - janusprefetchwith0.6
 
 jobs:
   build:
