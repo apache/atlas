@@ -248,12 +248,14 @@ public class ClassificationAssociator {
             Set<String> requiredClassificationKeys = Stream.concat(
                             Optional.ofNullable(incomingEntityHeader.getRemoveClassifications()).orElse(Collections.emptyList()).stream(),
                             Optional.ofNullable(incomingEntityHeader.getUpdateClassifications()).orElse(Collections.emptyList()).stream()
-                    ).map(this::generateClassificationComparisonKey)
+                    ).filter(classification -> classification.getEntityGuid().equals(entityToBeChanged.getGuid()))
+                    .map(this::generateClassificationComparisonKey)
                     .collect(Collectors.toSet());
 
             Set<String> preExistingClassificationKeys = Optional.ofNullable(entityToBeChanged.getClassifications())
                     .orElse(Collections.emptyList())
                     .stream()
+                    .filter(classification -> classification.getEntityGuid().equals(entityToBeChanged.getGuid()))
                     .map(this::generateClassificationComparisonKey)
                     .collect(Collectors.toSet());
 
@@ -269,6 +271,7 @@ public class ClassificationAssociator {
             List<AtlasClassification> filteredClassifications = Optional.ofNullable(incomingEntityHeader.getAppendClassifications())
                     .orElse(Collections.emptyList())
                     .stream()
+                    .filter(classification -> classification.getEntityGuid().equals(entityToBeChanged.getGuid()))
                     .filter(appendClassification -> !preExistingClassificationKeys.contains(generateClassificationComparisonKey(appendClassification)))
                     .collect(Collectors.toList());
 
