@@ -1256,8 +1256,6 @@ public class EntityGraphRetriever {
                         }
                     }
                 }
-                ret.setAttribute("meanings", ret.getMeanings());
-                ret.setAttribute("meaningNames", ret.getMeaningNames());
             }
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
@@ -1903,8 +1901,8 @@ public class EntityGraphRetriever {
             return new ArrayList<>();
         }
 
-        Set<TypeCategory> ENRICH_PROPERTY_TYPES = new HashSet<>(Arrays.asList(TypeCategory.STRUCT, TypeCategory.OBJECT_ID_TYPE, TypeCategory.MAP));
-        if (ENRICH_PROPERTY_TYPES.contains(attribute.getAttributeType().getTypeCategory())) {
+
+        if (AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
             LOG.info("capturing excluded property set category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
             AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
