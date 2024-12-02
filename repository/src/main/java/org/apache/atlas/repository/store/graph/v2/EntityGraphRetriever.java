@@ -1227,6 +1227,8 @@ public class EntityGraphRetriever {
                     ret.setDisplayText(properties.get(QUALIFIED_NAME).toString());
                 }
 
+
+
                 //attributes = only the attributes of entityType
                 if (CollectionUtils.isNotEmpty(attributes)) {
                     for (String attrName : attributes) {
@@ -1254,9 +1256,10 @@ public class EntityGraphRetriever {
                         }
                     }
                 }
+                ret.setAttribute("meanings", ret.getMeanings());
+                ret.setAttribute("meaningNames", ret.getMeaningNames());
             }
-        }
-        finally {
+        } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
         return ret;
@@ -1883,6 +1886,10 @@ public class EntityGraphRetriever {
             return null;
         }
         LOG.info("capturing property its category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
+
+        if (properties.get(attribute.getName()) == "meanings") {
+            LOG.info("meanings type: {}", ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory());
+        }
 
         if (properties.get(attribute.getName()) != null) {
             return properties.get(attribute.getName());
