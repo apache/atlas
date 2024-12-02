@@ -851,18 +851,18 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                 try {
                     AtlasEntityHeader end1Entity;
-                    if (atlasEntityHeaderCache.containsKey(entity.getEntityGuid())) {
-                        end1Entity = atlasEntityHeaderCache.get(entity.getEntityGuid());
+                    if (atlasEntityHeaderCache.containsKey(entity.getEntityGuidEnd1())) {
+                        end1Entity = atlasEntityHeaderCache.get(entity.getEntityGuidEnd1());
                     } else {
                         end1Entity = getAtlasEntityHeader(entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd1());
-                        atlasEntityHeaderCache.put(entity.getEntityGuid(), entityHeader);
+                        atlasEntityHeaderCache.put(entity.getEntityGuidEnd1(), end1Entity);
                     }
                     AtlasEntityHeader end2Entity;
-                    if (atlasEntityHeaderCache.containsKey(entity.getEntityGuid())) {
-                        end2Entity = atlasEntityHeaderCache.get(entity.getEntityGuid());
+                    if (atlasEntityHeaderCache.containsKey(entity.getEntityGuidEnd2())) {
+                        end2Entity = atlasEntityHeaderCache.get(entity.getEntityGuidEnd2());
                     } else {
                         end2Entity = getAtlasEntityHeader(entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), entity.getEntityTypeEnd2());
-                        atlasEntityHeaderCache.put(entity.getEntityGuid(), entityHeader);
+                        atlasEntityHeaderCache.put(entity.getEntityGuidEnd2(), end2Entity);
                     }
                     AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entities.get(i).getRelationShipTypeName(), end1Entity, end2Entity));
                     response.add(new AtlasEvaluatePolicyResponse(action, entities.get(i).getRelationShipTypeName(), entities.get(i).getEntityTypeEnd1(), entities.get(i).getEntityGuidEnd1(), entities.get(i).getEntityIdEnd1(), entities.get(i).getEntityTypeEnd2(), entities.get(i).getEntityGuidEnd2(), entities.get(i).getEntityIdEnd2(), true, null));
