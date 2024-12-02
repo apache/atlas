@@ -385,47 +385,38 @@ public class TaskRegistry {
         DirectIndexQueryResult indexQueryResult = null;
         List<AtlasTask> ret = new ArrayList<>();
 
-        int size = 1000; // Batch size for fetching tasks
-        int from = 0; // Pagination offset
-        int totalFetched = 0; // Tracks the total number of tasks fetched
-
-        LOG.info("Starting fetch of PENDING and IN_PROGRESS tasks. Queue size limit: {}", queueSize);
+        int size = 1000;
+        int from = 0;
 
         IndexSearchParams indexSearchParams = new IndexSearchParams();
 
-        // Build query for PENDING and IN_PROGRESS tasks
-        List<Map<String, Object>> statusClauseList = new ArrayList<>();
+        List statusClauseList = new ArrayList();
         statusClauseList.add(mapOf("match", mapOf(TASK_STATUS, AtlasTask.Status.IN_PROGRESS.toString())));
         statusClauseList.add(mapOf("match", mapOf(TASK_STATUS, AtlasTask.Status.PENDING.toString())));
 
-        Map<String, Object> dsl = mapOf(
-                "query", mapOf("bool", mapOf("should", statusClauseList))
-        );
+        Map<String, Object> dsl = mapOf("query", mapOf("bool", mapOf("should", statusClauseList)));
         dsl.put("sort", Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc"))));
         dsl.put("size", size);
-
+        int totalFetched = 0;
         while (true) {
             int fetched = 0;
             try {
                 if (totalFetched + size > queueSize) {
-                    size = queueSize - totalFetched; // Adjust size to not exceed queue size
-                    LOG.info("Adjusting fetch size to {} based on queue size constraint.", size);
+                    size = queueSize - totalFetched;
                 }
 
                 dsl.put("from", from);
                 dsl.put("size", size);
 
-                LOG.debug("DSL Query for iteration: {}", dsl);
                 indexSearchParams.setDsl(dsl);
 
-                LOG.info("Executing Elasticsearch query with from: {} and size: {}", from, size);
                 AtlasIndexQuery indexQuery = graph.elasticsearchQuery(Constants.VERTEX_INDEX, indexSearchParams);
 
                 try {
                     indexQueryResult = indexQuery.vertices(indexSearchParams);
-                    LOG.info("Query executed successfully for from: {} with size: {}", from, size);
                 } catch (AtlasBaseException e) {
-                    LOG.error("Failed to fetch PENDING/IN_PROGRESS task vertices. Exiting loop.", e);
+                    LOG.error("Failed to fetch pending/in-progress task vertices to re-que");
+                    e.printStackTrace();
                     break;
                 }
 
@@ -437,47 +428,34 @@ public class TaskRegistry {
 
                         if (vertex != null) {
                             AtlasTask atlasTask = toAtlasTask(vertex);
-
-                            LOG.debug("Processing fetched task: {}", atlasTask);
                             if (atlasTask.getStatus().equals(AtlasTask.Status.PENDING) ||
-                                    atlasTask.getStatus().equals(AtlasTask.Status.IN_PROGRESS)) {
-                                LOG.info("Adding task to the result list: {}", atlasTask);
+                                    atlasTask.getStatus().equals(AtlasTask.Status.IN_PROGRESS) ){
+                                LOG.info(String.format("Fetched task from index search: %s", atlasTask.toString()));
                                 ret.add(atlasTask);
                             } else {
                                 LOG.warn("Status mismatch for task with guid: {}. Expected PENDING/IN_PROGRESS but found: {}",
                                         atlasTask.getGuid(), atlasTask.getStatus());
-
-                                // Repair mismatched task
                                 String docId = LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay()));
-                                LOG.info("Repairing mismatched task with docId: {}", docId);
                                 repairMismatchedTask(atlasTask, docId);
                             }
                         } else {
-                            LOG.warn("Null vertex encountered while re-queuing tasks at index {}", fetched);
+                            LOG.warn("Null vertex while re-queuing tasks at index {}", fetched);
                         }
 
                         fetched++;
                     }
-                    LOG.info("Fetched {} tasks in this iteration.", fetched);
-                } else {
-                    LOG.warn("Index query result is null for from: {} and size: {}", from, size);
                 }
 
                 totalFetched += fetched;
-                LOG.info("Total tasks fetched so far: {}. Incrementing offset by {}.", totalFetched, size);
-
                 from += size;
                 if (fetched < size || totalFetched >= queueSize) {
-                    LOG.info("Breaking loop. Fetched fewer tasks ({}) than requested size ({}) or reached queue size limit ({}).", fetched, size, queueSize);
                     break;
                 }
-            } catch (Exception e) {
-                LOG.error("Exception occurred during task fetching process. Exiting loop.", e);
+            } catch (Exception e){
                 break;
             }
         }
 
-        LOG.info("Fetch process completed. Total tasks fetched: {}.", totalFetched);
         return ret;
     }
 
