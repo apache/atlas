@@ -1884,11 +1884,7 @@ public class EntityGraphRetriever {
         }
         LOG.info("capturing property its category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
 
-        if ((properties.get(attribute.getName()) != null) &&
-                (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) ||
-                        attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ENUM) ||
-                        attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ARRAY)
-                )) {
+        if (properties.get(attribute.getName()) != null) {
             return properties.get(attribute.getName());
         }
 
@@ -1896,6 +1892,7 @@ public class EntityGraphRetriever {
         TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
 
         if (elementTypeCategory == TypeCategory.PRIMITIVE) {
+            LOG.info("capturing null array attributes - {}: {} : {}", attribute.getName(), elementTypeCategory, properties.get(attribute.getName()));
             return new ArrayList<>();
         }
 
