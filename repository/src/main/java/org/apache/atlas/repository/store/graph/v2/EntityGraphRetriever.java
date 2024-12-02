@@ -1887,7 +1887,7 @@ public class EntityGraphRetriever {
         }
         LOG.info("capturing property its category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
 
-        if (properties.get(attribute.getName()) == "meanings") {
+        if (attribute.getName().equals( "meanings")){
             LOG.info("meanings type: {}", ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory());
         }
 
