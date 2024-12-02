@@ -1132,6 +1132,7 @@ public class EntityGraphRetriever {
                             }
                         }
 
+
                         Object attrValue = getVertexAttribute(entityVertex, attribute);
 
                         if (attrValue != null) {
@@ -1865,13 +1866,21 @@ public class EntityGraphRetriever {
             return null;
         }
 
-        if (properties.get(attribute.getName()) != null) {
+        LOG.info("capturing property its category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
+
+        if (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) ||
+                attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ENUM)) {
             return properties.get(attribute.getName());
         }
 
-        if (AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean() && !attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE)) {
+        if (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ARRAY) &&
+                (attribute.getAttributeType()).getTypeCategory().getClass().getComponentType().toString().equals("class java.lang.String")) {
+            return properties.get(attribute.getName());
+        }
+
+        Set<TypeCategory> ENRICH_PROPERTY_TYPES = new HashSet<>(Arrays.asList(TypeCategory.STRUCT, TypeCategory.OBJECT_ID_TYPE, TypeCategory.MAP));
+        if (ENRICH_PROPERTY_TYPES.contains(attribute.getAttributeType().getTypeCategory())) {
             AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
-            LOG.info("Fetching non primitive attributes for entity: {}", attribute.getName());
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
             properties.put(attribute.getName(), mappedVertex);
             RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
