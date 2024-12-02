@@ -1021,7 +1021,20 @@ public class EntityGraphRetriever {
             VertexProperty<Object> property = traversal.next();
 
             if (property.isPresent()) { // Ensure the property exists
-                propertiesMap.put(property.key(), property.value());
+                if (propertiesMap.containsKey(property.key())) {
+                    Object prevValue = propertiesMap.get(property.key());
+                    if (prevValue instanceof List) {
+                        ((List) prevValue).add(property.value());
+                    } else {
+                        List<Object> values = new ArrayList<>();
+                        values.add(prevValue);
+                        values.add(property.value());
+                        propertiesMap.put(property.key(), values);
+                    }
+                }else {
+                    propertiesMap.put(property.key(), property.value());
+                }
+
             }
         }
 
@@ -1869,17 +1882,14 @@ public class EntityGraphRetriever {
         LOG.info("capturing property its category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
 
         if (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) ||
-                attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ENUM)) {
-            return properties.get(attribute.getName());
-        }
-
-        if (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ARRAY) &&
-                (attribute.getAttributeType()).getTypeCategory().getClass().getComponentType().toString().equals("class java.lang.String")) {
+                attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ENUM)||
+                attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ARRAY)) {
             return properties.get(attribute.getName());
         }
 
         Set<TypeCategory> ENRICH_PROPERTY_TYPES = new HashSet<>(Arrays.asList(TypeCategory.STRUCT, TypeCategory.OBJECT_ID_TYPE, TypeCategory.MAP));
         if (ENRICH_PROPERTY_TYPES.contains(attribute.getAttributeType().getTypeCategory())) {
+            LOG.info("capturing excluded property set category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
             AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
             properties.put(attribute.getName(), mappedVertex);
