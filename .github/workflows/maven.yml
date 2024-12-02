@@ -26,7 +26,7 @@ on:
       - development
       - master
       - lineageondemand
-      - janusprefetchwith0.6
+      - janusoptimisation
 
 jobs:
   build:
@@ -35,12 +35,12 @@ jobs:
 
     steps:
       - uses: actions/checkout@v2
-      
+
       - name: Set up JDK 1.8
         uses: actions/setup-java@v1
         with:
           java-version: 1.8
-      
+
       - name: Cache Maven packages
         uses: actions/cache@v2
         with:
@@ -49,8 +49,9 @@ jobs:
           restore-keys: ${{ runner.os }}-m2
 
       - name: Get branch name
-        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-        id: get_branch
+        run: |
+          echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+          echo BRANCH_NAME=${GITHUB_REF#refs/heads/}
 
       - name: Create Maven Settings
         uses: s4u/maven-settings-action@v2.8.0
@@ -64,7 +65,7 @@ jobs:
 
       - name: Build with Maven
         run: |
-          branch_name=${{ steps.get_branch.outputs.branch }} 
+          branch_name=${{ env.BRANCH_NAME }}
           if [[ $branch_name == 'main' || $branch_name == 'master' || $branch_name == 'lineageondemand' ]]
           then
               echo "build without dashboard"
@@ -74,19 +75,26 @@ jobs:
               chmod +x ./build.sh && ./build.sh
           fi
 
-      - run:   echo "REPOSITORY_NAME=`echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//"`" >> $GITHUB_ENV
+      - name: Get Repository Name
+        run:   echo "REPOSITORY_NAME=`echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//"`" >> $GITHUB_ENV
         shell: bash
 
       - name: Get version tag
-        run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ steps.get_branch.outputs.branch }} | awk '{ print $1}' | cut -c1-7`)abcd"
-        id: get_version
+        # run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ env.BRANCH_NAME }} | awk '{ print $1}' | cut -c1-7`)abcd"
+        run: |
+          echo "VERSION=$(git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ env.BRANCH_NAME }} | awk '{ print $1}' | cut -c1-7 | head -n 1)abcd"
+          echo "VERSION=$(git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ env.BRANCH_NAME }} | awk '{ print $1}' | cut -c1-7 | tr -d '[:space:]')abcd"
+          echo "VERSION=$(git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ env.BRANCH_NAME }} | awk '{ print $1}' | cut -c1-7 | tr -d '[:space:]')abcd" >> $GITHUB_ENV
 
-      - name: Set up Buildx 
+      - name: Get commit ID
+        run: echo "COMMIT_ID=$(echo ${GITHUB_SHA} | cut -c1-7)abcd" >> $GITHUB_ENV
+
+      - name: Set up Buildx
         id: buildx
         uses: docker/setup-buildx-action@v1
 
       - name: Login to GitHub Registry
-        uses: docker/login-action@v1 
+        uses: docker/login-action@v1
         with:
           registry: ghcr.io
           username: $GITHUB_ACTOR
@@ -103,8 +111,8 @@ jobs:
           provenance: true
           push: true
           tags: |
-            ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:latest
-            ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ steps.get_branch.outputs.branch }}:${{ steps.get_version.outputs.version }}
+            ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ env.BRANCH_NAME }}:latest
+            ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ env.BRANCH_NAME }}:${{ env.COMMIT_ID }}
 
       - name: Scan Image
         uses: aquasecurity/trivy-action@master
