@@ -35,12 +35,18 @@ public class ExceptionMapperUtil {
                 .append("  \"message\": \"There was an error processing your request.\",\n")
                 .append("  \"causes\": [\n");
 
-        // Traverse through the chain of causes
+        // Traverse through the chain of causes, avoiding cycles
         List<String> causes = new ArrayList<>();
+        List<Throwable> visited = new ArrayList<>();
         Throwable currentException = exception;
         while (currentException != null) {
+            if (visited.contains(currentException)) {
+                causes.add("    {\n      \"errorType\": \"CircularReferenceDetected\",\n      \"errorMessage\": \"A circular reference was detected in the exception chain.\",\n      \"location\": \"Unavailable\"\n    }");
+                break;
+            }
+            visited.add(currentException);
             causes.add(formatCause(currentException));
-            currentException =currentException .getCause();
+            currentException = currentException.getCause();
         }
 
         // Add all formatted causes to the response
