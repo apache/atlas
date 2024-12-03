@@ -25,7 +25,7 @@ on:
       - beta
       - development
       - master
-      - dg1869dev
+      - lineageondemand
 
 jobs:
   build:
@@ -64,7 +64,7 @@ jobs:
       - name: Build with Maven
         run: |
           branch_name=${{ steps.get_branch.outputs.branch }} 
-          if [[ $branch_name == 'main' || $branch_name == 'master' || $branch_name == 'dg1869dev' ]]
+          if [[ $branch_name == 'main' || $branch_name == 'master' || $branch_name == 'lineageondemand' ]]
           then
               echo "build without dashboard"
               chmod +x ./build.sh && ./build.sh build_without_dashboard
