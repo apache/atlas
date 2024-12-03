@@ -27,6 +27,15 @@ public class ExceptionMapperUtil {
 
     @SuppressWarnings("UnusedParameters")
     protected static String formatErrorMessage(long id, Exception exception) {
+        if (exception == null) {
+            // If the exception is null, return a minimal error message
+            return "{\n"
+                    + String.format("  \"errorId\": \"%016x\",\n", id)
+                    + "  \"message\": \"No exception provided\",\n"
+                    + "  \"causes\": []\n"
+                    + "}";
+        }
+
         StringBuilder response = new StringBuilder();
 
         // Add error ID and general error message
