@@ -1024,7 +1024,7 @@ public class EntityGraphRetriever {
             TypeCategory typeCategory = attribute != null ? attribute.getAttributeType().getTypeCategory() : null;
             TypeCategory elementTypeCategory = attribute != null && attribute.getAttributeType().getTypeCategory() == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
 
-
+            if (property.isPresent()) {
                 if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
                     Object value = propertiesMap.get(property.key());
                     if (value instanceof List) {
@@ -1039,6 +1039,7 @@ public class EntityGraphRetriever {
                         propertiesMap.put(property.key(), property.value());
                     }
                 }
+            }
         }
 
         return propertiesMap;
