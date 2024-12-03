@@ -123,13 +123,6 @@ public enum AtlasConfiguration {
      * This configuration is used to enable fetching non primitive attributes in index search
      */
     ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES("atlas.indexsearch.enable.fetching.non.primitive.attributes", false),
-
-    /**
-     * decides which flow of indexsearch to be used
-     * if no of attributes requested is less than configured invoke old flow
-     * else invoke new flow
-     */
-    ATLAS_INDEXSEARCH_ATTRIBUTES_MIN_LIMIT("atlas.indexsearch.attributes.min.limit", 8),
     ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false),
 
     ATLAS_UD_RELATIONSHIPS_MAX_COUNT("atlas.ud.relationship.max.count", 100);
