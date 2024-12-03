@@ -1010,8 +1010,7 @@ public class EntityGraphRetriever {
         return mapVertexToAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }
 
-    private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set attributes) {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("preloadProperties");
+    private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType) {
         Map<String, Object> propertiesMap = new HashMap<>();
 
         // Execute the traversal to fetch properties
@@ -1044,7 +1043,6 @@ public class EntityGraphRetriever {
             }
         }
 
-        RequestContext.get().endMetricRecord(metricRecorder);
         return propertiesMap;
     }
 
@@ -1175,7 +1173,7 @@ public class EntityGraphRetriever {
             //pre-fetching the properties
             String typeName = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class); //properties.get returns null
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName); // this is not costly
-            Map<String, Object> properties = preloadProperties(entityVertex, entityType, attributes);
+            Map<String, Object> properties = preloadProperties(entityVertex, entityType);
 
             String guid = (String) properties.get(Constants.GUID_PROPERTY_KEY);
 
@@ -1883,7 +1881,6 @@ public class EntityGraphRetriever {
     }
 
     public Object getVertexAttributePreFetchCache(AtlasVertex vertex, AtlasAttribute attribute, Map<String, Object> properties) throws AtlasBaseException {
-      //  AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getVertexAttributePreFetchCache");
         if (vertex == null || attribute == null) {
             return null;
         }
@@ -1892,25 +1889,24 @@ public class EntityGraphRetriever {
         TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
         TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ?((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
 
-
+        // if element is primitive or array of primitives, return the value from properties
         if (properties.get(attribute.getName()) != null &&
                 (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) || (elementTypeCategory == null || elementTypeCategory.equals(TypeCategory.PRIMITIVE)))) {
-            //RequestContext.get().endMetricRecord(metricRecorder);
             return properties.get(attribute.getName());
         }
 
+        // if array is empty && element is array of primitives, return the value from properties
         if (properties.get(attribute.getName()) == null &&  attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ARRAY)) {
-           // RequestContext.get().endMetricRecord(metricRecorder);
             return new ArrayList<>();
         }
 
+        // if element is non-primitive, fetch the value from the vertex
         if (properties.get(attribute.getName()) != null && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
-            LOG.info("capturing excluded property set category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
+            LOG.debug("capturing excluded property set category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
             AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
             properties.put(attribute.getName(), mappedVertex);
             RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
-           // RequestContext.get().endMetricRecord(metricRecorder);
             return mappedVertex;
         }
 
