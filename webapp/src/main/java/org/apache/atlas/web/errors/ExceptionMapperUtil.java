@@ -17,10 +17,13 @@
  */
 package org.apache.atlas.web.errors;
 
+import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
 public class ExceptionMapperUtil {
     protected static final Logger LOGGER = LoggerFactory.getLogger(ExceptionMapperUtil.class);
@@ -29,28 +32,31 @@ public class ExceptionMapperUtil {
     protected static String formatErrorMessage(long id, Exception exception) {
         if (exception == null) {
             // If the exception is null, return a minimal error message
-            return "{\n"
-                    + String.format("  \"errorId\": \"%016x\",\n", id)
-                    + "  \"message\": \"No exception provided\",\n"
-                    + "  \"causes\": []\n"
-                    + "}";
+            Map<String, Object> errorDetails = new HashMap<>();
+            errorDetails.put("errorId", String.format("%016x", id));
+            errorDetails.put("message", "No exception provided.");
+            errorDetails.put("causes", new ArrayList<>());
+            return AtlasType.toJson(errorDetails);
         }
 
-        StringBuilder response = new StringBuilder();
+        // Prepare data for error message
+        Map<String, Object> errorDetails = new HashMap<>();
+        errorDetails.put("errorId", String.format("%016x", id));
+        errorDetails.put("message", "There was an error processing your request.");
 
-        // Add error ID and general error message
-        response.append("{\n")
-                .append(String.format("  \"errorId\": \"%016x\",\n", id))
-                .append("  \"message\": \"There was an error processing your request.\",\n")
-                .append("  \"causes\": [\n");
-
-        // Traverse through the chain of causes, avoiding cycles
-        List<String> causes = new ArrayList<>();
+        // Create a list of causes
+        List<Map<String, String>> causes = new ArrayList<>();
         List<Throwable> visited = new ArrayList<>();
         Throwable currentException = exception;
+
         while (currentException != null) {
             if (visited.contains(currentException)) {
-                causes.add("    {\n      \"errorType\": \"CircularReferenceDetected\",\n      \"errorMessage\": \"A circular reference was detected in the exception chain.\",\n      \"location\": \"Unavailable\"\n    }");
+                // If circular reference detected, add special entry
+                Map<String, String> circularCause = new HashMap<>();
+                circularCause.put("errorType", "CircularReferenceDetected");
+                circularCause.put("errorMessage", "A circular reference was detected in the exception chain.");
+                circularCause.put("location", "Unavailable");
+                causes.add(circularCause);
                 break;
             }
             visited.add(currentException);
@@ -58,24 +64,14 @@ public class ExceptionMapperUtil {
             currentException = currentException.getCause();
         }
 
-        // Add all formatted causes to the response
-        for (int i = 0; i < causes.size(); i++) {
-            response.append(causes.get(i));
-            if (i < causes.size() - 1) {
-                response.append(",\n");
-            }
-        }
+        errorDetails.put("causes", causes);
 
-        // Close the JSON structure
-        response.append("\n  ]\n")
-                .append("}");
-
-        return response.toString();
+        return AtlasType.toJson(errorDetails);
     }
 
     // Helper method to format a single exception cause
-    private static String formatCause(Throwable exception) {
-        StringBuilder cause = new StringBuilder();
+    private static Map<String, String> formatCause(Throwable exception) {
+        Map<String, String> cause = new HashMap<>();
 
         // Extract location details from the first stack trace element
         StackTraceElement[] stackTrace = exception.getStackTrace();
@@ -89,17 +85,13 @@ public class ExceptionMapperUtil {
                     element.getLineNumber());
         }
 
-        // Build JSON object for this cause
-        cause.append("    {\n")
-                .append("      \"errorType\": \"").append(exception.getClass().getName()).append("\",\n")
-                .append("      \"errorMessage\": \"").append(exception.getMessage() != null ? exception.getMessage() : "No additional information provided").append("\",\n")
-                .append("      \"location\": \"").append(location).append("\"\n")
-                .append("    }");
+        // Populate the cause map
+        cause.put("errorType", exception.getClass().getName());
+        cause.put("errorMessage", exception.getMessage() != null ? exception.getMessage() : "No additional information provided");
+        cause.put("location", location);
 
-        return cause.toString();
+        return cause;
     }
-
-
 
     protected static void logException(long id, Exception exception) {
         LOGGER.error(formatLogMessage(id, exception), exception);
@@ -109,5 +101,4 @@ public class ExceptionMapperUtil {
     protected static String formatLogMessage(long id, Throwable exception) {
         return String.format("Error handling a request: %016x", id);
     }
-
 }
