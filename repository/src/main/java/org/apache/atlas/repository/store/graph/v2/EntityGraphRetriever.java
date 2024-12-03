@@ -1889,12 +1889,13 @@ public class EntityGraphRetriever {
         }
         LOG.info("capturing property its category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
 
-        TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
-        TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ?((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
+//        TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
+//        TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ?((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
 
 
-        if (properties.get(attribute.getName()) != null &&
-                (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) || (elementTypeCategory == null || elementTypeCategory.equals(TypeCategory.PRIMITIVE)))) {
+        if (properties.get(attribute.getName()) != null ) {
+//                &&
+//                (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) || (elementTypeCategory == null || elementTypeCategory.equals(TypeCategory.PRIMITIVE)))) {
             LOG.info("capturing non null attributes - {} : {} : {} ", attribute.getName(), properties.get(attribute.getName()), attribute.getAttributeType().getTypeCategory());
             RequestContext.get().endMetricRecord(metricRecorder);
             return properties.get(attribute.getName());
