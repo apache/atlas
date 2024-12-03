@@ -151,11 +151,14 @@ public class AtlasSolrQueryBuilder {
 
         Set<String> typesToSearch = new HashSet<>();
         for (AtlasEntityType type : entityTypes) {
-
-            if (includeSubtypes) {
-                typesToSearch.addAll(type.getTypeAndAllSubTypes());
+            if (type == AtlasEntityType.getEntityRoot()) {
+                typesToSearch.add("*");
             } else {
-                typesToSearch.add(type.getTypeName());
+                if (includeSubtypes) {
+                    typesToSearch.addAll(type.getTypeAndAllSubTypes());
+                } else {
+                    typesToSearch.add(type.getTypeName());
+                }
             }
         }
 
