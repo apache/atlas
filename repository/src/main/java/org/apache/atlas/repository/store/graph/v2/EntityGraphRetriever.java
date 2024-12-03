@@ -1883,27 +1883,24 @@ public class EntityGraphRetriever {
     }
 
     public Object getVertexAttributePreFetchCache(AtlasVertex vertex, AtlasAttribute attribute, Map<String, Object> properties) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getVertexAttributePreFetchCache");
+      //  AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getVertexAttributePreFetchCache");
         if (vertex == null || attribute == null) {
             return null;
         }
-        LOG.info("capturing property its category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
-
-//        TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
-//        TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ?((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
 
 
-        if (properties.get(attribute.getName()) != null ) {
-//                &&
-//                (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) || (elementTypeCategory == null || elementTypeCategory.equals(TypeCategory.PRIMITIVE)))) {
-            LOG.info("capturing non null attributes - {} : {} : {} ", attribute.getName(), properties.get(attribute.getName()), attribute.getAttributeType().getTypeCategory());
-            RequestContext.get().endMetricRecord(metricRecorder);
+        TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
+        TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ?((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
+
+
+        if (properties.get(attribute.getName()) != null &&
+                (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) || (elementTypeCategory == null || elementTypeCategory.equals(TypeCategory.PRIMITIVE)))) {
+            //RequestContext.get().endMetricRecord(metricRecorder);
             return properties.get(attribute.getName());
         }
 
         if (properties.get(attribute.getName()) == null &&  attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ARRAY)) {
-            LOG.info("capturing null array attributes - {} : {}", attribute.getName(), properties.get(attribute.getName()));
-            RequestContext.get().endMetricRecord(metricRecorder);
+           // RequestContext.get().endMetricRecord(metricRecorder);
             return new ArrayList<>();
         }
 
@@ -1913,11 +1910,10 @@ public class EntityGraphRetriever {
             Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
             properties.put(attribute.getName(), mappedVertex);
             RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
-            RequestContext.get().endMetricRecord(metricRecorder);
+           // RequestContext.get().endMetricRecord(metricRecorder);
             return mappedVertex;
         }
 
-        RequestContext.get().endMetricRecord(metricRecorder);
         return null;
     }
 
