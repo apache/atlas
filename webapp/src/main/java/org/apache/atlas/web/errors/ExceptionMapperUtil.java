@@ -34,11 +34,7 @@ public class ExceptionMapperUtil {
 
     @SuppressWarnings("UnusedParameters")
     protected static String formatLogMessage(long id, Throwable exception) {
-        StringBuilder stackTrace = new StringBuilder();
-        for (StackTraceElement element : exception.getStackTrace()) {
-            stackTrace.append(element.toString()).append("\n");
-        }
-        return String.format("Error handling a request: %016x , exception is: %s\nStack trace:\n%s", id, exception.getMessage(), stackTrace.toString());
+        return String.format("Error handling a request: %016x , exception is: %s", id, exception.getMessage());
     }
 
 }
