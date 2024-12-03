@@ -139,6 +139,9 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             policy.setAttribute(ATTR_POLICY_USERS, new ArrayList<>());
             policy.setAttribute(ATTR_POLICY_GROUPS, new ArrayList<>());
 
+            if(parentEntity != null) {
+                policy.setAttribute(ATTR_POLICY_IS_ENABLED, getIsAccessControlEnabled(parentEntity));
+            }
 
             //create ES alias
             aliasStore.updateAlias(parent, policy);
@@ -154,6 +157,10 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             List<String> policyResources = purposeTags.stream().map(x -> "tag:" + x).collect(Collectors.toList());
 
             policy.setAttribute(ATTR_POLICY_RESOURCES, policyResources);
+
+            if(parentEntity != null) {
+                policy.setAttribute(ATTR_POLICY_IS_ENABLED, getIsAccessControlEnabled(parentEntity));
+            }
 
             //create ES alias
             aliasStore.updateAlias(parent, policy);
