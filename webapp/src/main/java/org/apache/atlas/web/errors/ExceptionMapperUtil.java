@@ -34,7 +34,7 @@ public class ExceptionMapperUtil {
 
     @SuppressWarnings("UnusedParameters")
     protected static String formatLogMessage(long id, Throwable exception) {
-        return String.format("Error handling a request: %016x", id);
+        return String.format("Error handling a request: %016x , exception is: %s", id, exception.getMessage());
     }
 
 }

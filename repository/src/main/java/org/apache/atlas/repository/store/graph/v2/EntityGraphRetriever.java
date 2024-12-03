@@ -1018,27 +1018,32 @@ public class EntityGraphRetriever {
 
         // Iterate through the resulting VertexProperty objects
         while (traversal.hasNext()) {
-            VertexProperty<Object> property = traversal.next();
+            try {
+                VertexProperty<Object> property = traversal.next();
 
-            AtlasAttribute attribute = entityType.getAttribute(property.key());
-            TypeCategory typeCategory = attribute != null ? attribute.getAttributeType().getTypeCategory() : null;
-            TypeCategory elementTypeCategory = attribute != null && attribute.getAttributeType().getTypeCategory() == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
+                AtlasAttribute attribute = entityType.getAttribute(property.key());
+                TypeCategory typeCategory = attribute != null ? attribute.getAttributeType().getTypeCategory() : null;
+                TypeCategory elementTypeCategory = attribute != null && attribute.getAttributeType().getTypeCategory() == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
 
-            if (property.isPresent()) {
-                if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
-                    Object value = propertiesMap.get(property.key());
-                    if (value instanceof List) {
-                        ((List) value).add(property.value());
+                if (property.isPresent()) {
+                    if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
+                        Object value = propertiesMap.get(property.key());
+                        if (value instanceof List) {
+                            ((List) value).add(property.value());
+                        } else {
+                            List<Object> values = new ArrayList<>();
+                            values.add(property.value());
+                            propertiesMap.put(property.key(), values);
+                        }
                     } else {
-                        List<Object> values = new ArrayList<>();
-                        values.add(property.value());
-                        propertiesMap.put(property.key(), values);
-                    }
-                } else {
-                    if (propertiesMap.get(property.key()) == null) {
-                        propertiesMap.put(property.key(), property.value());
+                        if (propertiesMap.get(property.key()) == null) {
+                            propertiesMap.put(property.key(), property.value());
+                        }
                     }
                 }
+            } catch (RuntimeException e) {
+                LOG.error("Error preloading properties for entity vertex: {}", entityVertex, e);
+                throw e; // Re-throw the exception after logging it
             }
         }
 
