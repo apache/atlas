@@ -442,6 +442,7 @@ public class DiscoveryREST {
             }
             throw abe;
         } catch (Exception e) {
+            e.printStackTrace();
             AtlasBaseException abe = new AtlasBaseException(e.getMessage(), e.getCause());
             if (enableSearchLogging && parameters.isSaveSearchLog()) {
                 logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
