@@ -163,6 +163,10 @@ public class AuthREST {
                 }
                 ret = policyTransformer.getPoliciesAll(serviceName, pluginId, lastUpdatedTime);
             }
+            LOG.info("downloadPolicies: serviceName={}, lastUpdatedTime={}, policies fetched={} delta fetched={}", serviceName,
+                    lastUpdatedTime > 0 ? new Date(lastUpdatedTime) : lastUpdatedTime,
+                    ret != null && ret.getPolicies() != null ? ret.getPolicies().size() : 0,
+                    ret != null && ret.getPolicyDeltas() != null ? ret.getPolicyDeltas().size() : 0);
             updateLastSync(serviceName);
 
             return ret;
@@ -184,18 +188,26 @@ public class AuthREST {
         mustClauseList.add(getMap("terms", getMap("typeName", entityUpdateToWatch)));
 
         lastUpdatedTime = lastUpdatedTime == -1 ? 0 : lastUpdatedTime;
-        mustClauseList.add(getMap("range", getMap("timestamp", getMap("gte", lastUpdatedTime))));
+        mustClauseList.add(getMap("range", getMap("created", getMap("gte", lastUpdatedTime))));
 
         dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
-        parameters.setDsl(dsl);
+
+        int from = 0;
+        int size = 100;
 
         List<EntityAuditEventV2> events = new ArrayList<>();
         try {
-            String query = parameters.getQueryString();
-            EntityAuditSearchResult result = auditRepository.searchEvents(query); // attributes are not getting passed in query
-            if (result != null && !CollectionUtils.isEmpty(result.getEntityAudits())) {
-                events = result.getEntityAudits();
-            }
+            do {
+                dsl.put("from", from);
+                dsl.put("size", size);
+                parameters.setDsl(dsl);
+                String query = parameters.getQueryString();
+                EntityAuditSearchResult result = auditRepository.searchEvents(query); // attributes are not getting passed in query
+                if (result != null && !CollectionUtils.isEmpty(result.getEntityAudits())) {
+                    events = result.getEntityAudits();
+                }
+                from += size;
+            } while (events.size() == size);
         } catch (AtlasBaseException e) {
             LOG.error("ERROR in getPolicyAuditLogs while fetching entity audits {}: ", e.getMessage());
         } finally {

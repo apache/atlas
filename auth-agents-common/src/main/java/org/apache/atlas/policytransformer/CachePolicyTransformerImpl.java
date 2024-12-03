@@ -169,7 +169,7 @@ public class CachePolicyTransformerImpl {
                     AtlasEntityHeader tagService = getServiceEntity(tagServiceName);
 
                     if (tagService != null) {
-                        List<RangerPolicy> tagRangerPolicies = getServicePolicies(tagService, 0);
+//                        List<RangerPolicy> tagRangerPolicies = getServicePolicies(tagService, 0);
 
                         TagPolicies tagPolicies = new TagPolicies();
 
@@ -180,15 +180,14 @@ public class CachePolicyTransformerImpl {
 
                         String tagServiceDefName =  String.format(RESOURCE_SERVICE_DEF_PATTERN, tagService.getAttribute(NAME));
                         tagPolicies.setServiceDef(getResourceAsObject(tagServiceDefName, RangerServiceDef.class));
-                        tagPolicies.setPolicies(tagRangerPolicies);
+//                        tagPolicies.setPolicies(tagRangerPolicies);
 
                         servicePolicies.setTagPolicies(tagPolicies);
-                        LOG.info("PolicyDelta: {}: Found tag policies - {}", serviceName, tagRangerPolicies.size());
+//                        LOG.info("PolicyDelta: {}: Found tag policies - {}", serviceName, tagRangerPolicies.size());
                     }
                 }
 
                 LOG.info("PolicyDelta: {}: Found {} policies", serviceName, policiesDelta.size());
-                LOG.info("PolicyDelta: Found and set {} policies as delta and {} tag policies", servicePolicies.getPolicyDeltas().size(), servicePolicies.getTagPolicies().getPolicies().size());
             }
 
         } catch (Exception e) {
@@ -586,12 +585,15 @@ public class CachePolicyTransformerImpl {
             Map<String, Object> dsl = getMap("size", 0);
 
             List<Map<String, Object>> mustClauseList = new ArrayList<>();
-            mustClauseList.add(getMap("term", getMap(ATTR_POLICY_SERVICE_NAME, serviceName)));
+
             mustClauseList.add(getMap("term", getMap(ATTR_POLICY_IS_ENABLED, true)));
             mustClauseList.add(getMap("match", getMap("__state", Id.EntityState.ACTIVE)));
 
             if (!policyGuids.isEmpty()) {
                 mustClauseList.add(getMap("terms", getMap("__guid", policyGuids)));
+            } else {
+                // no service filter required if guids are provided
+                mustClauseList.add(getMap("term", getMap(ATTR_POLICY_SERVICE_NAME, serviceName)));
             }
 
             dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
