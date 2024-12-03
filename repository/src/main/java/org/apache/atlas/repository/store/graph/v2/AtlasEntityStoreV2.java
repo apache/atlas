@@ -788,7 +788,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     public List<AtlasEvaluatePolicyResponse> evaluatePolicies(List<AtlasEvaluatePolicyRequest> entities) throws AtlasBaseException {
-        List<AtlasEvaluatePolicyResponse> response = new ArrayList();
+        List<AtlasEvaluatePolicyResponse> response = new ArrayList<>();
         HashMap<String, AtlasEntityHeader> atlasEntityHeaderCache = new HashMap<>();
         for (AtlasEvaluatePolicyRequest entity : entities) {
             String action = entity.getAction();
@@ -802,8 +802,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     || ENTITY_DELETE.name().equals(action) || ENTITY_UPDATE_BUSINESS_METADATA.name().equals(action)) {
 
                 try {
-                    if (StringUtils.isNotEmpty(entity.getEntityGuid())) {
-                        String cacheKey = generateCacheKey(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
+                    String cacheKey = generateCacheKey(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
+                    if (StringUtils.isNotEmpty(entity.getEntityGuid()) || StringUtils.isNotEmpty(entity.getEntityId())) {
                         if (atlasEntityHeaderCache.containsKey(cacheKey)) {
                             entityHeader = atlasEntityHeaderCache.get(cacheKey);
                         } else {
@@ -835,9 +835,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     throw new AtlasBaseException(BAD_REQUEST, "classification needed for " + action + " authorization");
                 }
                 try {
-
-                    if (StringUtils.isNotEmpty(entity.getEntityGuid())) {
-                        String cacheKey = generateCacheKey(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
+                    String cacheKey = generateCacheKey(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
+                    if (StringUtils.isNotEmpty(entity.getEntityGuid()) || StringUtils.isNotEmpty(entity.getEntityId())) {
                         if (atlasEntityHeaderCache.containsKey(cacheKey)) {
                             entityHeader = atlasEntityHeaderCache.get(cacheKey);
                         } else {
@@ -864,31 +863,31 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
 
                 try {
-                AtlasEntityHeader end1Entity;
-                if (StringUtils.isNotEmpty(entity.getEntityGuidEnd1())) {
+                    AtlasEntityHeader end1Entity;
                     String cacheKeyEnd1 = generateCacheKey(entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd1());
-                    if (atlasEntityHeaderCache.containsKey(cacheKeyEnd1)) {
-                        end1Entity = atlasEntityHeaderCache.get(cacheKeyEnd1);
+                    if (StringUtils.isNotEmpty(entity.getEntityGuidEnd1()) || StringUtils.isNotEmpty(entity.getEntityIdEnd1())) {
+                        if (atlasEntityHeaderCache.containsKey(cacheKeyEnd1)) {
+                            end1Entity = atlasEntityHeaderCache.get(cacheKeyEnd1);
+                        } else {
+                            end1Entity = getAtlasEntityHeader(entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd1());
+                            atlasEntityHeaderCache.put(cacheKeyEnd1, end1Entity);
+                        }
                     } else {
                         end1Entity = getAtlasEntityHeader(entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd1());
-                        atlasEntityHeaderCache.put(cacheKeyEnd1, end1Entity);
                     }
-                } else {
-                    end1Entity = getAtlasEntityHeader(entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd1());
-                }
 
-                AtlasEntityHeader end2Entity;
-                if (StringUtils.isNotEmpty(entity.getEntityGuidEnd2())) {
+                    AtlasEntityHeader end2Entity;
                     String cacheKeyEnd2 = generateCacheKey(entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), entity.getEntityTypeEnd2());
-                    if (atlasEntityHeaderCache.containsKey(cacheKeyEnd2)) {
-                        end2Entity = atlasEntityHeaderCache.get(cacheKeyEnd2);
+                    if (StringUtils.isNotEmpty(entity.getEntityGuidEnd2()) || StringUtils.isNotEmpty(entity.getEntityIdEnd2())) {
+                        if (atlasEntityHeaderCache.containsKey(cacheKeyEnd2)) {
+                            end2Entity = atlasEntityHeaderCache.get(cacheKeyEnd2);
+                        } else {
+                            end2Entity = getAtlasEntityHeader(entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), entity.getEntityTypeEnd2());
+                            atlasEntityHeaderCache.put(cacheKeyEnd2, end2Entity);
+                        }
                     } else {
                         end2Entity = getAtlasEntityHeader(entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), entity.getEntityTypeEnd2());
-                        atlasEntityHeaderCache.put(cacheKeyEnd2, end2Entity);
                     }
-                } else {
-                    end2Entity = getAtlasEntityHeader(entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), entity.getEntityTypeEnd2());
-                }
 
                     AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entity.getRelationShipTypeName(), end1Entity, end2Entity));
                     response.add(new AtlasEvaluatePolicyResponse(action, entity.getRelationShipTypeName(), entity.getEntityTypeEnd1(), entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd2(), entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), true, null));
