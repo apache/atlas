@@ -155,7 +155,10 @@ public class AuthREST {
             if (usePolicyDelta) {
                 List<EntityAuditEventV2> auditEvents = getPolicyAuditLogs(serviceName, lastUpdatedTime);
                 long lastEventTime = auditEvents.isEmpty() ? 0 : auditEvents.get(auditEvents.size() - 1).getCreated();
-                long lastEventTime2 = auditEvents.stream().mapToLong(EntityAuditEventV2::getTimestamp).max().orElse(0);
+                LOG.info("PolicyDelta: serviceName={}, lastUpdatedTime={}, audit events found={}", serviceName, lastEventTime, auditEvents.size());
+                if (auditEvents.isEmpty()) {
+                    return null;
+                }
                 Map<String, EntityAuditEventV2.EntityAuditActionV2> policyChanges = policyTransformer.createPolicyChangeMap(serviceName, auditEvents);
                 ret = policyTransformer.getPoliciesDelta(serviceName, policyChanges, lastEventTime);
             } else {
@@ -189,7 +192,7 @@ public class AuthREST {
         mustClauseList.add(getMap("terms", getMap("typeName", entityUpdateToWatch)));
 
         lastUpdatedTime = lastUpdatedTime == -1 ? 0 : lastUpdatedTime;
-        mustClauseList.add(getMap("range", getMap("created", getMap("gte", lastUpdatedTime))));
+        mustClauseList.add(getMap("range", getMap("created", getMap("gt", lastUpdatedTime))));
 
         dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
 

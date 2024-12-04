@@ -108,7 +108,7 @@ public class PolicyRefresher extends Thread {
 		this.pollingIntervalMs             = pluginConfig.getLong(propertyPrefix + ".policy.pollIntervalMs", 30 * 1000);
 
 		this.enableDeltaBasedRefresh = AtlasConfiguration.DELTA_BASED_REFRESH_ENABLED.getBoolean();
-		LOG.info("PolicyRefresher(serviceName=" + serviceName + ") - delta based policy refresh is enabled");
+		LOG.info("PolicyRefresher(serviceName=" + serviceName + ") - delta based policy refresh enabled="+this.enableDeltaBasedRefresh);
 
 		setName("PolicyRefresher(serviceName=" + serviceName + ")-" + getId());
 

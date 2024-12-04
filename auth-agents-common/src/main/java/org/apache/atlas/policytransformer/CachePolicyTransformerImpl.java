@@ -60,17 +60,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CONNECTION_QN;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_PRIORITY;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
-import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SUB_CATEGORY;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_DATAMESH;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
-import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
-import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
-import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
+import static org.apache.atlas.repository.util.AccessControlUtils.*;
 
 @Component
 public class CachePolicyTransformerImpl {
@@ -304,7 +294,29 @@ public class CachePolicyTransformerImpl {
             RangerPolicyDelta delta = new RangerPolicyDelta(policy.getId(), changeType, policy.getVersion(), policy);
             policyDeltas.add(delta);
         }
-        LOG.info("PolicyDelta: {}: atlas policies found = {}, delta created = {}", serviceName, atlasPolicies.size(), policyDeltas.size());
+
+        // handle delete changes separately as they won't be present in atlas policies
+        List<RangerPolicyDelta> deletedPolicyDeltas = new ArrayList<>();
+        for (String policyGuid : policyGuids) {
+            if (policyChanges.get(policyGuid) == EntityAuditActionV2.ENTITY_DELETE) {
+                RangerPolicy deletedPolicy = new RangerPolicy();
+                deletedPolicy.setGuid(policyGuid);
+                deletedPolicy.setService(serviceName);
+                deletedPolicy.setServiceType(serviceType);
+                RangerPolicyDelta deletedPolicyDelta = new RangerPolicyDelta(
+                        deletedPolicy.getId(),
+                        auditEventToDeltaChangeType.get(EntityAuditActionV2.ENTITY_DELETE),
+                        deletedPolicy.getVersion(),
+                        deletedPolicy
+                );
+                deletedPolicyDeltas.add(deletedPolicyDelta);
+            }
+        }
+
+        policyDeltas.addAll(deletedPolicyDeltas);
+
+        LOG.info("PolicyDelta: {}: atlas policies found={}, delta created={}, including deleted policies={}",
+                serviceName, atlasPolicies.size(), policyDeltas.size(), deletedPolicyDeltas.size());
         RequestContext.get().endMetricRecord(recorder);
 
         return policyDeltas;
@@ -585,15 +597,13 @@ public class CachePolicyTransformerImpl {
             Map<String, Object> dsl = getMap("size", 0);
 
             List<Map<String, Object>> mustClauseList = new ArrayList<>();
-
-            mustClauseList.add(getMap("term", getMap(ATTR_POLICY_IS_ENABLED, true)));
             mustClauseList.add(getMap("match", getMap("__state", Id.EntityState.ACTIVE)));
 
             if (!policyGuids.isEmpty()) {
                 mustClauseList.add(getMap("terms", getMap("__guid", policyGuids)));
             } else {
-                // no service filter required if guids are provided
                 mustClauseList.add(getMap("term", getMap(ATTR_POLICY_SERVICE_NAME, serviceName)));
+                mustClauseList.add(getMap("term", getMap(ATTR_POLICY_IS_ENABLED, true)));
             }
 
             dsl.put("query", getMap("bool", getMap("must", mustClauseList)));
