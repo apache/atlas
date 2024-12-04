@@ -174,6 +174,19 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
     }
 
+    private Map<String, LinkedHashMap> runUpdateByQueryWithLowLevelClient(String query) throws AtlasBaseException {
+        try {
+            String responseString = performDirectUpdateByQuery(query);
+
+            Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(responseString, Map.class);
+            return responseMap;
+
+        } catch (IOException e) {
+            LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
+        }
+    }
+
     private DirectIndexQueryResult performAsyncDirectIndexQuery(SearchParams searchParams) throws AtlasBaseException, IOException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("performAsyncDirectIndexQuery");
         DirectIndexQueryResult result = null;
@@ -444,6 +457,30 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         return EntityUtils.toString(response.getEntity());
     }
 
+    private String performDirectUpdateByQuery(String query) throws AtlasBaseException, IOException {
+        HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
+        String endPoint;
+
+        endPoint = index + "/_update_by_query";
+
+        Request request = new Request("POST", endPoint);
+        request.setEntity(entity);
+
+        Response response;
+        try {
+            response = lowLevelRestClient.performRequest(request);
+        } catch (ResponseException rex) {
+            if (rex.getResponse().getStatusLine().getStatusCode() == 404) {
+                LOG.warn(String.format("ES index with name %s not found", index));
+                throw new AtlasBaseException(INDEX_NOT_FOUND, index);
+            } else {
+                throw new AtlasBaseException(String.format("Error in executing elastic query: %s", EntityUtils.toString(entity)), rex);
+            }
+        }
+
+        return EntityUtils.toString(response.getEntity());
+    }
+
     private DirectIndexQueryResult getResultFromResponse(String responseString, boolean async) throws IOException {
         Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(responseString, Map.class);
         return getResultFromResponse(responseMap.get("response"));
@@ -493,6 +530,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     @Override
     public Map<String, Object> directIndexQuery(String query) throws AtlasBaseException {
         return runQueryWithLowLevelClient(query);
+    }
+
+    public Map<String, LinkedHashMap> directUpdateByQuery(String query) throws AtlasBaseException {
+        return runUpdateByQueryWithLowLevelClient(query);
     }
 
     @Override
