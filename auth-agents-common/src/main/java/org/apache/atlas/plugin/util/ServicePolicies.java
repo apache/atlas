@@ -20,10 +20,11 @@
 package org.apache.atlas.plugin.util;
 
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.htrace.shaded.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.plugin.model.RangerPolicyDelta;
 import org.apache.atlas.plugin.model.RangerServiceDef;
@@ -33,12 +34,7 @@ import org.apache.atlas.plugin.policyengine.RangerPolicyEngineImpl;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @XmlRootElement
@@ -180,6 +176,7 @@ public class ServicePolicies implements java.io.Serializable {
 				+ "securityZones=" + securityZones
 				;
 	}
+
 	public List<RangerPolicyDelta> getPolicyDeltas() { return this.policyDeltas; }
 
 	public void setPolicyDeltas(List<RangerPolicyDelta> policyDeltas) { this.policyDeltas = policyDeltas; }

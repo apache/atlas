@@ -79,7 +79,7 @@ public class RangerPolicyDeltaUtil {
                     int changeType = delta.getChangeType();
 
                     if (changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_CREATE || changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE || changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE) {
-                        Long policyId = delta.getPolicyId();
+                        String policyId = delta.getPolicyGuid(); // change to getGuid() as id is not set in policy
 
                         if (policyId == null) {
                             continue;
@@ -91,7 +91,10 @@ public class RangerPolicyDeltaUtil {
 
                         while (iter.hasNext()) {
                             RangerPolicy policy = iter.next();
-                            if (policyId.equals(policy.getId()) && (changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE || changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE)) {
+                            if (
+                                    (changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE && policyId.equals(policy.getGuid())) ||
+                                    (changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE && policyId.equals(policy.getAtlasGuid()))
+                            ){
                                 deletedPolicies.add(policy);
                                 iter.remove();
                             }
@@ -111,8 +114,8 @@ public class RangerPolicyDeltaUtil {
                                 break;
                             }
                             case RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE: {
-                                if (CollectionUtils.isEmpty(deletedPolicies) || deletedPolicies.size() > 1) {
-                                    LOG.warn("Unexpected: found no policy or multiple policies for CHANGE_TYPE_POLICY_DELETE: " + Arrays.toString(deletedPolicies.toArray()));
+                                if (CollectionUtils.isEmpty(deletedPolicies)) {
+                                    LOG.warn("Unexpected: found no policy for CHANGE_TYPE_POLICY_DELETE: " + Arrays.toString(deletedPolicies.toArray()));
                                 }
                                 break;
                             }
@@ -140,10 +143,6 @@ public class RangerPolicyDeltaUtil {
             ret = policies;
         }
 
-        if (CollectionUtils.isNotEmpty(deltas) && hasExpectedServiceType && CollectionUtils.isNotEmpty(ret)) {
-            ret.sort(RangerPolicy.POLICY_ID_COMPARATOR);
-        }
-
         RangerPerfTracer.log(perf);
 
         if (LOG.isDebugEnabled()) {
@@ -160,7 +159,7 @@ public class RangerPolicyDeltaUtil {
 
         for (RangerPolicyDelta delta : deltas) {
             final Integer changeType = delta.getChangeType();
-            final Long    policyId   = delta.getPolicyId();
+            final String policyGuid = delta.getPolicyGuid();
 
             if (changeType == null) {
                 isValid = false;
@@ -171,7 +170,7 @@ public class RangerPolicyDeltaUtil {
                     && changeType != RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE
                     && changeType != RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE) {
                 isValid = false;
-            } else if (policyId == null) {
+            } else if (policyGuid == null) {
                 isValid = false;
             } else {
                 final String  serviceType = delta.getServiceType();
@@ -226,11 +225,11 @@ public class RangerPolicyDeltaUtil {
 
             if (isPoliciesExist && isPolicyDeltasExist) {
                 LOG.warn("ServicePolicies contain both policies and policy-deltas!! Cannot build policy-engine from these servicePolicies. Please check server-side code!");
-                LOG.warn("Downloaded ServicePolicies are [" + servicePolicies + "]");
+                LOG.warn("Downloaded ServicePolicies for [" + servicePolicies.getServiceName() + "]");
                 ret = null;
             } else if (!isPoliciesExist && !isPolicyDeltasExist) {
                 LOG.warn("ServicePolicies do not contain any policies or policy-deltas!! There are no material changes in the policies.");
-                LOG.warn("Downloaded ServicePolicies are [" + servicePolicies + "]");
+                LOG.warn("Downloaded ServicePolicies for [" + servicePolicies.getServiceName() + "]");
                 ret = null;
             } else {
                 ret = isPolicyDeltasExist;

@@ -314,7 +314,7 @@ public class RangerBasePlugin {
 				Boolean hasPolicyDeltas = RangerPolicyDeltaUtil.hasPolicyDeltas(policies);
 
 				if (hasPolicyDeltas == null) {
-					LOG.info("Downloaded policies do not require policy change !! [" + policies + "]");
+					LOG.info("Downloaded policies do not require policy change !! [" + (policies.getPolicies() != null ? policies.getPolicies().size() : 0) + "]");
 
 					if (this.policyEngine == null) {
 
@@ -379,6 +379,7 @@ public class RangerBasePlugin {
 							RangerPolicyEngineImpl oldPolicyEngineImpl = (RangerPolicyEngineImpl) oldPolicyEngine;
 
 							newPolicyEngine = RangerPolicyEngineImpl.getPolicyEngine(oldPolicyEngineImpl, policies);
+							//TODO: this looks like a mistake, second arg should be servicePolicies which has the applied delta
 						}
 
 						if (newPolicyEngine != null) {

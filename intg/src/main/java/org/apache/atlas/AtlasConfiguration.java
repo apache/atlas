@@ -125,6 +125,8 @@ public enum AtlasConfiguration {
     ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES("atlas.indexsearch.enable.fetching.non.primitive.attributes", true),
     ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false),
 
+    DELTA_BASED_REFRESH_ENABLED("atlas.authorizer.enable.delta_based_refresh", false),
+
     ATLAS_UD_RELATIONSHIPS_MAX_COUNT("atlas.ud.relationship.max.count", 100);
 
 
