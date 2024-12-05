@@ -143,6 +143,7 @@ public class CachePolicyTransformerImpl {
         this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_CREATE, RangerPolicyDelta.CHANGE_TYPE_POLICY_CREATE);
         this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_UPDATE, RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE);
         this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_DELETE, RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE);
+        this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_PURGE, RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE);
     }
 
     public AtlasEntityHeader getService() {
@@ -313,14 +314,15 @@ public class CachePolicyTransformerImpl {
         // handle delete changes separately as they won't be present in atlas policies
         List<RangerPolicyDelta> deletedPolicyDeltas = new ArrayList<>();
         for (String policyGuid : policyGuids) {
-            if (policyChanges.get(policyGuid) == EntityAuditActionV2.ENTITY_DELETE) {
+            int deltaChangeType = auditEventToDeltaChangeType.get(policyChanges.get(policyGuid));
+            if (deltaChangeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE) {
                 RangerPolicy deletedPolicy = new RangerPolicy();
                 deletedPolicy.setGuid(policyGuid);
                 deletedPolicy.setService(serviceName);
                 deletedPolicy.setServiceType(serviceType);
                 RangerPolicyDelta deletedPolicyDelta = new RangerPolicyDelta(
                         deletedPolicy.getId(),
-                        auditEventToDeltaChangeType.get(EntityAuditActionV2.ENTITY_DELETE),
+                        deltaChangeType,
                         deletedPolicy.getVersion(),
                         deletedPolicy
                 );
