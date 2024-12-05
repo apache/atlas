@@ -25,9 +25,7 @@ on:
       - beta
       - development
       - master
-      - lineageondemand
-      - janusoptimisation
-      - janusprefetchwith0.6
+      - staging
 
 jobs:
   build:
