@@ -97,6 +97,7 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CREATED_BY;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_DESCRIPTION;
@@ -1943,11 +1944,8 @@ public class EntityGraphRetriever {
         }
 
         // value is present as marker, fetch the value from the vertex
-        if (properties.get(attribute.getName()) != null) {
-            AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
-            Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
-            RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
-            return mappedVertex;
+        if (ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
+            return mapVertexToAttribute(vertex, attribute, null, false);
         }
 
         return null;
