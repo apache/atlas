@@ -1052,7 +1052,8 @@ public class EntityGraphRetriever {
                     edgeProperties.stream()
                             .map(e -> {
                                 AtlasJanusEdge edge = (AtlasJanusEdge) e;
-                                return edge.getLabel().toString().substring(2);
+                                String edgeLabel = edge.getLabel();
+                                return edgeLabel.replaceFirst(EDGE_LABEL_PREFIX , StringUtils.EMPTY);
                             })
                             .collect(Collectors.toList());
 
