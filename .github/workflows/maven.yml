@@ -26,6 +26,7 @@ on:
       - development
       - master
       - lineageondemand
+      - janus0.6
 
 jobs:
   build:
