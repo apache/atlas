@@ -177,39 +177,6 @@ public class ServicePolicies implements java.io.Serializable {
 				;
 	}
 
-	@JsonIgnore
-	public Date getLatestUpdateTime() {
-		Date lastestUpdateTime = new Date(0L);
-
-		if (policies != null && !policies.isEmpty()) {
-			for (RangerPolicy policy : policies) {
-				if (policy.getUpdateTime() != null && policy.getUpdateTime().after(lastestUpdateTime)) {
-					lastestUpdateTime = policy.getUpdateTime();
-				}
-			}
-		}
-
-		if (tagPolicies != null && tagPolicies.getPolicies() != null) {
-			for (RangerPolicy policy : tagPolicies.getPolicies()) {
-				if (policy.getUpdateTime() != null && policy.getUpdateTime().after(lastestUpdateTime)) {
-					lastestUpdateTime = policy.getUpdateTime();
-				}
-			}
-		}
-
-		if (policyDeltas != null && !policyDeltas.isEmpty()) {
-			for (RangerPolicyDelta delta : policyDeltas) {
-				if (delta.getPolicy() != null && delta.getPolicy().getUpdateTime() != null && delta.getPolicy().getUpdateTime().after(lastestUpdateTime)) {
-					lastestUpdateTime = delta.getPolicy().getUpdateTime();
-				}
-			}
-		}
-		if (Objects.equals(lastestUpdateTime, new Date(0L))) {
-			lastestUpdateTime = null;
-		}
-		return lastestUpdateTime;
-	}
-
 	public List<RangerPolicyDelta> getPolicyDeltas() { return this.policyDeltas; }
 
 	public void setPolicyDeltas(List<RangerPolicyDelta> policyDeltas) { this.policyDeltas = policyDeltas; }
@@ -420,7 +387,7 @@ public class ServicePolicies implements java.io.Serializable {
 		return ret;
 	}
 
-	public static ServicePolicies  applyDelta(final ServicePolicies servicePolicies, RangerPolicyEngineImpl policyEngine) {
+	public static ServicePolicies applyDelta(final ServicePolicies servicePolicies, RangerPolicyEngineImpl policyEngine) {
 		ServicePolicies ret = copyHeader(servicePolicies);
 
 		List<RangerPolicy> oldResourcePolicies = policyEngine.getResourcePolicies();

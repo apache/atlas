@@ -400,7 +400,7 @@ public class PolicyRefresher extends Thread {
 					}
 
 					lastKnownVersion = policies.getPolicyVersion() == null ? -1 : policies.getPolicyVersion().longValue();
-					lastUpdatedTiemInMillis = policies.getLatestUpdateTime() == null ? -1 : policies.getLatestUpdateTime().getTime();
+					lastUpdatedTiemInMillis = policies.getPolicyUpdateTime() == null ? -1 : policies.getPolicyUpdateTime().getTime();
 				}
 			} catch (Exception excp) {
 				LOG.error("failed to load policies from cache file " + cacheFile.getAbsolutePath(), excp);

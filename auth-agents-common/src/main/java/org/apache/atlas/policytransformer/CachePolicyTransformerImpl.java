@@ -56,11 +56,32 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.util.AccessControlUtils.*;
+import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.SERVICE_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.POLICY_ENTITY_TYPE;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CATEGORY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CONNECTION_QN;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_IS_ENABLED;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_PRIORITY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SUB_CATEGORY;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_DATAMESH;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PERSONA;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
+import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
 
 @Component
 public class CachePolicyTransformerImpl {
@@ -159,24 +180,18 @@ public class CachePolicyTransformerImpl {
                     AtlasEntityHeader tagService = getServiceEntity(tagServiceName);
 
                     if (tagService != null) {
-//                        List<RangerPolicy> tagRangerPolicies = getServicePolicies(tagService, 0);
-
                         TagPolicies tagPolicies = new TagPolicies();
 
                         tagPolicies.setServiceName(tagServiceName);
                         tagPolicies.setPolicyUpdateTime(new Date());
                         tagPolicies.setServiceId(tagService.getGuid());
                         tagPolicies.setPolicyVersion(-1L);
-
                         String tagServiceDefName =  String.format(RESOURCE_SERVICE_DEF_PATTERN, tagService.getAttribute(NAME));
                         tagPolicies.setServiceDef(getResourceAsObject(tagServiceDefName, RangerServiceDef.class));
-//                        tagPolicies.setPolicies(tagRangerPolicies);
 
                         servicePolicies.setTagPolicies(tagPolicies);
-//                        LOG.info("PolicyDelta: {}: Found tag policies - {}", serviceName, tagRangerPolicies.size());
                     }
                 }
-
                 LOG.info("PolicyDelta: {}: Found {} policies", serviceName, policiesDelta.size());
             }
 
