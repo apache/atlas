@@ -53,6 +53,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
     private Map<String, String> updatedPolicyResources;
     private EntityGraphRetriever retrieverNoRelation = null;
     private Map<String, String> updatedDomainQualifiedNames;
+    public static final String UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX = "__u_";
 
     public DataDomainPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever,
                                   AtlasGraph graph) {
@@ -290,9 +291,14 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             String currentDomainQualifiedName = childDomainVertex.getProperty(QUALIFIED_NAME, String.class);
             String updatedDomainQualifiedName = parentDomainQualifiedName + getOwnQualifiedNameForChild(currentDomainQualifiedName);
 
+            String uniqueQualifiedNameAttribute = UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX + QUALIFIED_NAME;
+
             // Change domain qualifiedName
             childDomainVertex.setProperty(QUALIFIED_NAME, updatedDomainQualifiedName);
             updatedAttributes.put(QUALIFIED_NAME, updatedDomainQualifiedName);
+
+            // Change unique qualifiedName attribute
+            childDomainVertex.setProperty(uniqueQualifiedNameAttribute, updatedDomainQualifiedName);
 
             //change superDomainQN, parentDomainQN
             childDomainVertex.setProperty(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
@@ -347,7 +353,10 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             String currentQualifiedName = productVertex.getProperty(QUALIFIED_NAME, String.class);
             String updatedQualifiedName = parentDomainQualifiedName + getOwnQualifiedNameForChild(currentQualifiedName);
 
+            String uniqueQualifiedNameAttribute = UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX + QUALIFIED_NAME;
+
             productVertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
+            productVertex.setProperty(uniqueQualifiedNameAttribute, updatedQualifiedName);
             updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
 
             productVertex.setProperty(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
