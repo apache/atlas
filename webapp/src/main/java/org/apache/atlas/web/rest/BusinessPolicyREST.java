@@ -4,6 +4,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.BusinessPolicyRequest;
 import org.apache.atlas.model.instance.LinkBusinessPolicyRequest;
 import org.apache.atlas.model.instance.MoveBusinessPolicyRequest;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -49,12 +50,8 @@ public class BusinessPolicyREST {
     @POST
     @Path("/link-business-policy")
     @Timed
-    public void linkBusinessPolicy(final LinkBusinessPolicyRequest request) throws AtlasBaseException {
+    public void linkBusinessPolicy(final BusinessPolicyRequest request) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkBusinessPolicy");
-
-        if(Objects.isNull(request) || CollectionUtils.isEmpty(request.getBusinessPolicyGuids()) || CollectionUtils.isEmpty(request.getLinkGuids())){
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, RequestContext.getCurrentUser(), "Policy linking");
-        }
 
         // Ensure the current user is authorized to link policies
         if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
@@ -75,7 +72,9 @@ public class BusinessPolicyREST {
             }
 
             // Link the business policy to the specified entities
-            entitiesStore.linkBusinessPolicy(request.getBusinessPolicyGuids(), request.getLinkGuids());
+
+            entitiesStore.linkBusinessPolicy(request.getData());
+
         } finally {
             // Log performance metrics
             AtlasPerfTracer.log(perf);

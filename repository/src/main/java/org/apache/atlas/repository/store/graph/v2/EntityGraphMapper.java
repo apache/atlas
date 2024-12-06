@@ -73,6 +73,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -4772,61 +4773,96 @@ public class EntityGraphMapper {
     }
 
 
-    public List<AtlasVertex> linkBusinessPolicy(Set<String> policyIds, Set<String> assetGuids) {
-        List<AtlasVertex> updatedVertices = new ArrayList<>();
-        assetGuids.forEach(assetGuid -> processAssetPolicy(assetGuid, policyIds).ifPresent(updatedVertices::add));
-        return updatedVertices;
-    }
-
-    private Optional<AtlasVertex> processAssetPolicy(String assetGuid, Set<String> newPolicyIds) {
-        if (StringUtils.isEmpty(assetGuid)) {
-            return Optional.empty();
-        }
-
+    public AtlasVertex linkBusinessPolicy(final BusinessPolicyRequest.AssetData data) {
+        String assetGuid = data.getAssetId();
         AtlasVertex vertex = findByGuid(graph, assetGuid);
-        if (vertex == null) {
-            LOG.warn("Asset not found with GUID: {}", assetGuid);
-            return Optional.empty();
-        }
 
-        // Get current policies and calculate the difference
-        Set<String> currentPolicies = getVertexPolicies(vertex);
-        Set<String> policiesToAdd = SetUtils.difference(newPolicyIds, currentPolicies);
+        // Retrieve existing policies
+        Set<String> existingComplaint = getVertexPoliciesCompliant(vertex);
+        Set<String> existingNonComplaint = getVertexPoliciesNonCompliant(vertex);
 
-        if (policiesToAdd.isEmpty()) {
-            return Optional.empty();
-        }
+        // Retrieve new policies
+        Set<String> newComplaintRules = data.getComplaintRules();
+        Set<String> newNonComplaintRules = data.getNonComplaintRules();
+        Set<String> newComplaintPolicies = data.getComplaintPolicies();
+        Set<String> newNonComplaintPolicies = data.getNonComplaintPolicies();
 
-        return updateAssetPolicies(vertex, currentPolicies, policiesToAdd);
-    }
+        // Calculate effective complaint and non-compliant policies
+        Set<String> effectiveComplaint = calculateEffectivePolicies(
+                existingComplaint, newComplaintRules, newComplaintPolicies,
+                existingNonComplaint, newNonComplaintRules, newNonComplaintPolicies);
 
+        Set<String> effectiveNonComplaint = calculateEffectivePolicies(
+                existingNonComplaint, newNonComplaintRules, newNonComplaintPolicies,
+                existingComplaint, newComplaintRules, newComplaintPolicies);
 
-    private Optional<AtlasVertex> updateAssetPolicies(AtlasVertex vertex, Set<String> currentPolicies, Set<String> policiesToAdd) {
-        Set<String> allGoverned = new HashSet<>(currentPolicies);
-        allGoverned.addAll(policiesToAdd);
-        policiesToAdd.forEach(policyGuid -> vertex.setProperty(ASSET_POLICY_GUIDS, policyGuid));
-        vertex.setProperty(ASSET_POLICIES_COUNT, allGoverned.size());
+        // Update vertex properties
+        updateVertexPolicies(vertex, effectiveComplaint, effectiveNonComplaint);
+
+        // Count and set policies
+        int complaintRuleCount = countPoliciesContaining(effectiveComplaint, "rule");
+        int nonComplaintRuleCount = countPoliciesContaining(effectiveNonComplaint, "rule");
+        int totalPolicyCount = complaintRuleCount + nonComplaintRuleCount;
+
+        vertex.setProperty(ASSET_POLICIES_COUNT, totalPolicyCount);
         updateModificationMetadata(vertex);
 
-        // Cache the differential using existing non-compliant policies
-        Set<String> nonCompliant = vertex.getMultiValuedSetProperty(
-                NON_COMPLIANT_ASSET_POLICY_GUIDS,
-                String.class
-        );
+        // Create and cache differential entity
+        AtlasEntity diffEntity = createDifferentialEntity(
+                vertex, effectiveComplaint, effectiveNonComplaint,
+                existingComplaint, existingNonComplaint, totalPolicyCount);
+
+        RequestContext.get().cacheDifferentialEntity(diffEntity);
+        return vertex;
+    }
+
+    private Set<String> calculateEffectivePolicies(
+            Set<String> existing, Set<String> addRules, Set<String> addPolicies,
+            Set<String> removeExisting, Set<String> removeRules, Set<String> removePolicies) {
+
+        Set<String> effective = new HashSet<>(existing);
+        effective.addAll(addRules);
+        effective.addAll(addPolicies);
+        effective.removeAll(removeExisting);
+        effective.removeAll(removeRules);
+        effective.removeAll(removePolicies);
+        return effective;
+    }
+
+    private void updateVertexPolicies(AtlasVertex vertex, Set<String> complaint, Set<String> nonComplaint) {
+        complaint.forEach(policyGuid -> vertex.setProperty(ASSET_POLICY_GUIDS, policyGuid));
+        nonComplaint.forEach(policyGuid -> vertex.setProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyGuid));
+    }
+
+    private int countPoliciesContaining(Set<String> policies, String substring) {
+        return (int) policies.stream().filter(policy -> !policy.contains(substring)).count();
+    }
+
+    private AtlasEntity createDifferentialEntity(
+            AtlasVertex vertex, Set<String> effectiveComplaint, Set<String> effectiveNonComplaint,
+            Set<String> existingComplaint, Set<String> existingNonComplaint, int totalPolicyCount) {
 
         AtlasEntity diffEntity = new AtlasEntity(vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
         setEntityCommonAttributes(vertex, diffEntity);
-        diffEntity.setAttribute(ASSET_POLICY_GUIDS, allGoverned);
-        diffEntity.setAttribute(ASSET_POLICIES_COUNT, allGoverned.size() + nonCompliant.size());
+        diffEntity.setAttribute(ASSET_POLICIES_COUNT, totalPolicyCount);
 
-        RequestContext requestContext = RequestContext.get();
-        requestContext.cacheDifferentialEntity(diffEntity);
+        if (!existingComplaint.equals(effectiveComplaint)) {
+            diffEntity.setAttribute(ASSET_POLICY_GUIDS, effectiveComplaint);
+        }
+        if (!existingNonComplaint.equals(effectiveNonComplaint)) {
+            diffEntity.setAttribute(NON_COMPLIANT_ASSET_POLICY_GUIDS, effectiveNonComplaint);
+        }
 
-        return Optional.of(vertex);
+        return diffEntity;
     }
 
-    private Set<String> getVertexPolicies(AtlasVertex vertex) {
+    private Set<String> getVertexPoliciesCompliant(AtlasVertex vertex) {
         Set<String> policies = vertex.getMultiValuedSetProperty(ASSET_POLICY_GUIDS, String.class);
+        return policies != null ? policies : new HashSet<>();
+    }
+
+    private Set<String> getVertexPoliciesNonCompliant(AtlasVertex vertex) {
+        Set<String> policies = vertex.getMultiValuedSetProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, String.class);
         return policies != null ? policies : new HashSet<>();
     }
 
