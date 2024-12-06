@@ -1054,6 +1054,10 @@ public class EntityGraphRetriever {
                             .map(e -> {
                                 AtlasJanusEdge edge = (AtlasJanusEdge) e;
                                 String edgeLabel = edge.getLabel();
+                                // check if edgeLabel contains __ as prefix
+                                if(!edgeLabel.contains(EDGE_LABEL_PREFIX)) {
+                                    LOG.debug("Edge label {} does not contain prefix", edgeLabel);
+                                }
                                 return edgeLabel.replaceFirst(EDGE_LABEL_PREFIX , StringUtils.EMPTY);
                             })
                             .collect(Collectors.toList());
@@ -1936,6 +1940,11 @@ public class EntityGraphRetriever {
         if (properties.get(attribute.getName()) != null && properties.get(attribute.getName()) != StringUtils.SPACE &&
                 (typeCategory.equals(TypeCategory.PRIMITIVE) || isArrayOfPrimitives)) {
             return properties.get(attribute.getName());
+        }
+
+        //when value is not present and type is primitive, return null
+        if(properties.get(attribute.getName()) == null && typeCategory.equals(TypeCategory.PRIMITIVE)) {
+            return null;
         }
 
         // if value is empty && element is array of primitives, return empty list
