@@ -310,12 +310,16 @@ public class EntityGraphRetriever {
 
             Map<String, Object> attributes = new HashMap<>();
             Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
+
+            // preloadProperties here
             if (CollectionUtils.isNotEmpty(relationAttributes)) {
+                Map<String, Object> referenceVertexProperties =   preloadProperties(entityVertex, entityType, Collections.emptySet());
+
                 for (String attributeName : relationAttributes) {
                     AtlasAttribute attribute = entityType.getAttribute(attributeName);
                     if (attribute != null
                             && !uniqueAttributes.containsKey(attributeName)) {
-                        Object attrValue = getVertexAttribute(entityVertex, attribute);
+                        Object attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, referenceVertexProperties);
                         if (attrValue != null) {
                             attributes.put(attribute.getName(), attrValue);
                         }
