@@ -303,7 +303,6 @@ public class CachePolicyTransformerImpl {
         }
 
         ArrayList<String> policyGuids = new ArrayList<>(policyChanges.keySet());
-//        List<AtlasEntityHeader> atlasPolicies = getAtlasPolicies(serviceName, POLICY_BATCH_SIZE, policyGuids);
 
         List<RangerPolicy> rangerPolicies = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
