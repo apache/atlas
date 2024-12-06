@@ -1019,52 +1019,6 @@ public class EntityGraphRetriever {
         // Execute the traversal to fetch properties
         GraphTraversal<Vertex, VertexProperty<Object>> traversal = graph.V(entityVertex.getId()).properties();
 
-        // Check if any attribute is a struct or object type for edge lookup
-        boolean isAnyAttributeAStructOrObject = attributes.stream().anyMatch(a -> {
-            if (entityType == null) {
-                return false;
-            }
-            AtlasAttribute attribute = entityType.getAttribute(a);
-            if (attribute == null || attribute.getAttributeType() == null) {
-                return false;
-            }
-
-            if ((attribute.getAttributeType() instanceof AtlasStructType)) {
-                return true;
-            }
-
-            if (!(attribute.getAttributeType() instanceof AtlasArrayType)) {
-                return false;
-            }
-            AtlasArrayType arrayType = (AtlasArrayType) attribute.getAttributeType();
-
-            if (arrayType.getElementType() == null) {
-                return false;
-            }
-
-            AtlasType arrayElementType = arrayType.getElementType();
-
-            return arrayElementType.getTypeCategory() == TypeCategory.STRUCT;
-        });
-
-        if (isAnyAttributeAStructOrObject) {
-            List<AtlasEdge> edgeProperties = IteratorUtils.toList(entityVertex.getEdges(AtlasEdgeDirection.OUT).iterator());
-            List<String> edgeLabels =
-                    edgeProperties.stream()
-                            .map(e -> {
-                                AtlasJanusEdge edge = (AtlasJanusEdge) e;
-                                String edgeLabel = edge.getLabel();
-                                // check if edgeLabel contains __ as prefix
-                                if(!edgeLabel.contains(EDGE_LABEL_PREFIX)) {
-                                    LOG.debug("Edge label {} does not contain prefix", edgeLabel);
-                                }
-                                return edgeLabel.replaceFirst(EDGE_LABEL_PREFIX , StringUtils.EMPTY);
-                            })
-                            .collect(Collectors.toList());
-
-            edgeLabels.stream().forEach(e -> propertiesMap.put(e, StringUtils.SPACE));
-        }
-
         // Iterate through the resulting VertexProperty objects
         while (traversal.hasNext()) {
             try {
@@ -1292,6 +1246,7 @@ public class EntityGraphRetriever {
                             attribute = entityType.getAttribute(attrName);
 
                             if (attribute == null) {
+                                // dataContractLatest, meanings, links
                                 attribute = entityType.getRelationshipAttribute(attrName, null);
                             }
                         }
@@ -1954,11 +1909,11 @@ public class EntityGraphRetriever {
 
         // value is present as marker, fetch the value from the vertex
         if (ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
-            AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
-            Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
-            LOG.debug("capturing excluded property set category and value, mapVertexValue - {}: {} : {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()), mappedVertex);
-            RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
-            return mappedVertex;
+            //AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
+            return mapVertexToAttribute(vertex, attribute, null, false);
+            //LOG.debug("capturing excluded property set category and value, mapVertexValue - {}: {} : {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()), mappedVertex);
+            //RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
+            //return mappedVertex;
         }
 
         return null;
