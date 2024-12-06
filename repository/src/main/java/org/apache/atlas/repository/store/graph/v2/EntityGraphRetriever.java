@@ -1945,7 +1945,11 @@ public class EntityGraphRetriever {
 
         // value is present as marker, fetch the value from the vertex
         if (ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
-            return mapVertexToAttribute(vertex, attribute, null, false);
+            AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
+            Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
+            LOG.debug("capturing excluded property set category and value, mapVertexValue - {}: {} : {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()), mappedVertex);
+            RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
+            return mappedVertex;
         }
 
         return null;
