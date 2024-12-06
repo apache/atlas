@@ -4800,9 +4800,9 @@ public class EntityGraphMapper {
         updateVertexPolicies(vertex, effectiveComplaint, effectiveNonComplaint);
 
         // Count and set policies
-        int complaintRuleCount = countPoliciesContaining(effectiveComplaint, "rule");
-        int nonComplaintRuleCount = countPoliciesContaining(effectiveNonComplaint, "rule");
-        int totalPolicyCount = complaintRuleCount + nonComplaintRuleCount;
+        int complaintPolicyCount = countPoliciesContaining(effectiveComplaint, "rule");
+        int nonComplaintPolicyCount = countPoliciesContaining(effectiveNonComplaint, "rule");
+        int totalPolicyCount = complaintPolicyCount + nonComplaintPolicyCount;
 
         vertex.setProperty(ASSET_POLICIES_COUNT, totalPolicyCount);
         updateModificationMetadata(vertex);
@@ -4830,8 +4830,6 @@ public class EntityGraphMapper {
     }
 
     private void updateVertexPolicies(AtlasVertex vertex, Set<String> complaint, Set<String> nonComplaint) {
-        vertex.removeProperty(ASSET_POLICY_GUIDS);
-        vertex.removeProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS);
         complaint.forEach(policyGuid -> vertex.setProperty(ASSET_POLICY_GUIDS, policyGuid));
         nonComplaint.forEach(policyGuid -> vertex.setProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyGuid));
     }
