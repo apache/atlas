@@ -4830,6 +4830,8 @@ public class EntityGraphMapper {
     }
 
     private void updateVertexPolicies(AtlasVertex vertex, Set<String> complaint, Set<String> nonComplaint) {
+        vertex.removeProperty(ASSET_POLICY_GUIDS);
+        vertex.removeProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS);
         complaint.forEach(policyGuid -> vertex.setProperty(ASSET_POLICY_GUIDS, policyGuid));
         nonComplaint.forEach(policyGuid -> vertex.setProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyGuid));
     }
