@@ -49,6 +49,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusEdge;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
@@ -66,6 +67,7 @@ import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
@@ -95,6 +97,7 @@ import java.util.Set;
 import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CREATED_BY;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_DESCRIPTION;
@@ -307,12 +310,16 @@ public class EntityGraphRetriever {
 
             Map<String, Object> attributes = new HashMap<>();
             Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
+
+            // preloadProperties here
             if (CollectionUtils.isNotEmpty(relationAttributes)) {
+                Map<String, Object> referenceVertexProperties =   preloadProperties(entityVertex, entityType, Collections.emptySet());
+
                 for (String attributeName : relationAttributes) {
                     AtlasAttribute attribute = entityType.getAttribute(attributeName);
                     if (attribute != null
                             && !uniqueAttributes.containsKey(attributeName)) {
-                        Object attrValue = getVertexAttribute(entityVertex, attribute);
+                        Object attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, referenceVertexProperties);
                         if (attrValue != null) {
                             attributes.put(attribute.getName(), attrValue);
                         }
@@ -1010,7 +1017,7 @@ public class EntityGraphRetriever {
         return mapVertexToAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }
 
-    private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType) {
+    private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set<String> attributes) {
         Map<String, Object> propertiesMap = new HashMap<>();
 
         // Execute the traversal to fetch properties
@@ -1046,7 +1053,6 @@ public class EntityGraphRetriever {
                 throw e; // Re-throw the exception after logging it
             }
         }
-
         return propertiesMap;
     }
 
@@ -1064,11 +1070,7 @@ public class EntityGraphRetriever {
                 AccessControlUtils.ATTR_POLICY_RESOURCES_CATEGORY,
                 AccessControlUtils.ATTR_POLICY_SERVICE_NAME,
                 AccessControlUtils.ATTR_POLICY_PRIORITY,
-                AccessControlUtils.REL_ATTR_POLICIES,
-                AccessControlUtils.ATTR_SERVICE_SERVICE_TYPE,
-                AccessControlUtils.ATTR_SERVICE_TAG_SERVICE,
-                AccessControlUtils.ATTR_SERVICE_IS_ENABLED,
-                AccessControlUtils.ATTR_SERVICE_LAST_SYNC));
+                AccessControlUtils.REL_ATTR_POLICIES));
 
         return exclusionSet.stream().anyMatch(attributes::contains);
     }
@@ -1176,7 +1178,7 @@ public class EntityGraphRetriever {
             //pre-fetching the properties
             String typeName = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class); //properties.get returns null
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName); // this is not costly
-            Map<String, Object> properties = preloadProperties(entityVertex, entityType);
+            Map<String, Object> properties = preloadProperties(entityVertex, entityType, attributes);
 
             String guid = (String) properties.get(Constants.GUID_PROPERTY_KEY);
 
@@ -1248,6 +1250,7 @@ public class EntityGraphRetriever {
                             attribute = entityType.getAttribute(attrName);
 
                             if (attribute == null) {
+                                // dataContractLatest, meanings, links
                                 attribute = entityType.getRelationshipAttribute(attrName, null);
                             }
                         }
@@ -1888,29 +1891,33 @@ public class EntityGraphRetriever {
             return null;
         }
 
-
         TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
-        TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ?((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
+        TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
+        boolean isArrayOfPrimitives = typeCategory.equals(TypeCategory.ARRAY) && elementTypeCategory.equals(TypeCategory.PRIMITIVE);
+        boolean isPrefetchValueFinal = (typeCategory.equals(TypeCategory.PRIMITIVE) || typeCategory.equals(TypeCategory.ENUM) || typeCategory.equals(TypeCategory.MAP) || isArrayOfPrimitives);
 
-        // if element is primitive or array of primitives, return the value from properties
-        if (properties.get(attribute.getName()) != null &&
-                (attribute.getAttributeType().getTypeCategory().equals(TypeCategory.PRIMITIVE) || (elementTypeCategory == null || elementTypeCategory.equals(TypeCategory.PRIMITIVE)))) {
+        // value is present and value is not marker (SPACE for further lookup) and type is primitive or array of primitives
+        if (properties.get(attribute.getName()) != null && properties.get(attribute.getName()) != StringUtils.SPACE && isPrefetchValueFinal) {
             return properties.get(attribute.getName());
         }
 
-        // if array is empty && element is array of primitives, return the value from properties
-        if (properties.get(attribute.getName()) == null &&  attribute.getAttributeType().getTypeCategory().equals(TypeCategory.ARRAY)) {
+        //when value is not present and type is primitive, return null
+        if(properties.get(attribute.getName()) == null && isPrefetchValueFinal) {
+            return null;
+        }
+
+        // if value is empty && element is array of primitives, return empty list
+        if (properties.get(attribute.getName()) == null && isArrayOfPrimitives) {
             return new ArrayList<>();
         }
 
-        // if element is non-primitive, fetch the value from the vertex
-        if (properties.get(attribute.getName()) != null && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
-            LOG.debug("capturing excluded property set category and value - {}: {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()));
-            AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
-            Object mappedVertex = mapVertexToAttribute(vertex, attribute, null, false);
-            properties.put(attribute.getName(), mappedVertex);
-            RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
-            return mappedVertex;
+        // value is present as marker, fetch the value from the vertex
+        if (ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
+            //AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
+            return mapVertexToAttribute(vertex, attribute, null, false);
+            //LOG.debug("capturing excluded property set category and value, mapVertexValue - {}: {} : {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()), mappedVertex);
+            //RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
+            //return mappedVertex;
         }
 
         return null;
