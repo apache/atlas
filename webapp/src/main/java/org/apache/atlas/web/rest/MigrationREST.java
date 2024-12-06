@@ -8,6 +8,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.model.instance.UniqueQnMigrationRequest;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -323,6 +324,31 @@ public class MigrationREST {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    @POST
+    @Path("update-unique-qualified-name")
+    @Timed
+    public Boolean updateUniqueQualifiedName(final UniqueQnMigrationRequest request) throws Exception {
+        AtlasPerfTracer perf = null;
+        try {
+            if (CollectionUtils.isEmpty(request.getAssetGuids())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Asset GUIDs are required for which updating unique qualified name is required");
+            }
+
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.updateUniqueQualifiedName(" + request.getAssetGuids() + ")");
+            }
+
+            UniqueQNAttributeMigrationService migrationService = new UniqueQNAttributeMigrationService(entityRetriever, request.getAssetGuids(), transactionInterceptHelper);
+            migrationService.migrateQN();
+        } catch (Exception e) {
+            LOG.error("Error while updating unique qualified name for guids: {}", request.getAssetGuids(), e);
+            throw e;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+        return Boolean.TRUE;
     }
 
     private List<AtlasEntity> getEntitiesByIndexSearch(IndexSearchParams indexSearchParams, Boolean minExtInfo, boolean ignoreRelationships) throws AtlasBaseException {
