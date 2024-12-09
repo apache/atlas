@@ -1034,7 +1034,7 @@ public class EntityGraphRetriever {
                 boolean isBusinessAttribute = attribute == null;
 
                 if (property.isPresent()) {
-                    if ((typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE)) {
+                    if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
                         Object value = propertiesMap.get(property.key());
                         if (value instanceof List) {
                             ((List) value).add(property.value());
@@ -1047,7 +1047,7 @@ public class EntityGraphRetriever {
                         if (propertiesMap.get(property.key()) == null) {
                             propertiesMap.put(property.key(), property.value());
                         } else if (isBusinessAttribute) {    // If it is a business attribute, and is a multi-valued attribute
-                            LOG.info("Duplicate property key {} found for entity vertex: {}", property.key(), entityVertex);
+                            LOG.warn("Duplicate property key {} found for entity vertex: {}", property.key(), entityVertex);
                             List<Object> values = new ArrayList<>();
                             values.add(propertiesMap.get(property.key()));
                             values.add(property.value());
