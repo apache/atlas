@@ -82,6 +82,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGOR
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
+import static org.apache.atlas.services.tag.RangerServiceTag.TAG_RESOURCE_NAME;
 
 @Component
 public class CachePolicyTransformerImpl {
@@ -710,7 +711,14 @@ public class CachePolicyTransformerImpl {
         //policy.setId(atlasPolicy.getGuid());
         policy.setName((String) atlasPolicy.getAttribute(QUALIFIED_NAME));
         policy.setService((String) atlasPolicy.getAttribute(ATTR_POLICY_SERVICE_NAME));
-        policy.setServiceType(serviceType);
+
+        // Adding atlas as serviceType for tag policies, as atlas_tag doesn't have all the resource available for evaluation
+        if (serviceType != null && serviceType.equals(TAG_RESOURCE_NAME) && policy.getService().equals("atlas")) {
+            policy.setServiceType("atlas");
+        } else {
+            policy.setServiceType(serviceType);
+        }
+
         policy.setGuid(atlasPolicy.getGuid());
         policy.setCreatedBy(atlasPolicy.getCreatedBy());
         policy.setCreateTime(atlasPolicy.getCreateTime());
