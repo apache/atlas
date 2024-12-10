@@ -73,6 +73,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
+import org.janusgraph.core.Cardinality;
+import org.janusgraph.graphdb.relations.CacheVertexProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -1031,28 +1033,16 @@ public class EntityGraphRetriever {
                 AtlasAttribute attribute = entityType.getAttribute(property.key());
                 TypeCategory typeCategory = attribute != null ? attribute.getAttributeType().getTypeCategory() : null;
                 TypeCategory elementTypeCategory = attribute != null && attribute.getAttributeType().getTypeCategory() == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
-                boolean canBeBusinessAttribute = attribute == null;
+                boolean isMultiValuedProperty = (property instanceof CacheVertexProperty && ((CacheVertexProperty) property).propertyKey().cardinality().equals(Cardinality.SET));
 
                 if (property.isPresent()) {
                     if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
-                        Object value = propertiesMap.get(property.key());
-                        if (value instanceof List) {
-                            ((List) value).add(property.value());
-                        } else {
-                            List<Object> values = new ArrayList<>();
-                            values.add(property.value());
-                            propertiesMap.put(property.key(), values);
-                        }
-                    } else {
-                        if (propertiesMap.get(property.key()) == null) {
-                            propertiesMap.put(property.key(), property.value());
-                        } else if (canBeBusinessAttribute) {    // If it is a business attribute, and is a multi-valued attribute
-                            LOG.warn("Duplicate property key {} found for entity vertex: {}", property.key(), entityVertex);
-                            List<Object> values = new ArrayList<>();
-                            values.add(propertiesMap.get(property.key()));
-                            values.add(property.value());
-                            propertiesMap.put(property.key(), values);
-                        }
+                        updateAttrValue(propertiesMap, property);
+                    } else if (attribute == null && isMultiValuedProperty) {
+                        LOG.warn("Multiple value found for key {} for entity vertex: {}", property.key(), entityVertex);
+                        updateAttrValue(propertiesMap, property);
+                    } else if (propertiesMap.get(property.key()) == null) {
+                        propertiesMap.put(property.key(), property.value());
                     }
                 }
             } catch (RuntimeException e) {
@@ -1063,6 +1053,16 @@ public class EntityGraphRetriever {
         return propertiesMap;
     }
 
+    private void updateAttrValue( Map<String, Object> propertiesMap, VertexProperty<Object> property){
+        Object value = propertiesMap.get(property.key());
+        if (value instanceof List) {
+            ((List) value).add(property.value());
+        } else {
+            List<Object> values = new ArrayList<>();
+            values.add(property.value());
+            propertiesMap.put(property.key(), values);
+        }
+    }
 
     private boolean isPolicyAttribute(Set<String> attributes) {
         Set<String> exclusionSet = new HashSet<>(Arrays.asList(AccessControlUtils.ATTR_POLICY_TYPE,
