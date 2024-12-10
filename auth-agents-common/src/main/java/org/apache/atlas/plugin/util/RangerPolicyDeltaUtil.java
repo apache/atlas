@@ -72,7 +72,7 @@ public class RangerPolicyDeltaUtil {
                 ret = new ArrayList<>(policies);
 
                 for (RangerPolicyDelta delta : deltas) {
-                    if (!serviceType.equals(delta.getPolicyServiceName())) {
+                    if (!serviceType.equals(delta.getServiceType())) {
                         continue;
                     }
 
