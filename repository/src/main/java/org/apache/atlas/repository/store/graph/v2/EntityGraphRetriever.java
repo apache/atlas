@@ -1037,7 +1037,7 @@ public class EntityGraphRetriever {
                 if (property.isPresent()) {
 
                     // If the attribute is not known (null)
-                    // validate if it is multi-valued
+                    // validate if prefetched property is multi-valued
                     boolean isMultiValuedProperty = (property instanceof CacheVertexProperty && ((CacheVertexProperty) property).propertyKey().cardinality().equals(Cardinality.SET));
 
                     if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
