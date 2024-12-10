@@ -1355,7 +1355,6 @@ public class RangerPolicyRepository {
     }
 
     private RangerPolicyEvaluator update(final RangerPolicyDelta delta, final RangerPolicyEvaluator currentEvaluator) {
-        LOG.info("PolicyDelta: RangerPolicyRepository.update is called, policyGuid: "+delta.getPolicyGuid());
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> RangerPolicyRepository.update(delta=" + delta + ", currentEvaluator=" + (currentEvaluator == null ? null : currentEvaluator.getPolicy()) + ")");
         }

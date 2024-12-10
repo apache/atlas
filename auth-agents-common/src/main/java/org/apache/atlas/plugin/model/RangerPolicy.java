@@ -532,10 +532,7 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
 
 	@JsonIgnore
 	public String getAtlasGuid() {
-		if (getGuid().length() > 36) {
-			return getGuid().substring(0, 36);
-		}
-		return getGuid();
+		return getGuid().length() > 36 ? getGuid().substring(0, 36) : getGuid();
 	}
 
 	@Override
