@@ -89,6 +89,9 @@ public class RangerPolicyDelta implements java.io.Serializable {
 
     public void setPolicy(RangerPolicy policy) { this.policy = policy; }
 
+    @JsonIgnore
+    public String getPolicyServiceName() { return policy != null ? policy.getService() : null;}
+
     @Override
     public String toString() {
         return "id:" + id

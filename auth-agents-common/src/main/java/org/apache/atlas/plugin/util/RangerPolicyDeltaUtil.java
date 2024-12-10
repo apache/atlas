@@ -39,9 +39,9 @@ public class RangerPolicyDeltaUtil {
 
     private static final Log PERF_POLICY_DELTA_LOG = RangerPerfTracer.getPerfLogger("policy.delta");
 
-    public static List<RangerPolicy> applyDeltas(List<RangerPolicy> policies, List<RangerPolicyDelta> deltas, String serviceType) {
+    public static List<RangerPolicy> applyDeltas(List<RangerPolicy> policies, List<RangerPolicyDelta> deltas, String serviceName) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> applyDeltas(serviceType=" + serviceType + ")");
+            LOG.debug("==> applyDeltas(serviceType=" + serviceName + ")");
         }
 
         List<RangerPolicy> ret;
@@ -52,27 +52,27 @@ public class RangerPolicyDeltaUtil {
             perf = RangerPerfTracer.getPerfTracer(PERF_POLICY_DELTA_LOG, "RangerPolicyDelta.applyDeltas()");
         }
 
-        boolean hasExpectedServiceType = false;
+        boolean hasExpectedServiceName = false;
 
         if (CollectionUtils.isNotEmpty(deltas)) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("applyDeltas(deltas=" + Arrays.toString(deltas.toArray()) + ", serviceType=" + serviceType + ")");
+                LOG.debug("applyDeltas(deltas=" + Arrays.toString(deltas.toArray()) + ", serviceType=" + serviceName + ")");
             }
 
             for (RangerPolicyDelta delta : deltas) {
-                if (serviceType.equals(delta.getServiceType())) {
-                    hasExpectedServiceType = true;
+                if (serviceName.equals(delta.getPolicyServiceName())) {
+                    hasExpectedServiceName = true;
                     break;
-                } else if (!serviceType.equals(EmbeddedServiceDefsUtil.EMBEDDED_SERVICEDEF_TAG_NAME) && !delta.getServiceType().equals(EmbeddedServiceDefsUtil.EMBEDDED_SERVICEDEF_TAG_NAME)) {
-                    LOG.warn("Found unexpected serviceType in policyDelta:[" + delta + "]. Was expecting serviceType:[" + serviceType + "]. Should NOT have come here!! Ignoring delta and continuing");
+                } else if (!serviceName.equals(EmbeddedServiceDefsUtil.EMBEDDED_SERVICEDEF_TAG_SERVICE_NAME) && !delta.getPolicyServiceName().equals(EmbeddedServiceDefsUtil.EMBEDDED_SERVICEDEF_TAG_SERVICE_NAME)) {
+                    LOG.warn("Found unexpected serviceType in policyDelta:[" + delta + "]. Was expecting serviceType:[" + serviceName + "]. Should NOT have come here!! Ignoring delta and continuing");
                 }
             }
 
-            if (hasExpectedServiceType) {
+            if (hasExpectedServiceName) {
                 ret = new ArrayList<>(policies);
 
                 for (RangerPolicyDelta delta : deltas) {
-                    if (!serviceType.equals(delta.getServiceType())) {
+                    if (!serviceName.equals(delta.getPolicyServiceName())) {
                         continue;
                     }
 
@@ -132,7 +132,7 @@ public class RangerPolicyDeltaUtil {
                 }
             } else {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("applyDeltas - none of the deltas is for " + serviceType + ")");
+                    LOG.debug("applyDeltas - none of the deltas is for " + serviceName + ")");
                 }
                 ret = policies;
             }
@@ -146,7 +146,7 @@ public class RangerPolicyDeltaUtil {
         RangerPerfTracer.log(perf);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== applyDeltas(serviceType=" + serviceType + "): " + ret);
+            LOG.debug("<== applyDeltas(serviceType=" + serviceName + "): " + ret);
         }
         return ret;
     }
