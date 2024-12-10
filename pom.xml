@@ -150,7 +150,7 @@
         <lucene-solr.version>8.11.3</lucene-solr.version>
         <maven-plugin-sortpom.version>3.0.1</maven-plugin-sortpom.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
-        <netty.version>4.1.100.Final</netty.version>
+        <netty.version>4.1.108.Final</netty.version>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
         <npm-for-v2.version>6.13.7</npm-for-v2.version>
         <okio.version>3.4.0</okio.version>
