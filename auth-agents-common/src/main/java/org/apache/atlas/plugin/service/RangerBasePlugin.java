@@ -376,10 +376,8 @@ public class RangerBasePlugin {
 						}
 
 						if (oldPolicyEngine != null) {
-							RangerPolicyEngineImpl oldPolicyEngineImpl = (RangerPolicyEngineImpl) oldPolicyEngine;
-
-							newPolicyEngine = RangerPolicyEngineImpl.getPolicyEngine(oldPolicyEngineImpl, policies);
-							//TODO: this looks like a mistake, second arg should be servicePolicies which has the applied delta
+							// Create new evaluator for the updated policies
+							newPolicyEngine = new RangerPolicyEngineImpl(servicePolicies, pluginContext, roles);
 						}
 
 						if (newPolicyEngine != null) {
