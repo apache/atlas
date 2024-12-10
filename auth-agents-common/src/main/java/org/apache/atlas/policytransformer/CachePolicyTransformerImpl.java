@@ -709,17 +709,9 @@ public class CachePolicyTransformerImpl {
     private RangerPolicy getRangerPolicy(AtlasEntityHeader atlasPolicy, String serviceType) {
         RangerPolicy policy = new RangerPolicy();
 
-        //policy.setId(atlasPolicy.getGuid());
         policy.setName((String) atlasPolicy.getAttribute(QUALIFIED_NAME));
         policy.setService((String) atlasPolicy.getAttribute(ATTR_POLICY_SERVICE_NAME));
-
-        // Adding atlas as serviceType for tag policies, as atlas_tag doesn't have all the resource available for evaluation
-        if (serviceType != null && serviceType.equals(TAG_RESOURCE_NAME) && policy.getService().equals("atlas")) {
-            policy.setServiceType("atlas");
-        } else {
-            policy.setServiceType(serviceType);
-        }
-
+        policy.setServiceType(serviceType);
         policy.setGuid(atlasPolicy.getGuid());
         policy.setCreatedBy(atlasPolicy.getCreatedBy());
         policy.setCreateTime(atlasPolicy.getCreateTime());

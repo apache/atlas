@@ -428,7 +428,8 @@ public class RangerBasePlugin {
 			}
 
 		} catch (Exception e) {
-			LOG.error("setPolicies: policy engine initialization failed!  Leaving current policy engine as-is. Exception : ", e);
+			LOG.error("setPolicies: Failed to set policies, didn't set policies", e);
+			throw e;
 		}
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("<== setPolicies(" + policies + ")");
