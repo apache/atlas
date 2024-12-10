@@ -34,7 +34,12 @@ import org.apache.atlas.plugin.policyengine.RangerPolicyEngineImpl;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @XmlRootElement
@@ -53,8 +58,6 @@ public class ServicePolicies implements java.io.Serializable {
 	private TagPolicies        tagPolicies;
 	private Map<String, SecurityZoneInfo> securityZones;
 	private List<RangerPolicyDelta> policyDeltas;
-
-	private Map<String, RangerPolicyDelta> deleteDeltas;
 	private Map<String, String> serviceConfig;
 
 	/**
@@ -182,14 +185,6 @@ public class ServicePolicies implements java.io.Serializable {
 	public List<RangerPolicyDelta> getPolicyDeltas() { return this.policyDeltas; }
 
 	public void setPolicyDeltas(List<RangerPolicyDelta> policyDeltas) { this.policyDeltas = policyDeltas; }
-
-	public Map<String, RangerPolicyDelta> getDeleteDeltas() {
-		return deleteDeltas;
-	}
-
-	public void setDeleteDeltas(Map<String, RangerPolicyDelta> deleteDeltas) {
-		this.deleteDeltas = deleteDeltas;
-	}
 
 	@JsonInclude(JsonInclude.Include.NON_NULL)
 	@XmlRootElement
@@ -417,7 +412,7 @@ public class ServicePolicies implements java.io.Serializable {
 		List<RangerPolicy> resourcePoliciesAfterDelete =
 				RangerPolicyDeltaUtil.deletePoliciesByDelta(oldResourcePolicies, deletedDeltaMap);
 		List<RangerPolicy> newResourcePolicies =
-				RangerPolicyDeltaUtil.applyDeltas(resourcePoliciesAfterDelete, servicePolicies.getPolicyDeltas(), servicePolicies.getServiceDef().getName());
+				RangerPolicyDeltaUtil.applyDeltas(resourcePoliciesAfterDelete, servicePolicies.getPolicyDeltas(), servicePolicies.getServiceDef().getName(), servicePolicies.getServiceName());
 
 		ret.setPolicies(newResourcePolicies);
 
@@ -428,7 +423,7 @@ public class ServicePolicies implements java.io.Serializable {
 			}
 			List<RangerPolicy> tagPoliciesAfterDelete =
 					RangerPolicyDeltaUtil.deletePoliciesByDelta(oldTagPolicies, deletedDeltaMap);
-			newTagPolicies = RangerPolicyDeltaUtil.applyDeltas(tagPoliciesAfterDelete, servicePolicies.getPolicyDeltas(), servicePolicies.getTagPolicies().getServiceDef().getName());
+			newTagPolicies = RangerPolicyDeltaUtil.applyDeltas(tagPoliciesAfterDelete, servicePolicies.getPolicyDeltas(), servicePolicies.getTagPolicies().getServiceDef().getName(), servicePolicies.getTagPolicies().getServiceName());
 		} else {
 			if (LOG.isDebugEnabled()) {
 				LOG.debug("No need to apply deltas for tag policies");
@@ -442,38 +437,6 @@ public class ServicePolicies implements java.io.Serializable {
 
 		if (ret.getTagPolicies() != null) {
 			ret.getTagPolicies().setPolicies(newTagPolicies);
-		}
-
-		if (MapUtils.isNotEmpty(servicePolicies.getSecurityZones())) {
-			Map<String, SecurityZoneInfo> newSecurityZones = new HashMap<>();
-
-			for (Map.Entry<String, SecurityZoneInfo> entry : servicePolicies.getSecurityZones().entrySet()) {
-				String 			 zoneName = entry.getKey();
-				SecurityZoneInfo zoneInfo = entry.getValue();
-
-				List<RangerPolicy> zoneResourcePolicies = policyEngine.getResourcePolicies(zoneName);
-				// There are no separate tag-policy-repositories for each zone
-
-				if (LOG.isDebugEnabled()) {
-					LOG.debug("Applying deltas for security-zone:[" + zoneName + "]");
-				}
-
-				final List<RangerPolicy> newZonePolicies = RangerPolicyDeltaUtil.applyDeltas(zoneResourcePolicies, zoneInfo.getPolicyDeltas(), servicePolicies.getServiceDef().getName());
-
-				if (LOG.isDebugEnabled()) {
-					LOG.debug("New resource policies for security-zone:[" + zoneName + "], zoneResourcePolicies:[" + Arrays.toString(newZonePolicies.toArray())+ "]");
-				}
-
-				SecurityZoneInfo newZoneInfo = new SecurityZoneInfo();
-
-				newZoneInfo.setZoneName(zoneName);
-				newZoneInfo.setResources(zoneInfo.getResources());
-				newZoneInfo.setPolicies(newZonePolicies);
-
-				newSecurityZones.put(zoneName, newZoneInfo);
-			}
-
-			ret.setSecurityZones(newSecurityZones);
 		}
 
 		return ret;

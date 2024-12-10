@@ -49,7 +49,7 @@ public class RangerPolicyDeltaUtil {
         }
     }
 
-    public static List<RangerPolicy> applyDeltas(List<RangerPolicy> policies, List<RangerPolicyDelta> deltas, String serviceType) {
+    public static List<RangerPolicy> applyDeltas(List<RangerPolicy> policies, List<RangerPolicyDelta> deltas, String serviceType, String serviceName) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> applyDeltas(serviceType=" + serviceType + ")");
         }
@@ -61,9 +61,9 @@ public class RangerPolicyDeltaUtil {
             return policies;
         }
 
-        boolean hasExpectedServiceType = deltas.stream().anyMatch(delta -> serviceType.equals(delta.getServiceType()));
+        boolean hasExpectedServiceName = deltas.stream().anyMatch(delta -> serviceName.equals(delta.getPolicy().getService()));
 
-        if (!hasExpectedServiceType) {
+        if (!hasExpectedServiceName) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("No deltas match the expected serviceType: " + serviceType);
             }
@@ -73,7 +73,7 @@ public class RangerPolicyDeltaUtil {
         List<RangerPolicy> updatedPolicies = new ArrayList<>(policies);
 
         for (RangerPolicyDelta delta : deltas) {
-            if (!serviceType.equals(delta.getServiceType())) {
+            if (!serviceName.equals(delta.getPolicy().getService())) {
                 continue;
             }
 
@@ -83,7 +83,7 @@ public class RangerPolicyDeltaUtil {
                     updatedPolicies.add(delta.getPolicy());
                     break;
                 default:
-                    LOG.warn("Unexpected changeType in policyDelta: [" + delta + "]. Ignoring delta.");
+                    LOG.warn("Unexpected changeType in policyDelta: [" + delta.getPolicyGuid() + "]. Ignoring delta.");
             }
         }
 
