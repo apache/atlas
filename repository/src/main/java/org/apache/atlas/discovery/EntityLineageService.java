@@ -534,15 +534,15 @@ public class EntityLineageService implements AtlasLineageService {
     private void enqueueNeighbours(AtlasVertex currentVertex, boolean isDataset,
                                    AtlasLineageListContext lineageListContext, Queue<String> traversalQueue,
                                    Set<String> visitedVertices, Set<String> skippedVertices,
-                                   Map<String, List<String>> lineageParentsForEntityMap, Map<String, List<String>> lineageChildrenForEntityMap) {
+                                   Map<String, List<String>> lineageParentsForEntityMap, Map<String, List<String>> lineageChildrenForEntityMap) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder traverseEdgesOnDemandGetEdges = RequestContext.get().startMetricRecord("traverseEdgesOnDemandGetEdges");
         Iterator<AtlasEdge> edges;
         if (isDataset)
-            edges = currentVertex.getEdges(IN, isInputDirection(lineageListContext) ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE).iterator();
+            edges = GraphHelper.getActiveEdges(currentVertex, isInputDirection(lineageListContext) ? PROCESS_OUTPUTS_EDGE : PROCESS_INPUTS_EDGE, IN);
         else
-            edges = currentVertex.getEdges(OUT, isInputDirection(lineageListContext) ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE).iterator();
-        RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdges);
+            edges = GraphHelper.getActiveEdges(currentVertex, isInputDirection(lineageListContext) ? PROCESS_INPUTS_EDGE : PROCESS_OUTPUTS_EDGE, OUT);
 
+        RequestContext.get().endMetricRecord(traverseEdgesOnDemandGetEdges);
         while (edges.hasNext()) {
             AtlasEdge currentEdge = edges.next();
             if (!lineageListContext.evaluateTraversalFilter(currentEdge))
