@@ -393,7 +393,7 @@ public class ServicePolicies implements java.io.Serializable {
 		List<RangerPolicy> oldResourcePolicies = policyEngine.getResourcePolicies();
 		List<RangerPolicy> oldTagPolicies      = policyEngine.getTagPolicies();
 
-		List<RangerPolicy> newResourcePolicies = RangerPolicyDeltaUtil.applyDeltas(oldResourcePolicies, servicePolicies.getPolicyDeltas(), servicePolicies.getServiceName());
+		List<RangerPolicy> newResourcePolicies = RangerPolicyDeltaUtil.applyDeltas(oldResourcePolicies, servicePolicies.getPolicyDeltas(), servicePolicies.getServiceDef().getName());
 
 		ret.setPolicies(newResourcePolicies);
 
@@ -402,7 +402,7 @@ public class ServicePolicies implements java.io.Serializable {
 			if (LOG.isDebugEnabled()) {
 				LOG.debug("applyingDeltas for tag policies");
 			}
-			newTagPolicies = RangerPolicyDeltaUtil.applyDeltas(oldTagPolicies, servicePolicies.getPolicyDeltas(), servicePolicies.getTagPolicies().getServiceName());
+			newTagPolicies = RangerPolicyDeltaUtil.applyDeltas(oldTagPolicies, servicePolicies.getPolicyDeltas(), servicePolicies.getTagPolicies().getServiceDef().getName());
 		} else {
 			if (LOG.isDebugEnabled()) {
 				LOG.debug("No need to apply deltas for tag policies");
