@@ -92,7 +92,7 @@ public class RangerPolicyDeltaUtil {
                         while (iter.hasNext()) {
                             RangerPolicy policy = iter.next();
                             if (
-                                    (changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE && policyId.equals(policy.getGuid())) ||
+                                    (changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE && policyId.equals(policy.getAtlasGuid())) ||
                                     (changeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE && policyId.equals(policy.getAtlasGuid()))
                             ){
                                 deletedPolicies.add(policy);
@@ -108,7 +108,7 @@ public class RangerPolicyDeltaUtil {
                                 break;
                             }
                             case RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE: {
-                                if (CollectionUtils.isEmpty(deletedPolicies) || deletedPolicies.size() > 1) {
+                                if (CollectionUtils.isEmpty(deletedPolicies)) {
                                     LOG.warn("Unexpected: found no policy or multiple policies for CHANGE_TYPE_POLICY_UPDATE: " + Arrays.toString(deletedPolicies.toArray()));
                                 }
                                 break;
