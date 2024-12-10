@@ -1031,7 +1031,7 @@ public class EntityGraphRetriever {
                 AtlasAttribute attribute = entityType.getAttribute(property.key());
                 TypeCategory typeCategory = attribute != null ? attribute.getAttributeType().getTypeCategory() : null;
                 TypeCategory elementTypeCategory = attribute != null && attribute.getAttributeType().getTypeCategory() == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
-                boolean isBusinessAttribute = attribute == null;
+                boolean canBeBusinessAttribute = attribute == null;
 
                 if (property.isPresent()) {
                     if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
@@ -1046,7 +1046,7 @@ public class EntityGraphRetriever {
                     } else {
                         if (propertiesMap.get(property.key()) == null) {
                             propertiesMap.put(property.key(), property.value());
-                        } else if (isBusinessAttribute) {    // If it is a business attribute, and is a multi-valued attribute
+                        } else if (canBeBusinessAttribute) {    // If it is a business attribute, and is a multi-valued attribute
                             LOG.warn("Duplicate property key {} found for entity vertex: {}", property.key(), entityVertex);
                             List<Object> values = new ArrayList<>();
                             values.add(propertiesMap.get(property.key()));
@@ -1903,20 +1903,21 @@ public class EntityGraphRetriever {
         TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
         boolean isArrayOfPrimitives = typeCategory.equals(TypeCategory.ARRAY) && elementTypeCategory.equals(TypeCategory.PRIMITIVE);
         boolean isPrefetchValueFinal = (typeCategory.equals(TypeCategory.PRIMITIVE) || typeCategory.equals(TypeCategory.ENUM) || typeCategory.equals(TypeCategory.MAP) || isArrayOfPrimitives);
+        boolean isMultiValueBusinessAttribute = attribute.getDefinedInType() != null && attribute.getDefinedInType().getTypeCategory() == TypeCategory.BUSINESS_METADATA && isArrayOfPrimitives;
 
         // value is present and value is not marker (SPACE for further lookup) and type is primitive or array of primitives
-        if (properties.get(attribute.getName()) != null && properties.get(attribute.getName()) != StringUtils.SPACE && isPrefetchValueFinal) {
+        if (properties.get(attribute.getName()) != null && properties.get(attribute.getName()) != StringUtils.SPACE && (isMultiValueBusinessAttribute || isPrefetchValueFinal)) {
             return properties.get(attribute.getName());
-        }
-
-        //when value is not present and type is primitive, return null
-        if(properties.get(attribute.getName()) == null && isPrefetchValueFinal) {
-            return null;
         }
 
         // if value is empty && element is array of primitives, return empty list
         if (properties.get(attribute.getName()) == null && isArrayOfPrimitives) {
             return new ArrayList<>();
+        }
+
+        //when value is not present and type is primitive, return null
+        if(properties.get(attribute.getName()) == null && isPrefetchValueFinal) {
+            return null;
         }
 
         // value is present as marker, fetch the value from the vertex
