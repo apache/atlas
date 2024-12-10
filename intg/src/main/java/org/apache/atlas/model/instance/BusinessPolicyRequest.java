@@ -73,7 +73,6 @@ public class BusinessPolicyRequest implements Serializable {
 
         private Set<String> complaintPolicies;
 
-        private Set<String> nonComplaintPolicies;
 
         public String getAssetId() {
             return assetId;
@@ -107,13 +106,6 @@ public class BusinessPolicyRequest implements Serializable {
             this.complaintPolicies = complaintPolicies;
         }
 
-        public Set<String> getNonComplaintPolicies() {
-            return nonComplaintPolicies;
-        }
-
-        public void setNonComplaintPolicies(Set<String> nonComplaintPolicies) {
-            this.nonComplaintPolicies = nonComplaintPolicies;
-        }
 
         @Override
         public String toString() {
@@ -122,7 +114,6 @@ public class BusinessPolicyRequest implements Serializable {
                     ", complaintRules=" + complaintRules +
                     ", nonComplaintRules=" + nonComplaintRules +
                     ", complaintPolicies=" + complaintPolicies +
-                    ", nonComplaintPolicies=" + nonComplaintPolicies +
                     '}';
         }
     }
