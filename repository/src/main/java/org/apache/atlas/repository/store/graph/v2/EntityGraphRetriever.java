@@ -1033,9 +1033,13 @@ public class EntityGraphRetriever {
                 AtlasAttribute attribute = entityType.getAttribute(property.key());
                 TypeCategory typeCategory = attribute != null ? attribute.getAttributeType().getTypeCategory() : null;
                 TypeCategory elementTypeCategory = attribute != null && attribute.getAttributeType().getTypeCategory() == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
-                boolean isMultiValuedProperty = (property instanceof CacheVertexProperty && ((CacheVertexProperty) property).propertyKey().cardinality().equals(Cardinality.SET));
 
                 if (property.isPresent()) {
+
+                    // If the attribute is not known (null)
+                    // validate if it is multi-valued
+                    boolean isMultiValuedProperty = (property instanceof CacheVertexProperty && ((CacheVertexProperty) property).propertyKey().cardinality().equals(Cardinality.SET));
+
                     if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
                         updateAttrValue(propertiesMap, property);
                     } else if (attribute == null && isMultiValuedProperty) {
