@@ -143,7 +143,7 @@ public class CachePolicyTransformerImpl {
 
         this.auditEventToDeltaChangeType = new HashMap<>();
         this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_CREATE, RangerPolicyDelta.CHANGE_TYPE_POLICY_CREATE);
-        this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_UPDATE, RangerPolicyDelta.CHANGE_TYPE_POLICY_CREATE);
+        this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_UPDATE, RangerPolicyDelta.CHANGE_TYPE_POLICY_UPDATE);
         this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_DELETE, RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE);
         this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_PURGE, RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE);
     }
@@ -177,8 +177,6 @@ public class CachePolicyTransformerImpl {
 
                 List<AtlasEntityHeader> atlasServicePolicies = allAtlasPolicies.stream().filter(x -> serviceName.equals(x.getAttribute(ATTR_POLICY_SERVICE_NAME))).collect(Collectors.toList());
                 List<RangerPolicyDelta> policiesDelta = getRangerPolicyDelta(service, policyChanges, atlasServicePolicies);
-                Map<String, RangerPolicyDelta> deletedPolicyDeltas = getRangerPolicyDeleteDelta(service, policyChanges);
-                servicePolicies.setDeleteDeltas(deletedPolicyDeltas);
 
                 // Process tag based policies
                 String tagServiceName = (String) service.getAttribute(ATTR_SERVICE_TAG_SERVICE);
@@ -296,42 +294,6 @@ public class CachePolicyTransformerImpl {
         return servicePolicies;
     }
 
-    private Map<String, RangerPolicyDelta> getRangerPolicyDeleteDelta(AtlasEntityHeader service, Map<String, EntityAuditActionV2> policyChanges) {
-        String serviceName = (String) service.getAttribute("name");
-        String serviceType = (String) service.getAttribute("authServiceType");
-        Map<String, RangerPolicyDelta> policyDeltas = new HashMap<>();
-        if (policyChanges.isEmpty()) {
-            return policyDeltas;
-        }
-
-        Iterator<Map.Entry<String, EntityAuditActionV2>> iterator = policyChanges.entrySet().iterator();
-        while (iterator.hasNext()) {
-            Map.Entry<String, EntityAuditActionV2> entry = iterator.next();
-            String policyGuid = entry.getKey();
-            EntityAuditActionV2 policyChange = entry.getValue();
-
-            if (policyChange == EntityAuditActionV2.ENTITY_UPDATE || policyChange == EntityAuditActionV2.ENTITY_DELETE
-                    || policyChange == EntityAuditActionV2.ENTITY_PURGE) {
-                RangerPolicy atlasDeletedPolicy = new RangerPolicy();
-                atlasDeletedPolicy.setGuid(policyGuid);
-                atlasDeletedPolicy.setService(serviceName);
-                atlasDeletedPolicy.setServiceType(serviceType);
-
-                policyDeltas.put(policyGuid, new RangerPolicyDelta(atlasDeletedPolicy.getId(),
-                        RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE,
-                        atlasDeletedPolicy.getVersion(),
-                        atlasDeletedPolicy));
-            }
-
-            if (policyChange == EntityAuditActionV2.ENTITY_DELETE || policyChange == EntityAuditActionV2.ENTITY_PURGE) {
-                iterator.remove(); // Remove for ENTITY_DELETE and ENTITY_PURGE
-            }
-        }
-
-        return  policyDeltas;
-    }
-
-
     private List<RangerPolicyDelta> getRangerPolicyDelta(AtlasEntityHeader service, Map<String, EntityAuditActionV2> policyChanges, List<AtlasEntityHeader> atlasPolicies) throws AtlasBaseException, IOException {
         String serviceName = (String) service.getAttribute("name");
         String serviceType = (String) service.getAttribute("authServiceType");
@@ -341,6 +303,8 @@ public class CachePolicyTransformerImpl {
         if (policyChanges.isEmpty()) {
             return policyDeltas;
         }
+
+        ArrayList<String> policyGuids = new ArrayList<>(policyChanges.keySet());
 
         List<RangerPolicy> rangerPolicies = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(atlasPolicies)) {
@@ -353,6 +317,29 @@ public class CachePolicyTransformerImpl {
             policyDeltas.add(delta);
         }
 
+        // handle delete changes separately as they won't be present in atlas policies
+        List<RangerPolicyDelta> deletedPolicyDeltas = new ArrayList<>();
+        for (String policyGuid : policyGuids) {
+            int deltaChangeType = auditEventToDeltaChangeType.get(policyChanges.get(policyGuid));
+            if (deltaChangeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE) {
+                RangerPolicy deletedPolicy = new RangerPolicy();
+                deletedPolicy.setGuid(policyGuid);
+                deletedPolicy.setService(serviceName);
+                deletedPolicy.setServiceType(serviceType);
+                RangerPolicyDelta deletedPolicyDelta = new RangerPolicyDelta(
+                        deletedPolicy.getId(),
+                        deltaChangeType,
+                        deletedPolicy.getVersion(),
+                        deletedPolicy
+                );
+                deletedPolicyDeltas.add(deletedPolicyDelta);
+            }
+        }
+
+        policyDeltas.addAll(deletedPolicyDeltas);
+
+        LOG.info("PolicyDelta: {}: atlas policies found={}, delta created={}, including deleted policies={}",
+                serviceName, atlasPolicies.size(), policyDeltas.size(), deletedPolicyDeltas.size());
         RequestContext.get().endMetricRecord(recorder);
 
         return policyDeltas;
