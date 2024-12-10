@@ -1043,7 +1043,6 @@ public class EntityGraphRetriever {
                     if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
                         updateAttrValue(propertiesMap, property);
                     } else if (attribute == null && isMultiValuedProperty) {
-                        LOG.warn("Multiple value found for key {} for entity vertex: {}", property.key(), entityVertex);
                         updateAttrValue(propertiesMap, property);
                     } else if (propertiesMap.get(property.key()) == null) {
                         propertiesMap.put(property.key(), property.value());
