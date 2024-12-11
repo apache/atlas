@@ -1043,7 +1043,6 @@ public class EntityGraphRetriever {
                     if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
                         updateAttrValue(propertiesMap, property);
                     } else if (attribute == null && isMultiValuedProperty) {
-                        LOG.warn("Multiple value found for key {} for entity vertex: {}", property.key(), entityVertex);
                         updateAttrValue(propertiesMap, property);
                     } else if (propertiesMap.get(property.key()) == null) {
                         propertiesMap.put(property.key(), property.value());
@@ -1081,7 +1080,12 @@ public class EntityGraphRetriever {
                 AccessControlUtils.ATTR_POLICY_RESOURCES_CATEGORY,
                 AccessControlUtils.ATTR_POLICY_SERVICE_NAME,
                 AccessControlUtils.ATTR_POLICY_PRIORITY,
-                AccessControlUtils.REL_ATTR_POLICIES));
+                AccessControlUtils.REL_ATTR_POLICIES,
+                AccessControlUtils.ATTR_SERVICE_SERVICE_TYPE,
+                AccessControlUtils.ATTR_SERVICE_TAG_SERVICE,
+                AccessControlUtils.ATTR_SERVICE_IS_ENABLED,
+                AccessControlUtils.ATTR_SERVICE_LAST_SYNC)
+        );
 
         return exclusionSet.stream().anyMatch(attributes::contains);
     }
@@ -1926,11 +1930,7 @@ public class EntityGraphRetriever {
 
         // value is present as marker, fetch the value from the vertex
         if (ATLAS_INDEXSEARCH_ENABLE_FETCHING_NON_PRIMITIVE_ATTRIBUTES.getBoolean()) {
-            //AtlasPerfMetrics.MetricRecorder nonPrimitiveAttributes = RequestContext.get().startMetricRecord("processNonPrimitiveAttributes");
             return mapVertexToAttribute(vertex, attribute, null, false);
-            //LOG.debug("capturing excluded property set category and value, mapVertexValue - {}: {} : {} : {}", attribute.getName(), attribute.getAttributeType().getTypeCategory(), properties.get(attribute.getName()), mappedVertex);
-            //RequestContext.get().endMetricRecord(nonPrimitiveAttributes);
-            //return mappedVertex;
         }
 
         return null;
