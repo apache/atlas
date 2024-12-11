@@ -79,6 +79,7 @@
             <groupId>org.apache.sqoop</groupId>
             <artifactId>sqoop</artifactId>
             <version>${sqoop.version}</version>
+            <classifier>${sqoop.classifier}</classifier>
             <scope>compile</scope>
         </dependency>
         <!-- Logging -->
