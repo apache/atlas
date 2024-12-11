@@ -21,6 +21,7 @@ package org.apache.atlas.plugin.util;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
 import org.apache.commons.lang.StringUtils;
@@ -60,10 +61,11 @@ public class PolicyRefresher extends Thread {
 	private final BlockingQueue<DownloadTrigger> policyDownloadQueue = new LinkedBlockingQueue<>();
 	private       Timer                          policyDownloadTimer;
 	private       long                           lastKnownVersion    = -1L;
-	private       long                           lastUpdatedTiemInMillis    = -1L;
+	private       long 							lastUpdatedTimeInMillis = -1L;
 	private       long                           lastActivationTimeInMillis;
 	private       boolean                        policiesSetInPlugin;
 	private       boolean                        serviceDefSetInPlugin;
+	private       boolean                        enableDeltaBasedRefresh;
 
 
 	public PolicyRefresher(RangerBasePlugin plugIn) {
@@ -103,6 +105,9 @@ public class PolicyRefresher extends Thread {
 		this.rolesProvider                 = new RangerRolesProvider(getServiceType(), appId, getServiceName(), atlasAuthAdminClient, cacheDir, pluginConfig);
 		this.userStoreProvider             = new RangerUserStoreProvider(getServiceType(), appId, getServiceName(), atlasAuthAdminClient,  cacheDir, pluginConfig);
 		this.pollingIntervalMs             = pluginConfig.getLong(propertyPrefix + ".policy.pollIntervalMs", 30 * 1000);
+
+		this.enableDeltaBasedRefresh = AtlasConfiguration.DELTA_BASED_REFRESH_ENABLED.getBoolean();
+		LOG.info("PolicyRefresher(serviceName=" + serviceName + ") - delta based policy refresh enabled="+this.enableDeltaBasedRefresh);
 
 		setName("PolicyRefresher(serviceName=" + serviceName + ")-" + getId());
 
@@ -216,7 +221,7 @@ public class PolicyRefresher extends Thread {
 				loadPolicy();
 				loadUserStore();
 			} catch(InterruptedException excp) {
-				LOG.info("PolicyRefresher(serviceName=" + serviceName + ").run(): interrupted! Exiting thread", excp);
+				LOG.info("PolicyRefreshxer(serviceName=" + serviceName + ").run(): interrupted! Exiting thread", excp);
 				break;
 			} finally {
 				if (trigger != null) {
@@ -273,7 +278,7 @@ public class PolicyRefresher extends Thread {
 				serviceDefSetInPlugin = false;
 				setLastActivationTimeInMillis(System.currentTimeMillis());
 				lastKnownVersion = svcPolicies.getPolicyVersion() != null ? svcPolicies.getPolicyVersion() : -1L;
-				lastUpdatedTiemInMillis = svcPolicies.getPolicyUpdateTime() != null ? svcPolicies.getPolicyUpdateTime().getTime() : -1L;
+				lastUpdatedTimeInMillis = svcPolicies.getPolicyUpdateTime() != null ? svcPolicies.getPolicyUpdateTime().getTime() : -1L;
 			} else {
 				if (!policiesSetInPlugin && !serviceDefSetInPlugin) {
 					plugIn.setPolicies(null);
@@ -287,10 +292,10 @@ public class PolicyRefresher extends Thread {
 				serviceDefSetInPlugin = true;
 				setLastActivationTimeInMillis(System.currentTimeMillis());
 				lastKnownVersion = -1;
-				lastUpdatedTiemInMillis = -1;
+				lastUpdatedTimeInMillis = -1;
 			}
 		} catch (Exception excp) {
-			LOG.error("Encountered unexpected exception, ignoring..", excp);
+			LOG.error("Encountered unexpected exception!!!!!!!!!!!", excp);
 		}
 
 		RangerPerfTracer.log(perf);
@@ -316,15 +321,18 @@ public class PolicyRefresher extends Thread {
 
 		try {
 
-			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null && lastUpdatedTiemInMillis == -1) {
+
+			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null && lastUpdatedTimeInMillis == -1) {
+				LOG.info("PolicyRefresher(serviceName=" + serviceName + "): loading all policies for first time");
 				RangerRESTUtils restUtils = new RangerRESTUtils();
 				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry());
 
-				svcPolicies = transformer.getPolicies(serviceName,
-						restUtils.getPluginId(serviceName, plugIn.getAppId()),
-						lastUpdatedTiemInMillis);
+				svcPolicies = transformer.getPoliciesAll(serviceName,
+							restUtils.getPluginId(serviceName, plugIn.getAppId()),
+						lastUpdatedTimeInMillis);
 			} else {
-				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTiemInMillis);
+				LOG.info("PolicyRefresher(serviceName=" + serviceName + "): loading delta policies from last known version=" + lastKnownVersion + ", lastUpdatedTime=" + lastUpdatedTimeInMillis);
+				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTimeInMillis, this.enableDeltaBasedRefresh);
 			}
 
 			boolean isUpdated = svcPolicies != null;
@@ -391,7 +399,7 @@ public class PolicyRefresher extends Thread {
 					}
 
 					lastKnownVersion = policies.getPolicyVersion() == null ? -1 : policies.getPolicyVersion().longValue();
-					lastUpdatedTiemInMillis = policies.getPolicyUpdateTime() == null ? -1 : policies.getPolicyUpdateTime().getTime();
+					lastUpdatedTimeInMillis = policies.getPolicyUpdateTime() == null ? -1 : policies.getPolicyUpdateTime().getTime();
 				}
 			} catch (Exception excp) {
 				LOG.error("failed to load policies from cache file " + cacheFile.getAbsolutePath(), excp);

@@ -314,7 +314,7 @@ public class RangerBasePlugin {
 				Boolean hasPolicyDeltas = RangerPolicyDeltaUtil.hasPolicyDeltas(policies);
 
 				if (hasPolicyDeltas == null) {
-					LOG.info("Downloaded policies do not require policy change !! [" + policies + "]");
+					LOG.info("Downloaded policies do not require policy change !! [" + (policies.getPolicies() != null ? policies.getPolicies().size() : 0) + "]");
 
 					if (this.policyEngine == null) {
 
@@ -376,9 +376,8 @@ public class RangerBasePlugin {
 						}
 
 						if (oldPolicyEngine != null) {
-							RangerPolicyEngineImpl oldPolicyEngineImpl = (RangerPolicyEngineImpl) oldPolicyEngine;
-
-							newPolicyEngine = RangerPolicyEngineImpl.getPolicyEngine(oldPolicyEngineImpl, policies);
+							// Create new evaluator for the updated policies
+							newPolicyEngine = new RangerPolicyEngineImpl(servicePolicies, pluginContext, roles);
 						}
 
 						if (newPolicyEngine != null) {
@@ -429,7 +428,8 @@ public class RangerBasePlugin {
 			}
 
 		} catch (Exception e) {
-			LOG.error("setPolicies: policy engine initialization failed!  Leaving current policy engine as-is. Exception : ", e);
+			LOG.error("setPolicies: Failed to set policies, didn't set policies", e);
+			throw e;
 		}
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("<== setPolicies(" + policies + ")");
