@@ -49,6 +49,7 @@ public class UniqueQNAttributeMigrationService {
             }
 
             if (count > 0) {
+                LOG.info("Total Vertex updated: {}", count);
                 commitChanges();
             }
             else {
