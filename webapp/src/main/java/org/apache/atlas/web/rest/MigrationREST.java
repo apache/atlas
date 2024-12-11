@@ -325,6 +325,31 @@ public class MigrationREST {
         }
     }
 
+    @POST
+    @Path("repair-unique-qualified-name")
+    @Timed
+    public Boolean updateUniqueQualifiedName(final Set<String> assetGuids) throws Exception {
+        AtlasPerfTracer perf = null;
+        try {
+            if (CollectionUtils.isEmpty(assetGuids)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Asset GUIDs are required for which updating unique qualified name is required");
+            }
+
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.updateUniqueQualifiedName(" + assetGuids + ")");
+            }
+
+            UniqueQNAttributeMigrationService migrationService = new UniqueQNAttributeMigrationService(entityRetriever, assetGuids, transactionInterceptHelper);
+            migrationService.migrateQN();
+        } catch (Exception e) {
+            LOG.error("Error while updating unique qualified name for guids: {}", assetGuids, e);
+            throw e;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+        return Boolean.TRUE;
+    }
+
     private List<AtlasEntity> getEntitiesByIndexSearch(IndexSearchParams indexSearchParams, Boolean minExtInfo, boolean ignoreRelationships) throws AtlasBaseException {
         List<AtlasEntity> entities = new ArrayList<>();
         String indexName = "janusgraph_vertex_index";
