@@ -30,6 +30,7 @@ public class UniqueQNAttributeMigrationService {
 
     public void migrateQN() throws Exception {
         try {
+            int count = 0;
             for (String entityGuid : entityGuids) {
                 AtlasVertex entityVertex = entityRetriever.getEntityVertex(entityGuid);
 
@@ -40,12 +41,18 @@ public class UniqueQNAttributeMigrationService {
 
                 boolean isCommitRequired = migrateuniqueQnAttr(entityVertex);
                 if (isCommitRequired){
-                    LOG.info("Committing changes for entity: {}", entityGuid);
-                    commitChanges();
+                    count++;
                 }
                 else {
                     LOG.info("No changes to commit for entity: {} as no migration needed", entityGuid);
                 }
+            }
+
+            if (count > 0) {
+                commitChanges();
+            }
+            else {
+                LOG.info("No changes to commit for entities as no migration needed");
             }
 
         } catch (Exception e) {

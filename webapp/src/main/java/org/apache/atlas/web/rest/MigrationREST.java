@@ -8,7 +8,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
-import org.apache.atlas.model.instance.UniqueQnMigrationRequest;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -327,23 +326,23 @@ public class MigrationREST {
     }
 
     @POST
-    @Path("update-unique-qualified-name")
+    @Path("repair-unique-qualified-name")
     @Timed
-    public Boolean updateUniqueQualifiedName(final UniqueQnMigrationRequest request) throws Exception {
+    public Boolean updateUniqueQualifiedName(final Set<String> assetGuids) throws Exception {
         AtlasPerfTracer perf = null;
         try {
-            if (CollectionUtils.isEmpty(request.getAssetGuids())) {
+            if (CollectionUtils.isEmpty(assetGuids)) {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Asset GUIDs are required for which updating unique qualified name is required");
             }
 
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.updateUniqueQualifiedName(" + request.getAssetGuids() + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.updateUniqueQualifiedName(" + assetGuids + ")");
             }
 
-            UniqueQNAttributeMigrationService migrationService = new UniqueQNAttributeMigrationService(entityRetriever, request.getAssetGuids(), transactionInterceptHelper);
+            UniqueQNAttributeMigrationService migrationService = new UniqueQNAttributeMigrationService(entityRetriever, assetGuids, transactionInterceptHelper);
             migrationService.migrateQN();
         } catch (Exception e) {
-            LOG.error("Error while updating unique qualified name for guids: {}", request.getAssetGuids(), e);
+            LOG.error("Error while updating unique qualified name for guids: {}", assetGuids, e);
             throw e;
         } finally {
             AtlasPerfTracer.log(perf);
