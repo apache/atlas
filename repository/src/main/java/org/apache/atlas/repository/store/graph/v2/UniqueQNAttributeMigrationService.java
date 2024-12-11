@@ -31,6 +31,7 @@ public class UniqueQNAttributeMigrationService {
     public void migrateQN() throws Exception {
         try {
             int count = 0;
+            int totalUpdatedCount = 0;
             for (String entityGuid : entityGuids) {
                 AtlasVertex entityVertex = entityRetriever.getEntityVertex(entityGuid);
 
@@ -42,19 +43,25 @@ public class UniqueQNAttributeMigrationService {
                 boolean isCommitRequired = migrateuniqueQnAttr(entityVertex);
                 if (isCommitRequired){
                     count++;
+                    totalUpdatedCount++;
                 }
                 else {
                     LOG.info("No changes to commit for entity: {} as no migration needed", entityGuid);
                 }
+
+                if (count == 20) {
+                    LOG.info("Committing batch of 20 entities...");
+                    commitChanges();
+                    count = 0;
+                }
             }
 
             if (count > 0) {
-                LOG.info("Total Vertex updated: {}", count);
+                LOG.info("Committing remaining {} entities...", count);
                 commitChanges();
             }
-            else {
-                LOG.info("No changes to commit for entities as no migration needed");
-            }
+
+            LOG.info("Total Vertex updated: {}", totalUpdatedCount);
 
         } catch (Exception e) {
             LOG.error("Error while migration unique qualifiedName attribute for entities: {}", entityGuids, e);
