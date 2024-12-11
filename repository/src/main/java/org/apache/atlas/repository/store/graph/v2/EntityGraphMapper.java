@@ -4820,7 +4820,11 @@ public class EntityGraphMapper {
     }
 
     private void updateVertexPolicies(AtlasVertex vertex, String propertyKey, Set<String> policies) {
-        vertex.setProperty(propertyKey, policies.stream().collect(Collectors.joining(",")));
+        if(ASSET_POLICY_GUIDS.equals(propertyKey)){
+            policies.forEach(policyGuid -> vertex.setProperty(ASSET_POLICY_GUIDS, policyGuid));
+        }else {
+            policies.forEach(policyGuid -> vertex.setProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyGuid));
+        }
     }
 
     private int countPoliciesExcluding(Set<String> policies, String substring) {
