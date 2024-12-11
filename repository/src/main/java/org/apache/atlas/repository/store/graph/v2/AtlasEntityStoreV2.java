@@ -765,7 +765,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         // Metric logs
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getAtlasEntityHeader");
         AtlasEntityHeader entityHeader = null;
-
+        String cacheKey = generateCacheKey(entityGuid, entityId, entityType);
+        entityHeader = RequestContext.get().getCachedEntityHeader(cacheKey);
+        if(Objects.nonNull(entityHeader)){
+            return entityHeader;
+        }
         if (StringUtils.isNotEmpty(entityGuid)) {
             AtlasEntityWithExtInfo ret = getByIdWithoutAuthorization(entityGuid);
             entityHeader = new AtlasEntityHeader(ret.getEntity());
@@ -782,6 +786,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         } else {
             throw new AtlasBaseException(BAD_REQUEST, "requires entityGuid or typeName and qualifiedName for entity authorization");
         }
+        RequestContext.get().setEntityHeaderCache(cacheKey, entityHeader);
         RequestContext.get().endMetricRecord(metric);
         return entityHeader;
     }
@@ -802,18 +807,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     || ENTITY_DELETE.name().equals(action) || ENTITY_UPDATE_BUSINESS_METADATA.name().equals(action)) {
 
                 try {
-                    String cacheKey = generateCacheKey(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
-                    if (StringUtils.isNotEmpty(entity.getEntityGuid()) || StringUtils.isNotEmpty(entity.getEntityId())) {
-                        if (atlasEntityHeaderCache.containsKey(cacheKey)) {
-                            entityHeader = atlasEntityHeaderCache.get(cacheKey);
-                        } else {
-                            entityHeader = getAtlasEntityHeader(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
-                            atlasEntityHeaderCache.put(cacheKey, entityHeader);
-                        }
-                    } else {
-                        entityHeader = getAtlasEntityHeader(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
-                    }
-
+                    entityHeader = getAtlasEntityHeader(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
                     AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.valueOf(entity.getAction()), entityHeader);
                     if (entity.getBusinessMetadata() != null) {
                         requestBuilder.setBusinessMetadata(entity.getBusinessMetadata());
@@ -835,17 +829,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     throw new AtlasBaseException(BAD_REQUEST, "classification needed for " + action + " authorization");
                 }
                 try {
-                    String cacheKey = generateCacheKey(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
-                    if (StringUtils.isNotEmpty(entity.getEntityGuid()) || StringUtils.isNotEmpty(entity.getEntityId())) {
-                        if (atlasEntityHeaderCache.containsKey(cacheKey)) {
-                            entityHeader = atlasEntityHeaderCache.get(cacheKey);
-                        } else {
-                            entityHeader = getAtlasEntityHeader(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
-                            atlasEntityHeaderCache.put(cacheKey, entityHeader);
-                        }
-                    } else {
-                        entityHeader = getAtlasEntityHeader(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
-                    }
+                    entityHeader = getAtlasEntityHeader(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
 
                     AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entity.getAction()), entityHeader, new AtlasClassification(entity.getClassification())));
                     response.add(new AtlasEvaluatePolicyResponse(entity.getTypeName(), entity.getEntityGuid(), entity.getAction(), entity.getEntityId(), entity.getClassification(), true, null));
@@ -863,31 +847,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 }
 
                 try {
-                    AtlasEntityHeader end1Entity;
-                    String cacheKeyEnd1 = generateCacheKey(entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd1());
-                    if (StringUtils.isNotEmpty(entity.getEntityGuidEnd1()) || StringUtils.isNotEmpty(entity.getEntityIdEnd1())) {
-                        if (atlasEntityHeaderCache.containsKey(cacheKeyEnd1)) {
-                            end1Entity = atlasEntityHeaderCache.get(cacheKeyEnd1);
-                        } else {
-                            end1Entity = getAtlasEntityHeader(entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd1());
-                            atlasEntityHeaderCache.put(cacheKeyEnd1, end1Entity);
-                        }
-                    } else {
-                        end1Entity = getAtlasEntityHeader(entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd1());
-                    }
+                    AtlasEntityHeader end1Entity = getAtlasEntityHeader(entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd1());
 
-                    AtlasEntityHeader end2Entity;
-                    String cacheKeyEnd2 = generateCacheKey(entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), entity.getEntityTypeEnd2());
-                    if (StringUtils.isNotEmpty(entity.getEntityGuidEnd2()) || StringUtils.isNotEmpty(entity.getEntityIdEnd2())) {
-                        if (atlasEntityHeaderCache.containsKey(cacheKeyEnd2)) {
-                            end2Entity = atlasEntityHeaderCache.get(cacheKeyEnd2);
-                        } else {
-                            end2Entity = getAtlasEntityHeader(entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), entity.getEntityTypeEnd2());
-                            atlasEntityHeaderCache.put(cacheKeyEnd2, end2Entity);
-                        }
-                    } else {
-                        end2Entity = getAtlasEntityHeader(entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), entity.getEntityTypeEnd2());
-                    }
+                    AtlasEntityHeader end2Entity = getAtlasEntityHeader(entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), entity.getEntityTypeEnd2());
 
                     AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entity.getRelationShipTypeName(), end1Entity, end2Entity));
                     response.add(new AtlasEvaluatePolicyResponse(action, entity.getRelationShipTypeName(), entity.getEntityTypeEnd1(), entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd2(), entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), true, null));
