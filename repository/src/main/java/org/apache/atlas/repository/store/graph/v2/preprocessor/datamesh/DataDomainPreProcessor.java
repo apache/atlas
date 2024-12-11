@@ -294,6 +294,9 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             childDomainVertex.setProperty(QUALIFIED_NAME, updatedDomainQualifiedName);
             updatedAttributes.put(QUALIFIED_NAME, updatedDomainQualifiedName);
 
+            // Change unique qualifiedName attribute
+            childDomainVertex.setProperty(UNIQUE_QUALIFIED_NAME, updatedDomainQualifiedName);
+
             //change superDomainQN, parentDomainQN
             childDomainVertex.setProperty(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
             childDomainVertex.setProperty(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
@@ -348,6 +351,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             String updatedQualifiedName = parentDomainQualifiedName + getOwnQualifiedNameForChild(currentQualifiedName);
 
             productVertex.setProperty(QUALIFIED_NAME, updatedQualifiedName);
+            productVertex.setProperty(UNIQUE_QUALIFIED_NAME, updatedQualifiedName);
             updatedAttributes.put(QUALIFIED_NAME, updatedQualifiedName);
 
             productVertex.setProperty(PARENT_DOMAIN_QN_ATTR, parentDomainQualifiedName);
