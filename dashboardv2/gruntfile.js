@@ -234,7 +234,7 @@ module.exports = function(grunt) {
                 files: [{
                     expand: true,
                     cwd: distPath + '/js',
-                    src: ['external_lib/**/*.js', 'libs/**/*.js'],
+                    src: ['external_lib/**/*.js', '!external_lib/**/purify.min.js', 'libs/**/*.js'],
                     dest: distPath + '/js'
                 }]
             },
@@ -247,7 +247,7 @@ module.exports = function(grunt) {
                 files: [{
                     expand: true,
                     cwd: distPath + '/js',
-                    src: ['**/*.js', '!libs/**', '!external_lib/**'],
+                    src: ['**/*.js', '!libs/**', '!external_lib/**/purify.min.js', '!external_lib/**'],
                     dest: distPath + '/js'
                 }]
             }
