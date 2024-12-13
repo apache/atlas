@@ -27,7 +27,7 @@ on:
       - development
       - master
       - lineageondemand
-      - cassandraPhase2
+      - makerlogic
 
 jobs:
   build:
