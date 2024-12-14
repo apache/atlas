@@ -26,14 +26,13 @@ RUN apt-get update && \
     python3 python3-pip openjdk-8-jdk openjdk-11-jdk openjdk-17-jdk bc iputils-ping ssh pdsh
 
 # Set environment variables
-ENV JAVA_HOME     /usr/lib/jvm/java-${ATLAS_BASE_JAVA_VERSION}-openjdk-${TARGETARCH}
-ENV ATLAS_DIST    /home/atlas/dist
-ENV ATLAS_HOME    /opt/atlas
-ENV ATLAS_SCRIPTS /home/atlas/scripts
-ENV PATH          /usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV JAVA_HOME=/usr/lib/jvm/java-${ATLAS_BASE_JAVA_VERSION}-openjdk-${TARGETARCH}
+ENV ATLAS_DIST=/home/atlas/dist
+ENV ATLAS_HOME=/opt/atlas
+ENV ATLAS_SCRIPTS=/home/atlas/scripts
+ENV PATH=/usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 RUN update-java-alternatives --set /usr/lib/jvm/java-1.${ATLAS_BASE_JAVA_VERSION}.0-openjdk-${TARGETARCH}
-
 
 # setup groups, users, directories
 RUN groupadd atlas && \

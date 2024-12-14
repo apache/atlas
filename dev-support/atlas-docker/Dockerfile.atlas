@@ -20,7 +20,7 @@ ARG ATLAS_SERVER_JAVA_VERSION
 ARG ATLAS_VERSION
 ARG TARGETARCH
 
-ENV JAVA_HOME /usr/lib/jvm/java-${ATLAS_SERVER_JAVA_VERSION}-openjdk-${TARGETARCH}
+ENV JAVA_HOME=/usr/lib/jvm/java-${ATLAS_SERVER_JAVA_VERSION}-openjdk-${TARGETARCH}
 RUN update-java-alternatives --set /usr/lib/jvm/java-1.${ATLAS_SERVER_JAVA_VERSION}.0-openjdk-${TARGETARCH}
 
 COPY ./scripts/atlas.sh                                 ${ATLAS_SCRIPTS}/

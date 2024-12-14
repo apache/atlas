@@ -19,7 +19,6 @@ FROM atlas-base:latest
 ARG ATLAS_VERSION
 ARG KAFKA_VERSION
 
-
 COPY ./dist/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz /home/atlas/dist/
 COPY ./downloads/kafka_2.12-${KAFKA_VERSION}.tgz            /home/atlas/dist/
 
@@ -35,9 +34,9 @@ RUN tar xvfz /home/atlas/dist/kafka_2.12-${KAFKA_VERSION}.tgz --directory=/opt/ 
     rm -f /home/atlas/dist/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz && \
     cp -f /home/atlas/scripts/atlas-kafka-application.properties /opt/kafka/config/atlas-application.properties
 
-ENV KAFKA_HOME     /opt/kafka
-ENV KAFKA_CONF_DIR /opt/kafka/config
-ENV PATH           /usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/kafka/bin
+ENV KAFKA_HOME=/opt/kafka
+ENV KAFKA_CONF_DIR=/opt/kafka/config
+ENV PATH=/usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/kafka/bin
 
 EXPOSE 9092
 

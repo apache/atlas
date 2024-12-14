@@ -20,7 +20,6 @@ ARG HIVE_VERSION
 ARG HIVE_HADOOP_VERSION
 ARG ATLAS_VERSION
 
-
 COPY ./dist/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz /home/atlas/dist/
 COPY ./downloads/apache-hive-${HIVE_VERSION}-bin.tar.gz    /home/atlas/dist/
 COPY ./downloads/hadoop-${HIVE_HADOOP_VERSION}.tar.gz      /home/atlas/dist/
@@ -45,8 +44,8 @@ RUN tar xvfz /home/atlas/dist/apache-hive-${HIVE_VERSION}-bin.tar.gz --directory
     cp -f /home/atlas/scripts/hive-site.xml /opt/hive/conf/hive-site.xml && \
     cp -f /home/atlas/scripts/atlas-hive-application.properties /opt/hive/conf/atlas-application.properties
 
-ENV HIVE_HOME   /opt/hive
-ENV HADOOP_HOME /opt/hadoop
-ENV PATH        /usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/hive/bin:/opt/hadoop/bin
+ENV HIVE_HOME=/opt/hive
+ENV HADOOP_HOME=/opt/hadoop
+ENV PATH=/usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/hive/bin:/opt/hadoop/bin
 
 ENTRYPOINT [ "/home/atlas/scripts/atlas-hive.sh" ]

@@ -24,15 +24,15 @@ RUN apt-get update && apt-get install -y git python
 
 # Install Java.
 RUN apt-get update && apt-get install -y openjdk-8-jdk
-ENV JAVA_HOME /usr/lib/jvm/java-${ATLAS_BASE_JAVA_VERSION}-openjdk-${TARGETARCH}
+ENV JAVA_HOME=/usr/lib/jvm/java-${ATLAS_BASE_JAVA_VERSION}-openjdk-${TARGETARCH}
 
 # Install Maven.
 
 RUN apt-get update && apt-get install -y maven
-ENV MAVEN_HOME /usr/share/maven
+ENV MAVEN_HOME=/usr/share/maven
 
 # Add Java and Maven to the path.
-ENV PATH /usr/java/bin:/usr/local/apache-maven/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV PATH=/usr/java/bin:/usr/local/apache-maven/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 # Working directory
 WORKDIR /root
@@ -45,7 +45,7 @@ RUN echo 'package-lock=false' >> ./atlas/.npmrc
 RUN echo 'package-lock.json' >> ./atlas/.gitignore
 
 # Memory requirements
-ENV MAVEN_OPTS "-Xms2g -Xmx2g"
+ENV MAVEN_OPTS="-Xms2g -Xmx2g"
 # RUN export MAVEN_OPTS="-Xms2g -Xmx2g"
 
 # Remove -DskipTests if unit tests are to be included
@@ -54,9 +54,9 @@ RUN mkdir -p atlas-bin
 RUN tar xzf /root/atlas/distro/target/*bin.tar.gz --strip-components 1 -C /root/atlas-bin
 
 # Set env variables, add it to the path, and start Atlas.
-ENV MANAGE_LOCAL_SOLR true
-ENV MANAGE_LOCAL_HBASE true
-ENV PATH /root/atlas-bin/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV MANAGE_LOCAL_SOLR=true
+ENV MANAGE_LOCAL_HBASE=true
+ENV PATH=/root/atlas-bin/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 
 EXPOSE 21000
 

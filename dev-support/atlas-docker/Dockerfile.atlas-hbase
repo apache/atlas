@@ -40,8 +40,8 @@ RUN tar xvfz /home/atlas/dist/hbase-${HBASE_VERSION}-bin.tar.gz --directory=/opt
     cp /home/atlas/scripts/hbase-site.xml /opt/hbase/conf/hbase-site.xml && \
     cp -f /home/atlas/scripts/atlas-hbase-application.properties /opt/hbase/conf/atlas-application.properties
 
-ENV HBASE_HOME /opt/hbase
-ENV PATH       /usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/hbase/bin
+ENV HBASE_HOME=/opt/hbase
+ENV PATH=/usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/hbase/bin
 
 EXPOSE 16000
 EXPOSE 16010

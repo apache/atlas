@@ -19,14 +19,13 @@ FROM atlas-base:latest
 ARG ATLAS_BUILD_JAVA_VERSION
 ARG TARGETARCH
 
-
 # Install necessary packages to build Atlas
 RUN apt-get update && apt-get -y install git maven
 
 # Set environment variables
-ENV JAVA_HOME  /usr/lib/jvm/java-${ATLAS_BUILD_JAVA_VERSION}-openjdk-${TARGETARCH}
-ENV MAVEN_HOME /usr/share/maven
-ENV PATH       /usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/apache-maven/bin
+ENV JAVA_HOME=/usr/lib/jvm/java-${ATLAS_BUILD_JAVA_VERSION}-openjdk-${TARGETARCH}
+ENV MAVEN_HOME=/usr/share/maven
+ENV PATH=/usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/apache-maven/bin
 
 RUN update-java-alternatives --set /usr/lib/jvm/java-1.${ATLAS_BUILD_JAVA_VERSION}.0-openjdk-${TARGETARCH}
 
@@ -37,11 +36,7 @@ RUN mkdir -p /home/atlas/git && \
 
 COPY ./scripts/atlas-build.sh /home/atlas/scripts/
 
-VOLUME /home/atlas/.m2
-VOLUME /home/atlas/scripts
-VOLUME /home/atlas/patches
-VOLUME /home/atlas/dist
-VOLUME /home/atlas/src
+VOLUME ["/home/atlas/.m2", "/home/atlas/scripts", "/home/atlas/patches", "/home/atlas/dist", "/home/atlas/src"]
 
 USER atlas
 

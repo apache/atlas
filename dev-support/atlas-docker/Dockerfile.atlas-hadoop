@@ -18,7 +18,6 @@ FROM atlas-base:latest
 
 ARG HADOOP_VERSION
 
-
 COPY ./downloads/hadoop-${HADOOP_VERSION}.tar.gz /home/atlas/dist/
 
 COPY ./scripts/atlas-hadoop-setup.sh             /home/atlas/scripts/
@@ -29,13 +28,13 @@ RUN tar xvfz /home/atlas/dist/hadoop-${HADOOP_VERSION}.tar.gz --directory=/opt/ 
     ln -s /opt/hadoop-${HADOOP_VERSION} /opt/hadoop && \
     rm -f /home/atlas/dist/hadoop-${HADOOP_VERSION}.tar.gz
 
-ENV HADOOP_HOME        /opt/hadoop
-ENV HADOOP_CONF_DIR    /opt/hadoop/etc/hadoop
-ENV HADOOP_HDFS_HOME   /opt/hadoop
-ENV HADOOP_MAPRED_HOME /opt/hadoop
-ENV HADOOP_COMMON_HOME /opt/hadoop
-ENV YARN_HOME          /opt/hadoop
-ENV PATH               /usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/hadoop/bin
+ENV HADOOP_HOME=/opt/hadoop
+ENV HADOOP_CONF_DIR=/opt/hadoop/etc/hadoop
+ENV HADOOP_HDFS_HOME=/opt/hadoop
+ENV HADOOP_MAPRED_HOME=/opt/hadoop
+ENV HADOOP_COMMON_HOME=/opt/hadoop
+ENV YARN_HOME=/opt/hadoop
+ENV PATH=/usr/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/hadoop/bin
 
 EXPOSE 9000
 EXPOSE 8088

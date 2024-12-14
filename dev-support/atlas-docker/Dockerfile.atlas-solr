@@ -20,8 +20,10 @@ USER 0
 
 # Copy Atlas collections config set
 RUN  mkdir -p /opt/solr/server/solr/configsets/atlas/conf/lang
+
 COPY ./config/solr/*.*       /opt/solr/server/solr/configsets/atlas/conf/
 COPY ./config/solr/lang/*.* /opt/solr/server/solr/configsets/atlas/conf/lang/
+
 RUN chown -R solr:solr /opt/solr/server/solr/configsets/atlas/
 
 # Copy script that creates Atlas collections
