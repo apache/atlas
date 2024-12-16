@@ -50,6 +50,7 @@ import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusEdge;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusPropertyKey;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusVertex;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.type.AtlasArrayType;
@@ -1065,23 +1066,25 @@ public class EntityGraphRetriever {
     private void retrieveEdgeLabels(AtlasVertex entityVertex, AtlasEdgeDirection edgeDirection, Set<String> attributes, Map<String, String> relationshipsLookup,Map<String, Object> propertiesMap) throws AtlasBaseException {
         Iterator<AtlasJanusEdge> edges = GraphHelper.getOnlyActiveEdges(entityVertex, edgeDirection);
 
+        List<String> edgeLabelsDebug = new ArrayList<>();
+        Map<String, String> edgesTypeName = new HashMap();
 
-
-        List<AtlasEdge> edgesDebug= new ArrayList<>();
         while (edges.hasNext()) {
             AtlasJanusEdge edge = edges.next();
-            edgesDebug.add(edge);
+            String label = edge.getLabel();
+            edgeLabelsDebug.add(label);
+            edgesTypeName.putIfAbsent(label, edge.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
         }
 
-        Set<String> edgeLabels= new HashSet<>();
-
-        edgesDebug.stream().filter(Objects::nonNull).forEach(edge -> attributes.forEach(attribute->{
-               if (edge.getLabel().contains(attribute)){
+        Set<String> edgeLabels = new HashSet<>();
+        edgeLabelsDebug.stream().filter(Objects::nonNull).forEach(edgeLabel -> attributes.forEach(attribute->{
+               if (edgeLabel.contains(attribute)){
                    edgeLabels.add(attribute);
                    return;
                }
-            String edgeName = edge.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
-            if (relationshipsLookup.containsKey(edgeName) && attribute.equals(relationshipsLookup.get(edgeName))) {
+
+            String edgeTypeName = edgesTypeName.get(edgeLabel);
+            if (relationshipsLookup.containsKey(edgeTypeName) && attribute.equals(relationshipsLookup.get(edgeTypeName))) {
                 edgeLabels.add(attribute);
             }
         }));
