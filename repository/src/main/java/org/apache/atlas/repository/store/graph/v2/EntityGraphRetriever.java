@@ -1004,6 +1004,9 @@ public class EntityGraphRetriever {
     }
 
     private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set<String> attributes) throws AtlasBaseException {
+        if (entityType == null) {
+            return new HashMap<>();
+        }
         Map<String, Object> propertiesMap = new HashMap<>();
 
         // Execute the traversal to fetch properties
