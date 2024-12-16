@@ -51,8 +51,10 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES;
 
@@ -154,7 +156,7 @@ public class ClassificationAssociator {
             this(AtlasGraphProvider.getGraphInstance(), typeRegistry, entitiesStore, entityGraphMapper, entityChangeNotifier, instanceConverter);
         }
 
-        public void setClassifications(Map<String, AtlasEntityHeader> map) throws AtlasBaseException {
+        public void setClassifications(Map<String, AtlasEntityHeader> map, boolean overrideClassifications) throws AtlasBaseException {
             RequestContext.get().setDelayTagNotifications(true);
 
             for (String guid  : map.keySet()) {
@@ -178,8 +180,12 @@ public class ClassificationAssociator {
                 if (entityToBeChanged == null) {
                     throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
                 }
-
-                Map<String, List<AtlasClassification>> operationListMap = computeChanges(incomingEntityHeader, entityToBeChanged);
+                Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
+                if(overrideClassifications) {
+                    operationListMap = computeChanges(incomingEntityHeader, entityToBeChanged);
+                } else {
+                    operationListMap = validateAndTransfer(incomingEntityHeader, entityToBeChanged);
+                }
                 try {
                     commitChanges(guid, typeName, operationListMap);
                 } catch (AtlasBaseException e) {
@@ -234,6 +240,49 @@ public class ClassificationAssociator {
 
             RequestContext.get().endMetricRecord(recorder);
             RequestContext.get().setDelayTagNotifications(false);
+        }
+
+        private Map<String, List<AtlasClassification>> validateAndTransfer(AtlasEntityHeader incomingEntityHeader, AtlasEntityHeader entityToBeChanged) throws AtlasBaseException {
+            Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
+
+            Set<String> requiredClassificationKeys = Stream.concat(
+                            Optional.ofNullable(incomingEntityHeader.getRemoveClassifications()).orElse(Collections.emptyList()).stream(),
+                            Optional.ofNullable(incomingEntityHeader.getUpdateClassifications()).orElse(Collections.emptyList()).stream()
+                    ).filter(classification -> classification.getEntityGuid().equals(entityToBeChanged.getGuid()))
+                    .map(this::generateClassificationComparisonKey)
+                    .collect(Collectors.toSet());
+
+            Set<String> preExistingClassificationKeys = Optional.ofNullable(entityToBeChanged.getClassifications())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .filter(classification -> classification.getEntityGuid().equals(entityToBeChanged.getGuid()))
+                    .map(this::generateClassificationComparisonKey)
+                    .collect(Collectors.toSet());
+
+            Set<String> diff = requiredClassificationKeys.stream()
+                    .filter(key -> !preExistingClassificationKeys.contains(key))
+                    .collect(Collectors.toSet());
+
+            if (!diff.isEmpty()) {
+                String firstTypeName = diff.iterator().next().split("\\|")[1];
+                throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_ASSOCIATED_WITH_ENTITY, firstTypeName);
+            }
+
+            List<AtlasClassification> filteredClassifications = Optional.ofNullable(incomingEntityHeader.getAppendClassifications())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .filter(classification -> classification.getEntityGuid().equals(entityToBeChanged.getGuid()))
+                    .filter(appendClassification -> !preExistingClassificationKeys.contains(generateClassificationComparisonKey(appendClassification)))
+                    .collect(Collectors.toList());
+
+            bucket(PROCESS_DELETE, operationListMap, incomingEntityHeader.getRemoveClassifications());
+            bucket(PROCESS_UPDATE, operationListMap, incomingEntityHeader.getUpdateClassifications());
+            bucket(PROCESS_ADD, operationListMap, filteredClassifications);
+            return operationListMap;
+        }
+
+        private String generateClassificationComparisonKey(AtlasClassification classification) {
+            return classification.getEntityGuid() + "|" + classification.getTypeName();
         }
 
         private void commitChanges(String entityGuid, String typeName, Map<String, List<AtlasClassification>> operationListMap) throws AtlasBaseException {

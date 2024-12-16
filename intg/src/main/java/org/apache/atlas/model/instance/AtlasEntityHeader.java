@@ -61,6 +61,11 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private String                          displayText         = null;
     private List<String>                    classificationNames = null;
     private List<AtlasClassification>       classifications     = null;
+    private List<AtlasClassification>       appendClassifications     = null;
+
+
+    private List<AtlasClassification>       updateClassifications     = null;
+    private List<AtlasClassification>       removeClassifications     = null;
     private List<String>                    meaningNames        = null;
     private List<AtlasTermAssignmentHeader> meanings            = null;
     private Boolean                         isIncomplete        = Boolean.FALSE;
@@ -101,6 +106,29 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         setLabels(null);
     }
 
+    public List<AtlasClassification> getAppendClassifications() {
+        return appendClassifications;
+    }
+
+    public void setAppendClassifications(List<AtlasClassification> appendClassifications) {
+        this.appendClassifications = appendClassifications;
+    }
+
+    public List<AtlasClassification> getUpdateClassifications() {
+        return updateClassifications;
+    }
+
+    public void setUpdateClassifications(List<AtlasClassification> updateClassifications) {
+        this.updateClassifications = updateClassifications;
+    }
+
+    public List<AtlasClassification> getRemoveClassifications() {
+        return removeClassifications;
+    }
+
+    public void setRemoveClassifications(List<AtlasClassification> removeClassifications) {
+        this.removeClassifications = removeClassifications;
+    }
 
     public AtlasEntityHeader(String typeName, String guid, Map<String, Object> attributes) {
         super(typeName, attributes);

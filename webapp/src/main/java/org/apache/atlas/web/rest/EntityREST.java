@@ -1265,16 +1265,16 @@ public class EntityREST {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Timed
-    public void setClassifications(AtlasEntityHeaders entityHeaders) throws AtlasBaseException {
+    public void setClassifications(AtlasEntityHeaders entityHeaders, @QueryParam("overrideClassifications") @DefaultValue("true") boolean overrideClassifications) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.setClassifications()");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.setClassifications(" + overrideClassifications +")");
             }
 
             ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(typeRegistry, entitiesStore, entityGraphMapper, entityChangeNotifier, instanceConverter);
-            associator.setClassifications(entityHeaders.getGuidHeaderMap());
+            associator.setClassifications(entityHeaders.getGuidHeaderMap(), overrideClassifications);
         } finally {
             AtlasPerfTracer.log(perf);
         }
