@@ -4876,8 +4876,8 @@ public class EntityGraphMapper {
         Set<String> compliantPolicies = getMultiValuedSetProperty(vertex, ASSET_POLICY_GUIDS);
         Set<String> nonCompliantPolicies = getMultiValuedSetProperty(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS);
 
-        boolean removed = compliantPolicies.remove(policyId);
-        removed |= nonCompliantPolicies.remove(policyId);
+        boolean removed = removePolicyAndRule(compliantPolicies, policyId);
+        removed |= removePolicyAndRule(nonCompliantPolicies,policyId);
 
         if (removed) {
             vertex.removePropertyValue(ASSET_POLICY_GUIDS, policyId);
@@ -4891,6 +4891,12 @@ public class EntityGraphMapper {
         }
 
         return vertex;
+    }
+
+    private boolean removePolicyAndRule(Set<String> policies, String policyId) {
+        Set<String> toRemove = policies.stream().filter(i-> i.contains(policyId)).collect(Collectors.toSet());
+        return policies.removeAll(toRemove);
+
     }
 
     private Set<String> getMultiValuedSetProperty(AtlasVertex vertex, String propertyName) {
