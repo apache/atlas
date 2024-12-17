@@ -1964,7 +1964,7 @@ public class EntityGraphRetriever {
         }
 
         // value is present as marker , fetch the value from the vertex
-        if (properties.get(attribute.getName()) == StringUtils.SPACE) {
+        if (properties.get(attribute.getName()).equals(StringUtils.SPACE)) {
             return mapVertexToAttribute(vertex, attribute, null, false);
         }
 
