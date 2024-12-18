@@ -147,6 +147,14 @@ Apache HBase tables used by Apache Atlas can be set using the following configur
 atlas.audit.hbase.tablename=apache_atlas_entity_audit`}
 </SyntaxHighlighter>
 
+#### Configuring Apache Hbase Compression Algorithm
+
+By default, Atlas uses GZ (Gzip) as Hbase compression. Other compression algorithm can be configured using below configuration:
+
+<SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
+{`atlas.graph.storage.hbase.compression-algorithm=SNAPPY`}
+</SyntaxHighlighter>
+
 #### Configuring Apache Solr as the indexing backend for the Graph Repository
 
 By default, Apache Atlas uses JanusGraph as the graph repository and is the only graph repository implementation available currently. For configuring JanusGraph to work with Apache Solr, please follow the instructions below
@@ -236,7 +244,7 @@ By default, Apache Atlas uses [JanusGraph](https://janusgraph.org/) as the graph
 
 <SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
 {`atlas.graph.index.search.backend=elasticsearch
-atlas.graph.index.search.hostname=<the hostname(s) of the Elasticsearch master nodes comma separated>
+atlas.graph.index.search.hostname={the hostname(s) of the Elasticsearch master nodes comma separated}
 atlas.graph.index.search.elasticsearch.client-only=true`}
  </SyntaxHighlighter>
 
@@ -362,3 +370,22 @@ run setup again.
 
 If the setup failed due to Apache HBase schema setup errors, it may be necessary to repair Apache HBase schema. If no
 data has been stored, one can also disable and drop the Apache HBase tables used by Apache Atlas and run setup again.
+
+#### Startup issues when SNAPPY compression is configured
+If you encounter issues where the Atlas server doesn't start after setting SNAPPY as the compression algorithm, it could be due to missing or incompatible libraries required for SNAPPY compression.
+
+Solution: Ensure Snappy compression libraries are available.
+If not already installed, download and configure the Snappy library on your system.
+- Download and Install Snappy: The library can be found on platforms like GitHub or official distribution repositories for your operating system.
+  <SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
+  {`On Linux:
+  sudo apt-get install libsnappy-dev`}
+  </SyntaxHighlighter>
+- Download and extract Hadoop according to the hbase version: [Hadoop 3.2.4](https://downloads.apache.org/hadoop/common/hadoop-3.2.4/hadoop-3.2.4.tar.gz)
+- Update the HBase Configuration:
+   Add below lines to the file `hbase-env.sh`:
+  <SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
+  {`export HADOOP_HOME={path-to-hadoop}
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$HADOOP_HOME/lib/native`}
+  </SyntaxHighlighter>
+- Restart Atlas Server

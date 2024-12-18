@@ -32,7 +32,7 @@ The bridge uses environment variables for configuration.
 | CB_PASSWORD          | Couchbase Cluster password                                                                                                        | "password"               |
 | CB_ENABLE_TLS        | Use TLS                                                                                                                           | false                    |
 | CB_BUCKET            | Couchbase bucket to monitor                                                                                                       | "default"                |
-| CB_COLLECTIONS       | Comma-separated list of collections to monitor with each collection listed as <scope>.<collection>                                |                          |
+| CB_COLLECTIONS       | Comma-separated list of collections to monitor with each collection listed as {scope}.{collection}                                |                          |
 | DCP_PORT             | DCP port to use                                                                                                                   | 11210                    |
 | DCP_FIELD_THRESHOLD  | A threshold that indicates in what percentage of analyzed messages per collection  a field must appear before it is sent to Atlas | 0                        |
 | DCP_SAMPLE_RATIO     | Percentage of DCP messages to be analyzed in form of a short between 0 and 1.                                                     | 1                        |
