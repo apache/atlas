@@ -444,6 +444,7 @@ public class DiscoveryREST {
             if (enableSearchLogging && parameters.isSaveSearchLog()) {
                 logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
             }
+            abe.setStackTrace(e.getStackTrace());
             throw abe;
         } finally {
             if(CollectionUtils.isNotEmpty(parameters.getUtmTags())) {
