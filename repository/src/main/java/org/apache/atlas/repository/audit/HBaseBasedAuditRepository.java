@@ -848,7 +848,7 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
         String tableNameStr = atlasConf.getString(CONFIG_TABLE_NAME, DEFAULT_TABLE_NAME);
         tableName = TableName.valueOf(tableNameStr);
 
-        compressionType = atlasConf.getString(CONFIG_COMPRESSION_ALGORITHM, atlasConf.getString(HBASE_STORE_COMPRESSION_PROPERTY, "SNAPPY"));
+        compressionType = atlasConf.getString(CONFIG_COMPRESSION_ALGORITHM, atlasConf.getString(HBASE_STORE_COMPRESSION_PROPERTY, "GZ"));
 
         try {
             connection = createConnection(hbaseConf);
