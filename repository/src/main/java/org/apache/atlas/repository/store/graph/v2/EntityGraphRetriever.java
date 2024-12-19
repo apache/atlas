@@ -1061,8 +1061,6 @@ public class EntityGraphRetriever {
                 edgeNames.get(k1).add(k);
             });
         });
-
-        LOG.warn("get all edges: {}", edgeNames);
         return edgeNames;
     }
 
@@ -1081,20 +1079,16 @@ public class EntityGraphRetriever {
 
         Set<String> edgeLabels = new HashSet<>();
         edgeLabelsDebug.stream().filter(Objects::nonNull).forEach(edgeLabel -> attributes.forEach(attribute->{
-             LOG.warn("attribute requested: {}", attribute);
 
              if (edgeLabel.contains(attribute)){
-                 LOG.warn("attribute matched by edge");
                    edgeLabels.add(attribute);
                    return;
                }
 
             String edgeTypeName = edgesTypeName.get(edgeLabel);
 
-             LOG.warn("edgeTypeName for attribute: {} :{}", edgeTypeName, relationshipsLookup.containsKey(edgeTypeName));
             if (MapUtils.isNotEmpty(relationshipsLookup) && relationshipsLookup.containsKey(edgeTypeName) && relationshipsLookup.get(edgeTypeName).contains(attribute)) {
                 edgeLabels.add(attribute);
-                LOG.warn("attribute matched by edgeTypeName");
             }
         }));
 
@@ -1950,7 +1944,6 @@ public class EntityGraphRetriever {
         if (vertex == null || attribute == null) {
             return null;
         }
-        LOG.warn("final call to attribute {} : {}", attribute.getName(), properties.get(attribute.getName()));
 
         TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
         TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
