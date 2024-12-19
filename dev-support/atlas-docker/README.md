@@ -31,20 +31,29 @@ Docker files in this folder create docker images and run them to build Apache At
 3. Update environment variables in .env file, if necessary
 
 4. Execute following command to download necessary archives to setup Atlas/HDFS/HBase/Kafka services:
-     ./download-archives.sh
+   ~~~
+   chmod +x download-archives.sh
+   ./download-archives.sh
+   ~~~
 
-5. Build and deploy Apache Atlas in containers using docker-compose
+5.  Execute following commands to set environment variables to build Apache Atlas docker containers:
+   ~~~
+   export DOCKER_BUILDKIT=1
+   export COMPOSE_DOCKER_CLI_BUILD=1
+   ~~~
 
-   5.1. Execute following command to build Apache Atlas:
+6. Build and deploy Apache Atlas in containers using docker-compose
+
+   6.1. Execute following command to build Apache Atlas:
 
         docker-compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
 
    Time taken to complete the build might vary (upto an hour), depending on status of ${HOME}/.m2 directory cache.
 
-   5.2. Execute following command to install and start Atlas and dependent services (Solr, HBase, Kafka) in containers:
+   6.2. Execute following command to install and start Atlas and dependent services (Solr, HBase, Kafka) in containers:
 
         docker-compose -f docker-compose.atlas-base.yml -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-hbase.yml -f docker-compose.atlas-kafka.yml -f docker-compose.atlas-hive.yml up -d
 
    Apache Atlas will be installed at /opt/atlas/, and logs are at /var/logs/atlas directory.
 
-6. Atlas Admin can be accessed at http://localhost:21000 (admin/atlasR0cks!)
+7. Atlas Admin can be accessed at http://localhost:21000 (admin/atlasR0cks!)
