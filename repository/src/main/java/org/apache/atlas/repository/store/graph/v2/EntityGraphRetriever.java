@@ -1060,6 +1060,8 @@ public class EntityGraphRetriever {
                 edgeNames.put(k1, k);
             });
         });
+
+        LOG.warn("get all edges: {}", edgeNames);
         return edgeNames;
     }
 
@@ -1078,20 +1080,20 @@ public class EntityGraphRetriever {
 
         Set<String> edgeLabels = new HashSet<>();
         edgeLabelsDebug.stream().filter(Objects::nonNull).forEach(edgeLabel -> attributes.forEach(attribute->{
-             LOG.info("attribute requested: {}", attribute);
+             LOG.warn("attribute requested: {}", attribute);
 
              if (edgeLabel.contains(attribute)){
-                 LOG.info("attribute matched by edge");
+                 LOG.warn("attribute matched by edge");
                    edgeLabels.add(attribute);
                    return;
                }
 
             String edgeTypeName = edgesTypeName.get(edgeLabel);
 
-             LOG.info("edgeTypeName for attribute: {} :{}", edgeTypeName, relationshipsLookup.containsKey(edgeTypeName));
+             LOG.warn("edgeTypeName for attribute: {} :{}", edgeTypeName, relationshipsLookup.containsKey(edgeTypeName));
             if (MapUtils.isNotEmpty(relationshipsLookup) && relationshipsLookup.containsKey(edgeTypeName) && attribute.equals(relationshipsLookup.get(edgeTypeName))) {
                 edgeLabels.add(attribute);
-                LOG.info("attribute matched by edgeTypeName");
+                LOG.warn("attribute matched by edgeTypeName");
             }
         }));
 
@@ -1947,7 +1949,7 @@ public class EntityGraphRetriever {
         if (vertex == null || attribute == null) {
             return null;
         }
-        LOG.info("finall call to attribute {} : {}", attribute.getName(), properties.get(attribute.getName()));
+        LOG.warn("final call to attribute {} : {}", attribute.getName(), properties.get(attribute.getName()));
 
         TypeCategory typeCategory = attribute.getAttributeType().getTypeCategory();
         TypeCategory elementTypeCategory = typeCategory == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
