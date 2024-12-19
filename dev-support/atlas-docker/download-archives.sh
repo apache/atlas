@@ -28,6 +28,7 @@
 #
 source .env
 
+mkdir -p downloads
 
 downloadIfNotPresent() {
   local fileName=$1
