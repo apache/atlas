@@ -101,6 +101,13 @@
         </dependency>
 
         <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>hive-bridge-shim</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.hive</groupId>
             <artifactId>hive-exec</artifactId>
             <version>${hive.version}</version>
