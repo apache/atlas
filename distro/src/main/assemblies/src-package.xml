@@ -49,6 +49,7 @@
                 <exclude>dev-support/atlas-docker/data/**</exclude>
                 <exclude>dev-support/atlas-docker/dist/**</exclude>
                 <exclude>dev-support/atlas-docker/downloads/**</exclude>
+                <exclude>docs/node_modules/**</exclude>
             </excludes>
         </fileSet>
     </fileSets>
