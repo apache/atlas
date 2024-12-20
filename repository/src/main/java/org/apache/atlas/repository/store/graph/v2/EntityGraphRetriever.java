@@ -1014,7 +1014,7 @@ public class EntityGraphRetriever {
         Iterator<VertexProperty<Object>> traversal = ((AtlasJanusVertex)entityVertex).getWrappedElement().properties();
 
         //  retrieve all the valid relationships for this entityType
-        Map<String, String> relationshipsLookup = fetchEdgeNames(entityType);
+        Map<String, Set<String>> relationshipsLookup = fetchEdgeNames(entityType);
 
         // Fetch edges in both directions
         retrieveEdgeLabels(entityVertex, AtlasEdgeDirection.BOTH, attributes, relationshipsLookup, propertiesMap);
@@ -1052,18 +1052,19 @@ public class EntityGraphRetriever {
         return propertiesMap;
     }
 
-    private Map<String, String> fetchEdgeNames(AtlasEntityType entityType){
+    private Map<String, Set<String>> fetchEdgeNames(AtlasEntityType entityType){
         Map<String, Map<String, AtlasAttribute>> relationships = entityType.getRelationshipAttributes();
-        Map<String, String> edgeNames = new HashMap<>();
+        Map<String, Set<String>> edgeNames = new HashMap<>();
         relationships.forEach((k,v) -> {
             v.forEach((k1,v1) -> {
-                edgeNames.put(k1, k);
+                edgeNames.putIfAbsent(k1, new HashSet<>());
+                edgeNames.get(k1).add(k);
             });
         });
         return edgeNames;
     }
 
-    private void retrieveEdgeLabels(AtlasVertex entityVertex, AtlasEdgeDirection edgeDirection, Set<String> attributes, Map<String, String> relationshipsLookup,Map<String, Object> propertiesMap) throws AtlasBaseException {
+    private void retrieveEdgeLabels(AtlasVertex entityVertex, AtlasEdgeDirection edgeDirection, Set<String> attributes, Map<String, Set<String>> relationshipsLookup,Map<String, Object> propertiesMap) throws AtlasBaseException {
         Iterator<AtlasJanusEdge> edges = GraphHelper.getOnlyActiveEdges(entityVertex, edgeDirection);
 
         List<String> edgeLabelsDebug = new ArrayList<>();
@@ -1078,13 +1079,15 @@ public class EntityGraphRetriever {
 
         Set<String> edgeLabels = new HashSet<>();
         edgeLabelsDebug.stream().filter(Objects::nonNull).forEach(edgeLabel -> attributes.forEach(attribute->{
-               if (edgeLabel.contains(attribute)){
+
+             if (edgeLabel.contains(attribute)){
                    edgeLabels.add(attribute);
                    return;
                }
 
             String edgeTypeName = edgesTypeName.get(edgeLabel);
-            if (MapUtils.isNotEmpty(relationshipsLookup) && relationshipsLookup.containsKey(edgeTypeName) && attribute.equals(relationshipsLookup.get(edgeTypeName))) {
+
+            if (MapUtils.isNotEmpty(relationshipsLookup) && relationshipsLookup.containsKey(edgeTypeName) && relationshipsLookup.get(edgeTypeName).contains(attribute)) {
                 edgeLabels.add(attribute);
             }
         }));
