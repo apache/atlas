@@ -750,7 +750,7 @@ public class RequestContext {
     }
 
     public void setClientOrigin(String clientOrigin) {
-        this.clientOrigin = StringUtils.isEmpty(this.clientOrigin) ? "other" :clientOrigin;
+        this.clientOrigin = StringUtils.isEmpty(clientOrigin) ? "other" :clientOrigin;
     }
 
     public class EntityGuidPair {

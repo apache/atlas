@@ -57,6 +57,9 @@ import java.util.Properties;
 
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getClient;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getProductClusterClient;
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getSDKClusterClient;
+
 
 import static org.apache.atlas.ApplicationProperties.DEFAULT_INDEX_RECOVERY;
 import static org.apache.atlas.ApplicationProperties.INDEX_RECOVERY_CONF;
@@ -354,7 +357,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
     @Override
     public AtlasGraph<AtlasJanusVertex, AtlasJanusEdge> getGraphBulkLoading() {
-        return new AtlasJanusGraph(getBulkLoadingGraphInstance(), getClient(), getLowLevelClient());
+        return new AtlasJanusGraph(getBulkLoadingGraphInstance(), getClient(), getLowLevelClient(), getProductClusterClient(), getSDKClusterClient());
     }
 
     private static void startEmbeddedSolr() throws AtlasException {
