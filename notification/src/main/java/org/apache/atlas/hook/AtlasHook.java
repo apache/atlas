@@ -95,8 +95,8 @@ public abstract class AtlasHook {
             failedMessagesLogger = null;
         }
 
-        isRESTNotificationEnabled = AtlasConfiguration.NOTIFICATION_HOOK_REST_ENABLED.getBoolean();
-        isHookMsgsSortEnabled     = atlasProperties.getBoolean(CONF_ATLAS_HOOK_MESSAGES_SORT_ENABLED, isRESTNotificationEnabled);
+//        isRESTNotificationEnabled = AtlasConfiguration.NOTIFICATION_HOOK_REST_ENABLED.getBoolean();
+//        isHookMsgsSortEnabled     = atlasProperties.getBoolean(CONF_ATLAS_HOOK_MESSAGES_SORT_ENABLED, isRESTNotificationEnabled);
         metadataNamespace         = getMetadataNamespace(atlasProperties);
         notificationMaxRetries    = atlasProperties.getInt(ATLAS_NOTIFICATION_MAX_RETRIES, 3);
         notificationRetryInterval = atlasProperties.getInt(ATLAS_NOTIFICATION_RETRY_INTERVAL, 1000);
