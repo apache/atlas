@@ -28,7 +28,6 @@ on:
       - master
       - lineageondemand
       - makerlogic
-      - pol1
 
 jobs:
   build:
