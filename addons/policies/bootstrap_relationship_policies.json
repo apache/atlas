@@ -886,6 +886,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "policyPriority": 1,
                 "policyUsers":
                 [],
                 "policyGroups":
