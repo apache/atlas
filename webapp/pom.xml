@@ -583,6 +583,31 @@
             <version>1.17.0</version>
         </dependency>
 
+        <!-- OTEL integration in webapp/pom.xml -->
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-sdk</artifactId>
+            <version>1.42.0</version>
+        </dependency>
+        <dependency>
+            <groupId>io.opentelemetry</groupId>
+            <artifactId>opentelemetry-exporter-otlp</artifactId>
+            <version>1.42.0</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.opentelemetry.semconv</groupId>
+            <artifactId>opentelemetry-semconv</artifactId>
+            <version>1.27.0-alpha</version>
+        </dependency>
+
+        <dependency>
+            <groupId>io.opentelemetry.instrumentation</groupId>
+            <artifactId>opentelemetry-logback-appender-1.0</artifactId>
+            <version>2.10.0-alpha</version>
+        </dependency>
+
+
     </dependencies>
 
     <build>
