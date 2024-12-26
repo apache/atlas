@@ -74,8 +74,6 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private Integer                         depth               = null;
     private Integer                         traversalOrder      = null;
     private Integer                         finishTime          = null;
-    private String                          name                = null;
-    private String                          typeName            = null;
 
     private Map<String, AtlasSearchResult>  collapse    = null;
 
@@ -281,14 +279,6 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     public void setCollapse(Map<String, AtlasSearchResult> collapse) {
         this.collapse = collapse;
     }
-
-    public String getName(){ return name; }
-
-    public void setName(String name){ this.name = name; }
-
-    public String getTypeName(){ return typeName; }
-
-    public void setTypeName(){ this.typeName = typeName; }
 
     @Override
     public StringBuilder toString(StringBuilder sb) {

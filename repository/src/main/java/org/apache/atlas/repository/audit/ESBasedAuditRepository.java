@@ -269,7 +269,6 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                         try {
                             AtlasEntityHeader domainEntityHeader = fetchAtlasEntityHeader(domainGUID);
                             if (domainEntityHeader != null) {
-                                source.put("domainDetails", domainEntityHeader);
                                 linkedEntityList.add(domainEntityHeader);
                             }
                         } catch (Exception e) {
