@@ -135,6 +135,7 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
     private Map<String, Object> detail;
     private AtlasEntityHeader   entityDetail;
     private Map<String, String> headers;
+    private List<AtlasEntityHeader> linkedEntities;
 
     public EntityAuditEventV2() { }
 
@@ -250,6 +251,19 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         this.headers = headers;
     }
 
+    public List<AtlasEntityHeader> getLinkedEntities() {
+        return linkedEntities;
+    }
+
+    public void setLinkedEntities(List<AtlasEntityHeader> linkedEntities) {
+        this.linkedEntities = linkedEntities;
+    }
+
+    @JsonIgnore
+    public boolean hasLinkedEntities() {
+        return linkedEntities != null && !linkedEntities.isEmpty();
+    }
+
     @JsonIgnore
     public String getEntityDefinitionString() {
         if (entity != null) {
@@ -315,6 +329,11 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         sb.append(", detail=").append(detail);
         sb.append(", created=").append(created);
         sb.append(", headers=").append(headers);
+
+        if (hasLinkedEntities()) {
+            sb.append(", linkedEntities=").append(linkedEntities);
+        }
+
         sb.append('}');
 
         return sb.toString();

@@ -29,6 +29,7 @@ import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
@@ -47,6 +48,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -60,6 +64,7 @@ import java.text.MessageFormat;
 import java.util.*;
 
 import static java.nio.charset.Charset.defaultCharset;
+import static org.apache.atlas.repository.Constants.DOMAIN_GUIDS;
 import static org.springframework.util.StreamUtils.copyToString;
 
 /**
@@ -94,12 +99,22 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     private RestClient lowLevelClient;
     private final Configuration configuration;
+    private EntityGraphRetriever entityGraphRetriever;
+    private AtlasGraph graph;
+    private AtlasTypeRegistry typeRegistry;
 
     @Inject
     public ESBasedAuditRepository(Configuration configuration) {
         this.configuration = configuration;
     }
-
+    
+    @Inject
+    public ESBasedAuditRepository(Configuration configuration, AtlasGraph graph, AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityGraphRetriever) {
+        this.configuration = configuration;
+        this.graph = graph;
+        this.typeRegistry = typeRegistry;
+        this.entityGraphRetriever = entityGraphRetriever;
+    }
 
     @Override
     public void putEventsV1(List<EntityAuditEvent> events) throws AtlasException {
@@ -243,6 +258,28 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 eventKey = event.getEntityId() + ":" + event.getTimestamp();
             }
 
+            Map<String, Object> detail = event.getDetail();
+            if (detail != null && detail.containsKey("attributes")) {
+                Map<String, Object> attributes = (Map<String, Object>) detail.get("attributes");
+                List<String> domainGUIDs = (List<String>) attributes.get(DOMAIN_GUIDS);
+
+                if (domainGUIDs != null && !domainGUIDs.isEmpty()) {
+                    List<AtlasEntityHeader> linkedEntityList = new ArrayList<>();
+                    for (String domainGUID: domainGUIDs) {
+                        try {
+                            AtlasEntityHeader domainEntityHeader = fetchAtlasEntityHeader(domainGUID);
+                            if (domainEntityHeader != null) {
+                                source.put("domainDetails", domainEntityHeader);
+                                linkedEntityList.add(domainEntityHeader);
+                            }
+                        } catch (Exception e) {
+                            throw new AtlasBaseException(e);
+                        }
+                    }
+                    event.setLinkedEntities(linkedEntityList);
+                }
+            }
+
             event.setHeaders((Map<String, String>) source.get("headers"));
 
             event.setEventKey(eventKey);
@@ -256,6 +293,16 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         searchResult.setTotalCount(totalCount);
         searchResult.setCount(entityAudits.size());
         return searchResult;
+    }
+
+    private AtlasEntityHeader fetchAtlasEntityHeader(String domainGUID) throws AtlasBaseException {
+        try {                                                                                                           
+            EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
+
+            return entityRetriever.toAtlasEntityHeader(domainGUID);
+        } catch (Exception e) {
+            throw new AtlasBaseException(e);
+        }
     }
 
     private String performSearchOnIndex(String queryString) throws IOException {
