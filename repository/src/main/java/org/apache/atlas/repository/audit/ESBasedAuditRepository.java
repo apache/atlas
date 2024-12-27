@@ -48,8 +48,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 
 import javax.inject.Inject;
@@ -100,19 +98,10 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private RestClient lowLevelClient;
     private final Configuration configuration;
     private EntityGraphRetriever entityGraphRetriever;
-    private AtlasGraph graph;
-    private AtlasTypeRegistry typeRegistry;
 
     @Inject
-    public ESBasedAuditRepository(Configuration configuration) {
+    public ESBasedAuditRepository(Configuration configuration, EntityGraphRetriever entityGraphRetriever) {
         this.configuration = configuration;
-    }
-    
-    @Inject
-    public ESBasedAuditRepository(Configuration configuration, AtlasGraph graph, AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityGraphRetriever) {
-        this.configuration = configuration;
-        this.graph = graph;
-        this.typeRegistry = typeRegistry;
         this.entityGraphRetriever = entityGraphRetriever;
     }
 
@@ -271,7 +260,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                             if (domainEntityHeader != null) {
                                 linkedEntityList.add(domainEntityHeader);
                             }
-                        } catch (Exception e) {
+                        } catch (AtlasBaseException e) {
                             throw new AtlasBaseException(e);
                         }
                     }
@@ -295,11 +284,10 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     }
 
     private AtlasEntityHeader fetchAtlasEntityHeader(String domainGUID) throws AtlasBaseException {
-        try {                                                                                                           
-            EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
-
-            return entityRetriever.toAtlasEntityHeader(domainGUID);
-        } catch (Exception e) {
+        try {
+            AtlasEntityHeader entityHeader = entityGraphRetriever.toAtlasEntityHeader(domainGUID);
+            return entityHeader;
+        } catch (AtlasBaseException e) {
             throw new AtlasBaseException(e);
         }
     }
