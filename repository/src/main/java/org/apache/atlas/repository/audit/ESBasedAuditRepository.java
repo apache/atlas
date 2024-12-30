@@ -257,7 +257,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                     if (guidKeys.contains(entry.getKey()) && entry.getValue() instanceof List) {
                         List<String> guids = (List<String>) entry.getValue();
 
-                        if (guids != null && !guids.isEmpty()){
+                        if (!guids.isEmpty()){
                             for (String guid: guids){
                                 try {
                                     AtlasEntityHeader entityHeader = fetchAtlasEntityHeader(guid);
