@@ -88,6 +88,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String DETAIL = "detail";
     private static final String ENTITY = "entity";
     private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
+    private static final Set<String> guidKeys = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
 
     /*
     *    created   → event creation time
@@ -250,20 +251,28 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             Map<String, Object> detail = event.getDetail();
             if (detail != null && detail.containsKey("attributes")) {
                 Map<String, Object> attributes = (Map<String, Object>) detail.get("attributes");
-                List<String> domainGUIDs = (List<String>) attributes.get(DOMAIN_GUIDS);
+                List<AtlasEntityHeader> linkedEntityList = new ArrayList<>();
 
-                if (domainGUIDs != null && !domainGUIDs.isEmpty()) {
-                    List<AtlasEntityHeader> linkedEntityList = new ArrayList<>();
-                    for (String domainGUID: domainGUIDs) {
-                        try {
-                            AtlasEntityHeader domainEntityHeader = fetchAtlasEntityHeader(domainGUID);
-                            if (domainEntityHeader != null) {
-                                linkedEntityList.add(domainEntityHeader);
+                for (Map.Entry<String, Object> entry: attributes.entrySet()) {
+                    if (guidKeys.contains(entry.getKey()) && entry.getValue() instanceof List) {
+                        List<String> guids = (List<String>) entry.getValue();
+
+                        if (guids != null && !guids.isEmpty()){
+                            for (String guid: guids){
+                                try {
+                                    AtlasEntityHeader entityHeader = fetchAtlasEntityHeader(guid);
+                                    if (entityHeader != null) {
+                                        linkedEntityList.add(entityHeader);
+                                    }
+                                } catch (AtlasBaseException e) {
+                                    throw new AtlasBaseException(e);
+                                }
                             }
-                        } catch (AtlasBaseException e) {
-                            throw new AtlasBaseException(e);
                         }
                     }
+                }
+
+                if(!linkedEntityList.isEmpty()){
                     event.setLinkedEntities(linkedEntityList);
                 }
             }
