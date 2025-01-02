@@ -87,7 +87,7 @@ export default [
             "Download",
             {
                 name: "Whats New",
-                menu: ["WhatsNew-2.3", "WhatsNew-2.2", "WhatsNew-2.1", "WhatsNew-2.0", "WhatsNew-1.0"]
+                menu: ["WhatsNew-2.4", "WhatsNew-2.3", "WhatsNew-2.2", "WhatsNew-2.1", "WhatsNew-2.0", "WhatsNew-1.0"]
             },
             "Migration"
         ]
