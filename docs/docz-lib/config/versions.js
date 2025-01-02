@@ -1,5 +1,5 @@
 export default  [
-    { id: 1, href: "/2.4.0/index.html", title: "2.4.0", label: "2.4.0" },
+	{ id: 1, href: "/2.4.0/index.html", title: "2.4.0", label: "2.4.0" },
 	{ id: 2, href: "/2.3.0/index.html", title: "2.3.0", label: "2.3.0" },
 	{ id: 3, href: "/2.2.0/index.html", title: "2.2.0", label: "2.2.0" },
 	{ id: 4, href: "/2.1.0/index.html", title: "2.1.0", label: "2.1.0" },

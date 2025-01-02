@@ -12,14 +12,14 @@ import SyntaxHighlighter from 'react-syntax-highlighter';
 ## Building & Installing Apache Atlas
 
 ### Building Apache Atlas
-Download Apache Atlas 1.0.0 release sources, apache-atlas-1.0.0-sources.tar.gz, from the [downloads](#/Downloads) page.
+Download Apache Atlas 2.4.0 release sources, apache-atlas-2.4.0-sources.tar.gz, from the [downloads](#/Downloads) page.
 Then follow the instructions below to build Apache Atlas.
 
 
 
 <SyntaxHighlighter wrapLines={true} language="powershell" style={theme.dark}>
-{`tar xvfz apache-atlas-1.0.0-sources.tar.gz
-cd apache-atlas-sources-1.0.0/
+{`tar xvfz apache-atlas-2.4.0-sources.tar.gz
+cd apache-atlas-sources-2.4.0/
 export MAVEN_OPTS="-Xms2g -Xmx2g"
 mvn clean -DskipTests install`}
 </SyntaxHighlighter>
