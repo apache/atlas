@@ -20,7 +20,6 @@ package org.apache.atlas.model.instance;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -45,13 +44,13 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class BusinessPolicyRequest implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private List<AssetData> data;
+    private List<AssetComplianceInfo> data;
 
-    public List<AssetData> getData() {
+    public List<AssetComplianceInfo> getData() {
         return data;
     }
 
-    public void setData(List<AssetData> data) {
+    public void setData(List<AssetComplianceInfo> data) {
         this.data = data;
     }
 
@@ -62,15 +61,19 @@ public class BusinessPolicyRequest implements Serializable {
                 '}';
     }
 
-    public static class AssetData implements Serializable {
+    public static class AssetComplianceInfo implements Serializable {
         private static final long serialVersionUID = 1L;
 
+        //guids for asset
         private String assetId;
 
+        //guids for complaint rules
         private Set<String> complaintRules;
 
+        //guids for non complaint rules
         private Set<String> nonComplaintRules;
 
+        //guids for complaint policies
         private Set<String> complaintPolicies;
 
 
@@ -109,7 +112,7 @@ public class BusinessPolicyRequest implements Serializable {
 
         @Override
         public String toString() {
-            return "AssetData{" +
+            return "AssetComplianceInfo{" +
                     "assetId='" + assetId + '\'' +
                     ", complaintRules=" + complaintRules +
                     ", nonComplaintRules=" + nonComplaintRules +

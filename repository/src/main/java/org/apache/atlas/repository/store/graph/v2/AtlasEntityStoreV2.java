@@ -2781,15 +2781,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public void linkBusinessPolicy(List<BusinessPolicyRequest.AssetData> data) throws AtlasBaseException {
+    public void linkBusinessPolicy(List<BusinessPolicyRequest.AssetComplianceInfo> data) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkBusinessPolicy.GraphTransaction");
-        List<AtlasVertex> l = new ArrayList<>();
+        List<AtlasVertex> atlasVertices = new ArrayList<>();
         try {
-            for (BusinessPolicyRequest.AssetData ad : data) {
+            for (BusinessPolicyRequest.AssetComplianceInfo ad : data) {
                 AtlasVertex av = this.entityGraphMapper.linkBusinessPolicy(ad);
-                l.add(av);
+                atlasVertices.add(av);
             }
-            handleEntityMutation(l);
+            handleEntityMutation(atlasVertices);
         } catch (Exception e) {
             LOG.error("Error during linkBusinessPolicy for policyGuid: ", e);
             throw e;

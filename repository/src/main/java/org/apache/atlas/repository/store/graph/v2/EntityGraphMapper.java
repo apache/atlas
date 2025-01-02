@@ -71,9 +71,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.collections4.SetUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -86,7 +84,6 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.LABEL_MAX_LENGTH;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
-import static org.apache.atlas.AtlasErrorCode.CLASSIFICATION_NOT_FOUND;
 import static org.apache.atlas.model.TypeCategory.ARRAY;
 import static org.apache.atlas.model.TypeCategory.CLASSIFICATION;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
@@ -4773,7 +4770,7 @@ public class EntityGraphMapper {
     }
 
 
-    public AtlasVertex linkBusinessPolicy(final BusinessPolicyRequest.AssetData data) {
+    public AtlasVertex linkBusinessPolicy(final BusinessPolicyRequest.AssetComplianceInfo data) {
         String assetGuid = data.getAssetId();
         AtlasVertex vertex = findByGuid(graph, assetGuid);
 
@@ -4782,21 +4779,21 @@ public class EntityGraphMapper {
         Set<String> existingNonCompliant = getVertexPolicies(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS);
 
         // Retrieve new policies
-        Set<String> newCompliantRules = data.getComplaintRules();
-        Set<String> newNonCompliantRules = data.getNonComplaintRules();
-        Set<String> newCompliantPolicies = data.getComplaintPolicies();
+        Set<String> newCompliantRulesGUIDs = data.getComplaintRules();
+        Set<String> newNonCompliantRulesGUIDs = data.getNonComplaintRules();
+        Set<String> newCompliantPolicyGUIDs = data.getComplaintPolicies();
 
         // Calculate effective compliant and non-compliant policies
-        Set<String> effectiveCompliant = calculateEffectivePolicies(existingCompliant, newCompliantRules, newCompliantPolicies);
-        Set<String> effectiveNonCompliant = calculateEffectivePolicies(existingNonCompliant, newNonCompliantRules);
+        Set<String> effectiveCompliantGUIDs = calculateEffectivePolicies(existingCompliant, newCompliantRulesGUIDs, newCompliantPolicyGUIDs);
+        Set<String> effectiveNonCompliantGUIDs = calculateEffectivePolicies(existingNonCompliant, newNonCompliantRulesGUIDs);
 
         // Update vertex properties
-        updateVertexPolicies(vertex, ASSET_POLICY_GUIDS, effectiveCompliant);
-        updateVertexPolicies(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, effectiveNonCompliant);
+        updateVertexPolicies(vertex, ASSET_POLICY_GUIDS, effectiveCompliantGUIDs);
+        updateVertexPolicies(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, effectiveNonCompliantGUIDs);
 
         // Count and set policies
-        int compliantPolicyCount = countPoliciesExcluding(effectiveCompliant, "rule");
-        int nonCompliantPolicyCount = countPoliciesExcluding(effectiveNonCompliant, "rule");
+        int compliantPolicyCount = countPoliciesExcluding(effectiveCompliantGUIDs, "rule");
+        int nonCompliantPolicyCount = countPoliciesExcluding(effectiveNonCompliantGUIDs, "rule");
         int totalPolicyCount = compliantPolicyCount + nonCompliantPolicyCount;
 
         vertex.setProperty(ASSET_POLICIES_COUNT, totalPolicyCount);
@@ -4804,7 +4801,7 @@ public class EntityGraphMapper {
 
         // Create and cache differential entity
         AtlasEntity diffEntity = createDifferentialEntity(
-                vertex, effectiveCompliant, effectiveNonCompliant, existingCompliant, existingNonCompliant, totalPolicyCount);
+                vertex, effectiveCompliantGUIDs, effectiveNonCompliantGUIDs, existingCompliant, existingNonCompliant, totalPolicyCount);
 
         RequestContext.get().cacheDifferentialEntity(diffEntity);
         return vertex;
