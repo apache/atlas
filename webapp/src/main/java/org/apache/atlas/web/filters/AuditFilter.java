@@ -165,7 +165,6 @@ public class AuditFilter implements Filter {
             MDC.put("httpStatus", String.valueOf(auditLog.httpStatus));
             MDC.put("timeTaken", String.valueOf(auditLog.timeTaken));
             AUDIT_LOG.info("Capturing audit log");
-            MDC.clear();
         }
     }
 
