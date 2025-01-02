@@ -18,7 +18,8 @@ artifacts can be found in our published [KEYS file](https://www.apache.org/dist/
 
 | **Version** | **Release Date** | **Tarball** | **GPG** | **Hash** |
 | : ------------- : | : ------------- : | : ------------- : | : ------------- : |: ------------- :|
-| 2.3.0 | 2022-12-06 | [source](https://www.apache.org/dyn/closer.cgi/atlas/2.3.0/apache-atlas-2.3.0-sources.tar.gz) | [signature](https://www.apache.org/dist/atlas/2.3.0/apache-atlas-2.3.0-sources.tar.gz.asc) | [SHA512](https://www.apache.org/dist/atlas/2.3.0/apache-atlas-2.3.0-sources.tar.gz.sha512) |
+|      2.4.0       |    2025-01-02    |              [source](https://www.apache.org/dyn/closer.cgi/atlas/2.4.0/apache-atlas-2.4.0-sources.tar.gz)              |                   [signature](https://www.apache.org/dist/atlas/2.4.0/apache-atlas-2.4.0-sources.tar.gz.asc)                   |                  [SHA512](https://www.apache.org/dist/atlas/2.4.0/apache-atlas-2.4.0-sources.tar.gz.sha512)                   |
+|      2.3.0       |    2022-12-06    |                [source](https://archive.apache.org/dist/atlas/2.3.0/apache-atlas-2.3.0-sources.tar.gz)                  |                   [signature](https://archive.apache.org/dist/atlas/2.3.0/apache-atlas-2.3.0-sources.tar.gz.asc)                   |                [SHA512](https://archive.apache.org/dist/atlas/2.3.0/apache-atlas-2.3.0-sources.tar.gz.sha512)                 |
 | 2.2.0 | 2021-08-17 | [source](https://archive.apache.org/dist/atlas/2.2.0/apache-atlas-2.2.0-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/2.2.0/apache-atlas-2.2.0-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/2.2.0/apache-atlas-2.2.0-sources.tar.gz.sha512) |
 | 2.1.0 | 2020-07-15 | [source](https://archive.apache.org/dist/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/2.1.0/apache-atlas-2.1.0-sources.tar.gz.sha512) |
 | 0.8.4 | 2019-06-21 | [source](https://archive.apache.org/dist/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz) | [signature](https://archive.apache.org/dist/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz.asc) | [SHA512](https://archive.apache.org/dist/atlas/0.8.4/apache-atlas-0.8.4-sources.tar.gz.sha512) |
@@ -67,6 +68,28 @@ pgp downloaded_file.asc`}
 </SyntaxHighlighter>
 
 ## Release Notes
+
+**[Atlas 2.4.0](../2.4.0/index) (Released on 2025/01/02)**
+   * Search: added support to download the search results of Basic and Advanced search.
+   * Hook: added CouchBase bridge
+   * Audits: implemented aging for audits
+   * Notification: utility to analyze hook notifications
+   * Ignore/Prune Pattern: support ignore patterns to be generic for all the hooks
+   * Provide Liveness and Readyness probes
+   * Export/Import: fixes and enhancements in this feature
+   * Dynamic Index Recovery: improvements in handling index recovery dynamically
+   * Relationship: performance improvements in dealing with large number of relationhips
+   * Lineage: performance improvements by handling data where there is no scope of lineage.
+   * Notification Hook Consumer: message processing improvement by skipping to retry for specific cases
+   * Hbase Compression Algotithm: identified SNAPPY compression performs faster, hence support is added to change compression
+   * Search: support for Chinese character in Atlas entities is added
+   * Dependencies Upgrade: JanusGraph, Spring Security, Netty, Tinkerpop, Spring Framework, Hbase, Sqoop, Storm, Jetty, Testng
+   * UI Dependencies Upgrade: Swagger-UI, DomPurify, send, serve-static, elliptic
+   * UI: fixes and improvements in multiple areas like Glossary, Entity Detail Page, Property tab, Text Editor, Search
+   * Log: replace use of log4j with logback
+   * Docker image: improvements to Docker support
+   * [List of JIRAs resolved in Apache Atlas 2.4.0 release](https://issues.apache.org/jira/issues/?jql=project%20%3D%20ATLAS%20AND%20fixVersion%20%3D%202.4.0%20ORDER%20BY%20key%20DESC)
+
 **[Atlas 2.3.0](../2.3.0/index) (Released on 2022/12/06)**
    * (new) Relationship search: API and UI to search relationships based on type and properties
    * Resiliency: improvements in handling of index update failures
