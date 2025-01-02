@@ -4998,7 +4998,7 @@ public class EntityGraphMapper {
 
         // Check if the asset already has the given policy IDs
         if (policyIds.isEmpty()) {
-            return assetVertex;
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Asset already has the given policy id");
         }
 
         // Move policies to the appropriate set
