@@ -4880,8 +4880,10 @@ public class EntityGraphMapper {
             vertex.removePropertyValue(ASSET_POLICY_GUIDS, policyId);
             vertex.removePropertyValue(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
 
-            int totalPolicies = compliantPolicies.size() + nonCompliantPolicies.size();
-            vertex.setProperty(ASSET_POLICIES_COUNT, totalPolicies);
+            int compliantPolicyCount = countPoliciesExcluding(compliantPolicies, "rule");
+            int nonCompliantPolicyCount = countPoliciesExcluding(nonCompliantPolicies, "rule");
+            int totalPolicyCount = compliantPolicyCount + nonCompliantPolicyCount;
+            vertex.setProperty(ASSET_POLICIES_COUNT, totalPolicyCount);
 
             updateModificationMetadata(vertex);
             cacheDifferentialEntity(vertex, compliantPolicies, nonCompliantPolicies);
