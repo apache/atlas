@@ -3001,12 +3001,17 @@ public class EntityGraphMapper {
                     List<AtlasEdge> additionalElements = new ArrayList<>();
 
                     for (AtlasEdge edge : edgesToRemove) {
-                        if (getStatus(edge) == DELETED ) {
+                        if (getStatus(edge) == DELETED) {
                             continue;
                         }
 
-                        boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
-                                true, attribute.getRelationshipEdgeDirection(), entityVertex);
+                        boolean deleted = false;
+                        if (edge.getLabel().contains(OUTPUT_PORT_PRODUCT_EDGE_LABEL)) {
+                            graph.removeEdge(edge);
+                        } else {
+                            deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
+                                    true, attribute.getRelationshipEdgeDirection(), entityVertex);
+                        }
 
                         if (!deleted) {
                             additionalElements.add(edge);
