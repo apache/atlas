@@ -53,14 +53,19 @@ public class DataMigrationStatusService {
 
 
     public void init(String fileToImport) {
+        String fileHash = null;
         try {
-            this.status = new MigrationImportStatus(fileToImport, DigestUtils.md5Hex(new FileInputStream(fileToImport)));
+            fileHash = DigestUtils.md5Hex(new FileInputStream(fileToImport));
+            this.status = new MigrationImportStatus(fileToImport, fileHash);
         } catch (IOException e) {
             LOG.error("Not able to create Migration status", e);
         }
-
-        if (!this.migrationStatusVertexManagement.exists(fileToImport)) {
-            return;
+        try {
+            if (!this.migrationStatusVertexManagement.exists(fileHash)) {
+                return;
+            }
+        } catch (Exception e) {
+            LOG.error("Not able to find file vertex", e);
         }
 
         getCreate(fileToImport);
