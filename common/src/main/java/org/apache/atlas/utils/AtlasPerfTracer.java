@@ -19,6 +19,7 @@ package org.apache.atlas.utils;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 
 /**
@@ -74,7 +75,9 @@ public final class AtlasPerfTracer {
     public void log() {
         long elapsedTime = getElapsedTime();
         if (elapsedTime > reportingThresholdMs) {
-            logger.debug("PERF|{}|{}", tag, elapsedTime);
+            MDC.put("elapsedTime", String.valueOf(elapsedTime));
+            logger.debug("PERF|{}", tag);
+            MDC.clear();
         }
     }
 }
