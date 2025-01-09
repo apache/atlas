@@ -22,7 +22,7 @@
         <param name="Target" value="System.out"/>
         <encoder>
             <pattern>
-                logback: %d %-5p - [%t:%X{context-key}] - X-Atlan-Request-Id:[%X{X-Atlan-Request-Id}] - traceId:[%X{trace_id}] - span_id:[%X{span_id}]  ~ %m (%C{1}:%L)%n
+                logback: %d %-5p - [%t:%X{context-key}] - traceId:[%X{trace_id}]  ~ %m (%C{1}:%L)%n
             </pattern>
         </encoder>
         <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
@@ -39,108 +39,143 @@
         <captureKeyValuePairAttributes>true</captureKeyValuePairAttributes>
     </appender>
 
-
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${atlas.log.dir}/${atlas.log.file}</file>
-        <append>true</append>
+    <appender name="consoleAudit" class="ch.qos.logback.core.ConsoleAppender">
+        <param name="Target" value="System.out"/>
+        <filter class="org.apache.atlas.web.filters.MDCFilter">
+            <mdcKey>filter</mdcKey>
+            <mdcValue>atlas-audit</mdcValue>
+        </filter>
         <encoder>
-            <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+            <pattern>
+                logback: %d %-5p - [%t:%X{context-key}] - X-Atlan-Request-Id:[%X{X-Atlan-Request-Id}] - traceId:[%X{trace_id}]  ~ %m (%C{1}:%L)%n
+            </pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${atlas.log.dir}/${atlas.log.file}-%d</fileNamePattern>
-            <maxHistory>20</maxHistory>
-            <cleanHistoryOnStart>true</cleanHistoryOnStart>
-        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
     </appender>
 
-    <appender name="LARGE_MESSAGES" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${atlas.log.dir}/large_messages.log</file>
-        <append>true</append>
+    <appender name="consoleAuthAudit" class="ch.qos.logback.core.ConsoleAppender">
+        <param name="Target" value="System.out"/>
+        <filter class="org.apache.atlas.web.filters.MDCFilter">
+            <mdcKey>filter</mdcKey>
+            <mdcValue>atlas-auth-audit</mdcValue>
+        </filter>
         <encoder>
-            <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+            <pattern>
+                logback: %d %-5p - [%t:%X{context-key}] - X-Atlan-Request-Id:[%X{X-Atlan-Request-Id}] - traceId:[%X{trace_id}]  ~ %m (%C{1}:%L)%n
+            </pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${atlas.log.dir}/large_messages-%d.log</fileNamePattern>
-            <maxHistory>20</maxHistory>
-            <cleanHistoryOnStart>false</cleanHistoryOnStart>
-        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
     </appender>
 
-    <appender name="AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${atlas.log.dir}/audit.log</file>
-        <append>true</append>
+    <appender name="consoleAtlas" class="ch.qos.logback.core.ConsoleAppender">
+        <param name="Target" value="System.out"/>
+        <filter class="org.apache.atlas.web.filters.MDCFilter">
+            <mdcKey>filter</mdcKey>
+            <mdcValue>atlas-application</mdcValue>
+        </filter>
         <encoder>
-            <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+            <pattern>
+                logback: %d %-5p - [%t:%X{context-key}] - X-Atlan-Request-Id:[%X{X-Atlan-Request-Id}] - traceId:[%X{trace_id}]   ~ %m (%C{1}:%L)%n
+            </pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${atlas.log.dir}/audit-%d.log</fileNamePattern>
-            <maxHistory>20</maxHistory>
-            <cleanHistoryOnStart>false</cleanHistoryOnStart>
-        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
     </appender>
 
-    <appender name="TASKS" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${atlas.log.dir}/tasks.log</file>
-        <append>true</append>
+    <appender name="consolePerf" class="ch.qos.logback.core.ConsoleAppender">
+        <param name="Target" value="System.out"/>
+        <filter class="org.apache.atlas.web.filters.MDCFilter">
+            <mdcKey>filter</mdcKey>
+            <mdcValue>atlas-perf</mdcValue>
+        </filter>
         <encoder>
-            <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+            <pattern>
+                logback: %d %-5p - [%t:%X{context-key}] - X-Atlan-Request-Id:[%X{X-Atlan-Request-Id}] - traceId:[%X{trace_id}]  ~ %m (%C{1}:%L)%n
+            </pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${atlas.log.dir}/tasks-%d.log</fileNamePattern>
-            <maxHistory>20</maxHistory>
-            <cleanHistoryOnStart>false</cleanHistoryOnStart>
-        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
     </appender>
 
-    <appender name="METRICS" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${atlas.log.dir}/metrics.log</file>
-        <append>true</append>
+    <appender name="consoleRanger" class="ch.qos.logback.core.ConsoleAppender">
+        <param name="Target" value="System.out"/>
+        <filter class="org.apache.atlas.web.filters.MDCFilter">
+            <mdcKey>filter</mdcKey>
+            <mdcValue>atlas-ranger</mdcValue>
+        </filter>
         <encoder>
-            <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+            <pattern>
+                logback: %d %-5p - [%t:%X{context-key}] - X-Atlan-Request-Id:[%X{X-Atlan-Request-Id}] - traceId:[%X{trace_id}] ~ %m (%C{1}:%L)%n
+            </pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${atlas.log.dir}/metrics-%d.log</fileNamePattern>
-            <maxHistory>20</maxHistory>
-            <cleanHistoryOnStart>false</cleanHistoryOnStart>
-        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
     </appender>
 
-    <appender name="FAILED" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>${atlas.log.dir}/failed.log</file>
-        <append>true</append>
+    <appender name="consoleMetrics" class="ch.qos.logback.core.ConsoleAppender">
+        <param name="Target" value="System.out"/>
+        <filter class="org.apache.atlas.web.filters.MDCFilter">
+            <mdcKey>filter</mdcKey>
+            <mdcValue>atlas-metrics</mdcValue>
+        </filter>
         <encoder>
-            <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+            <pattern>
+                logback: %d %-5p - [%t:%X{context-key}] - X-Atlan-Request-Id:[%X{X-Atlan-Request-Id}] - traceId:[%X{trace_id}]  ~ %m (%C{1}:%L)%n
+            </pattern>
         </encoder>
-        <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-            <fileNamePattern>${atlas.log.dir}/failed-%d.log</fileNamePattern>
-            <maxHistory>20</maxHistory>
-            <cleanHistoryOnStart>false</cleanHistoryOnStart>
-        </rollingPolicy>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
     </appender>
 
-    <!-- Uncomment the following for perf logs -->
-    <!--
-    <appender name="perf_appender" class="ch.qos.logback.core.rolling.RollingFileAppender">
-      <file>${atlas.log.dir}/atlas_perf.log</file>
-      <append>true</append>
-      <encoder>
-        <pattern>%date [%thread] %msg%n</pattern>
-      </encoder>
-      <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
-        <fileNamePattern>${atlas.log.dir}/atlas_perf-%d.log</fileNamePattern>
-        <maxHistory>20</maxHistory>
-        <cleanHistoryOnStart>false</cleanHistoryOnStart>
-      </rollingPolicy>
+    <appender name="consoleTasks" class="ch.qos.logback.core.ConsoleAppender">
+        <param name="Target" value="System.out"/>
+        <filter class="org.apache.atlas.web.filters.MDCFilter">
+            <mdcKey>filter</mdcKey>
+            <mdcValue>atlas-tasks</mdcValue>
+        </filter>
+        <encoder>
+            <pattern>
+                logback: %d %-5p - [%t:%X{context-key}] - X-Atlan-Request-Id:[%X{X-Atlan-Request-Id}] - traceId:[%X{trace_id}]  ~ %m (%C{1}:%L)%n
+            </pattern>
+        </encoder>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
     </appender>
-    -->
-    <logger name="perf_appender" additivity="false" level="debug">
-      <appender-ref ref="console"/>
+
+    <logger name="org.apache.atlas.auth.perf" additivity="false" level="OFF">
+        <appender-ref ref="console"/>
         <appender-ref ref="OpenTelemetry"/>
     </logger>
 
 
+    <logger name="AUTH_AUDIT" additivity="false" level="info">
+        <appender-ref ref="consoleAuthAudit"/>
+        <appender-ref ref="OpenTelemetry"/>
+    </logger>
+
+    <!-- Authz loggers End -->
+
+    <logger name="org.apache.atlas.perf" additivity="false" level="debug">
+        <appender-ref ref="consolePerf"/>
+        <appender-ref ref="OpenTelemetry"/>
+    </logger>
+
     <logger name="org.apache.atlas" additivity="false" level="info">
-        <appender-ref ref="console"/>
+        <appender-ref ref="consoleAtlas"/>
+        <appender-ref ref="OpenTelemetry"/>
+    </logger>
+
+    <logger name="org.apache.ranger" additivity="false" level="warn">
+        <appender-ref ref="consoleRanger"/>
         <appender-ref ref="OpenTelemetry"/>
     </logger>
 
@@ -171,7 +206,7 @@
     </logger>
 
     <logger name="AUDIT" additivity="false" level="info">
-        <appender-ref ref="console"/>
+        <appender-ref ref="consoleAudit"/>
         <appender-ref ref="OpenTelemetry"/>
     </logger>
 
@@ -181,7 +216,7 @@
     </logger>
 
     <logger name="METRICS" additivity="false" level="debug">
-        <appender-ref ref="console"/>
+        <appender-ref ref="consoleMetrics"/>
         <appender-ref ref="OpenTelemetry"/>
     </logger>
 
@@ -191,7 +226,7 @@
     </logger>
 
     <logger name="TASKS" additivity="false" level="info">
-        <appender-ref ref="console"/>
+        <appender-ref ref="consoleTasks"/>
         <appender-ref ref="OpenTelemetry"/>
     </logger>
 
