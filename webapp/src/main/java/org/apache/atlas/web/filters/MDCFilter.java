@@ -1,4 +1,5 @@
-package org.apache.atlas.web.filters;import ch.qos.logback.classic.spi.ILoggingEvent;
+package org.apache.atlas.web.filters;
+import ch.qos.logback.classic.spi.ILoggingEvent;
 
 
 import ch.qos.logback.core.filter.Filter;
@@ -20,11 +21,7 @@ public class MDCFilter extends Filter<ILoggingEvent> {
 
     @Override
     public FilterReply decide(ILoggingEvent event) {
-        // Check if the MDC key-value matches
-        String value = MDC.get(mdcKey);
-        if (value != null && value.equals(mdcValue)) {
-            return FilterReply.ACCEPT;
-        }
-        return FilterReply.DENY;
+        MDC.put(mdcKey, mdcValue);
+        return FilterReply.ACCEPT;
     }
 }
