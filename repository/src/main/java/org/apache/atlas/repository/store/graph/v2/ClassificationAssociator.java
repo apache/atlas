@@ -241,17 +241,14 @@ public class ClassificationAssociator {
             RequestContext.get().setDelayTagNotifications(false);
         }
 
-
         private Map<String, List<AtlasClassification>> validateAndTransfer(AtlasEntityHeader incomingEntityHeader, AtlasEntityHeader entityToBeChanged) throws AtlasBaseException {
             Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
 
-            // Initialize required collections
             Set<String> preExistingClassificationKeys = new HashSet<>();
             List<AtlasClassification> filteredRemoveClassifications = new ArrayList<>();
 
             ListOps<AtlasClassification> listOps = new ListOps<>();
 
-            // First loop: Process pre-existing classifications and removeClassifications
             for (AtlasClassification classification : Optional.ofNullable(entityToBeChanged.getClassifications()).orElse(Collections.emptyList())) {
                 if (entityToBeChanged.getGuid().equals(classification.getEntityGuid())) {
                     String key = generateClassificationComparisonKey(classification);
@@ -272,26 +269,21 @@ public class ClassificationAssociator {
                 }
             }
 
-            // Process incoming classifications for add/update
             List<AtlasClassification> filteredClassifications = Optional.ofNullable(incomingEntityHeader.getAddOrUpdateClassifications())
                     .orElse(Collections.emptyList())
                     .stream()
                     .filter(classification -> classification.getEntityGuid().equals(entityToBeChanged.getGuid()))
                     .collect(Collectors.toList());
 
-            // Filter incoming and existing classifications for updates and additions
             List<AtlasClassification> incomingClassifications = listOps.filter(incomingEntityHeader.getGuid(), filteredClassifications);
             List<AtlasClassification> entityClassifications = listOps.filter(entityToBeChanged.getGuid(), entityToBeChanged.getClassifications());
 
-            // Bucket the operations (add, update, delete)
             bucket(PROCESS_DELETE, operationListMap, filteredRemoveClassifications);
             bucket(PROCESS_UPDATE, operationListMap, listOps.intersect(incomingClassifications, entityClassifications));
             bucket(PROCESS_ADD, operationListMap, listOps.subtract(incomingClassifications, entityClassifications));
 
             return operationListMap;
         }
-
-
 
         private String generateClassificationComparisonKey(AtlasClassification classification) {
             return classification.getEntityGuid() + "|" + classification.getTypeName();
