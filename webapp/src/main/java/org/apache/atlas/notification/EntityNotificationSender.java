@@ -45,11 +45,11 @@ public class EntityNotificationSender<T> {
 
     public EntityNotificationSender(NotificationInterface notificationInterface, boolean sendPostCommit) {
         if (sendPostCommit) {
-            LOG.info("EntityNotificationSender: notifications will be sent after transaction commit");
+            LOG.debug("EntityNotificationSender: notifications will be sent after transaction commit");
 
             this.notificationSender = new PostCommitNotificationSender(notificationInterface);
         } else {
-            LOG.info("EntityNotificationSender: notifications will be sent inline (i.e. not waiting for transaction to commit)");
+            LOG.debug("EntityNotificationSender: notifications will be sent inline (i.e. not waiting for transaction to commit)");
 
             this.notificationSender = new InlineNotificationSender(notificationInterface);
         }

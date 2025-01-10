@@ -81,7 +81,7 @@ public class DeleteHandlerDelegate {
         try {
             Class handlerFromProperties = AtlasRepositoryConfiguration.getDeleteHandlerV1Impl();
 
-            LOG.info("Default delete handler set to: {}", handlerFromProperties.getName());
+            LOG.debug("Default delete handler set to: {}", handlerFromProperties.getName());
 
             ret = (DeleteHandlerV1) handlerFromProperties.getConstructor(AtlasGraph.class, AtlasTypeRegistry.class, TaskManagement.class)
                                     .newInstance(this.graph, typeRegistry, taskManagement);
