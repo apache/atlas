@@ -26,6 +26,8 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -44,7 +46,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class BusinessPolicyRequest implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private List<AssetComplianceInfo> data;
+    private List<AssetComplianceInfo> data = new ArrayList<>();
 
     public List<AssetComplianceInfo> getData() {
         return data;
@@ -66,14 +68,14 @@ public class BusinessPolicyRequest implements Serializable {
 
         private String assetId;
 
-        private Set<String> addCompliantGUIDs;
+        private Set<String> addCompliantGUIDs = new HashSet<>();
 
-        private Set<String> removeCompliantGUIDs;
+        private Set<String> removeCompliantGUIDs = new HashSet<>();
 
 
-        private Set<String> addNonCompliantGUIDs;
+        private Set<String> addNonCompliantGUIDs = new HashSet<>();
 
-        private Set<String> removeNonCompliantGUIDs;
+        private Set<String> removeNonCompliantGUIDs = new HashSet<>();
 
 
         public String getAssetId() {
