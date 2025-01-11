@@ -26,6 +26,7 @@ on:
       - development
       - master
       - lineageondemand
+      - arpitbulklinkingmaster2
 
 jobs:
   build:

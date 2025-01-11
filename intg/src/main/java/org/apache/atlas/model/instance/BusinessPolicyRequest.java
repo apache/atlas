@@ -64,17 +64,16 @@ public class BusinessPolicyRequest implements Serializable {
     public static class AssetComplianceInfo implements Serializable {
         private static final long serialVersionUID = 1L;
 
-        //guids for asset
         private String assetId;
 
-        //guids for complaint rules
-        private Set<String> complaintRules;
+        private Set<String> addCompliantGUIDs;
 
-        //guids for non complaint rules
-        private Set<String> nonComplaintRules;
+        private Set<String> removeCompliantGUIDs;
 
-        //guids for complaint policies
-        private Set<String> complaintPolicies;
+
+        private Set<String> addNonCompliantGUIDs;
+
+        private Set<String> removeNonCompliantGUIDs;
 
 
         public String getAssetId() {
@@ -85,39 +84,48 @@ public class BusinessPolicyRequest implements Serializable {
             this.assetId = assetId;
         }
 
-        public Set<String> getComplaintRules() {
-            return complaintRules;
+        public Set<String> getAddCompliantGUIDs() {
+            return addCompliantGUIDs;
         }
 
-        public void setComplaintRules(Set<String> complaintRules) {
-            this.complaintRules = complaintRules;
+        public void setAddCompliantGUIDs(Set<String> addCompliantGUIDs) {
+            this.addCompliantGUIDs = addCompliantGUIDs;
         }
 
-        public Set<String> getNonComplaintRules() {
-            return nonComplaintRules;
+        public Set<String> getRemoveCompliantGUIDs() {
+            return removeCompliantGUIDs;
         }
 
-        public void setNonComplaintRules(Set<String> nonComplaintRules) {
-            this.nonComplaintRules = nonComplaintRules;
+        public void setRemoveCompliantGUIDs(Set<String> removeCompliantGUIDs) {
+            this.removeCompliantGUIDs = removeCompliantGUIDs;
         }
 
-        public Set<String> getComplaintPolicies() {
-            return complaintPolicies;
+        public Set<String> getAddNonCompliantGUIDs() {
+            return addNonCompliantGUIDs;
         }
 
-        public void setComplaintPolicies(Set<String> complaintPolicies) {
-            this.complaintPolicies = complaintPolicies;
+        public void setAddNonCompliantGUIDs(Set<String> addNonCompliantGUIDs) {
+            this.addNonCompliantGUIDs = addNonCompliantGUIDs;
         }
 
+        public Set<String> getRemoveNonCompliantGUIDs() {
+            return removeNonCompliantGUIDs;
+        }
+
+        public void setRemoveNonCompliantGUIDs(Set<String> removeNonCompliantGUIDs) {
+            this.removeNonCompliantGUIDs = removeNonCompliantGUIDs;
+        }
 
         @Override
         public String toString() {
-            return "AssetComplianceInfo{" +
-                    "assetId='" + assetId + '\'' +
-                    ", complaintRules=" + complaintRules +
-                    ", nonComplaintRules=" + nonComplaintRules +
-                    ", complaintPolicies=" + complaintPolicies +
-                    '}';
+            final StringBuilder sb = new StringBuilder("AssetComplianceInfo{");
+            sb.append("assetId='").append(assetId).append('\'');
+            sb.append(", addCompliantGUIDs=").append(addCompliantGUIDs);
+            sb.append(", removeCompliantGUIDs=").append(removeCompliantGUIDs);
+            sb.append(", addNonCompliantGUIDs=").append(addNonCompliantGUIDs);
+            sb.append(", removeNonCompliantGUIDs=").append(removeNonCompliantGUIDs);
+            sb.append('}');
+            return sb.toString();
         }
     }
 }
