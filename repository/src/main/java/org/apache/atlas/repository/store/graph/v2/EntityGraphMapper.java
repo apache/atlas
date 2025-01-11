@@ -4782,7 +4782,7 @@ public class EntityGraphMapper {
         Set<String> addCompliantGUIDs = data.getAddCompliantGUIDs();
         Set<String> addNonCompliantGUIDs = data.getAddNonCompliantGUIDs();
         Set<String> removeCompliantGUIDs = data.getRemoveCompliantGUIDs();
-        Set<String> removeNonCompliantGUIDs  = data.getAddNonCompliantGUIDs();
+        Set<String> removeNonCompliantGUIDs  = data.getRemoveNonCompliantGUIDs();
 
 
         // Update vertex properties
