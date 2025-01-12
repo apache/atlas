@@ -4779,10 +4779,10 @@ public class EntityGraphMapper {
         Set<String> existingNonCompliant = getVertexPolicies(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS);
 
         // Retrieve new policies
-        Set<String> addCompliantGUIDs = data.getAddCompliantGUIDs();
-        Set<String> addNonCompliantGUIDs = data.getAddNonCompliantGUIDs();
-        Set<String> removeCompliantGUIDs = data.getRemoveCompliantGUIDs();
-        Set<String> removeNonCompliantGUIDs  = data.getRemoveNonCompliantGUIDs();
+        Set<String> addCompliantGUIDs = getOrCreateEmptySet(data.getAddCompliantGUIDs());
+        Set<String> addNonCompliantGUIDs = getOrCreateEmptySet(data.getAddNonCompliantGUIDs());
+        Set<String> removeCompliantGUIDs = getOrCreateEmptySet(data.getRemoveCompliantGUIDs());
+        Set<String> removeNonCompliantGUIDs = getOrCreateEmptySet(data.getRemoveNonCompliantGUIDs());
 
 
         // Update vertex properties
@@ -4812,6 +4812,10 @@ public class EntityGraphMapper {
 
         RequestContext.get().cacheDifferentialEntity(diffEntity);
         return vertex;
+    }
+
+    private static Set<String> getOrCreateEmptySet(Set<String> input) {
+        return input == null ? new HashSet<>() : input;
     }
 
     private void addToAttribute(AtlasVertex vertex, String propertyKey, Set<String> policies) {
