@@ -4779,21 +4779,27 @@ public class EntityGraphMapper {
         Set<String> existingNonCompliant = getVertexPolicies(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS);
 
         // Retrieve new policies
-        Set<String> newCompliantRulesGUIDs = data.getComplaintRules();
-        Set<String> newNonCompliantRulesGUIDs = data.getNonComplaintRules();
-        Set<String> newCompliantPolicyGUIDs = data.getComplaintPolicies();
+        Set<String> addCompliantGUIDs = getOrCreateEmptySet(data.getAddCompliantGUIDs());
+        Set<String> addNonCompliantGUIDs = getOrCreateEmptySet(data.getAddNonCompliantGUIDs());
+        Set<String> removeCompliantGUIDs = getOrCreateEmptySet(data.getRemoveCompliantGUIDs());
+        Set<String> removeNonCompliantGUIDs = getOrCreateEmptySet(data.getRemoveNonCompliantGUIDs());
 
-        // Calculate effective compliant and non-compliant policies
-        Set<String> effectiveCompliantGUIDs = calculateEffectivePolicies(existingCompliant, newCompliantRulesGUIDs, newCompliantPolicyGUIDs);
-        Set<String> effectiveNonCompliantGUIDs = calculateEffectivePolicies(existingNonCompliant, newNonCompliantRulesGUIDs);
 
         // Update vertex properties
-        updateVertexPolicies(vertex, ASSET_POLICY_GUIDS, effectiveCompliantGUIDs);
-        updateVertexPolicies(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, effectiveNonCompliantGUIDs);
+        addToAttribute(vertex, ASSET_POLICY_GUIDS, addCompliantGUIDs);
+        removeFromAttribute(vertex, ASSET_POLICY_GUIDS, removeCompliantGUIDs);
+
+
+        addToAttribute(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, addNonCompliantGUIDs);
+        removeFromAttribute(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, removeNonCompliantGUIDs);
 
         // Count and set policies
+        Set<String> effectiveCompliantGUIDs = getVertexPolicies(vertex, ASSET_POLICY_GUIDS);
+        Set<String> effectiveNonCompliantGUIDs = getVertexPolicies(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS);
+
         int compliantPolicyCount = countPoliciesExcluding(effectiveCompliantGUIDs, "rule");
         int nonCompliantPolicyCount = countPoliciesExcluding(effectiveNonCompliantGUIDs, "rule");
+
         int totalPolicyCount = compliantPolicyCount + nonCompliantPolicyCount;
 
         vertex.setProperty(ASSET_POLICIES_COUNT, totalPolicyCount);
@@ -4807,21 +4813,28 @@ public class EntityGraphMapper {
         return vertex;
     }
 
-    @SafeVarargs
-    private final Set<String> calculateEffectivePolicies(Set<String> existing, Set<String>... additions) {
-        Set<String> effective = new HashSet<>(existing);
-        for (Set<String> addition : additions) {
-            effective.addAll(addition);
-        }
-        return effective;
+    private static Set<String> getOrCreateEmptySet(Set<String> input) {
+        return input == null ? new HashSet<>() : input;
     }
 
-    private void updateVertexPolicies(AtlasVertex vertex, String propertyKey, Set<String> policies) {
-        if(ASSET_POLICY_GUIDS.equals(propertyKey)){
-            policies.forEach(policyGuid -> vertex.setProperty(ASSET_POLICY_GUIDS, policyGuid));
-        }else {
-            policies.forEach(policyGuid -> vertex.setProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyGuid));
-        }
+    private void addToAttribute(AtlasVertex vertex, String propertyKey, Set<String> policies) {
+        String targetProperty = determineTargetProperty(propertyKey);
+        policies.stream()
+                .filter(StringUtils::isNotEmpty)
+                .forEach(policyGuid -> vertex.setProperty(targetProperty, policyGuid));
+    }
+
+    private void removeFromAttribute(AtlasVertex vertex, String propertyKey, Set<String> policies) {
+        String targetProperty = determineTargetProperty(propertyKey);
+        policies.stream()
+                .filter(StringUtils::isNotEmpty)
+                .forEach(policyGuid -> vertex.removePropertyValue(targetProperty, policyGuid));
+    }
+
+    private String determineTargetProperty(String propertyKey) {
+        return ASSET_POLICY_GUIDS.equals(propertyKey)
+                ? ASSET_POLICY_GUIDS
+                : NON_COMPLIANT_ASSET_POLICY_GUIDS;
     }
 
     private int countPoliciesExcluding(Set<String> policies, String substring) {
