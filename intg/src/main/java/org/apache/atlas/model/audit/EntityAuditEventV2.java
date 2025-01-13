@@ -315,8 +315,6 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         sb.append(", detail=").append(detail);
         sb.append(", created=").append(created);
         sb.append(", headers=").append(headers);
-
-
         sb.append('}');
 
         return sb.toString();
