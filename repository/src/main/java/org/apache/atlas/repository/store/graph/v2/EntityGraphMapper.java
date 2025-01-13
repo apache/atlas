@@ -4794,7 +4794,6 @@ public class EntityGraphMapper {
         removeFromAttribute(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS, removeNonCompliantGUIDs);
 
         // Count and set policies
-
         Set<String> effectiveCompliantGUIDs = getVertexPolicies(vertex, ASSET_POLICY_GUIDS);
         Set<String> effectiveNonCompliantGUIDs = getVertexPolicies(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS);
 
@@ -4819,19 +4818,23 @@ public class EntityGraphMapper {
     }
 
     private void addToAttribute(AtlasVertex vertex, String propertyKey, Set<String> policies) {
-        if(ASSET_POLICY_GUIDS.equals(propertyKey)){
-            policies.forEach(policyGuid -> vertex.setProperty(ASSET_POLICY_GUIDS, policyGuid));
-        }else {
-            policies.forEach(policyGuid -> vertex.setProperty(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyGuid));
-        }
+        String targetProperty = determineTargetProperty(propertyKey);
+        policies.stream()
+                .filter(StringUtils::isNotEmpty)
+                .forEach(policyGuid -> vertex.setProperty(targetProperty, policyGuid));
     }
 
     private void removeFromAttribute(AtlasVertex vertex, String propertyKey, Set<String> policies) {
-        if(ASSET_POLICY_GUIDS.equals(propertyKey)){
-            policies.forEach(policyGuid -> vertex.removePropertyValue(ASSET_POLICY_GUIDS, policyGuid));
-        }else {
-            policies.forEach(policyGuid -> vertex.removePropertyValue(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyGuid));
-        }
+        String targetProperty = determineTargetProperty(propertyKey);
+        policies.stream()
+                .filter(StringUtils::isNotEmpty)
+                .forEach(policyGuid -> vertex.removePropertyValue(targetProperty, policyGuid));
+    }
+
+    private String determineTargetProperty(String propertyKey) {
+        return ASSET_POLICY_GUIDS.equals(propertyKey)
+                ? ASSET_POLICY_GUIDS
+                : NON_COMPLIANT_ASSET_POLICY_GUIDS;
     }
 
     private int countPoliciesExcluding(Set<String> policies, String substring) {
