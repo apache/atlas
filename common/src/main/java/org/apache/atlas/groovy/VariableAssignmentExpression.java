@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,18 +25,18 @@ import java.util.List;
  * Groovy statement that assigns a value to a variable.
  */
 public class VariableAssignmentExpression extends AbstractGroovyExpression {
-
-    private String type = null;
-    private String name;
-    private GroovyExpression value;
+    private final String           type;
+    private final String           name;
+    private final GroovyExpression value;
 
     /**
-     * @param string
+     * @param type
+     * @param name
      * @param v
      */
     public VariableAssignmentExpression(String type, String name, GroovyExpression v) {
-        this.type = type;
-        this.name = name;
+        this.type  = type;
+        this.name  = name;
         this.value = v;
     }
 
@@ -52,10 +52,11 @@ public class VariableAssignmentExpression extends AbstractGroovyExpression {
             context.append(type);
             context.append(" ");
         }
+
         context.append(name);
         context.append("=");
-        value.generateGroovy(context);
 
+        value.generateGroovy(context);
     }
 
     @Override
@@ -65,8 +66,6 @@ public class VariableAssignmentExpression extends AbstractGroovyExpression {
 
     @Override
     public GroovyExpression copy(List<GroovyExpression> newChildren) {
-        assert newChildren.size() == 1;
         return new VariableAssignmentExpression(name, newChildren.get(0));
     }
-
 }
