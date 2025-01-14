@@ -73,8 +73,9 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
                 LOG.debug("==> SoftDeleteHandlerV1.deleteEdge({}, {})", GraphHelper.string(edge), force);
             }
             boolean isRelationshipEdge = isRelationshipEdge(edge);
-
-            authorizeRemoveRelation(edge);
+            if(!RequestContext.get().isAuthorisedRemoveRelation()) {
+                authorizeRemoveRelation(edge);
+            }
 
             if (DEFERRED_ACTION_ENABLED && RequestContext.get().getCurrentTask() == null) {
                 if (CollectionUtils.isNotEmpty(getPropagatableClassifications(edge))) {

@@ -514,6 +514,9 @@ public abstract class DeleteHandlerV1 {
 
     public void authorizeRemoveRelation(AtlasEdge edge) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("authoriseRemoveRelation");
+        if(isRequestFromWF()){
+            RequestContext.get().setAuthorisedRemoveRelation(true);
+        }
         AtlasEntityHeader end1Entity, end2Entity;
         String relationShipType = getTypeName(edge);
         AtlasRelationshipDef relationshipDef = typeRegistry.getRelationshipDefByName(relationShipType);
@@ -527,6 +530,15 @@ public abstract class DeleteHandlerV1 {
         AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_REMOVE, relationShipType, end1Entity, end2Entity ));
 
         RequestContext.get().endMetricRecord(metric);
+    }
+
+    private boolean isRequestFromWF() {
+        String workflowID = RequestContext.get().getRequestContextHeaders().getOrDefault("x-atlan-agent-workflow-id", "");
+        boolean ret = workflowID.isEmpty();
+        if(ret){
+            LOG.info("Authorised one time request for workflow with id : {} ", workflowID);
+        }
+        return ret;
     }
 
     public Map<AtlasVertex, List<AtlasVertex>> removeTagPropagation(AtlasEdge edge) throws AtlasBaseException {

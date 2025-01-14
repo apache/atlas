@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.store.graph.v1;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -56,7 +57,9 @@ public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
         }
         boolean isRelationshipEdge = isRelationshipEdge(edge);
 
-        authorizeRemoveRelation(edge);
+        if(!RequestContext.get().isAuthorisedRemoveRelation()) {
+            authorizeRemoveRelation(edge);
+        }
 
         if (DEFERRED_ACTION_ENABLED) {
             createAndQueueClassificationRefreshPropagationTask(edge);
