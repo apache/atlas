@@ -534,7 +534,7 @@ public abstract class DeleteHandlerV1 {
 
     private boolean isRequestFromWF() {
         String workflowID = RequestContext.get().getRequestContextHeaders().getOrDefault("x-atlan-agent-workflow-id", "");
-        boolean ret = workflowID.isEmpty();
+        boolean ret = !workflowID.isEmpty();
         if(ret){
             LOG.info("Authorised one time request for workflow with id : {} ", workflowID);
         }
