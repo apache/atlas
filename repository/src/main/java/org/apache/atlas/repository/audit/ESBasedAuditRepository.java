@@ -88,7 +88,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String DETAIL = "detail";
     private static final String ENTITY = "entity";
     private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
-    private static final Set<String> linkedAttributes = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
+    private static final Set<String> ALLOWED_LINKED_ATTRIBUTES = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
 
     /*
     *    created   → event creation time
@@ -227,10 +227,6 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         List<LinkedHashMap> hits_1 = (List<LinkedHashMap>) hits_0.get("hits");
         Map<String, AtlasEntityHeader> existingLinkedEntities = searchResult.getLinkedEntities();
 
-        if (existingLinkedEntities == null) {
-            existingLinkedEntities = new HashMap<>();
-        }
-
         for (LinkedHashMap hit : hits_1) {
             Map source = (Map) hit.get("_source");
             String entityGuid = (String) source.get(ENTITYID);
@@ -259,7 +255,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 Map<String, Object> attributes = (Map<String, Object>) detail.get("attributes");
 
                 for (Map.Entry<String, Object> entry: attributes.entrySet()) {
-                    if (linkedAttributes.contains(entry.getKey())) {
+                    if (ALLOWED_LINKED_ATTRIBUTES.contains(entry.getKey())) {
                         List<String> guids = (List<String>) entry.getValue();
 
                         if (guids != null && !guids.isEmpty()){
@@ -271,7 +267,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                                             existingLinkedEntities.put(guid, entityHeader);
                                         }
                                     } catch (AtlasBaseException e) {
-                                        throw new AtlasBaseException(e);
+                                        LOG.error("Error while fetching entity header for guid: {}", guid, e);
                                     }
                                 }
                             }

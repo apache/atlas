@@ -11,6 +11,7 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -31,7 +32,7 @@ public class EntityAuditSearchResult implements Serializable, Clearable  {
     private Map<String, Object> aggregations;
     private int count;
     private int totalCount;
-    private Map<String, AtlasEntityHeader> linkedEntities;
+    private Map<String, AtlasEntityHeader> linkedEntities = new HashMap<>(0);
 
     public List<EntityAuditEventV2> getEntityAudits() {
         return entityAudits;
@@ -67,7 +68,7 @@ public class EntityAuditSearchResult implements Serializable, Clearable  {
 
     public Map<String, AtlasEntityHeader> getLinkedEntities() { return linkedEntities; }
 
-    public void setLinkedEntities(Map<String, AtlasEntityHeader> linkedEntities) { this.linkedEntities = linkedEntities; }
+    public void setLinkedEntities(Map<String, AtlasEntityHeader> linkedEntities) { this.linkedEntities = linkedEntities != null ? linkedEntities : new HashMap<>(0); }
 
     @Override
     public boolean equals(Object o) {
@@ -78,12 +79,13 @@ public class EntityAuditSearchResult implements Serializable, Clearable  {
         return Objects.equals(entityAudits, that.entityAudits) &&
                 Objects.equals(aggregations, that.aggregations) &&
                 Objects.equals(count, that.count) &&
-                Objects.equals(totalCount, that.totalCount);
+                Objects.equals(totalCount, that.totalCount) &&
+                Objects.equals(linkedEntities, that.linkedEntities);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(entityAudits, aggregations, count, totalCount);
+        return Objects.hash(entityAudits, aggregations, count, totalCount, linkedEntities);
     }
 
     @Override
