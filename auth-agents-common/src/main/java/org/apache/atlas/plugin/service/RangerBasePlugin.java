@@ -324,6 +324,7 @@ public class RangerBasePlugin {
 						if (defaultSvcPolicies == null) {
 							LOG.error("Could not get default Service Policies. Keeping old policy-engine! This is a FATAL error as the old policy-engine is null!");
 							isNewEngineNeeded = false;
+							throw new RuntimeException("PolicyRefresher("+policies.getServiceName()+").setPolicies: fetched service policies contains no policies or delta and current policy engine is null");
 						} else {
 							defaultSvcPolicies.setPolicyVersion(policies.getPolicyVersion());
 							policies = defaultSvcPolicies;
