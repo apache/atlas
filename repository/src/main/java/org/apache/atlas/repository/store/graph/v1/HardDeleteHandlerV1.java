@@ -57,9 +57,7 @@ public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
         }
         boolean isRelationshipEdge = isRelationshipEdge(edge);
 
-        if(!RequestContext.get().isAuthorisedRemoveRelation()) {
-            authorizeRemoveRelation(edge);
-        }
+        authorizeRemoveRelation(edge);
 
         if (DEFERRED_ACTION_ENABLED) {
             createAndQueueClassificationRefreshPropagationTask(edge);
