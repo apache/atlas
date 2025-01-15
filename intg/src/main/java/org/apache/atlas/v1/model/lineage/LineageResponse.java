@@ -19,19 +19,21 @@ package org.apache.atlas.v1.model.lineage;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.v1.model.instance.Struct;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class LineageResponse {
+public class LineageResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String requestId;
     private Struct results;
 
@@ -40,7 +42,7 @@ public class LineageResponse {
 
     public LineageResponse(final LineageResponse other) {
         this.requestId = other.requestId;
-        this.results = other.results;
+        this.results   = other.results;
     }
 
     public Struct getResults() {
@@ -60,17 +62,21 @@ public class LineageResponse {
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        final LineageResponse that = (LineageResponse) o;
-        return Objects.equals(requestId, that.requestId) &&
-                Objects.equals(results, that.results);
+    public int hashCode() {
+        return Objects.hash(requestId, results);
     }
 
     @Override
-    public int hashCode() {
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
-        return Objects.hash(requestId, results);
+        LineageResponse that = (LineageResponse) o;
+
+        return Objects.equals(requestId, that.requestId) &&
+                Objects.equals(results, that.results);
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,34 +21,34 @@ package org.apache.atlas.v1.model.instance;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.commons.collections.MapUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.ALWAYS)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.ALWAYS)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class Struct implements Serializable {
-    private static final long serialVersionUID = 1L;
-
     public static final String JSON_CLASS_STRUCT = "org.apache.atlas.typesystem.json.InstanceSerialization$_Struct";
-
+    private static final long serialVersionUID = 1L;
     private String              typeName;
     private Map<String, Object> values;
-
 
     public Struct() {
     }
@@ -133,32 +133,9 @@ public class Struct implements Serializable {
         }
     }
 
-    private Object normalizeAttributeValue(Object value) {
-        if (value instanceof Map) {
-            Map    mapValue  = (Map) value;
-            String jsonClass = (String)mapValue.get("jsonClass");
-
-            if (jsonClass != null) {
-                if (Id.JSON_CLASS_ID.equals(jsonClass)) {
-                    value = new Id(mapValue);
-                } else if (Struct.JSON_CLASS_STRUCT.equals(jsonClass)) {
-                    value = new Struct(mapValue);
-                } else if (Referenceable.JSON_CLASS_REFERENCE.equals(jsonClass)) {
-                    value = new Referenceable(mapValue);
-                }
-            }
-        } else if (value instanceof List) {
-            List<Object> listValue       = (List) value;
-            List<Object> normalizedValue = new ArrayList<>(listValue.size());
-
-            for (Object val : listValue) {
-                normalizedValue.add(normalizeAttributeValue(val));
-            }
-
-            value = normalizedValue;
-        }
-
-        return value;
+    @Override
+    public int hashCode() {
+        return Objects.hash(typeName, values);
     }
 
     @Override
@@ -171,15 +148,10 @@ public class Struct implements Serializable {
             return false;
         }
 
-        Struct obj = (Struct)o;
+        Struct obj = (Struct) o;
 
         return Objects.equals(typeName, obj.typeName) &&
-               Objects.equals(values, obj.values);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(typeName, values);
+                Objects.equals(values, obj.values);
     }
 
     @Override
@@ -200,5 +172,33 @@ public class Struct implements Serializable {
         sb.append("}");
 
         return sb;
+    }
+
+    private Object normalizeAttributeValue(Object value) {
+        if (value instanceof Map) {
+            Map<String, Object> mapValue  = (Map<String, Object>) value;
+            String              jsonClass = (String) mapValue.get("jsonClass");
+
+            if (jsonClass != null) {
+                if (Id.JSON_CLASS_ID.equals(jsonClass)) {
+                    value = new Id(mapValue);
+                } else if (Struct.JSON_CLASS_STRUCT.equals(jsonClass)) {
+                    value = new Struct(mapValue);
+                } else if (Referenceable.JSON_CLASS_REFERENCE.equals(jsonClass)) {
+                    value = new Referenceable(mapValue);
+                }
+            }
+        } else if (value instanceof List) {
+            List<Object> listValue       = (List<Object>) value;
+            List<Object> normalizedValue = new ArrayList<>(listValue.size());
+
+            for (Object val : listValue) {
+                normalizedValue.add(normalizeAttributeValue(val));
+            }
+
+            value = normalizedValue;
+        }
+
+        return value;
     }
 }

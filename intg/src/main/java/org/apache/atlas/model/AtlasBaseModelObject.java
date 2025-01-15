@@ -29,16 +29,16 @@ public abstract class AtlasBaseModelObject implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @JsonIgnore
-    private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
+    private static final AtomicLong s_nextId = new AtomicLong(System.nanoTime());
 
     private String guid;
 
-    protected void init() {
-        setGuid("-" + Long.toString(s_nextId.incrementAndGet()));
-    }
-
     protected AtlasBaseModelObject() {
         init();
+    }
+
+    public AtlasBaseModelObject(final AtlasBaseModelObject other) {
+        this.guid = other.guid;
     }
 
     public String getGuid() {
@@ -49,8 +49,22 @@ public abstract class AtlasBaseModelObject implements Serializable {
         this.guid = guid;
     }
 
-    public AtlasBaseModelObject(final AtlasBaseModelObject other) {
-        this.guid = other.guid;
+    @Override
+    public int hashCode() {
+        return Objects.hash(guid);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        } else if (!(o instanceof AtlasBaseModelObject)) {
+            return false;
+        }
+
+        AtlasBaseModelObject that = (AtlasBaseModelObject) o;
+
+        return Objects.equals(guid, that.guid);
     }
 
     @Override
@@ -64,18 +78,8 @@ public abstract class AtlasBaseModelObject implements Serializable {
         return sb.toString();
     }
 
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AtlasBaseModelObject)) return false;
-        final AtlasBaseModelObject that = (AtlasBaseModelObject) o;
-        return Objects.equals(guid, that.guid);
-    }
-
-    @Override
-    public int hashCode() {
-
-        return Objects.hash(guid);
+    protected void init() {
+        setGuid("-" + s_nextId.incrementAndGet());
     }
 
     protected abstract StringBuilder toString(StringBuilder sb);

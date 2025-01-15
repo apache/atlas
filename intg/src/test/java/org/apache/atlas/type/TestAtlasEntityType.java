@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,14 +16,6 @@
  * limitations under the License.
  */
 package org.apache.atlas.type;
-
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -37,8 +29,20 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class TestAtlasEntityType {
     private static final String TYPE_TABLE       = "my_table";
@@ -53,34 +57,6 @@ public class TestAtlasEntityType {
     private final AtlasEntityType entityType;
     private final List<Object>    validValues   = new ArrayList<>();
     private final List<Object>    invalidValues = new ArrayList<>();
-
-    {
-        entityType  = getEntityType(ModelTestUtil.getEntityDefWithSuperTypes());
-
-        AtlasEntity         invalidValue1 = entityType.createDefaultValue();
-        AtlasEntity         invalidValue2 = entityType.createDefaultValue();
-        Map<String, Object> invalidValue3 = entityType.createDefaultValue().getAttributes();
-
-        // invalid value for int
-        invalidValue1.setAttribute(ModelTestUtil.getDefaultAttributeName(AtlasBaseTypeDef.ATLAS_TYPE_INT), "xyz");
-        // invalid value for date
-        invalidValue2.setAttribute(ModelTestUtil.getDefaultAttributeName(AtlasBaseTypeDef.ATLAS_TYPE_DATE), "xyz");
-        // invalid value for bigint
-        invalidValue3.put(ModelTestUtil.getDefaultAttributeName(AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER), "xyz");
-
-        validValues.add(null);
-        validValues.add(entityType.createDefaultValue());
-        validValues.add(entityType.createDefaultValue().getAttributes()); // Map<String, Object>
-        invalidValues.add(invalidValue1);
-        invalidValues.add(invalidValue2);
-        invalidValues.add(invalidValue3);
-        invalidValues.add(new AtlasEntity());             // no values for mandatory attributes
-        invalidValues.add(new HashMap<>()); // no values for mandatory attributes
-        invalidValues.add(1);               // incorrect datatype
-        invalidValues.add(new HashSet());   // incorrect datatype
-        invalidValues.add(new ArrayList()); // incorrect datatype
-        invalidValues.add(new String[] {}); // incorrect datatype
-    }
 
     @Test
     public void testEntityTypeDefaultValue() {
@@ -130,7 +106,7 @@ public class TestAtlasEntityType {
 
         for (Object value : invalidValues) {
             assertFalse(entityType.validateValue(value, "testObj", messages));
-            assertTrue(messages.size() > 0, "value=" + value);
+            assertFalse(messages.isEmpty(), "value=" + value);
             messages.clear();
         }
     }
@@ -217,7 +193,7 @@ public class TestAtlasEntityType {
 
             ttr.addTypes(entityDefs);
             //options are read in the table,
-            AtlasEntityType typeTable  = ttr.getEntityTypeByName(TYPE_TABLE);
+            AtlasEntityType typeTable = ttr.getEntityTypeByName(TYPE_TABLE);
 
             // Expect attributes in this order: ATTR_DESCRIPTION, ATTR_OWNER, ATTR_NAME, ATTR_LOCATION
             assertEquals(typeTable.getDynEvalAttributes().get(0).getName(), ATTR_DESCRIPTION);
@@ -240,7 +216,7 @@ public class TestAtlasEntityType {
         AtlasTransientTypeRegistry ttr          = null;
         boolean                    commit       = false;
         List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
-        AtlasErrorCode             errorCode   = null;
+        AtlasErrorCode             errorCode    = null;
 
         entityDefs.add(createTableEntityDefWithOwnedRefOnInvalidType());
 
@@ -265,7 +241,7 @@ public class TestAtlasEntityType {
         AtlasTransientTypeRegistry ttr          = null;
         boolean                    commit       = false;
         List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
-        AtlasErrorCode             errorCode   = null;
+        AtlasErrorCode             errorCode    = null;
 
         entityDefs.add(createTableEntityDef());
         entityDefs.add(createColumnEntityDefWithMissingInverseAttribute());
@@ -291,7 +267,7 @@ public class TestAtlasEntityType {
         AtlasTransientTypeRegistry ttr          = null;
         boolean                    commit       = false;
         List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
-        AtlasErrorCode             errorCode   = null;
+        AtlasErrorCode             errorCode    = null;
 
         entityDefs.add(createTableEntityDef());
         entityDefs.add(createColumnEntityDefWithInvaidAttributeTypeForInverseAttribute());
@@ -317,7 +293,7 @@ public class TestAtlasEntityType {
         AtlasTransientTypeRegistry ttr          = null;
         boolean                    commit       = false;
         List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
-        AtlasErrorCode             errorCode   = null;
+        AtlasErrorCode             errorCode    = null;
 
         entityDefs.add(createTableEntityDef());
         entityDefs.add(createColumnEntityDefWithInvalidInverseAttributeType());
@@ -343,7 +319,7 @@ public class TestAtlasEntityType {
         AtlasTransientTypeRegistry ttr          = null;
         boolean                    commit       = false;
         List<AtlasEntityDef>       entityDefs   = new ArrayList<>();
-        AtlasErrorCode             errorCode   = null;
+        AtlasErrorCode             errorCode    = null;
 
         entityDefs.add(createTableEntityDef());
         entityDefs.add(createColumnEntityDefWithNonExistingInverseAttribute());
@@ -360,7 +336,173 @@ public class TestAtlasEntityType {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commit);
         }
         assertEquals(errorCode, AtlasErrorCode.CONSTRAINT_INVERSE_REF_INVERSE_ATTRIBUTE_NON_EXISTING,
-                     "expected invalid constraint failure - non-existing refAttribute");
+                "expected invalid constraint failure - non-existing refAttribute");
+    }
+
+    @Test
+    public void testInvalidAttributeNameForSubtype() throws AtlasBaseException {
+        AtlasTypeRegistry          registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr      = registry.lockTypeRegistryForUpdate();
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasEntityDef                   entityDefParent           = new AtlasEntityDef("entityDefParent", "entityDefParent desc", null, Collections.singletonList(attrDefForEntityDefParent));
+        ttr.addType(entityDefParent);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefChild = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasEntityDef                   entityDefChild           = new AtlasEntityDef("entityDefChild", "entityDefChild desc", null, Collections.singletonList(attrDefForEntityDefChild), Collections.singleton("entityDefParent"));
+        try {
+            ttr.addType(entityDefChild);
+            fail("Parent attribute name and Child attribute name should not be the same");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
+        } finally {
+            registry.releaseTypeRegistryForUpdate(ttr, false);
+        }
+    }
+
+    @Test
+    public void testInvalidAttributeNameForSubtypeUpdate() throws AtlasBaseException {
+        AtlasTypeRegistry          registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr      = registry.lockTypeRegistryForUpdate();
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasEntityDef                   entityDefParent           = new AtlasEntityDef("entityDefParent", "entityDefParent desc", null, Collections.singletonList(attrDefForEntityDefParent));
+        ttr.addType(entityDefParent);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefChild = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasEntityDef                   entityDefChild           = new AtlasEntityDef("entityDefChild", "entityDefChild desc", null, Collections.singletonList(attrDefForEntityDefChild));
+        ttr.addType(entityDefChild);
+
+        Set<String> superTypes = entityDefChild.getSuperTypes();
+        assertEquals(superTypes.size(), 0);
+
+        superTypes.add(entityDefParent.getName());
+        entityDefChild.setSuperTypes(superTypes);
+
+        try {
+            ttr.updateType(entityDefChild);
+            fail("Parent attribute name and Child attribute name should not be the same");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
+        } finally {
+            registry.releaseTypeRegistryForUpdate(ttr, false);
+        }
+    }
+
+    @Test
+    public void testInvalidAttributeNameForSubtypeForMultipleParents() throws AtlasBaseException {
+        AtlasTypeRegistry          registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr      = registry.lockTypeRegistryForUpdate();
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasEntityDef                   entityDefParent           = new AtlasEntityDef("entityDefParent", "entityDefParent desc", null, Collections.singletonList(attrDefForEntityDefParent));
+        ttr.addType(entityDefParent);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent2 = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasEntityDef                   entityDefParent2           = new AtlasEntityDef("entityDefParent2", "entityDefParent2 desc", null, Collections.singletonList(attrDefForEntityDefParent2));
+        ttr.addType(entityDefParent2);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefChild = new AtlasStructDef.AtlasAttributeDef("attributeC", "string");
+        Set<String>                      superTypes               = new HashSet<>();
+        superTypes.add("entityDefParent");
+        superTypes.add("entityDefParent2");
+        AtlasEntityDef entityDefChild = new AtlasEntityDef("entityDefChild", "entityDefChild desc", null, Collections.singletonList(attrDefForEntityDefChild), superTypes);
+
+        try {
+            ttr.addType(entityDefChild);
+            fail("Child type cannot have two Parent types having same attribute names");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
+        } finally {
+            registry.releaseTypeRegistryForUpdate(ttr, false);
+        }
+    }
+
+    @Test
+    public void testInvalidAttributeNameForSubtypeForMultipleParents_Update() throws AtlasBaseException {
+        AtlasTypeRegistry          registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr      = registry.lockTypeRegistryForUpdate();
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasEntityDef                   entityDefParent           = new AtlasEntityDef("entityDefParent", "entityDefParent desc", null, Collections.singletonList(attrDefForEntityDefParent));
+        ttr.addType(entityDefParent);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent2 = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasEntityDef                   entityDefParent2           = new AtlasEntityDef("entityDefParent2", "entityDefParent2 desc", null, Collections.singletonList(attrDefForEntityDefParent2));
+        ttr.addType(entityDefParent2);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefChild = new AtlasStructDef.AtlasAttributeDef("attributeC", "string");
+        AtlasEntityDef                   entityDefChild           = new AtlasEntityDef("entityDefChild", "entityDefChild desc", null, Collections.singletonList(attrDefForEntityDefChild), Collections.singleton("entityDefParent"));
+        ttr.addType(entityDefChild);
+
+        Set<String> superTypes = entityDefChild.getSuperTypes();
+        assertEquals(superTypes.size(), 1);
+
+        superTypes.add(entityDefParent2.getName());
+        entityDefChild.setSuperTypes(superTypes);
+        try {
+            ttr.updateType(entityDefChild);
+            fail("Child type cannot have two Parent types having same attribute names");
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
+        } finally {
+            registry.releaseTypeRegistryForUpdate(ttr, false);
+        }
+    }
+
+    @Test
+    public void testSkipInvalidAttributeNameForSubtype() throws AtlasBaseException {
+        AtlasTypeRegistry          registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr      = registry.lockTypeRegistryForUpdate();
+        AtlasStructType.skipCheckForParentChildAttributeName = true;
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasEntityDef                   entityDefParent           = new AtlasEntityDef("entityDefParent", "entityDefParent desc", null, Collections.singletonList(attrDefForEntityDefParent));
+        ttr.addType(entityDefParent);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefChild = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasEntityDef                   entityDefChild           = new AtlasEntityDef("entityDefChild", "entityDefChild desc", null, Collections.singletonList(attrDefForEntityDefChild), Collections.singleton("entityDefParent"));
+
+        try {
+            ttr.addType(entityDefChild);
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
+            fail("Parent attribute name and Child attribute name should be allowed to be same when skip-check flag is true");
+        } finally {
+            AtlasStructType.skipCheckForParentChildAttributeName = false;
+            registry.releaseTypeRegistryForUpdate(ttr, false);
+        }
+    }
+
+    @Test
+    public void testSkipInvalidAttributeNameForSubtypeForMultipleParents() throws AtlasBaseException {
+        AtlasTypeRegistry          registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr      = registry.lockTypeRegistryForUpdate();
+        AtlasStructType.skipCheckForParentChildAttributeName = true;
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasEntityDef                   entityDefParent           = new AtlasEntityDef("entityDefParent", "entityDefParent desc", null, Collections.singletonList(attrDefForEntityDefParent));
+        ttr.addType(entityDefParent);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent2 = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
+        AtlasEntityDef                   entityDefParent2           = new AtlasEntityDef("entityDefParent2", "entityDefParent2 desc", null, Collections.singletonList(attrDefForEntityDefParent2));
+        ttr.addType(entityDefParent2);
+
+        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefChild = new AtlasStructDef.AtlasAttributeDef("attributeC", "string");
+        Set<String>                      superTypes               = new HashSet<>();
+        superTypes.add("entityDefParent");
+        superTypes.add("entityDefParent2");
+        AtlasEntityDef entityDefChild = new AtlasEntityDef("entityDefChild", "entityDefChild desc", null, Collections.singletonList(attrDefForEntityDefChild), superTypes);
+
+        try {
+            ttr.addType(entityDefChild);
+        } catch (AtlasBaseException e) {
+            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
+            fail("Parent attribute name and Child attribute name should be allowed to be same when skip-check flag is true");
+        } finally {
+            AtlasStructType.skipCheckForParentChildAttributeName = false;
+            registry.releaseTypeRegistryForUpdate(ttr, false);
+        }
     }
 
     private static AtlasEntityType getEntityType(AtlasEntityDef entityDef) {
@@ -372,10 +514,10 @@ public class TestAtlasEntityType {
     }
 
     private AtlasEntityDef createTableEntityDef() {
-        AtlasEntityDef    table       = new AtlasEntityDef(TYPE_TABLE);
-        AtlasAttributeDef attrName    = new AtlasAttributeDef(ATTR_NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING);
+        AtlasEntityDef    table    = new AtlasEntityDef(TYPE_TABLE);
+        AtlasAttributeDef attrName = new AtlasAttributeDef(ATTR_NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING);
         AtlasAttributeDef attrColumns = new AtlasAttributeDef(ATTR_COLUMNS,
-                                                              AtlasBaseTypeDef.getArrayTypeName(TYPE_COLUMN));
+                AtlasBaseTypeDef.getArrayTypeName(TYPE_COLUMN));
 
         attrColumns.addConstraint(new AtlasConstraintDef(AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF));
 
@@ -397,11 +539,11 @@ public class TestAtlasEntityType {
         table.addAttribute(attrColumns);
         table.addAttribute(attrOwner);
 
-        Map<String,String> options = new HashMap<>();
-        String             key     = "dynAttribute:" + ATTR_OWNER;
-        String             value   = "{" + ATTR_NAME + "}";
+        Map<String, String> options = new HashMap<>();
+        String              key     = "dynAttribute:" + ATTR_OWNER;
+        String              value   = "{" + ATTR_NAME + "}";
 
-        options.put(key,value);
+        options.put(key, value);
 
         table.setOptions(options);
 
@@ -420,7 +562,7 @@ public class TestAtlasEntityType {
         table.addAttribute(attrDescription);
         table.addAttribute(attrLocation);
 
-        Map<String,String> options = new HashMap<>();
+        Map<String, String> options = new HashMap<>();
 
         String key1   = "dynAttribute:" + ATTR_OWNER;
         String value1 = "{" + ATTR_DESCRIPTION + "}";
@@ -517,169 +659,31 @@ public class TestAtlasEntityType {
         return column;
     }
 
-    @Test
-    public void testInvalidAttributeNameForSubtype() throws AtlasBaseException {
-        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
-        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
+    {
+        entityType = getEntityType(ModelTestUtil.getEntityDefWithSuperTypes());
 
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasEntityDef entityDefParent = new AtlasEntityDef("entityDefParent", "entityDefParent desc", null, Collections.singletonList(attrDefForEntityDefParent));
-        ttr.addType(entityDefParent);
+        AtlasEntity         invalidValue1 = entityType.createDefaultValue();
+        AtlasEntity         invalidValue2 = entityType.createDefaultValue();
+        Map<String, Object> invalidValue3 = entityType.createDefaultValue().getAttributes();
 
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefChild = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasEntityDef entityDefChild = new AtlasEntityDef("entityDefChild", "entityDefChild desc", null, Collections.singletonList(attrDefForEntityDefChild), Collections.singleton("entityDefParent"));
-        try {
-            ttr.addType(entityDefChild);
-            fail("Parent attribute name and Child attribute name should not be the same");
-        } catch (AtlasBaseException e) {
-            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
-        } finally {
-            registry.releaseTypeRegistryForUpdate(ttr, false);
-        }
-    }
+        // invalid value for int
+        invalidValue1.setAttribute(ModelTestUtil.getDefaultAttributeName(AtlasBaseTypeDef.ATLAS_TYPE_INT), "xyz");
+        // invalid value for date
+        invalidValue2.setAttribute(ModelTestUtil.getDefaultAttributeName(AtlasBaseTypeDef.ATLAS_TYPE_DATE), "xyz");
+        // invalid value for bigint
+        invalidValue3.put(ModelTestUtil.getDefaultAttributeName(AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER), "xyz");
 
-    @Test
-    public void testInvalidAttributeNameForSubtypeUpdate() throws AtlasBaseException {
-        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
-        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
-
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasEntityDef entityDefParent = new AtlasEntityDef("entityDefParent", "entityDefParent desc", null, Collections.singletonList(attrDefForEntityDefParent));
-        ttr.addType(entityDefParent);
-
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefChild = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasEntityDef entityDefChild = new AtlasEntityDef("entityDefChild", "entityDefChild desc", null, Collections.singletonList(attrDefForEntityDefChild));
-        ttr.addType(entityDefChild);
-
-        Set<String> superTypes = entityDefChild.getSuperTypes();
-        assertEquals(superTypes.size(), 0);
-
-        superTypes.add(entityDefParent.getName());
-        entityDefChild.setSuperTypes(superTypes);
-
-        try {
-            ttr.updateType(entityDefChild);
-            fail("Parent attribute name and Child attribute name should not be the same");
-        } catch (AtlasBaseException e) {
-            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
-        } finally {
-            registry.releaseTypeRegistryForUpdate(ttr, false);
-        }
-    }
-
-    @Test
-    public void testInvalidAttributeNameForSubtypeForMultipleParents() throws AtlasBaseException {
-        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
-        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
-
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasEntityDef entityDefParent = new AtlasEntityDef("entityDefParent", "entityDefParent desc", null, Collections.singletonList(attrDefForEntityDefParent));
-        ttr.addType(entityDefParent);
-
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent2 = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasEntityDef entityDefParent2 = new AtlasEntityDef("entityDefParent2", "entityDefParent2 desc", null, Collections.singletonList(attrDefForEntityDefParent2));
-        ttr.addType(entityDefParent2);
-
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefChild = new AtlasStructDef.AtlasAttributeDef("attributeC", "string");
-        Set<String> superTypes = new HashSet<>();
-        superTypes.add("entityDefParent");
-        superTypes.add("entityDefParent2");
-        AtlasEntityDef entityDefChild = new AtlasEntityDef("entityDefChild", "entityDefChild desc", null, Collections.singletonList(attrDefForEntityDefChild), superTypes);
-
-        try {
-            ttr.addType(entityDefChild);
-            fail("Child type cannot have two Parent types having same attribute names");
-        } catch (AtlasBaseException e) {
-            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
-        } finally {
-            registry.releaseTypeRegistryForUpdate(ttr, false);
-        }
-    }
-
-    @Test
-    public void testInvalidAttributeNameForSubtypeForMultipleParents_Update() throws AtlasBaseException {
-        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
-        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
-
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasEntityDef entityDefParent = new AtlasEntityDef("entityDefParent", "entityDefParent desc", null, Collections.singletonList(attrDefForEntityDefParent));
-        ttr.addType(entityDefParent);
-
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent2 = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasEntityDef entityDefParent2 = new AtlasEntityDef("entityDefParent2", "entityDefParent2 desc", null, Collections.singletonList(attrDefForEntityDefParent2));
-        ttr.addType(entityDefParent2);
-
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefChild = new AtlasStructDef.AtlasAttributeDef("attributeC", "string");
-        AtlasEntityDef entityDefChild = new AtlasEntityDef("entityDefChild", "entityDefChild desc", null, Collections.singletonList(attrDefForEntityDefChild), Collections.singleton("entityDefParent"));
-        ttr.addType(entityDefChild);
-
-        Set<String> superTypes = entityDefChild.getSuperTypes();
-        assertEquals(superTypes.size(), 1);
-
-        superTypes.add(entityDefParent2.getName());
-        entityDefChild.setSuperTypes(superTypes);
-        try {
-            ttr.updateType(entityDefChild);
-            fail("Child type cannot have two Parent types having same attribute names");
-        } catch (AtlasBaseException e) {
-            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
-        } finally {
-            registry.releaseTypeRegistryForUpdate(ttr, false);
-        }
-    }
-
-    @Test
-    public void testSkipInvalidAttributeNameForSubtype() throws AtlasBaseException {
-        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
-        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
-        AtlasStructType.skipCheckForParentChildAttributeName = true;
-
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasEntityDef entityDefParent = new AtlasEntityDef("entityDefParent", "entityDefParent desc", null, Collections.singletonList(attrDefForEntityDefParent));
-        ttr.addType(entityDefParent);
-
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefChild = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasEntityDef entityDefChild = new AtlasEntityDef("entityDefChild", "entityDefChild desc", null, Collections.singletonList(attrDefForEntityDefChild), Collections.singleton("entityDefParent"));
-
-        try {
-            ttr.addType(entityDefChild);
-        } catch (AtlasBaseException e) {
-            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
-            fail("Parent attribute name and Child attribute name should be allowed to be same when skip-check flag is true");
-        } finally {
-            AtlasStructType.skipCheckForParentChildAttributeName = false;
-            registry.releaseTypeRegistryForUpdate(ttr, false);
-        }
-    }
-
-    @Test
-    public void testSkipInvalidAttributeNameForSubtypeForMultipleParents() throws AtlasBaseException {
-        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
-        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
-        AtlasStructType.skipCheckForParentChildAttributeName = true;
-
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasEntityDef entityDefParent = new AtlasEntityDef("entityDefParent", "entityDefParent desc", null, Collections.singletonList(attrDefForEntityDefParent));
-        ttr.addType(entityDefParent);
-
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefParent2 = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasEntityDef entityDefParent2 = new AtlasEntityDef("entityDefParent2", "entityDefParent2 desc", null, Collections.singletonList(attrDefForEntityDefParent2));
-        ttr.addType(entityDefParent2);
-
-        AtlasStructDef.AtlasAttributeDef attrDefForEntityDefChild = new AtlasStructDef.AtlasAttributeDef("attributeC", "string");
-        Set<String> superTypes = new HashSet<>();
-        superTypes.add("entityDefParent");
-        superTypes.add("entityDefParent2");
-        AtlasEntityDef entityDefChild = new AtlasEntityDef("entityDefChild", "entityDefChild desc", null, Collections.singletonList(attrDefForEntityDefChild), superTypes);
-
-        try {
-            ttr.addType(entityDefChild);
-        } catch (AtlasBaseException e) {
-            assertEquals(e.getAtlasErrorCode().getErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_ALREADY_EXISTS_IN_ANOTHER_PARENT_TYPE.getErrorCode());
-            fail("Parent attribute name and Child attribute name should be allowed to be same when skip-check flag is true");
-        } finally {
-            AtlasStructType.skipCheckForParentChildAttributeName = false;
-            registry.releaseTypeRegistryForUpdate(ttr, false);
-        }
+        validValues.add(null);
+        validValues.add(entityType.createDefaultValue());
+        validValues.add(entityType.createDefaultValue().getAttributes()); // Map<String, Object>
+        invalidValues.add(invalidValue1);
+        invalidValues.add(invalidValue2);
+        invalidValues.add(invalidValue3);
+        invalidValues.add(new AtlasEntity());             // no values for mandatory attributes
+        invalidValues.add(new HashMap<>()); // no values for mandatory attributes
+        invalidValues.add(1);               // incorrect datatype
+        invalidValues.add(new HashSet<>());   // incorrect datatype
+        invalidValues.add(new ArrayList<>()); // incorrect datatype
+        invalidValues.add(new String[] {}); // incorrect datatype
     }
 }

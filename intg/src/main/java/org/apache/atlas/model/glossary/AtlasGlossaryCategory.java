@@ -28,6 +28,8 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
 @AtlasJSON
 public class AtlasGlossaryCategory extends AtlasGlossaryBaseObject {
     // Inherited attributes from relations
@@ -45,10 +47,11 @@ public class AtlasGlossaryCategory extends AtlasGlossaryBaseObject {
 
     public AtlasGlossaryCategory(final AtlasGlossaryCategory other) {
         super(other);
-        this.anchor = other.anchor;
-        this.parentCategory = other.parentCategory;
+
+        this.anchor             = other.anchor;
+        this.parentCategory     = other.parentCategory;
         this.childrenCategories = other.childrenCategories;
-        this.terms = other.terms;
+        this.terms              = other.terms;
     }
 
     public AtlasGlossaryHeader getAnchor() {
@@ -85,11 +88,14 @@ public class AtlasGlossaryCategory extends AtlasGlossaryBaseObject {
 
     @JsonIgnore
     public void addChild(AtlasRelatedCategoryHeader child) {
-        Set<AtlasRelatedCategoryHeader> children = this.childrenCategories ;
+        Set<AtlasRelatedCategoryHeader> children = this.childrenCategories;
+
         if (children == null) {
             children = new HashSet<>();
         }
+
         children.add(child);
+
         setChildrenCategories(children);
     }
 
@@ -103,10 +109,13 @@ public class AtlasGlossaryCategory extends AtlasGlossaryBaseObject {
     @JsonIgnore
     public void addTerm(AtlasRelatedTermHeader term) {
         Set<AtlasRelatedTermHeader> terms = this.terms;
+
         if (terms == null) {
             terms = new HashSet<>();
         }
+
         terms.add(term);
+
         setTerms(terms);
     }
 
@@ -120,8 +129,8 @@ public class AtlasGlossaryCategory extends AtlasGlossaryBaseObject {
     @JsonIgnore
     @Override
     public void setAttribute(String attrName, String attrVal) {
-        Objects.requireNonNull(attrName, "AtlasGlossary attribute name");
-        switch(attrName) {
+        requireNonNull(attrName, "AtlasGlossary attribute name");
+        switch (attrName) {
             case "name":
                 setName(attrVal);
                 break;
@@ -137,6 +146,29 @@ public class AtlasGlossaryCategory extends AtlasGlossaryBaseObject {
     }
 
     @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        } else if (!(o instanceof AtlasGlossaryCategory)) {
+            return false;
+        } else if (!super.equals(o)) {
+            return false;
+        }
+
+        AtlasGlossaryCategory category = (AtlasGlossaryCategory) o;
+
+        return Objects.equals(anchor, category.anchor) &&
+                Objects.equals(parentCategory, category.parentCategory) &&
+                Objects.equals(childrenCategories, category.childrenCategories) &&
+                Objects.equals(terms, category.terms);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), anchor, parentCategory, childrenCategories, terms);
+    }
+
+    @Override
     protected StringBuilder toString(final StringBuilder sb) {
         sb.append(", anchor=").append(anchor);
         sb.append(", parentCategory=").append(parentCategory);
@@ -144,23 +176,5 @@ public class AtlasGlossaryCategory extends AtlasGlossaryBaseObject {
         sb.append(", terms=").append(terms);
 
         return sb;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AtlasGlossaryCategory)) return false;
-        if (!super.equals(o)) return false;
-        final AtlasGlossaryCategory category = (AtlasGlossaryCategory) o;
-        return Objects.equals(anchor, category.anchor) &&
-                       Objects.equals(parentCategory, category.parentCategory) &&
-                       Objects.equals(childrenCategories, category.childrenCategories) &&
-                       Objects.equals(terms, category.terms);
-    }
-
-    @Override
-    public int hashCode() {
-
-        return Objects.hash(super.hashCode(), anchor, parentCategory, childrenCategories, terms);
     }
 }

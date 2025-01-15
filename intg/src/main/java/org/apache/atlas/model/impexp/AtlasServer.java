@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,7 +19,7 @@ package org.apache.atlas.model.impexp;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.AtlasBaseModelObject;
 import org.apache.atlas.type.AtlasType;
 
@@ -33,7 +33,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AtlasServer extends AtlasBaseModelObject implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -59,12 +59,12 @@ public class AtlasServer extends AtlasBaseModelObject implements Serializable {
         this.fullName    = fullName;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getName() {
         return this.name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getFullName() {
@@ -83,26 +83,25 @@ public class AtlasServer extends AtlasBaseModelObject implements Serializable {
         this.displayName = displayName;
     }
 
-    public void setAdditionalInfo(Map<String, String> additionalInfo) {
-        this.additionalInfo = additionalInfo;
-    }
-
     public Map<String, String> getAdditionalInfo() {
         return this.additionalInfo;
+    }
+
+    public void setAdditionalInfo(Map<String, String> additionalInfo) {
+        this.additionalInfo = additionalInfo;
     }
 
     public String getAdditionalInfo(String key) {
         return additionalInfo.get(key);
     }
 
-    public void setUrls(List<String> urls) {
-        this.urls = urls;
-    }
-
     public List<String> getUrls() {
         return this.urls;
     }
 
+    public void setUrls(List<String> urls) {
+        this.urls = urls;
+    }
 
     public void setAdditionalInfo(String key, String value) {
         if (additionalInfo == null) {

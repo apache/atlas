@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 package org.apache.atlas.utils;
-
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
@@ -35,24 +34,23 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-
 public class AtlasEntityUtil {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityUtil.class);
+
+    public static final String CONF_METADATA_NAMESPACE = "atlas.metadata.namespace";
+    public static final String CLUSTER_NAME_KEY        = "atlas.cluster.name";
+    public static final String DEFAULT_CLUSTER_NAME    = "default";
+
+    protected static final String   ENTITY          = "entity";
+    protected static final String   ACTIVE          = "Active";
+    protected static final String   DELETED         = "Deleted";
+    protected static final String   SHELL           = "Shell";
+    protected static final String[] STATUS_CATEGORY = {ACTIVE, DELETED, SHELL};
 
     private static final String SOFT_REFERENCE_FORMAT_SEPERATOR       = ":";
     private static final String SOFT_REF_FORMAT                       = "%s" + SOFT_REFERENCE_FORMAT_SEPERATOR + "%s";
     private static final int    SOFT_REFERENCE_FORMAT_INDEX_TYPE_NAME = 0;
     private static final int    SOFT_REFERENCE_FORMAT_INDEX_GUID      = 1;
-
-    public static final String CONF_METADATA_NAMESPACE                = "atlas.metadata.namespace";
-    public static final String CLUSTER_NAME_KEY                       = "atlas.cluster.name";
-    public static final String DEFAULT_CLUSTER_NAME                   = "default";
-
-    protected static final String ENTITY                              = "entity";
-    protected static final String ACTIVE                              = "Active";
-    protected static final String DELETED                             = "Deleted";
-    protected static final String SHELL                               = "Shell";
-    protected static final String[] STATUS_CATEGORY                   = {ACTIVE, DELETED, SHELL};
 
     public static String formatSoftRefValue(String typeName, String guid) {
         return String.format(SOFT_REF_FORMAT, typeName, guid);
@@ -60,6 +58,10 @@ public class AtlasEntityUtil {
 
     public static String formatSoftRefValue(AtlasObjectId objectId) {
         return formatSoftRefValue(objectId.getTypeName(), objectId.getGuid());
+    }
+
+    private AtlasEntityUtil() {
+        // to block instantiation
     }
 
     public static List<String> formatSoftRefValue(List<AtlasObjectId> objIds) {
@@ -88,7 +90,7 @@ public class AtlasEntityUtil {
         if (StringUtils.isNotEmpty(softRefValue)) {
             String[] objectIdParts = StringUtils.split(softRefValue, SOFT_REFERENCE_FORMAT_SEPERATOR);
 
-            if(objectIdParts.length >= 2) {
+            if (objectIdParts.length >= 2) {
                 ret = new AtlasObjectId(objectIdParts[SOFT_REFERENCE_FORMAT_INDEX_GUID], objectIdParts[SOFT_REFERENCE_FORMAT_INDEX_TYPE_NAME]);
             } else {
                 LOG.warn("Invalid soft-ref value: {}", softRefValue);
@@ -142,7 +144,7 @@ public class AtlasEntityUtil {
         } else if (val instanceof Collection) {
             String elemRelationshipType = null;
 
-            for (Object elem : (Collection) val) {
+            for (Object elem : (Collection<?>) val) {
                 elemRelationshipType = getRelationshipType(elem);
 
                 if (elemRelationshipType != null) {
@@ -152,10 +154,10 @@ public class AtlasEntityUtil {
 
             ret = elemRelationshipType;
         } else if (val instanceof Map) {
-            Map mapValue = (Map) val;
+            Map<?, ?> mapValue = (Map<?, ?>) val;
 
             if (mapValue.containsKey(AtlasRelatedObjectId.KEY_RELATIONSHIP_TYPE)) {
-                Object relTypeName = ((Map) val).get(AtlasRelatedObjectId.KEY_RELATIONSHIP_TYPE);
+                Object relTypeName = ((Map<?, ?>) val).get(AtlasRelatedObjectId.KEY_RELATIONSHIP_TYPE);
 
                 ret = relTypeName != null ? relTypeName.toString() : null;
             } else {
@@ -215,5 +217,4 @@ public class AtlasEntityUtil {
             metricsToTypeData(metrics, typeName, typeData);
         }
     }
-
 }

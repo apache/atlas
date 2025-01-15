@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,45 +34,45 @@ import java.net.URL;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.Iterator;
 import java.util.Properties;
+
 import static org.apache.atlas.security.SecurityProperties.HADOOP_SECURITY_CREDENTIAL_PROVIDER_PATH;
 
 /**
  * Application properties used by Atlas.
  */
 public final class ApplicationProperties extends PropertiesConfiguration {
-    public static final String ATLAS_CONFIGURATION_DIRECTORY_PROPERTY = "atlas.conf";
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationProperties.class);
 
-    public static final String  APPLICATION_PROPERTIES          = "atlas-application.properties";
-
-    public static final String  GRAPHDB_BACKEND_CONF            = "atlas.graphdb.backend";
-    public static final String  STORAGE_BACKEND_CONF            = "atlas.graph.storage.backend";
-    public static final String  INDEX_BACKEND_CONF              = "atlas.graph.index.search.backend";
-    public static final String  INDEX_MAP_NAME_CONF             = "atlas.graph.index.search.map-name";
-    public static final String  SOLR_WAIT_SEARCHER_CONF         = "atlas.graph.index.search.solr.wait-searcher";
-    public static final String  ELASTICSEARCH_INDEX_NAME_CONF   = "atlas.graph.index.search.elasticsearch.index-name";
-    public static final String  INDEX_RECOVERY_CONF             = "atlas.index.recovery.enable";
-    public static final String  ENABLE_FULLTEXT_SEARCH_CONF     = "atlas.search.fulltext.enable";
-    public static final String  ENABLE_FREETEXT_SEARCH_CONF     = "atlas.search.freetext.enable";
-    public static final String  ATLAS_RUN_MODE                  = "atlas.run.mode";
-    public static final String  GRAPHBD_BACKEND_JANUS           = "janus";
-    public static final String  DEFAULT_INDEX_NAME              = "janusgraph";
-    public static final String  STORAGE_BACKEND_HBASE           = "hbase";
-    public static final String  STORAGE_BACKEND_HBASE2          = "hbase2";
-    public static final String  INDEX_BACKEND_SOLR              = "solr";
-    public static final String  INDEX_BACKEND_ELASTICSEARCH     = "elasticsearch";
-    public static final String  LDAP_TYPE                       =  "atlas.authentication.method.ldap.type";
-    public static final String  LDAP                            =  "LDAP";
-    public static final String  AD                              =  "AD";
-    public static final String  LDAP_AD_BIND_PASSWORD           =  "atlas.authentication.method.ldap.ad.bind.password";
-    public static final String  LDAP_BIND_PASSWORD              =  "atlas.authentication.method.ldap.bind.password";
-    public static final String  MASK_LDAP_PASSWORD              =  "********";
-    public static final String  DEFAULT_GRAPHDB_BACKEND         = GRAPHBD_BACKEND_JANUS;
-    public static final boolean DEFAULT_SOLR_WAIT_SEARCHER      = false;
-    public static final boolean DEFAULT_INDEX_MAP_NAME          = false;
-    public static final boolean DEFAULT_INDEX_RECOVERY          = true;
-    public static final AtlasRunMode DEFAULT_ATLAS_RUN_MODE     = AtlasRunMode.PROD;
-    public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE = "atlas.graph.index.search.max-result-set-size";
+    public static final String       ATLAS_CONFIGURATION_DIRECTORY_PROPERTY = "atlas.conf";
+    public static final String       APPLICATION_PROPERTIES           = "atlas-application.properties";
+    public static final String       GRAPHDB_BACKEND_CONF             = "atlas.graphdb.backend";
+    public static final String       STORAGE_BACKEND_CONF             = "atlas.graph.storage.backend";
+    public static final String       INDEX_BACKEND_CONF               = "atlas.graph.index.search.backend";
+    public static final String       INDEX_MAP_NAME_CONF              = "atlas.graph.index.search.map-name";
+    public static final String       SOLR_WAIT_SEARCHER_CONF          = "atlas.graph.index.search.solr.wait-searcher";
+    public static final String       ELASTICSEARCH_INDEX_NAME_CONF    = "atlas.graph.index.search.elasticsearch.index-name";
+    public static final String       INDEX_RECOVERY_CONF              = "atlas.index.recovery.enable";
+    public static final String       ENABLE_FULLTEXT_SEARCH_CONF      = "atlas.search.fulltext.enable";
+    public static final String       ENABLE_FREETEXT_SEARCH_CONF      = "atlas.search.freetext.enable";
+    public static final String       ATLAS_RUN_MODE                   = "atlas.run.mode";
+    public static final String       GRAPHBD_BACKEND_JANUS            = "janus";
+    public static final String       DEFAULT_INDEX_NAME               = "janusgraph";
+    public static final String       STORAGE_BACKEND_HBASE            = "hbase";
+    public static final String       STORAGE_BACKEND_HBASE2           = "hbase2";
+    public static final String       INDEX_BACKEND_SOLR               = "solr";
+    public static final String       INDEX_BACKEND_ELASTICSEARCH      = "elasticsearch";
+    public static final String       LDAP_TYPE                        = "atlas.authentication.method.ldap.type";
+    public static final String       LDAP                             = "LDAP";
+    public static final String       AD                               = "AD";
+    public static final String       LDAP_AD_BIND_PASSWORD            = "atlas.authentication.method.ldap.ad.bind.password";
+    public static final String       LDAP_BIND_PASSWORD               = "atlas.authentication.method.ldap.bind.password";
+    public static final String       MASK_LDAP_PASSWORD               = "********";
+    public static final String       DEFAULT_GRAPHDB_BACKEND          = GRAPHBD_BACKEND_JANUS;
+    public static final boolean      DEFAULT_SOLR_WAIT_SEARCHER       = false;
+    public static final boolean      DEFAULT_INDEX_MAP_NAME           = false;
+    public static final boolean      DEFAULT_INDEX_RECOVERY           = true;
+    public static final AtlasRunMode DEFAULT_ATLAS_RUN_MODE           = AtlasRunMode.PROD;
+    public static final String       INDEX_SEARCH_MAX_RESULT_SET_SIZE = "atlas.graph.index.search.max-result-set-size";
 
     public static final SimpleEntry<String, String> DB_CACHE_CONF               = new SimpleEntry<>("atlas.graph.cache.db-cache", "true");
     public static final SimpleEntry<String, String> DB_CACHE_CLEAN_WAIT_CONF    = new SimpleEntry<>("atlas.graph.cache.db-cache-clean-wait", "20");
@@ -80,12 +80,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final SimpleEntry<String, String> DB_TX_CACHE_SIZE_CONF       = new SimpleEntry<>("atlas.graph.cache.tx-cache-size", "15000");
     public static final SimpleEntry<String, String> DB_CACHE_TX_DIRTY_SIZE_CONF = new SimpleEntry<>("atlas.graph.cache.tx-dirty-size", "120");
 
-    private static volatile Configuration instance = null;
-
-    public enum AtlasRunMode {
-        PROD,
-        DEV
-    }
+    private static volatile Configuration instance;
 
     private ApplicationProperties(URL url) throws ConfigurationException {
         super(url);
@@ -102,28 +97,36 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     }
 
     public static Configuration get() throws AtlasException {
-        if (instance == null) {
+        Configuration me = instance;
+
+        if (me == null) {
             synchronized (ApplicationProperties.class) {
-                if (instance == null) {
+                me = instance;
+
+                if (me == null) {
                     set(get(APPLICATION_PROPERTIES));
+
+                    me = instance;
                 }
             }
         }
 
-        return instance;
+        return me;
     }
 
     public static Configuration set(Configuration configuration) throws AtlasException {
         synchronized (ApplicationProperties.class) {
             instance = configuration;
         }
+
         return instance;
     }
 
     public static Configuration get(String fileName) throws AtlasException {
         String confLocation = System.getProperty(ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
+
         try {
-            URL url = null;
+            URL url;
 
             if (confLocation == null) {
                 LOG.info("Looking for {} in classpath", fileName);
@@ -150,20 +153,10 @@ public final class ApplicationProperties extends PropertiesConfiguration {
             Configuration configuration = appProperties.interpolatedConfiguration();
 
             logConfiguration(configuration);
+
             return configuration;
         } catch (Exception e) {
             throw new AtlasException("Failed to load application properties", e);
-        }
-    }
-
-    private static void logConfiguration(Configuration configuration) {
-        if (LOG.isDebugEnabled()) {
-            Iterator<String> keys = configuration.getKeys();
-            LOG.debug("Configuration loaded:");
-            while (keys.hasNext()) {
-                String key = keys.next();
-                LOG.debug("{} = {}", key, configuration.getProperty(key));
-            }
         }
     }
 
@@ -173,22 +166,22 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
     public static Properties getSubsetAsProperties(Configuration inConf, String prefix) {
         Configuration subset = inConf.subset(prefix);
-        Properties   ret     = ConfigurationConverter.getProperties(subset);
 
-        return ret;
+        return ConfigurationConverter.getProperties(subset);
     }
 
-    public static Class getClass(Configuration configuration, String propertyName, String defaultValue,
-                                 Class assignableClass) throws AtlasException {
+    public static Class getClass(Configuration configuration, String propertyName, String defaultValue, Class assignableClass) throws AtlasException {
         try {
-            String propertyValue = configuration.getString(propertyName, defaultValue);
-            Class<?> clazz = Class.forName(propertyValue);
+            String   propertyValue = configuration.getString(propertyName, defaultValue);
+            Class<?> clazz         = Class.forName(propertyValue);
+
             if (assignableClass == null || assignableClass.isAssignableFrom(clazz)) {
                 return clazz;
             } else {
-                String message = "Class " + clazz.getName() + " specified in property " + propertyName
-                        + " is not assignable to class " + assignableClass.getName();
+                String message = "Class " + clazz.getName() + " specified in property " + propertyName + " is not assignable to class " + assignableClass.getName();
+
                 LOG.error(message);
+
                 throw new AtlasException(message);
             }
         } catch (Exception e) {
@@ -199,11 +192,14 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static Class getClass(String fullyQualifiedClassName, Class assignableClass) throws AtlasException {
         try {
             Class<?> clazz = Class.forName(fullyQualifiedClassName);
+
             if (assignableClass == null || assignableClass.isAssignableFrom(clazz)) {
                 return clazz;
             } else {
                 String message = "Class " + clazz.getName() + " is not assignable to class " + assignableClass.getName();
+
                 LOG.error(message);
+
                 throw new AtlasException(message);
             }
         } catch (Exception e) {
@@ -227,7 +223,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
      * @throws AtlasException if no file was found or if there was an error loading the file
      */
     public static InputStream getFileAsInputStream(Configuration configuration, String propertyName, String defaultFileName) throws AtlasException {
-        File   fileToLoad = null;
+        File   fileToLoad;
         String fileName   = configuration.getString(propertyName);
 
         if (fileName == null) {
@@ -253,7 +249,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
             fileToLoad = new File(fileName);
         }
 
-        InputStream inStr = null;
+        InputStream inStr;
 
         if (fileToLoad.exists()) {
             try {
@@ -275,10 +271,35 @@ public final class ApplicationProperties extends PropertiesConfiguration {
                 throw new AtlasException(msg);
             }
 
-            LOG.info("Loaded {} as resource from {}", fileName, Thread.currentThread().getContextClassLoader().getResource(fileName).toString());
+            LOG.info("Loaded {} as resource from {}", fileName, Thread.currentThread().getContextClassLoader().getResource(fileName));
         }
 
         return inStr;
+    }
+
+    void setDefault(SimpleEntry<String, String> keyValueDefault, String currentValue) {
+        if (StringUtils.isNotEmpty(currentValue)) {
+            return;
+        }
+
+        clearPropertyDirect(keyValueDefault.getKey());
+        addPropertyDirect(keyValueDefault.getKey(), keyValueDefault.getValue());
+
+        LOG.info("Property (set to default) {} = {}", keyValueDefault.getKey(), keyValueDefault.getValue());
+    }
+
+    private static void logConfiguration(Configuration configuration) {
+        if (LOG.isDebugEnabled()) {
+            Iterator<String> keys = configuration.getKeys();
+
+            LOG.debug("Configuration loaded:");
+
+            while (keys.hasNext()) {
+                String key = keys.next();
+
+                LOG.debug("{} = {}", key, configuration.getProperty(key));
+            }
+        }
     }
 
     private static void setLdapPasswordFromKeystore(Configuration configuration) {
@@ -288,15 +309,19 @@ public final class ApplicationProperties extends PropertiesConfiguration {
             try {
                 if (ldapType.equalsIgnoreCase(LDAP)) {
                     String maskPasssword = configuration.getString(LDAP_BIND_PASSWORD);
+
                     if (MASK_LDAP_PASSWORD.equals(maskPasssword)) {
                         String password = SecurityUtil.getPassword(configuration, LDAP_BIND_PASSWORD, HADOOP_SECURITY_CREDENTIAL_PROVIDER_PATH);
+
                         configuration.clearProperty(LDAP_BIND_PASSWORD);
                         configuration.addProperty(LDAP_BIND_PASSWORD, password);
                     }
                 } else if (ldapType.equalsIgnoreCase(AD)) {
                     String maskPasssword = configuration.getString(LDAP_AD_BIND_PASSWORD);
+
                     if (MASK_LDAP_PASSWORD.equals(maskPasssword)) {
                         String password = SecurityUtil.getPassword(configuration, LDAP_AD_BIND_PASSWORD, HADOOP_SECURITY_CREDENTIAL_PROVIDER_PATH);
+
                         configuration.clearProperty(LDAP_AD_BIND_PASSWORD);
                         configuration.addProperty(LDAP_AD_BIND_PASSWORD, password);
                     }
@@ -319,7 +344,8 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
         clearPropertyDirect(GRAPHDB_BACKEND_CONF);
         addPropertyDirect(GRAPHDB_BACKEND_CONF, graphDbBackend);
-        LOG.info("Using graphdb backend '" + graphDbBackend + "'");
+
+        LOG.info("Using graphdb backend '{}'", graphDbBackend);
 
         // setting value for 'atlas.graph.storage.backend' (default = 'hbase2')
         String storageBackend = getString(STORAGE_BACKEND_CONF);
@@ -330,7 +356,8 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
         clearPropertyDirect(STORAGE_BACKEND_CONF);
         addPropertyDirect(STORAGE_BACKEND_CONF, storageBackend);
-        LOG.info("Using storage backend '" + storageBackend + "'");
+
+        LOG.info("Using storage backend '{}'", storageBackend);
 
         // setting value for 'atlas.graph.index.search.backend' (default = 'solr')
         String indexBackend = getString(INDEX_BACKEND_CONF);
@@ -341,7 +368,8 @@ public final class ApplicationProperties extends PropertiesConfiguration {
 
         clearPropertyDirect(INDEX_BACKEND_CONF);
         addPropertyDirect(INDEX_BACKEND_CONF, indexBackend);
-        LOG.info("Using index backend '" + indexBackend + "'");
+
+        LOG.info("Using index backend '{}'", indexBackend);
 
         // set the following if indexing backend is 'solr'
         if (indexBackend.equalsIgnoreCase(INDEX_BACKEND_SOLR)) {
@@ -352,16 +380,17 @@ public final class ApplicationProperties extends PropertiesConfiguration {
                     addPropertyDirect(SOLR_WAIT_SEARCHER_CONF, DEFAULT_SOLR_WAIT_SEARCHER);
                 }
 
-                LOG.info("Setting " + SOLR_WAIT_SEARCHER_CONF + " = " + getBoolean(SOLR_WAIT_SEARCHER_CONF));
+                LOG.info("Setting {} = {}", SOLR_WAIT_SEARCHER_CONF, getBoolean(SOLR_WAIT_SEARCHER_CONF));
 
                 clearPropertyDirect(INDEX_MAP_NAME_CONF);
                 addPropertyDirect(INDEX_MAP_NAME_CONF, DEFAULT_INDEX_MAP_NAME);
-                LOG.info("Setting index.search.map-name property '" + DEFAULT_INDEX_MAP_NAME + "'");
-            }
-        } else if (indexBackend.equalsIgnoreCase(INDEX_BACKEND_ELASTICSEARCH)){
-           addPropertyDirect(ELASTICSEARCH_INDEX_NAME_CONF, DEFAULT_INDEX_NAME);
 
-           LOG.info("Setting elasticsearch.index-name property '" + DEFAULT_INDEX_NAME + "'");
+                LOG.info("Setting index.search.map-name property '{}'", DEFAULT_INDEX_MAP_NAME);
+            }
+        } else if (indexBackend.equalsIgnoreCase(INDEX_BACKEND_ELASTICSEARCH)) {
+            addPropertyDirect(ELASTICSEARCH_INDEX_NAME_CONF, DEFAULT_INDEX_NAME);
+
+            LOG.info("Setting elasticsearch.index-name property '{}'", DEFAULT_INDEX_NAME);
         }
 
         // setting value for 'atlas.graph.index.search.max-result-set-size' (default = 500000)
@@ -370,30 +399,23 @@ public final class ApplicationProperties extends PropertiesConfiguration {
         clearPropertyDirect(INDEX_SEARCH_MAX_RESULT_SET_SIZE);
         addPropertyDirect(INDEX_SEARCH_MAX_RESULT_SET_SIZE, indexMaxResultSetSize);
 
-        LOG.info("Setting " + INDEX_SEARCH_MAX_RESULT_SET_SIZE + " = " + indexMaxResultSetSize);
+        LOG.info("Setting {} = {}", INDEX_SEARCH_MAX_RESULT_SET_SIZE, indexMaxResultSetSize);
 
         setDbCacheConfDefaults();
     }
 
-    void setDefault(SimpleEntry<String, String> keyValueDefault, String currentValue) {
-        if (StringUtils.isNotEmpty(currentValue)) {
-            return;
-        }
-
-        clearPropertyDirect(keyValueDefault.getKey());
-        addPropertyDirect(keyValueDefault.getKey(), keyValueDefault.getValue());
-        LOG.info("Property (set to default) {} = {}", keyValueDefault.getKey(), keyValueDefault.getValue());
-    }
-
     private void setDbCacheConfDefaults() {
-        SimpleEntry<String, String> keyValues[] = new SimpleEntry[]{ DB_CACHE_CONF, DB_CACHE_CLEAN_WAIT_CONF,
-                                                                     DB_CACHE_SIZE_CONF, DB_TX_CACHE_SIZE_CONF,
-                                                                     DB_CACHE_TX_DIRTY_SIZE_CONF };
+        SimpleEntry<String, String>[] keyValues = new SimpleEntry[] {DB_CACHE_CONF, DB_CACHE_CLEAN_WAIT_CONF, DB_CACHE_SIZE_CONF, DB_TX_CACHE_SIZE_CONF, DB_CACHE_TX_DIRTY_SIZE_CONF};
 
-        for(SimpleEntry<String, String> kv : keyValues) {
+        for (SimpleEntry<String, String> kv : keyValues) {
             String currentValue = getString(kv.getKey());
 
             setDefault(kv, currentValue);
         }
+    }
+
+    public enum AtlasRunMode {
+        PROD,
+        DEV
     }
 }

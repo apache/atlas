@@ -24,10 +24,9 @@ public enum AtlasTermAssignmentStatus {
     VALIDATED(3),
     DEPRECATED(4),
     OBSOLETE(5),
-    OTHER(6),
-    ;
+    OTHER(6);
 
-    private int value;
+    private final int value;
 
     AtlasTermAssignmentStatus(final int value) {
         this.value = value;

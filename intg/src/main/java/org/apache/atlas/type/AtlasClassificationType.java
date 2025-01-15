@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,10 +16,6 @@
  * limitations under the License.
  */
 package org.apache.atlas.type;
-
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_DATE;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
-import static org.apache.atlas.type.Constants.*;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -34,7 +30,24 @@ import org.apache.commons.validator.routines.DateValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TimeZone;
+
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_DATE;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
+import static org.apache.atlas.type.Constants.CLASSIFICATION_ENTITY_STATUS_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.CREATED_BY_KEY;
+import static org.apache.atlas.type.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.MODIFIED_BY_KEY;
+import static org.apache.atlas.type.Constants.TIMESTAMP_PROPERTY_KEY;
+import static org.apache.atlas.type.Constants.TYPE_NAME_PROPERTY_KEY;
 
 /**
  * class that implements behaviour of a classification-type.
@@ -42,8 +55,10 @@ import java.util.*;
 public class AtlasClassificationType extends AtlasStructType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasClassificationType.class);
 
-    public  static final AtlasClassificationType CLASSIFICATION_ROOT      = initRootClassificationType();
-    private static final String                  CLASSIFICATION_ROOT_NAME = "__CLASSIFICATION_ROOT";
+    private static final String CLASSIFICATION_ROOT_NAME = "__CLASSIFICATION_ROOT";
+    private static final String DEFAULT_GMT_TIMEZONE     = "GMT";
+
+    public static final  AtlasClassificationType CLASSIFICATION_ROOT = initRootClassificationType();
 
     private final AtlasClassificationDef classificationDef;
     private final String                 typeQryStr;
@@ -79,8 +94,7 @@ public class AtlasClassificationType extends AtlasStructType {
      * @param typeRegistry
      * @throws AtlasBaseException
      */
-    public AtlasClassificationType(AtlasClassificationDef classificationDef, AtlasTypeRegistry typeRegistry)
-        throws AtlasBaseException {
+    public AtlasClassificationType(AtlasClassificationDef classificationDef, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         super(classificationDef);
 
         this.classificationDef = classificationDef;
@@ -89,9 +103,220 @@ public class AtlasClassificationType extends AtlasStructType {
         resolveReferences(typeRegistry);
     }
 
-    public AtlasClassificationDef getClassificationDef() { return classificationDef; }
+    public static AtlasClassificationType getClassificationRoot() {
+        return CLASSIFICATION_ROOT;
+    }
 
-    public static AtlasClassificationType getClassificationRoot() {return CLASSIFICATION_ROOT; }
+    public static boolean isValidTimeZone(final String timeZone) {
+        if (timeZone.equals(DEFAULT_GMT_TIMEZONE)) {
+            return true;
+        } else {
+            // if custom time zone is invalid,
+            // time zone id returned is always "GMT" by default
+            String id = TimeZone.getTimeZone(timeZone).getID();
+            return !id.equals(DEFAULT_GMT_TIMEZONE);
+        }
+    }
+
+    public AtlasClassificationDef getClassificationDef() {
+        return classificationDef;
+    }
+
+    public Set<String> getSuperTypes() {
+        return classificationDef.getSuperTypes();
+    }
+
+    public Set<String> getAllSuperTypes() {
+        return allSuperTypes;
+    }
+
+    public Set<String> getSubTypes() {
+        return subTypes;
+    }
+
+    public Set<String> getAllSubTypes() {
+        return allSubTypes;
+    }
+
+    public Set<String> getTypeAndAllSubTypes() {
+        return typeAndAllSubTypes;
+    }
+
+    public Set<String> getTypeAndAllSuperTypes() {
+        return typeAndAllSuperTypes;
+    }
+
+    public String getTypeQryStr() {
+        return typeQryStr;
+    }
+
+    public String getTypeAndAllSubTypesQryStr() {
+        if (StringUtils.isEmpty(typeAndAllSubTypesQryStr)) {
+            typeAndAllSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndAllSubTypes, true);
+        }
+
+        return typeAndAllSubTypesQryStr;
+    }
+
+    public boolean isSuperTypeOf(AtlasClassificationType classificationType) {
+        return classificationType != null && allSubTypes.contains(classificationType.getTypeName());
+    }
+
+    public boolean isSuperTypeOf(String classificationName) {
+        return StringUtils.isNotEmpty(classificationName) && allSubTypes.contains(classificationName);
+    }
+
+    public boolean isSubTypeOf(AtlasClassificationType classificationType) {
+        return classificationType != null && allSuperTypes.contains(classificationType.getTypeName());
+    }
+
+    public boolean isSubTypeOf(String classificationName) {
+        return StringUtils.isNotEmpty(classificationName) && allSuperTypes.contains(classificationName);
+    }
+
+    public boolean hasAttribute(String attrName) {
+        return allAttributes.containsKey(attrName);
+    }
+
+    /**
+     * List of all the entity type names that are valid for this classification type.
+     *
+     * An empty list means there are no restrictions on which entities can be classified by these classifications.
+     * @return
+     */
+    public Set<String> getEntityTypes() {
+        return entityTypes;
+    }
+
+    @Override
+    public AtlasClassification createDefaultValue() {
+        AtlasClassification ret = new AtlasClassification(classificationDef.getName());
+
+        populateDefaultValues(ret);
+
+        return ret;
+    }
+
+    @Override
+    public boolean isValidValue(Object obj) {
+        if (obj != null) {
+            for (AtlasClassificationType superType : superTypes) {
+                if (!superType.isValidValue(obj)) {
+                    return false;
+                }
+            }
+
+            if (!validateTimeBoundaries(obj, null)) {
+                return false;
+            }
+
+            return super.isValidValue(obj);
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
+        for (AtlasClassificationType superType : superTypes) {
+            if (!superType.areEqualValues(val1, val2, guidAssignments)) {
+                return false;
+            }
+        }
+
+        return super.areEqualValues(val1, val2, guidAssignments);
+    }
+
+    @Override
+    public Object getNormalizedValue(Object obj) {
+        Object ret = null;
+
+        if (obj != null) {
+            if (isValidValue(obj)) {
+                if (obj instanceof AtlasClassification) {
+                    normalizeAttributeValues((AtlasClassification) obj);
+                    ret = obj;
+                } else if (obj instanceof Map) {
+                    normalizeAttributeValues((Map) obj);
+                    ret = obj;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    @Override
+    public boolean validateValue(Object obj, String objName, List<String> messages) {
+        boolean ret = true;
+
+        if (obj != null) {
+            for (AtlasClassificationType superType : superTypes) {
+                ret = superType.validateValue(obj, objName, messages) && ret;
+            }
+
+            ret = validateTimeBoundaries(obj, messages) && ret;
+
+            ret = super.validateValue(obj, objName, messages) && ret;
+        }
+
+        return ret;
+    }
+
+    @Override
+    public boolean isValidValueForUpdate(Object obj) {
+        if (obj != null) {
+            for (AtlasClassificationType superType : superTypes) {
+                if (!superType.isValidValueForUpdate(obj)) {
+                    return false;
+                }
+            }
+
+            if (!validateTimeBoundaries(obj, null)) {
+                return false;
+            }
+
+            return super.isValidValueForUpdate(obj);
+        }
+
+        return true;
+    }
+
+    @Override
+    public Object getNormalizedValueForUpdate(Object obj) {
+        Object ret = null;
+
+        if (obj != null) {
+            if (isValidValueForUpdate(obj)) {
+                if (obj instanceof AtlasClassification) {
+                    normalizeAttributeValuesForUpdate((AtlasClassification) obj);
+                    ret = obj;
+                } else if (obj instanceof Map) {
+                    normalizeAttributeValuesForUpdate((Map) obj);
+                    ret = obj;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    @Override
+    public boolean validateValueForUpdate(Object obj, String objName, List<String> messages) {
+        boolean ret = true;
+
+        if (obj != null) {
+            for (AtlasClassificationType superType : superTypes) {
+                ret = superType.validateValueForUpdate(obj, objName, messages) && ret;
+            }
+
+            ret = validateTimeBoundaries(obj, messages) && ret;
+
+            ret = super.validateValueForUpdate(obj, objName, messages) && ret;
+        }
+
+        return ret;
+    }
 
     @Override
     void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
@@ -107,7 +332,7 @@ public class AtlasClassificationType extends AtlasStructType {
             AtlasType superType = typeRegistry.getType(superTypeName);
 
             if (superType instanceof AtlasClassificationType) {
-                s.add((AtlasClassificationType)superType);
+                s.add((AtlasClassificationType) superType);
             } else {
                 throw new AtlasBaseException(AtlasErrorCode.INCOMPATIBLE_SUPERTYPE, superTypeName,
                         classificationDef.getName());
@@ -142,6 +367,72 @@ public class AtlasClassificationType extends AtlasStructType {
             AtlasClassificationType superType = typeRegistry.getClassificationTypeByName(superTypeName);
             superType.addToAllSubTypes(this);
         }
+    }
+
+    @Override
+    public AtlasAttribute getSystemAttribute(String attributeName) {
+        return AtlasClassificationType.CLASSIFICATION_ROOT.allAttributes.get(attributeName);
+    }
+
+    @Override
+    public void normalizeAttributeValues(Map<String, Object> obj) {
+        if (obj != null) {
+            for (AtlasClassificationType superType : superTypes) {
+                superType.normalizeAttributeValues(obj);
+            }
+
+            super.normalizeAttributeValues(obj);
+        }
+    }
+
+    public void normalizeAttributeValuesForUpdate(Map<String, Object> obj) {
+        if (obj != null) {
+            for (AtlasClassificationType superType : superTypes) {
+                superType.normalizeAttributeValuesForUpdate(obj);
+            }
+
+            super.normalizeAttributeValuesForUpdate(obj);
+        }
+    }
+
+    public void normalizeAttributeValues(AtlasClassification classification) {
+        if (classification != null) {
+            for (AtlasClassificationType superType : superTypes) {
+                superType.normalizeAttributeValues(classification);
+            }
+
+            super.normalizeAttributeValues(classification);
+        }
+    }
+
+    public void normalizeAttributeValuesForUpdate(AtlasClassification classification) {
+        if (classification != null) {
+            for (AtlasClassificationType superType : superTypes) {
+                superType.normalizeAttributeValuesForUpdate(classification);
+            }
+
+            super.normalizeAttributeValuesForUpdate(classification);
+        }
+    }
+
+    public void populateDefaultValues(AtlasClassification classification) {
+        if (classification != null) {
+            for (AtlasClassificationType superType : superTypes) {
+                superType.populateDefaultValues(classification);
+            }
+
+            super.populateDefaultValues(classification);
+        }
+    }
+
+    /**
+     * Check whether the supplied entityType can be applied to this classification.
+     *
+     * @param entityType
+     * @return whether can apply
+     */
+    public boolean canApplyToEntityType(AtlasEntityType entityType) {
+        return CollectionUtils.isEmpty(this.entityTypes) || this.entityTypes.contains(entityType.getTypeName());
     }
 
     /**
@@ -223,7 +514,7 @@ public class AtlasClassificationType extends AtlasStructType {
             if (CollectionUtils.isEmpty(classificationDefEntityTypes)) { // no restriction specified; use the restrictions from super-types
                 this.entityTypes = superTypeEntityTypes;
             } else {
-                this.entityTypes = AtlasEntityType.getEntityTypesAndAllSubTypes(classificationDefEntityTypes,typeRegistry);
+                this.entityTypes = AtlasEntityType.getEntityTypesAndAllSubTypes(classificationDefEntityTypes, typeRegistry);
                 // Compatible parents and entityTypes, now check whether the specified entityTypes are the same as the effective entityTypes due to our parents or a subset.
                 // Only allowed to restrict our parents.
                 if (!superTypeEntityTypes.containsAll(this.entityTypes)) {
@@ -235,10 +526,16 @@ public class AtlasClassificationType extends AtlasStructType {
         classificationDef.setSubTypes(subTypes);
     }
 
-    @Override
-    public AtlasAttribute getSystemAttribute(String attributeName) {
-        return AtlasClassificationType.CLASSIFICATION_ROOT.allAttributes.get(attributeName);
-    }
+    /**
+     * Check whether the supplied entityType can be applied to this classification.
+     *
+     * We can apply this classification to the supplied entityType if
+     * - we have no restrictions (entityTypes empty including null)
+     * or
+     * - the entityType is in our list of restricted entityTypes (which includes our parent classification restrictions)
+     *
+     * @param subType
+     */
 
     private void addSubType(AtlasClassificationType subType) {
         subTypes.add(subType.getTypeName());
@@ -249,282 +546,25 @@ public class AtlasClassificationType extends AtlasStructType {
         typeAndAllSubTypes.add(subType.getTypeName());
     }
 
-    public Set<String> getSuperTypes() {
-        return classificationDef.getSuperTypes();
-    }
-
-    public Set<String> getAllSuperTypes() { return allSuperTypes; }
-
-    public Set<String> getSubTypes() { return subTypes; }
-
-    public Set<String> getAllSubTypes() { return allSubTypes; }
-
-    public Set<String> getTypeAndAllSubTypes() { return typeAndAllSubTypes; }
-
-    public Set<String> getTypeAndAllSuperTypes() { return typeAndAllSuperTypes; }
-
-    public String getTypeQryStr() { return typeQryStr; }
-
-    public String getTypeAndAllSubTypesQryStr() {
-        if (StringUtils.isEmpty(typeAndAllSubTypesQryStr)) {
-            typeAndAllSubTypesQryStr = AtlasAttribute.escapeIndexQueryValue(typeAndAllSubTypes, true);
-        }
-
-        return typeAndAllSubTypesQryStr;
-    }
-
-    public boolean isSuperTypeOf(AtlasClassificationType classificationType) {
-        return classificationType != null && allSubTypes.contains(classificationType.getTypeName());
-    }
-
-    public boolean isSuperTypeOf(String classificationName) {
-        return StringUtils.isNotEmpty(classificationName) && allSubTypes.contains(classificationName);
-    }
-
-    public boolean isSubTypeOf(AtlasClassificationType classificationType) {
-        return classificationType != null && allSuperTypes.contains(classificationType.getTypeName());
-    }
-
-    public boolean isSubTypeOf(String classificationName) {
-        return StringUtils.isNotEmpty(classificationName) && allSuperTypes.contains(classificationName);
-    }
-
-    public boolean hasAttribute(String attrName) {
-        return allAttributes.containsKey(attrName);
-    }
-
-    /**
-     * List of all the entity type names that are valid for this classification type.
-     *
-     * An empty list means there are no restrictions on which entities can be classified by these classifications.
-     * @return
-     */
-    public Set<String> getEntityTypes() {
-        return entityTypes;
-    }
-
-    @Override
-    public AtlasClassification createDefaultValue() {
-        AtlasClassification ret = new AtlasClassification(classificationDef.getName());
-
-        populateDefaultValues(ret);
-
-        return ret;
-    }
-
-    @Override
-    public boolean isValidValue(Object obj) {
-        if (obj != null) {
-            for (AtlasClassificationType superType : superTypes) {
-                if (!superType.isValidValue(obj)) {
-                    return false;
-                }
-            }
-
-            if (!validateTimeBoundaries(obj, null)) {
-                return false;
-            }
-
-            return super.isValidValue(obj);
-        }
-
-        return true;
-    }
-
-    @Override
-    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
-        for (AtlasClassificationType superType : superTypes) {
-            if (!superType.areEqualValues(val1, val2, guidAssignments)) {
-                return false;
-            }
-        }
-
-        return super.areEqualValues(val1, val2, guidAssignments);
-    }
-
-    @Override
-    public boolean isValidValueForUpdate(Object obj) {
-        if (obj != null) {
-            for (AtlasClassificationType superType : superTypes) {
-                if (!superType.isValidValueForUpdate(obj)) {
-                    return false;
-                }
-            }
-
-            if (!validateTimeBoundaries(obj, null)) {
-                return false;
-            }
-
-            return super.isValidValueForUpdate(obj);
-        }
-
-        return true;
-    }
-
-    @Override
-    public Object getNormalizedValue(Object obj) {
-        Object ret = null;
-
-        if (obj != null) {
-            if (isValidValue(obj)) {
-                if (obj instanceof AtlasClassification) {
-                    normalizeAttributeValues((AtlasClassification) obj);
-                    ret = obj;
-                } else if (obj instanceof Map) {
-                    normalizeAttributeValues((Map) obj);
-                    ret = obj;
-                }
-            }
-        }
-
-        return ret;
-    }
-
-    @Override
-    public Object getNormalizedValueForUpdate(Object obj) {
-        Object ret = null;
-
-        if (obj != null) {
-            if (isValidValueForUpdate(obj)) {
-                if (obj instanceof AtlasClassification) {
-                    normalizeAttributeValuesForUpdate((AtlasClassification) obj);
-                    ret = obj;
-                } else if (obj instanceof Map) {
-                    normalizeAttributeValuesForUpdate((Map) obj);
-                    ret = obj;
-                }
-            }
-        }
-
-        return ret;
-    }
-
-    @Override
-    public boolean validateValue(Object obj, String objName, List<String> messages) {
-        boolean ret = true;
-
-        if (obj != null) {
-            for (AtlasClassificationType superType : superTypes) {
-                ret = superType.validateValue(obj, objName, messages) && ret;
-            }
-
-            ret = validateTimeBoundaries(obj, messages) && ret;
-
-            ret = super.validateValue(obj, objName, messages) && ret;
-        }
-
-        return ret;
-    }
-
-    @Override
-    public boolean validateValueForUpdate(Object obj, String objName, List<String> messages) {
-        boolean ret = true;
-
-        if (obj != null) {
-            for (AtlasClassificationType superType : superTypes) {
-                ret = superType.validateValueForUpdate(obj, objName, messages) && ret;
-            }
-
-            ret = validateTimeBoundaries(obj, messages) && ret;
-
-            ret = super.validateValueForUpdate(obj, objName, messages) && ret;
-        }
-
-        return ret;
-    }
-
-    public void normalizeAttributeValues(AtlasClassification classification) {
-        if (classification != null) {
-            for (AtlasClassificationType superType : superTypes) {
-                superType.normalizeAttributeValues(classification);
-            }
-
-            super.normalizeAttributeValues(classification);
-        }
-    }
-
-    public void normalizeAttributeValuesForUpdate(AtlasClassification classification) {
-        if (classification != null) {
-            for (AtlasClassificationType superType : superTypes) {
-                superType.normalizeAttributeValuesForUpdate(classification);
-            }
-
-            super.normalizeAttributeValuesForUpdate(classification);
-        }
-    }
-
-    @Override
-    public void normalizeAttributeValues(Map<String, Object> obj) {
-        if (obj != null) {
-            for (AtlasClassificationType superType : superTypes) {
-                superType.normalizeAttributeValues(obj);
-            }
-
-            super.normalizeAttributeValues(obj);
-        }
-    }
-
-    public void normalizeAttributeValuesForUpdate(Map<String, Object> obj) {
-        if (obj != null) {
-            for (AtlasClassificationType superType : superTypes) {
-                superType.normalizeAttributeValuesForUpdate(obj);
-            }
-
-            super.normalizeAttributeValuesForUpdate(obj);
-        }
-    }
-
-    public void populateDefaultValues(AtlasClassification classification) {
-        if (classification != null) {
-            for (AtlasClassificationType superType : superTypes) {
-                superType.populateDefaultValues(classification);
-            }
-
-            super.populateDefaultValues(classification);
-        }
-    }
-
-    /**
-     * Check whether the supplied entityType can be applied to this classification.
-     *
-     * We can apply this classification to the supplied entityType if
-     * - we have no restrictions (entityTypes empty including null)
-     * or
-     * - the entityType is in our list of restricted entityTypes (which includes our parent classification restrictions)
-     *
-     * @param entityType
-     * @return whether can apply
-     */
-    /**
-     * Check whether the supplied entityType can be applied to this classification.
-     *
-     * @param entityType
-     * @return whether can apply
-     */
-    public boolean canApplyToEntityType(AtlasEntityType entityType) {
-        return CollectionUtils.isEmpty(this.entityTypes) || this.entityTypes.contains(entityType.getTypeName());
-    }
-
     private static AtlasClassificationType initRootClassificationType() {
-        List<AtlasAttributeDef> attributeDefs = new ArrayList<AtlasAttributeDef>() {{
-            add(new AtlasAttributeDef(TYPE_NAME_PROPERTY_KEY, AtlasBaseTypeDef.ATLAS_TYPE_STRING, false, true));
-            add(new AtlasAttributeDef(TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_DATE, false, true));
-            add(new AtlasAttributeDef(MODIFICATION_TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_DATE, false, true));
-            add(new AtlasAttributeDef(MODIFIED_BY_KEY, ATLAS_TYPE_STRING, false, true));
-            add(new AtlasAttributeDef(CREATED_BY_KEY, ATLAS_TYPE_STRING, false, true));
-            add(new AtlasAttributeDef(CLASSIFICATION_ENTITY_STATUS_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
+        List<AtlasAttributeDef> attributeDefs = new ArrayList<>();
 
-        }};
+        attributeDefs.add(new AtlasAttributeDef(TYPE_NAME_PROPERTY_KEY, AtlasBaseTypeDef.ATLAS_TYPE_STRING, false, true));
+        attributeDefs.add(new AtlasAttributeDef(TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_DATE, false, true));
+        attributeDefs.add(new AtlasAttributeDef(MODIFICATION_TIMESTAMP_PROPERTY_KEY, ATLAS_TYPE_DATE, false, true));
+        attributeDefs.add(new AtlasAttributeDef(MODIFIED_BY_KEY, ATLAS_TYPE_STRING, false, true));
+        attributeDefs.add(new AtlasAttributeDef(CREATED_BY_KEY, ATLAS_TYPE_STRING, false, true));
+        attributeDefs.add(new AtlasAttributeDef(CLASSIFICATION_ENTITY_STATUS_PROPERTY_KEY, ATLAS_TYPE_STRING, false, true));
 
         AtlasClassificationDef classificationDef = new AtlasClassificationDef(CLASSIFICATION_ROOT_NAME, "Root classification for system attributes", "1.0", attributeDefs);
 
         return new AtlasClassificationType(classificationDef);
     }
 
-    private void getTypeHierarchyInfo(AtlasTypeRegistry              typeRegistry,
-                                      Set<String>                    allSuperTypeNames,
-                                      Map<String, AtlasAttribute>    allAttributes) throws AtlasBaseException {
-        List<String> visitedTypes = new ArrayList<>();
+    private void getTypeHierarchyInfo(AtlasTypeRegistry typeRegistry,
+            Set<String> allSuperTypeNames,
+            Map<String, AtlasAttribute> allAttributes) throws AtlasBaseException {
+        List<String>        visitedTypes                     = new ArrayList<>();
         Map<String, String> attributeToClassificationNameMap = new HashMap<>();
 
         collectTypeHierarchyInfo(typeRegistry, allSuperTypeNames, allAttributes, attributeToClassificationNameMap, visitedTypes);
@@ -534,14 +574,14 @@ public class AtlasClassificationType extends AtlasStructType {
      * This method should not assume that resolveReferences() has been called on all superTypes.
      * this.classificationDef is the only safe member to reference here
      */
-    private void collectTypeHierarchyInfo(AtlasTypeRegistry              typeRegistry,
-                                          Set<String>                    allSuperTypeNames,
-                                          Map<String, AtlasAttribute>    allAttributes,
-                                          Map<String, String> attributeToClassificationNameMap,
-                                          List<String>                   visitedTypes) throws AtlasBaseException {
+    private void collectTypeHierarchyInfo(AtlasTypeRegistry typeRegistry,
+            Set<String> allSuperTypeNames,
+            Map<String, AtlasAttribute> allAttributes,
+            Map<String, String> attributeToClassificationNameMap,
+            List<String> visitedTypes) throws AtlasBaseException {
         if (visitedTypes.contains(classificationDef.getName())) {
             throw new AtlasBaseException(AtlasErrorCode.CIRCULAR_REFERENCE, classificationDef.getName(),
-                                         visitedTypes.toString());
+                    visitedTypes.toString());
         }
 
         if (CollectionUtils.isNotEmpty(classificationDef.getSuperTypes())) {
@@ -561,7 +601,7 @@ public class AtlasClassificationType extends AtlasStructType {
         if (CollectionUtils.isNotEmpty(classificationDef.getAttributeDefs())) {
             for (AtlasAttributeDef attributeDef : classificationDef.getAttributeDefs()) {
                 AtlasType type          = typeRegistry.getType(attributeDef.getTypeName());
-                String attributeName    = attributeDef.getName();
+                String    attributeName = attributeDef.getName();
 
                 if (attributeToClassificationNameMap.containsKey(attributeName) && !attributeToClassificationNameMap.get(attributeName).equals(classificationDef.getName())) {
                     if (skipCheckForParentChildAttributeName) {
@@ -646,22 +686,6 @@ public class AtlasClassificationType extends AtlasStructType {
         }
 
         return ret;
-    }
-
-    public static boolean isValidTimeZone(final String timeZone) {
-        final String DEFAULT_GMT_TIMEZONE = "GMT";
-        if (timeZone.equals(DEFAULT_GMT_TIMEZONE)) {
-            return true;
-        } else {
-            // if custom time zone is invalid,
-            // time zone id returned is always "GMT" by default
-            String id = TimeZone.getTimeZone(timeZone).getID();
-            if (!id.equals(DEFAULT_GMT_TIMEZONE)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     private void addValidationMessageIfNotPresent(AtlasBaseException excp, List<String> messages) {

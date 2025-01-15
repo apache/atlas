@@ -21,7 +21,7 @@ package org.apache.atlas.model.tasks;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.Date;
@@ -32,18 +32,11 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AtlasTask {
     @JsonIgnore
     public static final int MAX_ATTEMPT_COUNT = 3;
-
-    public enum Status {
-        PENDING,
-        IN_PROGRESS,
-        COMPLETE,
-        FAILED;
-    }
 
     private String              type;
     private String              guid;
@@ -111,12 +104,16 @@ public class AtlasTask {
         this.parameters = val;
     }
 
+    public String getType() {
+        return this.type;
+    }
+
     public void setType(String val) {
         this.type = val;
     }
 
-    public String getType() {
-        return this.type;
+    public Status getStatus() {
+        return this.status;
     }
 
     public void setStatus(String val) {
@@ -127,10 +124,6 @@ public class AtlasTask {
 
     public void setStatus(Status val) {
         this.status = val;
-    }
-
-    public Status getStatus() {
-        return this.status;
     }
 
     public int getAttemptCount() {
@@ -188,5 +181,12 @@ public class AtlasTask {
     @JsonIgnore
     public void updateStatusFromAttemptCount() {
         setStatus((attemptCount < MAX_ATTEMPT_COUNT) ? AtlasTask.Status.PENDING : AtlasTask.Status.FAILED);
+    }
+
+    public enum Status {
+        PENDING,
+        IN_PROGRESS,
+        COMPLETE,
+        FAILED
     }
 }

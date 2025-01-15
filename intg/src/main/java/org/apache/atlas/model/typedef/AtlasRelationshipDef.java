@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,16 +17,15 @@
  */
 package org.apache.atlas.model.typedef;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.TypeCategory;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -69,50 +68,12 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
  *
  */
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
-
-
-    /**
-     * The Relationship category determines the style of relationship around containment and lifecycle.
-     * UML terminology is used for the values.
-     * <p>
-     * ASSOCIATION is a relationship with no containment. <br>
-     * COMPOSITION and AGGREGATION are containment relationships.
-     * <p>
-     * The difference being in the lifecycles of the container and its children. In the COMPOSITION case,
-     * the children cannot exist without the container. For AGGREGATION, the life cycles
-     * of the container and children are totally independant.
-     */
-    public enum RelationshipCategory {
-        ASSOCIATION, AGGREGATION, COMPOSITION
-    };
-
-    /**
-     * PropagateTags indicates whether tags should propagate across the relationship instance.
-     * <p>
-     * Tags can propagate:
-     * <p>
-     * NONE - not at all <br>
-     * ONE_TO_TWO - from end 1 to 2 <br>
-     * TWO_TO_ONE - from end 2 to 1  <br>
-     * BOTH - both ways
-     * <p>
-     * Care needs to be taken when specifying. The use cases we are aware of where this flag is useful:
-     * <p>
-     * - propagating confidentiality classifications from a table to columns - ONE_TO_TWO could be used here <br>
-     * - propagating classifications around Glossary synonyms - BOTH could be used here.
-     * <p>
-     * There is an expectation that further enhancements will allow more granular control of tag propagation and will
-     * address how to resolve conflicts.
-     */
-    public enum PropagateTags {
-        NONE, ONE_TO_TWO, TWO_TO_ONE, BOTH
-    };
 
     private RelationshipCategory    relationshipCategory;
     private String                  relationshipLabel;
@@ -123,8 +84,8 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
     /**
      * AtlasRelationshipDef contructor
      */
-    public AtlasRelationshipDef()  {
-        this(null, null, null, null,null, null, null);
+    public AtlasRelationshipDef() {
+        this(null, null, null, null, null, null, null);
     }
 
     /**
@@ -150,12 +111,8 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
      *            The ends are defined as 1 and 2 to avoid implying a direction. So we do not use to and from.
      *
      */
-    public AtlasRelationshipDef(String name, String description, String typeVersion,
-                                RelationshipCategory relationshipCategory,
-                                PropagateTags propagatetags,
-                                AtlasRelationshipEndDef endDef1,
-                                AtlasRelationshipEndDef endDef2) {
-        this(name, description, typeVersion, relationshipCategory,propagatetags, endDef1, endDef2, new ArrayList<>());
+    public AtlasRelationshipDef(String name, String description, String typeVersion, RelationshipCategory relationshipCategory, PropagateTags propagatetags, AtlasRelationshipEndDef endDef1, AtlasRelationshipEndDef endDef2) {
+        this(name, description, typeVersion, relationshipCategory, propagatetags, endDef1, endDef2, new ArrayList<>());
     }
 
     /**
@@ -183,13 +140,12 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
      *            The ends are defined as 1 and 2 to avoid implying a direction. So we do not use to and from.
      */
     public AtlasRelationshipDef(String name, String description, String typeVersion, String serviceType,
-                                RelationshipCategory relationshipCategory,
-                                PropagateTags propagatetags,
-                                AtlasRelationshipEndDef endDef1,
-                                AtlasRelationshipEndDef endDef2)  {
-        this(name, description, typeVersion, serviceType, relationshipCategory,propagatetags, endDef1, endDef2, new ArrayList<>());
+            RelationshipCategory relationshipCategory,
+            PropagateTags propagatetags,
+            AtlasRelationshipEndDef endDef1,
+            AtlasRelationshipEndDef endDef2) {
+        this(name, description, typeVersion, serviceType, relationshipCategory, propagatetags, endDef1, endDef2, new ArrayList<>());
     }
-
 
     /**
      * Create a relationshipDef with attributeDefs
@@ -216,9 +172,9 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
      *            - these are the attributes on the relationship itself.
      */
     public AtlasRelationshipDef(String name, String description, String typeVersion,
-                                RelationshipCategory relationshipCategory,
-                                PropagateTags propagatetags, AtlasRelationshipEndDef endDef1,
-                                AtlasRelationshipEndDef endDef2, List<AtlasAttributeDef> attributeDefs) {
+            RelationshipCategory relationshipCategory,
+            PropagateTags propagatetags, AtlasRelationshipEndDef endDef1,
+            AtlasRelationshipEndDef endDef2, List<AtlasAttributeDef> attributeDefs) {
         this(name, description, typeVersion, null, relationshipCategory, propagatetags, endDef1, endDef2, attributeDefs);
     }
 
@@ -249,9 +205,9 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
      *            - these are the attributes on the relationship itself.
      */
     public AtlasRelationshipDef(String name, String description, String typeVersion, String serviceType,
-                                RelationshipCategory relationshipCategory,
-                                PropagateTags propagatetags, AtlasRelationshipEndDef endDef1,
-                                AtlasRelationshipEndDef endDef2, List<AtlasAttributeDef> attributeDefs) {
+            RelationshipCategory relationshipCategory,
+            PropagateTags propagatetags, AtlasRelationshipEndDef endDef1,
+            AtlasRelationshipEndDef endDef2, List<AtlasAttributeDef> attributeDefs) {
         super(TypeCategory.RELATIONSHIP, name, description, typeVersion, attributeDefs, serviceType, null);
 
         setRelationshipCategory(relationshipCategory);
@@ -273,44 +229,44 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
         }
     }
 
-    public void setRelationshipCategory(RelationshipCategory relationshipCategory) {
-        this.relationshipCategory = relationshipCategory;
-    }
-
     public RelationshipCategory getRelationshipCategory() {
         return this.relationshipCategory;
     }
 
-    public void setRelationshipLabel(String relationshipLabel) {
-        this.relationshipLabel = relationshipLabel;
+    public void setRelationshipCategory(RelationshipCategory relationshipCategory) {
+        this.relationshipCategory = relationshipCategory;
     }
 
     public String getRelationshipLabel() {
         return relationshipLabel;
     }
 
-    public void setPropagateTags(PropagateTags propagateTags) {
-        this.propagateTags=propagateTags;
+    public void setRelationshipLabel(String relationshipLabel) {
+        this.relationshipLabel = relationshipLabel;
     }
 
     public PropagateTags getPropagateTags() {
         return this.propagateTags;
     }
 
-    public void setEndDef1(AtlasRelationshipEndDef endDef1) {
-        this.endDef1 = endDef1;
+    public void setPropagateTags(PropagateTags propagateTags) {
+        this.propagateTags = propagateTags;
     }
 
     public AtlasRelationshipEndDef getEndDef1() {
         return this.endDef1;
     }
 
-    public void setEndDef2(AtlasRelationshipEndDef endDef2) {
-        this.endDef2 = endDef2;
+    public void setEndDef1(AtlasRelationshipEndDef endDef1) {
+        this.endDef1 = endDef1;
     }
 
     public AtlasRelationshipEndDef getEndDef2() {
         return this.endDef2;
+    }
+
+    public void setEndDef2(AtlasRelationshipEndDef endDef2) {
+        this.endDef2 = endDef2;
     }
 
     @Override
@@ -329,16 +285,14 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
         sb.append(this.propagateTags);
         sb.append(',');
         if (this.endDef1 != null) {
-            sb.append(this.endDef1.toString());
-        }
-        else {
+            sb.append(this.endDef1);
+        } else {
             sb.append(" end1 is null!");
         }
         sb.append(',');
         if (this.endDef2 != null) {
-            sb.append(this.endDef2.toString());
-        }
-        else {
+            sb.append(this.endDef2);
+        } else {
             sb.append(" end2 is null!");
         }
         sb.append('}');
@@ -347,22 +301,29 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
 
     @Override
     public boolean equals(Object o) {
-        if (this == o)
+        if (this == o) {
             return true;
-        if (o == null || getClass() != o.getClass())
+        }
+        if (o == null || getClass() != o.getClass()) {
             return false;
+        }
         //AttributeDefs are checked in the super
-        if (!super.equals(o))
+        if (!super.equals(o)) {
             return false;
+        }
         AtlasRelationshipDef that = (AtlasRelationshipDef) o;
-        if (!Objects.equals(relationshipCategory, that.getRelationshipCategory()))
+        if (!Objects.equals(relationshipCategory, that.getRelationshipCategory())) {
             return false;
-        if (!Objects.equals(relationshipLabel, that.getRelationshipLabel()))
+        }
+        if (!Objects.equals(relationshipLabel, that.getRelationshipLabel())) {
             return false;
-        if (!Objects.equals(propagateTags, that.getPropagateTags()))
+        }
+        if (!Objects.equals(propagateTags, that.getPropagateTags())) {
             return false;
-        if (!Objects.equals(endDef1, that.getEndDef1()))
+        }
+        if (!Objects.equals(endDef1, that.getEndDef1())) {
             return false;
+        }
         return (Objects.equals(endDef2, that.getEndDef2()));
     }
 
@@ -374,5 +335,42 @@ public class AtlasRelationshipDef extends AtlasStructDef implements java.io.Seri
     @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
+    }
+
+    /**
+     * The Relationship category determines the style of relationship around containment and lifecycle.
+     * UML terminology is used for the values.
+     * <p>
+     * ASSOCIATION is a relationship with no containment. <br>
+     * COMPOSITION and AGGREGATION are containment relationships.
+     * <p>
+     * The difference being in the lifecycles of the container and its children. In the COMPOSITION case,
+     * the children cannot exist without the container. For AGGREGATION, the life cycles
+     * of the container and children are totally independant.
+     */
+    public enum RelationshipCategory {
+        ASSOCIATION, AGGREGATION, COMPOSITION
+    }
+
+    /**
+     * PropagateTags indicates whether tags should propagate across the relationship instance.
+     * <p>
+     * Tags can propagate:
+     * <p>
+     * NONE - not at all <br>
+     * ONE_TO_TWO - from end 1 to 2 <br>
+     * TWO_TO_ONE - from end 2 to 1  <br>
+     * BOTH - both ways
+     * <p>
+     * Care needs to be taken when specifying. The use cases we are aware of where this flag is useful:
+     * <p>
+     * - propagating confidentiality classifications from a table to columns - ONE_TO_TWO could be used here <br>
+     * - propagating classifications around Glossary synonyms - BOTH could be used here.
+     * <p>
+     * There is an expectation that further enhancements will allow more granular control of tag propagation and will
+     * address how to resolve conflicts.
+     */
+    public enum PropagateTags {
+        NONE, ONE_TO_TWO, TWO_TO_ONE, BOTH
     }
 }

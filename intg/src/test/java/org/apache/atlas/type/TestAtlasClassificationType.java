@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,8 +16,6 @@
  * limitations under the License.
  */
 package org.apache.atlas.type;
-
-import java.util.*;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -31,98 +29,27 @@ import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import static org.apache.atlas.type.AtlasClassificationType.isValidTimeZone;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 public class TestAtlasClassificationType {
     private final AtlasClassificationType classificationType;
-    private final List<Object>            validValues        = new ArrayList<>();
-    private final List<Object>            invalidValues      = new ArrayList<>();
-
-    {
-        classificationType = getClassificationType(ModelTestUtil.getClassificationDefWithSuperTypes());
-
-        AtlasClassification invalidValue1   = classificationType.createDefaultValue();
-        AtlasClassification invalidValue2   = classificationType.createDefaultValue();
-        Map<String, Object> invalidValue3   = classificationType.createDefaultValue().getAttributes();
-        AtlasClassification validValueTB1   = classificationType.createDefaultValue();
-        AtlasClassification validValueTB2   = classificationType.createDefaultValue();
-        AtlasClassification validValueTB3   = classificationType.createDefaultValue();
-        AtlasClassification validValueTB4   = classificationType.createDefaultValue();
-        AtlasClassification validValueTB5   = classificationType.createDefaultValue();
-        AtlasClassification validValueTB6   = classificationType.createDefaultValue();
-        AtlasClassification invalidValueTB1 = classificationType.createDefaultValue();
-        AtlasClassification invalidValueTB2 = classificationType.createDefaultValue();
-        AtlasClassification invalidValueTB3 = classificationType.createDefaultValue();
-        AtlasClassification invalidValueTB4 = classificationType.createDefaultValue();
-        AtlasClassification invalidValueTB5 = classificationType.createDefaultValue();
-        AtlasClassification invalidValueTB6 = classificationType.createDefaultValue();
-
-        TimeBoundary        validTB1        = new TimeBoundary("2018/07/07 04:38:55");                        // valid start-time
-        TimeBoundary        validTB2        = new TimeBoundary(null, "2018/07/08 04:38:55");                  // valid end-time
-        TimeBoundary        validTB3        = new TimeBoundary("2018/07/07 04:38:55", "2018/07/08 04:38:55"); // valid start and end times
-        TimeBoundary        validTB4        = new TimeBoundary("2018/07/07 04:38:55", "2018/07/08 04:38:55","America/Los_Angeles"); // valid start and end times and timezone in  country/city
-        TimeBoundary        validTB5        = new TimeBoundary(null, "2018/07/08 04:38:55", "GMT+10:30"); // valid start and end times and timezone
-        TimeBoundary        validTB6        = new TimeBoundary("2018/07/07 04:38:55", "2018/07/08 04:38:55","GMT"); // valid start and end times and timezone in GMT
-        TimeBoundary        validTB7        = new TimeBoundary("2018/07/07 04:38:55", "2019/07/08 04:38:55",null); // valid start and end times and timezone null
-        TimeBoundary        invalidTB1      = new TimeBoundary("2018-07-07 04:38:55");                        // invalid start-time
-        TimeBoundary        invalidTB2      = new TimeBoundary(null, "2018-07-08 04:38:55");                  // invalid end-time
-        TimeBoundary        invalidTB3      = new TimeBoundary("2018/07/08 04:38:55", "2018/07/07 04:38:55"); // invalid time-ranger
-        TimeBoundary        invalidTB4      = new TimeBoundary("2018/07/08 04:38:55", "2018/07/07 04:38:55", ""); // invalid time-zone
-        TimeBoundary        invalidTB5      = new TimeBoundary("2018/07/08 04:38:55", "2018/07/07 04:38:55","GMT+10:-30"); // invalid time-zone
-        TimeBoundary        invalidTB6      = new TimeBoundary("2018/07/08 04:38:55", "2018/07/07 04:38:55","abcd"); // invalid time-zone
-
-
-
-        validValueTB1.addValityPeriod(validTB1);
-        validValueTB2.addValityPeriod(validTB2);
-        validValueTB3.addValityPeriod(validTB3);
-        validValueTB4.addValityPeriod(validTB4);
-        validValueTB5.addValityPeriod(validTB5);
-        validValueTB6.addValityPeriod(validTB6);
-        validValueTB6.addValityPeriod(validTB7);
-
-        invalidValueTB1.addValityPeriod(invalidTB1);
-        invalidValueTB2.addValityPeriod(invalidTB2);
-        invalidValueTB3.addValityPeriod(invalidTB3);
-        invalidValueTB4.addValityPeriod(invalidTB4);
-        invalidValueTB5.addValityPeriod(invalidTB5);
-        invalidValueTB6.addValityPeriod(invalidTB6);
-
-
-        // invalid value for int
-        invalidValue1.setAttribute(ModelTestUtil.getDefaultAttributeName(AtlasBaseTypeDef.ATLAS_TYPE_INT), "xyz");
-        // invalid value for date
-        invalidValue2.setAttribute(ModelTestUtil.getDefaultAttributeName(AtlasBaseTypeDef.ATLAS_TYPE_DATE), "xyz");
-        // invalid value for bigint
-        invalidValue3.put(ModelTestUtil.getDefaultAttributeName(AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER), "xyz");
-
-        validValues.add(null);
-        validValues.add(classificationType.createDefaultValue());
-        validValues.add(classificationType.createDefaultValue().getAttributes()); // Map<String, Object>
-        validValues.add(validValueTB1);
-        validValues.add(validValueTB2);
-        validValues.add(validValueTB3);
-        validValues.add(validValueTB4);
-        validValues.add(validValueTB5);
-        validValues.add(validValueTB6);
-
-        invalidValues.add(invalidValue1);
-        invalidValues.add(invalidValue2);
-        invalidValues.add(invalidValue3);
-        invalidValues.add(new AtlasClassification());     // no values for mandatory attributes
-        invalidValues.add(new HashMap<>()); // no values for mandatory attributes
-        invalidValues.add(1);               // incorrect datatype
-        invalidValues.add(new HashSet());   // incorrect datatype
-        invalidValues.add(new ArrayList()); // incorrect datatype
-        invalidValues.add(new String[] {}); // incorrect datatype
-        invalidValues.add(invalidValueTB1);
-        invalidValues.add(invalidValueTB2);
-        invalidValues.add(invalidValueTB3);
-        invalidValues.add(invalidValueTB4);  //incorrect timezone
-        invalidValues.add(invalidValueTB5);  //incorrect timezone
-        invalidValues.add(invalidValueTB6);  //incorrect timezone
-    }
+    private final List<Object>            validValues   = new ArrayList<>();
+    private final List<Object>            invalidValues = new ArrayList<>();
 
     @Test
     public void testClassificationTypeDefaultValue() {
@@ -132,44 +59,28 @@ public class TestAtlasClassificationType {
         assertEquals(defValue.getTypeName(), classificationType.getTypeName());
     }
 
-    //       EntityA     EntityB    EntityE
-    //       /              \       /
-    //      /               \      /
-    //    EntityC           EntityF
-    //    /
-    //   /
-    // EntityD
-
-    //       Classify1(EntityA)     Classify6(EntityB)    Classify2     Classify9(EntityE)   Classify5(EntityA,EntityC)  Classify5(EntityC,EntityA)
-    //       /                \       /              \
-    //      /                  \     /               \
-    //    Classify3       Classify7 **invalid**    Classify8(EntityA) **invalid**
-    //    /
-    //   /
-    // Classify4((EntityD)
-
     @Test
     public void testcanApplyToEntityType() throws AtlasBaseException {
-        AtlasEntityDef         entityDefA   = new AtlasEntityDef("EntityA");
-        AtlasEntityDef         entityDefB   = new AtlasEntityDef("EntityB");
-        AtlasEntityDef         entityDefC   = new AtlasEntityDef("EntityC", null, null, null, new HashSet<>(Arrays.asList(entityDefA.getName())));
-        AtlasEntityDef         entityDefD   = new AtlasEntityDef("EntityD", null, null, null, new HashSet<>(Arrays.asList(entityDefC.getName())));
-        AtlasEntityDef         entityDefE   = new AtlasEntityDef("EntityE");
-        AtlasEntityDef         entityDefF  =  new AtlasEntityDef("EntityF", null, null, null, new HashSet<>(Arrays.asList(entityDefB.getName(),entityDefE.getName())));
+        AtlasEntityDef entityDefA = new AtlasEntityDef("EntityA");
+        AtlasEntityDef entityDefB = new AtlasEntityDef("EntityB");
+        AtlasEntityDef entityDefC = new AtlasEntityDef("EntityC", null, null, null, new HashSet<>(Collections.singletonList(entityDefA.getName())));
+        AtlasEntityDef entityDefD = new AtlasEntityDef("EntityD", null, null, null, new HashSet<>(Collections.singletonList(entityDefC.getName())));
+        AtlasEntityDef entityDefE = new AtlasEntityDef("EntityE");
+        AtlasEntityDef entityDefF = new AtlasEntityDef("EntityF", null, null, null, new HashSet<>(Arrays.asList(entityDefB.getName(), entityDefE.getName())));
 
-        AtlasClassificationDef classifyDef1 = new AtlasClassificationDef("Classify1", null, null, null, null, new HashSet<>(Arrays.asList(entityDefA.getName())), null);
-        AtlasClassificationDef classifyDef2 = new AtlasClassificationDef("Classify2");
-        AtlasClassificationDef classifyDef3 = new AtlasClassificationDef("Classify3", null, null, null, new HashSet<>(Arrays.asList(classifyDef1.getName())), null, null);
-        AtlasClassificationDef classifyDef4 = new AtlasClassificationDef("Classify4", null, null, null, new HashSet<>(Arrays.asList(classifyDef1.getName())), new HashSet<>(Arrays.asList(entityDefD.getName())), null);
-        AtlasClassificationDef classifyDef5 = new AtlasClassificationDef("Classify5", null, null, null, null, new HashSet<>(Arrays.asList(entityDefA.getName(),entityDefC.getName())), null);
-        AtlasClassificationDef classifyDef6 = new AtlasClassificationDef("Classify6", null, null, null, null, new HashSet<>(Arrays.asList(entityDefB.getName())), null);
-        AtlasClassificationDef classifyDef7 = new AtlasClassificationDef("Classify7", null, null, null,  new HashSet<>(Arrays.asList(classifyDef1.getName(),classifyDef6.getName())),null, null);
-        AtlasClassificationDef classifyDef8 = new AtlasClassificationDef("Classify8", null, null, null,  new HashSet<>(Arrays.asList(classifyDef6.getName())),new HashSet<>(Arrays.asList(entityDefA.getName())), null);
-        AtlasClassificationDef classifyDef9 = new AtlasClassificationDef("Classify9", null, null, null, null, new HashSet<>(Arrays.asList(entityDefE.getName())), null);
-        AtlasClassificationDef classifyDef10 = new AtlasClassificationDef("Classify10", null, null, null, null, new HashSet<>(Arrays.asList(entityDefC.getName(),entityDefA.getName())), null);
+        AtlasClassificationDef classifyDef1  = new AtlasClassificationDef("Classify1", null, null, null, null, new HashSet<>(Collections.singletonList(entityDefA.getName())), null);
+        AtlasClassificationDef classifyDef2  = new AtlasClassificationDef("Classify2");
+        AtlasClassificationDef classifyDef3  = new AtlasClassificationDef("Classify3", null, null, null, new HashSet<>(Collections.singletonList(classifyDef1.getName())), null, null);
+        AtlasClassificationDef classifyDef4  = new AtlasClassificationDef("Classify4", null, null, null, new HashSet<>(Collections.singletonList(classifyDef1.getName())), new HashSet<>(Collections.singletonList(entityDefD.getName())), null);
+        AtlasClassificationDef classifyDef5  = new AtlasClassificationDef("Classify5", null, null, null, null, new HashSet<>(Arrays.asList(entityDefA.getName(), entityDefC.getName())), null);
+        AtlasClassificationDef classifyDef6  = new AtlasClassificationDef("Classify6", null, null, null, null, new HashSet<>(Collections.singletonList(entityDefB.getName())), null);
+        AtlasClassificationDef classifyDef7  = new AtlasClassificationDef("Classify7", null, null, null, new HashSet<>(Arrays.asList(classifyDef1.getName(), classifyDef6.getName())), null, null);
+        AtlasClassificationDef classifyDef8  = new AtlasClassificationDef("Classify8", null, null, null, new HashSet<>(Collections.singletonList(classifyDef6.getName())), new HashSet<>(Collections.singletonList(entityDefA.getName())), null);
+        AtlasClassificationDef classifyDef9  = new AtlasClassificationDef("Classify9", null, null, null, null, new HashSet<>(Collections.singletonList(entityDefE.getName())), null);
+        AtlasClassificationDef classifyDef10 = new AtlasClassificationDef("Classify10", null, null, null, null, new HashSet<>(Arrays.asList(entityDefC.getName(), entityDefA.getName())), null);
 
-        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
-        AtlasTransientTypeRegistry ttr  = registry.lockTypeRegistryForUpdate();
+        AtlasTypeRegistry          registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr      = registry.lockTypeRegistryForUpdate();
 
         ttr.addType(entityDefA);
         ttr.addType(entityDefB);
@@ -189,14 +100,14 @@ public class TestAtlasClassificationType {
         registry.releaseTypeRegistryForUpdate(ttr, true);
 
         // test invalid adds
-        ttr      = registry.lockTypeRegistryForUpdate();
+        ttr = registry.lockTypeRegistryForUpdate();
         try {
             ttr.addType(classifyDef7);
             fail("Fail disjoined parent case");
         } catch (AtlasBaseException ae) {
             registry.releaseTypeRegistryForUpdate(ttr, false);
         }
-        ttr      = registry.lockTypeRegistryForUpdate();
+        ttr = registry.lockTypeRegistryForUpdate();
         try {
             ttr.addType(classifyDef8);
             fail("Fail trying to add an entity type that is not in the parent");
@@ -204,19 +115,19 @@ public class TestAtlasClassificationType {
             registry.releaseTypeRegistryForUpdate(ttr, false);
         }
 
-        AtlasEntityType         entityTypeA   = registry.getEntityTypeByName(entityDefA.getName());
-        AtlasEntityType         entityTypeB   = registry.getEntityTypeByName(entityDefB.getName());
-        AtlasEntityType         entityTypeC   = registry.getEntityTypeByName(entityDefC.getName());
-        AtlasEntityType         entityTypeD   = registry.getEntityTypeByName(entityDefD.getName());
-        AtlasEntityType         entityTypeE   = registry.getEntityTypeByName(entityDefE.getName());
-        AtlasEntityType         entityTypeF   = registry.getEntityTypeByName(entityDefF.getName());
-        AtlasClassificationType classifyType1 = registry.getClassificationTypeByName(classifyDef1.getName());
-        AtlasClassificationType classifyType2 = registry.getClassificationTypeByName(classifyDef2.getName());
-        AtlasClassificationType classifyType3 = registry.getClassificationTypeByName(classifyDef3.getName());
-        AtlasClassificationType classifyType4 = registry.getClassificationTypeByName(classifyDef4.getName());
-        AtlasClassificationType classifyType5 = registry.getClassificationTypeByName(classifyDef5.getName());
-        AtlasClassificationType classifyType6 = registry.getClassificationTypeByName(classifyDef6.getName());
-        AtlasClassificationType classifyType9 = registry.getClassificationTypeByName(classifyDef9.getName());
+        AtlasEntityType         entityTypeA    = registry.getEntityTypeByName(entityDefA.getName());
+        AtlasEntityType         entityTypeB    = registry.getEntityTypeByName(entityDefB.getName());
+        AtlasEntityType         entityTypeC    = registry.getEntityTypeByName(entityDefC.getName());
+        AtlasEntityType         entityTypeD    = registry.getEntityTypeByName(entityDefD.getName());
+        AtlasEntityType         entityTypeE    = registry.getEntityTypeByName(entityDefE.getName());
+        AtlasEntityType         entityTypeF    = registry.getEntityTypeByName(entityDefF.getName());
+        AtlasClassificationType classifyType1  = registry.getClassificationTypeByName(classifyDef1.getName());
+        AtlasClassificationType classifyType2  = registry.getClassificationTypeByName(classifyDef2.getName());
+        AtlasClassificationType classifyType3  = registry.getClassificationTypeByName(classifyDef3.getName());
+        AtlasClassificationType classifyType4  = registry.getClassificationTypeByName(classifyDef4.getName());
+        AtlasClassificationType classifyType5  = registry.getClassificationTypeByName(classifyDef5.getName());
+        AtlasClassificationType classifyType6  = registry.getClassificationTypeByName(classifyDef6.getName());
+        AtlasClassificationType classifyType9  = registry.getClassificationTypeByName(classifyDef9.getName());
         AtlasClassificationType classifyType10 = registry.getClassificationTypeByName(classifyDef10.getName());
 
         // verify restrictions on Classify1
@@ -253,9 +164,23 @@ public class TestAtlasClassificationType {
         assertTrue(classifyType5.canApplyToEntityType(entityTypeC)); // EntityC can be classified by Classify5
         assertTrue(classifyType10.canApplyToEntityType(entityTypeA)); // EntityA can be classified by Classify10
         assertTrue(classifyType10.canApplyToEntityType(entityTypeC)); // EntityC can be classified by Classify10
-
-
     }
+
+    //       EntityA     EntityB    EntityE
+    //       /              \       /
+    //      /               \      /
+    //    EntityC           EntityF
+    //    /
+    //   /
+    // EntityD
+
+    //       Classify1(EntityA)     Classify6(EntityB)    Classify2     Classify9(EntityE)   Classify5(EntityA,EntityC)  Classify5(EntityC,EntityA)
+    //       /                \       /              \
+    //      /                  \     /               \
+    //    Classify3       Classify7 **invalid**    Classify8(EntityA) **invalid**
+    //    /
+    //   /
+    // Classify4((EntityD)
 
     @Test
     public void testClassificationTypeIsValidValue() {
@@ -297,38 +222,29 @@ public class TestAtlasClassificationType {
 
         for (Object value : invalidValues) {
             assertFalse(classificationType.validateValue(value, "testObj", messages));
-            assertTrue(messages.size() > 0, "value=" + value);
+            assertFalse(messages.isEmpty(), "value=" + value);
             messages.clear();
-        }
-    }
-
-    private static AtlasClassificationType getClassificationType(AtlasClassificationDef classificationDef) {
-        try {
-            return new AtlasClassificationType(classificationDef, ModelTestUtil.getTypesRegistry());
-        } catch (AtlasBaseException excp) {
-            return null;
         }
     }
 
     @Test
     public void testClassificationTimebounderTimeZone() {
-
         assertTrue(isValidTimeZone("IST"));
         assertTrue(isValidTimeZone("JST"));
         assertTrue(isValidTimeZone("UTC"));
         assertTrue(isValidTimeZone("GMT"));
 
-        assertTrue(isValidTimeZone("GMT+0"));// GMT+00:00
-        assertTrue(isValidTimeZone("GMT-0"));// GMT-00:00
-        assertTrue(isValidTimeZone("GMT+9:00"));// GMT+09:00
-        assertTrue(isValidTimeZone("GMT+10:30"));// GMT+10:30
-        assertTrue(isValidTimeZone("GMT-0400"));// GMT-04:00
+        assertTrue(isValidTimeZone("GMT+0")); // GMT+00:00
+        assertTrue(isValidTimeZone("GMT-0")); // GMT-00:00
+        assertTrue(isValidTimeZone("GMT+9:00")); // GMT+09:00
+        assertTrue(isValidTimeZone("GMT+10:30")); // GMT+10:30
+        assertTrue(isValidTimeZone("GMT-0400")); // GMT-04:00
         assertTrue(isValidTimeZone("GMT+8")); // GMT+08:00
         assertTrue(isValidTimeZone("GMT-13")); // GMT-13:00
-        assertTrue(isValidTimeZone("GMT+13:59"));// GMT-13:59
+        assertTrue(isValidTimeZone("GMT+13:59")); // GMT-13:59
 
         assertTrue(isValidTimeZone("America/Los_Angeles")); // GMT-08:00
-        assertTrue(isValidTimeZone("Japan"));// GMT+09:00
+        assertTrue(isValidTimeZone("Japan")); // GMT+09:00
         assertTrue(isValidTimeZone("Europe/Berlin")); // GMT+01:00
         assertTrue(isValidTimeZone("Europe/Moscow")); // GMT+04:00
         assertTrue(isValidTimeZone("Asia/Singapore")); // GMT+08:00
@@ -343,20 +259,19 @@ public class TestAtlasClassificationType {
         assertFalse(isValidTimeZone("GMT+10:-30"));
         assertFalse(isValidTimeZone("GMT+24:00")); // hours is 0-23 only
         assertFalse(isValidTimeZone("GMT+13:60")); // minutes 00-59 only
-
     }
 
     @Test
     public void testInvalidAttributeNameForSubtype() throws AtlasBaseException {
-        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
-        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
+        AtlasTypeRegistry          registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr      = registry.lockTypeRegistryForUpdate();
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasClassificationDef classificationDefParent = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
+        AtlasClassificationDef           classificationDefParent           = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
         ttr.addType(classificationDefParent);
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefChild = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasClassificationDef classificationDefChild = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild), Collections.singleton("classificationDefParent"));
+        AtlasClassificationDef           classificationDefChild           = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild), Collections.singleton("classificationDefParent"));
         try {
             ttr.addType(classificationDefChild);
             fail("Parent attribute name and Child attribute name should not be the same");
@@ -369,15 +284,15 @@ public class TestAtlasClassificationType {
 
     @Test
     public void testInvalidAttributeNameForSubtypeUpdate() throws AtlasBaseException {
-        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
-        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
+        AtlasTypeRegistry          registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr      = registry.lockTypeRegistryForUpdate();
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasClassificationDef classificationDefParent = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
+        AtlasClassificationDef           classificationDefParent           = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
         ttr.addType(classificationDefParent);
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefChild = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasClassificationDef classificationDefChild = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild));
+        AtlasClassificationDef           classificationDefChild           = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild));
         ttr.addType(classificationDefChild);
 
         Set<String> superTypes = classificationDefChild.getSuperTypes();
@@ -398,19 +313,19 @@ public class TestAtlasClassificationType {
 
     @Test
     public void testInvalidAttributeNameForSubtypeForMultipleParents() throws AtlasBaseException {
-        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
-        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
+        AtlasTypeRegistry          registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr      = registry.lockTypeRegistryForUpdate();
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasClassificationDef classificationDefParent = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
+        AtlasClassificationDef           classificationDefParent           = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
         ttr.addType(classificationDefParent);
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent2 = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasClassificationDef classificationDefParent2 = new AtlasClassificationDef("classificationDefParent2", "classificationDefParent2 desc", null, Collections.singletonList(attrDefForClassificationDefParent2));
+        AtlasClassificationDef           classificationDefParent2           = new AtlasClassificationDef("classificationDefParent2", "classificationDefParent2 desc", null, Collections.singletonList(attrDefForClassificationDefParent2));
         ttr.addType(classificationDefParent2);
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefChild = new AtlasStructDef.AtlasAttributeDef("attributeC", "string");
-        Set<String> superTypes = new HashSet<>();
+        Set<String>                      superTypes                       = new HashSet<>();
         superTypes.add("classificationDefParent");
         superTypes.add("classificationDefParent2");
         AtlasClassificationDef classificationDefChild = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild), superTypes);
@@ -427,19 +342,19 @@ public class TestAtlasClassificationType {
 
     @Test
     public void testInvalidAttributeNameForSubtypeForMultipleParents_Update() throws AtlasBaseException {
-        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
-        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
+        AtlasTypeRegistry          registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr      = registry.lockTypeRegistryForUpdate();
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasClassificationDef classificationDefParent = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
+        AtlasClassificationDef           classificationDefParent           = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
         ttr.addType(classificationDefParent);
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent2 = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasClassificationDef classificationDefParent2 = new AtlasClassificationDef("classificationDefParent2", "classificationDefParent2 desc", null, Collections.singletonList(attrDefForClassificationDefParent2));
+        AtlasClassificationDef           classificationDefParent2           = new AtlasClassificationDef("classificationDefParent2", "classificationDefParent2 desc", null, Collections.singletonList(attrDefForClassificationDefParent2));
         ttr.addType(classificationDefParent2);
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefChild = new AtlasStructDef.AtlasAttributeDef("attributeC", "string");
-        AtlasClassificationDef classificationDefChild = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild), Collections.singleton("classificationDefParent"));
+        AtlasClassificationDef           classificationDefChild           = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild), Collections.singleton("classificationDefParent"));
         ttr.addType(classificationDefChild);
 
         Set<String> superTypes = classificationDefChild.getSuperTypes();
@@ -459,16 +374,16 @@ public class TestAtlasClassificationType {
 
     @Test
     public void testSkipInvalidAttributeNameForSubtype() throws AtlasBaseException {
-        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
-        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
+        AtlasTypeRegistry          registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr      = registry.lockTypeRegistryForUpdate();
         AtlasStructType.skipCheckForParentChildAttributeName = true;
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasClassificationDef classificationDefParent = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
+        AtlasClassificationDef           classificationDefParent           = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
         ttr.addType(classificationDefParent);
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefChild = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasClassificationDef classificationDefChild = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild), Collections.singleton("classificationDefParent"));
+        AtlasClassificationDef           classificationDefChild           = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild), Collections.singleton("classificationDefParent"));
 
         try {
             ttr.addType(classificationDefChild);
@@ -483,20 +398,20 @@ public class TestAtlasClassificationType {
 
     @Test
     public void testSkipInvalidAttributeNameForSubtypeForMultipleParents() throws AtlasBaseException {
-        AtlasTypeRegistry registry = ModelTestUtil.getTypesRegistry();
-        AtlasTransientTypeRegistry ttr = registry.lockTypeRegistryForUpdate();
+        AtlasTypeRegistry          registry = ModelTestUtil.getTypesRegistry();
+        AtlasTransientTypeRegistry ttr      = registry.lockTypeRegistryForUpdate();
         AtlasStructType.skipCheckForParentChildAttributeName = true;
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasClassificationDef classificationDefParent = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
+        AtlasClassificationDef           classificationDefParent           = new AtlasClassificationDef("classificationDefParent", "classificationDefParent desc", null, Collections.singletonList(attrDefForClassificationDefParent));
         ttr.addType(classificationDefParent);
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefParent2 = new AtlasStructDef.AtlasAttributeDef("attributeP", "string");
-        AtlasClassificationDef classificationDefParent2 = new AtlasClassificationDef("classificationDefParent2", "classificationDefParent2 desc", null, Collections.singletonList(attrDefForClassificationDefParent2));
+        AtlasClassificationDef           classificationDefParent2           = new AtlasClassificationDef("classificationDefParent2", "classificationDefParent2 desc", null, Collections.singletonList(attrDefForClassificationDefParent2));
         ttr.addType(classificationDefParent2);
 
         AtlasStructDef.AtlasAttributeDef attrDefForClassificationDefChild = new AtlasStructDef.AtlasAttributeDef("attributeC", "string");
-        Set<String> superTypes = new HashSet<>();
+        Set<String>                      superTypes                       = new HashSet<>();
         superTypes.add("classificationDefParent");
         superTypes.add("classificationDefParent2");
         AtlasClassificationDef classificationDefChild = new AtlasClassificationDef("classificationDefChild", "classificationDefChild desc", null, Collections.singletonList(attrDefForClassificationDefChild), superTypes);
@@ -510,5 +425,95 @@ public class TestAtlasClassificationType {
             AtlasStructType.skipCheckForParentChildAttributeName = false;
             registry.releaseTypeRegistryForUpdate(ttr, false);
         }
+    }
+
+    private static AtlasClassificationType getClassificationType(AtlasClassificationDef classificationDef) {
+        try {
+            return new AtlasClassificationType(classificationDef, ModelTestUtil.getTypesRegistry());
+        } catch (AtlasBaseException excp) {
+            return null;
+        }
+    }
+
+    {
+        classificationType = getClassificationType(ModelTestUtil.getClassificationDefWithSuperTypes());
+
+        AtlasClassification invalidValue1   = classificationType.createDefaultValue();
+        AtlasClassification invalidValue2   = classificationType.createDefaultValue();
+        Map<String, Object> invalidValue3   = classificationType.createDefaultValue().getAttributes();
+        AtlasClassification validValueTB1   = classificationType.createDefaultValue();
+        AtlasClassification validValueTB2   = classificationType.createDefaultValue();
+        AtlasClassification validValueTB3   = classificationType.createDefaultValue();
+        AtlasClassification validValueTB4   = classificationType.createDefaultValue();
+        AtlasClassification validValueTB5   = classificationType.createDefaultValue();
+        AtlasClassification validValueTB6   = classificationType.createDefaultValue();
+        AtlasClassification invalidValueTB1 = classificationType.createDefaultValue();
+        AtlasClassification invalidValueTB2 = classificationType.createDefaultValue();
+        AtlasClassification invalidValueTB3 = classificationType.createDefaultValue();
+        AtlasClassification invalidValueTB4 = classificationType.createDefaultValue();
+        AtlasClassification invalidValueTB5 = classificationType.createDefaultValue();
+        AtlasClassification invalidValueTB6 = classificationType.createDefaultValue();
+
+        TimeBoundary validTB1   = new TimeBoundary("2018/07/07 04:38:55");                        // valid start-time
+        TimeBoundary validTB2   = new TimeBoundary(null, "2018/07/08 04:38:55");                  // valid end-time
+        TimeBoundary validTB3   = new TimeBoundary("2018/07/07 04:38:55", "2018/07/08 04:38:55"); // valid start and end times
+        TimeBoundary validTB4   = new TimeBoundary("2018/07/07 04:38:55", "2018/07/08 04:38:55", "America/Los_Angeles"); // valid start and end times and timezone in  country/city
+        TimeBoundary validTB5   = new TimeBoundary(null, "2018/07/08 04:38:55", "GMT+10:30"); // valid start and end times and timezone
+        TimeBoundary validTB6   = new TimeBoundary("2018/07/07 04:38:55", "2018/07/08 04:38:55", "GMT"); // valid start and end times and timezone in GMT
+        TimeBoundary validTB7   = new TimeBoundary("2018/07/07 04:38:55", "2019/07/08 04:38:55", null); // valid start and end times and timezone null
+        TimeBoundary invalidTB1 = new TimeBoundary("2018-07-07 04:38:55");                        // invalid start-time
+        TimeBoundary invalidTB2 = new TimeBoundary(null, "2018-07-08 04:38:55");                  // invalid end-time
+        TimeBoundary invalidTB3 = new TimeBoundary("2018/07/08 04:38:55", "2018/07/07 04:38:55"); // invalid time-ranger
+        TimeBoundary invalidTB4 = new TimeBoundary("2018/07/08 04:38:55", "2018/07/07 04:38:55", ""); // invalid time-zone
+        TimeBoundary invalidTB5 = new TimeBoundary("2018/07/08 04:38:55", "2018/07/07 04:38:55", "GMT+10:-30"); // invalid time-zone
+        TimeBoundary invalidTB6 = new TimeBoundary("2018/07/08 04:38:55", "2018/07/07 04:38:55", "abcd"); // invalid time-zone
+
+        validValueTB1.addValityPeriod(validTB1);
+        validValueTB2.addValityPeriod(validTB2);
+        validValueTB3.addValityPeriod(validTB3);
+        validValueTB4.addValityPeriod(validTB4);
+        validValueTB5.addValityPeriod(validTB5);
+        validValueTB6.addValityPeriod(validTB6);
+        validValueTB6.addValityPeriod(validTB7);
+
+        invalidValueTB1.addValityPeriod(invalidTB1);
+        invalidValueTB2.addValityPeriod(invalidTB2);
+        invalidValueTB3.addValityPeriod(invalidTB3);
+        invalidValueTB4.addValityPeriod(invalidTB4);
+        invalidValueTB5.addValityPeriod(invalidTB5);
+        invalidValueTB6.addValityPeriod(invalidTB6);
+
+        // invalid value for int
+        invalidValue1.setAttribute(ModelTestUtil.getDefaultAttributeName(AtlasBaseTypeDef.ATLAS_TYPE_INT), "xyz");
+        // invalid value for date
+        invalidValue2.setAttribute(ModelTestUtil.getDefaultAttributeName(AtlasBaseTypeDef.ATLAS_TYPE_DATE), "xyz");
+        // invalid value for bigint
+        invalidValue3.put(ModelTestUtil.getDefaultAttributeName(AtlasBaseTypeDef.ATLAS_TYPE_BIGINTEGER), "xyz");
+
+        validValues.add(null);
+        validValues.add(classificationType.createDefaultValue());
+        validValues.add(classificationType.createDefaultValue().getAttributes()); // Map<String, Object>
+        validValues.add(validValueTB1);
+        validValues.add(validValueTB2);
+        validValues.add(validValueTB3);
+        validValues.add(validValueTB4);
+        validValues.add(validValueTB5);
+        validValues.add(validValueTB6);
+
+        invalidValues.add(invalidValue1);
+        invalidValues.add(invalidValue2);
+        invalidValues.add(invalidValue3);
+        invalidValues.add(new AtlasClassification());     // no values for mandatory attributes
+        invalidValues.add(new HashMap<>()); // no values for mandatory attributes
+        invalidValues.add(1);               // incorrect datatype
+        invalidValues.add(new HashSet<>());   // incorrect datatype
+        invalidValues.add(new ArrayList<>()); // incorrect datatype
+        invalidValues.add(new String[] {}); // incorrect datatype
+        invalidValues.add(invalidValueTB1);
+        invalidValues.add(invalidValueTB2);
+        invalidValues.add(invalidValueTB3);
+        invalidValues.add(invalidValueTB4);  //incorrect timezone
+        invalidValues.add(invalidValueTB5);  //incorrect timezone
+        invalidValues.add(invalidValueTB6);  //incorrect timezone
     }
 }

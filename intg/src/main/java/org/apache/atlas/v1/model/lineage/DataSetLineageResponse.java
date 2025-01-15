@@ -17,20 +17,22 @@
  */
 package org.apache.atlas.v1.model.lineage;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.io.Serializable;
 import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DataSetLineageResponse extends LineageResponse {
+public class DataSetLineageResponse extends LineageResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String tableName;
 
     public DataSetLineageResponse() {
@@ -50,17 +52,22 @@ public class DataSetLineageResponse extends LineageResponse {
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-        final DataSetLineageResponse that = (DataSetLineageResponse) o;
-        return Objects.equals(tableName, that.tableName);
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), tableName);
     }
 
     @Override
-    public int hashCode() {
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        } else if (!super.equals(o)) {
+            return false;
+        }
 
-        return Objects.hash(super.hashCode(), tableName);
+        final DataSetLineageResponse that = (DataSetLineageResponse) o;
+
+        return Objects.equals(tableName, that.tableName);
     }
 }

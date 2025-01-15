@@ -17,12 +17,11 @@
  */
 package org.apache.atlas.model.discovery;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.SortOrder;
 
 import java.io.Serializable;
@@ -36,38 +35,36 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class SearchParameters implements Serializable {
     private static final long serialVersionUID = 1L;
-
-    private String  query;
-    private String  typeName;
-    private String  classification;
-    private String  relationshipName;
-    private String  termName;
-    private String  sortBy;
-    private boolean excludeDeletedEntities;
-    private boolean includeClassificationAttributes;
-    private boolean includeSubTypes                 = true;
-    private boolean includeSubClassifications       = true;
-    private boolean excludeHeaderAttributes         = false;
-
-    private int     limit;
-    private int     offset;
-    private String  marker;
-
-    private FilterCriteria entityFilters;
-    private FilterCriteria tagFilters;
-    private FilterCriteria relationshipFilters;
-    private Set<String>    attributes;
-    private SortOrder      sortOrder;
 
     public static final String WILDCARD_CLASSIFICATIONS = "*";
     public static final String ALL_CLASSIFICATIONS      = "_CLASSIFIED";
     public static final String NO_CLASSIFICATIONS       = "_NOT_CLASSIFIED";
     public static final String ALL_ENTITY_TYPES         = "_ALL_ENTITY_TYPES";
     public static final String ALL_CLASSIFICATION_TYPES = "_ALL_CLASSIFICATION_TYPES";
+
+    private String         query;
+    private String         typeName;
+    private String         classification;
+    private String         relationshipName;
+    private String         termName;
+    private String         sortBy;
+    private boolean        excludeDeletedEntities;
+    private boolean        includeClassificationAttributes;
+    private boolean        includeSubTypes           = true;
+    private boolean        includeSubClassifications = true;
+    private boolean        excludeHeaderAttributes;
+    private int            limit;
+    private int            offset;
+    private String         marker;
+    private FilterCriteria entityFilters;
+    private FilterCriteria tagFilters;
+    private FilterCriteria relationshipFilters;
+    private Set<String>    attributes;
+    private SortOrder      sortOrder;
 
     /**
      * @return The type of query
@@ -78,6 +75,7 @@ public class SearchParameters implements Serializable {
 
     /**
      * Set query type
+     *
      * @param query type
      */
     public void setQuery(String query) {
@@ -93,6 +91,7 @@ public class SearchParameters implements Serializable {
 
     /**
      * Set the type name to search on
+     *
      * @param typeName type name
      */
     public void setTypeName(String typeName) {
@@ -100,7 +99,6 @@ public class SearchParameters implements Serializable {
     }
 
     /**
-     *
      * @return termName to search on
      */
     public String getTermName() {
@@ -109,6 +107,7 @@ public class SearchParameters implements Serializable {
 
     /**
      * Set the classification/tag to search on
+     *
      * @param termName classification/tag name
      */
     public void setTermName(String termName) {
@@ -116,7 +115,6 @@ public class SearchParameters implements Serializable {
     }
 
     /**
-     *
      * @return Classification/tag to search on
      */
     public String getClassification() {
@@ -125,6 +123,7 @@ public class SearchParameters implements Serializable {
 
     /**
      * Set the classification/tag to search on
+     *
      * @param classification classification/tag name
      */
     public void setClassification(String classification) {
@@ -148,6 +147,7 @@ public class SearchParameters implements Serializable {
 
     /**
      * Exclude deleted entities from search
+     *
      * @param excludeDeletedEntities boolean flag
      */
     public void setExcludeDeletedEntities(boolean excludeDeletedEntities) {
@@ -163,6 +163,7 @@ public class SearchParameters implements Serializable {
 
     /**
      * Include classificatio attributes in search result.
+     *
      * @param includeClassificationAttributes boolean flag
      */
     public void setIncludeClassificationAttributes(boolean includeClassificationAttributes) {
@@ -178,6 +179,7 @@ public class SearchParameters implements Serializable {
 
     /**
      * Include sub-type entities in search
+     *
      * @param includeSubTypes boolean flag
      */
     public void setIncludeSubTypes(boolean includeSubTypes) {
@@ -193,6 +195,7 @@ public class SearchParameters implements Serializable {
 
     /**
      * Include sub-classifications in search
+     *
      * @param includeSubClassifications boolean flag
      */
     public void setIncludeSubClassifications(boolean includeSubClassifications) {
@@ -208,6 +211,7 @@ public class SearchParameters implements Serializable {
 
     /**
      * Restrict the results to the specified limit
+     *
      * @param limit max number of results
      */
     public void setLimit(int limit) {
@@ -231,15 +235,20 @@ public class SearchParameters implements Serializable {
     /**
      * @return marker (offset of the next page)
      */
-    public String getMarker() { return marker; }
+    public String getMarker() {
+        return marker;
+    }
 
     /**
      * @param marker
      */
-    public void setMarker(String marker) { this.marker = marker; }
+    public void setMarker(String marker) {
+        this.marker = marker;
+    }
 
     /**
      * Entity attribute filters for the type (if type name is specified)
+     *
      * @return
      */
     public FilterCriteria getEntityFilters() {
@@ -248,6 +257,7 @@ public class SearchParameters implements Serializable {
 
     /**
      * Filter the entities on this criteria
+     *
      * @param entityFilters
      */
     public void setEntityFilters(FilterCriteria entityFilters) {
@@ -256,6 +266,7 @@ public class SearchParameters implements Serializable {
 
     /**
      * Tag attribute filters for the classification/tag (if tag name is specified)
+     *
      * @return
      */
     public FilterCriteria getTagFilters() {
@@ -264,6 +275,7 @@ public class SearchParameters implements Serializable {
 
     /**
      * Filter the tag/classification on this criteria
+     *
      * @param tagFilters
      */
     public void setTagFilters(FilterCriteria tagFilters) {
@@ -272,16 +284,21 @@ public class SearchParameters implements Serializable {
 
     /**
      * Relationship attribute filters for the relationship
+     *
      * @return
      */
-    public FilterCriteria getRelationshipFilters() { return relationshipFilters; }
+    public FilterCriteria getRelationshipFilters() {
+        return relationshipFilters;
+    }
 
     /**
      * Filter the relationship on this criteria
+     *
      * @param relationshipFilters
      */
-    public void setRelationshipFilters(FilterCriteria relationshipFilters) { this.relationshipFilters = relationshipFilters; }
-
+    public void setRelationshipFilters(FilterCriteria relationshipFilters) {
+        this.relationshipFilters = relationshipFilters;
+    }
 
     public boolean getExcludeHeaderAttributes() {
         return excludeHeaderAttributes;
@@ -293,6 +310,7 @@ public class SearchParameters implements Serializable {
 
     /**
      * Attribute values included in the results
+     *
      * @return
      */
     public Set<String> getAttributes() {
@@ -301,6 +319,7 @@ public class SearchParameters implements Serializable {
 
     /**
      * Return these attributes in the result response
+     *
      * @param attributes
      */
     public void setAttributes(Set<String> attributes) {
@@ -310,13 +329,18 @@ public class SearchParameters implements Serializable {
     /**
      * @return Attribute on which to sort the results
      */
-    public String getSortBy() { return sortBy; }
+    public String getSortBy() {
+        return sortBy;
+    }
 
     /**
      * Sort the results based on sortBy attribute
+     *
      * @param sortBy Attribute on which to sort the results
      */
-    public void setSortBy(String sortBy) { this.sortBy = sortBy; }
+    public void setSortBy(String sortBy) {
+        this.sortBy = sortBy;
+    }
 
     /**
      * @return Sorting order of the results
@@ -327,15 +351,30 @@ public class SearchParameters implements Serializable {
 
     /**
      * Sorting order to sort the results
+     *
      * @param sortOrder ASCENDING vs DESCENDING
      */
-    public void setSortOrder(SortOrder sortOrder) { this.sortOrder = sortOrder; }
+    public void setSortOrder(SortOrder sortOrder) {
+        this.sortOrder = sortOrder;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(query, typeName, classification, termName, includeSubTypes, includeSubClassifications,
+                excludeDeletedEntities, includeClassificationAttributes, excludeHeaderAttributes, limit, offset, entityFilters,
+                tagFilters, attributes, sortBy, sortOrder);
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
         SearchParameters that = (SearchParameters) o;
+
         return excludeDeletedEntities == that.excludeDeletedEntities &&
                 includeClassificationAttributes == that.includeClassificationAttributes &&
                 includeSubTypes == that.includeSubTypes &&
@@ -355,10 +394,8 @@ public class SearchParameters implements Serializable {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(query, typeName, classification, termName, includeSubTypes, includeSubClassifications,
-                            excludeDeletedEntities, includeClassificationAttributes, excludeHeaderAttributes, limit, offset, entityFilters,
-                            tagFilters, attributes, sortBy, sortOrder);
+    public String toString() {
+        return toString(new StringBuilder()).toString();
     }
 
     public StringBuilder toString(StringBuilder sb) {
@@ -388,19 +425,74 @@ public class SearchParameters implements Serializable {
         return sb;
     }
 
-    @Override
-    public String toString() {
-        return toString(new StringBuilder()).toString();
+    /**
+     * NOTE : The names added in the String array should always contain first value in lower case
+     */
+    public enum Operator {
+        LT(new String[] {"<", "lt"}),
+        GT(new String[] {">", "gt"}),
+        LTE(new String[] {"<=", "lte"}),
+        GTE(new String[] {">=", "gte"}),
+        EQ(new String[] {"=", "eq"}),
+        NEQ(new String[] {"!=", "neq"}),
+        IN(new String[] {"in", "IN"}),
+        LIKE(new String[] {"like", "LIKE"}),
+        STARTS_WITH(new String[] {"startsWith", "STARTSWITH", "begins_with", "BEGINS_WITH"}),
+        ENDS_WITH(new String[] {"endsWith", "ENDSWITH", "ends_with", "ENDS_WITH"}),
+        CONTAINS(new String[] {"contains", "CONTAINS"}),
+        NOT_CONTAINS(new String[] {"not_contains", "NOT_CONTAINS"}),
+        CONTAINS_ANY(new String[] {"containsAny", "CONTAINSANY", "contains_any", "CONTAINS_ANY"}),
+        CONTAINS_ALL(new String[] {"containsAll", "CONTAINSALL", "contains_all", "CONTAINS_ALL"}),
+        IS_NULL(new String[] {"isNull", "ISNULL", "is_null", "IS_NULL"}),
+        NOT_NULL(new String[] {"notNull", "NOTNULL", "not_null", "NOT_NULL"}),
+        TIME_RANGE(new String[] {"timerange", "TIMERANGE", "time_range", "TIME_RANGE"}),
+        NOT_EMPTY(new String[] {"notEmpty", "NOTEMPTY", "not_empty", "NOT_EMPTY"});
+        static final Map<String, Operator> operatorsMap = new HashMap<>();
+
+        private final String[] symbols;
+
+        Operator(String[] symbols) {
+            this.symbols = symbols;
+        }
+
+        @JsonCreator
+        public static Operator fromString(String symbol) {
+            return operatorsMap.get(symbol);
+        }
+
+        @JsonValue
+        public String getSymbol() {
+            return symbols[0];
+        }
+
+        public String[] getSymbols() {
+            return symbols;
+        }
+
+        @Override
+        public String toString() {
+            return getSymbol();
+        }
+
+        static {
+            for (Operator operator : Operator.values()) {
+                for (String s : operator.symbols) {
+                    operatorsMap.put(s, operator);
+                }
+            }
+        }
     }
 
+    /**
+     * Supported search operations
+     * Logical comparision operators can only be used with numbers or dates
+     * IN, LIKE, startsWith, endsWith, CONTAINS can only be used with strings or text
+     */
 
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class FilterCriteria {
-        // Can be presented as a group of conditions or a single condition
-        public enum Condition { AND, OR }
-
         // Single condition
         private String   attributeName;
         private Operator operator;
@@ -451,10 +543,20 @@ public class SearchParameters implements Serializable {
         }
 
         @Override
+        public int hashCode() {
+            return Objects.hash(attributeName, operator, attributeValue, condition, criterion);
+        }
+
+        @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o) {
+                return true;
+            } else if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
             FilterCriteria that = (FilterCriteria) o;
+
             return Objects.equals(attributeName, that.attributeName) &&
                     Objects.equals(operator, that.operator) &&
                     Objects.equals(attributeValue, that.attributeValue) &&
@@ -463,8 +565,8 @@ public class SearchParameters implements Serializable {
         }
 
         @Override
-        public int hashCode() {
-            return Objects.hash(attributeName, operator, attributeValue, condition, criterion);
+        public String toString() {
+            return toString(new StringBuilder()).toString();
         }
 
         public StringBuilder toString(StringBuilder sb) {
@@ -483,75 +585,7 @@ public class SearchParameters implements Serializable {
             return sb;
         }
 
-        @Override
-        public String toString() {
-            return toString(new StringBuilder()).toString();
-        }
-    }
-
-    /**
-     * Supported search operations
-     * Logical comparision operators can only be used with numbers or dates
-     * IN, LIKE, startsWith, endsWith, CONTAINS can only be used with strings or text
-     */
-
-    /**
-     * NOTE : The names added in the String array should always contain first value in lower case
-     */
-    public enum Operator {
-        LT(new String[]{"<", "lt"}),
-        GT(new String[]{">", "gt"}),
-        LTE(new String[]{"<=", "lte"}),
-        GTE(new String[]{">=", "gte"}),
-        EQ(new String[]{"=", "eq"}),
-        NEQ(new String[]{"!=", "neq"}),
-        IN(new String[]{"in", "IN"}),
-        LIKE(new String[]{"like", "LIKE"}),
-        STARTS_WITH(new String[]{"startsWith", "STARTSWITH", "begins_with", "BEGINS_WITH"}),
-        ENDS_WITH(new String[]{"endsWith", "ENDSWITH", "ends_with", "ENDS_WITH"}),
-        CONTAINS(new String[]{"contains", "CONTAINS"}),
-        NOT_CONTAINS(new String[]{"not_contains", "NOT_CONTAINS"}),
-        CONTAINS_ANY(new String[]{"containsAny", "CONTAINSANY", "contains_any", "CONTAINS_ANY"}),
-        CONTAINS_ALL(new String[]{"containsAll", "CONTAINSALL", "contains_all", "CONTAINS_ALL"}),
-        IS_NULL(new String[]{"isNull", "ISNULL", "is_null", "IS_NULL"}),
-        NOT_NULL(new String[]{"notNull", "NOTNULL", "not_null", "NOT_NULL"}),
-        TIME_RANGE(new String[]{"timerange", "TIMERANGE","time_range","TIME_RANGE"}),
-        NOT_EMPTY(new String[]{"notEmpty", "NOTEMPTY", "not_empty", "NOT_EMPTY"})
-        ;
-        static final Map<String, Operator> operatorsMap = new HashMap<>();
-
-        private String[] symbols;
-
-        static  {
-            for (Operator operator : Operator.values()) {
-                for (String s : operator.symbols) {
-                    operatorsMap.put(s, operator);
-                }
-            }
-        }
-
-        Operator(String[] symbols) {
-            this.symbols = symbols;
-        }
-
-        @JsonCreator
-        public static Operator fromString(String symbol) {
-            return operatorsMap.get(symbol);
-        }
-
-        @JsonValue
-        public String getSymbol() {
-            return symbols[0];
-        }
-
-        public String[] getSymbols() {
-            return symbols;
-        }
-
-        @Override
-        public String toString() {
-            return getSymbol();
-        }
-
+        // Can be presented as a group of conditions or a single condition
+        public enum Condition { AND, OR }
     }
 }

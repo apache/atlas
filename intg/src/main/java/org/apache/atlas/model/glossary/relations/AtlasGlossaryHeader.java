@@ -51,28 +51,30 @@ public class AtlasGlossaryHeader {
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AtlasGlossaryHeader)) return false;
-        final AtlasGlossaryHeader that = (AtlasGlossaryHeader) o;
-        return Objects.equals(glossaryGuid, that.glossaryGuid) &&
-                       Objects.equals(relationGuid, that.relationGuid);
-    }
-
-    @Override
     public int hashCode() {
-
         return Objects.hash(glossaryGuid, relationGuid);
     }
 
     @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        } else if (!(o instanceof AtlasGlossaryHeader)) {
+            return false;
+        }
+
+        AtlasGlossaryHeader that = (AtlasGlossaryHeader) o;
+
+        return Objects.equals(glossaryGuid, that.glossaryGuid) &&
+                Objects.equals(relationGuid, that.relationGuid);
+    }
+
+    @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("AtlasGlossaryId{");
-        sb.append("glossaryGuid='").append(glossaryGuid).append('\'');
-        sb.append(", relationGuid='").append(relationGuid).append('\'');
-        sb.append(", displayText='").append(displayText).append('\'');
-        sb.append('}');
-        return sb.toString();
+        return "AtlasGlossaryId{" + "glossaryGuid='" + glossaryGuid + '\'' +
+                ", relationGuid='" + relationGuid + '\'' +
+                ", displayText='" + displayText + '\'' +
+                '}';
     }
 
     public String getRelationGuid() {

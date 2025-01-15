@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,16 +27,22 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Array;
-import java.util.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.*;
-
+import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.ATTR_MAX_STRING_LENGTH;
+import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES;
+import static org.apache.atlas.model.typedef.AtlasBusinessMetadataDef.ATTR_VALID_PATTERN;
 
 public class AtlasBusinessMetadataType extends AtlasStructType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasBusinessMetadataType.class);
 
     private final AtlasBusinessMetadataDef businessMetadataDef;
-
 
     public AtlasBusinessMetadataType(AtlasBusinessMetadataDef businessMetadataDef) {
         super(businessMetadataDef);
@@ -45,22 +51,18 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
     }
 
     @Override
-    public boolean isValidValue(Object o) {
-        return true; // there is no runtime instance for businessMetadataDef, so return true
-    }
-
-    @Override
     public AtlasStruct createDefaultValue() {
         return null;  // there is no runtime instance for businessMetadataDef, so return null
     }
 
     @Override
-    public Object getNormalizedValue(Object a) {
-        return null;  // there is no runtime instance for businessMetadataDef, so return null
+    public boolean isValidValue(Object o) {
+        return true; // there is no runtime instance for businessMetadataDef, so return true
     }
 
-    public AtlasBusinessMetadataDef getBusinessMetadataDef() {
-        return businessMetadataDef;
+    @Override
+    public Object getNormalizedValue(Object a) {
+        return null;  // there is no runtime instance for businessMetadataDef, so return null
     }
 
     @Override
@@ -133,6 +135,10 @@ public class AtlasBusinessMetadataType extends AtlasStructType {
                 }
             }
         }
+    }
+
+    public AtlasBusinessMetadataDef getBusinessMetadataDef() {
+        return businessMetadataDef;
     }
 
     public static class AtlasBusinessAttribute extends AtlasAttribute {
