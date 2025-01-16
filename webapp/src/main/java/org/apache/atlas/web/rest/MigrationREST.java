@@ -28,6 +28,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.apache.atlas.repository.migration.BulkUpdateProductsRestorationService;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -343,6 +344,33 @@ public class MigrationREST {
             migrationService.migrateQN();
         } catch (Exception e) {
             LOG.error("Error while updating unique qualified name for guids: {}", assetGuids, e);
+            throw e;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+        return Boolean.TRUE;
+    }
+
+    @POST
+    @Path("product/remove-edges")
+    @Timed
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Boolean bulkProductsRedundantEdgeRemoval(Set<String> guids) throws Exception {
+        AtlasPerfTracer perf = null;
+        try {
+            if (CollectionUtils.isEmpty(guids)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Product GUIDs are required for removing redundant edges");
+            }
+
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.bulkProductsRedundantEdgeRemoval(" + guids + ")");
+            }
+
+            BulkUpdateProductsRestorationService migrationService = new BulkUpdateProductsRestorationService(graph, guids, new GraphHelper(graph), transactionInterceptHelper);
+            migrationService.productState();
+
+        } catch (Exception e) {
+            LOG.error("Error while removing edges for guid: {}", guids, e);
             throw e;
         } finally {
             AtlasPerfTracer.log(perf);
