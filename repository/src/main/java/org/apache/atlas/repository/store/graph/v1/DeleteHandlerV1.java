@@ -533,14 +533,6 @@ public abstract class DeleteHandlerV1 {
         RequestContext.get().endMetricRecord(metric);
     }
 
-    private boolean isRequestFromWorkFlow() {
-        String workflowID = RequestContext.get().getRequestContextHeaders().getOrDefault("x-atlan-agent-workflow-id", "");
-        boolean isWorkFlowRequest = !workflowID.isEmpty();
-        if(isWorkFlowRequest){
-            LOG.info("Authorised one time request for workflow with id : {} ", workflowID);
-        }
-        return isWorkFlowRequest;
-    }
 
     public Map<AtlasVertex, List<AtlasVertex>> removeTagPropagation(AtlasEdge edge) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("removeTagPropagationEdge");
@@ -1580,6 +1572,14 @@ public abstract class DeleteHandlerV1 {
             }
         }
         RequestContext.get().endMetricRecord(metricRecorder);
+    }
+    private boolean isRequestFromWorkFlow() {
+        String workflowID = RequestContext.get().getRequestContextHeaders().getOrDefault("x-atlan-agent-workflow-id", "");
+        boolean isWorkFlowRequest = !workflowID.isEmpty();
+        if(isWorkFlowRequest){
+            LOG.info("Authorised one time request for workflow with id : {} ", workflowID);
+        }
+        return isWorkFlowRequest;
     }
 
     private String getLabel(String guid, String label){
