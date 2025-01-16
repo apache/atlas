@@ -33,6 +33,7 @@
     <description>HBase Testing Utilities.</description>
 
     <properties>
+        <apache.log4j.version>2.17.1</apache.log4j.version>
         <hadoop.version>3.0.3</hadoop.version>
         <jetty.version>9.3.14.v20161028</jetty.version>
     </properties>
@@ -231,6 +232,18 @@
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-api</artifactId>
+            <version>${apache.log4j.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-core</artifactId>
+            <version>${apache.log4j.version}</version>
+            <scope>runtime</scope>
         </dependency>
     </dependencies>
 </project>
