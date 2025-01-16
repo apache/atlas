@@ -110,6 +110,8 @@ public class RequestContext {
     private boolean delayTagNotifications = false;
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
     private Map<AtlasClassification, Collection<Object>> addedClassificationAndVertices = new HashMap<>();
+    private final List<String> addedOutputPorts = new ArrayList<>();
+    private final List<String> removedOutputPorts = new ArrayList<>();
 
 
     private RequestContext() {
@@ -175,6 +177,8 @@ public class RequestContext {
         this.delayTagNotifications = false;
         deletedClassificationAndVertices.clear();
         addedClassificationAndVertices.clear();
+        this.addedOutputPorts.clear();
+        this.removedOutputPorts.clear();
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
@@ -827,6 +831,22 @@ public class RequestContext {
 
     public boolean isEdgeLabelAlreadyProcessed(String processEdgeLabel) {
         return edgeLabels.contains(processEdgeLabel);
+    }
+
+    public void setAddedOutputPorts(List<String> addedOutputPorts) {
+        this.addedOutputPorts.addAll(addedOutputPorts);
+    }
+
+    public List<String> getAddedOutputPorts() {
+        return addedOutputPorts;
+    }
+
+    public void setRemovedOutputPorts(List<String> removedOutputPorts) {
+        this.removedOutputPorts.addAll(removedOutputPorts);
+    }
+
+    public List<String> getRemovedOutputPorts() {
+        return removedOutputPorts;
     }
 
 }
