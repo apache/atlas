@@ -88,6 +88,9 @@ public class RequestContext {
     private int attemptCount = 1;
     private boolean isImportInProgress = false;
     private boolean     isInNotificationProcessing = false;
+
+
+    private boolean     authorisedRemoveRelation = false;
     private boolean     isInTypePatching           = false;
     private boolean     createShellEntityForNonExistingReference = false;
     private boolean     skipFailedEntities = false;
@@ -205,6 +208,13 @@ public class RequestContext {
         this.entityCache.clear();
     }
 
+    public boolean isAuthorisedRemoveRelation() {
+        return authorisedRemoveRelation;
+    }
+
+    public void setAuthorisedRemoveRelation(boolean authorisedRemoveRelation) {
+        this.authorisedRemoveRelation = authorisedRemoveRelation;
+    }
     public Set<String> getRelationAttrsForSearch() {
         return relationAttrsForSearch;
     }
