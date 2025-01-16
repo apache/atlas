@@ -102,7 +102,7 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getClient;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getLowLevelClient;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getProductClusterClient;
-import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getSDKClusterClient;
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getNonProductSearchClusterClient;
 import static org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase.getGraphInstance;
 import static org.apache.atlas.type.Constants.STATE_PROPERTY_KEY;
 
@@ -122,8 +122,8 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     private final RestHighLevelClient         elasticsearchClient;
     private final RestClient                  restClient;
 
-    private final RestClient                   esProductClusterClient;
-    private final RestClient                    esSDKClusterClient;
+    private final RestClient                  esProductClusterClient;
+    private final RestClient                  esNonProductClusterClient;
 
     private final ThreadLocal<GremlinGroovyScriptEngine> scriptEngine = ThreadLocal.withInitial(() -> {
         DefaultImportCustomizer.Builder builder = DefaultImportCustomizer.build()
@@ -134,10 +134,10 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     });
 
     public AtlasJanusGraph() {
-        this(getGraphInstance(), getClient(), getLowLevelClient(), getProductClusterClient(), getSDKClusterClient());
+        this(getGraphInstance(), getClient(), getLowLevelClient(), getProductClusterClient(), getNonProductSearchClusterClient());
     }
 
-    public AtlasJanusGraph(JanusGraph graphInstance, RestHighLevelClient elasticsearchClient, RestClient restClient,RestClient esProductClusterClient, RestClient esSDKClusterClient ) {
+    public AtlasJanusGraph(JanusGraph graphInstance, RestHighLevelClient elasticsearchClient, RestClient restClient,RestClient esProductClusterClient, RestClient esNonProductClusterClient) {
         //determine multi-properties once at startup
         JanusGraphManagement mgmt = null;
 
@@ -161,7 +161,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         this.restClient = restClient;
         this.elasticsearchClient = elasticsearchClient;
         this.esProductClusterClient = esProductClusterClient;
-        this.esSDKClusterClient = esSDKClusterClient;
+        this.esNonProductClusterClient = esNonProductClusterClient;
     }
 
     @Override
@@ -333,7 +333,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
             LOG.error("restClient is not initiated, failed to run query on ES");
             throw new AtlasBaseException(INDEX_SEARCH_FAILED, "restClient is not initiated");
         }
-        return new AtlasElasticsearchQuery(this, restClient, INDEX_PREFIX + indexName, searchParams, esProductClusterClient, esSDKClusterClient);
+        return new AtlasElasticsearchQuery(this, restClient, INDEX_PREFIX + indexName, searchParams, esProductClusterClient, esNonProductClusterClient);
     }
 
     @Override
@@ -389,7 +389,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
             LOG.error("restClient is not initiated, failed to run query on ES");
             throw new AtlasBaseException(INDEX_SEARCH_FAILED, "restClient is not initiated");
         }
-        return new AtlasElasticsearchQuery(this, indexName, restClient, esProductClusterClient, esSDKClusterClient);
+        return new AtlasElasticsearchQuery(this, indexName, restClient, esProductClusterClient, esNonProductClusterClient);
     }
 
     @Override

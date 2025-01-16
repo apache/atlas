@@ -38,7 +38,7 @@ public class AtlasElasticsearchDatabase {
     private static volatile RestClient lowLevelClient;
 
     private static volatile RestClient esProductClusterClient;
-    private static volatile RestClient esSDKClusterClient;
+    private static volatile RestClient esNonProductClusterClient;
     public static final String INDEX_BACKEND_CONF = "atlas.graph.index.search.hostname";
 
     public static List<HttpHost> getHttpHosts() throws AtlasException {
@@ -115,10 +115,6 @@ public class AtlasElasticsearchDatabase {
                 if (esProductClusterClient == null) {
                     try {
                         HttpHost productHost = HttpHost.create(AtlasConfiguration.ATLAS_ELASTICSEARCH_PRODUCT_SEARCH_CLUSTER_URL.getString());
-                        if (productHost == null) {
-                            LOG.error("Invalid product cluster URL configuration");
-                            return null;
-                        }
 
                         RestClientBuilder builder = RestClient.builder(productHost);
                         builder.setHttpClientConfigCallback(httpAsyncClientBuilder ->
@@ -138,37 +134,33 @@ public class AtlasElasticsearchDatabase {
         return esProductClusterClient;
     }
 
-    public static RestClient getSDKClusterClient() {
+    public static RestClient getNonProductSearchClusterClient() {
         if (!AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_REQUEST_ISOLATION.getBoolean()) {
             return null;
         }
 
-        if (esSDKClusterClient == null) {
+        if (esNonProductClusterClient == null) {
             synchronized (AtlasElasticsearchDatabase.class) {
-                if (esSDKClusterClient == null) {
+                if (esNonProductClusterClient == null) {
                     try {
-                        HttpHost sdkHost = HttpHost.create(AtlasConfiguration.ATLAS_ELASTICSEARCH_SDK_SEARCH_CLUSTER_URL.getString());
-                        if (sdkHost == null) {
-                            LOG.error("Invalid SDK cluster URL configuration");
-                            return null;
-                        }
+                        HttpHost nonProductHost = HttpHost.create(AtlasConfiguration.ATLAS_ELASTICSEARCH_NON_PRODUCT_SEARCH_CLUSTER_URL.getString());
 
-                        RestClientBuilder builder = RestClient.builder(sdkHost);
+                        RestClientBuilder builder = RestClient.builder(nonProductHost);
                         builder.setHttpClientConfigCallback(httpAsyncClientBuilder ->
                                 httpAsyncClientBuilder.setKeepAliveStrategy(((httpResponse, httpContext) -> 3600000)));
                         builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
                                 .setConnectTimeout(AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
                                 .setSocketTimeout(AtlasConfiguration.INDEX_CLIENT_SOCKET_TIMEOUT.getInt()));
 
-                        esSDKClusterClient = builder.build();
+                        esNonProductClusterClient = builder.build();
                     } catch (Exception e) {
-                        LOG.error("Failed to initialize SDK cluster client", e);
+                        LOG.error("Failed to initialize Non-product cluster client", e);
                         return null;
                     }
                 }
             }
         }
-        return esSDKClusterClient;
+        return esNonProductClusterClient;
     }
 
 

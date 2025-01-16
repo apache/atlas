@@ -72,7 +72,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     private RestClient lowLevelRestClient;
 
     private RestClient esProductClusterClient;
-    private RestClient esSDKClusterClient;
+    private RestClient esNonProductClusterClient;
     private String index;
     private SearchSourceBuilder sourceBuilder;
     private SearchResponse searchResponse;
@@ -85,11 +85,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         this.sourceBuilder = sourceBuilder;
     }
 
-    public AtlasElasticsearchQuery(AtlasJanusGraph graph, RestClient restClient, String index, SearchParams searchParams, RestClient esProductClusterClient, RestClient esSDKClusterClient) {
+    public AtlasElasticsearchQuery(AtlasJanusGraph graph, RestClient restClient, String index, SearchParams searchParams, RestClient esProductClusterClient, RestClient esNonProductClusterClient) {
         this(graph, index);
         this.lowLevelRestClient = restClient;
         this.esProductClusterClient = esProductClusterClient;
-        this.esSDKClusterClient = esSDKClusterClient;
+        this.esNonProductClusterClient = esNonProductClusterClient;
         this.searchParams = searchParams;
     }
 
@@ -99,8 +99,8 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         searchResponse = null;
     }
 
-    public AtlasElasticsearchQuery(AtlasJanusGraph graph, String index, RestClient restClient,RestClient esProductClusterClient, RestClient esSDKClusterClient) {
-        this(graph, restClient, index, null, esProductClusterClient, esSDKClusterClient);
+    public AtlasElasticsearchQuery(AtlasJanusGraph graph, String index, RestClient restClient,RestClient esProductClusterClient, RestClient esNonProductClusterClient) {
+        this(graph, restClient, index, null, esProductClusterClient, esNonProductClusterClient);
     }
 
     public AtlasElasticsearchQuery(String index, RestClient restClient) {
@@ -134,7 +134,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 return Optional.ofNullable(esProductClusterClient)
                         .orElse(lowLevelRestClient);
             } else {
-                return Optional.ofNullable(esSDKClusterClient)
+                return Optional.ofNullable(esNonProductClusterClient)
                         .orElse(lowLevelRestClient);
             }
 
