@@ -1987,14 +1987,6 @@ public class EntityGraphMapper {
             setArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty(), allArrayElements, currentElements, cardinality);
         }
 
-        List<String> currentElementGuids = new ArrayList<>();
-        if(CollectionUtils.isNotEmpty(currentElements)){
-            currentElementGuids = currentElements.stream()
-                    .filter(x -> ((AtlasEdge) x).getProperty(STATE_PROPERTY_KEY, String.class).equals("ACTIVE"))
-                    .map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class))
-                    .collect(Collectors.toList());
-        }
-
         switch (ctx.getAttribute().getRelationshipEdgeLabel()) {
             case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, newElementsCreated, removedElements);
                 break;
@@ -2011,7 +2003,7 @@ public class EntityGraphMapper {
 
             case INPUT_PORT_PRODUCT_EDGE_LABEL:
             case OUTPUT_PORT_PRODUCT_EDGE_LABEL:
-                addInternalProductAttr(ctx, newElementsCreated, removedElements, currentElementGuids);
+                addInternalProductAttr(ctx, newElementsCreated, removedElements, currentElements);
                 break;
 
             case UD_RELATIONSHIP_EDGE_LABEL:
@@ -2314,7 +2306,7 @@ public class EntityGraphMapper {
         }
     }
 
-    private void addInternalProductAttr(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements, List<String> currentElements) throws AtlasBaseException {
+    private void addInternalProductAttr(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements, List<Object> currentElements) throws AtlasBaseException {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addInternalProductAttrForAppend");
         AtlasVertex toVertex = ctx.getReferringVertex();
         String toVertexType = getTypeName(toVertex);
@@ -2336,23 +2328,29 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void addOrRemoveDaapInternalAttr(AtlasVertex toVertex, String internalAttr, List<Object> createdElements, List<AtlasEdge> deletedElements, List<String> currentElements) {
+    private void addOrRemoveDaapInternalAttr(AtlasVertex toVertex, String internalAttr, List<Object> createdElements, List<AtlasEdge> deletedElements, List<Object> currentElements) {
         List<String> addedGuids = new ArrayList<>();
         List<String> removedGuids = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(createdElements)) {
             addedGuids = createdElements.stream().map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
-            //addedGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(toVertex, internalAttr, guid));
+            addedGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(toVertex, internalAttr, guid));
         }
 
         if (CollectionUtils.isNotEmpty(deletedElements)) {
             removedGuids = deletedElements.stream().map(x -> x.getOutVertex().getProperty("__guid", String.class)).collect(Collectors.toList());
-            //removedGuids.forEach(guid -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(toVertex, internalAttr, guid));
+            removedGuids.forEach(guid -> AtlasGraphUtilsV2.removeItemFromListPropertyValue(toVertex, internalAttr, guid));
         }
 
+        // Add more info to outputPort update event.
         if (internalAttr.equals(OUTPUT_PORT_GUIDS_ATTR)) {
             if (CollectionUtils.isNotEmpty(currentElements)) {
+                List<String> currentElementGuids = currentElements.stream()
+                        .filter(x -> ((AtlasEdge) x).getProperty(STATE_PROPERTY_KEY, String.class).equals("ACTIVE"))
+                        .map(x -> ((AtlasEdge) x).getOutVertex().getProperty("__guid", String.class))
+                        .collect(Collectors.toList());
+
                 addedGuids = addedGuids.stream()
-                        .filter(guid -> !currentElements.contains(guid))
+                        .filter(guid -> !currentElementGuids.contains(guid))
                         .collect(Collectors.toList());
             }
             RequestContext.get().setAddedOutputPorts(addedGuids);
