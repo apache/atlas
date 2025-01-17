@@ -1974,6 +1974,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
             for (AtlasVertex vertex : deletionCandidates) {
+                updateModificationMetadata(vertex);
+
                 String typeName = getTypeName(vertex);
 
                 List<PreProcessor> preProcessors = getPreProcessor(typeName);
