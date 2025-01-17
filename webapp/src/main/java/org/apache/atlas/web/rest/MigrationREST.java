@@ -10,6 +10,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.migration.validateProductEdgesRestorationService;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
@@ -376,6 +377,35 @@ public class MigrationREST {
             AtlasPerfTracer.log(perf);
         }
         return Boolean.TRUE;
+    }
+
+    @POST
+    @Path("product/validate-edges")
+    @Timed
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Boolean bulkValidateProductEdges(Set<String> guids) throws Exception {
+        AtlasPerfTracer perf = null;
+
+        boolean flag = false;
+        try {
+            if (CollectionUtils.isEmpty(guids)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Product GUIDs are required for validating edges");
+            }
+
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.bulkValidateProductEdges(" + guids + ")");
+            }
+
+            validateProductEdgesRestorationService migrationService = new validateProductEdgesRestorationService(graph, guids, new GraphHelper(graph), transactionInterceptHelper);
+            flag = migrationService.productState();
+
+        } catch (Exception e) {
+            LOG.error("Error while validating edges for guid: {}", guids, e);
+            throw e;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+        return flag;
     }
 
     private List<AtlasEntity> getEntitiesByIndexSearch(IndexSearchParams indexSearchParams, Boolean minExtInfo, boolean ignoreRelationships) throws AtlasBaseException {
