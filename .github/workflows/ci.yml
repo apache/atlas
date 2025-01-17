@@ -1,0 +1,172 @@
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# This workflow will build a Java project with Maven, and cache/restore any dependencies to improve the workflow execution time
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-java-with-maven
+
+# This workflow uses actions that are not certified by GitHub.
+# They are provided by a third-party and are governed by
+# separate terms of service, privacy policy, and support
+# documentation.
+
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [ "master" ]
+
+env:
+  MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
+
+jobs:
+  build-8:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache for maven dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.m2/repository/*/*/*
+            !~/.m2/repository/org/apache/atlas
+          key: maven-repo-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-repo-
+      - name: Set up JDK 8
+        uses: actions/setup-java@v4
+        with:
+          java-version: '8'
+          distribution: 'temurin'
+      - name: build (8)
+        run: mvn clean verify --no-transfer-progress -B -V
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: target-8
+          path: distro/target/*
+
+  build-11:
+    needs:
+      - build-8
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache for maven dependencies
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/.m2/repository/*/*/*
+            !~/.m2/repository/org/apache/atlas
+          key: maven-repo-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            maven-repo-
+      - name: Set up JDK 11
+        uses: actions/setup-java@v4
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+      - name: build (11)
+        run: mvn clean verify --no-transfer-progress -B -V
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: target-11
+          path: distro/target/*
+
+  docker-build:
+    needs:
+      - build-8
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download build-8 artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: target-8
+
+      - name: Copy artifacts for docker build
+        run: |
+          cp apache-atlas-*.tar.gz dev-support/atlas-docker/dist
+
+      - name: Cache downloaded archives
+        uses: actions/cache@v4
+        with:
+          path: dev-support/atlas-docker/downloads
+          key: ${{ runner.os }}-atlas-downloads-${{ hashFiles('dev-support/atlas-docker/.env') }}
+          restore-keys: |
+            ${{ runner.os }}-atlas-downloads-
+
+      - name: Run download-archives.sh
+        run: |
+          cd dev-support/atlas-docker
+          chmod +x download-archives.sh && ./download-archives.sh
+
+      - name: Clean up Docker space
+        run: docker system prune --all --force --volumes
+
+      - name: Build all atlas-service images
+        run: |
+          cd dev-support/atlas-docker
+          docker compose -f docker-compose.atlas-base.yml build
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
+          docker compose \
+          -f docker-compose.atlas-base.yml \
+          -f docker-compose.atlas.yml \
+          -f docker-compose.atlas-hadoop.yml \ 
+          -f docker-compose.atlas-hbase.yml \ 
+          -f docker-compose.atlas-kafka.yml \
+          -f docker-compose.atlas-hive.yml build
+
+      - name: Bring up containers
+        run: |
+          cd dev-support/atlas-docker
+          docker compose -f docker-compose.atlas-base.yml build
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
+          docker compose \
+          -f docker-compose.atlas-base.yml \
+          -f docker-compose.atlas.yml \
+          -f docker-compose.atlas-hadoop.yml \ 
+          -f docker-compose.atlas-hbase.yml \ 
+          -f docker-compose.atlas-kafka.yml \
+          -f docker-compose.atlas-hive.yml up -d
+
+      - name: Check status of containers and remove them
+        run: |
+          sleep 60
+          containers=(atlas atlas-hadoop atlas-hbase atlas-kafka atlas-hive);
+          flag=true;
+          for container in "${containers[@]}"; do
+              if [[ $(docker inspect -f '{{.State.Running}}' $container 2>/dev/null) == "true" ]]; then
+                  echo "Container $container is running!";
+              else
+                  flag=false;
+                  echo "Container $container is NOT running!";
+              fi
+          done
+          
+          if [[ $flag == true ]]; then
+              echo "All required containers are up and running";
+              docker stop $(docker ps -q) && docker rm $(docker ps -aq);
+          else
+              docker stop $(docker ps -q) && docker rm $(docker ps -aq);
+              exit 1;
+          fi
