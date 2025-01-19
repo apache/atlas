@@ -4,8 +4,7 @@ import os
 import subprocess
 import sys
 import platform
-import shutil
-import time  
+import time
 
 
 
@@ -234,7 +233,7 @@ def build_janusgraph():
     clone_repo(repo_url, repo_dir)
 
     
-    run_command("git fetch --all", cwd=repo_dir)
+    run_command("git fetch atlan-v0.6.0", cwd=repo_dir)
     run_command("git checkout atlan-v0.6.0", cwd=repo_dir)
 
     
@@ -323,7 +322,11 @@ def main():
     install_docker_cli_tools()
 
     
-    install_lazydocker()
+    ans = input("\nDo you already have a Docker client? (yes/no): ").strip().lower()
+    if ans in ("yes", "y"):
+        print("[INFO] Skipping lazydocker installation.")
+    else:
+        install_lazydocker()
 
     
     build_keycloak()
