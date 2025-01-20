@@ -19,108 +19,251 @@
 package org.apache.atlas.repository.businesslineage;
 
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
-import org.apache.atlas.authorize.AtlasEntityAccessRequest;
-import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.BusinessLineageRequest;
-import org.apache.atlas.model.lineage.*;
-import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection;
-import org.apache.atlas.model.lineage.AtlasLineageInfo.LineageRelation;
-import org.apache.atlas.model.lineage.AtlasLineageOnDemandInfo.LineageInfoOnDemand;
-import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.repository.store.graph.v2.TransactionInterceptHelper;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.atlas.utils.AtlasPerfMetrics;
-import org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
-import javax.script.ScriptEngine;
-import javax.script.ScriptException;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
-import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
-import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
-import static org.apache.atlas.AtlasErrorCode.INSTANCE_LINEAGE_QUERY_FAILED;
-import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.model.lineage.AtlasLineageInfo.LineageDirection.*;
 import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.graph.GraphHelper.*;
-import static org.apache.atlas.repository.graphdb.AtlasEdgeDirection.IN;
-import static org.apache.atlas.repository.graphdb.AtlasEdgeDirection.OUT;
-import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.*;
+import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
 
 @Service
 public class BusinessLineageService implements AtlasBusinessLineageService {
     private static final Logger LOG = LoggerFactory.getLogger(BusinessLineageService.class);
 
-    private static final String PROCESS_INPUTS_EDGE = "__Process.inputs";
-    private static final String PROCESS_OUTPUTS_EDGE = "__Process.outputs";
-    private static final String COLUMNS = "columns";
     private static final boolean LINEAGE_USING_GREMLIN = AtlasConfiguration.LINEAGE_USING_GREMLIN.getBoolean();
-    private static final String  SEPARATOR                            = "->";
+    private static final String TYPE_GLOSSARY= "AtlasGlossary";
+    private static final String TYPE_CATEGORY= "AtlasGlossaryCategory";
+    private static final String TYPE_TERM = "AtlasGlossaryTerm";
+    private static final String TYPE_PRODUCT = "DataProduct";
+    private static final String TYPE_DOMAIN = "DataDomain";
 
     private final AtlasGraph graph;
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
     private final EntityGraphRetriever entityRetriever;
     private final AtlasTypeRegistry atlasTypeRegistry;
+    private final TransactionInterceptHelper   transactionInterceptHelper;
+    private final GraphHelper graphHelper;
+    private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
 
-    private static final List<String> FETCH_ENTITY_ATTRIBUTES = Arrays.asList(ATTRIBUTE_NAME_GUID, QUALIFIED_NAME, NAME);
+
 
     @Inject
-    BusinessLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, VertexEdgeCache vertexEdgeCache) {
+    BusinessLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, TransactionInterceptHelper transactionInterceptHelper, GraphHelper graphHelper) {
         this.graph = atlasGraph;
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
         this.entityRetriever = new EntityGraphRetriever(atlasGraph, typeRegistry);
         this.atlasTypeRegistry = typeRegistry;
+        this.transactionInterceptHelper = transactionInterceptHelper;
+        this.graphHelper = graphHelper;
     }
 
     @Override
-    public void createLineage(BusinessLineageRequest request) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> BusinessLineageService.createLineage({})", request);
-        }
+    public void createLineage(BusinessLineageRequest request) throws AtlasBaseException, RepositoryException {
 
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("createLineage");
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("BusinessLineageService.createLineage");
 
         try {
+            List<BusinessLineageRequest.LineageOperation> lineageOperations = request.getLineageOperations();
 
-        } finally {
+            if (CollectionUtils.isEmpty(lineageOperations)) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Lineage operations are empty");
+            }
+
+            for (BusinessLineageRequest.LineageOperation lineageOperation : lineageOperations) {
+                String workflowId = lineageOperation.getWorkflowId();
+                String assetGuid = lineageOperation.getAssetGuid();
+                String productGuid = lineageOperation.getProductGuid();
+                BusinessLineageRequest.OperationType operation = lineageOperation.getOperation();
+                String edgeLabel = lineageOperation.getEdgeLabel();
+
+                if (StringUtils.isEmpty(assetGuid) || StringUtils.isEmpty(productGuid) || operation == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Invalid lineage operation");
+                }
+
+                if (StringUtils.isNotEmpty(workflowId)) {
+                    LOG.info("Processing lineage operation for workflowId: {}, assetGuid: {}, productGuid: {}, operation: {}, edgeLabel: {}",
+                            workflowId, assetGuid, productGuid, operation, edgeLabel);
+                } else {
+                    LOG.info("Processing lineage operation for assetGuid: {}, productGuid: {}, operation: {}, edgeLabel: {}",
+                            assetGuid, productGuid, operation, edgeLabel);
+                }
+
+                if (StringUtils.isEmpty(edgeLabel)) {
+                    processProductAssetLink(assetGuid, productGuid, operation);
+                } else {
+                    processProductAssetInputRelation(assetGuid, productGuid, operation, edgeLabel);
+                }
+            }
+        } catch (AtlasBaseException | RepositoryException e){
+            LOG.error("Error while creating lineage", e);
+            throw e;
+        }finally {
             RequestContext.get().endMetricRecord(metric);
         }
+    }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== BusinessLineageService.createLineage({})", request);
+    @GraphTransaction
+    public void processProductAssetLink (String assetGuid, String productGuid, BusinessLineageRequest.OperationType operation) throws AtlasBaseException {
+        try {
+            AtlasVertex assetVertex = entityRetriever.getEntityVertex(assetGuid);
+            AtlasVertex productVertex = entityRetriever.getEntityVertex(productGuid);
+
+
+            if (assetVertex == null || productVertex == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, assetGuid + " or " + productGuid);
+            }
+
+            switch (operation) {
+                case ADD:
+                    linkProductToAsset (assetVertex, productGuid);
+                    break;
+                case REMOVE:
+                    unlinkProductFromAsset (assetVertex, productGuid);
+                    break;
+                default:
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Invalid operation type");
+            }
+        } catch (AtlasBaseException e){
+            LOG.error("Error while processing product asset link", e);
+            throw e;
+        }
+    }
+
+    @GraphTransaction
+    public void processProductAssetInputRelation(String assetGuid, String productGuid, BusinessLineageRequest.OperationType operation, String edgeLabel) throws AtlasBaseException, RepositoryException {
+        try {
+             AtlasVertex assetVertex = entityRetriever.getEntityVertex(assetGuid);
+             AtlasVertex productVertex = entityRetriever.getEntityVertex(productGuid);
+
+            if (assetVertex == null || productVertex == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, assetGuid + " or " + productGuid);
+            }
+
+            switch (operation) {
+                case ADD:
+                    addInputRelation(assetVertex, assetVertex, edgeLabel);
+                    break;
+                case REMOVE:
+                    removeInputRelation(assetVertex, assetVertex, edgeLabel);
+                    break;
+                default:
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Invalid operation type");
+            }
+        } catch (AtlasBaseException | RepositoryException e){
+            LOG.error("Error while processing product asset input relation", e);
+            throw e;
+        }
+    }
+
+    public void linkProductToAsset (AtlasVertex assetVertex, String productGuid) throws AtlasBaseException {
+        try {
+            String typeName = assetVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
+            if (excludedTypes.contains(typeName)){
+                LOG.warn("Type {} is not allowed to link with PRODUCT entity", typeName);
+            }
+            Set<String> existingValues = assetVertex.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+
+            if (!existingValues.contains(productGuid)) {
+                assetVertex.setProperty(PRODUCT_GUIDS_ATTR, productGuid);
+                existingValues.add(productGuid);
+
+                updateModificationMetadata(assetVertex);
+
+                cacheDifferentialMeshEntity(assetVertex, existingValues);
+
+            }
+        } catch (Exception e){
+            LOG.error("Error while linking product to asset", e);
+            throw e;
+        }
+    }
+
+    public void unlinkProductFromAsset (AtlasVertex assetVertex, String productGuid) throws AtlasBaseException {
+        try {
+            Set<String> existingValues = assetVertex.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+
+            if (existingValues.contains(productGuid)) {
+                existingValues.remove(productGuid);
+                assetVertex.removePropertyValue(PRODUCT_GUIDS_ATTR, productGuid);
+
+                updateModificationMetadata(assetVertex);
+
+                cacheDifferentialMeshEntity(assetVertex, existingValues);
+            }
+        } catch (Exception e){
+            LOG.error("Error while unlinking product from asset", e);
+            throw e;
+        }
+    }
+
+    public void addInputRelation(AtlasVertex assetVertex, AtlasVertex productVertex, String edgeLabel) throws AtlasBaseException, RepositoryException{
+        try{
+            if(StringUtils.equals(INPUT_PORT_PRODUCT_EDGE_LABEL, edgeLabel)) {
+                if(graphHelper.getEdge(assetVertex, productVertex, OUTPUT_PORT_PRODUCT_EDGE_LABEL) == null){
+                    AtlasEdge inputPortEdge = graphHelper.addEdge(assetVertex, productVertex, INPUT_PORT_PRODUCT_EDGE_LABEL);
+                }
+            }
+        } catch (AtlasBaseException | RepositoryException e){
+            LOG.error("Error while adding input relation", e);
+            throw e;
+        }
+    }
+
+    public void removeInputRelation(AtlasVertex assetVertex, AtlasVertex productVertex, String edgeLabel) throws AtlasBaseException, RepositoryException{
+        try{
+            if(StringUtils.equals(INPUT_PORT_PRODUCT_EDGE_LABEL, edgeLabel)) {
+                //check if this assetvertex and productvertex has output relation with OUTPUT_PORT_PRODUCT_EDGE_LABEL
+                if(graphHelper.getEdge(assetVertex, productVertex, INPUT_PORT_PRODUCT_EDGE_LABEL) != null){
+                    graph.removeEdge(graphHelper.getEdge(assetVertex, productVertex, INPUT_PORT_PRODUCT_EDGE_LABEL));
+                }
+            }
+        } catch (AtlasBaseException | RepositoryException e){
+            LOG.error("Error while removing input relation", e);
+            throw e;
+        }
+    }
+
+    private void cacheDifferentialMeshEntity(AtlasVertex ev, Set<String> existingValues) {
+        AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+        diffEntity.setGuid(ev.getProperty(GUID_PROPERTY_KEY, String.class));
+        diffEntity.setUpdatedBy(ev.getProperty(MODIFIED_BY_KEY, String.class));
+        diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
+        diffEntity.setAttribute(PRODUCT_GUIDS_ATTR, existingValues);
+
+        RequestContext requestContext = RequestContext.get();
+        requestContext.cacheDifferentialEntity(diffEntity);
+    }
+
+    public void commitChanges() throws AtlasBaseException {
+        try {
+            transactionInterceptHelper.intercept();
+            LOG.info("Committed a entity to the graph");
+        } catch (Exception e){
+            LOG.error("Failed to commit asset: ", e);
+            throw e;
         }
     }
 }
+

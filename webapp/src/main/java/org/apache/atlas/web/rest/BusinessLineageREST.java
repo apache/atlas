@@ -5,6 +5,8 @@ import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.BusinessLineageRequest;
 import org.apache.atlas.model.instance.LinkMeshEntityRequest;
+import org.apache.atlas.repository.RepositoryException;
+import org.apache.atlas.repository.businesslineage.BusinessLineageService;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -28,11 +30,11 @@ public class BusinessLineageREST {
     private static final Logger LOG = LoggerFactory.getLogger(BusinessLineageREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.BusinessLineageREST");
 
-    private final AtlasEntityStore entitiesStore;
+    private final BusinessLineageService businessLineageService;
 
     @Inject
-    public BusinessLineageREST(AtlasEntityStore entitiesStore) {
-        this.entitiesStore = entitiesStore;
+    public BusinessLineageREST(BusinessLineageService businessLineageService) {
+        this.businessLineageService = businessLineageService;
     }
 
     /**
@@ -45,12 +47,12 @@ public class BusinessLineageREST {
     @POST
     @Path("/create-lineage")
     @Timed
-    public void createLineage(final BusinessLineageRequest request) throws AtlasBaseException {
+    public void createLineage(final BusinessLineageRequest request) throws AtlasBaseException, RepositoryException {
 
         // Set request context parameters
         RequestContext.get().setIncludeClassifications(true);
         RequestContext.get().setIncludeMeanings(false);
-        RequestContext.get().getRequestContextHeaders().put("route", "business-lineage");
+        RequestContext.get().getRequestContextHeaders().put("route", "business-lineage-rest");
 
         AtlasPerfTracer perf = null;
         try {
@@ -59,7 +61,13 @@ public class BusinessLineageREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BusinessLineageREST.createLineage()");
             }
 
-        } finally {
+            // Create lineage
+            businessLineageService.createLineage(request);
+
+        }catch(AtlasBaseException | RepositoryException e) {
+            LOG.error("An error occurred while creating lineage", e);
+            throw e;
+        }finally {
             // Log performance metrics
             AtlasPerfTracer.log(perf);
         }

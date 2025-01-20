@@ -21,10 +21,11 @@ package org.apache.atlas.repository.businesslineage;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.BusinessLineageRequest;
+import org.apache.atlas.repository.RepositoryException;
 
 import java.util.Set;
 
 public interface AtlasBusinessLineageService {
 
-    void createLineage(BusinessLineageRequest request) throws AtlasBaseException;
+    void createLineage(BusinessLineageRequest request) throws AtlasBaseException, RepositoryException;
 }
