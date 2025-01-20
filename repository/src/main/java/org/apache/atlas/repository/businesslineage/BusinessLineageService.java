@@ -70,13 +70,13 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
 
 
     @Inject
-    BusinessLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, TransactionInterceptHelper transactionInterceptHelper, GraphHelper graphHelper) {
+    BusinessLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, TransactionInterceptHelper transactionInterceptHelper) {
         this.graph = atlasGraph;
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
         this.entityRetriever = new EntityGraphRetriever(atlasGraph, typeRegistry);
         this.atlasTypeRegistry = typeRegistry;
         this.transactionInterceptHelper = transactionInterceptHelper;
-        this.graphHelper = graphHelper;
+        this.graphHelper = new GraphHelper(atlasGraph);
     }
 
     @Override
@@ -116,6 +116,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                     processProductAssetInputRelation(assetGuid, productGuid, operation, edgeLabel);
                 }
             }
+            commitChanges();
         } catch (AtlasBaseException | RepositoryException e){
             LOG.error("Error while creating lineage", e);
             throw e;
@@ -124,7 +125,6 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         }
     }
 
-    @GraphTransaction
     public void processProductAssetLink (String assetGuid, String productGuid, BusinessLineageRequest.OperationType operation) throws AtlasBaseException {
         try {
             AtlasVertex assetVertex = entityRetriever.getEntityVertex(assetGuid);
@@ -151,7 +151,6 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         }
     }
 
-    @GraphTransaction
     public void processProductAssetInputRelation(String assetGuid, String productGuid, BusinessLineageRequest.OperationType operation, String edgeLabel) throws AtlasBaseException, RepositoryException {
         try {
              AtlasVertex assetVertex = entityRetriever.getEntityVertex(assetGuid);
@@ -163,10 +162,10 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
 
             switch (operation) {
                 case ADD:
-                    addInputRelation(assetVertex, assetVertex, edgeLabel);
+                    addInputRelation(assetVertex, productVertex, edgeLabel);
                     break;
                 case REMOVE:
-                    removeInputRelation(assetVertex, assetVertex, edgeLabel);
+                    removeInputRelation(assetVertex, productVertex, edgeLabel);
                     break;
                 default:
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Invalid operation type");
@@ -183,7 +182,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
             if (excludedTypes.contains(typeName)){
                 LOG.warn("Type {} is not allowed to link with PRODUCT entity", typeName);
             }
-            Set<String> existingValues = assetVertex.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+            Set<String> existingValues = assetVertex.getMultiValuedSetProperty(PRODUCT_GUIDS_ATTR, String.class);
 
             if (!existingValues.contains(productGuid)) {
                 assetVertex.setProperty(PRODUCT_GUIDS_ATTR, productGuid);
@@ -202,7 +201,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
 
     public void unlinkProductFromAsset (AtlasVertex assetVertex, String productGuid) throws AtlasBaseException {
         try {
-            Set<String> existingValues = assetVertex.getMultiValuedSetProperty(DOMAIN_GUIDS_ATTR, String.class);
+            Set<String> existingValues = assetVertex.getMultiValuedSetProperty(PRODUCT_GUIDS_ATTR, String.class);
 
             if (existingValues.contains(productGuid)) {
                 existingValues.remove(productGuid);
@@ -221,8 +220,10 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
     public void addInputRelation(AtlasVertex assetVertex, AtlasVertex productVertex, String edgeLabel) throws AtlasBaseException, RepositoryException{
         try{
             if(StringUtils.equals(INPUT_PORT_PRODUCT_EDGE_LABEL, edgeLabel)) {
-                if(graphHelper.getEdge(assetVertex, productVertex, OUTPUT_PORT_PRODUCT_EDGE_LABEL) == null){
+                AtlasEdge outputPortEdge = graphHelper.getEdge(assetVertex, productVertex, OUTPUT_PORT_PRODUCT_EDGE_LABEL);
+                if(outputPortEdge == null){
                     AtlasEdge inputPortEdge = graphHelper.addEdge(assetVertex, productVertex, INPUT_PORT_PRODUCT_EDGE_LABEL);
+                    LOG.info("Added input relation between asset and product");
                 }
             }
         } catch (AtlasBaseException | RepositoryException e){
@@ -234,9 +235,10 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
     public void removeInputRelation(AtlasVertex assetVertex, AtlasVertex productVertex, String edgeLabel) throws AtlasBaseException, RepositoryException{
         try{
             if(StringUtils.equals(INPUT_PORT_PRODUCT_EDGE_LABEL, edgeLabel)) {
-                //check if this assetvertex and productvertex has output relation with OUTPUT_PORT_PRODUCT_EDGE_LABEL
-                if(graphHelper.getEdge(assetVertex, productVertex, INPUT_PORT_PRODUCT_EDGE_LABEL) != null){
-                    graph.removeEdge(graphHelper.getEdge(assetVertex, productVertex, INPUT_PORT_PRODUCT_EDGE_LABEL));
+
+                AtlasEdge inputPortEdge = graphHelper.getEdge(assetVertex, productVertex, INPUT_PORT_PRODUCT_EDGE_LABEL);
+                if(inputPortEdge != null){
+                    graph.removeEdge(inputPortEdge);
                 }
             }
         } catch (AtlasBaseException | RepositoryException e){
