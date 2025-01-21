@@ -28,7 +28,6 @@ on:
       - master
       - lineageondemand
       - makerlogic
-      - fixentitymutations
 
 jobs:
   build:
