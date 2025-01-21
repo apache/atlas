@@ -36,8 +36,11 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
@@ -53,6 +56,7 @@ import java.util.regex.Pattern;
     private static final String  INTERNAL_NAME_REGEX   = "__" + NAME_REGEX;
     private static final Pattern NAME_PATTERN          = Pattern.compile(NAME_REGEX);
     private static final Pattern INTERNAL_NAME_PATTERN = Pattern.compile(INTERNAL_NAME_REGEX);
+    private static final Set<String> INVALID_TYPEDEF_NAMES_LIST = new HashSet<String>(Arrays.asList("description", "version", "options", "name", "servicetype"));
 
     public static final String ALLOW_RESERVED_KEYWORDS = "atlas.types.allowReservedKeywords";
 
@@ -107,6 +111,10 @@ import java.util.regex.Pattern;
         if (!isValidName(typeDef.getName())) {
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID_FORMAT, typeDef.getName(), typeDef.getCategory().name());
         }
+        // To validate unsupported typeDef name
+        if (isInvalidTypeDefName(typeDef.getName())) {
+            throw new AtlasBaseException(AtlasErrorCode.UNSUPPORTED_TYPE_NAME, typeDef.getCategory().name());
+        }
 
         try {
             final boolean allowReservedKeywords = ApplicationProperties.get().getBoolean(ALLOW_RESERVED_KEYWORDS, true);
@@ -157,5 +165,9 @@ import java.util.regex.Pattern;
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasAbstractDefStoreV1.deleteByGuid({}, {})", guid, preDeleteResult);
         }
+    }
+    
+    public boolean isInvalidTypeDefName(String typeName) {
+        return INVALID_TYPEDEF_NAMES_LIST.contains(typeName);
     }
 }
