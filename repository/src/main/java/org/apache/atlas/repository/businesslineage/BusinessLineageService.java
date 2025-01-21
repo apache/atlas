@@ -221,7 +221,8 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         try{
             if(StringUtils.equals(INPUT_PORT_PRODUCT_EDGE_LABEL, edgeLabel)) {
                 AtlasEdge outputPortEdge = graphHelper.getEdge(assetVertex, productVertex, OUTPUT_PORT_PRODUCT_EDGE_LABEL);
-                if(outputPortEdge == null){
+                AtlasEdge existingInputPortEdge = graphHelper.getEdge(assetVertex, productVertex, INPUT_PORT_PRODUCT_EDGE_LABEL);
+                if(outputPortEdge == null && existingInputPortEdge == null){
                     AtlasEdge inputPortEdge = graphHelper.addEdge(assetVertex, productVertex, INPUT_PORT_PRODUCT_EDGE_LABEL);
                     LOG.info("Added input relation between asset and product");
                 }
