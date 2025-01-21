@@ -1765,7 +1765,7 @@ public class EntityGraphMapper {
                 AtlasRelationship relationship = new AtlasRelationship(relationshipName, relationshipAttributes);
 
                 if (createEdge) {
-                    edge = relationshipStore.getOrCreate(fromVertex, toVertex, relationship);
+                    edge = relationshipStore.getOrCreate(fromVertex, toVertex, relationship, false);
                     boolean isCreated = graphHelper.getCreatedTime(edge) == RequestContext.get().getRequestTime();
 
                     if (isCreated) {
@@ -4401,7 +4401,7 @@ public class EntityGraphMapper {
 
     private AtlasEdge getOrCreateRelationship(AtlasVertex end1Vertex, AtlasVertex end2Vertex, String relationshipName,
                                               Map<String, Object> relationshipAttributes) throws AtlasBaseException {
-        return relationshipStore.getOrCreate(end1Vertex, end2Vertex, new AtlasRelationship(relationshipName, relationshipAttributes));
+        return relationshipStore.getOrCreate(end1Vertex, end2Vertex, new AtlasRelationship(relationshipName, relationshipAttributes), false);
     }
 
     private void recordEntityUpdate(AtlasVertex vertex) throws AtlasBaseException {
