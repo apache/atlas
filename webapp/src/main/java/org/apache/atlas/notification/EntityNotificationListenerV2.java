@@ -167,8 +167,8 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
              if(differentialEntities != null){
                  if (differentialEntities.containsKey(entityGuid)) {
                      if (differentialEntities.get(entityGuid).hasRelationshipAttribute(OUTPUT_PORTS)) {
-                         differentialEntities.get(entityGuid).setAppendRelationshipAttribute(OUTPUT_PORTS, addedOutputPorts);
-                         differentialEntities.get(entityGuid).setRemoveRelationshipAttribute(OUTPUT_PORTS, removedOutputPorts);
+                         differentialEntities.get(entityGuid).setAddedRelationshipAttribute(OUTPUT_PORTS, addedOutputPorts);
+                         differentialEntities.get(entityGuid).setRemovedRelationshipAttribute(OUTPUT_PORTS, removedOutputPorts);
                      }
                      messages.add(new EntityNotificationV2(toNotificationHeader(entity), differentialEntities.get(entityGuid),
                              operationType, RequestContext.get().getRequestTime(), requestContextHeaders));

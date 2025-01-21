@@ -101,6 +101,8 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Set<String>                      labels;
     private Set<String>                      pendingTasks; // read-only field i.e. value provided is ignored during entity create/update
     private String                           deleteHandler;
+    private Map<String, Object>              addedRelationshipAttributes;
+    private Map<String, Object>              removedRelationshipAttributes;
 
     @JsonIgnore
     private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
@@ -234,6 +236,8 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             setPendingTasks(other.getPendingTasks());
             setAppendRelationshipAttributes(other.getAppendRelationshipAttributes());
             setRemoveRelationshipAttributes(other.getRemoveRelationshipAttributes());
+            setAddedRelationshipAttributes(other.getAddedRelationshipAttributes());
+            setRemovedRelationshipAttributes(other.getRemovedRelationshipAttributes());
         }
     }
 
@@ -527,6 +531,60 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     public void setDeleteHandler(String deleteHandler) {
         this.deleteHandler = deleteHandler;
+    }
+
+    public Map<String, Object> getRemovedRelationshipAttributes() {
+        return removedRelationshipAttributes;
+    }
+
+    public void setRemovedRelationshipAttributes(Map<String, Object> removedRelationshipAttributes) {
+        this.removedRelationshipAttributes = removedRelationshipAttributes;
+    }
+
+    public boolean hasRemovedRelationshipAttribute(String name) {
+        Map<String, Object> r = this.removedRelationshipAttributes;
+
+        return r != null ? r.containsKey(name) : false;
+    }
+
+    public void setRemovedRelationshipAttribute(String name, Object value) {
+        Map<String, Object> r = this.removedRelationshipAttributes;
+
+        if (r != null) {
+            r.put(name, value);
+        } else {
+            r = new HashMap<>();
+            r.put(name, value);
+
+            this.removedRelationshipAttributes = r;
+        }
+    }
+
+    public boolean hasAddedRelationshipAttribute(String name) {
+        Map<String, Object> r = this.addedRelationshipAttributes;
+
+        return r != null ? r.containsKey(name) : false;
+    }
+
+    public Map<String, Object> getAddedRelationshipAttributes() {
+        return addedRelationshipAttributes;
+    }
+
+    public void setAddedRelationshipAttributes(Map<String, Object> addedRelationshipAttributes) {
+        this.addedRelationshipAttributes = addedRelationshipAttributes;
+    }
+
+    public void setAddedRelationshipAttribute(String name, Object value) {
+        Map<String, Object> r = this.addedRelationshipAttributes;
+
+        if (r != null) {
+            r.put(name, value);
+        } else {
+            r = new HashMap<>();
+            r.put(name, value);
+
+            this.addedRelationshipAttributes = r;
+        }
     }
 
     private void init() {
