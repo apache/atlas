@@ -45,7 +45,7 @@ public final class KeycloakAuthenticationService {
     @NotNull
     private OkHttpClient getOkHttpClient() {
         HttpLoggingInterceptor interceptor = new HttpLoggingInterceptor();
-        interceptor.setLevel(HttpLoggingInterceptor.Level.BASIC);
+        interceptor.setLevel(HttpLoggingInterceptor.Level.NONE);
         return new OkHttpClient.Builder()
                 .addInterceptor(interceptor)
                 .addInterceptor(responseLoggingInterceptor)

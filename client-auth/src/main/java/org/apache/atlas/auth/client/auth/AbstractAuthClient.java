@@ -56,7 +56,7 @@ public class AbstractAuthClient {
         this.authConfig = authConfig;
         this.metricUtils = new MetricUtils();
         HttpLoggingInterceptor httpInterceptor = new HttpLoggingInterceptor();
-        httpInterceptor.setLevel(HttpLoggingInterceptor.Level.BASIC);
+        httpInterceptor.setLevel(HttpLoggingInterceptor.Level.NONE);
         OkHttpClient okHttpClient = new OkHttpClient.Builder()
                 .addInterceptor(accessTokenInterceptor)
                 .addInterceptor(httpInterceptor)
