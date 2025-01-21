@@ -76,7 +76,7 @@ jobs:
           cd dev-support/atlas-docker
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
-          docker compose --env SKIPTESTS=false -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
+          SKIPTESTS=false docker compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
 
       - name: Bring up containers
         run: |
