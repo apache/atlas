@@ -25,12 +25,15 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.BusinessLineageRequest;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
+import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.TransactionInterceptHelper;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -65,18 +68,20 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
     private final AtlasTypeRegistry atlasTypeRegistry;
     private final TransactionInterceptHelper   transactionInterceptHelper;
     private final GraphHelper graphHelper;
+    private final AtlasRelationshipStoreV2 relationshipStoreV2;
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
 
 
 
     @Inject
-    BusinessLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, TransactionInterceptHelper transactionInterceptHelper) {
+    BusinessLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, TransactionInterceptHelper transactionInterceptHelper, AtlasRelationshipStoreV2 relationshipStoreV2) {
         this.graph = atlasGraph;
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
         this.entityRetriever = new EntityGraphRetriever(atlasGraph, typeRegistry);
         this.atlasTypeRegistry = typeRegistry;
         this.transactionInterceptHelper = transactionInterceptHelper;
         this.graphHelper = new GraphHelper(atlasGraph);
+        this.relationshipStoreV2 = relationshipStoreV2;
     }
 
     @Override
@@ -223,7 +228,9 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                 AtlasEdge outputPortEdge = graphHelper.getEdge(assetVertex, productVertex, OUTPUT_PORT_PRODUCT_EDGE_LABEL);
                 AtlasEdge existingInputPortEdge = graphHelper.getEdge(assetVertex, productVertex, INPUT_PORT_PRODUCT_EDGE_LABEL);
                 if(outputPortEdge == null && existingInputPortEdge == null){
-                    AtlasEdge inputPortEdge = graphHelper.addEdge(assetVertex, productVertex, INPUT_PORT_PRODUCT_EDGE_LABEL);
+                    AtlasRelationship relationship = new AtlasRelationship();
+                    relationship.setTypeName(REL_DATA_PRODUCT_TO_INPUT_PORTS);
+                    AtlasEdge newInputPortEdge = relationshipStoreV2.getOrCreate(assetVertex, productVertex, relationship, true);
                     LOG.info("Added input relation between asset and product");
                 }
             }

@@ -68,7 +68,7 @@ public interface AtlasRelationshipStore {
     AtlasRelationshipWithExtInfo getExtInfoById(String guid) throws AtlasBaseException;
 
 
-    AtlasEdge getOrCreate(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship) throws AtlasBaseException;
+    AtlasEdge getOrCreate(AtlasVertex end1Vertex, AtlasVertex end2Vertex, AtlasRelationship relationship, boolean skipAuth) throws AtlasBaseException;
 
     AtlasEdge getRelationship(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasRelationship relationship) throws AtlasBaseException;
 
