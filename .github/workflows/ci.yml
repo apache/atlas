@@ -33,78 +33,10 @@ env:
   MAVEN_OPTS: -Dhttp.keepAlive=false -Dmaven.wagon.http.pool=false -Dmaven.wagon.http.retryHandler.class=standard -Dmaven.wagon.http.retryHandler.count=3
 
 jobs:
-  build-8:
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-      - name: Cache for maven dependencies
-        uses: actions/cache@v4
-        with:
-          path: |
-            ~/.m2/repository/*/*/*
-            !~/.m2/repository/org/apache/atlas
-          key: maven-repo-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            maven-repo-
-      - name: Set up JDK 8
-        uses: actions/setup-java@v4
-        with:
-          java-version: '8'
-          distribution: 'temurin'
-      - name: build (8)
-        run: mvn clean verify --no-transfer-progress -B -V
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: target-8
-          path: distro/target/*
-
-  build-11:
-    needs:
-      - build-8
-    runs-on: ubuntu-22.04
-    timeout-minutes: 60
-    steps:
-      - uses: actions/checkout@v4
-      - name: Cache for maven dependencies
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            ~/.m2/repository/*/*/*
-            !~/.m2/repository/org/apache/atlas
-          key: maven-repo-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            maven-repo-
-      - name: Set up JDK 11
-        uses: actions/setup-java@v4
-        with:
-          java-version: '11'
-          distribution: 'temurin'
-      - name: build (11)
-        run: mvn clean verify --no-transfer-progress -B -V
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: target-11
-          path: distro/target/*
-
   docker-build:
-    needs:
-      - build-8
     runs-on: ubuntu-22.04
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
-      - name: Download build-8 artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: target-8
-
-      - name: Copy artifacts for docker build
-        run: |
-          cp apache-atlas-*.tar.gz dev-support/atlas-docker/dist
-
       - name: Cache downloaded archives
         uses: actions/cache@v4
         with:
@@ -121,24 +53,16 @@ jobs:
       - name: Clean up Docker space
         run: docker system prune --all --force --volumes
 
-      - name: Build all atlas-service images
+      - name: Build Atlas - JDK 8
         run: |
           cd dev-support/atlas-docker
-          docker compose -f docker-compose.atlas-base.yml build
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
-          docker compose \
-          -f docker-compose.atlas-base.yml \
-          -f docker-compose.atlas.yml \
-          -f docker-compose.atlas-hadoop.yml \ 
-          -f docker-compose.atlas-hbase.yml \ 
-          -f docker-compose.atlas-kafka.yml \
-          -f docker-compose.atlas-hive.yml build
+          docker compose --env SKIPTESTS=false -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
 
       - name: Bring up containers
         run: |
           cd dev-support/atlas-docker
-          docker compose -f docker-compose.atlas-base.yml build
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
           docker compose \
