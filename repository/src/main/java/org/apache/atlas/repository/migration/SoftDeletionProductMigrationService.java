@@ -18,30 +18,28 @@ import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 
-public class validateProductEdgesRestorationService {
+public class SoftDeletionProductMigrationService {
 
-    private static final Logger LOG = LoggerFactory.getLogger(validateProductEdgesRestorationService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SoftDeletionProductMigrationService.class);
 
     private final AtlasGraph graph;
     private final Set<String> productGuids;
     private final GraphHelper graphHelper;
     private final TransactionInterceptHelper transactionInterceptHelper;
 
-    public validateProductEdgesRestorationService (AtlasGraph graph, Set<String> productGuids, GraphHelper graphHelper, TransactionInterceptHelper transactionInterceptHelper) {
+    public SoftDeletionProductMigrationService(AtlasGraph graph, Set<String> productGuids, GraphHelper graphHelper, TransactionInterceptHelper transactionInterceptHelper) {
         this.graph = graph;
         this.productGuids = productGuids;
         this.graphHelper = graphHelper;
         this.transactionInterceptHelper = transactionInterceptHelper;
     }
 
-    public boolean productState() throws AtlasBaseException {
+    public void productState() throws AtlasBaseException {
         try {
             int count = 0;
-            int totalProductChecked = 0;
-            boolean redundantEdgesFound = false;
-
+            int totalUpdatedCount = 0;
             for (String productGuid: productGuids) {
-                LOG.info("Validating edges for Product: {}", productGuid);
+                LOG.info("Restoring state for Product: {}", productGuid);
 
                 if (productGuid != null && !productGuid.trim().isEmpty()) {
                     AtlasVertex productVertex = graphHelper.getVertexForGUID(productGuid);
@@ -49,79 +47,80 @@ public class validateProductEdgesRestorationService {
                     AtlasEntity.Status vertexStatus = getStatus(productVertex);
 
                     if (ACTIVE.equals(vertexStatus)) {
-                        LOG.info("Validating edges for Active Product: {}", productGuid);
-                        boolean softDeletedEdgesFound = validateEdgeForActiveProduct(productVertex);
-                        if (softDeletedEdgesFound) {
+                        LOG.info("Removing edges for Active Product: {}", productGuid);
+                        boolean isCommitRequired = deleteEdgeForActiveProduct(productVertex);
+                        if (isCommitRequired) {
                             count++;
-                            totalProductChecked++;
-                        } else {
-                            totalProductChecked++;
+                            totalUpdatedCount++;
                         }
                     } else {
-                        LOG.info("Validating edges for Archived Product: {}", productGuid);
-                        boolean edgeWithDifferentTimeStampFound = validateEdgeForArchivedProduct(productVertex);
-                        if (edgeWithDifferentTimeStampFound) {
+                        LOG.info("Restoring edges for Archived Product: {}", productGuid);
+                        boolean isCommitRequired = deleteEdgeForArchivedProduct(productVertex);
+                        if (isCommitRequired) {
                             count++;
-                            totalProductChecked++;
-                        } else {
-                            totalProductChecked++;
+                            totalUpdatedCount++;
                         }
+                    }
+
+                    if (count == 20) {
+                        LOG.info("Committing batch of 20 products...");
+                        commitChanges();
+                        count = 0;
                     }
                 }
             }
 
             if (count > 0) {
-                redundantEdgesFound = true;
-                LOG.info("Found {} products with redundant edges....", count);
+                LOG.info("Committing remaining {} products...", count);
+                commitChanges();
             }
 
-            LOG.info("Total products checked: {}", totalProductChecked);
-
-            return redundantEdgesFound;
+            LOG.info("Total products updated: {}", totalUpdatedCount);
         } catch (Exception e) {
-            LOG.error("Error while validating edges for Products: {}", productGuids, e);
+            LOG.error("Error while restoring state for Products: {}", productGuids, e);
             throw new AtlasBaseException(e);
         }
     }
 
-    public boolean validateEdgeForActiveProduct (AtlasVertex productVertex) {
-        boolean softDeletedEdgesFound = false;
 
+    public boolean deleteEdgeForActiveProduct(AtlasVertex productVertex) {
+        boolean isCommitRequired = false;
         try {
             Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH).iterator();
 
             if (existingEdges == null || !existingEdges.hasNext()) {
                 LOG.info("No edges found for Product: {}", productVertex);
-                return softDeletedEdgesFound;
+                return isCommitRequired;
             }
 
             while (existingEdges.hasNext()) {
                 AtlasEdge edge = existingEdges.next();
 
                 AtlasEntity.Status edgeStatus = getStatus(edge);
+                LOG.info("Edge status: {}", edgeStatus);
 
                 if (DELETED.equals(edgeStatus)) {
-                    LOG.info("Found soft deleted edge: {}", edge);
-                    softDeletedEdgesFound = true;
+                    graph.removeEdge(edge);
+                    isCommitRequired = true;
                 }
             }
         } catch (Exception e) {
-            LOG.error("Error while validating edges for Active Product: {}", productVertex, e);
+            LOG.error("Error while deleting soft edges for Active Product: {}", productVertex, e);
             throw new RuntimeException(e);
         }
-
-        return softDeletedEdgesFound;
+        return isCommitRequired;
     }
 
-    public boolean validateEdgeForArchivedProduct (AtlasVertex productVertex) {
-        boolean edgeWithDifferentTimeStampFound = false;
+
+    private boolean deleteEdgeForArchivedProduct(AtlasVertex productVertex) {
+        boolean isCommitRequired = false;
         try {
             Long updatedTime = productVertex.getProperty("__modificationTimestamp", Long.class);
             Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH).iterator();
 
             if (existingEdges == null || !existingEdges.hasNext()) {
                 LOG.info("No edges found for Product: {}", productVertex);
-                return edgeWithDifferentTimeStampFound;
+                return isCommitRequired;
             }
 
             while (existingEdges.hasNext()) {
@@ -129,14 +128,27 @@ public class validateProductEdgesRestorationService {
                 Long modifiedTimestamp = edge.getProperty("__modificationTimestamp", Long.class);
 
                 if (!updatedTime.equals(modifiedTimestamp)) {
-                    LOG.info("Found edge with different timestamp: {}", edge);
-                    edgeWithDifferentTimeStampFound = true;
+                    LOG.info("Removing edge with different timestamp: {}", edge);
+                    graph.removeEdge(edge);
+                    isCommitRequired = true;
+                } else {
+                    LOG.info("Keeping edge with matching timestamp: {}", edge);
                 }
             }
         } catch (Exception e) {
-            LOG.error("Error while validating edges for Archived Product: {}", productVertex, e);
+            LOG.error("Error while deleting edges for Archived Product: {}", productVertex, e);
             throw new RuntimeException(e);
         }
-        return edgeWithDifferentTimeStampFound;
+        return isCommitRequired;
+    }
+
+    public void commitChanges() throws AtlasBaseException {
+        try {
+            transactionInterceptHelper.intercept();
+            LOG.info("Committed a entity to the graph");
+        } catch (Exception e) {
+            LOG.error("Failed to commit asset: ", e);
+            throw e;
+        }
     }
 }

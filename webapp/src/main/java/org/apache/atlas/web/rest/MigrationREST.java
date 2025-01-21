@@ -10,7 +10,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
-import org.apache.atlas.repository.migration.validateProductEdgesRestorationService;
+import org.apache.atlas.repository.migration.ValidateProductEdgesMigrationService;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
@@ -29,7 +29,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.apache.atlas.repository.migration.BulkUpdateProductsRestorationService;
+import org.apache.atlas.repository.migration.SoftDeletionProductMigrationService;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -367,7 +367,7 @@ public class MigrationREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.bulkProductsRedundantEdgeRemoval(" + guids + ")");
             }
 
-            BulkUpdateProductsRestorationService migrationService = new BulkUpdateProductsRestorationService(graph, guids, new GraphHelper(graph), transactionInterceptHelper);
+            SoftDeletionProductMigrationService migrationService = new SoftDeletionProductMigrationService(graph, guids, new GraphHelper(graph), transactionInterceptHelper);
             migrationService.productState();
 
         } catch (Exception e) {
@@ -396,7 +396,7 @@ public class MigrationREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.bulkValidateProductEdges(" + guids + ")");
             }
 
-            validateProductEdgesRestorationService migrationService = new validateProductEdgesRestorationService(graph, guids, new GraphHelper(graph), transactionInterceptHelper);
+            ValidateProductEdgesMigrationService migrationService = new ValidateProductEdgesMigrationService(graph, guids, new GraphHelper(graph));
             flag = migrationService.productState();
 
         } catch (Exception e) {

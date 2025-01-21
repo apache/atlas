@@ -195,7 +195,7 @@ public class EntityGraphMapper {
     private final EntityGraphRetriever       retrieverNoRelation;
 
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
-    private static final Set<String> edgeLabelsForHardDeletion = new HashSet<>(Arrays.asList(OUTPUT_PORT_PRODUCT_EDGE_LABEL, INPUT_PORT_PRODUCT_EDGE_LABEL));
+    private static final Set<String> edgeLabelsForHardDeletion = new HashSet<>(Arrays.asList(OUTPUT_PORT_PRODUCT_EDGE_LABEL, INPUT_PORT_PRODUCT_EDGE_LABEL, TERM_ASSIGNMENT_LABEL));
 
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
