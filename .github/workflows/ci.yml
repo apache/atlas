@@ -49,13 +49,30 @@ jobs:
           restore-keys: |
             maven-repo-
 
+      - name: Set up .m2 directory and permissions
+        run: |
+          mkdir -p ~/.m2/repository
+          chmod -R 777 ~/.m2
+          chmod -R 777 ./
+      
       - name: Set up JDK 8
         uses: actions/setup-java@v4
         with:
           java-version: '8'
           distribution: 'temurin'
 
+      - name: Clean up Docker space
+        run: docker system prune --all --force --volumes
+
+      - name: Build Atlas - JDK 8
+        run: |
+          cd dev-support/atlas-docker
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
+          SKIPTESTS=false docker compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
+
       - name: Cache downloaded archives
+        if: success()
         uses: actions/cache@v4
         with:
           path: dev-support/atlas-docker/downloads
@@ -68,16 +85,6 @@ jobs:
           cd dev-support/atlas-docker
           chmod +x download-archives.sh && ./download-archives.sh
 
-      - name: Clean up Docker space
-        run: docker system prune --all --force --volumes
-
-      - name: Build Atlas - JDK 8
-        run: |
-          cd dev-support/atlas-docker
-          export DOCKER_BUILDKIT=1
-          export COMPOSE_DOCKER_CLI_BUILD=1
-          SKIPTESTS=false docker compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
-
       - name: Bring up containers
         run: |
           cd dev-support/atlas-docker
@@ -86,8 +93,8 @@ jobs:
           docker compose \
           -f docker-compose.atlas-base.yml \
           -f docker-compose.atlas.yml \
-          -f docker-compose.atlas-hadoop.yml \ 
-          -f docker-compose.atlas-hbase.yml \ 
+          -f docker-compose.atlas-hadoop.yml \
+          -f docker-compose.atlas-hbase.yml \
           -f docker-compose.atlas-kafka.yml \
           -f docker-compose.atlas-hive.yml up -d
 
