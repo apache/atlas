@@ -67,7 +67,6 @@ jobs:
       - name: Build Atlas - JDK 8
         run: |
           cd dev-support/atlas-docker
-          chmod -R 777 ./../..
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
           SKIPTESTS=false docker compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
@@ -93,8 +92,8 @@ jobs:
           docker compose \
           -f docker-compose.atlas-base.yml \
           -f docker-compose.atlas.yml \
-          -f docker-compose.atlas-hadoop.yml \ 
-          -f docker-compose.atlas-hbase.yml \ 
+          -f docker-compose.atlas-hadoop.yml \
+          -f docker-compose.atlas-hbase.yml \
           -f docker-compose.atlas-kafka.yml \
           -f docker-compose.atlas-hive.yml up -d
 
