@@ -60,6 +60,7 @@ public class RequestContext {
     private final Set<String>                            deletedEdgesIds      = new HashSet<>();
     private final Set<String>                            processGuidIds      = new HashSet<>();
 
+    private       Map<String, String>                    evaluateEntityHeaderCache        = null;
     private final AtlasPerfMetrics metrics = isMetricsEnabled ? new AtlasPerfMetrics() : null;
     private final List<AtlasPerfMetrics.Metric> applicationMetrics = new ArrayList<>();
     private List<EntityGuidPair> entityGuidInRequest = null;
@@ -87,6 +88,9 @@ public class RequestContext {
     private int attemptCount = 1;
     private boolean isImportInProgress = false;
     private boolean     isInNotificationProcessing = false;
+
+
+    private boolean     authorisedRemoveRelation = false;
     private boolean     isInTypePatching           = false;
     private boolean     createShellEntityForNonExistingReference = false;
     private boolean     skipFailedEntities = false;
@@ -204,6 +208,13 @@ public class RequestContext {
         this.entityCache.clear();
     }
 
+    public boolean isAuthorisedRemoveRelation() {
+        return authorisedRemoveRelation;
+    }
+
+    public void setAuthorisedRemoveRelation(boolean authorisedRemoveRelation) {
+        this.authorisedRemoveRelation = authorisedRemoveRelation;
+    }
     public Set<String> getRelationAttrsForSearch() {
         return relationAttrsForSearch;
     }
@@ -567,17 +578,17 @@ public class RequestContext {
         }
     }
 
-    public void setEntityHeaderCache(AtlasEntityHeader headerCache){
-        if(headerCache != null && headerCache.getGuid() != null){
-            entityHeaderCache.put(headerCache.getGuid(), headerCache);
+    public void setEntityHeaderCache(String cacheKey, AtlasEntityHeader headerCache){
+        if(headerCache != null && StringUtils.isNotEmpty(cacheKey)){
+            entityHeaderCache.put(cacheKey, headerCache);
         }
     }
 
-    public AtlasEntityHeader getCachedEntityHeader(String guid){
-        if(guid == null){
+    public AtlasEntityHeader getCachedEntityHeader(String cacheKey){
+        if(cacheKey == null){
             return null;
         }
-        return entityHeaderCache.get(guid);
+        return entityHeaderCache.getOrDefault(cacheKey,null);
     }
 
     public AtlasEntity getDifferentialEntity(String guid) {
@@ -751,6 +762,14 @@ public class RequestContext {
 
     public void setClientOrigin(String clientOrigin) {
         this.clientOrigin = StringUtils.isEmpty(this.clientOrigin) ? "other" :clientOrigin;
+    }
+
+    public Map<String, String> getEvaluateEntityHeaderCache() {
+        return evaluateEntityHeaderCache;
+    }
+
+    public void setEvaluateEntityHeaderCache(Map<String, String> evaluateEntityHeaderCache) {
+        this.evaluateEntityHeaderCache = evaluateEntityHeaderCache;
     }
 
     public class EntityGuidPair {

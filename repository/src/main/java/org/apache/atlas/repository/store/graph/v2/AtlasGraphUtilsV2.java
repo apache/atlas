@@ -94,7 +94,7 @@ public class AtlasGraphUtilsV2 {
         } catch (Exception excp) {
             LOG.error("Error reading configuration", excp);
         } finally {
-            LOG.info("atlas.use.index.query.to.find.entity.by.unique.attributes=" + USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES);
+            LOG.debug("atlas.use.index.query.to.find.entity.by.unique.attributes=" + USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES);
         }
     }
 

@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.store.graph.v1;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graph.GraphHelper;

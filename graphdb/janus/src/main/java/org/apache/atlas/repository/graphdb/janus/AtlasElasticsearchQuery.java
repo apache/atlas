@@ -217,10 +217,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                     CompletableFuture.runAsync(() -> SearchContextCache.put(searchContextId, searchContextSequenceNo, esSearchId));
                 }
                 response = getAsyncSearchResponse(searchParams, esSearchId).get();
-                if (response ==  null) {
-                    // Rather than null (if the response is null wil help returning @204 HTTP_NO_CONTENT to the user)
-                    // return timeout exception to user
-                    throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED_DUE_TO_TIMEOUT, KeepAliveTime);
+                if (response == null) {
+                    // If the response is null, we want to return a timeout exception to the user
+                    // This should correspond to a 504 Gateway Timeout since the issue is server-side (Elasticsearch timeout)
+                    throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_GATEWAY_TIMEOUT, KeepAliveTime);
                 }
 
                 if(response.isTimedOut()) {

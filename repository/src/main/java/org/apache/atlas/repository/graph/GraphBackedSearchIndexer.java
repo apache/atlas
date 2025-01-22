@@ -298,24 +298,24 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         AtlasGraphManagement management = graph.getManagementSystem();
 
         try {
-            LOG.info("Creating indexes for graph.");
+            LOG.debug("Creating indexes for graph.");
 
             if (management.getGraphIndex(VERTEX_INDEX) == null) {
                 management.createVertexMixedIndex(VERTEX_INDEX, BACKING_INDEX, Collections.emptyList());
 
-                LOG.info("Created index : {}", VERTEX_INDEX);
+                LOG.debug("Created index : {}", VERTEX_INDEX);
             }
 
             if (management.getGraphIndex(EDGE_INDEX) == null) {
                 management.createEdgeMixedIndex(EDGE_INDEX, BACKING_INDEX, Collections.emptyList());
 
-                LOG.info("Created index : {}", EDGE_INDEX);
+                LOG.debug("Created index : {}", EDGE_INDEX);
             }
 
             if (management.getGraphIndex(FULLTEXT_INDEX) == null) {
                 management.createFullTextMixedIndex(FULLTEXT_INDEX, BACKING_INDEX, Collections.emptyList());
 
-                LOG.info("Created index : {}", FULLTEXT_INDEX);
+                LOG.debug("Created index : {}", FULLTEXT_INDEX);
             }
 
             HashMap<String, Object> ES_DATE_FIELD = new HashMap<>();
@@ -443,7 +443,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             commit(management);
 
-            LOG.info("Index creation for global keys complete.");
+            LOG.debug("Index creation for global keys complete.");
         } catch (Throwable t) {
             LOG.error("GraphBackedSearchIndexer.initialize() failed", t);
 
@@ -850,7 +850,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 }
 
                 indexFieldName = management.addMixedIndex(VERTEX_INDEX, propertyKey, isStringField, indexTypeESConfig, indexTypeESFields);
-                LOG.info("Created backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
+                LOG.debug("Created backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
             }
 
             if(indexFieldName == null && isIndexApplicable(propertyClass, cardinality)) {

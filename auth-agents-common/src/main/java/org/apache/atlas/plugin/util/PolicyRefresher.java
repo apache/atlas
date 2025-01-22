@@ -295,7 +295,7 @@ public class PolicyRefresher extends Thread {
 				lastUpdatedTimeInMillis = -1;
 			}
 		} catch (Exception excp) {
-			LOG.error("Encountered unexpected exception!!!!!!!!!!!", excp);
+			LOG.error("Encountered unexpected exception!!!!!!!!!!! Message:" + excp.getMessage() + "Stacktrace: " + excp.getStackTrace().toString(), excp);
 		}
 
 		RangerPerfTracer.log(perf);
