@@ -49,13 +49,13 @@ jobs:
           restore-keys: |
             maven-repo-
 
-      - name: Ensure .m2 directory exists
-        run: mkdir -p ~/.m2/repository
-
-      - name: Debug file permissions
+      - name: Set up .m2 directory and permissions
         run: |
-          ls -ld ~/.m2
-          whoami
+          mkdir -p ~/.m2/repository
+          chmod -R 777 ~/.m2
+
+      - name: Clean up corrupted Maven files
+        run: rm -rf ~/.m2/repository/org/apache/apache
 
       - name: Set up JDK 8
         uses: actions/setup-java@v4
