@@ -53,15 +53,24 @@ jobs:
         run: |
           mkdir -p ~/.m2/repository
           chmod -R 777 ~/.m2
-
-      - name: Clean up corrupted Maven files
-        run: rm -rf ~/.m2/repository/org/apache/apache
-
+          chmod -R 777 ./
+      
       - name: Set up JDK 8
         uses: actions/setup-java@v4
         with:
           java-version: '8'
           distribution: 'temurin'
+
+      - name: Clean up Docker space
+        run: docker system prune --all --force --volumes
+
+      - name: Build Atlas - JDK 8
+        run: |
+          cd dev-support/atlas-docker
+          chmod -R 777 ./../..
+          export DOCKER_BUILDKIT=1
+          export COMPOSE_DOCKER_CLI_BUILD=1
+          SKIPTESTS=false docker compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
 
       - name: Cache downloaded archives
         uses: actions/cache@v4
@@ -75,16 +84,6 @@ jobs:
         run: |
           cd dev-support/atlas-docker
           chmod +x download-archives.sh && ./download-archives.sh
-
-      - name: Clean up Docker space
-        run: docker system prune --all --force --volumes
-
-      - name: Build Atlas - JDK 8
-        run: |
-          cd dev-support/atlas-docker
-          export DOCKER_BUILDKIT=1
-          export COMPOSE_DOCKER_CLI_BUILD=1
-          SKIPTESTS=false docker compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
 
       - name: Bring up containers
         run: |
