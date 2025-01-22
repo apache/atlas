@@ -58,7 +58,6 @@ public abstract class ClassificationTask extends AbstractTask {
     public static final String PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE = "previousRestrictPropagationThroughLineage";
 
     public static final String PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_HIERARCHY = "previousRestrictPropagationThroughHierarchy";
-    public static final String X_ATLAN_TASK_GUID = "x-atlan-task-guid";
 
     protected final AtlasGraph             graph;
     protected final EntityGraphMapper      entityGraphMapper;
@@ -98,7 +97,6 @@ public abstract class ClassificationTask extends AbstractTask {
         }
 
         RequestContext.get().setUser(userName, null);
-        RequestContext.get().addRequestContextHeader(X_ATLAN_TASK_GUID, getTaskGuid());
 
         try {
             setStatus(IN_PROGRESS);
