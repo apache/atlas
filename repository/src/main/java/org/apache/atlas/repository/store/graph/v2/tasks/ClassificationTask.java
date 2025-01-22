@@ -58,7 +58,7 @@ public abstract class ClassificationTask extends AbstractTask {
     public static final String PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE = "previousRestrictPropagationThroughLineage";
 
     public static final String PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_HIERARCHY = "previousRestrictPropagationThroughHierarchy";
-
+  
     protected final AtlasGraph             graph;
     protected final EntityGraphMapper      entityGraphMapper;
     protected final DeleteHandlerDelegate  deleteDelegate;
