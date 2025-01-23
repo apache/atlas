@@ -170,8 +170,8 @@
                 <role>committer</role>
                 <role>PMC</role>
             </roles>
-            <organization>Microsoft</organization>
-            <!--<organizationUrl>https://www.microsoft.com</organizationUrl>-->
+            <organization>SAP Inc.</organization>
+            <!--<organizationUrl>https://www.sap.com</organizationUrl>-->
         </developer>
         <developer>
             <id>chyzer</id>
@@ -384,16 +384,6 @@
             <!--<organizationUrl>https://www.privacera.com</organizationUrl>-->
         </developer>
         <developer>
-            <id>mandarambawane</id>
-            <name>Mandar Ambawane</name>
-            <email>mandarambawane@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-            </roles>
-            <organization>Freestone Infotech</organization>
-        </developer>
-        <developer>
             <id>mandy</id>
             <name>Mandy Chessell</name>
             <email>mandy@apache.org</email>
@@ -458,37 +448,6 @@
                 <role>committer</role>
             </roles>
             <organization>Freestone Infotech</organization>
-        </developer>
-        <developer>
-            <id>ppawar</id>
-            <name>Prasad Pawar</name>
-            <email>ppawar@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-            </roles>
-            <organization>Freestone Infotech</organization>
-        </developer>
-        <developer>
-            <id>chaitalithombare</id>
-            <name>Chaitali Borole</name>
-            <email>chaitalithombare@apache.org</email>
-            <timezone>Asia/Kolkata</timezone>
-            <roles>
-                <role>committer</role>
-            </roles>
-            <organization>Freestone Infotech</organization>
-        </developer>
-        <developer>
-            <id>radhikakundam</id>
-            <name>Radhika Kundam</name>
-            <email>radhikakundam@apache.org</email>
-            <timezone>America/Los_Angeles</timezone>
-            <roles>
-                <role>committer</role>
-            </roles>
-            <organization>Cloudera Inc.</organization>
-            <!--<organizationUrl>https://www.cloudera.com</organizationUrl>-->
         </developer>
         <developer>
             <id>rmani</id>

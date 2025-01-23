@@ -187,11 +187,23 @@ public final class Atlas {
 
     private static OpenTelemetry initializeOpenTelemetry() {
 
-         List<String> customResourceAttr =
-                Arrays.asList(AtlasConfiguration.OTEL_RESOURCE_ATTRIBUTES.getStringArray());
+        String otelResourceAttributes = System.getenv("OTEL_RESOURCE_ATTRIBUTES");
+
+        List<String> customResourceAttr = null;
+
+        if (otelResourceAttributes != null) {
+            // Split the environment variable by commas
+            String[] values = otelResourceAttributes.split(",");
+            customResourceAttr = Arrays.asList(values);
+        } else {
+            customResourceAttr = Arrays.asList(AtlasConfiguration.OTEL_RESOURCE_ATTRIBUTES.getStringArray());
+        }
+
+        String serviceName = System.getenv("OTEL_SERVICE_NAME") != null ? System.getenv("OTEL_SERVICE_NAME") : AtlasConfiguration.OTEL_SERVICE_NAME.getString();
+        String otelEndpoint = System.getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != null ? System.getenv("OTEL_EXPORTER_OTLP_ENDPOINT") : AtlasConfiguration.OTEL_EXPORTER_OTLP_ENDPOINT.getString();
 
         ResourceBuilder resourceBuilder = Resource.getDefault().toBuilder()
-                .put(ResourceAttributes.SERVICE_NAME, AtlasConfiguration.OTEL_SERVICE_NAME.getString());
+                .put(ResourceAttributes.SERVICE_NAME, serviceName);
 
         // Iterate through the ArrayList and add each attribute
         for (String attribute : customResourceAttr) {
@@ -213,7 +225,7 @@ public final class Atlas {
                                 .addLogRecordProcessor(
                                         BatchLogRecordProcessor.builder(
                                                         OtlpGrpcLogRecordExporter.builder()
-                                                                .setEndpoint(AtlasConfiguration.OTEL_EXPORTER_OTLP_ENDPOINT.getString())
+                                                                .setEndpoint(otelEndpoint)
                                                                 .build()
                                                 )
                                                 .build()
