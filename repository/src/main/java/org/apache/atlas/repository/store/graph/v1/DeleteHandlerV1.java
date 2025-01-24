@@ -828,7 +828,7 @@ public abstract class DeleteHandlerV1 {
                             AtlasType      elemType = arrType.getElementType();
 
                             if (isReference(elemType.getTypeCategory())) {
-                                List<AtlasEdge> edges = getCollectionElementsUsingRelationship(instanceVertex, attributeInfo);
+                                List<AtlasEdge> edges = getActiveCollectionElementsUsingRelationship(instanceVertex, attributeInfo);
 
                                 if (CollectionUtils.isNotEmpty(edges)) {
                                     for (AtlasEdge edge : edges) {

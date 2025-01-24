@@ -1673,10 +1673,27 @@ public final class GraphHelper {
         return getCollectionElementsUsingRelationship(vertex, attribute, edgeLabel);
     }
 
+    public static List<AtlasEdge> getActiveCollectionElementsUsingRelationship(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
+        String edgeLabel = attribute.getRelationshipEdgeLabel();
+        return getActiveCollectionElementsUsingRelationship(vertex, attribute, edgeLabel);
+    }
+
     public static List<AtlasEdge> getCollectionElementsUsingRelationship(AtlasVertex vertex, AtlasAttribute attribute,
                                                                          boolean isStructType) {
         String edgeLabel = isStructType ? AtlasGraphUtilsV2.getEdgeLabel(attribute.getName()) :  attribute.getRelationshipEdgeLabel();
         return getCollectionElementsUsingRelationship(vertex, attribute, edgeLabel);
+    }
+
+    public static List<AtlasEdge> getActiveCollectionElementsUsingRelationship(AtlasVertex vertex, AtlasAttribute attribute, String edgeLabel) throws AtlasBaseException {
+        List<AtlasEdge>                ret;
+        AtlasRelationshipEdgeDirection edgeDirection = attribute.getRelationshipEdgeDirection();
+        Iterator<AtlasEdge>            edgesForLabel = getActiveEdges(vertex, edgeLabel, AtlasEdgeDirection.valueOf(edgeDirection.name()));
+
+        ret = IteratorUtils.toList(edgesForLabel);
+
+        sortCollectionElements(attribute, ret);
+
+        return ret;
     }
 
 
