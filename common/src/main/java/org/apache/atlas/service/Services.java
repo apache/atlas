@@ -27,6 +27,7 @@ import org.springframework.context.annotation.Profile;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
+
 import java.util.List;
 
 import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
@@ -39,8 +40,9 @@ import static org.apache.atlas.AtlasConstants.ATLAS_SERVICES_ENABLED;
 @Profile("!test")
 public class Services {
     public static final Logger LOG = LoggerFactory.getLogger(Services.class);
+
     private static final String DATA_MIGRATION_CLASS_NAME_DEFAULT = "DataMigrationService";
-    private static final String FILE_EXTENSION_ZIP = ".zip";
+    private static final String FILE_EXTENSION_ZIP                = ".zip";
 
     private final List<Service> services;
     private final String        dataMigrationClassName;

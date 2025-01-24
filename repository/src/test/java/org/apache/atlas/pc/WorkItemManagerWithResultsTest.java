@@ -34,7 +34,7 @@ public class WorkItemManagerWithResultsTest {
     private static final Logger LOG = LoggerFactory.getLogger(WorkItemManagerWithResultsTest.class);
 
     private static class IntegerConsumer extends WorkItemConsumer<Integer> {
-        private static ThreadLocal<Integer> payload = new ThreadLocal<Integer>();
+        private static final ThreadLocal<Integer> payload = new ThreadLocal<>();
 
         public IntegerConsumer(BlockingQueue<Integer> queue) {
             super(queue);
@@ -44,6 +44,7 @@ public class WorkItemManagerWithResultsTest {
         protected void doCommit() {
             if (getPayload() == -1) {
                 LOG.debug("Skipping:");
+
                 return;
             }
 
@@ -56,8 +57,10 @@ public class WorkItemManagerWithResultsTest {
         @Override
         protected void processItem(Integer item) {
             try {
-                setPayload(item.intValue());
+                setPayload(item);
+
                 Thread.sleep(20 + RandomUtils.nextInt(5, 7));
+
                 super.commit();
             } catch (InterruptedException e) {
                 e.printStackTrace();
@@ -77,31 +80,33 @@ public class WorkItemManagerWithResultsTest {
         }
     }
 
-    private class IntegerConsumerBuilder implements WorkItemBuilder<IntegerConsumer, Integer> {
+    private static class IntegerConsumerBuilder implements WorkItemBuilder<WorkItemConsumer<Integer>, Integer> {
         @Override
         public IntegerConsumer build(BlockingQueue<Integer> queue) {
             return new IntegerConsumer(queue);
         }
     }
 
-    private WorkItemManager<Integer, WorkItemConsumer> getWorkItemManger(IntegerConsumerBuilder cb, int numWorkers) {
+    private WorkItemManager<Integer, WorkItemConsumer<Integer>> getWorkItemManger(IntegerConsumerBuilder cb, int numWorkers) {
         return new WorkItemManager<>(cb, "IntegerConsumer", 5, numWorkers, true);
     }
 
     @Test
     public void drainTest() throws InterruptedException {
-        final int maxItems = 50;
-
-        IntegerConsumerBuilder cb = new IntegerConsumerBuilder();
-        WorkItemManager<Integer, WorkItemConsumer> wi = getWorkItemManger(cb, 5);
+        final int                                           maxItems = 50;
+        IntegerConsumerBuilder                              cb       = new IntegerConsumerBuilder();
+        WorkItemManager<Integer, WorkItemConsumer<Integer>> wi       = getWorkItemManger(cb, 5);
 
         for (int i = 0; i < maxItems; i++) {
             wi.produce(i);
         }
 
         wi.drain();
+
         assertEquals(wi.getResults().size(), maxItems);
-        Set<Integer> set = new HashSet<Integer>(wi.getResults());
+
+        Set<Object> set = new HashSet<>(wi.getResults());
+
         assertEquals(set.size(), maxItems);
 
         wi.shutdown();
@@ -109,8 +114,8 @@ public class WorkItemManagerWithResultsTest {
 
     @Test
     public void drainCheckProduceTest() throws InterruptedException {
-        IntegerConsumerBuilder cb = new IntegerConsumerBuilder();
-        WorkItemManager<Integer, WorkItemConsumer> wi = getWorkItemManger(cb, 2);
+        IntegerConsumerBuilder                              cb = new IntegerConsumerBuilder();
+        WorkItemManager<Integer, WorkItemConsumer<Integer>> wi = getWorkItemManger(cb, 2);
 
         for (int i = 0; i < 5; i++) {
             repeatedDrainAndProduce(i, wi);
@@ -119,19 +124,22 @@ public class WorkItemManagerWithResultsTest {
         wi.shutdown();
     }
 
-    private void repeatedDrainAndProduce(int runCount, WorkItemManager<Integer, WorkItemConsumer> wi) {
+    private void repeatedDrainAndProduce(int runCount, WorkItemManager<Integer, WorkItemConsumer<Integer>> wi) {
         final int maxItems = 100;
-        int halfWay = maxItems / 2;
+        int       halfWay = maxItems / 2;
 
         LOG.info("Run: {}", runCount);
+
         wi.getResults().clear();
 
         for (int i = 0; i < maxItems; i++) {
             if (i == halfWay) {
                 wi.drain();
 
-                Set<Integer> set = new HashSet<Integer>(wi.getResults());
+                Set<Object> set = new HashSet<>(wi.getResults());
+
                 assertEquals(wi.getResults().size(), halfWay, "halfWay: total count");
+
                 assertEquals(set.size(), halfWay, "halfWay: set match");
             }
 
@@ -139,8 +147,11 @@ public class WorkItemManagerWithResultsTest {
         }
 
         wi.drain();
+
         assertEquals(wi.getResults().size(), maxItems, "total count");
-        Set<Integer> set = new HashSet<Integer>(wi.getResults());
+
+        Set<Object> set = new HashSet<>(wi.getResults());
+
         assertEquals(set.size(), maxItems, "set count");
 
         for (int i = 100; i < 100 + maxItems; i++) {

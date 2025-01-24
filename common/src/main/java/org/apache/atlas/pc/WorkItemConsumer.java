@@ -37,8 +37,8 @@ public abstract class WorkItemConsumer<T> implements Runnable {
     private final BlockingQueue<T> queue;
     private final AtomicBoolean    isDirty           = new AtomicBoolean(false);
     private final AtomicLong       maxCommitTimeInMs = new AtomicLong(DEFAULT_COMMIT_TIME_IN_MS);
-    private CountDownLatch         countdownLatch;
-    private Queue<Object>          results;
+    private       CountDownLatch   countdownLatch;
+    private       Queue<Object>    results;
 
     public WorkItemConsumer(BlockingQueue<T> queue) {
         this.queue          = queue;
@@ -76,6 +76,14 @@ public abstract class WorkItemConsumer<T> implements Runnable {
         return ((commitTime > DEFAULT_COMMIT_TIME_IN_MS) ? commitTime : DEFAULT_COMMIT_TIME_IN_MS);
     }
 
+    public void setCountDownLatch(CountDownLatch countdownLatch) {
+        this.countdownLatch = countdownLatch;
+    }
+
+    public <V> void setResults(Queue<Object> queue) {
+        this.results = queue;
+    }
+
     protected void commitDirty() {
         if (!isDirty.get()) {
             return;
@@ -109,13 +117,5 @@ public abstract class WorkItemConsumer<T> implements Runnable {
         if (this.maxCommitTimeInMs.get() < commitTime) {
             this.maxCommitTimeInMs.set(commitTime);
         }
-    }
-
-    public void setCountDownLatch(CountDownLatch countdownLatch) {
-        this.countdownLatch = countdownLatch;
-    }
-
-    public <V> void setResults(Queue<Object> queue) {
-        this.results = queue;
     }
 }
