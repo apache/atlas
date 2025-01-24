@@ -27,6 +27,11 @@
 
     <artifactId>atlas-client-v2</artifactId>
 
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.atlas</groupId>
