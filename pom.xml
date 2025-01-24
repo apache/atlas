@@ -88,6 +88,9 @@
         <avro.version>1.7.5</avro.version>
         <calcite.version>1.16.0</calcite.version>
         <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
+        <checkstyle.plugin.version>3.1.0</checkstyle.plugin.version>
+        <checkstyle.skip>true</checkstyle.skip>
+        <checkstyle.version>8.29</checkstyle.version>
         <codehaus.woodstox.stax2-api.version>3.1.4</codehaus.woodstox.stax2-api.version>
         <commons-cli.version>1.4</commons-cli.version>
         <commons-codec.version>1.14</commons-codec.version>
@@ -1164,12 +1167,6 @@
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
-                    <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>2.9.1</version>
-                </plugin>
-
-                <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
                     <version>${maven-site-plugin.version}</version>
                 </plugin>
@@ -1504,7 +1501,13 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-checkstyle-plugin</artifactId>
+                <version>${checkstyle.plugin.version}</version>
                 <dependencies>
+                    <dependency>
+                        <groupId>com.puppycrawl.tools</groupId>
+                        <artifactId>checkstyle</artifactId>
+                        <version>${checkstyle.version}</version>
+                    </dependency>
                     <dependency>
                         <groupId>org.apache.atlas</groupId>
                         <artifactId>atlas-buildtools</artifactId>
@@ -1519,10 +1522,11 @@
                         </goals>
                         <phase>verify</phase>
                         <configuration>
-                            <skip>${skipCheck}</skip>
-                            <consoleOutput>false</consoleOutput>
+                            <consoleOutput>true</consoleOutput>
                             <includeTestSourceDirectory>true</includeTestSourceDirectory>
-                            <suppressionsFileExpression>checkstyle.suppressions.file</suppressionsFileExpression>
+                            <configLocation>./dev-support/checkstyle.xml</configLocation>
+                            <suppressionsLocation>./dev-support/checkstyle-suppressions.xml</suppressionsLocation>
+                            <skip>${checkstyle.skip}</skip>
                             <failOnViolation>${checkstyle.failOnViolation}</failOnViolation>
                         </configuration>
                     </execution>
