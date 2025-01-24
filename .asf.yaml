@@ -40,3 +40,11 @@ github:
     jira_options: worklog link label
   protected_branches:
     master: {}
+  collaborators:
+    - ashutoshm
+    - DishaTalreja3
+    - kevalbhatt
+    - nixonrodrigues
+    - pinal-shah
+    - rkundam
+    - sarathsubramanian
