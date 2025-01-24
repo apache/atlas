@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,10 +17,19 @@
  */
 package org.apache.atlas.model.instance;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import org.apache.atlas.model.PList;
+import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
+
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
 
 import java.io.Serializable;
 import java.text.DateFormat;
@@ -32,38 +41,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlSeeAlso;
-
-import org.apache.atlas.model.PList;
-import org.apache.atlas.model.SearchFilter.SortType;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
-
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-
 
 /**
  * Captures details of struct contents. Not instantiated directly, used only via AtlasEntity, AtlasClassification.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    public static final String KEY_TYPENAME   = "typeName";
-    public static final String KEY_ATTRIBUTES = "attributes";
+    public static final String KEY_TYPENAME               = "typeName";
+    public static final String KEY_ATTRIBUTES             = "attributes";
+    public static final String SERIALIZED_DATE_FORMAT_STR = "yyyyMMdd-HH:mm:ss.SSS-Z";
 
-    public static final String     SERIALIZED_DATE_FORMAT_STR = "yyyyMMdd-HH:mm:ss.SSS-Z";
     @Deprecated
-    public static final DateFormat DATE_FORMATTER             = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
+    public static final DateFormat DATE_FORMATTER = new SimpleDateFormat(SERIALIZED_DATE_FORMAT_STR);
 
     private String              typeName;
     private Map<String, Object> attributes;
@@ -106,6 +103,81 @@ public class AtlasStruct implements Serializable {
         }
     }
 
+    public static StringBuilder dumpModelObjects(Collection<? extends AtlasStruct> objList, StringBuilder sb) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+
+        if (CollectionUtils.isNotEmpty(objList)) {
+            int i = 0;
+
+            for (AtlasStruct obj : objList) {
+                if (i > 0) {
+                    sb.append(", ");
+                }
+
+                obj.toString(sb);
+                i++;
+            }
+        }
+
+        return sb;
+    }
+
+    public static StringBuilder dumpObjects(Collection<?> objects, StringBuilder sb) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+
+        if (CollectionUtils.isNotEmpty(objects)) {
+            int i = 0;
+
+            for (Object obj : objects) {
+                if (i > 0) {
+                    sb.append(", ");
+                }
+
+                sb.append(obj);
+                i++;
+            }
+        }
+
+        return sb;
+    }
+
+    public static StringBuilder dumpObjects(Map<?, ?> objects, StringBuilder sb) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+
+        if (MapUtils.isNotEmpty(objects)) {
+            int i = 0;
+
+            for (Map.Entry<?, ?> e : objects.entrySet()) {
+                if (i > 0) {
+                    sb.append(", ");
+                }
+
+                sb.append(e.getKey()).append(":").append(e.getValue());
+                i++;
+            }
+        }
+
+        return sb;
+    }
+
+    public static StringBuilder dumpDateField(String prefix, Date value, StringBuilder sb) {
+        sb.append(prefix);
+
+        if (value == null) {
+            sb.append(value);
+        } else {
+            sb.append(AtlasBaseTypeDef.getDateFormatter().format(value));
+        }
+
+        return sb;
+    }
+
     public String getTypeName() {
         return typeName;
     }
@@ -125,7 +197,7 @@ public class AtlasStruct implements Serializable {
     public boolean hasAttribute(String name) {
         Map<String, Object> a = this.attributes;
 
-        return a != null ? a.containsKey(name) : false;
+        return a != null && a.containsKey(name);
     }
 
     public Object getAttribute(String name) {
@@ -141,6 +213,7 @@ public class AtlasStruct implements Serializable {
             a.put(name, value);
         } else {
             a = new HashMap<>();
+
             a.put(name, value);
 
             this.attributes = a;
@@ -169,18 +242,22 @@ public class AtlasStruct implements Serializable {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AtlasStruct that = (AtlasStruct) o;
-
-        return Objects.equals(typeName, that.typeName) &&
-               Objects.equals(attributes, that.attributes);
+    public int hashCode() {
+        return Objects.hash(typeName, attributes);
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(typeName, attributes);
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        AtlasStruct that = (AtlasStruct) o;
+
+        return Objects.equals(typeName, that.typeName) &&
+                Objects.equals(attributes, that.attributes);
     }
 
     @Override
@@ -188,13 +265,12 @@ public class AtlasStruct implements Serializable {
         return toString(new StringBuilder()).toString();
     }
 
-
     /**
      * REST serialization friendly list.
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     @XmlSeeAlso(AtlasStruct.class)
@@ -209,82 +285,8 @@ public class AtlasStruct implements Serializable {
             super(list);
         }
 
-        public AtlasStructs(List list, long startIndex, int pageSize, long totalCount,
-                            SortType sortType, String sortBy) {
+        public AtlasStructs(List<AtlasStruct> list, long startIndex, int pageSize, long totalCount, SortType sortType, String sortBy) {
             super(list, startIndex, pageSize, totalCount, sortType, sortBy);
         }
-    }
-
-
-    public static StringBuilder dumpModelObjects(Collection<? extends AtlasStruct> objList, StringBuilder sb) {
-        if (sb == null) {
-            sb = new StringBuilder();
-        }
-
-        if (CollectionUtils.isNotEmpty(objList)) {
-            int i = 0;
-            for (AtlasStruct obj : objList) {
-                if (i > 0) {
-                    sb.append(", ");
-                }
-
-                obj.toString(sb);
-                i++;
-            }
-        }
-
-        return sb;
-    }
-
-    public static StringBuilder dumpObjects(Collection<?> objects, StringBuilder sb) {
-        if (sb == null) {
-            sb = new StringBuilder();
-        }
-
-        if (CollectionUtils.isNotEmpty(objects)) {
-            int i = 0;
-            for (Object obj : objects) {
-                if (i > 0) {
-                    sb.append(", ");
-                }
-
-                sb.append(obj);
-                i++;
-            }
-        }
-
-        return sb;
-    }
-
-    public static StringBuilder dumpObjects(Map<?, ?> objects, StringBuilder sb) {
-        if (sb == null) {
-            sb = new StringBuilder();
-        }
-
-        if (MapUtils.isNotEmpty(objects)) {
-            int i = 0;
-            for (Map.Entry<?, ?> e : objects.entrySet()) {
-                if (i > 0) {
-                    sb.append(", ");
-                }
-
-                sb.append(e.getKey()).append(":").append(e.getValue());
-                i++;
-            }
-        }
-
-        return sb;
-    }
-
-    public static StringBuilder dumpDateField(String prefix, Date value, StringBuilder sb) {
-        sb.append(prefix);
-
-        if (value == null) {
-            sb.append(value);
-        } else {
-            sb.append(AtlasBaseTypeDef.getDateFormatter().format(value));
-        }
-
-        return sb;
     }
 }

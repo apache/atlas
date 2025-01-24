@@ -17,17 +17,16 @@
  */
 package org.apache.atlas.model.lineage;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
@@ -37,11 +36,12 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown = true, value = {"visitedEdges"})
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true, value = "visitedEdges")
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasLineageInfo implements Serializable {
+    private static final long serialVersionUID = 1L;
 
     private String                                  baseEntityGuid;
     private LineageDirection                        lineageDirection;
@@ -52,33 +52,30 @@ public class AtlasLineageInfo implements Serializable {
     private Map<String, LineageInfoOnDemand>        relationsOnDemand;
     private Map<String, LineageOnDemandConstraints> lineageOnDemandPayload;
 
-    public AtlasLineageInfo() {}
-
-    public enum LineageDirection { INPUT, OUTPUT, BOTH }
+    public AtlasLineageInfo() {
+    }
 
     /**
      * Captures lineage information for an entity instance like hive_table
-
+     *
      * @param baseEntityGuid guid of the lineage entity .
      * @param lineageDirection direction of lineage, can be INPUT, OUTPUT or INPUT_AND_OUTPUT
-     * @param lineageDepth  lineage depth to be fetched.
+     * @param lineageDepth lineage depth to be fetched.
      * @param guidEntityMap map of entity guid to AtlasEntityHeader (minimal entity info)
      * @param relations list of lineage relations for the entity (fromEntityId -> toEntityId)
      */
-    public AtlasLineageInfo(String baseEntityGuid, Map<String, AtlasEntityHeader> guidEntityMap,
-                            Set<LineageRelation> relations, LineageDirection lineageDirection, int lineageDepth) {
+    public AtlasLineageInfo(String baseEntityGuid, Map<String, AtlasEntityHeader> guidEntityMap, Set<LineageRelation> relations, LineageDirection lineageDirection, int lineageDepth) {
         this(baseEntityGuid, guidEntityMap, relations, null, null, lineageDirection, lineageDepth);
     }
 
-    public AtlasLineageInfo(String baseEntityGuid, Map<String, AtlasEntityHeader> guidEntityMap,
-                            Set<LineageRelation> relations, Set<String> visitedEdges, Map<String, LineageInfoOnDemand> relationsOnDemand, LineageDirection lineageDirection, int lineageDepth) {
-        this.baseEntityGuid               = baseEntityGuid;
-        this.lineageDirection             = lineageDirection;
-        this.lineageDepth                 = lineageDepth;
-        this.guidEntityMap                = guidEntityMap;
-        this.relations                    = relations;
-        this.visitedEdges                 = visitedEdges;
-        this.relationsOnDemand            = relationsOnDemand;
+    public AtlasLineageInfo(String baseEntityGuid, Map<String, AtlasEntityHeader> guidEntityMap, Set<LineageRelation> relations, Set<String> visitedEdges, Map<String, LineageInfoOnDemand> relationsOnDemand, LineageDirection lineageDirection, int lineageDepth) {
+        this.baseEntityGuid    = baseEntityGuid;
+        this.lineageDirection  = lineageDirection;
+        this.lineageDepth      = lineageDepth;
+        this.guidEntityMap     = guidEntityMap;
+        this.relations         = relations;
+        this.visitedEdges      = visitedEdges;
+        this.relationsOnDemand = relationsOnDemand;
     }
 
     public String getBaseEntityGuid() {
@@ -146,20 +143,25 @@ public class AtlasLineageInfo implements Serializable {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(baseEntityGuid, lineageDirection, lineageDepth, guidEntityMap, relations);
+    }
+
+    @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
         AtlasLineageInfo that = (AtlasLineageInfo) o;
+
         return lineageDepth == that.lineageDepth &&
                 Objects.equals(baseEntityGuid, that.baseEntityGuid) &&
                 lineageDirection == that.lineageDirection &&
                 Objects.equals(guidEntityMap, that.guidEntityMap) &&
                 Objects.equals(relations, that.relations);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(baseEntityGuid, lineageDirection, lineageDepth, guidEntityMap, relations);
     }
 
     @Override
@@ -174,21 +176,26 @@ public class AtlasLineageInfo implements Serializable {
                 '}';
     }
 
+    public enum LineageDirection { INPUT, OUTPUT, BOTH }
+
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
-    public static class LineageRelation {
+    public static class LineageRelation implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private String fromEntityId;
         private String toEntityId;
         private String relationshipId;
 
-        public LineageRelation() { }
+        public LineageRelation() {
+        }
 
         public LineageRelation(String fromEntityId, String toEntityId, final String relationshipId) {
-            this.fromEntityId = fromEntityId;
-            this.toEntityId   = toEntityId;
+            this.fromEntityId   = fromEntityId;
+            this.toEntityId     = toEntityId;
             this.relationshipId = relationshipId;
         }
 
@@ -217,18 +224,23 @@ public class AtlasLineageInfo implements Serializable {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            LineageRelation that = (LineageRelation) o;
-            return Objects.equals(fromEntityId, that.fromEntityId) &&
-                    Objects.equals(toEntityId, that.toEntityId) &&
-                    Objects.equals(relationshipId, that.relationshipId);
+        public int hashCode() {
+            return Objects.hash(fromEntityId, toEntityId, relationshipId);
         }
 
         @Override
-        public int hashCode() {
-            return Objects.hash(fromEntityId, toEntityId, relationshipId);
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            } else if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            LineageRelation that = (LineageRelation) o;
+
+            return Objects.equals(fromEntityId, that.fromEntityId) &&
+                    Objects.equals(toEntityId, that.toEntityId) &&
+                    Objects.equals(relationshipId, that.relationshipId);
         }
 
         @Override
@@ -242,22 +254,27 @@ public class AtlasLineageInfo implements Serializable {
     }
 
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true, value = {"inputRelationsReachedLimit", "outputRelationsReachedLimit"})
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
-    public static class LineageInfoOnDemand {
+    public static class LineageInfoOnDemand implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         @JsonProperty
-        boolean                    hasMoreInputs;
+        boolean hasMoreInputs;
+
         @JsonProperty
-        boolean                    hasMoreOutputs;
+        boolean hasMoreOutputs;
+
         int                        inputRelationsCount;
         int                        outputRelationsCount;
         boolean                    isInputRelationsReachedLimit;
         boolean                    isOutputRelationsReachedLimit;
         LineageOnDemandConstraints onDemandConstraints;
 
-        public LineageInfoOnDemand() { }
+        public LineageInfoOnDemand() {
+        }
 
         public LineageInfoOnDemand(LineageOnDemandConstraints onDemandConstraints) {
             this.onDemandConstraints           = onDemandConstraints;
@@ -319,7 +336,6 @@ public class AtlasLineageInfo implements Serializable {
 
             if (inputRelationsCount == onDemandConstraints.getInputRelationsLimit()) {
                 this.setInputRelationsReachedLimit(true);
-                return;
             }
         }
 
@@ -341,7 +357,6 @@ public class AtlasLineageInfo implements Serializable {
 
             if (outputRelationsCount == onDemandConstraints.getOutputRelationsLimit()) {
                 this.setOutputRelationsReachedLimit(true);
-                return;
             }
         }
 
@@ -354,7 +369,5 @@ public class AtlasLineageInfo implements Serializable {
                     ", outputRelationsCount='" + outputRelationsCount + '\'' +
                     '}';
         }
-
     }
-
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,8 +21,12 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.model.typedef.*;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -43,8 +47,7 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_BUILTIN_TYPE
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_PRIMITIVE_TYPES;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_RELATIONSHIP_ATTRIBUTE_TYPES;
 
-
-public final class  ModelTestUtil {
+public final class ModelTestUtil {
     private static final Logger LOG = LoggerFactory.getLogger(ModelTestUtil.class);
 
     private static final String PREFIX_ENUM_DEF           = "testEnumDef-";
@@ -76,43 +79,40 @@ public final class  ModelTestUtil {
     private static final AtlasClassificationDef CLASSIFICATION_DEF_WITH_SUPER_TYPE;
     private static final AtlasClassificationDef CLASSIFICATION_DEF_WITH_SUPER_TYPES;
 
-    static {
-        TYPE_REGISTRY = new AtlasTypeRegistry();
-
-        ENUM_DEF                 = newEnumDef(true);
-        ENUM_DEF_WITH_NO_DEFAULT = newEnumDef(false);
-
-        STRUCT_DEF = newStructDef();
-
-        ENTITY_DEF                  = newEntityDef();
-        ENTITY_DEF_WITH_SUPER_TYPE  = newEntityDef(new AtlasEntityDef[] { ENTITY_DEF });
-        ENTITY_DEF_WITH_SUPER_TYPES = newEntityDef(new AtlasEntityDef[] { ENTITY_DEF, ENTITY_DEF_WITH_SUPER_TYPE });
-
-        CLASSIFICATION_DEF                  = newClassificationDef();
-        CLASSIFICATION_DEF_WITH_SUPER_TYPE  = newClassificationDef(new AtlasClassificationDef[] { CLASSIFICATION_DEF });
-        CLASSIFICATION_DEF_WITH_SUPER_TYPES = newClassificationDef(
-                               new AtlasClassificationDef[] { CLASSIFICATION_DEF, CLASSIFICATION_DEF_WITH_SUPER_TYPE });
-    }
-
     private ModelTestUtil() {
-
     }
 
-    public static AtlasTypeRegistry getTypesRegistry() { return TYPE_REGISTRY; }
+    public static AtlasTypeRegistry getTypesRegistry() {
+        return TYPE_REGISTRY;
+    }
 
-    public static AtlasEnumDef getEnumDef() { return ENUM_DEF; }
+    public static AtlasEnumDef getEnumDef() {
+        return ENUM_DEF;
+    }
 
-    public static AtlasEnumDef getEnumDefWithNoDefault() { return ENUM_DEF_WITH_NO_DEFAULT; }
+    public static AtlasEnumDef getEnumDefWithNoDefault() {
+        return ENUM_DEF_WITH_NO_DEFAULT;
+    }
 
-    public static AtlasStructDef getStructDef() { return STRUCT_DEF; }
+    public static AtlasStructDef getStructDef() {
+        return STRUCT_DEF;
+    }
 
-    public static AtlasEntityDef getEntityDef() { return ENTITY_DEF; }
+    public static AtlasEntityDef getEntityDef() {
+        return ENTITY_DEF;
+    }
 
-    public static AtlasEntityDef getEntityDefWithSuperType() { return ENTITY_DEF_WITH_SUPER_TYPE; }
+    public static AtlasEntityDef getEntityDefWithSuperType() {
+        return ENTITY_DEF_WITH_SUPER_TYPE;
+    }
 
-    public static AtlasEntityDef getEntityDefWithSuperTypes() { return ENTITY_DEF_WITH_SUPER_TYPES; }
+    public static AtlasEntityDef getEntityDefWithSuperTypes() {
+        return ENTITY_DEF_WITH_SUPER_TYPES;
+    }
 
-    public static AtlasClassificationDef getClassificationDef() { return CLASSIFICATION_DEF; }
+    public static AtlasClassificationDef getClassificationDef() {
+        return CLASSIFICATION_DEF;
+    }
 
     public static AtlasClassificationDef getClassificationDefWithSuperType() {
         return CLASSIFICATION_DEF_WITH_SUPER_TYPE;
@@ -121,7 +121,6 @@ public final class  ModelTestUtil {
     public static AtlasClassificationDef getClassificationDefWithSuperTypes() {
         return CLASSIFICATION_DEF_WITH_SUPER_TYPES;
     }
-
 
     public static AtlasEnumDef newEnumDef() {
         return newEnumDef(getTypesRegistry(), true);
@@ -235,6 +234,7 @@ public final class  ModelTestUtil {
         if (superTypes != null) {
             for (AtlasEntityDef superType : superTypes) {
                 List<AtlasAttributeDef> superTypeAttrDefs = superType.getAttributeDefs();
+
                 removeAttributeIfExistedInSuperType(currentTypeAttrDefs, superTypeAttrDefs);
 
                 ret.addSuperType(superType.getName());
@@ -266,7 +266,7 @@ public final class  ModelTestUtil {
     }
 
     public static AtlasEntityDef newEntityDefWithSuperTypes(AtlasTypeRegistry typesRegistry) {
-        return newEntityDef(typesRegistry, new AtlasEntityDef[] { ENTITY_DEF, ENTITY_DEF_WITH_SUPER_TYPE });
+        return newEntityDef(typesRegistry, new AtlasEntityDef[] {ENTITY_DEF, ENTITY_DEF_WITH_SUPER_TYPE});
     }
 
     public static AtlasClassificationDef newClassificationDef() {
@@ -281,8 +281,7 @@ public final class  ModelTestUtil {
         return newClassificationDef(typesRegistry, null);
     }
 
-    public static AtlasClassificationDef newClassificationDef(AtlasTypeRegistry typesRegistry,
-                                                              AtlasClassificationDef[] superTypes) {
+    public static AtlasClassificationDef newClassificationDef(AtlasTypeRegistry typesRegistry, AtlasClassificationDef[] superTypes) {
         int classificationDefIdx = IDX_CLASSIFICATION_DEF.getAndIncrement();
 
         AtlasClassificationDef ret = new AtlasClassificationDef();
@@ -296,6 +295,7 @@ public final class  ModelTestUtil {
         if (superTypes != null) {
             for (AtlasClassificationDef superType : superTypes) {
                 List<AtlasAttributeDef> superTypeAttrDefs = superType.getAttributeDefs();
+
                 removeAttributeIfExistedInSuperType(currentTypeAttrDefs, superTypeAttrDefs);
 
                 ret.addSuperType(superType.getName());
@@ -322,14 +322,12 @@ public final class  ModelTestUtil {
         return ret;
     }
 
-
     public static AtlasEntity newEntity(AtlasEntityDef entityDef) {
         return newEntity(entityDef, getTypesRegistry());
     }
 
     public static AtlasEntity newEntity(AtlasEntityDef entityDef, AtlasTypeRegistry typesRegistry) {
-        AtlasEntity ret = null;
-
+        AtlasEntity     ret        = null;
         AtlasEntityType entityType = typesRegistry.getEntityTypeByName(entityDef.getName());
 
         if (entityType != null) {
@@ -346,8 +344,7 @@ public final class  ModelTestUtil {
     }
 
     public static AtlasStruct newStruct(AtlasStructDef structDef, AtlasTypeRegistry typesRegistry) {
-        AtlasStruct ret = null;
-
+        AtlasStruct     ret        = null;
         AtlasStructType structType = typesRegistry.getStructTypeByName(structDef.getName());
 
         if (structType != null) {
@@ -363,10 +360,8 @@ public final class  ModelTestUtil {
         return newClassification(classificationDef, getTypesRegistry());
     }
 
-    public static AtlasClassification newClassification(AtlasClassificationDef classificationDef,
-                                                        AtlasTypeRegistry typesRegistry) {
-        AtlasClassification ret = null;
-
+    public static AtlasClassification newClassification(AtlasClassificationDef classificationDef, AtlasTypeRegistry typesRegistry) {
+        AtlasClassification     ret                = null;
         AtlasClassificationType classificationType = typesRegistry.getClassificationTypeByName(classificationDef.getName());
 
         if (classificationType != null) {
@@ -382,69 +377,61 @@ public final class  ModelTestUtil {
         List<AtlasAttributeDef> ret = new ArrayList<>();
 
         // add all built-in types
-        for (String ATLAS_BUILTIN_TYPE2 : ATLAS_BUILTIN_TYPES) {
-            ret.add(getAttributeDef(attrNamePrefix, ATLAS_BUILTIN_TYPE2));
+        for (String atlasBuiltinType2 : ATLAS_BUILTIN_TYPES) {
+            ret.add(getAttributeDef(attrNamePrefix, atlasBuiltinType2));
         }
+
         // add enum types
         ret.add(getAttributeDef(attrNamePrefix, ENUM_DEF.getName()));
         ret.add(getAttributeDef(attrNamePrefix, ENUM_DEF_WITH_NO_DEFAULT.getName()));
 
         // add array of built-in types
-        for (String ATLAS_BUILTIN_TYPE1 : ATLAS_BUILTIN_TYPES) {
-            ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(ATLAS_BUILTIN_TYPE1)));
+        for (String atlasBuiltinType1 : ATLAS_BUILTIN_TYPES) {
+            ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(atlasBuiltinType1)));
         }
+
         // add array of enum types
         ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(ENUM_DEF.getName())));
         ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(ENUM_DEF_WITH_NO_DEFAULT.getName())));
 
         // add few map types
-        for (String ATLAS_PRIMITIVE_TYPE3 : ATLAS_PRIMITIVE_TYPES) {
-            ret.add(getAttributeDef(attrNamePrefix,
-                    AtlasBaseTypeDef.getMapTypeName(ATLAS_PRIMITIVE_TYPE3, getRandomBuiltInType())));
+        for (String atlasPrimitiveType3 : ATLAS_PRIMITIVE_TYPES) {
+            ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getMapTypeName(atlasPrimitiveType3, getRandomBuiltInType())));
         }
+
         // add map types with enum as key
-        ret.add(getAttributeDef(attrNamePrefix,
-                                AtlasBaseTypeDef.getMapTypeName(ENUM_DEF.getName(), getRandomBuiltInType())));
-        ret.add(getAttributeDef(attrNamePrefix,
-                AtlasBaseTypeDef.getMapTypeName(ENUM_DEF_WITH_NO_DEFAULT.getName(), getRandomBuiltInType())));
+        ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getMapTypeName(ENUM_DEF.getName(), getRandomBuiltInType())));
+        ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getMapTypeName(ENUM_DEF_WITH_NO_DEFAULT.getName(), getRandomBuiltInType())));
         // add map types with enum as value
-        ret.add(getAttributeDef(attrNamePrefix,
-                AtlasBaseTypeDef.getMapTypeName(getRandomPrimitiveType(), ENUM_DEF.getName())));
-        ret.add(getAttributeDef(attrNamePrefix,
-                AtlasBaseTypeDef.getMapTypeName(getRandomPrimitiveType(), ENUM_DEF_WITH_NO_DEFAULT.getName())));
+        ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getMapTypeName(getRandomPrimitiveType(), ENUM_DEF.getName())));
+        ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getMapTypeName(getRandomPrimitiveType(), ENUM_DEF_WITH_NO_DEFAULT.getName())));
 
         // add few array of arrays
-        for (String ATLAS_BUILTIN_TYPE : ATLAS_BUILTIN_TYPES) {
-            ret.add(getAttributeDef(attrNamePrefix,
-                    AtlasBaseTypeDef.getArrayTypeName(AtlasBaseTypeDef.getArrayTypeName(getRandomBuiltInType()))));
+        for (String atlasBuiltinType : ATLAS_BUILTIN_TYPES) {
+            ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(AtlasBaseTypeDef.getArrayTypeName(atlasBuiltinType))));
         }
+
         ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(ENUM_DEF.getName())));
         ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(ENUM_DEF_WITH_NO_DEFAULT.getName())));
 
         // add few array of maps
-        for (String ATLAS_PRIMITIVE_TYPE2 : ATLAS_PRIMITIVE_TYPES) {
-            ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(
-                    AtlasBaseTypeDef.getMapTypeName(ATLAS_PRIMITIVE_TYPE2, getRandomBuiltInType()))));
+        for (String atlasPrimitiveType2 : ATLAS_PRIMITIVE_TYPES) {
+            ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(AtlasBaseTypeDef.getMapTypeName(atlasPrimitiveType2, getRandomBuiltInType()))));
         }
-        ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(
-                AtlasBaseTypeDef.getMapTypeName(ENUM_DEF.getName(), getRandomBuiltInType()))));
-        ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(
-                AtlasBaseTypeDef.getMapTypeName(ENUM_DEF_WITH_NO_DEFAULT.getName(), getRandomBuiltInType()))));
-        ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(
-                AtlasBaseTypeDef.getMapTypeName(getRandomPrimitiveType(), ENUM_DEF.getName()))));
-        ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(
-                AtlasBaseTypeDef.getMapTypeName(getRandomPrimitiveType(), ENUM_DEF_WITH_NO_DEFAULT.getName()))));
+
+        ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(AtlasBaseTypeDef.getMapTypeName(ENUM_DEF.getName(), getRandomBuiltInType()))));
+        ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(AtlasBaseTypeDef.getMapTypeName(ENUM_DEF_WITH_NO_DEFAULT.getName(), getRandomBuiltInType()))));
+        ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(AtlasBaseTypeDef.getMapTypeName(getRandomPrimitiveType(), ENUM_DEF.getName()))));
+        ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(AtlasBaseTypeDef.getMapTypeName(getRandomPrimitiveType(), ENUM_DEF_WITH_NO_DEFAULT.getName()))));
 
         // add few map of arrays
-        for (String ATLAS_PRIMITIVE_TYPE1 : ATLAS_PRIMITIVE_TYPES) {
-            ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getMapTypeName(ATLAS_PRIMITIVE_TYPE1,
-                    AtlasBaseTypeDef.getArrayTypeName(getRandomBuiltInType()))));
+        for (String atlasPrimitiveType1 : ATLAS_PRIMITIVE_TYPES) {
+            ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getMapTypeName(atlasPrimitiveType1, AtlasBaseTypeDef.getArrayTypeName(getRandomBuiltInType()))));
         }
 
         // add few map of maps
-        for (String ATLAS_PRIMITIVE_TYPE : ATLAS_PRIMITIVE_TYPES) {
-            ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getMapTypeName(ATLAS_PRIMITIVE_TYPE,
-                    AtlasBaseTypeDef.getMapTypeName(ATLAS_PRIMITIVE_TYPE, getRandomBuiltInType()))));
+        for (String atlasPrimitiveType : ATLAS_PRIMITIVE_TYPES) {
+            ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getMapTypeName(atlasPrimitiveType, AtlasBaseTypeDef.getMapTypeName(atlasPrimitiveType, getRandomBuiltInType()))));
         }
 
         return ret;
@@ -469,9 +456,7 @@ public final class  ModelTestUtil {
         ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(ENUM_DEF.getName())));
         ret.add(getAttributeDef(attrNamePrefix, AtlasBaseTypeDef.getArrayTypeName(ENUM_DEF_WITH_NO_DEFAULT.getName())));
 
-
         for (String attributeType : ATLAS_RELATIONSHIP_ATTRIBUTE_TYPES) {
-
             // simple attributes
             ret.add(getAttributeDef(attrNamePrefix, attributeType));
             // array
@@ -482,7 +467,7 @@ public final class  ModelTestUtil {
             // map types with enum as key no default
             ret.add(getAttributeDef(attrNamePrefix,
                     AtlasBaseTypeDef.getMapTypeName(ENUM_DEF_WITH_NO_DEFAULT.getName(), attributeType)));
-             // map types attribute as key enum no default as value
+            // map types attribute as key enum no default as value
             ret.add(getAttributeDef(attrNamePrefix,
                     AtlasBaseTypeDef.getMapTypeName(attributeType, ENUM_DEF_WITH_NO_DEFAULT.getName())));
             // map types with enum as value
@@ -534,5 +519,22 @@ public final class  ModelTestUtil {
 
             currentTypeAttrDefs.removeIf(obj -> superTypeAttrNames.contains(obj.getName()));
         }
+    }
+
+    static {
+        TYPE_REGISTRY = new AtlasTypeRegistry();
+
+        ENUM_DEF                 = newEnumDef(true);
+        ENUM_DEF_WITH_NO_DEFAULT = newEnumDef(false);
+
+        STRUCT_DEF = newStructDef();
+
+        ENTITY_DEF                  = newEntityDef();
+        ENTITY_DEF_WITH_SUPER_TYPE  = newEntityDef(new AtlasEntityDef[] {ENTITY_DEF});
+        ENTITY_DEF_WITH_SUPER_TYPES = newEntityDef(new AtlasEntityDef[] {ENTITY_DEF, ENTITY_DEF_WITH_SUPER_TYPE});
+
+        CLASSIFICATION_DEF                  = newClassificationDef();
+        CLASSIFICATION_DEF_WITH_SUPER_TYPE  = newClassificationDef(new AtlasClassificationDef[] {CLASSIFICATION_DEF});
+        CLASSIFICATION_DEF_WITH_SUPER_TYPES = newClassificationDef(new AtlasClassificationDef[] {CLASSIFICATION_DEF, CLASSIFICATION_DEF_WITH_SUPER_TYPE});
     }
 }

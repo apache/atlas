@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import java.io.Console;
 
 /**
@@ -58,7 +59,7 @@ public final class AuthenticationUtil {
         return atlasConf.getBoolean("atlas.authentication.method.kerberos", defaultValue);
     }
 
-    public static boolean includeHadoopGroups(){
+    public static boolean includeHadoopGroups() {
         boolean includeHadoopGroups = false;
 
         try {
@@ -86,15 +87,14 @@ public final class AuthenticationUtil {
             username = console.readLine("Enter username for atlas :- ");
 
             char[] pwdChar = console.readPassword("Enter password for atlas :- ");
-            if(pwdChar != null) {
+            if (pwdChar != null) {
                 password = new String(pwdChar);
             }
-
         } catch (Exception e) {
             System.out.print("Error while reading user input");
             System.exit(1);
         }
-        return new String[]{username, password};
-    }
 
+        return new String[] {username, password};
+    }
 }

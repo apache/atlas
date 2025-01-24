@@ -26,17 +26,16 @@ import java.util.Collections;
 import java.util.List;
 
 public class DependentToken implements TemplateToken {
+    private static final String DYN_ATTRIBUTE_NAME_SEPARATOR = "\\.";
     private final String       path;
     private final List<String> objectPath;
     private final String       attrName;
 
-    private static final String DYN_ATTRIBUTE_NAME_SEPARATOR = "\\.";
-
-    public DependentToken(String path){
+    public DependentToken(String path) {
         List<String> objectPath = new ArrayList<>(Arrays.asList(path.split(DYN_ATTRIBUTE_NAME_SEPARATOR)));
 
-        this.path      = path;
-        this.attrName  = objectPath.remove(objectPath.size() - 1);
+        this.path       = path;
+        this.attrName   = objectPath.remove(objectPath.size() - 1);
         this.objectPath = Collections.unmodifiableList(objectPath);
     }
 

@@ -17,11 +17,9 @@
  */
 package org.apache.atlas.model.profile;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.AtlasBaseModelObject;
 import org.apache.atlas.model.discovery.SearchParameters;
 
@@ -31,34 +29,16 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AtlasUserSavedSearch extends AtlasBaseModelObject implements Serializable {
     private static final long serialVersionUID = 1L;
-
-    public enum SavedSearchType {
-        BASIC,
-        ADVANCED,
-        BASIC_RELATIONSHIP;
-
-        public static SavedSearchType to(String val) {
-            SavedSearchType searchType = SavedSearchType.BASIC;
-            if (SavedSearchType.ADVANCED.name().equalsIgnoreCase(val)) {
-                searchType = SavedSearchType.ADVANCED;
-            } else if (SavedSearchType.BASIC_RELATIONSHIP.name().equalsIgnoreCase(val)) {
-                searchType = SavedSearchType.BASIC_RELATIONSHIP;
-            }
-
-            return  searchType;
-        }
-    }
 
     private String           ownerName;
     private String           name;
     private SavedSearchType  searchType;
     private SearchParameters searchParameters;
-    private String uiParameters;
-
+    private String           uiParameters;
 
     public AtlasUserSavedSearch() {
         this(null, null, SavedSearchType.BASIC, null);
@@ -83,7 +63,6 @@ public class AtlasUserSavedSearch extends AtlasBaseModelObject implements Serial
         this(ownerName, name, searchType, searchParameters);
         setUiParameters(uiParameters);
     }
-
 
     public String getOwnerName() {
         return this.ownerName;
@@ -140,5 +119,22 @@ public class AtlasUserSavedSearch extends AtlasBaseModelObject implements Serial
         sb.append(", uiParameters=").append(uiParameters);
 
         return sb;
+    }
+
+    public enum SavedSearchType {
+        BASIC,
+        ADVANCED,
+        BASIC_RELATIONSHIP;
+
+        public static SavedSearchType to(String val) {
+            SavedSearchType searchType = SavedSearchType.BASIC;
+            if (SavedSearchType.ADVANCED.name().equalsIgnoreCase(val)) {
+                searchType = SavedSearchType.ADVANCED;
+            } else if (SavedSearchType.BASIC_RELATIONSHIP.name().equalsIgnoreCase(val)) {
+                searchType = SavedSearchType.BASIC_RELATIONSHIP;
+            }
+
+            return searchType;
+        }
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,19 +17,22 @@
  */
 package org.apache.atlas.type;
 
-import java.util.ArrayList;
-import java.util.List;
-
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasBooleanType;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.*;
+import java.util.ArrayList;
+import java.util.List;
 
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 public class TestAtlasBooleanType {
-    private final AtlasBooleanType booleanType = new AtlasBooleanType();
-    private final Object[] validValues   = { null, Boolean.TRUE, Boolean.FALSE, "true", "false", "TRUE", "FALSE", "tRue", "FaLse" };
-    private final Object[] invalidValues = {1, 0.5,123456789, "abcd", "101010" };
+    private final AtlasBooleanType booleanType   = new AtlasBooleanType();
+    private final Object[]         validValues   = {null, Boolean.TRUE, Boolean.FALSE, "true", "false", "TRUE", "FALSE", "tRue", "FaLse"};
+    private final Object[]         invalidValues = {1, 0.5, 123456789, "abcd", "101010"};
 
     @Test
     public void testBooleanTypeDefaultValue() {
@@ -51,8 +54,8 @@ public class TestAtlasBooleanType {
 
     @Test
     public void testBooleanTypeGetNormalizedValue() {
-        Object[] trueValues  = { Boolean.TRUE, "true", "TRUE", "tRuE", "TrUe" };
-        Object[] falseValues = { Boolean.FALSE, "false", "FALSE", "fAlSe", "FaLsE" };
+        Object[] trueValues  = {Boolean.TRUE, "true", "TRUE", "tRuE", "TrUe"};
+        Object[] falseValues = {Boolean.FALSE, "false", "FALSE", "fAlSe", "FaLsE"};
 
         assertNull(booleanType.getNormalizedValue(null), "value=" + null);
 

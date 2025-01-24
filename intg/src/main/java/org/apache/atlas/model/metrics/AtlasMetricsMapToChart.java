@@ -19,8 +19,9 @@ package org.apache.atlas.model.metrics;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
+import java.io.Serializable;
 import java.util.List;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -34,10 +35,12 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
  * The second element is the Atlas Metrics entity's count. It is used for rendering y-axis of the chart.
  */
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class AtlasMetricsMapToChart {
-    private String key;
+public class AtlasMetricsMapToChart implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    private String       key;
     private List<long[]> values;
 
     public AtlasMetricsMapToChart(String key, List<long[]> values) {
@@ -45,7 +48,9 @@ public class AtlasMetricsMapToChart {
         this.values = values;
     }
 
-    public String getKey() { return key; }
+    public String getKey() {
+        return key;
+    }
 
     public void setKey(String key) {
         this.key = key;
@@ -58,5 +63,4 @@ public class AtlasMetricsMapToChart {
     public void setValues(List<long[]> values) {
         this.values = values;
     }
-
 }

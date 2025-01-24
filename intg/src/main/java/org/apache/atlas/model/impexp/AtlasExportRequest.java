@@ -17,11 +17,10 @@
  */
 package org.apache.atlas.model.impexp;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.commons.collections.MapUtils;
@@ -30,6 +29,7 @@ import org.apache.commons.lang.StringUtils;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -39,34 +39,32 @@ import java.util.Map;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasExportRequest implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
-    public static final String OPTION_FETCH_TYPE = "fetchType";
-    public static final String OPTION_ATTR_MATCH_TYPE = "matchType";
-    public static final String OPTION_SKIP_LINEAGE = "skipLineage";
-    public static final String OPTION_KEY_REPLICATED_TO = "replicatedTo";
+    public static final String OPTION_FETCH_TYPE                       = "fetchType";
+    public static final String OPTION_ATTR_MATCH_TYPE                  = "matchType";
+    public static final String OPTION_SKIP_LINEAGE                     = "skipLineage";
+    public static final String OPTION_KEY_REPLICATED_TO                = "replicatedTo";
     public static final String OPTION_KEY_SKIP_UPDATE_REPLICATION_ATTR = "skipUpdateReplicationAttr";
-    public static final String FETCH_TYPE_FULL = "full";
-    public static final String FETCH_TYPE_CONNECTED = "connected";
-    public static final String FETCH_TYPE_INCREMENTAL = "incremental";
-    public static final String FETCH_TYPE_INCREMENTAL_CHANGE_MARKER = "changeMarker";
-    public static final String MATCH_TYPE_STARTS_WITH = "startsWith";
-    public static final String MATCH_TYPE_ENDS_WITH = "endsWith";
-    public static final String MATCH_TYPE_CONTAINS = "contains";
-    public static final String MATCH_TYPE_MATCHES = "matches";
-    public static final String MATCH_TYPE_FOR_TYPE = "forType";
-    public static final String OMIT_ZIP_RESPONSE_FOR_EMPTY_EXPORT = "omitZipResponseForEmptyExport";
+    public static final String FETCH_TYPE_FULL                         = "full";
+    public static final String FETCH_TYPE_CONNECTED                    = "connected";
+    public static final String FETCH_TYPE_INCREMENTAL                  = "incremental";
+    public static final String FETCH_TYPE_INCREMENTAL_CHANGE_MARKER    = "changeMarker";
+    public static final String MATCH_TYPE_STARTS_WITH                  = "startsWith";
+    public static final String MATCH_TYPE_ENDS_WITH                    = "endsWith";
+    public static final String MATCH_TYPE_CONTAINS                     = "contains";
+    public static final String MATCH_TYPE_MATCHES                      = "matches";
+    public static final String MATCH_TYPE_FOR_TYPE                     = "forType";
+    public static final String OMIT_ZIP_RESPONSE_FOR_EMPTY_EXPORT      = "omitZipResponseForEmptyExport";
 
     private List<AtlasObjectId> itemsToExport = new ArrayList<>();
-    private Map<String, Object> options = new HashMap<>();
+    private Map<String, Object> options       = new HashMap<>();
 
     public List<AtlasObjectId> getItemsToExport() {
         return itemsToExport;
@@ -90,6 +88,7 @@ public class AtlasExportRequest implements Serializable {
         }
 
         Object o = getOptions().get(OPTION_FETCH_TYPE);
+
         if (o instanceof String) {
             return (String) o;
         }
@@ -98,17 +97,15 @@ public class AtlasExportRequest implements Serializable {
     }
 
     public boolean getSkipLineageOptionValue() {
-        if (MapUtils.isEmpty(getOptions()) ||
-                !getOptions().containsKey(AtlasExportRequest.OPTION_SKIP_LINEAGE)) {
+        if (MapUtils.isEmpty(getOptions()) || !getOptions().containsKey(AtlasExportRequest.OPTION_SKIP_LINEAGE)) {
             return false;
         }
 
         Object o = getOptions().get(AtlasExportRequest.OPTION_SKIP_LINEAGE);
+
         if (o instanceof String) {
             return Boolean.parseBoolean((String) o);
-        }
-
-        if (o instanceof Boolean) {
+        } else if (o instanceof Boolean) {
             return (Boolean) o;
         }
 
@@ -128,9 +125,7 @@ public class AtlasExportRequest implements Serializable {
     }
 
     public long getChangeTokenFromOptions() {
-        if (MapUtils.isEmpty(getOptions()) ||
-                !getFetchTypeOptionValue().equalsIgnoreCase(FETCH_TYPE_INCREMENTAL) ||
-                !getOptions().containsKey(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_CHANGE_MARKER)) {
+        if (MapUtils.isEmpty(getOptions()) || !getFetchTypeOptionValue().equalsIgnoreCase(FETCH_TYPE_INCREMENTAL) || !getOptions().containsKey(AtlasExportRequest.FETCH_TYPE_INCREMENTAL_CHANGE_MARKER)) {
             return 0L;
         }
 
@@ -145,17 +140,15 @@ public class AtlasExportRequest implements Serializable {
     @JsonIgnore
     public boolean skipUpdateReplicationAttr() {
         if (MapUtils.isNotEmpty(getOptions()) && getOptions().containsKey(OPTION_KEY_SKIP_UPDATE_REPLICATION_ATTR)) {
-
             Object o = getOptions().get(AtlasExportRequest.OPTION_KEY_SKIP_UPDATE_REPLICATION_ATTR);
+
             if (o instanceof String) {
                 return Boolean.parseBoolean((String) o);
-            }
-
-            if (o instanceof Boolean) {
+            } else if (o instanceof Boolean) {
                 return (Boolean) o;
             }
-
         }
+
         return false;
     }
 
@@ -171,18 +164,15 @@ public class AtlasExportRequest implements Serializable {
     }
 
     public Boolean getOmitZipResponseForEmptyExport() {
-
-        if (MapUtils.isEmpty(getOptions()) ||
-                !getOptions().containsKey(AtlasExportRequest.OMIT_ZIP_RESPONSE_FOR_EMPTY_EXPORT)) {
+        if (MapUtils.isEmpty(getOptions()) || !getOptions().containsKey(AtlasExportRequest.OMIT_ZIP_RESPONSE_FOR_EMPTY_EXPORT)) {
             return false;
         }
 
         Object o = getOptions().get(AtlasExportRequest.OMIT_ZIP_RESPONSE_FOR_EMPTY_EXPORT);
+
         if (o instanceof String) {
             return Boolean.parseBoolean((String) o);
-        }
-
-        if (o instanceof Boolean) {
+        } else if (o instanceof Boolean) {
             return (Boolean) o;
         }
 

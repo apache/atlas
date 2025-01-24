@@ -67,34 +67,35 @@ public class AtlasTermCategorizationHeader {
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AtlasTermCategorizationHeader)) return false;
-        final AtlasTermCategorizationHeader that = (AtlasTermCategorizationHeader) o;
-        return Objects.equals(categoryGuid, that.categoryGuid) &&
-                       Objects.equals(relationGuid, that.relationGuid) &&
-                       Objects.equals(description, that.description) &&
-                       status == that.status;
-    }
-
-    @Override
     public int hashCode() {
-
         return Objects.hash(categoryGuid, relationGuid, description, status);
     }
 
     @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("AtlasTermCategorizationId{");
-        sb.append("categoryGuid='").append(categoryGuid).append('\'');
-        sb.append(", relationGuid='").append(relationGuid).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", displayText='").append(displayText).append('\'');
-        sb.append(", status=").append(status);
-        sb.append('}');
-        return sb.toString();
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        } else if (!(o instanceof AtlasTermCategorizationHeader)) {
+            return false;
+        }
+
+        AtlasTermCategorizationHeader that = (AtlasTermCategorizationHeader) o;
+
+        return Objects.equals(categoryGuid, that.categoryGuid) &&
+                Objects.equals(relationGuid, that.relationGuid) &&
+                Objects.equals(description, that.description) &&
+                status == that.status;
     }
 
+    @Override
+    public String toString() {
+        return "AtlasTermCategorizationId{" + "categoryGuid='" + categoryGuid + '\'' +
+                ", relationGuid='" + relationGuid + '\'' +
+                ", description='" + description + '\'' +
+                ", displayText='" + displayText + '\'' +
+                ", status=" + status +
+                '}';
+    }
 
     public String getRelationGuid() {
         return relationGuid;

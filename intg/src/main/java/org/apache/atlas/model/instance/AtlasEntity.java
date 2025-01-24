@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,11 +17,10 @@
  */
 package org.apache.atlas.model.instance;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
@@ -34,9 +33,10 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+
 import java.io.Serializable;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -48,13 +48,12 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-
 /**
  * An instance of an entity - like hive_table, hive_database.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasEntity extends AtlasStruct implements Serializable {
@@ -72,22 +71,20 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     public static final String KEY_UPDATE_TIME     = "updateTime";
     public static final String KEY_VERSION         = "version";
 
-    /**
-     * Status of the entity - can be active or deleted. Deleted entities are not removed from Atlas store.
-     */
-    public enum Status { ACTIVE, DELETED, PURGED }
+    @JsonIgnore
+    private static final AtomicLong s_nextId = new AtomicLong(System.nanoTime());
 
-    private String  guid           = null;
-    private String  homeId         = null;
+    private String  guid;
+    private String  homeId;
     private Boolean isProxy        = Boolean.FALSE;
     private Boolean isIncomplete   = Boolean.FALSE;
-    private Integer provenanceType = 0;
+    private Integer provenanceType;
     private Status  status         = Status.ACTIVE;
-    private String  createdBy      = null;
-    private String  updatedBy      = null;
-    private Date    createTime     = null;
-    private Date    updateTime     = null;
-    private Long    version        = 0L;
+    private String  createdBy;
+    private String  updatedBy;
+    private Date    createTime;
+    private Date    updateTime;
+    private Long    version;
 
     private Map<String, Object>              relationshipAttributes;
     private List<AtlasClassification>        classifications;
@@ -96,9 +93,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     private Map<String, Map<String, Object>> businessAttributes;
     private Set<String>                      labels;
     private Set<String>                      pendingTasks; // read-only field i.e. value provided is ignored during entity create/update
-
-    @JsonIgnore
-    private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
 
     public AtlasEntity() {
         this(null, null);
@@ -137,17 +131,17 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         super(map);
 
         if (map != null) {
-            Object oGuid             = map.get(KEY_GUID);
-            Object homeId            = map.get(KEY_HOME_ID);
-            Object isProxy           = map.get(KEY_IS_PROXY);
-            Object isIncomplete      = map.get(KEY_IS_INCOMPLETE);
-            Object provenanceType    = map.get(KEY_PROVENANCE_TYPE);
-            Object status            = map.get(KEY_STATUS);
-            Object createdBy         = map.get(KEY_CREATED_BY);
-            Object updatedBy         = map.get(KEY_UPDATED_BY);
-            Object createTime        = map.get(KEY_CREATE_TIME);
-            Object updateTime        = map.get(KEY_UPDATE_TIME);
-            Object version           = map.get(KEY_VERSION);
+            Object oGuid          = map.get(KEY_GUID);
+            Object homeId         = map.get(KEY_HOME_ID);
+            Object isProxy        = map.get(KEY_IS_PROXY);
+            Object isIncomplete   = map.get(KEY_IS_INCOMPLETE);
+            Object provenanceType = map.get(KEY_PROVENANCE_TYPE);
+            Object status         = map.get(KEY_STATUS);
+            Object createdBy      = map.get(KEY_CREATED_BY);
+            Object updatedBy      = map.get(KEY_UPDATED_BY);
+            Object createTime     = map.get(KEY_CREATE_TIME);
+            Object updateTime     = map.get(KEY_UPDATE_TIME);
+            Object version        = map.get(KEY_VERSION);
 
             if (oGuid != null) {
                 setGuid(oGuid.toString());
@@ -158,9 +152,8 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             }
 
             if (isProxy != null) {
-                setIsProxy((Boolean)isProxy);
-            }
-            else {
+                setIsProxy((Boolean) isProxy);
+            } else {
                 setIsProxy(Boolean.FALSE);
             }
 
@@ -313,7 +306,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         this.version = version;
     }
 
-    public Map<String, Object> getRelationshipAttributes() { return relationshipAttributes; }
+    public Map<String, Object> getRelationshipAttributes() {
+        return relationshipAttributes;
+    }
 
     public void setRelationshipAttributes(Map<String, Object> relationshipAttributes) {
         this.relationshipAttributes = relationshipAttributes;
@@ -326,6 +321,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             r.put(name, value);
         } else {
             r = new HashMap<>();
+
             r.put(name, value);
 
             this.relationshipAttributes = r;
@@ -341,7 +337,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
     public boolean hasRelationshipAttribute(String name) {
         Map<String, Object> r = this.relationshipAttributes;
 
-        return r != null ? r.containsKey(name) : false;
+        return r != null && r.containsKey(name);
     }
 
     public Map<String, String> getCustomAttributes() {
@@ -369,13 +365,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             this.businessAttributes = businessAttributes;
         }
 
-        Map<String, Object> businessAttributeMap = businessAttributes.get(nsName);
-
-        if (businessAttributeMap == null) {
-            businessAttributeMap = new HashMap<>();
-
-            businessAttributes.put(nsName, businessAttributeMap);
-        }
+        Map<String, Object> businessAttributeMap = businessAttributes.computeIfAbsent(nsName, k -> new HashMap<>());
 
         businessAttributeMap.put(nsAttrName, nsValue);
     }
@@ -403,9 +393,13 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         this.pendingTasks = pendingTasks;
     }
 
-    public List<AtlasClassification> getClassifications() { return classifications; }
+    public List<AtlasClassification> getClassifications() {
+        return classifications;
+    }
 
-    public void setClassifications(List<AtlasClassification> classifications) { this.classifications = classifications; }
+    public void setClassifications(List<AtlasClassification> classifications) {
+        this.classifications = classifications;
+    }
 
     public void addClassifications(List<AtlasClassification> classifications) {
         List<AtlasClassification> c = this.classifications;
@@ -435,29 +429,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         }
         meanings.add(meaning);
         setMeanings(meanings);
-    }
-
-    private void init() {
-        setGuid(nextInternalId());
-        setHomeId(null);
-        setIsProxy(Boolean.FALSE);
-        setIsIncomplete(Boolean.FALSE);
-        setProvenanceType(0);
-        setStatus(null);
-        setCreatedBy(null);
-        setUpdatedBy(null);
-        setCreateTime(null);
-        setUpdateTime(null);
-        setClassifications(null);
-        setMeanings(null);
-        setCustomAttributes(null);
-        setBusinessAttributes(null);
-        setLabels(null);
-        setPendingTasks(null);
-    }
-
-    private static String nextInternalId() {
-        return "-" + Long.toString(s_nextId.getAndIncrement());
     }
 
     @Override
@@ -507,11 +478,16 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) { return true; }
-        if (o == null || getClass() != o.getClass()) { return false; }
-        if (!super.equals(o)) { return false; }
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        } else if (!super.equals(o)) {
+            return false;
+        }
 
         AtlasEntity that = (AtlasEntity) o;
+
         return Objects.equals(guid, that.guid) &&
                 Objects.equals(homeId, that.homeId) &&
                 Objects.equals(isProxy, that.isProxy) &&
@@ -541,19 +517,46 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         return toString(new StringBuilder()).toString();
     }
 
+    private void init() {
+        setGuid(nextInternalId());
+        setHomeId(null);
+        setIsProxy(Boolean.FALSE);
+        setIsIncomplete(Boolean.FALSE);
+        setProvenanceType(0);
+        setStatus(null);
+        setCreatedBy(null);
+        setUpdatedBy(null);
+        setCreateTime(null);
+        setUpdateTime(null);
+        setClassifications(null);
+        setMeanings(null);
+        setCustomAttributes(null);
+        setBusinessAttributes(null);
+        setLabels(null);
+        setPendingTasks(null);
+    }
+
+    private static String nextInternalId() {
+        return "-" + s_nextId.getAndIncrement();
+    }
+
+    /**
+     * Status of the entity - can be active or deleted. Deleted entities are not removed from Atlas store.
+     */
+    public enum Status { ACTIVE, DELETED, PURGED }
+
     /**
      * An instance of an entity along with extended info - like hive_table, hive_database.
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class AtlasEntityExtInfo implements Serializable {
         private static final long serialVersionUID = 1L;
 
         private Map<String, AtlasEntity> referredEntities;
-
 
         public AtlasEntityExtInfo() {
             setReferredEntities(null);
@@ -573,9 +576,13 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             }
         }
 
-        public Map<String, AtlasEntity> getReferredEntities() { return referredEntities; }
+        public Map<String, AtlasEntity> getReferredEntities() {
+            return referredEntities;
+        }
 
-        public void setReferredEntities(Map<String, AtlasEntity> referredEntities) { this.referredEntities = referredEntities; }
+        public void setReferredEntities(Map<String, AtlasEntity> referredEntities) {
+            this.referredEntities = referredEntities;
+        }
 
         @JsonIgnore
         public final void addReferredEntity(AtlasEntity entity) {
@@ -629,7 +636,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             if (entity != null) {
                 entity.setGuid(newGuid);
 
-                if(removeEntity(oldGuid) != null) {
+                if (removeEntity(oldGuid) != null) {
                     addReferredEntity(newGuid, entity);
                 }
             }
@@ -658,22 +665,21 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         }
 
         @Override
+        public int hashCode() {
+            return Objects.hash(referredEntities);
+        }
+
+        @Override
         public boolean equals(Object o) {
             if (this == o) {
                 return true;
-            }
-
-            if (o == null || getClass() != o.getClass()) {
+            } else if (o == null || getClass() != o.getClass()) {
                 return false;
             }
 
             AtlasEntityExtInfo that = (AtlasEntityExtInfo) o;
-            return Objects.equals(referredEntities, that.referredEntities);
-        }
 
-        @Override
-        public int hashCode() {
-            return Objects.hash(referredEntities);
+            return Objects.equals(referredEntities, that.referredEntities);
         }
 
         @Override
@@ -682,9 +688,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         }
     }
 
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class AtlasEntityWithExtInfo extends AtlasEntityExtInfo {
@@ -706,9 +712,13 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             this.entity = entity;
         }
 
-        public AtlasEntity getEntity() { return entity; }
+        public AtlasEntity getEntity() {
+            return entity;
+        }
 
-        public void setEntity(AtlasEntity entity) { this.entity = entity; }
+        public void setEntity(AtlasEntity entity) {
+            this.entity = entity;
+        }
 
         @JsonIgnore
         @Override
@@ -753,13 +763,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         public boolean equals(Object o) {
             if (this == o) {
                 return true;
-            }
-
-            if (o == null || getClass() != o.getClass()) {
+            } else if (o == null || getClass() != o.getClass()) {
+                return false;
+            } else if (!super.equals(o)) {
                 return false;
             }
 
             AtlasEntityWithExtInfo that = (AtlasEntityWithExtInfo) o;
+
             return Objects.equals(entity, that.entity);
         }
 
@@ -769,9 +780,9 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         }
     }
 
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class AtlasEntitiesWithExtInfo extends AtlasEntityExtInfo {
@@ -783,7 +794,8 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             this(null, null);
         }
 
-        public AtlasEntitiesWithExtInfo(AtlasEntity entity) { this(Arrays.asList(entity), null);
+        public AtlasEntitiesWithExtInfo(AtlasEntity entity) {
+            this(Collections.singletonList(entity), null);
         }
 
         public AtlasEntitiesWithExtInfo(List<AtlasEntity> entities) {
@@ -791,7 +803,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         }
 
         public AtlasEntitiesWithExtInfo(AtlasEntityWithExtInfo entity) {
-            this(Arrays.asList(entity.getEntity()), entity);
+            this(Collections.singletonList(entity.getEntity()), entity);
         }
 
         public AtlasEntitiesWithExtInfo(List<AtlasEntity> entities, AtlasEntityExtInfo extInfo) {
@@ -800,9 +812,13 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             this.entities = entities;
         }
 
-        public List<AtlasEntity> getEntities() { return entities; }
+        public List<AtlasEntity> getEntities() {
+            return entities;
+        }
 
-        public void setEntities(List<AtlasEntity> entities) { this.entities = entities; }
+        public void setEntities(List<AtlasEntity> entities) {
+            this.entities = entities;
+        }
 
         @JsonIgnore
         @Override
@@ -820,26 +836,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             }
 
             return ret;
-        }
-
-        public void addEntity(AtlasEntity entity) {
-            List<AtlasEntity> entities = this.entities;
-
-            if (entities == null) {
-                entities = new ArrayList<>();
-
-                this.entities = entities;
-            }
-
-            entities.add(entity);
-        }
-
-        public void removeEntity(AtlasEntity entity) {
-            List<AtlasEntity> entities = this.entities;
-
-            if (entity != null && entities != null) {
-                entities.remove(entity);
-            }
         }
 
         @Override
@@ -874,13 +870,14 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         public boolean equals(Object o) {
             if (this == o) {
                 return true;
-            }
-
-            if (o == null || getClass() != o.getClass()) {
+            } else if (o == null || getClass() != o.getClass()) {
+                return false;
+            } else if (!super.equals(o)) {
                 return false;
             }
 
             AtlasEntitiesWithExtInfo that = (AtlasEntitiesWithExtInfo) o;
+
             return Objects.equals(entities, that.entities);
         }
 
@@ -888,14 +885,34 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         public int hashCode() {
             return Objects.hash(super.hashCode(), entities);
         }
+
+        public void addEntity(AtlasEntity entity) {
+            List<AtlasEntity> entities = this.entities;
+
+            if (entities == null) {
+                entities = new ArrayList<>();
+
+                this.entities = entities;
+            }
+
+            entities.add(entity);
+        }
+
+        public void removeEntity(AtlasEntity entity) {
+            List<AtlasEntity> entities = this.entities;
+
+            if (entity != null && entities != null) {
+                entities.remove(entity);
+            }
+        }
     }
 
     /**
      * REST serialization friendly list.
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     @XmlSeeAlso(AtlasEntity.class)
@@ -910,8 +927,7 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             super(list);
         }
 
-        public AtlasEntities(List list, long startIndex, int pageSize, long totalCount,
-                             SortType sortType, String sortBy) {
+        public AtlasEntities(List<AtlasEntity> list, long startIndex, int pageSize, long totalCount, SortType sortType, String sortBy) {
             super(list, startIndex, pageSize, totalCount, sortType, sortBy);
         }
     }

@@ -22,7 +22,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 public class ConstantToken implements TemplateToken {
     private final String constant;
 
-    public ConstantToken(String constant){
+    public ConstantToken(String constant) {
         this.constant = constant;
     }
 

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,24 +17,24 @@
  */
 package org.apache.atlas.model.instance;
 
-import java.io.Serializable;
-import java.util.List;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Objects;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import org.apache.atlas.model.PList;
+import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.commons.lang.StringUtils;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
 
-import org.apache.atlas.model.PList;
-import org.apache.atlas.model.SearchFilter.SortType;
-import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.commons.lang.StringUtils;
+import java.io.Serializable;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -42,12 +42,12 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 /**
  * Reference to an object-instance of an Atlas type - like entity.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class AtlasObjectId  implements Serializable {
+public class AtlasObjectId implements Serializable {
     private static final long serialVersionUID = 1L;
 
     public static final String KEY_GUID              = "guid";
@@ -58,17 +58,16 @@ public class AtlasObjectId  implements Serializable {
     private String              typeName;
     private Map<String, Object> uniqueAttributes;
 
-
     public AtlasObjectId() {
-        this(null, null, (Map<String, Object>)null);
+        this(null, null, null);
     }
 
     public AtlasObjectId(String guid) {
-        this(guid, null, (Map<String, Object>)null);
+        this(guid, null, null);
     }
 
     public AtlasObjectId(String guid, String typeName) {
-        this(guid, typeName, (Map<String, Object>)null);
+        this(guid, typeName, null);
     }
 
     public AtlasObjectId(String typeName, Map<String, Object> uniqueAttributes) {
@@ -76,7 +75,7 @@ public class AtlasObjectId  implements Serializable {
     }
 
     public AtlasObjectId(String typeName, final String attrName, final Object attrValue) {
-        this(null, typeName, new HashMap<String, Object>() {{ put(attrName, attrValue); }});
+        this(null, typeName, createMap(attrName, attrValue));
     }
 
     public AtlasObjectId(String guid, String typeName, Map<String, Object> uniqueAttributes) {
@@ -107,8 +106,8 @@ public class AtlasObjectId  implements Serializable {
                 setTypeName(t.toString());
             }
 
-            if (u != null && u instanceof Map) {
-                setUniqueAttributes((Map)u);
+            if (u instanceof Map) {
+                setUniqueAttributes((Map) u);
             }
         }
     }
@@ -154,6 +153,11 @@ public class AtlasObjectId  implements Serializable {
     }
 
     @Override
+    public int hashCode() {
+        return guid != null ? Objects.hash(guid) : Objects.hash(typeName, uniqueAttributes);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -174,21 +178,24 @@ public class AtlasObjectId  implements Serializable {
     }
 
     @Override
-    public int hashCode() {
-        return guid != null ? Objects.hash(guid) : Objects.hash(typeName, uniqueAttributes);
-    }
-
-    @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
+    }
+
+    private static Map<String, Object> createMap(String key, Object val) {
+        Map<String, Object> ret = new HashMap<>();
+
+        ret.put(key, val);
+
+        return ret;
     }
 
     /**
      * REST serialization friendly list.
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     @XmlSeeAlso(AtlasObjectId.class)
@@ -203,8 +210,7 @@ public class AtlasObjectId  implements Serializable {
             super(list);
         }
 
-        public AtlasObjectIds(List list, long startIndex, int pageSize, long totalCount,
-                              SortType sortType, String sortBy) {
+        public AtlasObjectIds(List<AtlasObjectId> list, long startIndex, int pageSize, long totalCount, SortType sortType, String sortBy) {
             super(list, startIndex, pageSize, totalCount, sortType, sortBy);
         }
     }

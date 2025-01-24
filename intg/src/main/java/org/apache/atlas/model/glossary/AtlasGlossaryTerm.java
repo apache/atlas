@@ -34,6 +34,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
 @AtlasJSON
 public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
     // Core attributes
@@ -75,33 +77,33 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
     private Set<AtlasRelatedTermHeader> validValues;
     private Set<AtlasRelatedTermHeader> validValuesFor;
 
-    private boolean hasTerms = false;
+    private boolean hasTerms;
 
     public AtlasGlossaryTerm() {
     }
 
     public AtlasGlossaryTerm(final AtlasGlossaryTerm other) {
         super(other);
-        this.examples = other.examples;
-        this.abbreviation = other.abbreviation;
-        this.usage = other.usage;
-        this.anchor = other.anchor;
+        this.examples         = other.examples;
+        this.abbreviation     = other.abbreviation;
+        this.usage            = other.usage;
+        this.anchor           = other.anchor;
         this.assignedEntities = other.assignedEntities;
-        this.categories = other.categories;
-        this.seeAlso = other.seeAlso;
-        this.synonyms = other.synonyms;
-        this.antonyms = other.antonyms;
-        this.preferredTerms = other.preferredTerms;
+        this.categories       = other.categories;
+        this.seeAlso          = other.seeAlso;
+        this.synonyms         = other.synonyms;
+        this.antonyms         = other.antonyms;
+        this.preferredTerms   = other.preferredTerms;
         this.preferredToTerms = other.preferredToTerms;
         this.replacementTerms = other.replacementTerms;
-        this.replacedBy = other.replacedBy;
+        this.replacedBy       = other.replacedBy;
         this.translationTerms = other.translationTerms;
-        this.translatedTerms = other.translatedTerms;
-        this.isA = other.isA;
-        this.classifies = other.classifies;
-        this.validValues = other.validValues;
-        this.validValuesFor = other.validValuesFor;
-        this.hasTerms = other.hasTerms;
+        this.translatedTerms  = other.translatedTerms;
+        this.isA              = other.isA;
+        this.classifies       = other.classifies;
+        this.validValues      = other.validValues;
+        this.validValuesFor   = other.validValuesFor;
+        this.hasTerms         = other.hasTerms;
     }
 
     public List<String> getExamples() {
@@ -146,10 +148,13 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void addCategory(final AtlasTermCategorizationHeader category) {
         Set<AtlasTermCategorizationHeader> categories = this.categories;
+
         if (categories == null) {
             categories = new HashSet<>();
         }
+
         categories.add(category);
+
         setCategories(categories);
     }
 
@@ -163,10 +168,13 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
 
     public void addAssignedEntity(final AtlasRelatedObjectId atlasObjectId) {
         Set<AtlasRelatedObjectId> assignedEntities = this.assignedEntities;
+
         if (assignedEntities == null) {
             assignedEntities = new HashSet<>();
         }
+
         assignedEntities.add(atlasObjectId);
+
         setAssignedEntities(assignedEntities);
     }
 
@@ -333,6 +341,7 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
     @JsonIgnore
     public String toAuditString() {
         AtlasGlossaryTerm t = new AtlasGlossaryTerm();
+
         t.setGuid(this.getGuid());
         t.setName(this.getName());
         t.setQualifiedName(this.getQualifiedName());
@@ -348,7 +357,8 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
     @JsonIgnore
     @Override
     public void setAttribute(String attrName, String attrVal) {
-        Objects.requireNonNull(attrName, "AtlasGlossaryTerm attribute name");
+        requireNonNull(attrName, "AtlasGlossaryTerm attribute name");
+
         switch (attrName) {
             case "name":
                 setName(attrVal);
@@ -368,6 +378,71 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
             default:
                 throw new IllegalArgumentException("Invalid attribute '" + attrName + "' for object AtlasGlossaryTerm");
         }
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        } else if (!(o instanceof AtlasGlossaryTerm)) {
+            return false;
+        } else if (!super.equals(o)) {
+            return false;
+        }
+
+        AtlasGlossaryTerm that = (AtlasGlossaryTerm) o;
+
+        return Objects.equals(examples, that.examples) &&
+                Objects.equals(abbreviation, that.abbreviation) &&
+                Objects.equals(usage, that.usage) &&
+                Objects.equals(anchor, that.anchor) &&
+                Objects.equals(assignedEntities, that.assignedEntities) &&
+                Objects.equals(categories, that.categories) &&
+                Objects.equals(seeAlso, that.seeAlso) &&
+                Objects.equals(synonyms, that.synonyms) &&
+                Objects.equals(antonyms, that.antonyms) &&
+                Objects.equals(preferredTerms, that.preferredTerms) &&
+                Objects.equals(preferredToTerms, that.preferredToTerms) &&
+                Objects.equals(replacementTerms, that.replacementTerms) &&
+                Objects.equals(replacedBy, that.replacedBy) &&
+                Objects.equals(translationTerms, that.translationTerms) &&
+                Objects.equals(translatedTerms, that.translatedTerms) &&
+                Objects.equals(isA, that.isA) &&
+                Objects.equals(classifies, that.classifies) &&
+                Objects.equals(validValues, that.validValues) &&
+                Objects.equals(validValuesFor, that.validValuesFor);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), examples, abbreviation, usage, anchor, assignedEntities, categories,
+                seeAlso, synonyms, antonyms, preferredTerms, preferredToTerms, replacementTerms, replacedBy,
+                translationTerms, translatedTerms, isA, classifies, validValues, validValuesFor);
+    }
+
+    @Override
+    protected StringBuilder toString(final StringBuilder sb) {
+        sb.append("examples=").append(examples);
+        sb.append(", abbreviation='").append(abbreviation).append('\'');
+        sb.append(", usage='").append(usage).append('\'');
+        sb.append(", anchor=").append(anchor);
+        sb.append(", assignedEntities=").append(assignedEntities);
+        sb.append(", categories=").append(categories);
+        sb.append(", seeAlso=").append(seeAlso);
+        sb.append(", synonyms=").append(synonyms);
+        sb.append(", antonyms=").append(antonyms);
+        sb.append(", preferredTerms=").append(preferredTerms);
+        sb.append(", preferredToTerms=").append(preferredToTerms);
+        sb.append(", replacementTerms=").append(replacementTerms);
+        sb.append(", replacedBy=").append(replacedBy);
+        sb.append(", translationTerms=").append(translationTerms);
+        sb.append(", translatedTerms=").append(translatedTerms);
+        sb.append(", isA=").append(isA);
+        sb.append(", classifies=").append(classifies);
+        sb.append(", validValues=").append(validValues);
+        sb.append(", validValuesFor=").append(validValuesFor);
+
+        return sb;
     }
 
     @JsonIgnore
@@ -429,66 +504,6 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
         return ret;
     }
 
-    @Override
-    protected StringBuilder toString(final StringBuilder sb) {
-        sb.append("examples=").append(examples);
-        sb.append(", abbreviation='").append(abbreviation).append('\'');
-        sb.append(", usage='").append(usage).append('\'');
-        sb.append(", anchor=").append(anchor);
-        sb.append(", assignedEntities=").append(assignedEntities);
-        sb.append(", categories=").append(categories);
-        sb.append(", seeAlso=").append(seeAlso);
-        sb.append(", synonyms=").append(synonyms);
-        sb.append(", antonyms=").append(antonyms);
-        sb.append(", preferredTerms=").append(preferredTerms);
-        sb.append(", preferredToTerms=").append(preferredToTerms);
-        sb.append(", replacementTerms=").append(replacementTerms);
-        sb.append(", replacedBy=").append(replacedBy);
-        sb.append(", translationTerms=").append(translationTerms);
-        sb.append(", translatedTerms=").append(translatedTerms);
-        sb.append(", isA=").append(isA);
-        sb.append(", classifies=").append(classifies);
-        sb.append(", validValues=").append(validValues);
-        sb.append(", validValuesFor=").append(validValuesFor);
-
-        return sb;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AtlasGlossaryTerm)) return false;
-        if (!super.equals(o)) return false;
-        final AtlasGlossaryTerm that = (AtlasGlossaryTerm) o;
-        return Objects.equals(examples, that.examples) &&
-                       Objects.equals(abbreviation, that.abbreviation) &&
-                       Objects.equals(usage, that.usage) &&
-                       Objects.equals(anchor, that.anchor) &&
-                       Objects.equals(assignedEntities, that.assignedEntities) &&
-                       Objects.equals(categories, that.categories) &&
-                       Objects.equals(seeAlso, that.seeAlso) &&
-                       Objects.equals(synonyms, that.synonyms) &&
-                       Objects.equals(antonyms, that.antonyms) &&
-                       Objects.equals(preferredTerms, that.preferredTerms) &&
-                       Objects.equals(preferredToTerms, that.preferredToTerms) &&
-                       Objects.equals(replacementTerms, that.replacementTerms) &&
-                       Objects.equals(replacedBy, that.replacedBy) &&
-                       Objects.equals(translationTerms, that.translationTerms) &&
-                       Objects.equals(translatedTerms, that.translatedTerms) &&
-                       Objects.equals(isA, that.isA) &&
-                       Objects.equals(classifies, that.classifies) &&
-                       Objects.equals(validValues, that.validValues) &&
-                       Objects.equals(validValuesFor, that.validValuesFor);
-    }
-
-    @Override
-    public int hashCode() {
-
-        return Objects.hash(super.hashCode(), examples, abbreviation, usage, anchor, assignedEntities, categories,
-                            seeAlso, synonyms, antonyms, preferredTerms, preferredToTerms, replacementTerms, replacedBy,
-                            translationTerms, translatedTerms, isA, classifies, validValues, validValuesFor);
-    }
-
     public enum Relation {
         SEE_ALSO("AtlasGlossaryRelatedTerm", "seeAlso"),
         SYNONYMS("AtlasGlossarySynonym", "synonyms"),
@@ -502,20 +517,19 @@ public class AtlasGlossaryTerm extends AtlasGlossaryBaseObject {
         ISA("AtlasGlossaryIsARelationship", "isA", true),
         CLASSIFIES("AtlasGlossaryIsARelationship", "classifies"),
         VALID_VALUES("AtlasGlossaryValidValue", "validValues", true),
-        VALID_VALUES_FOR("AtlasGlossaryValidValue", "validValuesFor"),
-        ;
+        VALID_VALUES_FOR("AtlasGlossaryValidValue", "validValuesFor");
 
-        private String  name;
-        private String  attrName;
-        private boolean isEnd2Attr;
+        private final String  name;
+        private final String  attrName;
+        private final boolean isEnd2Attr;
 
         Relation(final String name, final String attrName) {
             this(name, attrName, false);
         }
 
         Relation(final String name, final String attrName, final boolean isEnd2Attr) {
-            this.name = name;
-            this.attrName = attrName;
+            this.name       = name;
+            this.attrName   = attrName;
             this.isEnd2Attr = isEnd2Attr;
         }
 

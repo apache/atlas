@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,14 +18,14 @@
 
 package org.apache.atlas.v1.model.instance;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.util.Date;
 import java.util.Map;
@@ -34,10 +34,9 @@ import java.util.Objects;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.ALWAYS)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.ALWAYS)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasSystemAttributes implements Serializable {
@@ -47,7 +46,6 @@ public class AtlasSystemAttributes implements Serializable {
     private String modifiedBy;
     private Date   createdTime;
     private Date   modifiedTime;
-
 
     public AtlasSystemAttributes() {
     }
@@ -61,7 +59,7 @@ public class AtlasSystemAttributes implements Serializable {
         }
     }
 
-    public AtlasSystemAttributes(String createdBy, String modifiedBy, Date createdTime, Date modifiedTime){
+    public AtlasSystemAttributes(String createdBy, String modifiedBy, Date createdTime, Date modifiedTime) {
         this.createdBy    = createdBy;
         this.modifiedBy   = modifiedBy;
         this.createdTime  = createdTime;
@@ -79,7 +77,7 @@ public class AtlasSystemAttributes implements Serializable {
         }
     }
 
-    public String getCreatedBy(){
+    public String getCreatedBy() {
         return createdBy;
     }
 
@@ -87,7 +85,7 @@ public class AtlasSystemAttributes implements Serializable {
         this.createdBy = createdBy;
     }
 
-    public String getModifiedBy(){
+    public String getModifiedBy() {
         return modifiedBy;
     }
 
@@ -95,7 +93,7 @@ public class AtlasSystemAttributes implements Serializable {
         this.modifiedBy = modifiedBy;
     }
 
-    public Date getCreatedTime(){
+    public Date getCreatedTime() {
         return createdTime;
     }
 
@@ -103,7 +101,7 @@ public class AtlasSystemAttributes implements Serializable {
         this.createdTime = createdTime;
     }
 
-    public Date getModifiedTime(){
+    public Date getModifiedTime() {
         return modifiedTime;
     }
 
@@ -111,6 +109,10 @@ public class AtlasSystemAttributes implements Serializable {
         this.modifiedTime = modifiedTime;
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(createdBy, modifiedBy, createdTime, modifiedTime);
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -124,16 +126,10 @@ public class AtlasSystemAttributes implements Serializable {
         AtlasSystemAttributes obj = (AtlasSystemAttributes) o;
 
         return Objects.equals(createdBy, obj.createdBy) &&
-               Objects.equals(modifiedBy, obj.modifiedBy) &&
-               Objects.equals(createdTime, obj.createdTime) &&
-               Objects.equals(modifiedTime, obj.modifiedTime);
+                Objects.equals(modifiedBy, obj.modifiedBy) &&
+                Objects.equals(createdTime, obj.createdTime) &&
+                Objects.equals(modifiedTime, obj.modifiedTime);
     }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(createdBy, modifiedBy, createdTime, modifiedTime);
-    }
-
 
     @Override
     public String toString() {

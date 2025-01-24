@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,24 +17,23 @@
  */
 package org.apache.atlas.v1.model.notification;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.v1.model.instance.Referenceable;
-import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.util.HashMap;
 import java.util.LinkedList;
@@ -49,35 +48,25 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 /**
  * Entity notification
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class EntityNotificationV1 extends EntityNotification implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    public enum OperationType {
-        ENTITY_CREATE,
-        ENTITY_UPDATE,
-        ENTITY_DELETE,
-        TRAIT_ADD,
-        TRAIT_DELETE,
-        TRAIT_UPDATE
-    }
-
     private Referenceable entity;
     private OperationType operationType;
     private List<Struct>  traits;
-
-
-    // ----- Constructors ------------------------------------------------------
 
     /**
      * No-arg constructor for serialization.
      */
     public EntityNotificationV1() {
     }
+
+    // ----- Constructors ------------------------------------------------------
 
     /**
      * Construct an EntityNotificationV1.
@@ -148,23 +137,6 @@ public class EntityNotificationV1 extends EntityNotification implements Serializ
         }
     }
 
-    // ----- Object overrides --------------------------------------------------
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        EntityNotificationV1 that = (EntityNotificationV1) o;
-        return Objects.equals(entity, that.entity) &&
-                operationType == that.operationType &&
-                Objects.equals(traits, that.traits);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(entity, operationType, traits);
-    }
-
     @Override
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
@@ -188,8 +160,27 @@ public class EntityNotificationV1 extends EntityNotification implements Serializ
         return sb;
     }
 
+    // ----- Object overrides --------------------------------------------------
 
-    // ----- helper methods ----------------------------------------------------
+    @Override
+    public int hashCode() {
+        return Objects.hash(entity, operationType, traits);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        EntityNotificationV1 that = (EntityNotificationV1) o;
+
+        return Objects.equals(entity, that.entity) &&
+                operationType == that.operationType &&
+                Objects.equals(traits, that.traits);
+    }
 
     private static List<Struct> getAllTraits(Referenceable entityDefinition, AtlasTypeRegistry typeRegistry) {
         List<Struct> ret = new LinkedList<>();
@@ -229,5 +220,16 @@ public class EntityNotificationV1 extends EntityNotification implements Serializ
         }
 
         return ret;
+    }
+
+    // ----- helper methods ----------------------------------------------------
+
+    public enum OperationType {
+        ENTITY_CREATE,
+        ENTITY_UPDATE,
+        ENTITY_DELETE,
+        TRAIT_ADD,
+        TRAIT_DELETE,
+        TRAIT_UPDATE
     }
 }

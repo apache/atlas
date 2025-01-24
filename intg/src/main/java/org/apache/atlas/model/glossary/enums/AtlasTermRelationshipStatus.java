@@ -22,10 +22,9 @@ public enum AtlasTermRelationshipStatus {
     ACTIVE(1),
     DEPRECATED(2),
     OBSOLETE(3),
-    OTHER(99)
-    ;
+    OTHER(99);
 
-    private int value;
+    private final int value;
 
     AtlasTermRelationshipStatus(final int value) {
         this.value = value;

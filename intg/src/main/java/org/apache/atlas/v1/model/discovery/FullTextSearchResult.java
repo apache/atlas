@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,21 +20,24 @@ package org.apache.atlas.v1.model.discovery;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.ALWAYS)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.ALWAYS)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class FullTextSearchResult implements Serializable {
@@ -44,9 +47,8 @@ public class FullTextSearchResult implements Serializable {
     private String                    queryType;
     private String                    query;
     private String                    dataType;
-    private int                       count = 0;
+    private int                       count;
     private List<AtlasFullTextResult> results;
-
 
     public FullTextSearchResult() {
     }
@@ -108,29 +110,27 @@ public class FullTextSearchResult implements Serializable {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(requestId, queryType, query, dataType, count, results);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
+        } else if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         FullTextSearchResult obj = (FullTextSearchResult) o;
 
         return Objects.equals(requestId, obj.requestId) &&
-               Objects.equals(queryType, obj.queryType) &&
-               Objects.equals(query, obj.query) &&
-               Objects.equals(dataType, obj.dataType) &&
-               Objects.equals(count, obj.count) &&
-               Objects.equals(results, obj.results);
+                Objects.equals(queryType, obj.queryType) &&
+                Objects.equals(query, obj.query) &&
+                Objects.equals(dataType, obj.dataType) &&
+                Objects.equals(count, obj.count) &&
+                Objects.equals(results, obj.results);
     }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(requestId, queryType, query, dataType, count, results);
-    }
-
 
     @Override
     public String toString() {

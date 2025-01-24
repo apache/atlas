@@ -28,4 +28,5 @@
     <suppress files="[\\/]target[\\/]" checks="[a-zA-Z0-9]*"/>
     <suppress files="[\\/]generated-sources[\\/]" checks="[a-zA-Z0-9]*"/>
     <suppress files="[\\/]surefire-reports[\\/]" checks="[a-zA-Z0-9]*"/>
+    <suppress files="Id.java" checks="MethodName"/>
 </suppressions>

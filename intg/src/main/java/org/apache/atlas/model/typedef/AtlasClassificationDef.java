@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,11 +17,9 @@
  */
 package org.apache.atlas.model.typedef;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
@@ -31,6 +29,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -40,13 +39,12 @@ import java.util.Set;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-
 /**
  * class that captures details of a classification-type.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasClassificationDef extends AtlasStructDef implements java.io.Serializable {
@@ -58,7 +56,6 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
     // subTypes field below is derived from 'superTypes' specified in all AtlasClassificationDef
     // this value is ignored during create & update operations
     private Set<String> subTypes;
-
 
     public AtlasClassificationDef() {
         this(null, null, null, null, null, null);
@@ -76,25 +73,19 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         this(name, description, typeVersion, null, null, null);
     }
 
-    public AtlasClassificationDef(String name, String description, String typeVersion,
-                                  List<AtlasAttributeDef> attributeDefs) {
+    public AtlasClassificationDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs) {
         this(name, description, typeVersion, attributeDefs, null, null);
     }
 
-    public AtlasClassificationDef(String name, String description, String typeVersion,
-                                  List<AtlasAttributeDef> attributeDefs, Set<String> superTypes) {
+    public AtlasClassificationDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Set<String> superTypes) {
         this(name, description, typeVersion, attributeDefs, superTypes, null);
     }
 
-    public AtlasClassificationDef(String name, String description, String typeVersion,
-                                  List<AtlasAttributeDef> attributeDefs, Set<String> superTypes,
-                                  Map<String, String> options) {
+    public AtlasClassificationDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Set<String> superTypes, Map<String, String> options) {
         this(name, description, typeVersion, attributeDefs, superTypes, null, options);
     }
 
-    public AtlasClassificationDef(String name, String description, String typeVersion,
-                                  List<AtlasAttributeDef> attributeDefs, Set<String> superTypes,
-                                  Set<String> entityTypes, Map<String, String> options) {
+    public AtlasClassificationDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Set<String> superTypes, Set<String> entityTypes, Map<String, String> options) {
         super(TypeCategory.CLASSIFICATION, name, description, typeVersion, attributeDefs, options);
 
         setSuperTypes(superTypes);
@@ -159,10 +150,6 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         }
     }
 
-    private static boolean hasSuperType(Set<String> superTypes, String typeName) {
-        return superTypes != null && typeName != null && superTypes.contains(typeName);
-    }
-
     /**
      * Specifying a list of entityType names in the classificationDef, ensures that classifications can
      * only be applied to those entityTypes.
@@ -219,10 +206,6 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         }
     }
 
-    private static boolean hasEntityType(Set<String> entityTypes, String typeName) {
-        return entityTypes != null && typeName != null && entityTypes.contains(typeName);
-    }
-
     @Override
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
@@ -243,13 +226,17 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) { return true; }
-        if (o == null || getClass() != o.getClass()) { return false; }
-        if (!super.equals(o)) { return false; }
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        } else if (!super.equals(o)) {
+            return false;
+        }
 
         AtlasClassificationDef that = (AtlasClassificationDef) o;
 
-        return Objects.equals(superTypes, that.superTypes) && Objects.equals(entityTypes,that.entityTypes);
+        return Objects.equals(superTypes, that.superTypes) && Objects.equals(entityTypes, that.entityTypes);
     }
 
     @Override
@@ -262,13 +249,20 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
         return toString(new StringBuilder()).toString();
     }
 
+    private static boolean hasSuperType(Set<String> superTypes, String typeName) {
+        return superTypes != null && typeName != null && superTypes.contains(typeName);
+    }
+
+    private static boolean hasEntityType(Set<String> entityTypes, String typeName) {
+        return entityTypes != null && typeName != null && entityTypes.contains(typeName);
+    }
 
     /**
      * REST serialization friendly list.
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     @XmlSeeAlso(AtlasClassificationDef.class)
@@ -283,10 +277,8 @@ public class AtlasClassificationDef extends AtlasStructDef implements java.io.Se
             super(list);
         }
 
-        public AtlasClassificationDefs(List list, long startIndex, int pageSize, long totalCount,
-                                       SortType sortType, String sortBy) {
+        public AtlasClassificationDefs(List<AtlasClassificationDef> list, long startIndex, int pageSize, long totalCount, SortType sortType, String sortBy) {
             super(list, startIndex, pageSize, totalCount, sortType, sortBy);
         }
     }
-
 }

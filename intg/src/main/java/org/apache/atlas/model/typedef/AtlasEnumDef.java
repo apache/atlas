@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,32 +19,37 @@ package org.apache.atlas.model.typedef;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import java.io.Serializable;
-import java.util.*;
-
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
-import javax.xml.bind.annotation.XmlSeeAlso;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.util.StringUtils;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlSeeAlso;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-
 
 /**
  * class that captures details of an enum-type.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
@@ -77,18 +82,15 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
         this(name, description, typeVersion, elementDefs, null, null);
     }
 
-    public AtlasEnumDef(String name, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs,
-                        String defaultValue) {
+    public AtlasEnumDef(String name, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs, String defaultValue) {
         this(name, description, typeVersion, elementDefs, defaultValue, null);
     }
 
-    public AtlasEnumDef(String name, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs,
-                        String defaultValue, Map<String, String> options) {
+    public AtlasEnumDef(String name, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs, String defaultValue, Map<String, String> options) {
         this(name, description, typeVersion, elementDefs, defaultValue, null, options);
     }
 
-    public AtlasEnumDef(String name, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs,
-                        String defaultValue, String serviceType, Map<String, String> options) {
+    public AtlasEnumDef(String name, String description, String typeVersion, List<AtlasEnumElementDef> elementDefs, String defaultValue, String serviceType, Map<String, String> options) {
         super(TypeCategory.ENUM, name, description, typeVersion, serviceType, options);
 
         setElementDefs(elementDefs);
@@ -121,6 +123,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
             Set<String>               elementValues = new HashSet<>();
 
             ListIterator<AtlasEnumElementDef> iter = elementDefs.listIterator(elementDefs.size());
+
             while (iter.hasPrevious()) {
                 AtlasEnumElementDef elementDef   = iter.previous();
                 String              elementValue = elementDef != null ? elementDef.getValue() : null;
@@ -135,6 +138,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
                     }
                 }
             }
+
             Collections.reverse(tmpList);
 
             this.elementDefs = tmpList;
@@ -157,6 +161,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
         List<AtlasEnumElementDef> e = this.elementDefs;
 
         List<AtlasEnumElementDef> tmpList = new ArrayList<>();
+
         if (CollectionUtils.isNotEmpty(e)) {
             // copy existing elements, except ones having same value as the element being added
             for (AtlasEnumElementDef existingElem : e) {
@@ -165,6 +170,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
                 }
             }
         }
+
         tmpList.add(new AtlasEnumElementDef(elementDef));
 
         this.elementDefs = tmpList;
@@ -192,25 +198,6 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
         return getElement(elemValue) != null;
     }
 
-    private static boolean hasElement(List<AtlasEnumElementDef> elementDefs, String elemValue) {
-        return findElement(elementDefs, elemValue) != null;
-    }
-
-    private static AtlasEnumElementDef findElement(List<AtlasEnumElementDef> elementDefs, String elemValue) {
-        AtlasEnumElementDef ret = null;
-
-        if (CollectionUtils.isNotEmpty(elementDefs)) {
-            for (AtlasEnumElementDef elementDef : elementDefs) {
-                if (StringUtils.equalsIgnoreCase(elementDef.getValue(), elemValue)) {
-                    ret = elementDef;
-                    break;
-                }
-            }
-        }
-
-        return ret;
-    }
-
     @Override
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
@@ -232,10 +219,16 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        } else if (!super.equals(o)) {
+            return false;
+        }
+
         AtlasEnumDef that = (AtlasEnumDef) o;
+
         return Objects.equals(elementDefs, that.elementDefs) &&
                 Objects.equals(defaultValue, that.defaultValue);
     }
@@ -250,13 +243,31 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
         return toString(new StringBuilder()).toString();
     }
 
+    private static boolean hasElement(List<AtlasEnumElementDef> elementDefs, String elemValue) {
+        return findElement(elementDefs, elemValue) != null;
+    }
+
+    private static AtlasEnumElementDef findElement(List<AtlasEnumElementDef> elementDefs, String elemValue) {
+        AtlasEnumElementDef ret = null;
+
+        if (CollectionUtils.isNotEmpty(elementDefs)) {
+            for (AtlasEnumElementDef elementDef : elementDefs) {
+                if (StringUtils.equalsIgnoreCase(elementDef.getValue(), elemValue)) {
+                    ret = elementDef;
+                    break;
+                }
+            }
+        }
+
+        return ret;
+    }
 
     /**
      * class that captures details of an enum-element.
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class AtlasEnumElementDef implements Serializable {
@@ -323,18 +334,23 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            AtlasEnumElementDef that = (AtlasEnumElementDef) o;
-            return Objects.equals(value, that.value) &&
-                    Objects.equals(description, that.description) &&
-                    Objects.equals(ordinal, that.ordinal);
+        public int hashCode() {
+            return Objects.hash(value, description, ordinal);
         }
 
         @Override
-        public int hashCode() {
-            return Objects.hash(value, description, ordinal);
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            } else if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            AtlasEnumElementDef that = (AtlasEnumElementDef) o;
+
+            return Objects.equals(value, that.value) &&
+                    Objects.equals(description, that.description) &&
+                    Objects.equals(ordinal, that.ordinal);
         }
 
         @Override
@@ -343,13 +359,12 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
         }
     }
 
-
     /**
      * REST serialization friendly list.
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     @XmlSeeAlso(AtlasEnumDef.class)
@@ -364,8 +379,7 @@ public class AtlasEnumDef extends AtlasBaseTypeDef implements Serializable {
             super(list);
         }
 
-        public AtlasEnumDefs(List list, long startIndex, int pageSize, long totalCount,
-                             SortType sortType, String sortBy) {
+        public AtlasEnumDefs(List<AtlasEnumDef> list, long startIndex, int pageSize, long totalCount, SortType sortType, String sortBy) {
             super(list, startIndex, pageSize, totalCount, sortType, sortBy);
         }
     }

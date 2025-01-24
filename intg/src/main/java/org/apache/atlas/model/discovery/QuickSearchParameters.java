@@ -17,11 +17,9 @@
  */
 package org.apache.atlas.model.discovery;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 
@@ -32,7 +30,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 /**
  * This is the root class representing the input for quick search puroposes.
@@ -58,16 +56,7 @@ public class QuickSearchParameters implements Serializable {
     public QuickSearchParameters() {
     }
 
-    public QuickSearchParameters(String         query,
-                                 String         typeName,
-                                 FilterCriteria entityFilters,
-                                 boolean        includeSubTypes,
-                                 boolean        excludeDeletedEntities,
-                                 int            offset,
-                                 int            limit,
-                                 Set<String>    attributes,
-                                 String         sortBy,
-                                 SortOrder      sortOrder) {
+    public QuickSearchParameters(String query, String typeName, FilterCriteria entityFilters, boolean includeSubTypes, boolean excludeDeletedEntities, int offset, int limit, Set<String> attributes, String sortBy, SortOrder sortOrder) {
         this.query                  = query;
         this.typeName               = typeName;
         this.entityFilters          = entityFilters;

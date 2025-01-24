@@ -17,10 +17,9 @@
  */
 package org.apache.atlas.model.instance;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.glossary.relations.AtlasTermAssignmentHeader;
@@ -32,6 +31,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -42,27 +42,26 @@ import java.util.Set;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-
 /**
  * An instance of an entity - like hive_table, hive_database.
  */
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private String                          guid                = null;
+    private String                          guid;
     private AtlasEntity.Status              status              = AtlasEntity.Status.ACTIVE;
-    private String                          displayText         = null;
-    private List<String>                    classificationNames = null;
-    private List<AtlasClassification>       classifications     = null;
-    private List<String>                    meaningNames        = null;
-    private List<AtlasTermAssignmentHeader> meanings            = null;
+    private String                          displayText;
+    private List<String>                    classificationNames;
+    private List<AtlasClassification>       classifications;
+    private List<String>                    meaningNames;
+    private List<AtlasTermAssignmentHeader> meanings;
     private Boolean                         isIncomplete        = Boolean.FALSE;
-    private Set<String>                     labels              = null;
+    private Set<String>                     labels;
 
     public AtlasEntityHeader() {
         this(null, null);
@@ -84,7 +83,6 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         setLabels(null);
     }
 
-
     public AtlasEntityHeader(String typeName, String guid, Map<String, Object> attributes) {
         super(typeName, attributes);
         setGuid(guid);
@@ -92,7 +90,6 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         setClassifications(null);
         setLabels(null);
     }
-
 
     public AtlasEntityHeader(AtlasEntityHeader other) {
         super(other);
@@ -103,6 +100,8 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
             setDisplayText(other.getDisplayText());
             setClassificationNames(other.getClassificationNames());
             setClassifications(other.getClassifications());
+            setMeanings(other.getMeanings());
+            setMeaningNames(other.getMeaningNames());
             setIsIncomplete(other.getIsIncomplete());
             setLabels(other.getLabels());
         }
@@ -211,25 +210,31 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-        AtlasEntityHeader that = (AtlasEntityHeader) o;
-        return Objects.equals(guid, that.guid) &&
-                       status == that.status &&
-                       Objects.equals(displayText, that.displayText) &&
-                       Objects.equals(classificationNames, that.classificationNames) &&
-                       Objects.equals(meaningNames, that.classificationNames) &&
-                       Objects.equals(classifications, that.classifications) &&
-                       Objects.equals(labels, that.labels) &&
-                       Objects.equals(isIncomplete, that.isIncomplete) &&
-                       Objects.equals(meanings, that.meanings);
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), guid, status, displayText, classificationNames, classifications, meaningNames, meanings, isIncomplete, labels);
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, status, displayText, classificationNames, classifications, meaningNames, meanings, isIncomplete, labels);
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        } else if (!super.equals(o)) {
+            return false;
+        }
+
+        AtlasEntityHeader that = (AtlasEntityHeader) o;
+
+        return Objects.equals(guid, that.guid) &&
+                status == that.status &&
+                Objects.equals(displayText, that.displayText) &&
+                Objects.equals(classificationNames, that.classificationNames) &&
+                Objects.equals(meaningNames, that.classificationNames) &&
+                Objects.equals(classifications, that.classifications) &&
+                Objects.equals(labels, that.labels) &&
+                Objects.equals(isIncomplete, that.isIncomplete) &&
+                Objects.equals(meanings, that.meanings);
     }
 
     @Override
@@ -257,7 +262,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
      * REST serialization friendly list.
      */
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
@@ -273,8 +278,7 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
             super(list);
         }
 
-        public AtlasEntityHeaders(List list, long startIndex, int pageSize, long totalCount,
-                                  SortType sortType, String sortBy) {
+        public AtlasEntityHeaders(List<AtlasEntityHeader> list, long startIndex, int pageSize, long totalCount, SortType sortType, String sortBy) {
             super(list, startIndex, pageSize, totalCount, sortType, sortBy);
         }
     }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,42 +25,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.testng.Assert.*;
-
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 public class TestAtlasMapType {
     private final AtlasMapType intIntMapType = new AtlasMapType(new AtlasIntType(), new AtlasIntType());
     private final Object[]     validValues;
     private final Object[]     invalidValues;
-
-    {
-        Map<String, Integer>  strIntMap     = new HashMap<>();
-        Map<String, Double>   strDoubleMap  = new HashMap<>();
-        Map<String, String>   strStringMap  = new HashMap<>();
-        Map<Integer, Integer> intIntMap     = new HashMap<>();
-        Map<Object, Object>   objObjMap     = new HashMap<>();
-        Map<Object, Object>   invObjObjMap1 = new HashMap<>();
-        Map<Object, Object>   invObjObjMap2 = new HashMap<>();
-
-        for (int i = 0; i < 10; i++) {
-            strIntMap.put(Integer.toString(i), i);
-            strDoubleMap.put(Integer.toString(i), Double.valueOf(i));
-            strStringMap.put(Integer.toString(i), Integer.toString(i));
-            intIntMap.put(i, i);
-            objObjMap.put(i, i);
-        }
-
-        invObjObjMap1.put("xyz", "123"); // invalid key
-        invObjObjMap2.put("123", "xyz"); // invalid value
-
-        validValues = new Object[] {
-            null, new HashMap<String, Integer>(), new HashMap<>(), strIntMap, strDoubleMap, strStringMap,
-            intIntMap, objObjMap,
-        };
-
-        invalidValues = new Object[] { invObjObjMap1, invObjObjMap2, };
-    }
-
 
     @Test
     public void testMapTypeDefaultValue() {
@@ -109,8 +83,36 @@ public class TestAtlasMapType {
 
         for (Object value : invalidValues) {
             assertFalse(intIntMapType.validateValue(value, "testObj", messages));
-            assertTrue(messages.size() > 0, "value=" + value);
+            assertFalse(messages.isEmpty(), "value=" + value);
             messages.clear();
         }
+    }
+
+    {
+        Map<String, Integer>  strIntMap     = new HashMap<>();
+        Map<String, Double>   strDoubleMap  = new HashMap<>();
+        Map<String, String>   strStringMap  = new HashMap<>();
+        Map<Integer, Integer> intIntMap     = new HashMap<>();
+        Map<Object, Object>   objObjMap     = new HashMap<>();
+        Map<Object, Object>   invObjObjMap1 = new HashMap<>();
+        Map<Object, Object>   invObjObjMap2 = new HashMap<>();
+
+        for (int i = 0; i < 10; i++) {
+            strIntMap.put(Integer.toString(i), i);
+            strDoubleMap.put(Integer.toString(i), (double) i);
+            strStringMap.put(Integer.toString(i), Integer.toString(i));
+            intIntMap.put(i, i);
+            objObjMap.put(i, i);
+        }
+
+        invObjObjMap1.put("xyz", "123"); // invalid key
+        invObjObjMap2.put("123", "xyz"); // invalid value
+
+        validValues = new Object[] {
+                null, new HashMap<String, Integer>(), new HashMap<>(), strIntMap, strDoubleMap, strStringMap,
+                intIntMap, objObjMap,
+        };
+
+        invalidValues = new Object[] {invObjObjMap1, invObjObjMap2, };
     }
 }

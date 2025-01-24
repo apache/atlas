@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 package org.apache.atlas.type;
-
 
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -34,11 +33,25 @@ import java.util.Objects;
 
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.SERVICE_TYPE_ATLAS_CORE;
 
-
 /**
  * Built-in types in Atlas.
  */
 public class AtlasBuiltInTypes {
+    private static BigInteger toBigInteger(Number num) {
+        final BigInteger ret;
+
+        if (num instanceof BigInteger) {
+            ret = (BigInteger) num;
+        } else if (num instanceof Byte || num instanceof Short || num instanceof Integer || num instanceof Long) {
+            ret = BigInteger.valueOf(num.longValue());
+        } else if (num instanceof BigDecimal) {
+            ret = ((BigDecimal) num).toBigInteger();
+        } else {
+            ret = new BigDecimal(num.toString()).toBigInteger();
+        }
+
+        return ret;
+    }
 
     /**
      * class that implements behaviour of boolean type.
@@ -67,8 +80,8 @@ public class AtlasBuiltInTypes {
         public Boolean getNormalizedValue(Object obj) {
             if (obj != null) {
                 if (obj instanceof Boolean) {
-                    return (Boolean)obj;
-                } else if (obj instanceof String){
+                    return (Boolean) obj;
+                } else if (obj instanceof String) {
                     if (obj.toString().equalsIgnoreCase("true") || obj.toString().equalsIgnoreCase("false")) {
                         return Boolean.valueOf(obj.toString());
                     }
@@ -106,7 +119,6 @@ public class AtlasBuiltInTypes {
 
         @Override
         public Byte getNormalizedValue(Object obj) {
-
             if (obj != null) {
                 if (obj instanceof Byte) {
                     return (Byte) obj;
@@ -118,7 +130,7 @@ public class AtlasBuiltInTypes {
                     if (StringUtils.isNotEmpty(strValue)) {
                         try {
                             return Byte.valueOf(strValue);
-                        } catch(NumberFormatException excp) {
+                        } catch (NumberFormatException excp) {
                             // ignore
                         }
                     }
@@ -177,13 +189,13 @@ public class AtlasBuiltInTypes {
         public Short getNormalizedValue(Object obj) {
             if (obj != null) {
                 if (obj instanceof Short) {
-                    return (Short)obj;
+                    return (Short) obj;
                 } else if (obj instanceof Number) {
                     return isValidRange((Number) obj) ? ((Number) obj).shortValue() : null;
                 } else {
                     try {
                         return Short.valueOf(obj.toString());
-                    } catch(NumberFormatException excp) {
+                    } catch (NumberFormatException excp) {
                         // ignore
                     }
                 }
@@ -238,7 +250,6 @@ public class AtlasBuiltInTypes {
 
         @Override
         public Integer getNormalizedValue(Object obj) {
-
             if (obj != null) {
                 if (obj instanceof Integer) {
                     return (Integer) obj;
@@ -402,8 +413,9 @@ public class AtlasBuiltInTypes {
                     return isValidRange((Number) obj) ? ((Number) obj).floatValue() : null;
                 } else {
                     try {
-                        Float f = Float.valueOf(obj.toString());
-                        if(!Float.isInfinite(f)) {
+                        float f = Float.parseFloat(obj.toString());
+
+                        if (!Float.isInfinite(f)) {
                             return f;
                         } else {
                             return null;
@@ -425,7 +437,7 @@ public class AtlasBuiltInTypes {
             } else if (num instanceof Double) {
                 ret = num.floatValue() >= MIN_VALUE.floatValue() && num.floatValue() <= MAX_VALUE.floatValue();
             } else {
-                BigDecimal number = new BigDecimal(num.doubleValue());
+                BigDecimal number = BigDecimal.valueOf(num.doubleValue());
 
                 ret = (number.compareTo(MIN_VALUE) >= 0) && (number.compareTo(MAX_VALUE) <= 0);
             }
@@ -440,8 +452,8 @@ public class AtlasBuiltInTypes {
     public static class AtlasDoubleType extends AtlasType {
         private static final Double     DEFAULT_VALUE  = 0d;
         private static final Double     DOUBLE_EPSILON = 0.00000001d;
-        private static final BigDecimal MIN_VALUE     = BigDecimal.valueOf(-Double.MAX_VALUE);
-        private static final BigDecimal MAX_VALUE     = BigDecimal.valueOf(Double.MAX_VALUE);
+        private static final BigDecimal MIN_VALUE      = BigDecimal.valueOf(-Double.MAX_VALUE);
+        private static final BigDecimal MAX_VALUE      = BigDecimal.valueOf(Double.MAX_VALUE);
 
         public AtlasDoubleType() {
             super(AtlasBaseTypeDef.ATLAS_TYPE_DOUBLE, TypeCategory.PRIMITIVE, SERVICE_TYPE_ATLAS_CORE);
@@ -490,8 +502,6 @@ public class AtlasBuiltInTypes {
 
         @Override
         public Double getNormalizedValue(Object obj) {
-            Double ret;
-
             if (obj != null) {
                 if (obj instanceof Double) {
                     if (!Double.isInfinite((double) obj)) {
@@ -503,8 +513,9 @@ public class AtlasBuiltInTypes {
                     return isValidRange((Number) obj) ? ((Number) obj).doubleValue() : null;
                 } else {
                     try {
-                        Double d = Double.valueOf(obj.toString());
-                        if(!Double.isInfinite(d)) {
+                        double d = Double.parseDouble(obj.toString());
+
+                        if (!Double.isInfinite(d)) {
                             return d;
                         } else {
                             return null;
@@ -665,7 +676,8 @@ public class AtlasBuiltInTypes {
                         return AtlasBaseTypeDef.getDateFormatter().parse(obj.toString());
                     } catch (ParseException excp) {
                         try { // try to read it as a number
-                            long longDate = Long.valueOf(obj.toString());
+                            long longDate = Long.parseLong(obj.toString());
+
                             return new Date(longDate);
                         } catch (NumberFormatException e) {
                             // ignore
@@ -682,7 +694,7 @@ public class AtlasBuiltInTypes {
      * class that implements behaviour of String type.
      */
     public static class AtlasStringType extends AtlasType {
-        private static final String DEFAULT_VALUE = "";
+        private static final String DEFAULT_VALUE          = "";
         private static final String OPTIONAL_DEFAULT_VALUE = null;
 
         public AtlasStringType() {
@@ -734,7 +746,9 @@ public class AtlasBuiltInTypes {
             this.objectType = objectType;
         }
 
-        public String getObjectType() { return objectType; }
+        public String getObjectType() {
+            return objectType;
+        }
 
         @Override
         public AtlasObjectId createDefaultValue() {
@@ -746,7 +760,7 @@ public class AtlasBuiltInTypes {
             if (obj == null || obj instanceof AtlasObjectId) {
                 return true;
             } else if (obj instanceof Map) {
-                return isValidMap((Map)obj);
+                return isValidMap((Map<?, ?>) obj);
             }
 
             return getNormalizedValue(obj) != null;
@@ -754,7 +768,7 @@ public class AtlasBuiltInTypes {
 
         @Override
         public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
-            boolean ret = true;
+            boolean ret;
 
             if (val1 == null) {
                 ret = val2 == null;
@@ -770,7 +784,7 @@ public class AtlasBuiltInTypes {
                     String guid1 = v1.getGuid();
                     String guid2 = v2.getGuid();
 
-                    if (guidAssignments != null ) {
+                    if (guidAssignments != null) {
                         if (guidAssignments.containsKey(guid1)) {
                             guid1 = guidAssignments.get(guid1);
                         }
@@ -802,7 +816,7 @@ public class AtlasBuiltInTypes {
                 if (obj instanceof AtlasObjectId) {
                     ret = (AtlasObjectId) obj;
                 } else if (obj instanceof Map) {
-                    Map map = (Map) obj;
+                    Map<?, ?> map = (Map<?, ?>) obj;
 
                     if (isValidMap(map)) {
                         if (map.containsKey(AtlasRelatedObjectId.KEY_RELATIONSHIP_TYPE)) {
@@ -817,7 +831,7 @@ public class AtlasBuiltInTypes {
             return ret;
         }
 
-        private boolean isValidMap(Map map) {
+        private boolean isValidMap(Map<?, ?> map) {
             Object guid = map.get(AtlasObjectId.KEY_GUID);
 
             if (guid != null && StringUtils.isNotEmpty(guid.toString())) {
@@ -827,29 +841,11 @@ public class AtlasBuiltInTypes {
                 if (typeName != null && StringUtils.isNotEmpty(typeName.toString())) {
                     Object uniqueAttributes = map.get(AtlasObjectId.KEY_UNIQUE_ATTRIBUTES);
 
-                    if (uniqueAttributes instanceof Map && MapUtils.isNotEmpty((Map) uniqueAttributes)) {
-                        return true;
-                    }
+                    return uniqueAttributes instanceof Map && MapUtils.isNotEmpty((Map<?, ?>) uniqueAttributes);
                 }
             }
 
             return false;
         }
-    }
-
-    private static BigInteger toBigInteger(Number num) {
-        final BigInteger ret;
-
-        if (num instanceof BigInteger) {
-            ret = (BigInteger) num;
-        } else if (num instanceof Byte || num instanceof Short || num instanceof Integer || num instanceof Long) {
-            ret = BigInteger.valueOf(num.longValue());
-        } else if (num instanceof BigDecimal) {
-            ret = ((BigDecimal) num).toBigInteger();
-        } else {
-            ret = new BigDecimal(num.toString()).toBigInteger();
-        }
-
-        return ret;
     }
 }

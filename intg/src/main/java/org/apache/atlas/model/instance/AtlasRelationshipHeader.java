@@ -17,10 +17,9 @@
  */
 package org.apache.atlas.model.instance;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
@@ -29,6 +28,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
@@ -36,24 +36,22 @@ import java.util.Objects;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasRelationshipHeader extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private String                                  guid                = null;
-    private AtlasEntity.Status                      status              = AtlasEntity.Status.ACTIVE;
-    private AtlasRelationshipDef.PropagateTags      propagateTags       = AtlasRelationshipDef.PropagateTags.NONE;
-    private String                                  label               = null;
-    private AtlasObjectId                           end1                = null;
-    private AtlasObjectId                           end2                = null;
+    private String                             guid;
+    private AtlasEntity.Status                 status        = AtlasEntity.Status.ACTIVE;
+    private AtlasRelationshipDef.PropagateTags propagateTags = AtlasRelationshipDef.PropagateTags.NONE;
+    private String                             label;
+    private AtlasObjectId                      end1;
+    private AtlasObjectId                      end2;
 
     public AtlasRelationshipHeader() {
-
     }
 
     public AtlasRelationshipHeader(String typeName, String guid) {
@@ -63,7 +61,9 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
 
     public AtlasRelationshipHeader(String typeName, String guid, AtlasObjectId end1, AtlasObjectId end2, AtlasRelationshipDef.PropagateTags propagateTags) {
         this(typeName, guid);
+
         this.propagateTags = propagateTags;
+
         setEnd1(end1);
         setEnd2(end2);
     }
@@ -72,6 +72,7 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
         this(relationship.getTypeName(), relationship.getGuid(), relationship.getEnd1(), relationship.getEnd2(), relationship.getPropagateTags());
 
         setLabel(relationship.getLabel());
+
         switch (relationship.getStatus()) {
             case ACTIVE:
                 setStatus(AtlasEntity.Status.ACTIVE);
@@ -90,7 +91,6 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
             setAttributes(relationship.getAttributes());
         }
     }
-
 
     public String getGuid() {
         return guid;
@@ -159,22 +159,28 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-        AtlasRelationshipHeader that = (AtlasRelationshipHeader) o;
-        return Objects.equals(guid, that.guid) &&
-                       status == that.status &&
-                       Objects.equals(label, that.label) &&
-                       Objects.equals(propagateTags, that.propagateTags) &&
-                       Objects.equals(end1, that.end1) &&
-                       Objects.equals(end2, that.end2);
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), guid, status, label, propagateTags, end1, end2);
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, status, label, propagateTags, end1, end2);
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        } else if (!super.equals(o)) {
+            return false;
+        }
+
+        AtlasRelationshipHeader that = (AtlasRelationshipHeader) o;
+
+        return Objects.equals(guid, that.guid) &&
+                status == that.status &&
+                Objects.equals(label, that.label) &&
+                Objects.equals(propagateTags, that.propagateTags) &&
+                Objects.equals(end1, that.end1) &&
+                Objects.equals(end2, that.end2);
     }
 
     @Override
@@ -186,7 +192,7 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
      * REST serialization friendly list.
      */
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
@@ -202,8 +208,7 @@ public class AtlasRelationshipHeader extends AtlasStruct implements Serializable
             super(list);
         }
 
-        public AtlasRelationshipHeaders(List list, long startIndex, int pageSize, long totalCount,
-                                  SortType sortType, String sortBy) {
+        public AtlasRelationshipHeaders(List<AtlasRelationshipHeader> list, long startIndex, int pageSize, long totalCount, SortType sortType, String sortBy) {
             super(list, startIndex, pageSize, totalCount, sortType, sortBy);
         }
     }

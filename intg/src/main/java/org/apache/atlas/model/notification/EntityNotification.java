@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,13 +19,14 @@ package org.apache.atlas.model.notification;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasRelationshipHeader;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -36,20 +37,13 @@ import static org.apache.atlas.model.notification.EntityNotification.EntityNotif
 /**
  * Base type of hook message.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.ALWAYS)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.ALWAYS)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class EntityNotification implements Serializable {
     private static final long serialVersionUID = 1L;
-
-    /**
-     * Type of the hook message.
-     */
-    public enum EntityNotificationType {
-        ENTITY_NOTIFICATION_V1, ENTITY_NOTIFICATION_V2
-    }
 
     protected EntityNotificationType type;
 
@@ -69,7 +63,7 @@ public class EntityNotification implements Serializable {
         this.type = type;
     }
 
-    public void normalize() { }
+    public void normalize() {}
 
     @Override
     public String toString() {
@@ -89,26 +83,27 @@ public class EntityNotification implements Serializable {
     }
 
     /**
+     * Type of the hook message.
+     */
+    public enum EntityNotificationType {
+        ENTITY_NOTIFICATION_V1, ENTITY_NOTIFICATION_V2
+    }
+
+    /**
      * Entity v2 notification
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class EntityNotificationV2 extends EntityNotification implements Serializable {
         private static final long serialVersionUID = 1L;
 
-        public enum OperationType {
-            ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE,
-            CLASSIFICATION_ADD, CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE,
-            RELATIONSHIP_CREATE, RELATIONSHIP_UPDATE, RELATIONSHIP_DELETE
-        }
-
-        private AtlasEntityHeader entity;
+        private AtlasEntityHeader       entity;
         private AtlasRelationshipHeader relationship;
-        private OperationType     operationType;
-        private long              eventTime;
+        private OperationType           operationType;
+        private long                    eventTime;
 
         public EntityNotificationV2() {
             super(ENTITY_NOTIFICATION_V2);
@@ -171,18 +166,23 @@ public class EntityNotification implements Serializable {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) { return true; }
-            if (o == null || getClass() != o.getClass()) { return false; }
-            EntityNotificationV2 that = (EntityNotificationV2) o;
-            return Objects.equals(type, that.type) &&
-                   Objects.equals(entity, that.entity) &&
-                   operationType == that.operationType;
+        public int hashCode() {
+            return Objects.hash(type, entity, operationType);
         }
 
         @Override
-        public int hashCode() {
-            return Objects.hash(type, entity, operationType);
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            } else if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            EntityNotificationV2 that = (EntityNotificationV2) o;
+
+            return Objects.equals(type, that.type) &&
+                    Objects.equals(entity, that.entity) &&
+                    operationType == that.operationType;
         }
 
         @Override
@@ -204,6 +204,12 @@ public class EntityNotification implements Serializable {
             sb.append("}");
 
             return sb;
+        }
+
+        public enum OperationType {
+            ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE,
+            CLASSIFICATION_ADD, CLASSIFICATION_DELETE, CLASSIFICATION_UPDATE,
+            RELATIONSHIP_CREATE, RELATIONSHIP_UPDATE, RELATIONSHIP_DELETE
         }
     }
 }

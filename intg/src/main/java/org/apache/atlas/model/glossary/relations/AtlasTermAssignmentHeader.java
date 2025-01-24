@@ -24,17 +24,17 @@ import java.util.Objects;
 
 @AtlasJSON
 public class AtlasTermAssignmentHeader {
-    private String termGuid;
-    private String relationGuid;
-    private String description;
-    private String displayText;
-    private String expression;
-    private String createdBy;
-    private String steward;
-    private String source;
-    private int    confidence;
+    private String                    termGuid;
+    private String                    relationGuid;
+    private String                    description;
+    private String                    displayText;
+    private String                    expression;
+    private String                    createdBy;
+    private String                    steward;
+    private String                    source;
+    private int                       confidence;
     private AtlasTermAssignmentStatus status;
-    private String qualifiedName;
+    private String                    qualifiedName;
 
     public AtlasTermAssignmentHeader() {
     }
@@ -111,50 +111,55 @@ public class AtlasTermAssignmentHeader {
         this.displayText = displayText;
     }
 
-    public String getQualifiedName() { return qualifiedName; }
+    public String getQualifiedName() {
+        return qualifiedName;
+    }
 
-    public void setQualifiedName(String qualifiedName) { this.qualifiedName = qualifiedName; }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AtlasTermAssignmentHeader)) return false;
-        final AtlasTermAssignmentHeader that = (AtlasTermAssignmentHeader) o;
-        return confidence == that.confidence &&
-                       Objects.equals(termGuid, that.termGuid) &&
-                       Objects.equals(relationGuid, that.relationGuid) &&
-                       Objects.equals(description, that.description) &&
-                       Objects.equals(expression, that.expression) &&
-                       Objects.equals(createdBy, that.createdBy) &&
-                       Objects.equals(steward, that.steward) &&
-                       Objects.equals(source, that.source) &&
-                       status == that.status;
+    public void setQualifiedName(String qualifiedName) {
+        this.qualifiedName = qualifiedName;
     }
 
     @Override
     public int hashCode() {
-
         return Objects.hash(termGuid, relationGuid, description, expression, createdBy, steward, source, confidence, status);
     }
 
     @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("AtlasTermAssignmentId{");
-        sb.append("termGuid='").append(termGuid).append('\'');
-        sb.append(", relationGuid='").append(relationGuid).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", displayText='").append(displayText).append('\'');
-        sb.append(", qualifiedName='").append(qualifiedName).append('\'');
-        sb.append(", expression='").append(expression).append('\'');
-        sb.append(", createdBy='").append(createdBy).append('\'');
-        sb.append(", steward='").append(steward).append('\'');
-        sb.append(", source='").append(source).append('\'');
-        sb.append(", confidence=").append(confidence).append('\'');;
-        sb.append(", status=").append(status);
-        sb.append('}');
-        return sb.toString();
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        } else if (!(o instanceof AtlasTermAssignmentHeader)) {
+            return false;
+        }
+
+        AtlasTermAssignmentHeader that = (AtlasTermAssignmentHeader) o;
+
+        return confidence == that.confidence &&
+                Objects.equals(termGuid, that.termGuid) &&
+                Objects.equals(relationGuid, that.relationGuid) &&
+                Objects.equals(description, that.description) &&
+                Objects.equals(expression, that.expression) &&
+                Objects.equals(createdBy, that.createdBy) &&
+                Objects.equals(steward, that.steward) &&
+                Objects.equals(source, that.source) &&
+                status == that.status;
     }
 
+    @Override
+    public String toString() {
+        return "AtlasTermAssignmentId{" + "termGuid='" + termGuid + '\'' +
+                ", relationGuid='" + relationGuid + '\'' +
+                ", description='" + description + '\'' +
+                ", displayText='" + displayText + '\'' +
+                ", qualifiedName='" + qualifiedName + '\'' +
+                ", expression='" + expression + '\'' +
+                ", createdBy='" + createdBy + '\'' +
+                ", steward='" + steward + '\'' +
+                ", source='" + source + '\'' +
+                ", confidence=" + confidence + '\'' +
+                ", status=" + status +
+                '}';
+    }
 
     public String getRelationGuid() {
         return relationGuid;

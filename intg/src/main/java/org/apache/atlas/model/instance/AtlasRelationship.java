@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,11 +17,10 @@
  */
 package org.apache.atlas.model.instance;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.commons.collections.CollectionUtils;
@@ -29,6 +28,7 @@ import org.apache.commons.collections.CollectionUtils;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.util.Date;
 import java.util.HashMap;
@@ -42,56 +42,51 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-
 /**
  * Atlas relationship instance.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasRelationship extends AtlasStruct implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    public static final String KEY_GUID             = "guid";
-    public static final String KEY_HOME_ID          = "homeId";
+    public static final String KEY_GUID            = "guid";
+    public static final String KEY_HOME_ID         = "homeId";
     public static final String KEY_PROVENANCE_TYPE = "provenanceType";
-    public static final String KEY_STATUS           = "status";
-    public static final String KEY_CREATED_BY       = "createdBy";
-    public static final String KEY_UPDATED_BY       = "updatedBy";
-    public static final String KEY_CREATE_TIME      = "createTime";
-    public static final String KEY_UPDATE_TIME      = "updateTime";
-    public static final String KEY_VERSION          = "version";
-    public static final String KEY_END1             = "end1";
-    public static final String KEY_END2             = "end2";
-    public static final String KEY_LABEL            = "label";
-    public static final String KEY_PROPAGATE_TAGS   = "propagateTags";
-
+    public static final String KEY_STATUS          = "status";
+    public static final String KEY_CREATED_BY      = "createdBy";
+    public static final String KEY_UPDATED_BY      = "updatedBy";
+    public static final String KEY_CREATE_TIME     = "createTime";
+    public static final String KEY_UPDATE_TIME     = "updateTime";
+    public static final String KEY_VERSION         = "version";
+    public static final String KEY_END1            = "end1";
+    public static final String KEY_END2            = "end2";
+    public static final String KEY_LABEL           = "label";
+    public static final String KEY_PROPAGATE_TAGS  = "propagateTags";
     public static final String KEY_BLOCKED_PROPAGATED_CLASSIFICATIONS = "blockedPropagatedClassifications";
     public static final String KEY_PROPAGATED_CLASSIFICATIONS         = "propagatedClassifications";
 
-    private String        guid           = null;
-    private String        homeId         = null;
-    private Integer       provenanceType = null;
-    private AtlasObjectId end1           = null;
-    private AtlasObjectId end2           = null;
-    private String        label          = null;
-    private PropagateTags propagateTags  = PropagateTags.NONE;
-    private Status        status         = Status.ACTIVE;
-    private String        createdBy      = null;
-    private String        updatedBy      = null;
-    private Date          createTime     = null;
-    private Date          updateTime     = null;
-    private Long          version        = 0L;
+    @JsonIgnore
+    private static final AtomicLong s_nextId = new AtomicLong(System.nanoTime());
 
-    public enum Status { ACTIVE, DELETED }
-
+    private String        guid;
+    private String        homeId;
+    private Integer       provenanceType;
+    private AtlasObjectId end1;
+    private AtlasObjectId end2;
+    private String        label;
+    private PropagateTags propagateTags = PropagateTags.NONE;
+    private Status        status        = Status.ACTIVE;
+    private String        createdBy;
+    private String        updatedBy;
+    private Date          createTime;
+    private Date          updateTime;
+    private Long          version;
     private Set<AtlasClassification> propagatedClassifications;
     private Set<AtlasClassification> blockedPropagatedClassifications;
-
-    @JsonIgnore
-    private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
 
     public AtlasRelationship() {
         super();
@@ -131,7 +126,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         this(relationshipDef != null ? relationshipDef.getName() : null);
     }
 
-    public AtlasRelationship(Map map) {
+    public AtlasRelationship(Map<?, ?> map) {
         super(map);
 
         if (map != null) {
@@ -212,10 +207,10 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
                 setVersion(((Number) version).longValue());
             }
 
-            if (CollectionUtils.isNotEmpty((List) propagatedClassifications)) {
+            if (CollectionUtils.isNotEmpty((List<?>) propagatedClassifications)) {
                 this.propagatedClassifications = new HashSet<>();
 
-                for (Object elem : (List) propagatedClassifications) {
+                for (Object elem : (List<?>) propagatedClassifications) {
                     if (elem instanceof AtlasClassification) {
                         this.propagatedClassifications.add((AtlasClassification) elem);
                     } else if (elem instanceof Map) {
@@ -224,10 +219,10 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
                 }
             }
 
-            if (CollectionUtils.isNotEmpty((List) blockedPropagatedClassifications)) {
+            if (CollectionUtils.isNotEmpty((List<?>) blockedPropagatedClassifications)) {
                 this.blockedPropagatedClassifications = new HashSet<>();
 
-                for (Object elem : (List) blockedPropagatedClassifications) {
+                for (Object elem : (List<?>) blockedPropagatedClassifications) {
                     if (elem instanceof AtlasClassification) {
                         this.blockedPropagatedClassifications.add((AtlasClassification) elem);
                     } else if (elem instanceof Map) {
@@ -243,7 +238,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
         if (other != null) {
             init(other.guid, other.homeId, other.provenanceType, other.end1, other.end2, other.label, other.propagateTags, other.status, other.createdBy, other.updatedBy,
-                 other.createTime, other.updateTime, other.version, other.propagatedClassifications, other.blockedPropagatedClassifications);
+                    other.createTime, other.updateTime, other.version, other.propagatedClassifications, other.blockedPropagatedClassifications);
         }
     }
 
@@ -267,7 +262,9 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         return provenanceType;
     }
 
-    public void setProvenanceType(Integer provenanceType) { this.provenanceType = provenanceType; }
+    public void setProvenanceType(Integer provenanceType) {
+        this.provenanceType = provenanceType;
+    }
 
     public Status getStatus() {
         return status;
@@ -317,24 +314,36 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         this.version = version;
     }
 
-    public AtlasObjectId getEnd1() { return end1; }
+    public AtlasObjectId getEnd1() {
+        return end1;
+    }
 
-    public void setEnd1(AtlasObjectId end1) { this.end1 = end1; }
+    public void setEnd1(AtlasObjectId end1) {
+        this.end1 = end1;
+    }
 
-    public AtlasObjectId getEnd2() { return end2; }
+    public AtlasObjectId getEnd2() {
+        return end2;
+    }
 
-    public void setEnd2(AtlasObjectId end2) { this.end2 = end2; }
+    public void setEnd2(AtlasObjectId end2) {
+        this.end2 = end2;
+    }
 
-    public String getLabel() { return label; }
+    public String getLabel() {
+        return label;
+    }
 
-    public void setLabel(String label) { this.label = label; }
+    public void setLabel(String label) {
+        this.label = label;
+    }
 
-    public PropagateTags getPropagateTags() { return propagateTags; }
+    public PropagateTags getPropagateTags() {
+        return propagateTags;
+    }
 
-    public void setPropagateTags(PropagateTags propagateTags) { this.propagateTags = propagateTags; }
-
-    private static String nextInternalId() {
-        return "-" + Long.toString(s_nextId.getAndIncrement());
+    public void setPropagateTags(PropagateTags propagateTags) {
+        this.propagateTags = propagateTags;
     }
 
     public Set<AtlasClassification> getPropagatedClassifications() {
@@ -351,30 +360,6 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
 
     public void setBlockedPropagatedClassifications(Set<AtlasClassification> blockedPropagatedClassifications) {
         this.blockedPropagatedClassifications = blockedPropagatedClassifications;
-    }
-
-    private void init() {
-        init(nextInternalId(), null, 0 ,null, null, null, null, null,  null, null, null, null, 0L, null, null);
-    }
-
-    private void init(String guid, String homeId, Integer provenanceType, AtlasObjectId end1, AtlasObjectId end2, String label, PropagateTags propagateTags,
-                      Status status, String createdBy, String updatedBy, Date createTime, Date updateTime, Long version,
-                      Set<AtlasClassification> propagatedClassifications, Set<AtlasClassification> blockedPropagatedClassifications) {
-        setGuid(guid);
-        setHomeId(homeId);
-        setProvenanceType(provenanceType);
-        setEnd1(end1);
-        setEnd2(end2);
-        setLabel(label);
-        setPropagateTags(propagateTags);
-        setStatus(status);
-        setCreatedBy(createdBy);
-        setUpdatedBy(updatedBy);
-        setCreateTime(createTime);
-        setUpdateTime(updateTime);
-        setVersion(version);
-        setPropagatedClassifications(propagatedClassifications);
-        setBlockedPropagatedClassifications(blockedPropagatedClassifications);
     }
 
     @Override
@@ -410,12 +395,23 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), guid, homeId, provenanceType, end1, end2, label, propagateTags, status, createdBy, updatedBy,
+                createTime, updateTime, version, propagatedClassifications, blockedPropagatedClassifications);
+    }
+
+    @Override
     public boolean equals(Object o) {
-        if (this == o) { return true; }
-        if (o == null || getClass() != o.getClass()) { return false; }
-        if (!super.equals(o)) { return false; }
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        } else if (!super.equals(o)) {
+            return false;
+        }
 
         AtlasRelationship that = (AtlasRelationship) o;
+
         return Objects.equals(guid, that.guid) &&
                 Objects.equals(homeId, that.homeId) &&
                 Objects.equals(provenanceType, that.provenanceType) &&
@@ -434,19 +430,43 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), guid, homeId, provenanceType, end1, end2, label, propagateTags, status, createdBy, updatedBy,
-                            createTime, updateTime, version, propagatedClassifications, blockedPropagatedClassifications);
-    }
-
-    @Override
     public String toString() {
         return toString(new StringBuilder()).toString();
     }
 
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    private static String nextInternalId() {
+        return "-" + s_nextId.getAndIncrement();
+    }
+
+    private void init() {
+        init(nextInternalId(), null, 0, null, null, null, null, null, null, null, null, null, 0L, null, null);
+    }
+
+    private void init(String guid, String homeId, Integer provenanceType, AtlasObjectId end1, AtlasObjectId end2, String label, PropagateTags propagateTags,
+            Status status, String createdBy, String updatedBy, Date createTime, Date updateTime, Long version,
+            Set<AtlasClassification> propagatedClassifications, Set<AtlasClassification> blockedPropagatedClassifications) {
+        setGuid(guid);
+        setHomeId(homeId);
+        setProvenanceType(provenanceType);
+        setEnd1(end1);
+        setEnd2(end2);
+        setLabel(label);
+        setPropagateTags(propagateTags);
+        setStatus(status);
+        setCreatedBy(createdBy);
+        setUpdatedBy(updatedBy);
+        setCreateTime(createTime);
+        setUpdateTime(updateTime);
+        setVersion(version);
+        setPropagatedClassifications(propagatedClassifications);
+        setBlockedPropagatedClassifications(blockedPropagatedClassifications);
+    }
+
+    public enum Status { ACTIVE, DELETED }
+
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class AtlasRelationshipWithExtInfo implements Serializable {
@@ -477,7 +497,7 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         }
 
         public boolean referredEntitiesContains(String guid) {
-            return (referredEntities != null) ? referredEntities.containsKey(guid) : false;
+            return referredEntities != null && referredEntities.containsKey(guid);
         }
 
         @JsonIgnore
@@ -503,29 +523,29 @@ public class AtlasRelationship extends AtlasStruct implements Serializable {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) { return true; }
-            if (o == null || getClass() != o.getClass()) { return false; }
-            if (!super.equals(o)) { return false; }
-            AtlasRelationshipWithExtInfo that = (AtlasRelationshipWithExtInfo) o;
-
-            return Objects.equals(relationship, that.relationship) &&
-                   Objects.equals(referredEntities, that.referredEntities);
-        }
-
-        @Override
         public int hashCode() {
             return Objects.hash(super.hashCode(), relationship, referredEntities);
         }
 
         @Override
-        public String toString() {
-            final StringBuilder sb = new StringBuilder("AtlasRelationshipWithExtInfo{");
-            sb.append("relationship=").append(relationship);
-            sb.append(", referredEntities=").append(referredEntities);
-            sb.append('}');
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            } else if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
 
-            return sb.toString();
+            AtlasRelationshipWithExtInfo that = (AtlasRelationshipWithExtInfo) o;
+
+            return Objects.equals(relationship, that.relationship) &&
+                    Objects.equals(referredEntities, that.referredEntities);
+        }
+
+        @Override
+        public String toString() {
+            return "AtlasRelationshipWithExtInfo{" + "relationship=" + relationship +
+                    ", referredEntities=" + referredEntities +
+                    '}';
         }
     }
 }

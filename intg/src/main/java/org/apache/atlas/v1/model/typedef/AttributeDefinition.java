@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,12 +20,10 @@ package org.apache.atlas.v1.model.typedef;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
@@ -37,13 +35,13 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.DEFAULT_SEARCHWEIGHT;
 
-
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AttributeDefinition implements Serializable {
-    private static final long                          serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
+
     private String                                     name;
     private String                                     dataTypeName;
     private Multiplicity                               multiplicity;
@@ -55,7 +53,7 @@ public class AttributeDefinition implements Serializable {
     private String                                     description;
     private Map<String, String>                        options;
     private int                                        searchWeight = DEFAULT_SEARCHWEIGHT;
-    private AtlasStructDef.AtlasAttributeDef.IndexType indexType    = null;
+    private AtlasStructDef.AtlasAttributeDef.IndexType indexType;
 
     public AttributeDefinition() {
     }
@@ -64,25 +62,19 @@ public class AttributeDefinition implements Serializable {
         this(name, dataTypeName, multiplicity, false, false, true, null, null, DEFAULT_SEARCHWEIGHT, null);
     }
 
-    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
-                               String reverseAttributeName) {
-        this(name, dataTypeName, multiplicity, isComposite, reverseAttributeName,  DEFAULT_SEARCHWEIGHT, null);
+    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite, String reverseAttributeName) {
+        this(name, dataTypeName, multiplicity, isComposite, reverseAttributeName, DEFAULT_SEARCHWEIGHT, null);
     }
 
-    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
-                               String reverseAttributeName, int searchWeight, AtlasStructDef.AtlasAttributeDef.IndexType indexType) {
+    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite, String reverseAttributeName, int searchWeight, AtlasStructDef.AtlasAttributeDef.IndexType indexType) {
         this(name, dataTypeName, multiplicity, isComposite, false, false, reverseAttributeName, null, searchWeight, indexType);
     }
 
-    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
-                               boolean isUnique, boolean isIndexable, String reverseAttributeName,
-                               Map<String, String> options) {
-        this(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable,reverseAttributeName, options, DEFAULT_SEARCHWEIGHT, null);
+    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite, boolean isUnique, boolean isIndexable, String reverseAttributeName, Map<String, String> options) {
+        this(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable, reverseAttributeName, options, DEFAULT_SEARCHWEIGHT, null);
     }
 
-    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite,
-                               boolean isUnique, boolean isIndexable, String reverseAttributeName,
-                               Map<String, String> options, int searchWeight, AtlasStructDef.AtlasAttributeDef.IndexType indexType) {
+    public AttributeDefinition(String name, String dataTypeName, Multiplicity multiplicity, boolean isComposite, boolean isUnique, boolean isIndexable, String reverseAttributeName, Map<String, String> options, int searchWeight, AtlasStructDef.AtlasAttributeDef.IndexType indexType) {
         this.name                 = name;
         this.dataTypeName         = dataTypeName;
         this.multiplicity         = multiplicity;
@@ -94,7 +86,6 @@ public class AttributeDefinition implements Serializable {
         this.searchWeight         = searchWeight;
         this.indexType            = indexType;
     }
-
 
     public String getName() {
         return name;
@@ -181,49 +172,47 @@ public class AttributeDefinition implements Serializable {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable,
+                reverseAttributeName, defaultValue, description, options, searchWeight);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
-        }
-
-        if (o == null || getClass() != o.getClass()) {
+        } else if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         AttributeDefinition that = (AttributeDefinition) o;
 
         return isComposite == that.isComposite &&
-               isUnique == that.isUnique &&
-               isIndexable == that.isIndexable &&
-               Objects.equals(name, that.name) &&
-               Objects.equals(dataTypeName, that.dataTypeName) &&
-               Objects.equals(multiplicity, that.multiplicity) &&
-               Objects.equals(defaultValue, that.defaultValue) &&
-               Objects.equals(description, that.description) &&
-               Objects.equals(reverseAttributeName, that.reverseAttributeName) &&
-               Objects.equals(options, that.options) &&
-               Objects.equals(searchWeight, that.searchWeight);
+                isUnique == that.isUnique &&
+                isIndexable == that.isIndexable &&
+                Objects.equals(name, that.name) &&
+                Objects.equals(dataTypeName, that.dataTypeName) &&
+                Objects.equals(multiplicity, that.multiplicity) &&
+                Objects.equals(defaultValue, that.defaultValue) &&
+                Objects.equals(description, that.description) &&
+                Objects.equals(reverseAttributeName, that.reverseAttributeName) &&
+                Objects.equals(options, that.options) &&
+                Objects.equals(searchWeight, that.searchWeight);
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(name, dataTypeName, multiplicity, isComposite, isUnique, isIndexable,
-                            reverseAttributeName, defaultValue, description, options, searchWeight);
-    }
-
-  public void setSearchWeight(int searchWeight) {
-        this.searchWeight = searchWeight;
-  }
-
-  public int getSearchWeight() {
+    public int getSearchWeight() {
         return searchWeight;
-  }
+    }
 
-  public void setIndexType(AtlasStructDef.AtlasAttributeDef.IndexType indexType) {
-        this.indexType = indexType;
-  }
+    public void setSearchWeight(int searchWeight) {
+        this.searchWeight = searchWeight;
+    }
 
-  public AtlasStructDef.AtlasAttributeDef.IndexType getIndexType() {
+    public AtlasStructDef.AtlasAttributeDef.IndexType getIndexType() {
         return this.indexType;
-  }
+    }
+
+    public void setIndexType(AtlasStructDef.AtlasAttributeDef.IndexType indexType) {
+        this.indexType = indexType;
+    }
 }

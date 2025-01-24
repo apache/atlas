@@ -23,16 +23,18 @@ import org.apache.atlas.model.instance.AtlasEntity;
 public class AttributeToken implements TemplateToken {
     private final String attrName;
 
-    public AttributeToken(String attrName){
+    public AttributeToken(String attrName) {
         this.attrName = attrName;
     }
 
     @Override
     public String eval(AtlasEntity entity) throws AtlasBaseException {
         Object ret = entity.getAttribute(attrName);
+
         if (ret == null) {
             return null;
         }
+
         return ret.toString();
     }
 

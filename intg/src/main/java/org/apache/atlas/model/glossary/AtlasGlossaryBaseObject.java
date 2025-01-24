@@ -24,32 +24,30 @@ import org.apache.commons.collections.CollectionUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Map;
-
+import java.util.Objects;
 
 public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
+    protected String                    name;
+    protected String                    shortDescription;
+    protected String                    longDescription;
+    protected List<AtlasClassification> classifications;
 
     // Core attributes
-    private String qualifiedName;
-    protected String name;
-    protected String shortDescription;
-    protected String longDescription;
+    private String              qualifiedName;
     private Map<String, Object> additionalAttributes;
-
-    // Classifications
-    protected List<AtlasClassification> classifications;
 
     public AtlasGlossaryBaseObject() {
     }
 
     public AtlasGlossaryBaseObject(final AtlasGlossaryBaseObject other) {
         super(other);
-        this.name = other.name;
-        this.shortDescription = other.shortDescription;
-        this.longDescription = other.longDescription;
-        this.classifications = other.classifications;
-        this.qualifiedName = other.qualifiedName;
+
+        this.name                 = other.name;
+        this.shortDescription     = other.shortDescription;
+        this.longDescription      = other.longDescription;
+        this.classifications      = other.classifications;
+        this.qualifiedName        = other.qualifiedName;
         this.additionalAttributes = other.additionalAttributes;
     }
 
@@ -93,7 +91,7 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
         this.longDescription = longDescription;
     }
 
-    abstract public void setAttribute(String attrName, String attrVal);
+    public abstract void setAttribute(String attrName, String attrVal);
 
     public List<AtlasClassification> getClassifications() {
         return classifications;
@@ -106,10 +104,13 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
     @JsonIgnore
     public void addClassification(AtlasClassification classification) {
         List<AtlasClassification> classifications = this.classifications;
+
         if (classifications == null) {
             classifications = new ArrayList<>();
         }
+
         classifications.add(classification);
+
         setClassifications(classifications);
     }
 
@@ -122,10 +123,16 @@ public abstract class AtlasGlossaryBaseObject extends AtlasBaseModelObject {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        } else if (!super.equals(o)) {
+            return false;
+        }
+
         AtlasGlossaryBaseObject that = (AtlasGlossaryBaseObject) o;
+
         return Objects.equals(qualifiedName, that.qualifiedName) &&
                 Objects.equals(name, that.name) &&
                 Objects.equals(shortDescription, that.shortDescription) &&

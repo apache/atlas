@@ -17,29 +17,28 @@
  */
 package org.apache.atlas.model.audit;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.io.Serializable;
-import java.util.*;
+import java.util.Objects;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AuditReductionCriteria implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    private boolean auditAgingEnabled         = false;
-    private boolean defaultAgeoutEnabled      = false;
-    private boolean auditSweepoutEnabled      = false;
-    private boolean createEventsAgeoutAllowed = false;
-    private boolean subTypesIncluded          = true;
-    private boolean ignoreDefaultAgeoutTTL    = false;
+    private boolean auditAgingEnabled;
+    private boolean defaultAgeoutEnabled;
+    private boolean auditSweepoutEnabled;
+    private boolean createEventsAgeoutAllowed;
+    private boolean subTypesIncluded;
+    private boolean ignoreDefaultAgeoutTTL;
 
     private int defaultAgeoutAuditCount;
     private int defaultAgeoutTTLInDays;
@@ -164,12 +163,22 @@ public class AuditReductionCriteria implements Serializable {
         this.sweepoutActionTypes = sweepoutActionTypes;
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(auditAgingEnabled, defaultAgeoutEnabled, auditSweepoutEnabled, createEventsAgeoutAllowed, subTypesIncluded, ignoreDefaultAgeoutTTL, defaultAgeoutAuditCount, defaultAgeoutTTLInDays, customAgeoutAuditCount, customAgeoutTTLInDays,
+                customAgeoutEntityTypes, customAgeoutActionTypes, sweepoutEntityTypes, sweepoutActionTypes);
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
         AuditReductionCriteria that = (AuditReductionCriteria) o;
+
         return auditAgingEnabled == that.auditAgingEnabled &&
                 defaultAgeoutEnabled == that.defaultAgeoutEnabled &&
                 auditSweepoutEnabled == that.auditSweepoutEnabled &&
@@ -187,9 +196,8 @@ public class AuditReductionCriteria implements Serializable {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(auditAgingEnabled, defaultAgeoutEnabled, auditSweepoutEnabled, createEventsAgeoutAllowed, subTypesIncluded, ignoreDefaultAgeoutTTL, defaultAgeoutAuditCount, defaultAgeoutTTLInDays, customAgeoutAuditCount, customAgeoutTTLInDays,
-                            customAgeoutEntityTypes, customAgeoutActionTypes, sweepoutEntityTypes, sweepoutActionTypes);
+    public String toString() {
+        return toString(new StringBuilder()).toString();
     }
 
     public StringBuilder toString(StringBuilder sb) {
@@ -216,11 +224,4 @@ public class AuditReductionCriteria implements Serializable {
 
         return sb;
     }
-
-    @Override
-    public String toString() {
-        return toString(new StringBuilder()).toString();
-    }
-
-
 }

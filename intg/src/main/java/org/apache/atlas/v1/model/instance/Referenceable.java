@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,18 +18,17 @@
 
 package org.apache.atlas.v1.model.instance;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.commons.collections.MapUtils;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -40,22 +39,18 @@ import java.util.Objects;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.ALWAYS)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.ALWAYS)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class Referenceable extends Struct implements Serializable {
-    private static final long serialVersionUID = 1L;
-
     public static final String JSON_CLASS_REFERENCE = "org.apache.atlas.typesystem.json.InstanceSerialization$_Reference";
-
+    private static final long serialVersionUID = 1L;
     private Id                    id;
     private Map<String, Struct>   traits     = new HashMap<>();
     private List<String>          traitNames = new ArrayList<>();
     private AtlasSystemAttributes systemAttributes;
-
 
     public Referenceable() {
         super();
@@ -140,11 +135,11 @@ public class Referenceable extends Struct implements Serializable {
         super(map);
 
         if (map != null) {
-            this.id               = new Id((Map)map.get("id"));
+            this.id               = new Id((Map<String, Object>) map.get("id"));
             this.traitNames       = Id.asList(map.get("traitNames"));
-            this.systemAttributes = new AtlasSystemAttributes((Map) map.get("systemAttributes"));
+            this.systemAttributes = new AtlasSystemAttributes((Map<String, Object>) map.get("systemAttributes"));
 
-            Map traits = Id.asMap(map.get("traits"));
+            Map<?, ?> traits = Id.asMap(map.get("traits"));
 
             if (MapUtils.isNotEmpty(traits)) {
                 this.traits = new HashMap<>(traits.size());
@@ -156,10 +151,57 @@ public class Referenceable extends Struct implements Serializable {
         }
     }
 
-
     // for serialization backward compatibility
     public String getJsonClass() {
         return JSON_CLASS_REFERENCE;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, traits, traitNames, systemAttributes);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null || o.getClass() != getClass()) {
+            return false;
+        }
+
+        Referenceable obj = (Referenceable) o;
+
+        return Objects.equals(id, obj.id) &&
+                Objects.equals(traits, obj.traits) &&
+                Objects.equals(traitNames, obj.traitNames) &&
+                Objects.equals(systemAttributes, obj.systemAttributes);
+    }
+
+    @Override
+    public StringBuilder toString(StringBuilder sb) {
+        if (sb == null) {
+            sb = new StringBuilder();
+        }
+
+        sb.append("Referenceable{");
+        super.toString(sb);
+        sb.append(", id=");
+        if (id != null) {
+            id.asString(sb);
+        }
+        sb.append(", triats={");
+        AtlasBaseTypeDef.dumpObjects(this.traits, sb);
+        sb.append("}, traitNames=[");
+        AtlasBaseTypeDef.dumpObjects(traitNames, sb);
+        sb.append("], systemAttributes=");
+        if (systemAttributes != null) {
+            systemAttributes.toString(sb);
+        }
+        sb.append("}");
+
+        return sb;
     }
 
     public Id getId() {
@@ -202,54 +244,5 @@ public class Referenceable extends Struct implements Serializable {
     @JsonIgnore
     public String toShortString() {
         return String.format("entity[type=%s guid=%s]", getTypeName(), id._getId());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-
-        if (o == null || o.getClass() != getClass()) {
-            return false;
-        }
-
-        Referenceable obj = (Referenceable)o;
-
-        return Objects.equals(id, obj.id) &&
-               Objects.equals(traits, obj.traits) &&
-               Objects.equals(traitNames, obj.traitNames) &&
-               Objects.equals(systemAttributes, obj.systemAttributes);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, traits, traitNames, systemAttributes);
-    }
-
-
-    @Override
-    public StringBuilder toString(StringBuilder sb) {
-        if (sb == null) {
-            sb = new StringBuilder();
-        }
-
-        sb.append("Referenceable{");
-        super.toString(sb);
-        sb.append(", id=");
-        if (id != null) {
-            id.asString(sb);
-        }
-        sb.append(", triats={");
-        AtlasBaseTypeDef.dumpObjects(this.traits, sb);
-        sb.append("}, traitNames=[");
-        AtlasBaseTypeDef.dumpObjects(traitNames, sb);
-        sb.append("], systemAttributes=");
-        if (systemAttributes != null) {
-            systemAttributes.toString(sb);
-        }
-        sb.append("}");
-
-        return sb;
     }
 }

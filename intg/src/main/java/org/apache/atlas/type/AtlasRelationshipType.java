@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 package org.apache.atlas.type;
-
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -26,7 +25,6 @@ import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory;
 import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
@@ -71,7 +69,64 @@ public class AtlasRelationshipType extends AtlasStructType {
         resolveReferences(typeRegistry);
     }
 
-    public AtlasRelationshipDef getRelationshipDef() { return relationshipDef; }
+    /**
+     * Throw an exception so we can junit easily.
+     *
+     * This method assumes that the 2 ends are not null.
+     *
+     * @param relationshipDef
+     * @throws AtlasBaseException
+     */
+    public static void validateAtlasRelationshipDef(AtlasRelationshipDef relationshipDef) throws AtlasBaseException {
+        AtlasRelationshipEndDef endDef1              = relationshipDef.getEndDef1();
+        AtlasRelationshipEndDef endDef2              = relationshipDef.getEndDef2();
+        RelationshipCategory    relationshipCategory = relationshipDef.getRelationshipCategory();
+        String                  name                 = relationshipDef.getName();
+        boolean                 isContainer1         = endDef1.getIsContainer();
+        boolean                 isContainer2         = endDef2.getIsContainer();
+
+        if ((endDef1.getCardinality() == AtlasAttributeDef.Cardinality.LIST) || (endDef2.getCardinality() == AtlasAttributeDef.Cardinality.LIST)) {
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_LIST_ON_END, name);
+        }
+
+        if (isContainer1 && isContainer2) {
+            // we support 0 or 1 of these flags.
+            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_DOUBLE_CONTAINERS, name);
+        }
+
+        if ((isContainer1 || isContainer2)) {
+            // we have an isContainer defined in an end.
+            // the default relationshipCategory is ASSOCIATION.
+            if (relationshipCategory == null || relationshipCategory == RelationshipCategory.ASSOCIATION) {
+                // associations are not containment relationships - so do not allow an endpoint with isContainer
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_ASSOCIATION_AND_CONTAINER, name);
+            }
+        } else {
+            // we do not have an isContainer defined on an end
+            if (relationshipCategory == RelationshipCategory.COMPOSITION) {
+                // COMPOSITION needs one end to be the container.
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_NO_CONTAINER, name);
+            } else if (relationshipCategory == RelationshipCategory.AGGREGATION) {
+                // AGGREGATION needs one end to be the container.
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_AGGREGATION_NO_CONTAINER, name);
+            }
+        }
+        if (relationshipCategory == RelationshipCategory.COMPOSITION) {
+            // composition children should not be multiple cardinality
+            if (endDef1.getCardinality() == AtlasAttributeDef.Cardinality.SET &&
+                    !endDef1.getIsContainer()) {
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_MULTIPLE_PARENTS, name);
+            }
+            if ((endDef2.getCardinality() == AtlasAttributeDef.Cardinality.SET) &&
+                    !endDef2.getIsContainer()) {
+                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_MULTIPLE_PARENTS, name);
+            }
+        }
+    }
+
+    public AtlasRelationshipDef getRelationshipDef() {
+        return relationshipDef;
+    }
 
     public boolean hasLegacyAttributeEnd() {
         return this.hasLegacyAttributeEnd;
@@ -79,6 +134,66 @@ public class AtlasRelationshipType extends AtlasStructType {
 
     public String getRelationshipLabel() {
         return this.relationshipLabel;
+    }
+
+    @Override
+    public boolean isValidValue(Object obj) {
+        if (obj != null) {
+            if (obj instanceof AtlasRelationship) {
+                return validateRelationship((AtlasRelationship) obj);
+            } else {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    @Override
+    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
+        final boolean ret;
+
+        if (val1 == null) {
+            ret = val2 == null;
+        } else if (val2 == null) {
+            ret = false;
+        } else {
+            AtlasRelationship rel1 = getRelationshipFromValue(val1);
+
+            if (rel1 == null) {
+                ret = false;
+            } else {
+                AtlasRelationship rel2 = getRelationshipFromValue(val2);
+
+                if (rel2 == null) {
+                    ret = false;
+                } else if (!super.areEqualValues(rel1, rel2, guidAssignments)) {
+                    ret = false;
+                } else {
+                    ret = Objects.equals(rel1.getGuid(), rel2.getGuid()) &&
+                            Objects.equals(rel1.getEnd1(), rel2.getEnd1()) &&
+                            Objects.equals(rel1.getEnd2(), rel2.getEnd2()) &&
+                            Objects.equals(rel1.getLabel(), rel2.getLabel()) &&
+                            Objects.equals(rel1.getPropagateTags(), rel2.getPropagateTags()) &&
+                            Objects.equals(rel1.getStatus(), rel2.getStatus());
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    @Override
+    public boolean isValidValueForUpdate(Object obj) {
+        if (obj != null) {
+            if (obj instanceof AtlasRelationship) {
+                return validateRelationship((AtlasRelationship) obj);
+            } else {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Override
@@ -158,13 +273,19 @@ public class AtlasRelationshipType extends AtlasStructType {
         addRelationshipEdgeDirection();
     }
 
+    public AtlasEntityType getEnd1Type() {
+        return end1Type;
+    }
+
+    public AtlasEntityType getEnd2Type() {
+        return end2Type;
+    }
+
     private void addRelationshipEdgeDirection() {
         AtlasRelationshipEndDef endDef1 = relationshipDef.getEndDef1();
         AtlasRelationshipEndDef endDef2 = relationshipDef.getEndDef2();
 
-        if (StringUtils.equals(endDef1.getType(), endDef2.getType()) &&
-                StringUtils.equals(endDef1.getName(), endDef2.getName())) {
-
+        if (StringUtils.equals(endDef1.getType(), endDef2.getType()) && StringUtils.equals(endDef1.getName(), endDef2.getName())) {
             AtlasAttribute endAttribute = end1Type.getRelationshipAttribute(endDef1.getName(), relationshipDef.getName());
 
             endAttribute.setRelationshipEdgeDirection(BOTH);
@@ -190,159 +311,29 @@ public class AtlasRelationshipType extends AtlasStructType {
         }
     }
 
-    @Override
-    public boolean isValidValue(Object obj) {
-        if (obj != null) {
-            if (obj instanceof AtlasRelationship) {
-                return validateRelationship((AtlasRelationship) obj);
-            } else {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    @Override
-    public boolean areEqualValues(Object val1, Object val2, Map<String, String> guidAssignments) {
-        final boolean ret;
-
-        if (val1 == null) {
-            ret = val2 == null;
-        } else if (val2 == null) {
-            ret = false;
-        } else {
-            AtlasRelationship rel1 = getRelationshipFromValue(val1);
-
-            if (rel1 == null) {
-                ret = false;
-            } else {
-                AtlasRelationship rel2 = getRelationshipFromValue(val2);
-
-                if (rel2 == null) {
-                    ret = false;
-                } else if (!super.areEqualValues(rel1, rel2, guidAssignments)) {
-                    ret = false;
-                } else {
-                    ret = Objects.equals(rel1.getGuid(), rel2.getGuid()) &&
-                          Objects.equals(rel1.getEnd1(), rel2.getEnd1()) &&
-                          Objects.equals(rel1.getEnd2(), rel2.getEnd2()) &&
-                          Objects.equals(rel1.getLabel(), rel2.getLabel()) &&
-                          Objects.equals(rel1.getPropagateTags(), rel2.getPropagateTags()) &&
-                          Objects.equals(rel1.getStatus(), rel2.getStatus());
-                }
-            }
-        }
-
-        return ret;
-    }
-
-    @Override
-    public boolean isValidValueForUpdate(Object obj) {
-        if (obj != null) {
-            if (obj instanceof AtlasRelationship) {
-                return validateRelationship((AtlasRelationship) obj);
-            } else {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    public AtlasEntityType getEnd1Type() { return end1Type; }
-
-    public AtlasEntityType getEnd2Type() { return end2Type; }
-
     /**
      * Validate the fields in the the RelationshipType are consistent with respect to themselves.
      * @param relationship
-     * @throws AtlasBaseException
      */
     private boolean validateRelationship(AtlasRelationship relationship) {
-
         AtlasObjectId end1 = relationship.getEnd1();
         AtlasObjectId end2 = relationship.getEnd2();
 
         if (end1 != null && end2 != null) {
-
             String end1TypeName = end1.getTypeName();
             String end2TypeName = end2.getTypeName();
 
             if (StringUtils.isNotEmpty(end1TypeName) && StringUtils.isNotEmpty(end2TypeName)) {
-
                 return end1Type.isTypeOrSuperTypeOf(end1TypeName) && end2Type.isTypeOrSuperTypeOf(end2TypeName) && super.isValidValue(relationship);
-
             } else {
-
                 return StringUtils.isNotEmpty(end1.getGuid()) && StringUtils.isNotEmpty(end2.getGuid());
-
             }
-
         }
 
         return false;
-
     }
 
-    /**
-     * Throw an exception so we can junit easily.
-     *
-     * This method assumes that the 2 ends are not null.
-     *
-     * @param relationshipDef
-     * @throws AtlasBaseException
-     */
-    public static void validateAtlasRelationshipDef(AtlasRelationshipDef relationshipDef) throws AtlasBaseException {
-
-        AtlasRelationshipEndDef endDef1              = relationshipDef.getEndDef1();
-        AtlasRelationshipEndDef endDef2              = relationshipDef.getEndDef2();
-        RelationshipCategory    relationshipCategory = relationshipDef.getRelationshipCategory();
-        String                  name                 = relationshipDef.getName();
-        boolean                 isContainer1         = endDef1.getIsContainer();
-        boolean                 isContainer2         = endDef2.getIsContainer();
-
-        if ((endDef1.getCardinality() == AtlasAttributeDef.Cardinality.LIST) ||
-                (endDef2.getCardinality() == AtlasAttributeDef.Cardinality.LIST)) {
-            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_LIST_ON_END, name);
-        }
-        if (isContainer1 && isContainer2) {
-            // we support 0 or 1 of these flags.
-            throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_DOUBLE_CONTAINERS, name);
-        }
-        if ((isContainer1 || isContainer2)) {
-            // we have an isContainer defined in an end.
-            // the default relationshipCategory is ASSOCIATION.
-            if (relationshipCategory == null || relationshipCategory == RelationshipCategory.ASSOCIATION) {
-                // associations are not containment relationships - so do not allow an endpoint with isContainer
-                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_ASSOCIATION_AND_CONTAINER, name);
-            }
-        } else {
-            // we do not have an isContainer defined on an end
-            if (relationshipCategory == RelationshipCategory.COMPOSITION) {
-                // COMPOSITION needs one end to be the container.
-                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_NO_CONTAINER, name);
-            } else if (relationshipCategory == RelationshipCategory.AGGREGATION) {
-                // AGGREGATION needs one end to be the container.
-                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_AGGREGATION_NO_CONTAINER, name);
-            }
-        }
-        if (relationshipCategory == RelationshipCategory.COMPOSITION) {
-            // composition children should not be multiple cardinality
-            if (endDef1.getCardinality() == AtlasAttributeDef.Cardinality.SET &&
-                    !endDef1.getIsContainer()) {
-                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_MULTIPLE_PARENTS, name);
-            }
-            if ((endDef2.getCardinality() == AtlasAttributeDef.Cardinality.SET) &&
-                    !endDef2.getIsContainer()) {
-                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIPDEF_COMPOSITION_MULTIPLE_PARENTS, name);
-            }
-        }
-    }
-
-    private void addRelationshipAttributeToEndType(AtlasRelationshipEndDef endDef, AtlasEntityType entityType, String attrTypeName,
-                                                   AtlasTypeRegistry typeRegistry, String relationshipLabel) throws AtlasBaseException {
-
+    private void addRelationshipAttributeToEndType(AtlasRelationshipEndDef endDef, AtlasEntityType entityType, String attrTypeName, AtlasTypeRegistry typeRegistry, String relationshipLabel) throws AtlasBaseException {
         String attrName = (endDef != null) ? endDef.getName() : null;
 
         if (StringUtils.isEmpty(attrName)) {
@@ -419,7 +410,7 @@ public class AtlasRelationshipType extends AtlasStructType {
         if (val instanceof AtlasRelationship) {
             ret = (AtlasRelationship) val;
         } else if (val instanceof Map) {
-            ret = new AtlasRelationship((Map) val);
+            ret = new AtlasRelationship((Map<?, ?>) val);
         } else {
             ret = null;
         }

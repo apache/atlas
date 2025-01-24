@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,14 +17,14 @@
  */
 package org.apache.atlas.model.instance;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.util.Map;
 import java.util.Objects;
@@ -35,9 +35,9 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 /**
  * Reference to an object-instance of AtlasEntity type used in relationship attribute values
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable {
@@ -48,18 +48,17 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
     public static final String KEY_RELATIONSHIP_STATUS     = "relationshipStatus";
     public static final String KEY_RELATIONSHIP_ATTRIBUTES = "relationshipAttributes";
 
-    private AtlasEntity.Status       entityStatus           = null;
-    private String                   displayText            = null;
-    private String                   relationshipType       = null;
-    private String                   relationshipGuid       = null;
-    private AtlasRelationship.Status relationshipStatus     = null;
-    private AtlasStruct              relationshipAttributes = null;
-    private String qualifiedName = null;
+    private AtlasEntity.Status       entityStatus;
+    private String                   displayText;
+    private String                   relationshipType;
+    private String                   relationshipGuid;
+    private AtlasRelationship.Status relationshipStatus;
+    private AtlasStruct              relationshipAttributes;
+    private String                   qualifiedName;
 
-    public AtlasRelatedObjectId() { }
+    public AtlasRelatedObjectId() {}
 
-    public AtlasRelatedObjectId(String guid, String typeName, AtlasEntity.Status entityStatus, String relationshipGuid,
-                                AtlasRelationship.Status relationshipStatus, AtlasStruct relationshipAttributes) {
+    public AtlasRelatedObjectId(String guid, String typeName, AtlasEntity.Status entityStatus, String relationshipGuid, AtlasRelationship.Status relationshipStatus, AtlasStruct relationshipAttributes) {
         super(guid, typeName);
 
         setEntityStatus(entityStatus);
@@ -68,9 +67,7 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
         setRelationshipAttributes(relationshipAttributes);
     }
 
-    public AtlasRelatedObjectId(String guid, String typeName, AtlasEntity.Status entityStatus, Map<String, Object> uniqueAttributes, String displayText,
-                                String relationshipGuid, AtlasRelationship.Status relationshipStatus,
-                                AtlasStruct relationshipAttributes) {
+    public AtlasRelatedObjectId(String guid, String typeName, AtlasEntity.Status entityStatus, Map<String, Object> uniqueAttributes, String displayText, String relationshipGuid, AtlasRelationship.Status relationshipStatus, AtlasStruct relationshipAttributes) {
         super(guid, typeName, uniqueAttributes);
 
         setEntityStatus(entityStatus);
@@ -90,7 +87,7 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
         setRelationshipType(relationshipType);
     }
 
-    public AtlasRelatedObjectId(Map objIdMap) {
+    public AtlasRelatedObjectId(Map<?, ?> objIdMap) {
         super(objIdMap);
 
         if (objIdMap != null) {
@@ -127,17 +124,29 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
         this.entityStatus = entityStatus;
     }
 
-    public String getDisplayText() { return displayText; }
+    public String getDisplayText() {
+        return displayText;
+    }
 
-    public void setDisplayText(String displayText) { this.displayText = displayText; }
+    public void setDisplayText(String displayText) {
+        this.displayText = displayText;
+    }
 
-    public String getRelationshipType() { return relationshipType; }
+    public String getRelationshipType() {
+        return relationshipType;
+    }
 
-    public void setRelationshipType(String relationshipType) { this.relationshipType = relationshipType; }
+    public void setRelationshipType(String relationshipType) {
+        this.relationshipType = relationshipType;
+    }
 
-    public String getRelationshipGuid() { return relationshipGuid; }
+    public String getRelationshipGuid() {
+        return relationshipGuid;
+    }
 
-    public void setRelationshipGuid(String relationshipGuid) { this.relationshipGuid = relationshipGuid; }
+    public void setRelationshipGuid(String relationshipGuid) {
+        this.relationshipGuid = relationshipGuid;
+    }
 
     public AtlasRelationship.Status getRelationshipStatus() {
         return relationshipStatus;
@@ -147,7 +156,9 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
         this.relationshipStatus = relationshipStatus;
     }
 
-    public AtlasStruct getRelationshipAttributes() { return relationshipAttributes; }
+    public AtlasStruct getRelationshipAttributes() {
+        return relationshipAttributes;
+    }
 
     public void setRelationshipAttributes(AtlasStruct relationshipAttributes) {
         this.relationshipAttributes = relationshipAttributes;
@@ -156,36 +167,13 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
             setRelationshipType(relationshipAttributes.getTypeName());
         }
     }
+
     public String getQualifiedName() {
         return qualifiedName;
     }
 
     public void setQualifiedName(String qualifiedName) {
         this.qualifiedName = qualifiedName;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) { return true; }
-        if (o == null || getClass() != o.getClass()) { return false; }
-        if (!super.equals(o)) { return false; }
-        AtlasRelatedObjectId that = (AtlasRelatedObjectId) o;
-        return Objects.equals(entityStatus, that.entityStatus) &&
-               Objects.equals(displayText, that.displayText) &&
-               Objects.equals(relationshipType, that.relationshipType) &&
-               Objects.equals(relationshipGuid, that.relationshipGuid) &&
-               Objects.equals(relationshipStatus, that.relationshipStatus) &&
-               Objects.equals(relationshipAttributes, that.relationshipAttributes);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), displayText, relationshipType, relationshipGuid, relationshipStatus, relationshipAttributes);
-    }
-
-    @Override
-    public String toString() {
-        return toString(new StringBuilder()).toString();
     }
 
     @Override
@@ -206,5 +194,35 @@ public class AtlasRelatedObjectId extends AtlasObjectId implements Serializable 
         sb.append('}');
 
         return sb;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), displayText, relationshipType, relationshipGuid, relationshipStatus, relationshipAttributes);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        } else if (!super.equals(o)) {
+            return false;
+        }
+
+        AtlasRelatedObjectId that = (AtlasRelatedObjectId) o;
+
+        return Objects.equals(entityStatus, that.entityStatus) &&
+                Objects.equals(displayText, that.displayText) &&
+                Objects.equals(relationshipType, that.relationshipType) &&
+                Objects.equals(relationshipGuid, that.relationshipGuid) &&
+                Objects.equals(relationshipStatus, that.relationshipStatus) &&
+                Objects.equals(relationshipAttributes, that.relationshipAttributes);
+    }
+
+    @Override
+    public String toString() {
+        return toString(new StringBuilder()).toString();
     }
 }

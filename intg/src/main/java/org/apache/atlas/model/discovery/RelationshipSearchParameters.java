@@ -19,31 +19,28 @@ package org.apache.atlas.model.discovery;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.SortOrder;
 
 import java.io.Serializable;
-import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RelationshipSearchParameters implements Serializable {
-
     private static final long serialVersionUID = 1L;
 
-    private String         relationshipName;
+    private String                          relationshipName;
     private SearchParameters.FilterCriteria relationshipFilters;
-    private boolean        includeSubTypes;
-    private int            offset;
-    private int            limit;
-    private String         sortBy;
-    private SortOrder      sortOrder;
-    private String         marker;
-
+    private boolean                         includeSubTypes;
+    private int                             offset;
+    private int                             limit;
+    private String                          sortBy;
+    private SortOrder                       sortOrder;
+    private String                          marker;
 
     public String getRelationshipName() {
         return relationshipName;

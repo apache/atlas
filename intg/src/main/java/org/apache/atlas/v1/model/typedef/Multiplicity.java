@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,6 +20,7 @@ package org.apache.atlas.v1.model.typedef;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationContext;
@@ -40,21 +41,19 @@ import java.util.Objects;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(using = Multiplicity.MultiplicitySerializer.class, include=JsonSerialize.Inclusion.NON_NULL)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonSerialize(using = Multiplicity.MultiplicitySerializer.class)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonDeserialize(using = Multiplicity.MultiplicityDeserializer.class)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class Multiplicity implements Serializable {
-    private static final long serialVersionUID = 1L;
-
     public static final Multiplicity OPTIONAL   = new Multiplicity(0, 1, false);
     public static final Multiplicity REQUIRED   = new Multiplicity(1, 1, false);
     public static final Multiplicity COLLECTION = new Multiplicity(1, Integer.MAX_VALUE, false);
     public static final Multiplicity SET        = new Multiplicity(1, Integer.MAX_VALUE, true);
-
+    private static final long serialVersionUID = 1L;
     private int     lower;
     private int     upper;
     private boolean isUnique;
@@ -97,6 +96,10 @@ public class Multiplicity implements Serializable {
         this.isUnique = isUnique;
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(lower, upper, isUnique);
+    }
 
     @Override
     public boolean equals(Object o) {
@@ -111,15 +114,9 @@ public class Multiplicity implements Serializable {
         Multiplicity that = (Multiplicity) o;
 
         return lower == that.lower &&
-               upper == that.upper &&
-               isUnique == that.isUnique;
+                upper == that.upper &&
+                isUnique == that.isUnique;
     }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(lower, upper, isUnique);
-    }
-
 
     static class MultiplicitySerializer extends JsonSerializer<Multiplicity> {
         @Override

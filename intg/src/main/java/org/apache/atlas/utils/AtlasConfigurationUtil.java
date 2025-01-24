@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,17 +20,22 @@ package org.apache.atlas.utils;
 import org.apache.commons.configuration.Configuration;
 
 public class AtlasConfigurationUtil {
+    private AtlasConfigurationUtil() {
+        // to block instantiation
+    }
 
     public static String getRecentString(Configuration config, String key) {
         return getRecentString(config, key, null);
     }
 
     public static String getRecentString(Configuration config, String key, String defaultValue) {
-        String ret = defaultValue;
+        String   ret = defaultValue;
         String[] arr = config.getStringArray(key);
+
         if (arr.length > 0) {
-            ret = arr[arr.length-1];
+            ret = arr[arr.length - 1];
         }
+
         return ret;
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,18 +17,16 @@
  */
 package org.apache.atlas.model.impexp;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import org.apache.atlas.model.instance.AtlasEntity;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,20 +36,15 @@ import java.util.Map;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasExportResult implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    public final static String ENTITY_COUNT = "entityCount";
-
-    public enum OperationStatus {
-        SUCCESS, PARTIAL_SUCCESS, INPROGRESS, FAIL
-    }
+    public static final String ENTITY_COUNT = "entityCount";
 
     private AtlasExportRequest   request;
     private String               userName;
@@ -68,9 +61,7 @@ public class AtlasExportResult implements Serializable {
         this(null, null, null, null, System.currentTimeMillis(), 0L);
     }
 
-    public AtlasExportResult(AtlasExportRequest request,
-                             String userName, String clientIpAddress, String hostName, long timeStamp,
-                              long changeMarker) {
+    public AtlasExportResult(AtlasExportRequest request, String userName, String clientIpAddress, String hostName, long timeStamp, long changeMarker) {
         this.request         = request;
         this.userName        = userName;
         this.clientIpAddress = clientIpAddress;
@@ -138,12 +129,12 @@ public class AtlasExportResult implements Serializable {
         this.data = data;
     }
 
-    public void setChangeMarker(long changeMarker) {
-        this.changeMarker = changeMarker;
-    }
-
     public long getChangeMarker() {
         return this.changeMarker;
+    }
+
+    public void setChangeMarker(long changeMarker) {
+        this.changeMarker = changeMarker;
     }
 
     public OperationStatus getOperationStatus() {
@@ -157,6 +148,7 @@ public class AtlasExportResult implements Serializable {
     public void setMetric(String key, int value) {
         metrics.put(key, value);
     }
+
     public String getSourceClusterName() {
         return sourceClusterName;
     }
@@ -170,7 +162,7 @@ public class AtlasExportResult implements Serializable {
     }
 
     public void incrementMeticsCounter(String key, int incrementBy) {
-        int currentValue = metrics.containsKey(key) ? metrics.get(key) : 0;
+        int currentValue = metrics.getOrDefault(key, 0);
 
         metrics.put(key, currentValue + incrementBy);
     }
@@ -204,39 +196,50 @@ public class AtlasExportResult implements Serializable {
     }
 
     public void clear() {
-        if(this.data != null) {
+        if (this.data != null) {
             this.data.clear();
         }
 
-        if(this.metrics != null) {
+        if (this.metrics != null) {
             this.metrics.clear();
         }
     }
 
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    public enum OperationStatus {
+        SUCCESS, PARTIAL_SUCCESS, INPROGRESS, FAIL
+    }
+
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
-    public static class AtlasExportData implements Serializable{
+    public static class AtlasExportData implements Serializable {
         private static final long serialVersionUID = 1L;
 
-        private AtlasTypesDef            typesDef;
-        private List<String>             entityCreationOrder;
-
+        private AtlasTypesDef typesDef;
+        private List<String>  entityCreationOrder;
 
         public AtlasExportData() {
             typesDef            = new AtlasTypesDef();
             entityCreationOrder = new ArrayList<>();
         }
 
-        public AtlasTypesDef getTypesDef() { return typesDef; }
+        public AtlasTypesDef getTypesDef() {
+            return typesDef;
+        }
 
-        public void setTypesDef(AtlasTypesDef typesDef) { this.typesDef = typesDef; }
+        public void setTypesDef(AtlasTypesDef typesDef) {
+            this.typesDef = typesDef;
+        }
 
-        public List<String> getEntityCreationOrder() { return entityCreationOrder; }
+        public List<String> getEntityCreationOrder() {
+            return entityCreationOrder;
+        }
 
-        public void setEntityCreationOrder(List<String> entityCreationOrder) { this.entityCreationOrder = entityCreationOrder; }
+        public void setEntityCreationOrder(List<String> entityCreationOrder) {
+            this.entityCreationOrder = entityCreationOrder;
+        }
 
         public StringBuilder toString(StringBuilder sb) {
             if (sb == null) {
@@ -261,11 +264,11 @@ public class AtlasExportResult implements Serializable {
         }
 
         public void clear() {
-            if(this.typesDef!= null) {
+            if (this.typesDef != null) {
                 this.typesDef.clear();
             }
 
-            if(this.entityCreationOrder != null) {
+            if (this.entityCreationOrder != null) {
                 this.entityCreationOrder.clear();
             }
         }

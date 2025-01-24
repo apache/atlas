@@ -19,7 +19,6 @@ package org.apache.atlas.utils;
 
 import org.apache.atlas.model.Clearable;
 import org.apache.commons.lang.StringUtils;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.List;
@@ -29,40 +28,7 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
 public class FixedBufferListTest {
-    private String STR_PREFIX = "str:%s";
-
-    public static class Spying implements Clearable {
-        public static AtomicInteger callsToCtor = new AtomicInteger();
-        public static AtomicInteger callsToClear = new AtomicInteger();
-
-        private int anInt;
-        private String aString;
-        private long aLong;
-
-        public Spying() {
-            callsToCtor.incrementAndGet();
-        }
-
-        @Override
-        public void clear() {
-            callsToClear.incrementAndGet();
-
-            anInt = 0;
-            aString = StringUtils.EMPTY;
-            aLong = 0;
-        }
-
-        public static void resetCounters() {
-            Spying.callsToCtor.set(0);
-            Spying.callsToClear.set(0);
-        }
-    }
-
-    private static class SpyingFixedBufferList extends FixedBufferList<Spying> {
-        public SpyingFixedBufferList(int incrementCapacityFactor) {
-            super(Spying.class, incrementCapacityFactor);
-        }
-    }
+    private static final String STR_PREFIX = "str:%s";
 
     @Test
     public void instantiateListWithParameterizedClass() {
@@ -74,8 +40,8 @@ public class FixedBufferListTest {
     public void createdBasedOnInitialSize() {
         Spying.resetCounters();
 
-        int incrementByFactor = 2;
-        SpyingFixedBufferList fixedBufferList = new SpyingFixedBufferList(incrementByFactor);
+        int                   incrementByFactor = 2;
+        SpyingFixedBufferList fixedBufferList   = new SpyingFixedBufferList(incrementByFactor);
         addElements(fixedBufferList, 0, 3);
 
         List<Spying> list = fixedBufferList.toList();
@@ -83,11 +49,11 @@ public class FixedBufferListTest {
         assertEquals(Spying.callsToCtor.get(), incrementByFactor * 2);
     }
 
-    @Test (dependsOnMethods = "createdBasedOnInitialSize")
+    @Test(dependsOnMethods = "createdBasedOnInitialSize")
     public void bufferIncreasesIfNeeded() {
         Spying.resetCounters();
 
-        int incrementSizeBy = 5;
+        int                   incrementSizeBy = 5;
         SpyingFixedBufferList fixedBufferList = new SpyingFixedBufferList(incrementSizeBy);
         addElements(fixedBufferList, 0, incrementSizeBy);
         List<Spying> spyings = fixedBufferList.toList();
@@ -104,7 +70,7 @@ public class FixedBufferListTest {
 
     @Test
     public void retrieveEmptyList() {
-        int size = 5;
+        int                   size            = 5;
         SpyingFixedBufferList fixedBufferList = new SpyingFixedBufferList(size);
 
         List<Spying> list = fixedBufferList.toList();
@@ -118,7 +84,7 @@ public class FixedBufferListTest {
     private void assertSpyingList(List<Spying> list, int expectedSize) {
         assertEquals(list.size(), expectedSize);
         for (int i1 = 0; i1 < list.size(); i1++) {
-            Assert.assertNotNull(list.get(i1));
+            assertNotNull(list.get(i1));
             assertSpying(list.get(i1), i1);
         }
     }
@@ -130,8 +96,8 @@ public class FixedBufferListTest {
     }
 
     private Spying createSpyingClass(Spying spying, int i) {
-        spying.aLong = i;
-        spying.anInt = i;
+        spying.aLong   = i;
+        spying.anInt   = i;
         spying.aString = String.format(STR_PREFIX, i);
 
         return spying;
@@ -141,6 +107,39 @@ public class FixedBufferListTest {
         for (int i = startIndex; i < (startIndex + numElements); i++) {
             Spying spyForUpdate = fixedBufferList.next();
             createSpyingClass(spyForUpdate, i);
+        }
+    }
+
+    public static class Spying implements Clearable {
+        public static AtomicInteger callsToCtor  = new AtomicInteger();
+        public static AtomicInteger callsToClear = new AtomicInteger();
+
+        private int    anInt;
+        private String aString;
+        private long   aLong;
+
+        public Spying() {
+            callsToCtor.incrementAndGet();
+        }
+
+        public static void resetCounters() {
+            Spying.callsToCtor.set(0);
+            Spying.callsToClear.set(0);
+        }
+
+        @Override
+        public void clear() {
+            callsToClear.incrementAndGet();
+
+            anInt   = 0;
+            aString = StringUtils.EMPTY;
+            aLong   = 0;
+        }
+    }
+
+    private static class SpyingFixedBufferList extends FixedBufferList<Spying> {
+        public SpyingFixedBufferList(int incrementCapacityFactor) {
+            super(Spying.class, incrementCapacityFactor);
         }
     }
 }
