@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,15 +17,13 @@
  */
 package org.apache.atlas.type;
 
-
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * class that implements behaviour of an enum-type.
@@ -47,7 +45,7 @@ public class AtlasEnumType extends AtlasType {
         String d = enumDef.getDefaultValue();
 
         if (d == null) {
-            AtlasEnumElementDef defElem = enumDef.getElementDefs().size() > 0 ? enumDef.getElementDefs().get(0) : null;
+            AtlasEnumElementDef defElem = !enumDef.getElementDefs().isEmpty() ? enumDef.getElementDefs().get(0) : null;
 
             if (defElem != null) {
                 d = defElem.getValue();
@@ -59,10 +57,8 @@ public class AtlasEnumType extends AtlasType {
         this.defaultValue = d;
     }
 
-    public AtlasEnumDef getEnumDef() { return enumDef; }
-
-    @Override
-    void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    public AtlasEnumDef getEnumDef() {
+        return enumDef;
     }
 
     @Override
@@ -90,6 +86,10 @@ public class AtlasEnumType extends AtlasType {
         }
 
         return null;
+    }
+
+    @Override
+    void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
     }
 
     public AtlasEnumElementDef getEnumElementDef(String value) {

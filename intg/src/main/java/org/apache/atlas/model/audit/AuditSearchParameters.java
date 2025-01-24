@@ -20,7 +20,7 @@ package org.apache.atlas.model.audit;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 
@@ -31,16 +31,10 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AuditSearchParameters implements Serializable {
     private static final long serialVersionUID = 1L;
-
-    public static long getSerialVersionUID() {
-        return serialVersionUID;
-    }
-
-    AuditSearchParameters() {}
 
     private FilterCriteria auditFilters;
     private int            limit;
@@ -48,8 +42,16 @@ public class AuditSearchParameters implements Serializable {
     private String         sortBy;
     private SortOrder      sortOrder;
 
+    AuditSearchParameters() {
+    }
+
+    public static long getSerialVersionUID() {
+        return serialVersionUID;
+    }
+
     /**
      * Entity attribute filters for the type (if type name is specified)
+     *
      * @return
      */
     public FilterCriteria getAuditFilters() {
@@ -58,6 +60,7 @@ public class AuditSearchParameters implements Serializable {
 
     /**
      * Filter the entities on this criteria
+     *
      * @param auditFilters
      */
     public void setAuditFilters(FilterCriteria auditFilters) {
@@ -73,6 +76,7 @@ public class AuditSearchParameters implements Serializable {
 
     /**
      * Restrict the results to the specified limit
+     *
      * @param limit max number of results
      */
     public void setLimit(int limit) {
@@ -96,13 +100,18 @@ public class AuditSearchParameters implements Serializable {
     /**
      * @return Attribute on which to sort the results
      */
-    public String getSortBy() { return sortBy; }
+    public String getSortBy() {
+        return sortBy;
+    }
 
     /**
      * Sort the results based on sortBy attribute
+     *
      * @param sortBy Attribute on which to sort the results
      */
-    public void setSortBy(String sortBy) { this.sortBy = sortBy; }
+    public void setSortBy(String sortBy) {
+        this.sortBy = sortBy;
+    }
 
     /**
      * @return Sorting order of the results
@@ -113,20 +122,11 @@ public class AuditSearchParameters implements Serializable {
 
     /**
      * Sorting order to sort the results
+     *
      * @param sortOrder ASCENDING vs DESCENDING
      */
-    public void setSortOrder(SortOrder sortOrder) { this.sortOrder = sortOrder; }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AuditSearchParameters that = (AuditSearchParameters) o;
-        return Objects.equals(auditFilters, that.auditFilters) &&
-                limit == that.limit &&
-                offset == that.offset &&
-                Objects.equals(sortBy, that.sortBy) &&
-                Objects.equals(sortOrder, that.sortOrder);
+    public void setSortOrder(SortOrder sortOrder) {
+        this.sortOrder = sortOrder;
     }
 
     @Override
@@ -135,14 +135,29 @@ public class AuditSearchParameters implements Serializable {
     }
 
     @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        AuditSearchParameters that = (AuditSearchParameters) o;
+
+        return Objects.equals(auditFilters, that.auditFilters) &&
+                limit == that.limit &&
+                offset == that.offset &&
+                Objects.equals(sortBy, that.sortBy) &&
+                Objects.equals(sortOrder, that.sortOrder);
+    }
+
+    @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("AuditSearchParameters{");
-        sb.append("auditFilters=").append(auditFilters);
-        sb.append(", limit=").append(limit);
-        sb.append(", offset=").append(offset);
-        sb.append(", sortBy='").append(sortBy).append('\'');
-        sb.append(", sortOrder=").append(sortOrder);
-        sb.append('}');
-        return sb.toString();
+        return "AuditSearchParameters{" + "auditFilters=" + auditFilters +
+                ", limit=" + limit +
+                ", offset=" + offset +
+                ", sortBy='" + sortBy + '\'' +
+                ", sortOrder=" + sortOrder +
+                '}';
     }
 }

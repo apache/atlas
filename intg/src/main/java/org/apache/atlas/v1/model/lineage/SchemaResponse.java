@@ -17,13 +17,12 @@
  */
 package org.apache.atlas.v1.model.lineage;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.v1.model.typedef.ClassTypeDefinition;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -32,9 +31,11 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class SchemaResponse {
+public class SchemaResponse implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     private String        requestId;
     private String        tableName;
     private SchemaDetails results;
@@ -70,9 +71,11 @@ public class SchemaResponse {
      * Represents the column schema for a given hive table
      */
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonInclude(JsonInclude.Include.ALWAYS)
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class SchemaDetails {
+    public static class SchemaDetails implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private ClassTypeDefinition       dataType;   // Data type of the (hive) columns
         private List<Map<String, Object>> rows;       // Column instances for the given table
 
@@ -81,7 +84,7 @@ public class SchemaResponse {
 
         public SchemaDetails(final SchemaDetails other) {
             this.dataType = other.dataType;
-            this.rows = other.rows;
+            this.rows     = other.rows;
         }
 
         public ClassTypeDefinition getDataType() {
@@ -101,18 +104,22 @@ public class SchemaResponse {
         }
 
         @Override
-        public boolean equals(final Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            final SchemaDetails that = (SchemaDetails) o;
-            return Objects.equals(dataType, that.dataType) &&
-                    Objects.equals(rows, that.rows);
+        public int hashCode() {
+            return Objects.hash(dataType, rows);
         }
 
         @Override
-        public int hashCode() {
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            } else if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
 
-            return Objects.hash(dataType, rows);
+            SchemaDetails that = (SchemaDetails) o;
+
+            return Objects.equals(dataType, that.dataType) &&
+                    Objects.equals(rows, that.rows);
         }
     }
 }

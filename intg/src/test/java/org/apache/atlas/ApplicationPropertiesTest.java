@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,31 +17,33 @@
  */
 package org.apache.atlas;
 
-import java.io.InputStream;
-import java.util.AbstractMap;
-
 import org.apache.atlas.utils.AtlasConfigurationUtil;
 import org.apache.commons.configuration.Configuration;
 import org.testng.annotations.Test;
-import static org.testng.Assert.*;
+
+import java.io.InputStream;
+import java.util.AbstractMap;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.fail;
 
 /**
  * Unit test for {@link ApplicationProperties}
  *
  */
 public class ApplicationPropertiesTest {
-
     @Test
     public void testGetFileAsInputStream() throws Exception {
         Configuration props = ApplicationProperties.get("test.properties");
-        InputStream inStr = null;
+        InputStream   inStr = null;
 
         // configured file as class loader resource
         try {
             inStr = ApplicationProperties.getFileAsInputStream(props, "jaas.properties.file", null);
             assertNotNull(inStr);
-        }
-        finally {
+        } finally {
             if (inStr != null) {
                 inStr.close();
             }
@@ -51,9 +53,9 @@ public class ApplicationPropertiesTest {
         props.setProperty("jaas.properties.file", "src/test/resources/atlas-jaas.properties");
         try {
             inStr = ApplicationProperties.getFileAsInputStream(props, "jaas.properties.file", null);
+
             assertNotNull(inStr);
-        }
-        finally {
+        } finally {
             if (inStr != null) {
                 inStr.close();
             }
@@ -62,9 +64,9 @@ public class ApplicationPropertiesTest {
         // default file as class loader resource
         try {
             inStr = ApplicationProperties.getFileAsInputStream(props, "property.not.specified.in.config", "atlas-jaas.properties");
+
             assertNotNull(inStr);
-        }
-        finally {
+        } finally {
             if (inStr != null) {
                 inStr.close();
             }
@@ -73,9 +75,9 @@ public class ApplicationPropertiesTest {
         // default file relative to working directory
         try {
             inStr = ApplicationProperties.getFileAsInputStream(props, "property.not.specified.in.config", "src/test/resources/atlas-jaas.properties");
+
             assertNotNull(inStr);
-        }
-        finally {
+        } finally {
             if (inStr != null) {
                 inStr.close();
             }
@@ -83,18 +85,18 @@ public class ApplicationPropertiesTest {
 
         // default file relative to atlas configuration directory
         String originalConfDirSetting = System.setProperty(ApplicationProperties.ATLAS_CONFIGURATION_DIRECTORY_PROPERTY, "src/test/resources");
+
         try {
             inStr = ApplicationProperties.getFileAsInputStream(props, "property.not.specified.in.config", "atlas-jaas.properties");
+
             assertNotNull(inStr);
-        }
-        finally {
+        } finally {
             if (inStr != null) {
                 inStr.close();
             }
             if (originalConfDirSetting != null) {
                 System.setProperty(ApplicationProperties.ATLAS_CONFIGURATION_DIRECTORY_PROPERTY, originalConfDirSetting);
-            }
-            else {
+            } else {
                 System.clearProperty(ApplicationProperties.ATLAS_CONFIGURATION_DIRECTORY_PROPERTY);
             }
         }
@@ -102,12 +104,11 @@ public class ApplicationPropertiesTest {
         // non-existent property and no default file
         try {
             inStr = ApplicationProperties.getFileAsInputStream(props, "property.not.specified.in.config", null);
+
             fail("Expected " + AtlasException.class.getSimpleName() + " but none thrown");
-        }
-        catch (AtlasException e) {
+        } catch (AtlasException e) {
             // good
-        }
-        finally {
+        } finally {
             if (inStr != null) {
                 inStr.close();
             }
@@ -115,14 +116,14 @@ public class ApplicationPropertiesTest {
 
         // configured file not found in file system or classpath
         props.setProperty("jaas.properties.file", "does_not_exist.txt");
+
         try {
             inStr = ApplicationProperties.getFileAsInputStream(props, "jaas.properties.file", null);
+
             fail("Expected " + AtlasException.class.getSimpleName() + " but none thrown");
-        }
-        catch (AtlasException e) {
+        } catch (AtlasException e) {
             // good
-        }
-        finally {
+        } finally {
             if (inStr != null) {
                 inStr.close();
             }
@@ -131,12 +132,13 @@ public class ApplicationPropertiesTest {
 
     @Test
     public void verifySetDefault() throws AtlasException {
-        Configuration props = ApplicationProperties.get("test.properties");
+        Configuration         props  = ApplicationProperties.get("test.properties");
         ApplicationProperties aProps = (ApplicationProperties) props;
 
-        String defaultValue = "someValue";
-        String someKey = "someKey";
-        AbstractMap.SimpleEntry<String, String> defaultKV = new AbstractMap.SimpleEntry<>(someKey, defaultValue);
+        String                                  defaultValue = "someValue";
+        String                                  someKey      = "someKey";
+        AbstractMap.SimpleEntry<String, String> defaultKV    = new AbstractMap.SimpleEntry<>(someKey, defaultValue);
+
         aProps.setDefault(defaultKV, "newValue");
 
         assertNotEquals(props.getString(someKey), defaultValue);
@@ -145,11 +147,14 @@ public class ApplicationPropertiesTest {
     }
 
     @Test
-    public void verifyGetLatesttString () throws AtlasException {
-        String key="atlas.metadata.namespace", old_val = "nm-sp-1", new_val = "nm-sp-2";
+    public void verifyGetLatesttString() throws AtlasException {
+        String        key       = "atlas.metadata.namespace";
+        String        oldVal    = "nm-sp-1";
+        String        newVal    = "nm-sp-2";
         Configuration atlasConf = ApplicationProperties.get("test.properties");
-        assertEquals(atlasConf.getString(key), old_val);
-        assertEquals(AtlasConfigurationUtil.getRecentString(atlasConf, key, old_val), new_val);
-        assertEquals(AtlasConfigurationUtil.getRecentString(atlasConf, "garbage", old_val), old_val);
+
+        assertEquals(atlasConf.getString(key), oldVal);
+        assertEquals(AtlasConfigurationUtil.getRecentString(atlasConf, key, oldVal), newVal);
+        assertEquals(AtlasConfigurationUtil.getRecentString(atlasConf, "garbage", oldVal), oldVal);
     }
 }

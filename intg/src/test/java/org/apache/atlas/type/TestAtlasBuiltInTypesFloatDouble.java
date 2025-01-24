@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,10 +23,9 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 
 public class TestAtlasBuiltInTypesFloatDouble {
-
     @Test
     public void floatRangeCheck() {
-        assertFloatChecks(String.valueOf("-1.E-45"), true);
+        assertFloatChecks("-1.E-45", true);
         assertFloatChecks(String.valueOf(Float.MAX_VALUE), true);
         assertFloatChecks("3.4028235E32", true);
         assertFloatChecks("-3.4028235E32", true);
@@ -48,13 +47,12 @@ public class TestAtlasBuiltInTypesFloatDouble {
         assertNullNotNull(notNull, new AtlasBuiltInTypes.AtlasFloatType().getNormalizedValue(v));
     }
 
-
     private void assertDoubleChecks(String v, boolean notNull) {
         assertNullNotNull(notNull, new AtlasBuiltInTypes.AtlasDoubleType().getNormalizedValue(v));
     }
 
     private void assertNullNotNull(boolean notNull, Object f) {
-        if(notNull) {
+        if (notNull) {
             assertNotNull(f);
         } else {
             assertNull(f);

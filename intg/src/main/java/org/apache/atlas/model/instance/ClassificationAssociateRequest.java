@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,11 +17,9 @@
  */
 package org.apache.atlas.model.instance;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.commons.collections.CollectionUtils;
 
@@ -29,23 +27,26 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
-import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-
+import java.io.Serializable;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
-public class ClassificationAssociateRequest {
-    private AtlasClassification         classification;
-    private List<String>                entityGuids;
-    private List<Map<String, Object>>   entitiesUniqueAttributes;
-    private String                      entityTypeName;
+public class ClassificationAssociateRequest implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    private AtlasClassification       classification;
+    private List<String>              entityGuids;
+    private List<Map<String, Object>> entitiesUniqueAttributes;
+    private String                    entityTypeName;
 
     public ClassificationAssociateRequest() {
         this(null, null);
@@ -85,19 +86,34 @@ public class ClassificationAssociateRequest {
         this.entitiesUniqueAttributes = entitiesUniqueAttributes;
     }
 
-    public AtlasClassification getClassification() { return classification; }
+    public AtlasClassification getClassification() {
+        return classification;
+    }
 
-    public void setClassification(AtlasClassification classification) { this.classification = classification; }
+    public void setClassification(AtlasClassification classification) {
+        this.classification = classification;
+    }
 
-    public List<String> getEntityGuids() { return entityGuids; }
+    public List<String> getEntityGuids() {
+        return entityGuids;
+    }
 
-    public void setEntityGuids(List<String> entityGuids) { this.entityGuids = entityGuids; }
+    public void setEntityGuids(List<String> entityGuids) {
+        this.entityGuids = entityGuids;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(classification, entityGuids, entitiesUniqueAttributes);
+    }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) { return true; }
-
-        if (o == null || getClass() != o.getClass()) { return false; }
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
 
         ClassificationAssociateRequest that = (ClassificationAssociateRequest) o;
 
@@ -105,8 +121,8 @@ public class ClassificationAssociateRequest {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(classification, entityGuids, entitiesUniqueAttributes);
+    public String toString() {
+        return toString(new StringBuilder()).toString();
     }
 
     public StringBuilder toString(StringBuilder sb) {
@@ -133,10 +149,5 @@ public class ClassificationAssociateRequest {
         sb.append('}');
 
         return sb;
-    }
-
-    @Override
-    public String toString() {
-        return toString(new StringBuilder()).toString();
     }
 }

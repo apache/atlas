@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,15 +17,16 @@
  */
 package org.apache.atlas.model;
 
-import com.sun.jersey.core.util.MultivaluedMapImpl;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.sun.jersey.core.util.MultivaluedMapImpl;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.util.List;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
@@ -34,9 +35,9 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 /**
  * Generic filter, to specify search criteria using name/value pairs.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class SearchFilter {
@@ -48,17 +49,12 @@ public class SearchFilter {
     public static final String PARAM_NOT_SERVICETYPE = "notservicetype";
     public static final String PARAM_NOT_NAME        = "notname";
 
-    /**
-     * to specify whether the result should be sorted? If yes, whether asc or desc.
-     */
-    public enum SortType { NONE, ASC, DESC }
-
-    private MultivaluedMap<String, String> params     = null;
-    private long                startIndex = 0;
-    private long                maxRows    = Long.MAX_VALUE;
-    private boolean             getCount   = true;
-    private String              sortBy     = null;
-    private SortType            sortType   = null;
+    private MultivaluedMap<String, String> params;
+    private long                           startIndex;
+    private long                           maxRows  = Long.MAX_VALUE;
+    private boolean                        getCount = true;
+    private String                         sortBy;
+    private SortType                       sortType;
 
     public SearchFilter() {
         setParams(null);
@@ -154,4 +150,9 @@ public class SearchFilter {
     public void setSortType(SortType sortType) {
         this.sortType = sortType;
     }
+
+    /**
+     * to specify whether the result should be sorted? If yes, whether asc or desc.
+     */
+    public enum SortType { NONE, ASC, DESC }
 }

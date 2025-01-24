@@ -17,11 +17,9 @@
  */
 package org.apache.atlas.model.profile;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.AtlasBaseModelObject;
 
 import java.io.Serializable;
@@ -33,7 +31,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.dumpObjects;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AtlasUserProfile extends AtlasBaseModelObject implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -41,7 +39,6 @@ public class AtlasUserProfile extends AtlasBaseModelObject implements Serializab
     private String                     name;
     private String                     fullName;
     private List<AtlasUserSavedSearch> savedSearches;
-
 
     public AtlasUserProfile() {
         this(null, null);
@@ -57,31 +54,29 @@ public class AtlasUserProfile extends AtlasBaseModelObject implements Serializab
         this.savedSearches = new ArrayList<>();
     }
 
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
     public String getName() {
         return this.name;
     }
 
-    public void setFullName(String fullName) {
-        this.fullName = fullName;
+    public void setName(String name) {
+        this.name = name;
     }
 
     public String getFullName() {
         return this.fullName;
     }
 
-    public void setSavedSearches(List<AtlasUserSavedSearch> searches) {
-        this.savedSearches = searches;
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
     public List<AtlasUserSavedSearch> getSavedSearches() {
         return savedSearches;
     }
 
+    public void setSavedSearches(List<AtlasUserSavedSearch> searches) {
+        this.savedSearches = searches;
+    }
 
     @Override
     public StringBuilder toString(StringBuilder sb) {

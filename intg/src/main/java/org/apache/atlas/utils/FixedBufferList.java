@@ -27,9 +27,9 @@ import java.util.List;
 public class FixedBufferList<T extends Clearable> {
     private static final Logger LOG = LoggerFactory.getLogger(FixedBufferList.class);
 
-    private final Class<T> itemClass;
+    private final Class<T>     itemClass;
     private final ArrayList<T> buffer;
-    private final int incrementCapacityBy;
+    private final int          incrementCapacityBy;
 
     private int length;
 
@@ -39,12 +39,13 @@ public class FixedBufferList<T extends Clearable> {
 
     public FixedBufferList(Class<T> clazz, int incrementCapacityBy) {
         this.incrementCapacityBy = (incrementCapacityBy <= 0 ? 1 : incrementCapacityBy);
-        this.itemClass = clazz;
-        this.buffer = new ArrayList<>();
+        this.itemClass           = clazz;
+        this.buffer              = new ArrayList<>();
     }
 
     public T next() {
         request(length + 1);
+
         return buffer.get(length++);
     }
 
@@ -53,8 +54,8 @@ public class FixedBufferList<T extends Clearable> {
     }
 
     public void reset() {
-        for (int i = 0; i < buffer.size(); i++) {
-            buffer.get(i).clear();
+        for (T t : buffer) {
+            t.clear();
         }
 
         this.length = 0;
@@ -67,12 +68,12 @@ public class FixedBufferList<T extends Clearable> {
 
         int oldCapacity = this.buffer.size();
         int newCapacity = oldCapacity + this.incrementCapacityBy;
+
         this.buffer.ensureCapacity(newCapacity);
+
         instantiateItems(oldCapacity, newCapacity);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("FixedBufferList: Requested: {} From: {} To:{}", requestedCapacity, oldCapacity, newCapacity);
-        }
+        LOG.debug("FixedBufferList: Requested: {} From: {} To:{}", requestedCapacity, oldCapacity, newCapacity);
     }
 
     private void instantiateItems(int startIndex, int maxSize) {

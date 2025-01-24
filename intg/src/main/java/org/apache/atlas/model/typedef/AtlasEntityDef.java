@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,12 +17,9 @@
  */
 package org.apache.atlas.model.typedef;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TypeCategory;
@@ -33,6 +30,7 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlSeeAlso;
+
 import java.io.Serializable;
 import java.util.HashSet;
 import java.util.List;
@@ -43,13 +41,12 @@ import java.util.Set;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-
 /**
  * class that captures details of a entity-type.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializable {
@@ -71,7 +68,6 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
     // the value of this field is derived from all the businessMetadataDefs this entityType is referenced in
     private Map<String, List<AtlasAttributeDef>> businessAttributeDefs;
 
-
     public AtlasEntityDef() {
         this(null, null, null, null, null, null, null);
     }
@@ -87,45 +83,38 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
     public AtlasEntityDef(String name, String description, String typeVersion) {
         this(name, description, typeVersion, null, null, null, null);
     }
-    
+
     public AtlasEntityDef(String name, String description, String typeVersion, String serviceType) {
         this(name, description, typeVersion, serviceType, null, null, null);
     }
 
-
     public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs) {
         this(name, description, typeVersion, attributeDefs, null);
     }
-    
+
     public AtlasEntityDef(String name, String description, String typeVersion, String serviceType, List<AtlasAttributeDef> attributeDefs) {
         this(name, description, typeVersion, serviceType, attributeDefs, null, null);
     }
 
-    public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs,
-                          Set<String> superTypes) {
+    public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Set<String> superTypes) {
         this(name, description, typeVersion, attributeDefs, superTypes, null);
     }
-    
-    public AtlasEntityDef(String name, String description, String typeVersion, String serviceType, List<AtlasAttributeDef> attributeDefs,
-            Set<String> superTypes) {
-    	this(name, description, typeVersion, serviceType, attributeDefs, superTypes, null);
+
+    public AtlasEntityDef(String name, String description, String typeVersion, String serviceType, List<AtlasAttributeDef> attributeDefs, Set<String> superTypes) {
+        this(name, description, typeVersion, serviceType, attributeDefs, superTypes, null);
     }
 
-
-    public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs,
-                          Set<String> superTypes, Map<String, String> options) {
+    public AtlasEntityDef(String name, String description, String typeVersion, List<AtlasAttributeDef> attributeDefs, Set<String> superTypes, Map<String, String> options) {
         super(TypeCategory.ENTITY, name, description, typeVersion, attributeDefs, options);
 
         setSuperTypes(superTypes);
     }
-    
-    public AtlasEntityDef(String name, String description, String typeVersion, String serviceType, List<AtlasAttributeDef> attributeDefs,
-            Set<String> superTypes, Map<String, String> options) {
-    	super(TypeCategory.ENTITY, name, description, typeVersion, attributeDefs, serviceType, options);
 
-		setSuperTypes(superTypes);
-	}
+    public AtlasEntityDef(String name, String description, String typeVersion, String serviceType, List<AtlasAttributeDef> attributeDefs, Set<String> superTypes, Map<String, String> options) {
+        super(TypeCategory.ENTITY, name, description, typeVersion, attributeDefs, serviceType, options);
 
+        setSuperTypes(superTypes);
+    }
 
     public AtlasEntityDef(AtlasEntityDef other) {
         super(other);
@@ -138,9 +127,7 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         }
     }
 
-
-
-	public Set<String> getSuperTypes() {
+    public Set<String> getSuperTypes() {
         return superTypes;
     }
 
@@ -208,10 +195,6 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         }
     }
 
-    private static boolean hasSuperType(Set<String> superTypes, String typeName) {
-        return superTypes != null && typeName != null && superTypes.contains(typeName);
-    }
-
     @Override
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {
@@ -274,11 +257,16 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) { return true; }
-        if (o == null || getClass() != o.getClass()) { return false; }
-        if (!super.equals(o)) { return false; }
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        } else if (!super.equals(o)) {
+            return false;
+        }
 
         AtlasEntityDef that = (AtlasEntityDef) o;
+
         return Objects.equals(superTypes, that.superTypes);
     }
 
@@ -292,12 +280,16 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         return toString(new StringBuilder()).toString();
     }
 
+    private static boolean hasSuperType(Set<String> superTypes, String typeName) {
+        return superTypes != null && typeName != null && superTypes.contains(typeName);
+    }
+
     /**
      * class that captures details of a struct-attribute.
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include= JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     public static class AtlasRelationshipAttributeDef extends AtlasAttributeDef implements Serializable {
@@ -306,7 +298,7 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         private String  relationshipTypeName;
         private boolean isLegacyAttribute;
 
-        public AtlasRelationshipAttributeDef() { }
+        public AtlasRelationshipAttributeDef() {}
 
         public AtlasRelationshipAttributeDef(String relationshipTypeName, boolean isLegacyAttribute, AtlasAttributeDef attributeDef) {
             super(attributeDef);
@@ -347,15 +339,18 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
 
         @Override
         public boolean equals(Object o) {
-            if (this == o) return true;
-
-            if (o == null || getClass() != o.getClass()) return false;
+            if (this == o) {
+                return true;
+            } else if (o == null || getClass() != o.getClass()) {
+                return false;
+            } else if (!super.equals(o)) {
+                return false;
+            }
 
             AtlasRelationshipAttributeDef that = (AtlasRelationshipAttributeDef) o;
 
-            return super.equals(that) &&
-                   isLegacyAttribute == that.isLegacyAttribute &&
-                   Objects.equals(relationshipTypeName, that.relationshipTypeName);
+            return isLegacyAttribute == that.isLegacyAttribute &&
+                    Objects.equals(relationshipTypeName, that.relationshipTypeName);
         }
 
         @Override
@@ -369,13 +364,12 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
         }
     }
 
-
     /**
      * REST serialization friendly list.
      */
-    @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown=true)
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
     @XmlSeeAlso(AtlasEntityDef.class)
@@ -390,8 +384,7 @@ public class AtlasEntityDef extends AtlasStructDef implements java.io.Serializab
             super(list);
         }
 
-        public AtlasEntityDefs(List list, long startIndex, int pageSize, long totalCount,
-                               SortType sortType, String sortBy) {
+        public AtlasEntityDefs(List<AtlasEntityDef> list, long startIndex, int pageSize, long totalCount, SortType sortType, String sortBy) {
             super(list, startIndex, pageSize, totalCount, sortType, sortBy);
         }
     }

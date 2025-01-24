@@ -17,11 +17,9 @@
  */
 package org.apache.atlas.model.metrics;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.model.AtlasBaseModelObject;
 import org.apache.atlas.utils.AtlasEntityUtil;
@@ -37,22 +35,22 @@ import java.util.concurrent.TimeUnit;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-
 /**
  * Atlas MetricsStat which includes Metrics' collection time and time to live (TTL).
  */
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AtlasMetricsStat extends AtlasBaseModelObject implements Serializable {
+    private static final long serialVersionUID = 1L;
 
-    public static final String METRICS_CATEGORY_GENERAL_PROPERTY  = "general";
-    public static final String METRICS_COLLECTION_TIME_PROPERTY   = "collectionTime";
-    public static final String METRICS_ID_PREFIX_PROPERTY         = "atlas_metrics_";
+    public static final String METRICS_CATEGORY_GENERAL_PROPERTY = "general";
+    public static final String METRICS_COLLECTION_TIME_PROPERTY  = "collectionTime";
+    public static final String METRICS_ID_PREFIX_PROPERTY        = "atlas_metrics_";
 
-    private String       metricsId;
-    private long         collectionTime;
-    private long         timeToLiveMillis;
+    private String metricsId;
+    private long   collectionTime;
+    private long   timeToLiveMillis;
 
     private Map<String, Object> typeData;
 
@@ -66,31 +64,27 @@ public class AtlasMetricsStat extends AtlasBaseModelObject implements Serializab
         setGuid(guid);
     }
 
-    public AtlasMetricsStat(AtlasMetrics metrics){
+    public AtlasMetricsStat(AtlasMetrics metrics) {
         this(metrics, null);
     }
 
-    public AtlasMetricsStat(AtlasMetrics metrics,List<String> listOfTypeNames) {
-        this(metrics, TimeUnit.HOURS.toMillis(AtlasConfiguration.METRICS_TIME_TO_LIVE_HOURS.getInt()),listOfTypeNames);
-
+    public AtlasMetricsStat(AtlasMetrics metrics, List<String> listOfTypeNames) {
+        this(metrics, TimeUnit.HOURS.toMillis(AtlasConfiguration.METRICS_TIME_TO_LIVE_HOURS.getInt()), listOfTypeNames);
     }
 
     public AtlasMetricsStat(AtlasMetrics metrics, long timeToLiveMillis, List<String> listOfTypeNames) {
-        collectionTime = metrics == null ?
-                System.currentTimeMillis() : (long) metrics.getMetric(METRICS_CATEGORY_GENERAL_PROPERTY, METRICS_COLLECTION_TIME_PROPERTY);
+        collectionTime = metrics == null ? System.currentTimeMillis() : (long) metrics.getMetric(METRICS_CATEGORY_GENERAL_PROPERTY, METRICS_COLLECTION_TIME_PROPERTY);
+
         setCollectionTime(collectionTime);
-
         setMetricsId(METRICS_ID_PREFIX_PROPERTY + getCollectionTime() + "@" + AtlasEntityUtil.getMetadataNamespace());
-
         setTimeToLiveMillis(timeToLiveMillis);
         setMetrics(metrics);
         setGuid(getGuid());
 
         this.typeData = CollectionUtils.isEmpty(listOfTypeNames) ? null : new HashMap<>();
+
         AtlasEntityUtil.metricsToTypeData(metrics, listOfTypeNames, typeData);
     }
-
-
 
     public String getMetricsId() {
         return metricsId;
@@ -130,10 +124,16 @@ public class AtlasMetricsStat extends AtlasBaseModelObject implements Serializab
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        } else if (!super.equals(o)) {
+            return false;
+        }
+
         AtlasMetricsStat that = (AtlasMetricsStat) o;
+
         return Objects.equals(metrics, that.metrics);
     }
 
@@ -147,6 +147,7 @@ public class AtlasMetricsStat extends AtlasBaseModelObject implements Serializab
         sb.append(", metricsId=").append(metricsId);
         sb.append(", collectionTime=").append(collectionTime);
         sb.append(", timeToLiveMillis=").append(timeToLiveMillis);
+
         sb.append(", metrics=");
         if (metrics == null) {
             sb.append("null");

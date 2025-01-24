@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,8 +28,11 @@ import java.io.IOException;
 import static org.apache.atlas.security.SecurityProperties.CERT_STORES_CREDENTIAL_PROVIDER_PATH;
 
 public class SecurityUtil {
-
     public static final Logger LOG = LoggerFactory.getLogger(SecurityUtil.class);
+
+    private SecurityUtil() {
+        // to block instantiation
+    }
 
     /**
      * Retrieves a password from a configured credential provider or prompts for the password and stores it in the
@@ -43,7 +46,6 @@ public class SecurityUtil {
         return getPassword(config, key, CERT_STORES_CREDENTIAL_PROVIDER_PATH);
     }
 
-
     /**
      * Retrieves a password from a configured credential provider or prompts for the password and stores it in the
      * configured credential provider.
@@ -55,29 +57,28 @@ public class SecurityUtil {
      * @throws IOException
      */
     public static String getPassword(org.apache.commons.configuration.Configuration config, String key, String pathPropertyName) throws IOException {
-
         String password;
-
         String provider = config.getString(pathPropertyName);
+
         if (provider != null) {
             LOG.info("Attempting to retrieve password for key {} from {} configured credential provider path {}", key, pathPropertyName, provider);
+
             Configuration c = new Configuration();
+
             c.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, provider);
-            CredentialProvider credentialProvider = CredentialProviderFactory.getProviders(c).get(0);
-            CredentialProvider.CredentialEntry entry = credentialProvider.getCredentialEntry(key);
+
+            CredentialProvider                 credentialProvider = CredentialProviderFactory.getProviders(c).get(0);
+            CredentialProvider.CredentialEntry entry              = credentialProvider.getCredentialEntry(key);
+
             if (entry == null) {
-                throw new IOException(String.format("No credential entry found for %s. "
-                        + "Please create an entry in the configured credential provider", key));
+                throw new IOException(String.format("No credential entry found for %s. Please create an entry in the configured credential provider", key));
             } else {
                 password = String.valueOf(entry.getCredential());
             }
-
         } else {
             throw new IOException("No credential provider path " + pathPropertyName + " configured for storage of certificate store passwords");
         }
 
         return password;
     }
-
-
 }

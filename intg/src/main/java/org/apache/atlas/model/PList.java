@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,18 +17,16 @@
  */
 package org.apache.atlas.model;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import java.util.List;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.SearchFilter.SortType;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
+import java.util.List;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -36,20 +34,20 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 /**
  * Paginated-list, for returning search results.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class PList<T> implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
 
-    private List<T>  list       = null;
-    private long     startIndex = 0;
-    private int      pageSize   = 0;
-    private long     totalCount = 0;
-    private String   sortBy     = null;
-    private SortType sortType   = null;
+    private List<T>  list;
+    private long     startIndex;
+    private int      pageSize;
+    private long     totalCount;
+    private String   sortBy;
+    private SortType sortType;
 
     public PList() {
     }
@@ -67,9 +65,13 @@ public class PList<T> implements java.io.Serializable {
         setSortBy(sortBy);
     }
 
-    public void setList(List<T> list) { this.list = list; }
+    public List<T> getList() {
+        return this.list;
+    }
 
-    public List<T> getList() { return this.list; }
+    public void setList(List<T> list) {
+        this.list = list;
+    }
 
     public long getStartIndex() {
         return startIndex;
@@ -110,7 +112,6 @@ public class PList<T> implements java.io.Serializable {
     public void setSortBy(String sortBy) {
         this.sortBy = sortBy;
     }
-
 
     public StringBuilder toString(StringBuilder sb) {
         if (sb == null) {

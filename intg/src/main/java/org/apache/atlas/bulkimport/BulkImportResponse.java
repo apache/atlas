@@ -27,7 +27,7 @@ import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.SUCCES
 
 @AtlasJSON
 public class BulkImportResponse implements Serializable {
-    private List<ImportInfo> failedImportInfoList = new ArrayList<>();
+    private List<ImportInfo> failedImportInfoList  = new ArrayList<>();
     private List<ImportInfo> successImportInfoList = new ArrayList<>();
 
     public BulkImportResponse() {}
@@ -64,10 +64,6 @@ public class BulkImportResponse implements Serializable {
         successImportInfoList.add(importInfo);
     }
 
-    public enum ImportStatus {
-        SUCCESS, FAILED
-    }
-
     @Override
     public String toString() {
         return "BulkImportResponse{" +
@@ -76,22 +72,25 @@ public class BulkImportResponse implements Serializable {
                 '}';
     }
 
+    public enum ImportStatus {
+        SUCCESS, FAILED
+    }
 
     public static class ImportInfo {
-        private String parentObjectName;
-        private String childObjectName;
+        private String       parentObjectName;
+        private String       childObjectName;
         private ImportStatus importStatus;
-        private String remarks;
-        private Integer rowNumber;
+        private String       remarks;
+        private Integer      rowNumber;
 
-        public ImportInfo(){ }
+        public ImportInfo() {}
 
         public ImportInfo(String parentObjectName, String childObjectName, ImportStatus importStatus, String remarks, Integer rowNumber) {
             this.parentObjectName = parentObjectName;
-            this.childObjectName = childObjectName;
-            this.importStatus = importStatus;
-            this.remarks = remarks;
-            this.rowNumber = rowNumber;
+            this.childObjectName  = childObjectName;
+            this.importStatus     = importStatus;
+            this.remarks          = remarks;
+            this.rowNumber        = rowNumber;
         }
 
         public ImportInfo(String parentObjectName, String childObjectName, ImportStatus importStatus) {

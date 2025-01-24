@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,27 +23,30 @@ import org.testng.annotations.Test;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.util.Date;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
-import static org.testng.Assert.*;
-
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 public class TestAtlasDateType {
     private final AtlasDateType dateType = new AtlasDateType();
 
-    private final Object[] validValues    = {
-        null, "", Byte.valueOf((byte)1), Short.valueOf((short)1), Integer.valueOf(1), Long.valueOf(1L), Float.valueOf(1),
-        Double.valueOf(1), BigInteger.valueOf(1), BigDecimal.valueOf(1), "1",
+    private final Object[] validValues = {
+            null, "", (byte) 1, (short) 1, 1, 1L, 1F,
+            1.0, BigInteger.valueOf(1), BigDecimal.valueOf(1), "1",
     };
 
     private final Object[] negativeValues = {
-        Byte.valueOf((byte)-1), Short.valueOf((short)-1), Integer.valueOf(-1), Long.valueOf(-1L), Float.valueOf(-1),
-        Double.valueOf(-1), BigInteger.valueOf(-1), BigDecimal.valueOf(-1), "-1",
+            (byte) -1, (short) -1, -1, -1L, (float) -1,
+            (double) -1, BigInteger.valueOf(-1), BigDecimal.valueOf(-1), "-1",
     };
 
-    private final Object[] invalidValues  = { "12ab", "abcd", "-12ab", };
+    private final Object[] invalidValues = {"12ab", "abcd", "-12ab", };
 
     private final Date   now    = new Date();
     private final String strNow = AtlasBaseTypeDef.getDateFormatter().format(now);
@@ -78,7 +81,7 @@ public class TestAtlasDateType {
         assertNull(dateType.getNormalizedValue(null), "value=" + null);
 
         for (Object value : validValues) {
-            if (value == null || value == "") {
+            if (value == null || value.equals("")) {
                 continue;
             }
 

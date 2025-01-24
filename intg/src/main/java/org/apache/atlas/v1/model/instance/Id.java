@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,17 +18,16 @@
 
 package org.apache.atlas.v1.model.instance;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.text.ParseException;
 import java.util.Date;
@@ -40,27 +39,23 @@ import java.util.concurrent.atomic.AtomicLong;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
-
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.ALWAYS)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.ALWAYS)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class Id implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    @JsonIgnore
-    private static AtomicLong s_nextId = new AtomicLong(System.nanoTime());
-
     public static final String JSON_CLASS_ID = "org.apache.atlas.typesystem.json.InstanceSerialization$_Id";
 
-    public enum EntityState { ACTIVE, DELETED }
+    @JsonIgnore
+    private static final AtomicLong s_nextId = new AtomicLong(System.nanoTime());
 
-    private String      id;
+    private String     id;
     private String      typeName;
     private int         version;
     private EntityState state;
-
 
     public Id() {
     }
@@ -108,6 +103,68 @@ public class Id implements Serializable {
         }
     }
 
+    static String asString(Object val) {
+        return val == null ? null : val.toString();
+    }
+
+    static int asInt(Object val) {
+        if (val != null) {
+            if (val instanceof Number) {
+                return ((Number) val).intValue();
+            }
+
+            try {
+                return Integer.parseInt(val.toString());
+            } catch (NumberFormatException excp) {
+                // ignore
+            }
+        }
+
+        return 0;
+    }
+
+    static Date asDate(Object val) {
+        if (val != null) {
+            if (val instanceof Date) {
+                return (Date) val;
+            } else if (val instanceof Number) {
+                return new Date(((Number) val).longValue());
+            }
+
+            try {
+                return AtlasBaseTypeDef.getDateFormatter().parse(val.toString());
+            } catch (ParseException excp) {
+                // ignore
+            }
+        }
+
+        return null;
+    }
+
+    static EntityState asEntityState(Object val) {
+        if (val != null) {
+            if (val instanceof EntityState) {
+                return (EntityState) val;
+            }
+
+            try {
+                return EntityState.valueOf(val.toString());
+            } catch (Exception excp) {
+                // ignore
+            }
+        }
+
+        return EntityState.ACTIVE;
+    }
+
+    static Map asMap(Object val) {
+        return (val instanceof Map) ? ((Map) val) : null;
+    }
+
+    static List asList(Object val) {
+        return (val instanceof List) ? ((List) val) : null;
+    }
+
     // for serialization backward compatibility
     public String getJsonClass() {
         return JSON_CLASS_ID;
@@ -150,30 +207,26 @@ public class Id implements Serializable {
         return id;
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(id, typeName, version, state);
+    }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
-        }
-
-        if (o == null || getClass() != o.getClass()) {
+        } else if (o == null || getClass() != o.getClass()) {
             return false;
         }
 
         Id obj = (Id) o;
 
         return version == obj.version &&
-               Objects.equals(id, obj.id) &&
-               Objects.equals(typeName, obj.typeName) &&
+                Objects.equals(id, obj.id) &&
+                Objects.equals(typeName, obj.typeName) &&
                 Objects.equals(state, obj.state);
     }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(id, typeName, version, state);
-    }
-
 
     @Override
     public String toString() {
@@ -186,11 +239,11 @@ public class Id implements Serializable {
         }
 
         sb.append("Id{")
-          .append("id=").append(id)
-          .append(", typeName=").append(typeName)
-          .append(", version=").append(version)
-          .append(", state=").append(state)
-          .append("}");
+                .append("id=").append(id)
+                .append(", typeName=").append(typeName)
+                .append(", version=").append(version)
+                .append(", state=").append(state)
+                .append("}");
 
         return sb;
     }
@@ -207,65 +260,5 @@ public class Id implements Serializable {
         return ret;
     }
 
-    static String asString(Object val) {
-        return val == null ? null : val.toString();
-    }
-
-    static int asInt(Object val) {
-        if (val != null) {
-            if (val instanceof Number) {
-                return ((Number)val).intValue();
-            }
-
-            try {
-                return Integer.parseInt(val.toString());
-            } catch (NumberFormatException excp) {
-                // ignore
-            }
-        }
-
-        return 0;
-    }
-
-    static Date asDate(Object val) {
-        if (val != null) {
-            if (val instanceof Date) {
-                return (Date) val;
-            } else if (val instanceof Number) {
-                return new Date(((Number)val).longValue());
-            }
-
-            try {
-                return AtlasBaseTypeDef.getDateFormatter().parse(val.toString());
-            } catch (ParseException excp) {
-                // ignore
-            }
-        }
-
-        return null;
-    }
-
-    static EntityState asEntityState(Object val) {
-        if (val != null) {
-            if (val instanceof EntityState) {
-                return (EntityState) val;
-            }
-
-            try {
-                return EntityState.valueOf(val.toString());
-            } catch (Exception excp) {
-                // ignore
-            }
-        }
-
-        return EntityState.ACTIVE;
-    }
-
-    static Map asMap(Object val) {
-        return (val instanceof Map) ? ((Map) val) : null;
-    }
-
-    static List asList(Object val) {
-        return (val instanceof List) ? ((List) val) : null;
-    }
+    public enum EntityState { ACTIVE, DELETED }
 }

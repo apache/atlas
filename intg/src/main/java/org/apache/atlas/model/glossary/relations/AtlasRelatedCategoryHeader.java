@@ -57,34 +57,35 @@ public class AtlasRelatedCategoryHeader {
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AtlasRelatedCategoryHeader)) return false;
-        final AtlasRelatedCategoryHeader that = (AtlasRelatedCategoryHeader) o;
-        return Objects.equals(categoryGuid, that.categoryGuid) &&
-                       Objects.equals(parentCategoryGuid, that.parentCategoryGuid) &&
-                       Objects.equals(relationGuid, that.relationGuid) &&
-                       Objects.equals(description, that.description);
-    }
-
-    @Override
     public int hashCode() {
-
         return Objects.hash(categoryGuid, parentCategoryGuid, relationGuid, description);
     }
 
     @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("AtlasRelatedCategoryId{");
-        sb.append("categoryGuid='").append(categoryGuid).append('\'');
-        sb.append(", parentCategoryGuid='").append(parentCategoryGuid).append('\'');
-        sb.append(", relationGuid='").append(relationGuid).append('\'');
-        sb.append(", displayText='").append(displayText).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append('}');
-        return sb.toString();
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        } else if (!(o instanceof AtlasRelatedCategoryHeader)) {
+            return false;
+        }
+
+        AtlasRelatedCategoryHeader that = (AtlasRelatedCategoryHeader) o;
+
+        return Objects.equals(categoryGuid, that.categoryGuid) &&
+                Objects.equals(parentCategoryGuid, that.parentCategoryGuid) &&
+                Objects.equals(relationGuid, that.relationGuid) &&
+                Objects.equals(description, that.description);
     }
 
+    @Override
+    public String toString() {
+        return "AtlasRelatedCategoryId{" + "categoryGuid='" + categoryGuid + '\'' +
+                ", parentCategoryGuid='" + parentCategoryGuid + '\'' +
+                ", relationGuid='" + relationGuid + '\'' +
+                ", displayText='" + displayText + '\'' +
+                ", description='" + description + '\'' +
+                '}';
+    }
 
     public String getRelationGuid() {
         return relationGuid;

@@ -19,11 +19,12 @@ package org.apache.atlas.model.patches;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.util.List;
 import java.util.Objects;
@@ -35,7 +36,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
  * Display all atlas patches.
  */
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
@@ -50,12 +51,10 @@ public class AtlasPatch implements Serializable {
     private long        updatedTime;
     private PatchStatus status;
 
-    public enum PatchStatus { UNKNOWN, APPLIED, SKIPPED, FAILED }
-
-    public AtlasPatch() { }
+    public AtlasPatch() {}
 
     public AtlasPatch(String id, String patchName, String type, String action, PatchStatus status,
-                      String updatedBy, String createdBy, long createdTime, long updatedTime) {
+            String updatedBy, String createdBy, long createdTime, long updatedTime) {
         this.id          = id;
         this.description = patchName;
         this.type        = type;
@@ -140,10 +139,20 @@ public class AtlasPatch implements Serializable {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(id, description, type, action, updatedBy, createdBy, createdTime, updatedTime, status);
+    }
+
+    @Override
     public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
         AtlasPatch that = (AtlasPatch) o;
+
         return createdTime == that.createdTime &&
                 updatedTime == that.updatedTime &&
                 Objects.equals(id, that.id) &&
@@ -156,30 +165,23 @@ public class AtlasPatch implements Serializable {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(id, description, type, action, updatedBy, createdBy, createdTime, updatedTime, status);
-    }
-
-    @Override
     public String toString() {
-        final StringBuilder sb = new StringBuilder("AtlasPatch{");
-
-        sb.append("id=").append(id);
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", type='").append(type).append('\'');
-        sb.append(", action='").append(action).append('\'');
-        sb.append(", updatedBy='").append(updatedBy).append('\'');
-        sb.append(", createdBy='").append(createdBy).append('\'');
-        sb.append(", createdTime=").append(createdTime);
-        sb.append(", updatedTime=").append(updatedTime);
-        sb.append(", status=").append(status);
-        sb.append('}');
-
-        return sb.toString();
+        return "AtlasPatch{" + "id=" + id +
+                ", description='" + description + '\'' +
+                ", type='" + type + '\'' +
+                ", action='" + action + '\'' +
+                ", updatedBy='" + updatedBy + '\'' +
+                ", createdBy='" + createdBy + '\'' +
+                ", createdTime=" + createdTime +
+                ", updatedTime=" + updatedTime +
+                ", status=" + status +
+                '}';
     }
+
+    public enum PatchStatus { UNKNOWN, APPLIED, SKIPPED, FAILED }
 
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
@@ -202,24 +204,26 @@ public class AtlasPatch implements Serializable {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            AtlasPatches that = (AtlasPatches) o;
-            return Objects.equals(patches, that.patches);
-        }
-
-        @Override
         public int hashCode() {
             return Objects.hash(patches);
         }
 
         @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            } else if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            AtlasPatches that = (AtlasPatches) o;
+
+            return Objects.equals(patches, that.patches);
+        }
+
+        @Override
         public String toString() {
-            final StringBuilder sb = new StringBuilder("AtlasPatches{");
-            sb.append("patches=").append(patches);
-            sb.append('}');
-            return sb.toString();
+            return "AtlasPatches{patches=" + patches + "}";
         }
     }
 }

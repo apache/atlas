@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 package org.apache.atlas.type;
-
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -30,14 +29,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-
 /**
  * base class that declares interface for all Atlas types.
  */
 
 public abstract class AtlasType {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasType.class);
-
 
     private final String       typeName;
     private final TypeCategory typeCategory;
@@ -53,20 +50,41 @@ public abstract class AtlasType {
         this.serviceType  = serviceType;
     }
 
-    void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    public static String toJson(Object obj) {
+        return AtlasJson.toJson(obj);
     }
 
-    void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    public static <T> T fromJson(String jsonStr, Class<T> type) {
+        return AtlasJson.fromJson(jsonStr, type);
     }
 
-    void resolveReferencesPhase3(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    public static <T> T fromLinkedHashMap(Object obj, Class<T> type) {
+        return AtlasJson.fromLinkedHashMap(obj, type);
     }
 
-    public String getTypeName() { return typeName; }
+    public static String toV1Json(Object obj) {
+        return AtlasJson.toV1Json(obj);
+    }
 
-    public TypeCategory getTypeCategory() { return typeCategory; }
+    public static <T> T fromV1Json(String jsonStr, Class<T> type) {
+        return AtlasJson.fromV1Json(jsonStr, type);
+    }
 
-    public String getServiceType() { return serviceType; }
+    public static <T> T fromV1Json(String jsonStr, TypeReference<T> type) {
+        return AtlasJson.fromV1Json(jsonStr, type);
+    }
+
+    public String getTypeName() {
+        return typeName;
+    }
+
+    public TypeCategory getTypeCategory() {
+        return typeCategory;
+    }
+
+    public String getServiceType() {
+        return serviceType;
+    }
 
     public abstract Object createDefaultValue();
 
@@ -74,7 +92,7 @@ public abstract class AtlasType {
         return createDefaultValue();
     }
 
-    public Object createDefaultValue(Object val){
+    public Object createDefaultValue(Object val) {
         return val == null ? createDefaultValue() : getNormalizedValue(val);
     }
 
@@ -118,9 +136,13 @@ public abstract class AtlasType {
         return ret;
     }
 
-    public boolean isValidValueForUpdate(Object obj) { return isValidValue(obj); }
+    public boolean isValidValueForUpdate(Object obj) {
+        return isValidValue(obj);
+    }
 
-    public Object getNormalizedValueForUpdate(Object obj) { return getNormalizedValue(obj); }
+    public Object getNormalizedValueForUpdate(Object obj) {
+        return getNormalizedValue(obj);
+    }
 
     public boolean validateValueForUpdate(Object obj, String objName, List<String> messages) {
         return validateValue(obj, objName, messages);
@@ -134,27 +156,12 @@ public abstract class AtlasType {
         return this;
     }
 
-
-    public static String toJson(Object obj) {
-        return AtlasJson.toJson(obj);
+    void resolveReferences(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
     }
 
-    public static <T> T fromJson(String jsonStr, Class<T> type) {
-        return AtlasJson.fromJson(jsonStr, type);
+    void resolveReferencesPhase2(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
     }
 
-    public static <T> T fromLinkedHashMap(Object obj, Class<T> type) {
-        return AtlasJson.fromLinkedHashMap(obj, type);
-    }
-    public static String toV1Json(Object obj) {
-        return AtlasJson.toV1Json(obj);
-    }
-
-    public static <T> T fromV1Json(String jsonStr, Class<T> type) {
-        return AtlasJson.fromV1Json(jsonStr, type);
-    }
-
-    public static <T> T fromV1Json(String jsonStr, TypeReference<T> type) {
-        return AtlasJson.fromV1Json(jsonStr, type);
+    void resolveReferencesPhase3(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
     }
 }

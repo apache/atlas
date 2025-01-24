@@ -33,7 +33,7 @@ public class AtlasRelatedTermHeader {
     private String source;
 
     private AtlasTermRelationshipStatus status;
-    private String qualifiedName;
+    private String                      qualifiedName;
 
     public AtlasRelatedTermHeader() {
     }
@@ -87,39 +87,41 @@ public class AtlasRelatedTermHeader {
     }
 
     @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AtlasRelatedTermHeader)) return false;
-        final AtlasRelatedTermHeader that = (AtlasRelatedTermHeader) o;
-        return Objects.equals(termGuid, that.termGuid) &&
-                       Objects.equals(relationGuid, that.relationGuid) &&
-                       Objects.equals(description, that.description) &&
-                       Objects.equals(expression, that.expression) &&
-                       Objects.equals(steward, that.steward) &&
-                       Objects.equals(source, that.source) &&
-                       status == that.status;
-    }
-
-    @Override
     public int hashCode() {
-
         return Objects.hash(termGuid, relationGuid, description, expression, steward, source, status);
     }
 
     @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        } else if (!(o instanceof AtlasRelatedTermHeader)) {
+            return false;
+        }
+
+        AtlasRelatedTermHeader that = (AtlasRelatedTermHeader) o;
+
+        return Objects.equals(termGuid, that.termGuid) &&
+                Objects.equals(relationGuid, that.relationGuid) &&
+                Objects.equals(description, that.description) &&
+                Objects.equals(expression, that.expression) &&
+                Objects.equals(steward, that.steward) &&
+                Objects.equals(source, that.source) &&
+                status == that.status;
+    }
+
+    @Override
     public String toString() {
-        final StringBuffer sb = new StringBuffer("AtlasRelatedTermId{");
-        sb.append("termGuid='").append(termGuid).append('\'');
-        sb.append(", relationGuid='").append(relationGuid).append('\'');
-        sb.append(", description='").append(description).append('\'');
-        sb.append(", displayText='").append(displayText).append('\'');
-        sb.append(", qualifiedName='").append(qualifiedName).append('\'');
-        sb.append(", expression='").append(expression).append('\'');
-        sb.append(", steward='").append(steward).append('\'');
-        sb.append(", source='").append(source).append('\'');
-        sb.append(", status=").append(status);
-        sb.append('}');
-        return sb.toString();
+        return "AtlasRelatedTermId{" + "termGuid='" + termGuid + '\'' +
+                ", relationGuid='" + relationGuid + '\'' +
+                ", description='" + description + '\'' +
+                ", displayText='" + displayText + '\'' +
+                ", qualifiedName='" + qualifiedName + '\'' +
+                ", expression='" + expression + '\'' +
+                ", steward='" + steward + '\'' +
+                ", source='" + source + '\'' +
+                ", status=" + status +
+                '}';
     }
 
     public String getDisplayText() {
@@ -137,7 +139,12 @@ public class AtlasRelatedTermHeader {
     public void setRelationGuid(final String relationGuid) {
         this.relationGuid = relationGuid;
     }
-    public String getQualifiedName() { return qualifiedName; }
-    public void setQualifiedName(String qualifiedName) { this.qualifiedName = qualifiedName; }
 
+    public String getQualifiedName() {
+        return qualifiedName;
+    }
+
+    public void setQualifiedName(String qualifiedName) {
+        this.qualifiedName = qualifiedName;
+    }
 }

@@ -31,17 +31,8 @@ public class AtlasGlossaryTermHeader {
     }
 
     public AtlasGlossaryTermHeader(String termGuid, String qualifiedName) {
-        this.termGuid = termGuid;
+        this.termGuid      = termGuid;
         this.qualifiedName = qualifiedName;
-    }
-
-    @Override
-    public String toString() {
-        final StringBuilder sb = new StringBuilder("AtlasGlossaryTermHeader{");
-        sb.append("termGuid='").append(termGuid).append('\'');
-        sb.append(", qualifiedName='").append(qualifiedName).append('\'');
-        sb.append('}');
-        return sb.toString();
     }
 
     public AtlasGlossaryTermHeader() {
@@ -64,17 +55,28 @@ public class AtlasGlossaryTermHeader {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(termGuid, qualifiedName);
+    }
+
+    @Override
     public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof org.apache.atlas.model.glossary.AtlasGlossaryTermHeader)) return false;
-        final org.apache.atlas.model.glossary.AtlasGlossaryTermHeader that = (org.apache.atlas.model.glossary.AtlasGlossaryTermHeader) o;
+        if (this == o) {
+            return true;
+        } else if (!(o instanceof org.apache.atlas.model.glossary.AtlasGlossaryTermHeader)) {
+            return false;
+        }
+
+        org.apache.atlas.model.glossary.AtlasGlossaryTermHeader that = (org.apache.atlas.model.glossary.AtlasGlossaryTermHeader) o;
+
         return Objects.equals(termGuid, that.termGuid) &&
                 Objects.equals(qualifiedName, that.qualifiedName);
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(termGuid, qualifiedName);
+    public String toString() {
+        return "AtlasGlossaryTermHeader{" + "termGuid='" + termGuid + '\'' +
+                ", qualifiedName='" + qualifiedName + '\'' +
+                '}';
     }
-
 }

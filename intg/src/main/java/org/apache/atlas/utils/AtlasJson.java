@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,10 +17,19 @@
  */
 package org.apache.atlas.utils;
 
-
-import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.ObjectCodec;
+import com.fasterxml.jackson.core.TreeNode;
+import com.fasterxml.jackson.core.Version;
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -29,18 +38,22 @@ import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationType;
 import org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2;
 import org.apache.atlas.model.notification.HookNotification;
-import org.apache.atlas.model.notification.HookNotification.HookNotificationType;
 import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
 import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV2;
 import org.apache.atlas.model.notification.HookNotification.EntityPartialUpdateRequestV2;
 import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
+import org.apache.atlas.model.notification.HookNotification.HookNotificationType;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.v1.model.instance.AtlasSystemAttributes;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.v1.model.notification.EntityNotificationV1;
-import org.apache.atlas.v1.model.notification.HookNotificationV1.*;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityPartialUpdateRequest;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.TypeRequest;
 import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,61 +68,42 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-
 public class AtlasJson {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasJson.class);
 
-    private static final ObjectMapper mapper = new ObjectMapper()
-                                            .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+    private static final ObjectMapper mapper         = new ObjectMapper().configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+    private static final ObjectMapper mapperV1       = new ObjectMapper().configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+    private static final ObjectMapper mapperV1Search = new ObjectMapper().configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
 
-    private static final ObjectMapper mapperV1 = new ObjectMapper()
-                                            .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
+    private static final String V1_KEY_$TYPENAME          = "$typeName$";
+    private static final String V1_KEY_$ID                = "$id$";
+    private static final String V1_KEY_$SYSTEM_ATTRIBUTES = "$systemAttributes$";
+    private static final String V1_KEY_$TRAITS            = "$traits$";
+    private static final String V1_KEY_TYPENAME           = "typeName";
+    private static final String V1_KEY_ID                 = "id";
+    private static final String V1_KEY_GUID               = "guid";
+    private static final String V1_KEY_SCORE              = "score";
+    private static final String V1_KEY_VERSION            = "version";
+    private static final String V1_KEY_STATE              = "state";
+    private static final String V1_KEY_CREATED_BY         = "createdBy";
+    private static final String V1_KEY_MODIFIED_BY        = "modifiedBy";
+    private static final String V1_KEY_CREATED_TIME       = "createdTime";
+    private static final String V1_KEY_MODIFIED_TIME      = "modifiedTime";
 
-    private static final ObjectMapper mapperV1Search = new ObjectMapper()
-            .configure(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS, true);
-
-    static {
-        SimpleModule atlasSerDeModule = new SimpleModule("AtlasSerDe", new Version(1, 0, 0, null));
-
-        atlasSerDeModule.addSerializer(Referenceable.class, new ReferenceableSerializer());
-        atlasSerDeModule.addDeserializer(Referenceable.class, new ReferenceableDeserializer());
-        atlasSerDeModule.addSerializer(Struct.class, new StructSerializer());
-        atlasSerDeModule.addDeserializer(Struct.class, new StructDeserializer());
-        atlasSerDeModule.addSerializer(Id.class, new IdSerializer());
-        atlasSerDeModule.addDeserializer(Id.class, new IdDeserializer());
-        atlasSerDeModule.addDeserializer(HookNotification.class, new HookNotificationDeserializer());
-        atlasSerDeModule.addDeserializer(EntityNotification.class, new EntityNotificationDeserializer());
-
-        mapper.registerModule(atlasSerDeModule);
-
-        SimpleModule atlasSerDeV1Module = new SimpleModule("AtlasSerDeV1", new Version(1, 0, 0, null));
-
-        atlasSerDeV1Module.addSerializer(Date.class, new DateSerializer());
-        atlasSerDeV1Module.addDeserializer(Date.class, new DateDeserializer());
-
-        mapperV1.registerModule(atlasSerDeV1Module);
-
-        SimpleModule searchResultV1SerDeModule = new SimpleModule("SearchResultV1SerDe", new Version(1, 0, 0, null));
-
-        searchResultV1SerDeModule.addSerializer(Referenceable.class, new V1SearchReferenceableSerializer());
-        searchResultV1SerDeModule.addSerializer(Struct.class, new V1SearchStructSerializer());
-        searchResultV1SerDeModule.addSerializer(Id.class, new V1SearchIdSerializer());
-        searchResultV1SerDeModule.addSerializer(AtlasSystemAttributes.class, new V1SearchSystemAttributesSerializer());
-        searchResultV1SerDeModule.addSerializer(AtlasFullTextResult.class, new V1SearchFullTextResultSerializer());
-        searchResultV1SerDeModule.addSerializer(Date.class, new DateSerializer());
-
-        mapperV1Search.registerModule(searchResultV1SerDeModule);
+    private AtlasJson() {
+        // to block instantiation
     }
 
     public static String toJson(Object obj) {
         String ret;
+
         try {
             if (obj instanceof JsonNode && ((JsonNode) obj).isTextual()) {
                 ret = ((JsonNode) obj).textValue();
             } else {
                 ret = mapper.writeValueAsString(obj);
             }
-        }catch (IOException e){
+        } catch (IOException e) {
             LOG.error("AtlasJson.toJson()", e);
 
             ret = null;
@@ -201,14 +195,13 @@ public class AtlasJson {
         String ret;
         try {
             ret = mapperV1Search.writeValueAsString(obj);
-        }catch (IOException e){
+        } catch (IOException e) {
             LOG.error("AtlasType.toV1Json()", e);
 
             ret = null;
         }
         return ret;
     }
-
 
     public static ObjectNode createV1ObjectNode() {
         return mapperV1.createObjectNode();
@@ -236,18 +229,15 @@ public class AtlasJson {
         return ret;
     }
 
-
     public static JsonNode parseToV1JsonNode(String json) throws IOException {
-        JsonNode jsonNode = mapper.readTree(json);
-
-        return jsonNode;
+        return mapper.readTree(json);
     }
 
     public static ArrayNode parseToV1ArrayNode(String json) throws IOException {
         JsonNode jsonNode = mapper.readTree(json);
 
         if (jsonNode instanceof ArrayNode) {
-            return (ArrayNode)jsonNode;
+            return (ArrayNode) jsonNode;
         }
 
         throw new IOException("not an array");
@@ -281,14 +271,14 @@ public class AtlasJson {
     static class DateDeserializer extends JsonDeserializer<Date> {
         @Override
         public Date deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-            Date ret = null;
-
+            Date   ret   = null;
             String value = parser.readValueAs(String.class);
 
             if (value != null) {
                 try {
                     ret = AtlasBaseTypeDef.getDateFormatter().parse(value);
                 } catch (ParseException excp) {
+                    // ignored
                 }
             }
 
@@ -308,9 +298,7 @@ public class AtlasJson {
     static class ReferenceableDeserializer extends JsonDeserializer<Referenceable> {
         @Override
         public Referenceable deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-            Referenceable ret = mapperV1.readValue(parser, Referenceable.class);
-
-            return ret;
+            return mapperV1.readValue(parser, Referenceable.class);
         }
     }
 
@@ -326,9 +314,7 @@ public class AtlasJson {
     static class StructDeserializer extends JsonDeserializer<Struct> {
         @Override
         public Struct deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-            Struct ret = mapperV1.readValue(parser, Struct.class);
-
-            return ret;
+            return mapperV1.readValue(parser, Struct.class);
         }
     }
 
@@ -344,9 +330,7 @@ public class AtlasJson {
     static class IdDeserializer extends JsonDeserializer<Id> {
         @Override
         public Id deserialize(JsonParser parser, DeserializationContext context) throws IOException {
-            Id ret = mapperV1.readValue(parser, Id.class);
-
-            return ret;
+            return mapperV1.readValue(parser, Id.class);
         }
     }
 
@@ -431,21 +415,6 @@ public class AtlasJson {
         }
     }
 
-    private static final String V1_KEY_$TYPENAME          = "$typeName$";
-    private static final String V1_KEY_$ID                = "$id$";
-    private static final String V1_KEY_$SYSTEM_ATTRIBUTES = "$systemAttributes$";
-    private static final String V1_KEY_$TRAITS            = "$traits$";
-    private static final String V1_KEY_TYPENAME           = "typeName";
-    private static final String V1_KEY_ID                 = "id";
-    private static final String V1_KEY_GUID               = "guid";
-    private static final String V1_KEY_SCORE              = "score";
-    private static final String V1_KEY_VERSION            = "version";
-    private static final String V1_KEY_STATE              = "state";
-    private static final String V1_KEY_CREATED_BY         = "createdBy";
-    private static final String V1_KEY_MODIFIED_BY        = "modifiedBy";
-    private static final String V1_KEY_CREATED_TIME       = "createdTime";
-    private static final String V1_KEY_MODIFIED_TIME      = "modifiedTime";
-
     static class V1SearchReferenceableSerializer extends JsonSerializer<Referenceable> {
         @Override
         public void serialize(Referenceable entity, JsonGenerator jgen, SerializerProvider provider) throws IOException {
@@ -506,14 +475,7 @@ public class AtlasJson {
     }
 
     static class V1SearchSystemAttributesSerializer extends JsonSerializer<AtlasSystemAttributes> {
-        private static final ThreadLocal<DateFormat> V1_SEARCH_RESULT_DATE_FORMAT = new ThreadLocal<DateFormat>() {
-            @Override
-            public DateFormat initialValue() {
-                DateFormat ret = new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy");
-
-                return ret;
-            }
-        };
+        private static final ThreadLocal<DateFormat> V1_SEARCH_RESULT_DATE_FORMAT = ThreadLocal.withInitial(() -> new SimpleDateFormat("EEE MMM dd HH:mm:ss z yyyy"));
 
         @Override
         public void serialize(AtlasSystemAttributes systemAttributes, JsonGenerator jgen, SerializerProvider provider) throws IOException {
@@ -549,5 +511,38 @@ public class AtlasJson {
                 jgen.writeObject(valueMap);
             }
         }
+    }
+
+    static {
+        SimpleModule atlasSerDeModule = new SimpleModule("AtlasSerDe", new Version(1, 0, 0, null));
+
+        atlasSerDeModule.addSerializer(Referenceable.class, new ReferenceableSerializer());
+        atlasSerDeModule.addDeserializer(Referenceable.class, new ReferenceableDeserializer());
+        atlasSerDeModule.addSerializer(Struct.class, new StructSerializer());
+        atlasSerDeModule.addDeserializer(Struct.class, new StructDeserializer());
+        atlasSerDeModule.addSerializer(Id.class, new IdSerializer());
+        atlasSerDeModule.addDeserializer(Id.class, new IdDeserializer());
+        atlasSerDeModule.addDeserializer(HookNotification.class, new HookNotificationDeserializer());
+        atlasSerDeModule.addDeserializer(EntityNotification.class, new EntityNotificationDeserializer());
+
+        mapper.registerModule(atlasSerDeModule);
+
+        SimpleModule atlasSerDeV1Module = new SimpleModule("AtlasSerDeV1", new Version(1, 0, 0, null));
+
+        atlasSerDeV1Module.addSerializer(Date.class, new DateSerializer());
+        atlasSerDeV1Module.addDeserializer(Date.class, new DateDeserializer());
+
+        mapperV1.registerModule(atlasSerDeV1Module);
+
+        SimpleModule searchResultV1SerDeModule = new SimpleModule("SearchResultV1SerDe", new Version(1, 0, 0, null));
+
+        searchResultV1SerDeModule.addSerializer(Referenceable.class, new V1SearchReferenceableSerializer());
+        searchResultV1SerDeModule.addSerializer(Struct.class, new V1SearchStructSerializer());
+        searchResultV1SerDeModule.addSerializer(Id.class, new V1SearchIdSerializer());
+        searchResultV1SerDeModule.addSerializer(AtlasSystemAttributes.class, new V1SearchSystemAttributesSerializer());
+        searchResultV1SerDeModule.addSerializer(AtlasFullTextResult.class, new V1SearchFullTextResultSerializer());
+        searchResultV1SerDeModule.addSerializer(Date.class, new DateSerializer());
+
+        mapperV1Search.registerModule(searchResultV1SerDeModule);
     }
 }

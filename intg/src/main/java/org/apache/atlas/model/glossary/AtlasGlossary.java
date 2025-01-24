@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
 @AtlasJSON
 public class AtlasGlossary extends AtlasGlossaryBaseObject {
     private String language;
@@ -47,9 +49,9 @@ public class AtlasGlossary extends AtlasGlossaryBaseObject {
         super.setName(other.name);
         super.setShortDescription(other.shortDescription);
         super.setLongDescription(other.longDescription);
-        this.language = other.language;
-        this.usage = other.usage;
-        this.terms = other.terms;
+        this.language   = other.language;
+        this.usage      = other.usage;
+        this.terms      = other.terms;
         this.categories = other.categories;
     }
 
@@ -88,7 +90,8 @@ public class AtlasGlossary extends AtlasGlossaryBaseObject {
     @JsonIgnore
     @Override
     public void setAttribute(String attrName, String attrVal) {
-        Objects.requireNonNull(attrName, "AtlasGlossary attribute name");
+        requireNonNull(attrName, "AtlasGlossary attribute name");
+
         switch (attrName) {
             case "name":
                 setName(attrVal);
@@ -110,23 +113,62 @@ public class AtlasGlossary extends AtlasGlossaryBaseObject {
         }
     }
 
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        } else if (!(o instanceof AtlasGlossary)) {
+            return false;
+        } else if (!super.equals(o)) {
+            return false;
+        }
+
+        AtlasGlossary glossary = (AtlasGlossary) o;
+
+        return Objects.equals(language, glossary.language) &&
+                Objects.equals(usage, glossary.usage) &&
+                Objects.equals(terms, glossary.terms) &&
+                Objects.equals(categories, glossary.categories);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), language, usage, terms, categories);
+    }
+
+    @Override
+    protected StringBuilder toString(final StringBuilder sb) {
+        sb.append(", language='").append(language).append('\'');
+        sb.append(", usage='").append(usage).append('\'');
+        sb.append(", terms=").append(terms);
+        sb.append(", categories=").append(categories);
+
+        return sb;
+    }
+
     @JsonIgnore
     public void addTerm(AtlasRelatedTermHeader relatedTermId) {
         Set<AtlasRelatedTermHeader> terms = this.terms;
+
         if (terms == null) {
             terms = new HashSet<>();
         }
+
         terms.add(relatedTermId);
+
         setTerms(terms);
     }
 
     @JsonIgnore
     public void addCategory(AtlasRelatedCategoryHeader relatedCategoryId) {
         Set<AtlasRelatedCategoryHeader> categories = this.categories;
+
         if (categories == null) {
             categories = new HashSet<>();
         }
+
         categories.add(relatedCategoryId);
+
         setCategories(categories);
     }
 
@@ -142,34 +184,6 @@ public class AtlasGlossary extends AtlasGlossaryBaseObject {
         if (CollectionUtils.isNotEmpty(categories)) {
             categories.remove(relatedCategoryId);
         }
-    }
-
-    @Override
-    protected StringBuilder toString(final StringBuilder sb) {
-        sb.append(", language='").append(language).append('\'');
-        sb.append(", usage='").append(usage).append('\'');
-        sb.append(", terms=").append(terms);
-        sb.append(", categories=").append(categories);
-
-        return sb;
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (!(o instanceof AtlasGlossary)) return false;
-        if (!super.equals(o)) return false;
-        final AtlasGlossary glossary = (AtlasGlossary) o;
-        return Objects.equals(language, glossary.language) &&
-                       Objects.equals(usage, glossary.usage) &&
-                       Objects.equals(terms, glossary.terms) &&
-                       Objects.equals(categories, glossary.categories);
-    }
-
-    @Override
-    public int hashCode() {
-
-        return Objects.hash(super.hashCode(), language, usage, terms, categories);
     }
 
     @AtlasJSON
@@ -188,46 +202,32 @@ public class AtlasGlossary extends AtlasGlossaryBaseObject {
             return termInfo;
         }
 
+        public void setTermInfo(final Map<String, AtlasGlossaryTerm> termInfo) {
+            this.termInfo = termInfo;
+        }
+
         public void addTermInfo(final AtlasGlossaryTerm term) {
             if (termInfo == null) {
                 termInfo = new HashMap<>();
             }
-            termInfo.put(term.getGuid(), term);
-        }
 
-        public void setTermInfo(final Map<String, AtlasGlossaryTerm> termInfo) {
-            this.termInfo = termInfo;
+            termInfo.put(term.getGuid(), term);
         }
 
         public Map<String, AtlasGlossaryCategory> getCategoryInfo() {
             return categoryInfo;
         }
 
-        public void addCategoryInfo(final AtlasGlossaryCategory category) {
-            if (categoryInfo == null) {
-                categoryInfo = new HashMap<>();
-            }
-            categoryInfo.put(category.getGuid(), category);
-        }
-
         public void setCategoryInfo(final Map<String, AtlasGlossaryCategory> categoryInfo) {
             this.categoryInfo = categoryInfo;
         }
 
-        @Override
-        public boolean equals(final Object o) {
-            if (this == o) return true;
-            if (!(o instanceof AtlasGlossaryExtInfo)) return false;
-            if (!super.equals(o)) return false;
-            final AtlasGlossaryExtInfo that = (AtlasGlossaryExtInfo) o;
-            return Objects.equals(termInfo, that.termInfo) &&
-                           Objects.equals(categoryInfo, that.categoryInfo);
-        }
+        public void addCategoryInfo(final AtlasGlossaryCategory category) {
+            if (categoryInfo == null) {
+                categoryInfo = new HashMap<>();
+            }
 
-        @Override
-        public int hashCode() {
-
-            return Objects.hash(super.hashCode(), termInfo, categoryInfo);
+            categoryInfo.put(category.getGuid(), category);
         }
 
         @Override
@@ -238,6 +238,25 @@ public class AtlasGlossary extends AtlasGlossaryBaseObject {
             return sb;
         }
 
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            } else if (!(o instanceof AtlasGlossaryExtInfo)) {
+                return false;
+            } else if (!super.equals(o)) {
+                return false;
+            }
 
+            AtlasGlossaryExtInfo that = (AtlasGlossaryExtInfo) o;
+
+            return Objects.equals(termInfo, that.termInfo) &&
+                    Objects.equals(categoryInfo, that.categoryInfo);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(super.hashCode(), termInfo, categoryInfo);
+        }
     }
 }
