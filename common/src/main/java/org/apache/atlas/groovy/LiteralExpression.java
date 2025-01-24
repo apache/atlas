@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,36 +27,76 @@ import java.util.regex.Pattern;
  * Represents a literal value.
  */
 public class LiteralExpression extends AbstractGroovyExpression {
-
-    public static final LiteralExpression TRUE = new LiteralExpression(true);
+    public static final LiteralExpression TRUE  = new LiteralExpression(true);
     public static final LiteralExpression FALSE = new LiteralExpression(false);
-    public static final LiteralExpression NULL = new LiteralExpression(null);
+    public static final LiteralExpression NULL  = new LiteralExpression(null);
 
-    private Object value;
-    private boolean translateToParameter = true;
-    private boolean addTypeSuffix = false;
+    private final Object  value;
+    private       boolean translateToParameter;
+    private       boolean addTypeSuffix;
 
     public LiteralExpression(Object value, boolean addTypeSuffix) {
-        this.value = value;
+        this.value                = value;
         this.translateToParameter = value instanceof String;
-        this.addTypeSuffix = addTypeSuffix;
+        this.addTypeSuffix        = addTypeSuffix;
     }
 
     public LiteralExpression(Object value, boolean addTypeSuffix, boolean translateToParameter) {
-        this.value = value;
+        this.value                = value;
         this.translateToParameter = translateToParameter;
-        this.addTypeSuffix = addTypeSuffix;
+        this.addTypeSuffix        = addTypeSuffix;
     }
 
     public LiteralExpression(Object value) {
-        this.value = value;
+        this.value                = value;
         this.translateToParameter = value instanceof String;
+    }
+
+    @Override
+    public void generateGroovy(GroovyGenerationContext context) {
+        if (translateToParameter) {
+            GroovyExpression result = context.addParameter(value);
+
+            result.generateGroovy(context);
+
+            return;
+        }
+
+        if (value instanceof String) {
+            String escapedValue = getEscapedValue();
+
+            context.append("'");
+            context.append(escapedValue);
+            context.append("'");
+        } else {
+            context.append(String.valueOf(value));
+            context.append(getTypeSuffix());
+        }
+    }
+
+    @Override
+    public List<GroovyExpression> getChildren() {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public GroovyExpression copy(List<GroovyExpression> newChildren) {
+        return new LiteralExpression(value, addTypeSuffix, translateToParameter);
+    }
+
+    public Object getValue() {
+        return value;
+    }
+
+    public void setTranslateToParameter(boolean translateToParameter) {
+        this.translateToParameter = translateToParameter;
     }
 
     private String getTypeSuffix() {
         if (!addTypeSuffix) {
             return "";
         }
+
         if (value.getClass() == Long.class) {
             return "L";
         }
@@ -72,51 +112,12 @@ public class LiteralExpression extends AbstractGroovyExpression {
         return "";
     }
 
-    @Override
-    public void generateGroovy(GroovyGenerationContext context) {
-
-        if (translateToParameter) {
-            GroovyExpression result = context.addParameter(value);
-            result.generateGroovy(context);
-            return;
-        }
-
-        if (value instanceof String) {
-            String escapedValue = getEscapedValue();
-            context.append("'");
-            context.append(escapedValue);
-            context.append("'");
-
-        } else {
-            context.append(String.valueOf(value));
-            context.append(getTypeSuffix());
-        }
-
-    }
-
-    public Object getValue() {
-        return value;
-    }
-
     private String getEscapedValue() {
-        String escapedValue = (String)value;
+        String escapedValue = (String) value;
+
         escapedValue = escapedValue.replaceAll(Pattern.quote("\\"), Matcher.quoteReplacement("\\\\"));
         escapedValue = escapedValue.replaceAll(Pattern.quote("'"), Matcher.quoteReplacement("\\'"));
+
         return escapedValue;
-    }
-
-    public void setTranslateToParameter(boolean translateToParameter) {
-        this.translateToParameter = translateToParameter;
-    }
-
-    @Override
-    public List<GroovyExpression> getChildren() {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public GroovyExpression copy(List<GroovyExpression> newChildren) {
-        assert newChildren.size() == 0;
-        return new LiteralExpression(value, addTypeSuffix, translateToParameter);
     }
 }

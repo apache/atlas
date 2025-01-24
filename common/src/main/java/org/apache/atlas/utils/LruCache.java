@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,38 +17,36 @@
  */
 package org.apache.atlas.utils;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.text.DateFormat;
 import java.util.Date;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 /**
  * Fixed size LRU Cache.
  *
  */
-public class LruCache<K, V> extends LinkedHashMap<K, V>{
+public class LruCache<K, V> extends LinkedHashMap<K, V> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LruCache.class.getName());
 
     private static final long serialVersionUID = 8715233786643882558L;
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(LruCache.class.getName());
 
     /**
      * Specifies the number evictions that pass before a warning is logged.
      */
     private final int evictionWarningThrottle;
 
-    // The number of evictions since the last warning was logged.
-    private long evictionsSinceWarning =  0;
-
-    // When the last eviction warning was issued.
-    private Date lastEvictionWarning = new Date();
-
     // The maximum number of entries the cache holds.
     private final int capacity;
 
+    // The number of evictions since the last warning was logged.
+    private long evictionsSinceWarning;
+
+    // When the last eviction warning was issued.
+    private Date lastEvictionWarning = new Date();
 
     /**
      *
@@ -57,16 +55,19 @@ public class LruCache<K, V> extends LinkedHashMap<K, V>{
      */
     public LruCache(int cacheSize, int evictionWarningThrottle) {
         super(cacheSize, 0.75f, true);
+
         this.evictionWarningThrottle = evictionWarningThrottle;
-        this.capacity = cacheSize;
+        this.capacity                = cacheSize;
     }
 
     @Override
-    protected boolean removeEldestEntry(Map.Entry<K,V> eldest) {
-        if( size() > capacity) {
+    protected boolean removeEldestEntry(Map.Entry<K, V> eldest) {
+        if (size() > capacity) {
             evictionWarningIfNeeded();
+
             return true;
         }
+
         return false;
     }
 
@@ -84,14 +85,13 @@ public class LruCache<K, V> extends LinkedHashMap<K, V>{
 
         if (evictionsSinceWarning >= evictionWarningThrottle) {
             DateFormat dateFormat = DateFormat.getDateTimeInstance();
+
             if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("There have been " + evictionsSinceWarning
-                        + " evictions from the cache since "
-                        + dateFormat.format(lastEvictionWarning));
+                LOGGER.info("There have been {} evictions from the cache since {}", evictionsSinceWarning, dateFormat.format(lastEvictionWarning));
             }
+
             evictionsSinceWarning = 0;
-            lastEvictionWarning = new Date();
+            lastEvictionWarning   = new Date();
         }
     }
-
 }

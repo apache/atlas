@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,9 +28,7 @@ import java.util.List;
  * Groovy expression that represents a list literal.
  */
 public class ListExpression extends AbstractGroovyExpression {
-
     private List<GroovyExpression> values = new ArrayList<>();
-
 
     public ListExpression(GroovyExpression... values) {
         this.values = Arrays.asList(values);
@@ -45,16 +43,18 @@ public class ListExpression extends AbstractGroovyExpression {
     }
 
     public void generateGroovy(GroovyGenerationContext context) {
-
         context.append("[");
-        Iterator<GroovyExpression> it = values.iterator();
-        while(it.hasNext()) {
+
+        for (Iterator<GroovyExpression> it = values.iterator(); it.hasNext(); ) {
             GroovyExpression expr = it.next();
+
             expr.generateGroovy(context);
+
             if (it.hasNext()) {
                 context.append(", ");
             }
         }
+
         context.append("]");
     }
 
@@ -67,6 +67,4 @@ public class ListExpression extends AbstractGroovyExpression {
     public GroovyExpression copy(List<GroovyExpression> newChildren) {
         return new ListExpression(newChildren);
     }
-
-
 }

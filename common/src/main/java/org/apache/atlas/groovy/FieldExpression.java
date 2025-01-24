@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,19 +25,19 @@ import java.util.List;
  * Groovy expression that accesses a field in an object.
  */
 public class FieldExpression extends AbstractFunctionExpression {
-
-    private String fieldName;
+    private final String fieldName;
 
     public FieldExpression(GroovyExpression target, String fieldName) {
         super(target);
+
         this.fieldName = fieldName;
     }
 
     @Override
     public void generateGroovy(GroovyGenerationContext context) {
         getCaller().generateGroovy(context);
-        context.append(".'");
 
+        context.append(".'");
         context.append(fieldName);
         context.append("'");
     }
@@ -49,7 +49,6 @@ public class FieldExpression extends AbstractFunctionExpression {
 
     @Override
     public GroovyExpression copy(List<GroovyExpression> newChildren) {
-        assert newChildren.size() == 1;
         return new FieldExpression(newChildren.get(0), fieldName);
     }
 }

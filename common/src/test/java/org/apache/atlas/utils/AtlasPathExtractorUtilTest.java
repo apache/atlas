@@ -20,115 +20,82 @@ package org.apache.atlas.utils;
 
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
-import org.apache.hadoop.fs.Path;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 public class AtlasPathExtractorUtilTest {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasPathExtractorUtilTest.class);
 
     // Common
-    private static final String METADATA_NAMESPACE          = "metaspace";
-    private static final String QNAME_METADATA_NAMESPACE    = '@' + METADATA_NAMESPACE;
-    private static final String SCHEME_SEPARATOR            = "://";
-    private static final String ATTRIBUTE_NAME              = "name";
-    private static final String ATTRIBUTE_QUALIFIED_NAME    = "qualifiedName";
+    private static final String METADATA_NAMESPACE       = "metaspace";
+    private static final String QNAME_METADATA_NAMESPACE = '@' + METADATA_NAMESPACE;
+    private static final String SCHEME_SEPARATOR         = "://";
+    private static final String ATTRIBUTE_NAME           = "name";
+    private static final String ATTRIBUTE_QUALIFIED_NAME = "qualifiedName";
 
     // HDFS
-    private static final String HDFS_PATH_TYPE           = "hdfs_path";
-    private static final String ATTRIBUTE_PATH           = "path";
-    private static final String ATTRIBUTE_CLUSTER_NAME   = "clusterName";
+    private static final String HDFS_PATH_TYPE         = "hdfs_path";
+    private static final String ATTRIBUTE_PATH         = "path";
+    private static final String ATTRIBUTE_CLUSTER_NAME = "clusterName";
 
     // Ozone
-    private static final String OZONE_VOLUME      = "ozone_volume";
-    private static final String OZONE_BUCKET      = "ozone_bucket";
-    private static final String OZONE_KEY         = "ozone_key";
-    private static final String OZONE_SCHEME      = "ofs" + SCHEME_SEPARATOR;
-    private static final String OZONE_3_SCHEME    = "o3fs" + SCHEME_SEPARATOR;
+    private static final String OZONE_VOLUME   = "ozone_volume";
+    private static final String OZONE_BUCKET   = "ozone_bucket";
+    private static final String OZONE_KEY      = "ozone_key";
+    private static final String OZONE_SCHEME   = "ofs" + SCHEME_SEPARATOR;
+    private static final String OZONE_3_SCHEME = "o3fs" + SCHEME_SEPARATOR;
 
     // HDFS
-    private static final String HDFS_SCHEME    = "hdfs" + SCHEME_SEPARATOR;
-    private static final String HDFS_PATH      = HDFS_SCHEME + "host_name:8020/warehouse/tablespace/external/hive/taBlE_306";
+    private static final String HDFS_SCHEME = "hdfs" + SCHEME_SEPARATOR;
+    private static final String HDFS_PATH   = HDFS_SCHEME + "host_name:8020/warehouse/tablespace/external/hive/taBlE_306";
 
     // ADLS Gen2
-    private static final String ADLS_GEN2_ACCOUNT       = "adls_gen2_account";
-    private static final String ADLS_GEN2_CONTAINER     = "adls_gen2_container";
-    private static final String ADLS_GEN2_DIRECTORY     = "adls_gen2_directory";
-    private static final String ABFS_SCHEME             = "abfs" + SCHEME_SEPARATOR;
-    private static final String ABFSS_SCHEME            = "abfss" + SCHEME_SEPARATOR;
-    private static final String ABFS_PATH               = ABFS_SCHEME + "data@razrangersan.dfs.core.windows.net/tmp/cdp-demo/sample.csv";
-    private static final String ABFSS_PATH              = ABFSS_SCHEME + "data@razrangersan.dfs.core.windows.net/tmp/cdp-demo/sample.csv";
+    private static final String ADLS_GEN2_ACCOUNT   = "adls_gen2_account";
+    private static final String ADLS_GEN2_CONTAINER = "adls_gen2_container";
+    private static final String ADLS_GEN2_DIRECTORY = "adls_gen2_directory";
+    private static final String ABFS_SCHEME         = "abfs" + SCHEME_SEPARATOR;
+    private static final String ABFS_PATH           = ABFS_SCHEME + "data@razrangersan.dfs.core.windows.net/tmp/cdp-demo/sample.csv";
+    private static final String ABFSS_SCHEME        = "abfss" + SCHEME_SEPARATOR;
+    private static final String ABFSS_PATH          = ABFSS_SCHEME + "data@razrangersan.dfs.core.windows.net/tmp/cdp-demo/sample.csv";
 
     // AWS S3
-    private static final String AWS_S3_ATLAS_MODEL_VERSION_V2    = "V2";
-    private static final String AWS_S3_BUCKET                    = "aws_s3_bucket";
-    private static final String AWS_S3_PSEUDO_DIR                = "aws_s3_pseudo_dir";
-    private static final String AWS_S3_V2_BUCKET                 = "aws_s3_v2_bucket";
-    private static final String AWS_S3_V2_PSEUDO_DIR             = "aws_s3_v2_directory";
-    private static final String S3_SCHEME                        = "s3" + SCHEME_SEPARATOR;
-    private static final String S3A_SCHEME                       = "s3a" + SCHEME_SEPARATOR;
-    private static final String ATTRIBUTE_OBJECT_PREFIX          = "objectPrefix";
-    private static final String S3_PATH                          = S3_SCHEME + "aws_my_bucket1/1234567890/renders/Irradiance_A.csv";
-    private static final String S3A_PATH                         = S3A_SCHEME + "aws_my_bucket1/1234567890/renders/Irradiance_A.csv";
-
+    private static final String AWS_S3_ATLAS_MODEL_VERSION_V2 = "V2";
+    private static final String AWS_S3_BUCKET                 = "aws_s3_bucket";
+    private static final String AWS_S3_PSEUDO_DIR             = "aws_s3_pseudo_dir";
+    private static final String AWS_S3_V2_BUCKET              = "aws_s3_v2_bucket";
+    private static final String AWS_S3_V2_PSEUDO_DIR          = "aws_s3_v2_directory";
+    private static final String S3_SCHEME                     = "s3" + SCHEME_SEPARATOR;
+    private static final String S3_PATH                       = S3_SCHEME + "aws_my_bucket1/1234567890/renders/Irradiance_A.csv";
+    private static final String S3A_SCHEME                    = "s3a" + SCHEME_SEPARATOR;
+    private static final String S3A_PATH                      = S3A_SCHEME + "aws_my_bucket1/1234567890/renders/Irradiance_A.csv";
+    private static final String ATTRIBUTE_OBJECT_PREFIX       = "objectPrefix";
     // Google Cloud Storage
-    private static final String GCS_VIRTUAL_DIR            = "gcp_storage_virtual_directory";
-    private static final String GCS_BUCKET                 = "gcp_storage_bucket";
-    private static final String GCS_SCHEME                 = "gs" + SCHEME_SEPARATOR;
-    private static final String GCS_PATH                   = GCS_SCHEME + "gcs_test_bucket1/1234567890/data";
-
-    @DataProvider(name = "ozonePathProvider")
-    private Object[][] ozonePathProvider(){
-        return new Object[][]{
-                { new OzoneKeyValidator(OZONE_SCHEME, "ozone1.com/volume1/bucket1/files/file.txt",
-                        "files", "ozone1.com/volume1/bucket1/files",
-                        "file.txt", "ozone1.com/volume1/bucket1/files/file.txt")},
-
-                { new OzoneKeyValidator(OZONE_SCHEME, "ozone1:1234/volume1/bucket1/file21.txt",
-                        "file21.txt", "ozone1:1234/volume1/bucket1/file21.txt")},
-
-                { new OzoneKeyValidator(OZONE_SCHEME, "ozone1/volume1/bucket1/quarter_one/sales",
-                        "quarter_one", "ozone1/volume1/bucket1/quarter_one",
-                        "sales", "ozone1/volume1/bucket1/quarter_one/sales")},
-
-                { new OzoneKeyValidator(OZONE_SCHEME, "ozone1/volume1/bucket1/quarter_one/sales/",
-                        "quarter_one", "ozone1/volume1/bucket1/quarter_one",
-                        "sales", "ozone1/volume1/bucket1/quarter_one/sales")},
-
-                { new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/files/file.txt",
-                        "files", "bucket1.volume1.ozone1/files",
-                        "file.txt", "bucket1.volume1.ozone1/files/file.txt") },
-
-                { new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/file21.txt",
-                        "file21.txt", "bucket1.volume1.ozone1/file21.txt") },
-
-                { new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/quarter_one/sales",
-                        "quarter_one", "bucket1.volume1.ozone1/quarter_one",
-                        "sales", "bucket1.volume1.ozone1/quarter_one/sales") },
-
-                { new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/quarter_one/sales/",
-                        "quarter_one", "bucket1.volume1.ozone1/quarter_one",
-                        "sales", "bucket1.volume1.ozone1/quarter_one/sales") },
-        };
-    }
+    private static final String GCS_VIRTUAL_DIR = "gcp_storage_virtual_directory";
+    private static final String GCS_BUCKET      = "gcp_storage_bucket";
+    private static final String GCS_SCHEME      = "gs" + SCHEME_SEPARATOR;
+    private static final String GCS_PATH        = GCS_SCHEME + "gcs_test_bucket1/1234567890/data";
 
     @Test(dataProvider = "ozonePathProvider")
     public void testGetPathEntityOzone3Path(OzoneKeyValidator validator) {
-        String scheme = validator.scheme;
+        String scheme    = validator.scheme;
         String ozonePath = scheme + validator.location;
 
         PathExtractorContext extractorContext = new PathExtractorContext(METADATA_NAMESPACE);
-        Path path = new Path(ozonePath);
+        Path                 path             = new Path(ozonePath);
 
         AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity entity = entityWithExtInfo.getEntity();
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertNotNull(entity);
         verifyOzoneKeyEntity(entity, validator);
@@ -144,9 +111,9 @@ public class AtlasPathExtractorUtilTest {
     public void testGetPathEntityHdfsPath() {
         PathExtractorContext extractorContext = new PathExtractorContext(METADATA_NAMESPACE);
 
-        Path path = new Path(HDFS_PATH);
+        Path                   path              = new Path(HDFS_PATH);
         AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity entity = entityWithExtInfo.getEntity();
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertNotNull(entity);
         assertEquals(entity.getTypeName(), HDFS_PATH_TYPE);
@@ -161,9 +128,9 @@ public class AtlasPathExtractorUtilTest {
     public void testGetPathEntityHdfsPathLowerCase() {
         PathExtractorContext extractorContext = new PathExtractorContext(METADATA_NAMESPACE, true, null);
 
-        Path path = new Path(HDFS_PATH);
+        Path                   path              = new Path(HDFS_PATH);
         AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity entity = entityWithExtInfo.getEntity();
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertNotNull(entity);
         assertEquals(entity.getTypeName(), HDFS_PATH_TYPE);
@@ -178,9 +145,9 @@ public class AtlasPathExtractorUtilTest {
     public void testGetPathEntityABFSPath() {
         PathExtractorContext extractorContext = new PathExtractorContext(METADATA_NAMESPACE);
 
-        Path path = new Path(ABFS_PATH);
+        Path                   path              = new Path(ABFS_PATH);
         AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity entity = entityWithExtInfo.getEntity();
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertNotNull(entity);
         assertEquals(entity.getTypeName(), ADLS_GEN2_DIRECTORY);
@@ -194,9 +161,9 @@ public class AtlasPathExtractorUtilTest {
     public void testGetPathEntityABFSSPath() {
         PathExtractorContext extractorContext = new PathExtractorContext(METADATA_NAMESPACE);
 
-        Path path = new Path(ABFSS_PATH);
+        Path                   path              = new Path(ABFSS_PATH);
         AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity entity = entityWithExtInfo.getEntity();
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertNotNull(entity);
         assertEquals(entity.getTypeName(), ADLS_GEN2_DIRECTORY);
@@ -210,9 +177,9 @@ public class AtlasPathExtractorUtilTest {
     public void testGetPathEntityS3V2Path() {
         PathExtractorContext extractorContext = new PathExtractorContext(METADATA_NAMESPACE, AWS_S3_ATLAS_MODEL_VERSION_V2);
 
-        Path path = new Path(S3_PATH);
+        Path                   path              = new Path(S3_PATH);
         AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity entity = entityWithExtInfo.getEntity();
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertNotNull(entity);
         assertEquals(entity.getTypeName(), AWS_S3_V2_PSEUDO_DIR);
@@ -226,9 +193,9 @@ public class AtlasPathExtractorUtilTest {
     public void testGetPathEntityS3AV2Path() {
         PathExtractorContext extractorContext = new PathExtractorContext(METADATA_NAMESPACE, AWS_S3_ATLAS_MODEL_VERSION_V2);
 
-        Path path = new Path(S3A_PATH);
+        Path                   path              = new Path(S3A_PATH);
         AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity entity = entityWithExtInfo.getEntity();
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertNotNull(entity);
         assertEquals(entity.getTypeName(), AWS_S3_V2_PSEUDO_DIR);
@@ -242,9 +209,9 @@ public class AtlasPathExtractorUtilTest {
     public void testGetPathEntityS3Path() {
         PathExtractorContext extractorContext = new PathExtractorContext(METADATA_NAMESPACE);
 
-        Path path = new Path(S3_PATH);
+        Path                   path              = new Path(S3_PATH);
         AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity entity = entityWithExtInfo.getEntity();
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertNotNull(entity);
         assertEquals(entity.getTypeName(), AWS_S3_PSEUDO_DIR);
@@ -258,9 +225,9 @@ public class AtlasPathExtractorUtilTest {
     public void testGetPathEntityS3APath() {
         PathExtractorContext extractorContext = new PathExtractorContext(METADATA_NAMESPACE);
 
-        Path path = new Path(S3A_PATH);
+        Path                   path              = new Path(S3A_PATH);
         AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity entity = entityWithExtInfo.getEntity();
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertNotNull(entity);
         assertEquals(entity.getTypeName(), AWS_S3_PSEUDO_DIR);
@@ -274,9 +241,9 @@ public class AtlasPathExtractorUtilTest {
     public void testGetPathEntityGCSPath() {
         PathExtractorContext extractorContext = new PathExtractorContext(METADATA_NAMESPACE);
 
-        Path path = new Path(GCS_PATH);
+        Path                   path              = new Path(GCS_PATH);
         AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity entity = entityWithExtInfo.getEntity();
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertNotNull(entity);
         assertEquals(entity.getTypeName(), GCS_VIRTUAL_DIR);
@@ -286,9 +253,44 @@ public class AtlasPathExtractorUtilTest {
         verifyGCSKnownEntities(GCS_SCHEME, GCS_PATH, extractorContext.getKnownEntities());
     }
 
+    @DataProvider(name = "ozonePathProvider")
+    private Object[][] ozonePathProvider() {
+        return new Object[][] {
+                {new OzoneKeyValidator(OZONE_SCHEME, "ozone1.com/volume1/bucket1/files/file.txt",
+                        "files", "ozone1.com/volume1/bucket1/files",
+                        "file.txt", "ozone1.com/volume1/bucket1/files/file.txt")},
+
+                {new OzoneKeyValidator(OZONE_SCHEME, "ozone1:1234/volume1/bucket1/file21.txt",
+                        "file21.txt", "ozone1:1234/volume1/bucket1/file21.txt")},
+
+                {new OzoneKeyValidator(OZONE_SCHEME, "ozone1/volume1/bucket1/quarter_one/sales",
+                        "quarter_one", "ozone1/volume1/bucket1/quarter_one",
+                        "sales", "ozone1/volume1/bucket1/quarter_one/sales")},
+
+                {new OzoneKeyValidator(OZONE_SCHEME, "ozone1/volume1/bucket1/quarter_one/sales/",
+                        "quarter_one", "ozone1/volume1/bucket1/quarter_one",
+                        "sales", "ozone1/volume1/bucket1/quarter_one/sales")},
+
+                {new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/files/file.txt",
+                        "files", "bucket1.volume1.ozone1/files",
+                        "file.txt", "bucket1.volume1.ozone1/files/file.txt")},
+
+                {new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/file21.txt",
+                        "file21.txt", "bucket1.volume1.ozone1/file21.txt")},
+
+                {new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/quarter_one/sales",
+                        "quarter_one", "bucket1.volume1.ozone1/quarter_one",
+                        "sales", "bucket1.volume1.ozone1/quarter_one/sales")},
+
+                {new OzoneKeyValidator(OZONE_3_SCHEME, "bucket1.volume1.ozone1/quarter_one/sales/",
+                        "quarter_one", "bucket1.volume1.ozone1/quarter_one",
+                        "sales", "bucket1.volume1.ozone1/quarter_one/sales")},
+        };
+    }
+
     private void verifyOzoneEntities(Map<String, AtlasEntity> knownEntities, OzoneKeyValidator validator) {
         for (AtlasEntity knownEntity : knownEntities.values()) {
-            switch (knownEntity.getTypeName()){
+            switch (knownEntity.getTypeName()) {
                 case OZONE_KEY:
                     verifyOzoneKeyEntity(knownEntity, validator);
                     break;
@@ -325,15 +327,15 @@ public class AtlasPathExtractorUtilTest {
         }
     }
 
-    private void verifyABFSAdlsGen2Dir(String abfsScheme, String path, AtlasEntity entity){
-        String pathQName = abfsScheme + "data@razrangersan/tmp/cdp-demo/sample.csv" + QNAME_METADATA_NAMESPACE;
+    private void verifyABFSAdlsGen2Dir(String abfsScheme, String path, AtlasEntity entity) {
+        String pathQName   = abfsScheme + "data@razrangersan/tmp/cdp-demo/sample.csv" + QNAME_METADATA_NAMESPACE;
         String entityQName = (String) entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
 
-        if (pathQName.equalsIgnoreCase(entityQName)){
+        if (pathQName.equalsIgnoreCase(entityQName)) {
             assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "sample.csv");
         } else {
             pathQName = abfsScheme + "data@razrangersan/tmp/cdp-demo" + QNAME_METADATA_NAMESPACE;
-            if (pathQName.equalsIgnoreCase(entityQName)){
+            if (pathQName.equalsIgnoreCase(entityQName)) {
                 assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "cdp-demo");
             } else {
                 assertEquals(entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME), abfsScheme + "data@razrangersan/tmp" + QNAME_METADATA_NAMESPACE);
@@ -346,7 +348,7 @@ public class AtlasPathExtractorUtilTest {
         assertEquals(knownEntities.size(), 5);
         int directoryCount = 0;
         for (AtlasEntity knownEntity : knownEntities.values()) {
-            switch (knownEntity.getTypeName()){
+            switch (knownEntity.getTypeName()) {
                 case ADLS_GEN2_DIRECTORY:
                     verifyABFSAdlsGen2Dir(scheme, path, knownEntity);
                     directoryCount++;
@@ -366,16 +368,16 @@ public class AtlasPathExtractorUtilTest {
         assertEquals(directoryCount, 3);
     }
 
-    private void verifyS3V2PseudoDir(String s3Scheme, String path, AtlasEntity entity){
-        String pathQName = path + "/" + QNAME_METADATA_NAMESPACE;
+    private void verifyS3V2PseudoDir(String s3Scheme, String path, AtlasEntity entity) {
+        String pathQName   = path + "/" + QNAME_METADATA_NAMESPACE;
         String entityQName = (String) entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
 
-        if (pathQName.equalsIgnoreCase(entityQName)){
+        if (pathQName.equalsIgnoreCase(entityQName)) {
             assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "Irradiance_A.csv");
             assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/renders/Irradiance_A.csv/");
         } else {
             pathQName = s3Scheme + "aws_my_bucket1/1234567890/" + QNAME_METADATA_NAMESPACE;
-            if (pathQName.equalsIgnoreCase(entityQName)){
+            if (pathQName.equalsIgnoreCase(entityQName)) {
                 assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "1234567890");
                 assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/");
             } else {
@@ -387,10 +389,10 @@ public class AtlasPathExtractorUtilTest {
     }
 
     private void verifyGCSVirtualDir(String s3Scheme, String path, AtlasEntity entity) {
-        String pathQName = path + "/" + QNAME_METADATA_NAMESPACE;
+        String pathQName   = path + "/" + QNAME_METADATA_NAMESPACE;
         String entityQName = (String) entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
 
-        if (pathQName.equalsIgnoreCase(entityQName)){
+        if (pathQName.equalsIgnoreCase(entityQName)) {
             assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "data");
             assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/");
         } else {
@@ -405,7 +407,7 @@ public class AtlasPathExtractorUtilTest {
         assertEquals(knownEntities.size(), 4);
         int dirCount = 0;
         for (AtlasEntity knownEntity : knownEntities.values()) {
-            switch (knownEntity.getTypeName()){
+            switch (knownEntity.getTypeName()) {
                 case AWS_S3_V2_PSEUDO_DIR:
                     verifyS3V2PseudoDir(scheme, path, knownEntity);
                     dirCount++;
@@ -419,7 +421,7 @@ public class AtlasPathExtractorUtilTest {
         assertEquals(dirCount, 3);
     }
 
-    private void verifyS3PseudoDir(String path, AtlasEntity entity){
+    private void verifyS3PseudoDir(String path, AtlasEntity entity) {
         assertEquals(entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME), path.toLowerCase() + QNAME_METADATA_NAMESPACE);
         assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "/1234567890/renders/irradiance_a.csv");
         assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/renders/irradiance_a.csv");
@@ -429,7 +431,7 @@ public class AtlasPathExtractorUtilTest {
         assertEquals(knownEntities.size(), 2);
         int dirCount = 0;
         for (AtlasEntity knownEntity : knownEntities.values()) {
-            switch (knownEntity.getTypeName()){
+            switch (knownEntity.getTypeName()) {
                 case AWS_S3_PSEUDO_DIR:
                     verifyS3PseudoDir(path, knownEntity);
                     dirCount++;
@@ -452,7 +454,7 @@ public class AtlasPathExtractorUtilTest {
         assertEquals(knownEntities.size(), 3);
         int dirCount = 0;
         for (AtlasEntity knownEntity : knownEntities.values()) {
-            switch (knownEntity.getTypeName()){
+            switch (knownEntity.getTypeName()) {
                 case GCS_VIRTUAL_DIR:
                     verifyGCSVirtualDir(scheme, path, knownEntity);
                     dirCount++;
@@ -471,7 +473,7 @@ public class AtlasPathExtractorUtilTest {
         assertEquals(entity.getAttribute(ATTRIBUTE_NAME), "gcs_test_bucket1");
     }
 
-    private class OzoneKeyValidator {
+    private static class OzoneKeyValidator {
         private final String              scheme;
         private final String              location;
         private final int                 knownEntitiesCount;
@@ -484,25 +486,23 @@ public class AtlasPathExtractorUtilTest {
             this.knownEntitiesCount = nameQNamePairs.size() + 2;
         }
 
-        public boolean validateNameQName(AtlasEntity entity){
+        public boolean validateNameQName(AtlasEntity entity) {
             String name = (String) entity.getAttribute(ATTRIBUTE_NAME);
 
-            if (this.nameQNamePairs.containsKey(name)){
+            if (this.nameQNamePairs.containsKey(name)) {
                 String qName = (String) entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
 
-                if (qName.equals(this.nameQNamePairs.get(name))) {
-                    return true;
-                }
+                return qName.equals(this.nameQNamePairs.get(name));
             }
 
             return false;
         }
 
-        private Map<String, String> getPairMap(String scheme, String... pairs){
-            Map< String, String > ret = new HashMap<>();
+        private Map<String, String> getPairMap(String scheme, String... pairs) {
+            Map<String, String> ret = new HashMap<>();
 
             for (int i = 0; i < pairs.length; i += 2) {
-                ret.put(pairs[i], scheme + pairs[i+1] + QNAME_METADATA_NAMESPACE);
+                ret.put(pairs[i], scheme + pairs[i + 1] + QNAME_METADATA_NAMESPACE);
             }
 
             return ret;

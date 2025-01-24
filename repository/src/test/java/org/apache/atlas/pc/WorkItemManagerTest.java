@@ -32,19 +32,19 @@ import static org.testng.Assert.assertEquals;
 public class WorkItemManagerTest {
     private static final Logger LOG = LoggerFactory.getLogger(WorkItemManagerTest.class);
 
-    private class IntegerConsumer extends WorkItemConsumer<Integer> {
-
+    private static class IntegerConsumer extends WorkItemConsumer<Integer> {
         private final ConcurrentLinkedQueue<Integer> target;
 
         public IntegerConsumer(BlockingQueue<Integer> queue, ConcurrentLinkedQueue<Integer> target) {
             super(queue);
+
             this.target = target;
         }
 
         @Override
         protected void doCommit() {
             try {
-                Thread.sleep(20 * RandomUtils.nextInt(10, 15));
+                Thread.sleep(20L * RandomUtils.nextInt(10, 15));
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -57,7 +57,7 @@ public class WorkItemManagerTest {
         }
     }
 
-    private class IntegerConsumerBuilder implements WorkItemBuilder<IntegerConsumer, Integer> {
+    private static class IntegerConsumerBuilder implements WorkItemBuilder<WorkItemConsumer<Integer>, Integer> {
         ConcurrentLinkedQueue<Integer> integers = new ConcurrentLinkedQueue<>();
 
         @Override
@@ -71,7 +71,7 @@ public class WorkItemManagerTest {
         IntegerConsumerBuilder cb = new IntegerConsumerBuilder();
         int numberOfItems = 10;
         try {
-            WorkItemManager<Integer, WorkItemConsumer> wi = getWorkItemManger(cb, 1);
+            WorkItemManager<Integer, WorkItemConsumer<Integer>> wi = getWorkItemManger(cb, 1);
             for (int i = 0; i < numberOfItems; i++) {
                 wi.produce(i);
             }
@@ -94,7 +94,7 @@ public class WorkItemManagerTest {
         IntegerConsumerBuilder cb = new IntegerConsumerBuilder();
         int numberOfItems = 100;
         try {
-            WorkItemManager<Integer, WorkItemConsumer> wi = getWorkItemManger(cb, 5);
+            WorkItemManager<Integer, WorkItemConsumer<Integer>> wi = getWorkItemManger(cb, 5);
             for (int i = 0; i < numberOfItems; i++) {
                 wi.produce(i);
             }
@@ -107,7 +107,7 @@ public class WorkItemManagerTest {
         assertEquals(cb.integers.size(), numberOfItems);
     }
 
-    private WorkItemManager<Integer, WorkItemConsumer> getWorkItemManger(IntegerConsumerBuilder cb, int numWorkers) {
+    private WorkItemManager<Integer, WorkItemConsumer<Integer>> getWorkItemManger(IntegerConsumerBuilder cb, int numWorkers) {
         return new WorkItemManager<>(cb, 5, numWorkers);
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,25 +29,24 @@ import java.util.List;
  *
  */
 public abstract class BinaryExpression extends AbstractGroovyExpression {
-
-
-    private GroovyExpression left;
-    private GroovyExpression right;
-    protected String op;
+    protected     String           op;
+    private final GroovyExpression left;
+    private final GroovyExpression right;
 
     public BinaryExpression(GroovyExpression left, String op, GroovyExpression right) {
-        this.left = left;
-        this.op = op;
+        this.left  = left;
+        this.op    = op;
         this.right = right;
     }
 
     @Override
     public void generateGroovy(GroovyGenerationContext context) {
-
         left.generateGroovy(context);
+
         context.append(" ");
         context.append(op);
         context.append(" ");
+
         right.generateGroovy(context);
     }
 

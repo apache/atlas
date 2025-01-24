@@ -18,15 +18,13 @@
 
 package org.apache.atlas.utils;
 
-
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Set;
 
 public class AtlasPerfMetrics {
-    private final Map<String, Metric> metrics = new LinkedHashMap<>();
-    private long startTimeMs = -1;
-
+    private final Map<String, Metric> metrics     = new LinkedHashMap<>();
+    private       long                startTimeMs = -1;
 
     public MetricRecorder getMetricRecorder(String name) {
         return new MetricRecorder(name);
@@ -41,13 +39,7 @@ public class AtlasPerfMetrics {
                 startTimeMs = System.currentTimeMillis();
             }
 
-            Metric metric = metrics.get(name);
-
-            if (metric == null) {
-                metric = new Metric(name);
-
-                metrics.put(name, metric);
-            }
+            Metric metric = metrics.computeIfAbsent(name, Metric::new);
 
             metric.invocations++;
             metric.totalTimeMSecs += timeTaken;
@@ -91,23 +83,10 @@ public class AtlasPerfMetrics {
         return sb.toString();
     }
 
-    public class MetricRecorder {
-        private final String name;
-        private final long   startTimeMs = System.currentTimeMillis();
-
-        MetricRecorder(String name) {
-            this.name = name;
-        }
-
-        long getElapsedTime() {
-            return System.currentTimeMillis() - startTimeMs;
-        }
-    }
-
     public static class Metric {
         private final String name;
-        private       short  invocations    = 0;
-        private       long   totalTimeMSecs = 0;
+        private       short  invocations;
+        private       long   totalTimeMSecs;
 
         public Metric(String name) {
             this.name = name;
@@ -123,6 +102,19 @@ public class AtlasPerfMetrics {
 
         public long getTotalTimeMSecs() {
             return totalTimeMSecs;
+        }
+    }
+
+    public static class MetricRecorder {
+        private final String name;
+        private final long   startTimeMs = System.currentTimeMillis();
+
+        MetricRecorder(String name) {
+            this.name = name;
+        }
+
+        long getElapsedTime() {
+            return System.currentTimeMillis() - startTimeMs;
         }
     }
 }

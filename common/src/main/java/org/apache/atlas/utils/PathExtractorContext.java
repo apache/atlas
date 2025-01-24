@@ -30,15 +30,15 @@ public class PathExtractorContext {
     private final String                   awsS3AtlasModelVersion;
 
     public PathExtractorContext(String metadataNamespace) {
-        this(metadataNamespace, new HashMap<>(), false, null) ;
+        this(metadataNamespace, new HashMap<>(), false, null);
     }
 
     public PathExtractorContext(String metadataNamespace, String awsS3AtlasModelVersion) {
-        this(metadataNamespace, new HashMap<>(), false, awsS3AtlasModelVersion) ;
+        this(metadataNamespace, new HashMap<>(), false, awsS3AtlasModelVersion);
     }
 
     public PathExtractorContext(String metadataNamespace, boolean isConvertPathToLowerCase, String awsS3AtlasModelVersion) {
-        this(metadataNamespace, new HashMap<>(), isConvertPathToLowerCase, awsS3AtlasModelVersion) ;
+        this(metadataNamespace, new HashMap<>(), isConvertPathToLowerCase, awsS3AtlasModelVersion);
     }
 
     public PathExtractorContext(String metadataNamespace, Map<String, AtlasEntity> knownEntities, boolean isConvertPathToLowerCase, String awsS3AtlasModelVersion) {

@@ -22,7 +22,6 @@ import org.testng.annotations.Test;
 import static org.testng.Assert.assertEquals;
 
 public class HdfsNameServiceResolverTest {
-
     @Test
     public void testResolution() {
 //        assertEquals(HdfsNameServiceResolver.getNameServiceID("test"), "");
@@ -50,6 +49,5 @@ public class HdfsNameServiceResolverTest {
 
         assertEquals(HdfsNameServiceResolver.getPathWithNameServiceID("hdfs://mycluster/tmp/xyz"), "hdfs://mycluster/tmp/xyz");
         assertEquals(HdfsNameServiceResolver.getNameServiceIDForPath("hdfs://mycluster/tmp/xyz"), "mycluster");
-
     }
 }

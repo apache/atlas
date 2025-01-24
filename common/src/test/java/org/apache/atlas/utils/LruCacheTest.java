@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,29 +17,27 @@
  */
 package org.apache.atlas.utils;
 
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertFalse;
-import static org.testng.Assert.assertNull;
-import static org.testng.Assert.assertTrue;
+import org.apache.commons.lang.RandomStringUtils;
+import org.testng.annotations.Test;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import org.apache.commons.lang.RandomStringUtils;
-import org.testng.annotations.Test;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 /**
  * Tests the LruCache.
  */
 @Test
 public class LruCacheTest {
-
     /**
      * Tests the basic operations on the cache.
      */
     @Test
-    public void testBasicOps() throws Exception {
-
+    public void testBasicOps() {
         LruCache<String, String> cache = new LruCache<>(1000, 0);
         // Get the static cache and populate it. Its size and other
         // characteristics depend on the bootstrap properties that are hard to
@@ -107,8 +105,8 @@ public class LruCacheTest {
 
     @Test
     public void testMapOperations() {
-
         Map<String, String> reference = new HashMap<>();
+
         reference.put("name", "Fred");
         reference.put("occupation", "student");
         reference.put("height", "5'11");
@@ -116,29 +114,32 @@ public class LruCacheTest {
         reference.put("State", "MA");
 
         LruCache<String, String> map = new LruCache<>(10, 10);
+
         map.putAll(reference);
 
         assertEquals(map.size(), reference.size());
-        assertEquals(map.keySet().size(), reference.keySet().size());
+        assertEquals(map.size(), reference.size());
         assertTrue(map.keySet().containsAll(reference.keySet()));
         assertTrue(reference.keySet().containsAll(map.keySet()));
 
-        assertEquals(reference.entrySet().size(), map.entrySet().size());
-        for(Map.Entry<String, String> entry : map.entrySet()) {
+        assertEquals(reference.size(), map.size());
+
+        for (Map.Entry<String, String> entry : map.entrySet()) {
             assertTrue(reference.containsKey(entry.getKey()));
             assertEquals(entry.getValue(), reference.get(entry.getKey()));
             assertTrue(map.containsKey(entry.getKey()));
             assertTrue(map.containsValue(entry.getValue()));
-            assertTrue(map.values().contains(entry.getValue()));
+            assertTrue(map.containsValue(entry.getValue()));
         }
-        assertTrue(reference.equals(map));
-        assertTrue(map.equals(reference));
 
+        assertEquals(map, reference);
+        assertEquals(reference, map);
     }
 
     @Test
     public void testReplaceValueInMap() {
         LruCache<String, String> map = new LruCache<>(10, 10);
+
         map.put("name", "Fred");
         map.put("name", "George");
 
@@ -146,17 +147,17 @@ public class LruCacheTest {
         assertEquals(map.size(), 1);
     }
 
-
-
     @Test
     public void testOrderUpdatedWhenAddExisting() {
         LruCache<String, String> map = new LruCache<>(2, 10);
+
         map.put("name", "Fred");
         map.put("age", "15");
         map.put("name", "George");
 
         //age should be evicted
         map.put("height", "5'3\"");
+
         //age is now least recently used
         assertFalse(map.containsKey("age"));
     }
@@ -164,34 +165,32 @@ public class LruCacheTest {
     @Test
     public void testMapRemove() {
         LruCache<String, String> map = new LruCache<>(10, 10);
+
         map.put("name", "Fred");
         map.put("occupation", "student");
         map.put("height", "5'11");
         map.put("City", "Littleton");
         map.put("State", "MA");
+
         assertMapHasSize(map, 5);
         assertTrue(map.containsKey("State"));
+
         map.remove("State");
+
         assertMapHasSize(map, 4);
         assertFalse(map.containsKey("State"));
-
-    }
-
-    private void assertMapHasSize(LruCache<String, String> map, int size) {
-        assertEquals(map.size(), size);
-        assertEquals(map.keySet().size(), size);
-        assertEquals(map.values().size(), size);
-        assertEquals(map.entrySet().size(), size);
     }
 
     @Test
     public void testEvict() {
         LruCache<String, String> map = new LruCache<>(5, 10);
+
         map.put("name", "Fred");
         map.put("occupation", "student");
         map.put("height", "5'11");
         map.put("City", "Littleton");
         map.put("State", "MA");
+
         assertMapHasSize(map, 5);
 
         //name should be evicted next
@@ -208,11 +207,18 @@ public class LruCacheTest {
         assertMapHasSize(map, 5);
     }
 
+    private void assertMapHasSize(LruCache<String, String> map, int size) {
+        assertEquals(map.size(), size);
+        assertEquals(map.size(), size);
+        assertEquals(map.size(), size);
+        assertEquals(map.size(), size);
+    }
+
     /**
      * Create a fake query handle for testing.
      *
-     * @param queryPrefix
-     * @param pkgPrefix
+     * @param s1
+     * @param s2
      * @return a new query handle.
      */
     private String createHandle(String s1, String s2) {
@@ -223,11 +229,8 @@ public class LruCacheTest {
      * Create a mock IInternalQuery.
      *
      * @return a mock IInternalQuery.
-     * @throws QueryException
      */
     private String createQuery() {
         return RandomStringUtils.randomAlphabetic(10);
     }
-
-
 }

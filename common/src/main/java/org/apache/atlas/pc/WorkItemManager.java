@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,6 +17,7 @@
  */
 
 package org.apache.atlas.pc;
+
 import org.apache.curator.shaded.com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,19 +25,25 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
-import java.util.concurrent.*;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.TimeUnit;
 
-public class WorkItemManager<T, U extends WorkItemConsumer> {
+public class WorkItemManager<T, U extends WorkItemConsumer<T>> {
     private static final Logger LOG = LoggerFactory.getLogger(WorkItemManager.class);
 
     private final int              numWorkers;
     private final BlockingQueue<T> workQueue;
     private final ExecutorService  service;
     private final List<U>          consumers = new ArrayList<>();
-    private CountDownLatch         countdownLatch;
-    private Queue<Object>          resultsQueue;
+    private       CountDownLatch   countdownLatch;
+    private       Queue<Object>    resultsQueue;
 
-    public WorkItemManager(WorkItemBuilder builder, String namePrefix, int batchSize, int numWorkers, boolean collectResults) {
+    public WorkItemManager(WorkItemBuilder<U, T> builder, String namePrefix, int batchSize, int numWorkers, boolean collectResults) {
         this.numWorkers = numWorkers;
         this.workQueue  = new LinkedBlockingQueue<>(batchSize * numWorkers);
         this.service    = Executors.newFixedThreadPool(numWorkers, new ThreadFactoryBuilder().setNameFormat(namePrefix + "-%d").build());
@@ -46,28 +53,12 @@ public class WorkItemManager<T, U extends WorkItemConsumer> {
         start();
     }
 
-    public WorkItemManager(WorkItemBuilder builder, int batchSize, int numWorkers) {
+    public WorkItemManager(WorkItemBuilder<U, T> builder, int batchSize, int numWorkers) {
         this(builder, "workItemConsumer", batchSize, numWorkers, false);
     }
 
     public void setResultsCollection(Queue<Object> resultsQueue) {
         this.resultsQueue = resultsQueue;
-    }
-
-    private void createConsumers(WorkItemBuilder builder, int numWorkers, boolean collectResults) {
-        if (collectResults) {
-            setResultsCollection(new ConcurrentLinkedQueue<>());
-        }
-
-        for (int i = 0; i < numWorkers; i++) {
-            U c = (U) builder.build(workQueue);
-
-            consumers.add(c);
-
-            if (collectResults) {
-                c.setResults(resultsQueue);
-            }
-        }
     }
 
     public void start() {
@@ -107,7 +98,9 @@ public class WorkItemManager<T, U extends WorkItemConsumer> {
             }
 
             LOG.debug("Drain: Stated! Queue size: {}", workQueue.size());
+
             this.countdownLatch.await();
+
             LOG.debug("Drain: Done! Queue size: {}", workQueue.size());
         } catch (InterruptedException ex) {
             Thread.currentThread().interrupt();
@@ -125,17 +118,33 @@ public class WorkItemManager<T, U extends WorkItemConsumer> {
         LOG.info("WorkItemManager: Shutdown done!");
     }
 
-    public Queue getResults() {
+    public Queue<Object> getResults() {
         return this.resultsQueue;
     }
 
+    private void createConsumers(WorkItemBuilder<U, T> builder, int numWorkers, boolean collectResults) {
+        if (collectResults) {
+            setResultsCollection(new ConcurrentLinkedQueue<>());
+        }
+
+        for (int i = 0; i < numWorkers; i++) {
+            U c = builder.build(workQueue);
+
+            consumers.add(c);
+
+            if (collectResults) {
+                c.setResults(resultsQueue);
+            }
+        }
+    }
+
     private int getAvgCommitTimeSeconds() {
-        int commitTimeSeconds = 0;
+        long commitTimeSeconds = 0;
 
         for (U c : consumers) {
             commitTimeSeconds += c.getMaxCommitTimeInMs();
         }
 
-        return (commitTimeSeconds / consumers.size()) / 1000;
+        return (int) ((commitTimeSeconds / consumers.size()) / 1000);
     }
 }

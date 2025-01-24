@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,10 +30,10 @@ import java.util.Set;
 public class StatusReporter<T, U> {
     private static final Logger LOG = LoggerFactory.getLogger(StatusReporter.class);
 
-    private Map<T,U> producedItems = new LinkedHashMap<>();
-    private Set<T> processedSet = new HashSet<>();
-    private long timeoutDuration;
-    private long lastAck;
+    private final Map<T, U> producedItems = new LinkedHashMap<>();
+    private final Set<T>    processedSet  = new HashSet<>();
+    private final long      timeoutDuration;
+    private       long      lastAck;
 
     public StatusReporter() {
         this.timeoutDuration = -1;
@@ -58,15 +58,27 @@ public class StatusReporter<T, U> {
     public U ack() {
         U ack = null;
         U ret;
+
         do {
             Map.Entry<T, U> firstElement = getFirstElement(this.producedItems);
+
             ret = completionIndex(firstElement);
+
             if (ret != null) {
                 ack = ret;
             }
-        } while(ret != null);
+        }
+        while (ret != null);
 
         return ack;
+    }
+
+    public int getProducedCount() {
+        return this.producedItems.size();
+    }
+
+    public int getProcessedCount() {
+        return this.processedSet.size();
     }
 
     private Map.Entry<T, U> getFirstElement(Map<T, U> map) {
@@ -79,12 +91,14 @@ public class StatusReporter<T, U> {
 
     private U completionIndex(Map.Entry<T, U> lookFor) {
         U ack = null;
+
         if (lookFor == null) {
             return ack;
         }
 
         if (hasTimeoutDurationReached(System.currentTimeMillis())) {
             LOG.warn("Ack: Timeout: {} - {}", lookFor.getKey(), lookFor.getValue());
+
             return acknowledged(lookFor);
         }
 
@@ -97,22 +111,18 @@ public class StatusReporter<T, U> {
 
     private U acknowledged(Map.Entry<T, U> lookFor) {
         U ack = lookFor.getValue();
+
         producedItems.remove(lookFor.getKey());
         processedSet.remove(lookFor.getKey());
+
         return ack;
     }
 
     private boolean hasTimeoutDurationReached(long now) {
         boolean b = (this.timeoutDuration > -1) && (this.lastAck != 0) && ((now - this.lastAck) >= timeoutDuration);
+
         lastAck = System.currentTimeMillis();
+
         return b;
-    }
-
-    public int getProducedCount() {
-        return this.producedItems.size();
-    }
-
-    public int getProcessedCount() {
-        return this.processedSet.size();
     }
 }
