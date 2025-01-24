@@ -24,6 +24,8 @@
 <suppressions>
     <suppress checks="JavadocType" files="[/\\]src[/\\]test[/\\]java[/\\]"/>
 
-    <!-- skip checks on customized titan 0.5.4 files -->
-    <suppress checks="[a-zA-Z0-9]*" files="[/\\]com[/\\]thinkaurelius[/\\]titan[/\\]"/>
+    <suppress files="[*]*.properties" checks="[a-zA-Z0-9]*"/>
+    <suppress files="[\\/]target[\\/]" checks="[a-zA-Z0-9]*"/>
+    <suppress files="[\\/]generated-sources[\\/]" checks="[a-zA-Z0-9]*"/>
+    <suppress files="[\\/]surefire-reports[\\/]" checks="[a-zA-Z0-9]*"/>
 </suppressions>
