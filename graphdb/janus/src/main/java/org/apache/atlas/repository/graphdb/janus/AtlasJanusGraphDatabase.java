@@ -137,10 +137,10 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
                     configureTxLogBasedIndexRecovery();
 
-                    me = initJanusGraph(config);
-
+                    graphInstance      = initJanusGraph(config);
                     atlasGraphInstance = new AtlasJanusGraph();
-                    graphInstance      = me;
+
+                    me = graphInstance;
 
                     validateIndexBackend(config);
                 }
