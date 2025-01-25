@@ -22,7 +22,6 @@ import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Transaction;
 
 public interface AtlasGraphTraversalSource<V extends AtlasVertex, E extends AtlasEdge> {
-
     // Concrete implementations need to have graph and graphTraversal source
     Graph getGraph();
 
@@ -30,9 +29,9 @@ public interface AtlasGraphTraversalSource<V extends AtlasVertex, E extends Atla
 
     AtlasGraphTraversal<V, E> startAnonymousTraversal();
 
-    AtlasGraphTraversal<V, E> V(final Object... vertexIds);
+    AtlasGraphTraversal<V, E> V(Object... vertexIds);
 
-    AtlasGraphTraversal<V, E> E(final Object... edgesIds);
+    AtlasGraphTraversal<V, E> E(Object... edgesIds);
 
     Transaction tx();
 

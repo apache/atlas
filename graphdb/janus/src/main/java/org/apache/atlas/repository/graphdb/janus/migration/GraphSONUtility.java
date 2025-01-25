@@ -21,22 +21,26 @@ package org.apache.atlas.repository.graphdb.janus.migration;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasBigDecimalType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasBigIntegerType;
-import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Graph.Features.EdgeFeatures;
 import org.apache.tinkerpop.gremlin.structure.Graph.Features.VertexFeatures;
 import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty.Cardinality;
 import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
-class GraphSONUtility {
+public class GraphSONUtility {
     private static final Logger LOG = LoggerFactory.getLogger(GraphSONUtility.class);
 
     private static final String              EMPTY_STRING   = "";
@@ -47,6 +51,63 @@ class GraphSONUtility {
 
     public GraphSONUtility(final ElementProcessors elementProcessors) {
         this.elementProcessors = elementProcessors;
+    }
+
+    static Map<String, Object> readProperties(final JsonNode node) {
+        final Map<String, Object>                   map      = new HashMap<>();
+        final Iterator<Map.Entry<String, JsonNode>> iterator = node.fields();
+
+        while (iterator.hasNext()) {
+            final Map.Entry<String, JsonNode> entry = iterator.next();
+
+            if (!isReservedKey(entry.getKey())) {
+                // it generally shouldn't be as such but graphson containing null values can't be shoved into
+                // element property keys or it will result in error
+                final Object o = readProperty(entry.getValue());
+
+                if (o != null) {
+                    map.put(entry.getKey(), o);
+                }
+            }
+        }
+
+        return map;
+    }
+
+    static Object getTypedValueFromJsonNode(final JsonNode node) {
+        Object theValue = null;
+
+        if (node != null && !node.isNull()) {
+            if (node.isBoolean()) {
+                theValue = node.booleanValue();
+            } else if (node.isDouble()) {
+                theValue = node.doubleValue();
+            } else if (node.isFloatingPointNumber()) {
+                theValue = node.floatValue();
+            } else if (node.isInt()) {
+                theValue = node.intValue();
+            } else if (node.isLong()) {
+                theValue = node.longValue();
+            } else if (node.isTextual()) {
+                theValue = node.textValue();
+            } else if (node.isBigDecimal()) {
+                theValue = node.decimalValue();
+            } else if (node.isBigInteger()) {
+                theValue = node.bigIntegerValue();
+            } else if (node.isArray()) {
+                // this is an array so just send it back so that it can be
+                // reprocessed to its primitive components
+                theValue = node;
+            } else if (node.isObject()) {
+                // this is an object so just send it back so that it can be
+                // reprocessed to its primitive components
+                theValue = node;
+            } else {
+                theValue = node.textValue();
+            }
+        }
+
+        return theValue;
     }
 
     public Map<String, Object> vertexFromJson(Graph g, final JsonNode json) {
@@ -71,7 +132,7 @@ class GraphSONUtility {
                 final Object      val         = entry.getValue();
 
                 if ((cardinality == Cardinality.list || cardinality == Cardinality.set) && (val instanceof Collection)) {
-                    for (Object elem : (Collection) val) {
+                    for (Object elem : (Collection<?>) val) {
                         vertex.property(key, elem);
                     }
                 } else {
@@ -93,7 +154,7 @@ class GraphSONUtility {
 
     public Map<String, Object> edgeFromJson(Graph g, MappedElementCache cache, final JsonNode json) {
         final JsonNode nodeLabel = json.get(GraphSONTokensTP2._LABEL);
-              String   label     = nodeLabel == null ? EMPTY_STRING : nodeLabel.textValue();
+        String         label     = nodeLabel == null ? EMPTY_STRING : nodeLabel.textValue();
 
         if (label.startsWith("__type.")) {
             return null;
@@ -118,8 +179,8 @@ class GraphSONUtility {
 
             label = elementProcessors.updateEdge(in, out, edgeId, label, props);
 
-            EdgeFeatures  edgeFeatures = g.features().edge();
-            final Edge    edge         = edgeFeatures.willAllowId(edgeId) ? out.addEdge(label, in, T.id, edgeId) : out.addEdge(label, in);
+            EdgeFeatures edgeFeatures = g.features().edge();
+            final Edge   edge         = edgeFeatures.willAllowId(edgeId) ? out.addEdge(label, in, T.id, edgeId) : out.addEdge(label, in);
 
             for (Map.Entry<String, Object> entry : props.entrySet()) {
                 try {
@@ -134,7 +195,7 @@ class GraphSONUtility {
                     schemaUpdate.put(entry.getKey(), entry.getValue());
                 }
             }
-        } catch(IllegalArgumentException ex) {
+        } catch (IllegalArgumentException ex) {
             schemaUpdate = getSchemaUpdateMap(schemaUpdate);
             schemaUpdate.put("oid", edgeId);
         }
@@ -143,7 +204,7 @@ class GraphSONUtility {
     }
 
     private Map<String, Object> getSchemaUpdateMap(Map<String, Object> schemaUpdate) {
-        if(schemaUpdate == null) {
+        if (schemaUpdate == null) {
             schemaUpdate = new HashMap<>();
         }
 
@@ -154,27 +215,6 @@ class GraphSONUtility {
         Object inVId = GraphSONUtility.getTypedValueFromJsonNode(json.get(direction));
 
         return cache.getMappedVertex(gr, inVId);
-    }
-
-    static Map<String, Object> readProperties(final JsonNode node) {
-        final Map<String, Object>                   map      = new HashMap<>();
-        final Iterator<Map.Entry<String, JsonNode>> iterator = node.fields();
-
-        while (iterator.hasNext()) {
-            final Map.Entry<String, JsonNode> entry = iterator.next();
-
-            if (!isReservedKey(entry.getKey())) {
-                // it generally shouldn't be as such but graphson containing null values can't be shoved into
-                // element property keys or it will result in error
-                final Object o = readProperty(entry.getValue());
-
-                if (o != null) {
-                    map.put(entry.getKey(), o);
-                }
-            }
-        }
-
-        return map;
     }
 
     private static boolean isReservedKey(final String key) {
@@ -220,7 +260,7 @@ class GraphSONUtility {
         return propertyValue;
     }
 
-    private static List readProperties(final Iterator<JsonNode> listOfNodes) {
+    private static List<Object> readProperties(final Iterator<JsonNode> listOfNodes) {
         final List<Object> array = new ArrayList<>();
 
         while (listOfNodes.hasNext()) {
@@ -228,41 +268,5 @@ class GraphSONUtility {
         }
 
         return array;
-    }
-
-    static Object getTypedValueFromJsonNode(final JsonNode node) {
-        Object theValue = null;
-
-        if (node != null && !node.isNull()) {
-            if (node.isBoolean()) {
-                theValue = node.booleanValue();
-            } else if (node.isDouble()) {
-                theValue = node.doubleValue();
-            } else if (node.isFloatingPointNumber()) {
-                theValue = node.floatValue();
-            } else if (node.isInt()) {
-                theValue = node.intValue();
-            } else if (node.isLong()) {
-                theValue = node.longValue();
-            } else if (node.isTextual()) {
-                theValue = node.textValue();
-            } else if (node.isBigDecimal()) {
-                theValue = node.decimalValue();
-            } else if (node.isBigInteger()) {
-                theValue = node.bigIntegerValue();
-            } else if (node.isArray()) {
-                // this is an array so just send it back so that it can be
-                // reprocessed to its primitive components
-                theValue = node;
-            } else if (node.isObject()) {
-                // this is an object so just send it back so that it can be
-                // reprocessed to its primitive components
-                theValue = node;
-            } else {
-                theValue = node.textValue();
-            }
-        }
-
-        return theValue;
     }
 }

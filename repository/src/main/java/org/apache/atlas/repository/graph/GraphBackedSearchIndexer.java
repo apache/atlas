@@ -253,8 +253,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                     AtlasGraphIndex vertexIndex = management.getGraphIndex(VERTEX_INDEX);
 
                     if (vertexIndex != null) {
-                        recomputeIndexedKeys = false;
-
                         Set<String> indexKeys = new HashSet<>();
 
                         for (AtlasPropertyKey fieldKey : vertexIndex.getFieldKeys()) {
@@ -262,6 +260,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                         }
 
                         vertexIndexKeys = indexKeys;
+
+                        recomputeIndexedKeys = false;
                     }
 
                     management.commit();
@@ -293,8 +293,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                     AtlasGraphIndex edgeIndex = management.getGraphIndex(EDGE_INDEX);
 
                     if (edgeIndex != null) {
-                        recomputeEdgeIndexedKeys = false;
-
                         Set<String> indexKeys = new HashSet<>();
 
                         for (AtlasPropertyKey fieldKey : edgeIndex.getFieldKeys()) {
@@ -302,6 +300,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                         }
 
                         edgeIndexKeys = indexKeys;
+
+                        recomputeEdgeIndexedKeys = false;
                     }
 
                     management.commit();

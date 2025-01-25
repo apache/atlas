@@ -30,13 +30,18 @@ import java.util.UUID;
 public class GraphSandboxUtil {
     private static final Logger LOG = LoggerFactory.getLogger(GraphSandboxUtil.class);
 
+    private GraphSandboxUtil() {
+        // to block instantiation
+    }
+
     public static void create(String sandboxName) {
         Configuration configuration;
+
         try {
             configuration = ApplicationProperties.get();
+
             configuration.setProperty("atlas.graph.storage.directory", getStorageDir(sandboxName, "storage"));
             configuration.setProperty("atlas.graph.index.search.directory", getStorageDir(sandboxName, "index"));
-
 
             LOG.debug("New Storage dir : {}", configuration.getProperty("atlas.graph.storage.directory"));
             LOG.debug("New Indexer dir : {}", configuration.getProperty("atlas.graph.index.search.directory"));
@@ -45,31 +50,32 @@ public class GraphSandboxUtil {
         }
     }
 
-    private static String getStorageDir(String sandboxName, String directory) {
-        return System.getProperty("atlas.data") +
-                File.separatorChar + sandboxName +
-                File.separatorChar + directory;
-    }
-
     public static void create() {
         UUID uuid = UUID.randomUUID();
+
         create(uuid.toString());
     }
 
     public static boolean useLocalSolr() {
         boolean ret = false;
-        
+
         try {
             Configuration conf     = ApplicationProperties.get();
             Object        property = conf.getProperty("atlas.graph.index.search.solr.embedded");
 
-            if (property != null && property instanceof String) {
-                ret = Boolean.valueOf((String) property);
+            if (property instanceof String) {
+                ret = Boolean.parseBoolean((String) property);
             }
-        } catch (AtlasException ignored) {
-            throw new SkipException("useLocalSolr: failed! ", ignored);
+        } catch (AtlasException excp) {
+            throw new SkipException("useLocalSolr: failed! ", excp);
         }
 
         return ret;
+    }
+
+    private static String getStorageDir(String sandboxName, String directory) {
+        return System.getProperty("atlas.data") +
+                File.separatorChar + sandboxName +
+                File.separatorChar + directory;
     }
 }

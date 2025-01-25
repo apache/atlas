@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 package org.janusgraph.diskstorage.solr;
+
 import org.apache.http.client.HttpClient;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.impl.CloudSolrClient;
@@ -42,24 +43,10 @@ import java.util.Optional;
 public class Solr6Index extends SolrIndex {
     private static final Logger LOG = LoggerFactory.getLogger(Solr6Index.class);
 
-    public enum Mode {
-        HTTP, CLOUD;
+    public static final ConfigOption<Boolean> CREATE_SOLR_CLIENT_PER_REQUEST = new ConfigOption<>(SOLR_NS, "create-client-per-request", "when false, allows the sharing of solr client across other components.", org.janusgraph.diskstorage.configuration.ConfigOption.Type.LOCAL, false);
 
-        public static Mode parse(String mode) {
-            for (final Mode m : Mode.values()) {
-                if (m.toString().equalsIgnoreCase(mode)) {
-                    return m;
-                }
-            }
-
-            throw new IllegalArgumentException("Unrecognized mode: "+mode);
-        }
-    }
-
-    public static final ConfigOption<Boolean> CREATE_SOLR_CLIENT_PER_REQUEST = new ConfigOption(SOLR_NS, "create-client-per-request", "when false, allows the sharing of solr client across other components.", org.janusgraph.diskstorage.configuration.ConfigOption.Type.LOCAL, false);
-
-    private static boolean    createSolrClientPerRequest = false;
-    private static Solr6Index INSTANCE                   = null;
+    private static boolean    createSolrClientPerRequest;
+    private static Solr6Index instance;
 
     private final Configuration config;
     private final Mode          solrMode;
@@ -102,16 +89,16 @@ public class Solr6Index extends SolrIndex {
         this.solrMode   = solrMode;
         this.solrClient = solrClient;
 
-        createSolrClientPerRequest = config.get(CREATE_SOLR_CLIENT_PER_REQUEST);
-        INSTANCE                   = this;
+        Solr6Index.createSolrClientPerRequest = config.get(CREATE_SOLR_CLIENT_PER_REQUEST);
+        Solr6Index.instance                   = this;
     }
 
     public static SolrClient getSolrClient() {
         SolrClient ret   = null;
-        Solr6Index index = INSTANCE;
+        Solr6Index index = Solr6Index.instance;
 
         if (index != null) {
-            ret = createSolrClientPerRequest ? index.createSolrClient() : index.solrClient;
+            ret = Solr6Index.createSolrClientPerRequest ? index.createSolrClient() : index.solrClient;
         }
 
         if (ret == null) {
@@ -122,7 +109,7 @@ public class Solr6Index extends SolrIndex {
     }
 
     public static void releaseSolrClient(SolrClient client) {
-        if (createSolrClientPerRequest) {
+        if (Solr6Index.createSolrClientPerRequest) {
             if (client != null) {
                 try {
                     client.close();
@@ -136,7 +123,7 @@ public class Solr6Index extends SolrIndex {
     }
 
     public static Solr6Index.Mode getSolrMode() {
-        Solr6Index index = INSTANCE;
+        Solr6Index index = Solr6Index.instance;
 
         return index != null ? index.solrMode : Mode.CLOUD;
     }
@@ -154,10 +141,12 @@ public class Solr6Index extends SolrIndex {
                 String[]         zookeeperUrl = config.get(ZOOKEEPER_URL);
                 Optional<String> chroot       = Optional.empty();
 
-                for(int i = zookeeperUrl.length - 1; i >= 0; --i) {
+                for (int i = zookeeperUrl.length - 1; i >= 0; --i) {
                     int chrootIndex = zookeeperUrl[i].indexOf("/");
+
                     if (chrootIndex != -1) {
                         String hostAndPort = zookeeperUrl[i].substring(0, chrootIndex);
+
                         if (!chroot.isPresent()) {
                             chroot = Optional.of(zookeeperUrl[i].substring(chrootIndex));
                         }
@@ -166,18 +155,20 @@ public class Solr6Index extends SolrIndex {
                     }
                 }
 
-                CloudSolrClient.Builder builder = (new CloudSolrClient.Builder(Arrays.asList(zookeeperUrl), chroot)).withLBHttpSolrClientBuilder((new LBHttpSolrClient.Builder()).withHttpSolrClientBuilder((new HttpSolrClient.Builder()).withInvariantParams(clientParams)).withBaseSolrUrls((String[])config.get(HTTP_URLS, new String[0]))).sendUpdatesOnlyToShardLeaders();
-                CloudSolrClient cloudServer = builder.build();
+                CloudSolrClient.Builder builder      = (new CloudSolrClient.Builder(Arrays.asList(zookeeperUrl), chroot)).withLBHttpSolrClientBuilder((new LBHttpSolrClient.Builder()).withHttpSolrClientBuilder((new HttpSolrClient.Builder()).withInvariantParams(clientParams)).withBaseSolrUrls((String[]) config.get(HTTP_URLS, new String[0]))).sendUpdatesOnlyToShardLeaders();
+                CloudSolrClient         cloudServer = builder.build();
+
                 cloudServer.connect();
 
                 ret = cloudServer;
                 break;
 
             case HTTP:
-                clientParams.add("allowCompression", new String[]{((Boolean)config.get(HTTP_ALLOW_COMPRESSION, new String[0])).toString()});
-                clientParams.add("connTimeout", new String[]{((Integer)config.get(HTTP_CONNECTION_TIMEOUT, new String[0])).toString()});
-                clientParams.add("maxConnectionsPerHost", new String[]{((Integer)config.get(HTTP_MAX_CONNECTIONS_PER_HOST, new String[0])).toString()});
-                clientParams.add("maxConnections", new String[]{((Integer)config.get(HTTP_GLOBAL_MAX_CONNECTIONS, new String[0])).toString()});
+                clientParams.add("allowCompression", new String[] {((Boolean) config.get(HTTP_ALLOW_COMPRESSION, new String[0])).toString()});
+                clientParams.add("connTimeout", new String[] {((Integer) config.get(HTTP_CONNECTION_TIMEOUT, new String[0])).toString()});
+                clientParams.add("maxConnectionsPerHost", new String[] {((Integer) config.get(HTTP_MAX_CONNECTIONS_PER_HOST, new String[0])).toString()});
+                clientParams.add("maxConnections", new String[] {((Integer) config.get(HTTP_GLOBAL_MAX_CONNECTIONS, new String[0])).toString()});
+
                 HttpClient client = HttpClientUtil.createClient(clientParams);
 
                 ret = new LBHttpSolrClient.Builder().withHttpClient(client).withBaseSolrUrls(config.get(HTTP_URLS)).build();
@@ -188,5 +179,19 @@ public class Solr6Index extends SolrIndex {
         }
 
         return ret;
+    }
+
+    public enum Mode {
+        HTTP, CLOUD;
+
+        public static Mode parse(String mode) {
+            for (final Mode m : Mode.values()) {
+                if (m.toString().equalsIgnoreCase(mode)) {
+                    return m;
+                }
+            }
+
+            throw new IllegalArgumentException("Unrecognized mode: " + mode);
+        }
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,19 +18,17 @@
 package org.apache.atlas.repository.graphdb.janus.query;
 
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
-import org.apache.atlas.repository.graphdb.tinkerpop.query.TinkerpopGraphQuery;
-import org.apache.atlas.repository.graphdb.tinkerpop.query.NativeTinkerpopGraphQuery;
-import org.apache.atlas.repository.graphdb.tinkerpop.query.NativeTinkerpopQueryFactory;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusEdge;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusVertex;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.NativeTinkerpopGraphQuery;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.NativeTinkerpopQueryFactory;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.TinkerpopGraphQuery;
 
 /**
  * Janus implementation of TinkerpopGraphQuery.
  */
-public class AtlasJanusGraphQuery extends TinkerpopGraphQuery<AtlasJanusVertex, AtlasJanusEdge>
-        implements NativeTinkerpopQueryFactory<AtlasJanusVertex, AtlasJanusEdge> {
-
+public class AtlasJanusGraphQuery extends TinkerpopGraphQuery<AtlasJanusVertex, AtlasJanusEdge> implements NativeTinkerpopQueryFactory<AtlasJanusVertex, AtlasJanusEdge> {
     public AtlasJanusGraphQuery(AtlasJanusGraph graph, boolean isChildQuery) {
         super(graph, isChildQuery);
     }
@@ -45,12 +43,12 @@ public class AtlasJanusGraphQuery extends TinkerpopGraphQuery<AtlasJanusVertex, 
     }
 
     @Override
-    protected NativeTinkerpopQueryFactory<AtlasJanusVertex, AtlasJanusEdge> getQueryFactory() {
-        return this;
+    public NativeTinkerpopGraphQuery<AtlasJanusVertex, AtlasJanusEdge> createNativeTinkerpopQuery() {
+        return new NativeJanusGraphQuery((AtlasJanusGraph) graph);
     }
 
     @Override
-    public NativeTinkerpopGraphQuery<AtlasJanusVertex, AtlasJanusEdge> createNativeTinkerpopQuery() {
-        return new NativeJanusGraphQuery((AtlasJanusGraph) graph);
+    protected NativeTinkerpopQueryFactory<AtlasJanusVertex, AtlasJanusEdge> getQueryFactory() {
+        return this;
     }
 }

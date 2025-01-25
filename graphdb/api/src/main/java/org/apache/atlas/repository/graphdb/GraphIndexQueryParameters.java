@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,9 +23,9 @@ import java.util.List;
  * A class wrapping the parameters that need to create a graph index query.
  */
 public class GraphIndexQueryParameters {
-    final String indexName;
-    final String graphQueryString;
-    final int offset;
+    final String                         indexName;
+    final String                         graphQueryString;
+    final int                            offset;
     final List<AtlasIndexQueryParameter> indexQueryParameters;
 
     /**
@@ -36,12 +36,11 @@ public class GraphIndexQueryParameters {
      * @param indexQueryParameters  any index system specific parameters for use in query.
      */
     public GraphIndexQueryParameters(String indexName, String graphQueryString, int offset, List<AtlasIndexQueryParameter> indexQueryParameters) {
-        this.indexName = indexName;
-        this.graphQueryString = graphQueryString;
-        this.offset = offset;
+        this.indexName            = indexName;
+        this.graphQueryString     = graphQueryString;
+        this.offset               = offset;
         this.indexQueryParameters = indexQueryParameters;
     }
-
 
     public String getIndexName() {
         return indexName;

@@ -21,7 +21,7 @@ package org.apache.atlas.repository.graphdb.janus.migration;
 import org.apache.atlas.pc.WorkItemBuilder;
 import org.apache.atlas.pc.WorkItemConsumer;
 import org.apache.atlas.pc.WorkItemManager;
-import org.apache.atlas.repository.graphdb.janus.migration.postProcess.PostProcessListProperty;
+import org.apache.atlas.repository.graphdb.janus.migration.postproc.PostProcessListProperty;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
@@ -36,16 +36,26 @@ import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
 
 public class PostProcessManager {
+    private PostProcessManager() {
+        // to block instantiation
+    }
+
+    public static WorkItemsManager create(Graph bGraph, Map<String, Map<String, List<String>>> propertiesToPostProcess, int batchSize, int numWorkers) {
+        ConsumerBuilder cb = new ConsumerBuilder(bGraph, propertiesToPostProcess, batchSize);
+
+        return new WorkItemsManager(cb, batchSize, numWorkers);
+    }
+
     static class Consumer extends WorkItemConsumer<Object> {
         private static final Logger LOG = LoggerFactory.getLogger(Consumer.class);
 
         private final Graph                                  bulkLoadGraph;
         private final Map<String, Map<String, List<String>>> typePropertiesMap;
         private final int                                    batchSize;
-        private       long                                   counter;
-        private       long                                   batchCounter;
         private final PostProcessListProperty                processor;
         private final String[]                               nonPrimitiveCategoryKeys;
+        private       long                                   counter;
+        private       long                                   batchCounter;
 
         public Consumer(BlockingQueue<Object> queue, Graph bulkLoadGraph, Map<String, Map<String, List<String>>> typePropertiesMap, int batchSize) {
             super(queue);
@@ -60,28 +70,35 @@ public class PostProcessManager {
         }
 
         @Override
+        protected void doCommit() {
+            bulkLoadGraph.tx().commit();
+        }
+
+        @Override
         public void processItem(Object vertexId) {
             batchCounter++;
             counter++;
 
             try {
-                Vertex         vertex           = bulkLoadGraph.traversal().V(vertexId).next();
-                boolean        isTypeVertex     = vertex.property(TYPENAME_PROPERTY_KEY).isPresent();
-                VertexProperty typeNameProperty = vertex.property(ENTITY_TYPE_PROPERTY_KEY);
+                Vertex                 vertex           = bulkLoadGraph.traversal().V(vertexId).next();
+                boolean                isTypeVertex     = vertex.property(TYPENAME_PROPERTY_KEY).isPresent();
+                VertexProperty<String> typeNameProperty = vertex.property(ENTITY_TYPE_PROPERTY_KEY);
 
                 if (!isTypeVertex && typeNameProperty.isPresent()) {
-                    String typeName = (String) typeNameProperty.value();
+                    String typeName = typeNameProperty.value();
+
                     if (!typePropertiesMap.containsKey(typeName)) {
                         return;
                     }
 
                     Map<String, List<String>> collectionTypeProperties = typePropertiesMap.get(typeName);
+
                     for (String key : nonPrimitiveCategoryKeys) {
                         if (!collectionTypeProperties.containsKey(key)) {
                             continue;
                         }
 
-                        for(String propertyName : collectionTypeProperties.get(key)) {
+                        for (String propertyName : collectionTypeProperties.get(key)) {
                             processor.process(vertex, typeName, propertyName);
                         }
                     }
@@ -101,11 +118,6 @@ public class PostProcessManager {
 
                 batchCounter = 0;
             }
-        }
-
-        @Override
-        protected void doCommit() {
-            bulkLoadGraph.tx().commit();
         }
     }
 
@@ -127,15 +139,8 @@ public class PostProcessManager {
     }
 
     static class WorkItemsManager extends WorkItemManager<Object, Consumer> {
-        public WorkItemsManager(WorkItemBuilder builder, int batchSize, int numWorkers) {
+        public WorkItemsManager(WorkItemBuilder<Consumer, Object> builder, int batchSize, int numWorkers) {
             super(builder, batchSize, numWorkers);
         }
-    }
-
-    public static WorkItemsManager create(Graph bGraph, Map<String, Map<String, List<String>>> propertiesToPostProcess,
-                                          int batchSize, int numWorkers) {
-        ConsumerBuilder cb = new ConsumerBuilder(bGraph, propertiesToPostProcess, batchSize);
-
-        return new WorkItemsManager(cb, batchSize, numWorkers);
     }
 }
