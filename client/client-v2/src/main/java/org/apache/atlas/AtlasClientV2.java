@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,7 +27,6 @@ import com.sun.jersey.multipart.FormDataBodyPart;
 import com.sun.jersey.multipart.FormDataMultiPart;
 import com.sun.jersey.multipart.MultiPart;
 import com.sun.jersey.multipart.file.StreamDataBodyPart;
-
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
@@ -78,6 +77,7 @@ import javax.ws.rs.core.Cookie;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -89,7 +89,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 
 public class AtlasClientV2 extends AtlasBaseClient {
     // Type APIs
@@ -106,12 +105,12 @@ public class AtlasClientV2 extends AtlasBaseClient {
     private static final String ENTITY_BULK_API      = ENTITY_API + "bulk/";
 
     //Admin Entity
-    private static final String ADMIN_API            = BASE_URI + "admin/";
-    private static final String ENTITY_PURGE_API     = ADMIN_API + "purge/";
-    private static final String ATLAS_AUDIT_API      = ADMIN_API + "audits/";
+    private static final String ADMIN_API        = BASE_URI + "admin/";
+    private static final String ENTITY_PURGE_API = ADMIN_API + "purge/";
+    private static final String ATLAS_AUDIT_API  = ADMIN_API + "audits/";
 
     // Lineage APIs
-    private static final String LINEAGE_URI          = BASE_URI + "v2/lineage/";
+    private static final String LINEAGE_URI = BASE_URI + "v2/lineage/";
 
     // Discovery APIs
     private static final String DISCOVERY_URI        = BASE_URI + "v2/search";
@@ -128,16 +127,15 @@ public class AtlasClientV2 extends AtlasBaseClient {
     private static final String BULK_SET_CLASSIFICATIONS = "bulk/setClassifications";
     private static final String RELATIONSHIP_URI         = DISCOVERY_URI + "/relationship";
 
-
     //Glossary APIs
-    private static final String GLOSSARY_URI         = BASE_URI + "v2/glossary";
-    private static final String GLOSSARY_TERM        = GLOSSARY_URI + "/term";
-    private static final String GLOSSARY_TERMS       = GLOSSARY_URI + "/terms";
-    private static final String GLOSSARY_CATEGORY    = GLOSSARY_URI + "/category";
-    private static final String GLOSSARY_CATEGORIES  = GLOSSARY_URI + "/categories";
+    private static final String GLOSSARY_URI        = BASE_URI + "v2/glossary";
+    private static final String GLOSSARY_TERM       = GLOSSARY_URI + "/term";
+    private static final String GLOSSARY_TERMS      = GLOSSARY_URI + "/terms";
+    private static final String GLOSSARY_CATEGORY   = GLOSSARY_URI + "/category";
+    private static final String GLOSSARY_CATEGORIES = GLOSSARY_URI + "/categories";
 
     //Notification APIs
-    private static final String NOTIFICATION_URI         = BASE_URI + "v2/notification";
+    private static final String NOTIFICATION_URI = BASE_URI + "v2/notification";
 
     //IndexRecovery APIs
     private static final String INDEX_RECOVERY_URI = BASE_URI + "v2/indexrecovery";
@@ -273,9 +271,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
 
         AtlasTypesDef created = createAtlasTypeDefs(typesDef);
 
-        assert created != null;
-        assert created.getEnumDefs() != null;
-
         return created.getEnumDefs().get(0);
     }
 
@@ -286,9 +281,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
         typesDef.getStructDefs().add(structDef);
 
         AtlasTypesDef created = createAtlasTypeDefs(typesDef);
-
-        assert created != null;
-        assert created.getStructDefs() != null;
 
         return created.getStructDefs().get(0);
     }
@@ -301,9 +293,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
 
         AtlasTypesDef created = createAtlasTypeDefs(typesDef);
 
-        assert created != null;
-        assert created.getEntityDefs() != null;
-
         return created.getEntityDefs().get(0);
     }
 
@@ -314,9 +303,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
         typesDef.getClassificationDefs().add(classificationDef);
 
         AtlasTypesDef created = createAtlasTypeDefs(typesDef);
-
-        assert created != null;
-        assert created.getClassificationDefs() != null;
 
         return created.getClassificationDefs().get(0);
     }
@@ -349,13 +335,12 @@ public class AtlasClientV2 extends AtlasBaseClient {
      * @param typesDef A composite object that captures all types to be deleted
      */
     public void deleteAtlasTypeDefs(AtlasTypesDef typesDef) throws AtlasServiceException {
-        callAPI(API_V2.DELETE_TYPE_DEFS, (Class<?>)null, AtlasType.toJson(typesDef));
+        callAPI(API_V2.DELETE_TYPE_DEFS, (Class<?>) null, AtlasType.toJson(typesDef));
     }
 
-    public void deleteTypeByName(String typeName) throws AtlasServiceException{
+    public void deleteTypeByName(String typeName) throws AtlasServiceException {
         callAPI(API_V2.DELETE_TYPE_DEF_BY_NAME, (Class) null, null, typeName);
     }
-
 
     // Entity APIs
     public AtlasEntityWithExtInfo getEntityByGuid(String guid) throws AtlasServiceException {
@@ -398,7 +383,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(API_V2.GET_ENTITIES_BY_GUIDS, AtlasEntitiesWithExtInfo.class, queryParams);
     }
 
-    public AtlasEntitiesWithExtInfo getEntitiesByAttribute(String typeName, List<Map<String,String>> uniqAttributesList) throws AtlasServiceException {
+    public AtlasEntitiesWithExtInfo getEntitiesByAttribute(String typeName, List<Map<String, String>> uniqAttributesList) throws AtlasServiceException {
         return getEntitiesByAttribute(typeName, uniqAttributesList, false, false);
     }
 
@@ -483,7 +468,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(API_V2.PURGE_ENTITIES_BY_GUIDS, EntityMutationResponse.class, guids);
     }
 
-
     // Entity-classification APIs
     public AtlasClassifications getClassifications(String guid) throws AtlasServiceException {
         return callAPI(formatPathParameters(API_V2.GET_CLASSIFICATIONS, guid), AtlasClassifications.class, null);
@@ -498,7 +482,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     public void addClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
-        callAPI(formatPathParameters(API_V2.ADD_CLASSIFICATIONS, guid), (Class<?>)null, classifications, (String[]) null);
+        callAPI(formatPathParameters(API_V2.ADD_CLASSIFICATIONS, guid), (Class<?>) null, classifications, (String[]) null);
     }
 
     public void addClassifications(String typeName, Map<String, String> uniqAttributes, List<AtlasClassification> classifications) throws AtlasServiceException {
@@ -508,7 +492,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     public void updateClassifications(String guid, List<AtlasClassification> classifications) throws AtlasServiceException {
-        callAPI(formatPathParameters(API_V2.UPDATE_CLASSIFICATIONS, guid), (Class<?>)null, classifications);
+        callAPI(formatPathParameters(API_V2.UPDATE_CLASSIFICATIONS, guid), (Class<?>) null, classifications);
     }
 
     public void updateClassifications(String typeName, Map<String, String> uniqAttributes, List<AtlasClassification> classifications) throws AtlasServiceException {
@@ -549,7 +533,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(API_V2.GET_BULK_HEADERS, AtlasEntityHeaders.class, queryParams);
     }
 
-
     // Business attributes APIs
     public void addOrUpdateBusinessAttributes(String entityGuid, boolean isOverwrite, Map<String, Map<String, Object>> businessAttributes) throws AtlasServiceException {
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
@@ -583,7 +566,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(API_V2.IMPORT_BUSINESS_METADATA, BulkImportResponse.class, multipartEntity);
     }
 
-
     // Labels APIs
     public void addLabels(String entityGuid, Set<String> labels) throws AtlasServiceException {
         callAPI(formatPathParameters(API_V2.ADD_LABELS, entityGuid), (Class<?>) null, labels, (String[]) null);
@@ -614,7 +596,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
 
         callAPI(formatPathParameters(API_V2.SET_LABELS_BY_UNIQUE_ATTRIBUTE, typeName), (Class<?>) null, labels, queryParams);
     }
-
 
     /* Lineage APIs  */
     public AtlasLineageInfo getLineageInfo(String guid, LineageDirection direction, int depth) throws AtlasServiceException {
@@ -682,13 +663,15 @@ public class AtlasClientV2 extends AtlasBaseClient {
 
     public AtlasSearchResult basicSearch(String typeName, SearchParameters.FilterCriteria entityFilters, String classification, String query, boolean excludeDeletedEntities, int limit, int offset) throws AtlasServiceException {
         SearchParameters parameters = new SearchParameters();
+
         parameters.setTypeName(typeName);
         parameters.setClassification(classification);
         parameters.setQuery(query);
         parameters.setExcludeDeletedEntities(excludeDeletedEntities);
         parameters.setLimit(limit);
         parameters.setOffset(offset);
-        if (entityFilters != null){
+
+        if (entityFilters != null) {
             parameters.setEntityFilters(entityFilters);
         }
 
@@ -800,7 +783,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(formatPathParameters(API_V2.EXECUTE_SAVED_SEARCH_BY_GUID, searchGuid), AtlasSearchResult.class, null);
     }
 
-
     // Relationship APIs
     public AtlasRelationshipWithExtInfo getRelationshipByGuid(String guid) throws AtlasServiceException {
         return callAPI(API_V2.GET_RELATIONSHIP_BY_GUID, AtlasRelationshipWithExtInfo.class, null, guid);
@@ -826,7 +808,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
         callAPI(API_V2.DELETE_RELATIONSHIP_BY_GUID, (Class) null, null, guid);
     }
 
-
     // Admin APIs
     public List<AtlasAuditEntry> getAtlasAuditByOperation(AuditSearchParameters auditSearchParameters) throws AtlasServiceException {
         ArrayNode response = callAPI(API_V2.GET_ATLAS_AUDITS, ArrayNode.class, auditSearchParameters);
@@ -846,7 +827,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
 
         callAPI(API_V2.AGEOUT_ATLAS_AUDITS, List.class, auditReductionCriteria, queryParams);
     }
-
 
     // Glossary APIs
     public List<AtlasGlossary> getAllGlossaries(String sortByAttribute, int limit, int offset) throws AtlasServiceException {
@@ -1020,7 +1000,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
 
     public void assignTermToEntities(String termGuid, List<AtlasRelatedObjectId> relatedObjectIds) throws AtlasServiceException {
         callAPI(formatPathParameters(API_V2.ASSIGN_TERM_TO_ENTITIES, termGuid), (Class<?>) null, relatedObjectIds);
-
     }
 
     public void disassociateTermFromEntities(String termGuid, List<AtlasRelatedObjectId> relatedObjectIds) throws AtlasServiceException {
@@ -1065,6 +1044,24 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return new API(String.format(api.getPath(), params), api.getMethod(), api.getExpectedStatus());
     }
 
+    protected <T> String getPathForType(Class<T> typeDefClass) {
+        if (AtlasEnumDef.class.isAssignableFrom(typeDefClass)) {
+            return "enumdef";
+        } else if (AtlasEntityDef.class.isAssignableFrom(typeDefClass)) {
+            return "entitydef";
+        } else if (AtlasClassificationDef.class.isAssignableFrom(typeDefClass)) {
+            return "classificationdef";
+        } else if (AtlasRelationshipDef.class.isAssignableFrom(typeDefClass)) {
+            return "relationshipdef";
+        } else if (AtlasBusinessMetadataDef.class.isAssignableFrom(typeDefClass)) {
+            return "businessmetadatadef";
+        } else if (AtlasStructDef.class.isAssignableFrom(typeDefClass)) {
+            return "structdef";
+        }
+
+        // Code should never reach this point
+        return "";
+    }
 
     private MultiPart getMultiPartData(String fileName) throws AtlasServiceException {
         try {
@@ -1072,16 +1069,9 @@ public class AtlasClientV2 extends AtlasBaseClient {
             InputStream                      inputStream = new FileInputStream(file);
             final FormDataContentDisposition fd          = FormDataContentDisposition.name("file").fileName(file.getName()).build();
 
-            return new FormDataMultiPart().bodyPart(new StreamDataBodyPart("file", inputStream))
-                                          .bodyPart(new FormDataBodyPart(fd, "file"));
+            return new FormDataMultiPart().bodyPart(new StreamDataBodyPart("file", inputStream)).bodyPart(new FormDataBodyPart(fd, "file"));
         } catch (FileNotFoundException e) {
             throw new AtlasServiceException(e);
-        }
-    }
-
-    private class ExtractOperation<T, U> {
-        T extractElement(U element) {
-            return (T) element;
         }
     }
 
@@ -1090,7 +1080,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
             //Converting InputStream to String
             BufferedReader reader = new BufferedReader(new InputStreamReader(inputStream));
             StringBuffer   sb     = new StringBuffer();
-            String template;
+            String         template;
 
             while ((template = reader.readLine()) != null) {
                 sb.append(template);
@@ -1118,8 +1108,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return attributesToQueryParams(attributes, null);
     }
 
-    private MultivaluedMap<String, String> attributesToQueryParams(Map<String, String>            attributes,
-                                                                   MultivaluedMap<String, String> queryParams) {
+    private MultivaluedMap<String, String> attributesToQueryParams(Map<String, String> attributes, MultivaluedMap<String, String> queryParams) {
         if (queryParams == null) {
             queryParams = new MultivaluedMapImpl();
         }
@@ -1133,8 +1122,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return queryParams;
     }
 
-    private MultivaluedMap<String, String> attributesToQueryParams(List<Map<String, String>>      attributesList,
-                                                                   MultivaluedMap<String, String> queryParams) {
+    private MultivaluedMap<String, String> attributesToQueryParams(List<Map<String, String>> attributesList, MultivaluedMap<String, String> queryParams) {
         if (queryParams == null) {
             queryParams = new MultivaluedMapImpl();
         }
@@ -1162,25 +1150,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
         API    api         = new API(String.format(GET_BY_GUID_TEMPLATE, pathForType, guid), HttpMethod.GET, Response.Status.OK);
 
         return callAPI(api, typeDefClass, null);
-    }
-
-    protected  <T> String getPathForType(Class<T> typeDefClass) {
-        if (AtlasEnumDef.class.isAssignableFrom(typeDefClass)) {
-            return "enumdef";
-        } else if (AtlasEntityDef.class.isAssignableFrom(typeDefClass)) {
-            return "entitydef";
-        } else if (AtlasClassificationDef.class.isAssignableFrom(typeDefClass)) {
-            return "classificationdef";
-        } else if (AtlasRelationshipDef.class.isAssignableFrom(typeDefClass)) {
-            return "relationshipdef";
-        } else if (AtlasBusinessMetadataDef.class.isAssignableFrom(typeDefClass)) {
-            return "businessmetadatadef";
-        }else if (AtlasStructDef.class.isAssignableFrom(typeDefClass)) {
-            return "structdef";
-        }
-
-        // Code should never reach this point
-        return "";
     }
 
     public static class API_V2 extends API {
@@ -1234,9 +1203,9 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 GET_BUSINESS_METADATA_TEMPLATE    = new API_V2(ENTITY_API + "businessmetadata/import/template", HttpMethod.GET, Response.Status.OK, MediaType.APPLICATION_JSON, MediaType.APPLICATION_OCTET_STREAM);
         public static final API_V2 IMPORT_BUSINESS_METADATA          = new API_V2(ENTITY_API + "businessmetadata/import", HttpMethod.POST, Response.Status.OK, MediaType.MULTIPART_FORM_DATA, MediaType.APPLICATION_JSON);
 
-        public static final API_V2 POST_NOTIFICATIONS_TO_TOPIC     = new API_V2(NOTIFICATION_URI + "/topic/%s", HttpMethod.POST, Response.Status.NO_CONTENT);
+        public static final API_V2 POST_NOTIFICATIONS_TO_TOPIC = new API_V2(NOTIFICATION_URI + "/topic/%s", HttpMethod.POST, Response.Status.NO_CONTENT);
 
-        public static final API_V2 GET_INDEX_RECOVERY_DATA = new API_V2(INDEX_RECOVERY_URI , HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 GET_INDEX_RECOVERY_DATA = new API_V2(INDEX_RECOVERY_URI, HttpMethod.GET, Response.Status.OK);
         public static final API_V2 START_INDEX_RECOVERY    = new API_V2(INDEX_RECOVERY_URI + "/start", HttpMethod.POST, Response.Status.NO_CONTENT);
 
         // labels APIs
@@ -1248,37 +1217,37 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 DELETE_LABELS_BY_UNIQUE_ATTRIBUTE = new API_V2(ENTITY_API + "uniqueAttribute/type/%s/labels", HttpMethod.DELETE, Response.Status.NO_CONTENT);
 
         // Lineage APIs
-        public static final API_V2 LINEAGE_INFO                = new API_V2(LINEAGE_URI, HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 GET_LINEAGE_BY_ATTRIBUTES   = new API_V2(LINEAGE_URI + "uniqueAttribute/type/", HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 LINEAGE_INFO_ON_DEMAND      = new API_V2(LINEAGE_URI, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 LINEAGE_INFO              = new API_V2(LINEAGE_URI, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 GET_LINEAGE_BY_ATTRIBUTES = new API_V2(LINEAGE_URI + "uniqueAttribute/type/", HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 LINEAGE_INFO_ON_DEMAND    = new API_V2(LINEAGE_URI, HttpMethod.POST, Response.Status.OK);
 
         // Discovery APIs
-        public static final API_V2 DSL_SEARCH                  = new API_V2(DSL_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 FULL_TEXT_SEARCH            = new API_V2(FULL_TEXT_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 BASIC_SEARCH                = new API_V2(BASIC_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
-        public static final API_V2 FACETED_SEARCH              = new API_V2(FACETED_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
-        public static final API_V2 ATTRIBUTE_SEARCH            = new API_V2(DISCOVERY_URI+ "/attribute", HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 RELATIONSHIP_SEARCH         = new API_V2(DISCOVERY_URI+ "/relationship", HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 QUICK_SEARCH_WITH_GET       = new API_V2(QUICK_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 QUICK_SEARCH_WITH_POST      = new API_V2(QUICK_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
-        public static final API_V2 GET_SUGGESTIONS             = new API_V2(DISCOVERY_URI+ "/suggestions", HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 GET_SAVED_SEARCHES          = new API_V2(SAVED_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 GET_SAVED_SEARCH            = new API_V2(SAVED_SEARCH_URI+ "/%s", HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 ADD_SAVED_SEARCH            = new API_V2(SAVED_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
-        public static final API_V2 UPDATE_SAVED_SEARCH         = new API_V2(SAVED_SEARCH_URI, HttpMethod.PUT, Response.Status.OK);
-        public static final API_V2 DELETE_SAVED_SEARCH         = new API_V2(SAVED_SEARCH_URI+ "/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
-        public static final API_V2 EXECUTE_SAVED_SEARCH_BY_NAME = new API_V2(SAVED_SEARCH_URI+"/execute/%s", HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 EXECUTE_SAVED_SEARCH_BY_GUID = new API_V2(SAVED_SEARCH_URI+"/execute/guid/%s", HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 DSL_SEARCH                   = new API_V2(DSL_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 FULL_TEXT_SEARCH             = new API_V2(FULL_TEXT_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 BASIC_SEARCH                 = new API_V2(BASIC_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 FACETED_SEARCH               = new API_V2(FACETED_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 ATTRIBUTE_SEARCH             = new API_V2(DISCOVERY_URI + "/attribute", HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 RELATIONSHIP_SEARCH          = new API_V2(DISCOVERY_URI + "/relationship", HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 QUICK_SEARCH_WITH_GET        = new API_V2(QUICK_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 QUICK_SEARCH_WITH_POST       = new API_V2(QUICK_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 GET_SUGGESTIONS              = new API_V2(DISCOVERY_URI + "/suggestions", HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 GET_SAVED_SEARCHES           = new API_V2(SAVED_SEARCH_URI, HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 GET_SAVED_SEARCH             = new API_V2(SAVED_SEARCH_URI + "/%s", HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 ADD_SAVED_SEARCH             = new API_V2(SAVED_SEARCH_URI, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 UPDATE_SAVED_SEARCH          = new API_V2(SAVED_SEARCH_URI, HttpMethod.PUT, Response.Status.OK);
+        public static final API_V2 DELETE_SAVED_SEARCH          = new API_V2(SAVED_SEARCH_URI + "/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
+        public static final API_V2 EXECUTE_SAVED_SEARCH_BY_NAME = new API_V2(SAVED_SEARCH_URI + "/execute/%s", HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 EXECUTE_SAVED_SEARCH_BY_GUID = new API_V2(SAVED_SEARCH_URI + "/execute/guid/%s", HttpMethod.GET, Response.Status.OK);
 
         // Relationship APIs
         public static final API_V2 GET_RELATIONSHIP_BY_GUID    = new API_V2(RELATIONSHIPS_URI + "guid/", HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 CREATE_RELATIONSHIP         = new API_V2(RELATIONSHIPS_URI , HttpMethod.POST, Response.Status.OK);
-        public static final API_V2 UPDATE_RELATIONSHIP         = new API_V2(RELATIONSHIPS_URI , HttpMethod.PUT, Response.Status.OK);
+        public static final API_V2 CREATE_RELATIONSHIP         = new API_V2(RELATIONSHIPS_URI, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 UPDATE_RELATIONSHIP         = new API_V2(RELATIONSHIPS_URI, HttpMethod.PUT, Response.Status.OK);
         public static final API_V2 DELETE_RELATIONSHIP_BY_GUID = new API_V2(RELATIONSHIPS_URI + "guid/", HttpMethod.DELETE, Response.Status.NO_CONTENT);
 
         // Admin APIs
-        public static final API_V2 GET_ATLAS_AUDITS            = new API_V2(ATLAS_AUDIT_API, HttpMethod.POST, Response.Status.OK);
-        public static final API_V2 AGEOUT_ATLAS_AUDITS         = new API_V2(ATLAS_AUDIT_API + "ageout/", HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 GET_ATLAS_AUDITS    = new API_V2(ATLAS_AUDIT_API, HttpMethod.POST, Response.Status.OK);
+        public static final API_V2 AGEOUT_ATLAS_AUDITS = new API_V2(ATLAS_AUDIT_API + "ageout/", HttpMethod.POST, Response.Status.OK);
 
         // Glossary APIs
         public static final API_V2 GET_ALL_GLOSSARIES              = new API_V2(GLOSSARY_URI, HttpMethod.GET, Response.Status.OK);
@@ -1304,9 +1273,9 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 UPDATE_PARTIAL_TERM             = new API_V2(GLOSSARY_TERM + "/%s/partial", HttpMethod.PUT, Response.Status.OK);
         public static final API_V2 UPDATE_CATEGORY_BY_GUID         = new API_V2(GLOSSARY_CATEGORY + "/%s", HttpMethod.PUT, Response.Status.OK);
         public static final API_V2 UPDATE_PARTIAL_CATEGORY         = new API_V2(GLOSSARY_CATEGORY + "/%s/partial", HttpMethod.PUT, Response.Status.OK);
-        public static final API_V2 DELETE_GLOSSARY_BY_GUID         = new API_V2(GLOSSARY_URI+ "/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
-        public static final API_V2 DELETE_TERM_BY_GUID             = new API_V2(GLOSSARY_TERM+ "/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
-        public static final API_V2 DELETE_CATEGORY_BY_GUID         = new API_V2(GLOSSARY_CATEGORY+ "/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
+        public static final API_V2 DELETE_GLOSSARY_BY_GUID         = new API_V2(GLOSSARY_URI + "/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
+        public static final API_V2 DELETE_TERM_BY_GUID             = new API_V2(GLOSSARY_TERM + "/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
+        public static final API_V2 DELETE_CATEGORY_BY_GUID         = new API_V2(GLOSSARY_CATEGORY + "/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
         public static final API_V2 GET_ENTITIES_ASSIGNED_WITH_TERM = new API_V2(GLOSSARY_TERMS + "/%s/assignedEntities", HttpMethod.GET, Response.Status.OK);
         public static final API_V2 ASSIGN_TERM_TO_ENTITIES         = new API_V2(GLOSSARY_TERMS + "/%s/assignedEntities", HttpMethod.POST, Response.Status.NO_CONTENT);
         public static final API_V2 DISASSOCIATE_TERM_FROM_ENTITIES = new API_V2(GLOSSARY_TERMS + "/%s/assignedEntities", HttpMethod.PUT, Response.Status.NO_CONTENT);
@@ -1319,6 +1288,12 @@ public class AtlasClientV2 extends AtlasBaseClient {
 
         private API_V2(String path, String method, Response.Status status, String consumes, String produces) {
             super(path, method, status, consumes, produces);
+        }
+    }
+
+    private static class ExtractOperation<T, U> {
+        T extractElement(U element) {
+            return (T) element;
         }
     }
 }
