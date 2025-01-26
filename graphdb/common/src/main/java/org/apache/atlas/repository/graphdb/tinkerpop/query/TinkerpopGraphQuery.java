@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.graphdb.tinkerpop.query;
 
-import com.google.common.base.Preconditions;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
@@ -35,6 +34,8 @@ import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  *
@@ -89,12 +90,12 @@ import java.util.Set;
  *
  */
 public abstract class TinkerpopGraphQuery<V, E> implements AtlasGraphQuery<V, E> {
-
     private static final Logger LOG = LoggerFactory.getLogger(TinkerpopGraphQuery.class);
+
     protected final AtlasGraph<V, E> graph;
+
     private final OrCondition queryCondition = new OrCondition();
-    private final boolean isChildQuery;
-    protected abstract NativeTinkerpopQueryFactory<V, E> getQueryFactory();
+    private final boolean     isChildQuery;
 
     /**
      * Creates a TinkerpopGraphQuery.
@@ -102,7 +103,7 @@ public abstract class TinkerpopGraphQuery<V, E> implements AtlasGraphQuery<V, E>
      * @param graph
      */
     public TinkerpopGraphQuery(AtlasGraph<V, E> graph) {
-        this.graph = graph;
+        this.graph        = graph;
         this.isChildQuery = false;
     }
 
@@ -113,48 +114,39 @@ public abstract class TinkerpopGraphQuery<V, E> implements AtlasGraphQuery<V, E>
      * @param isChildQuery
      */
     public TinkerpopGraphQuery(AtlasGraph<V, E> graph, boolean isChildQuery) {
-        this.graph = graph;
+        this.graph        = graph;
         this.isChildQuery = isChildQuery;
     }
 
     @Override
     public AtlasGraphQuery<V, E> has(String propertyKey, Object value) {
         queryCondition.andWith(new HasPredicate(propertyKey, ComparisionOperator.EQUAL, value));
+
         return this;
     }
 
     @Override
-    public Iterable<AtlasVertex<V, E>> vertices() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Executing: " + queryCondition);
-        }
+    public AtlasGraphQuery<V, E> in(String propertyKey, Collection<?> values) {
+        queryCondition.andWith(new InPredicate(propertyKey, values));
 
-        // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
-        Set<AtlasVertex<V, E>> result = new LinkedHashSet<>();
-
-        for(AndCondition andExpr : queryCondition.getAndTerms()) {
-            NativeTinkerpopGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
-            for(AtlasVertex<V, E> vertex : andQuery.vertices()) {
-                result.add(vertex);
-            }
-        }
-        return result;
+        return this;
     }
 
     @Override
     public Iterable<AtlasEdge<V, E>> edges() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Executing: " + queryCondition);
-        }
+        LOG.debug("Executing: {}", queryCondition);
 
         // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
         Set<AtlasEdge<V, E>> result = new HashSet<>();
-        for(AndCondition andExpr : queryCondition.getAndTerms()) {
+
+        for (AndCondition andExpr : queryCondition.getAndTerms()) {
             NativeTinkerpopGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
-            for(AtlasEdge<V, E> edge : andQuery.edges()) {
+
+            for (AtlasEdge<V, E> edge : andQuery.edges()) {
                 result.add(edge);
             }
         }
+
         return result;
     }
 
@@ -165,23 +157,23 @@ public abstract class TinkerpopGraphQuery<V, E> implements AtlasGraphQuery<V, E>
 
     @Override
     public Iterable<AtlasEdge<V, E>> edges(int offset, int limit) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Executing: " + queryCondition);
-        }
+        LOG.debug("Executing: {}", queryCondition);
 
-        Preconditions.checkArgument(offset >= 0, "Offset must be non-negative");
-        Preconditions.checkArgument(limit >= 0, "Limit must be non-negative");
+        checkArgument(offset >= 0, "Offset must be non-negative");
+        checkArgument(limit >= 0, "Limit must be non-negative");
 
         // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
-        Set<AtlasEdge<V, E>> result = new HashSet<>();
-        long resultIdx = 0;
-        for(AndCondition andExpr : queryCondition.getAndTerms()) {
+        Set<AtlasEdge<V, E>> result    = new HashSet<>();
+        long                 resultIdx = 0;
+
+        for (AndCondition andExpr : queryCondition.getAndTerms()) {
             if (result.size() == limit) {
                 break;
             }
 
             NativeTinkerpopGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
-            for(AtlasEdge<V, E> edge : andQuery.edges(offset + limit)) {
+
+            for (AtlasEdge<V, E> edge : andQuery.edges(offset + limit)) {
                 if (resultIdx >= offset) {
                     result.add(edge);
 
@@ -198,29 +190,47 @@ public abstract class TinkerpopGraphQuery<V, E> implements AtlasGraphQuery<V, E>
     }
 
     @Override
+    public Iterable<AtlasVertex<V, E>> vertices() {
+        LOG.debug("Executing: {}", queryCondition);
+
+        // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
+        Set<AtlasVertex<V, E>> result = new LinkedHashSet<>();
+
+        for (AndCondition andExpr : queryCondition.getAndTerms()) {
+            NativeTinkerpopGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
+
+            for (AtlasVertex<V, E> vertex : andQuery.vertices()) {
+                result.add(vertex);
+            }
+        }
+
+        return result;
+    }
+
+    @Override
     public Iterable<AtlasVertex<V, E>> vertices(int limit) {
         return vertices(0, limit);
     }
 
     @Override
     public Iterable<AtlasVertex<V, E>> vertices(int offset, int limit) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Executing: " + queryCondition);
-        }
+        LOG.debug("Executing: {}", queryCondition);
 
-        Preconditions.checkArgument(offset >= 0, "Offset must be non-negative");
-        Preconditions.checkArgument(limit >= 0, "Limit must be non-negative");
+        checkArgument(offset >= 0, "Offset must be non-negative");
+        checkArgument(limit >= 0, "Limit must be non-negative");
 
         // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
-        Set<AtlasVertex<V, E>> result = new LinkedHashSet<>();
-        long resultIdx = 0;
-        for(AndCondition andExpr : queryCondition.getAndTerms()) {
+        Set<AtlasVertex<V, E>> result    = new LinkedHashSet<>();
+        long                   resultIdx = 0;
+
+        for (AndCondition andExpr : queryCondition.getAndTerms()) {
             if (result.size() == limit) {
                 break;
             }
 
             NativeTinkerpopGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
-            for(AtlasVertex<V, E> vertex : andQuery.vertices(offset + limit)) {
+
+            for (AtlasVertex<V, E> vertex : andQuery.vertices(offset + limit)) {
                 if (resultIdx >= offset) {
                     result.add(vertex);
 
@@ -238,19 +248,19 @@ public abstract class TinkerpopGraphQuery<V, E> implements AtlasGraphQuery<V, E>
 
     @Override
     public Iterable<Object> vertexIds() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Executing: " + queryCondition);
-        }
+        LOG.debug("Executing: {}", queryCondition);
 
         // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
         Set<Object> result = new HashSet<>();
 
-        for(AndCondition andExpr : queryCondition.getAndTerms()) {
+        for (AndCondition andExpr : queryCondition.getAndTerms()) {
             NativeTinkerpopGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
-            for(Object vertexId : andQuery.vertexIds()) {
+
+            for (Object vertexId : andQuery.vertexIds()) {
                 result.add(vertexId);
             }
         }
+
         return result;
     }
 
@@ -261,23 +271,23 @@ public abstract class TinkerpopGraphQuery<V, E> implements AtlasGraphQuery<V, E>
 
     @Override
     public Iterable<Object> vertexIds(int offset, int limit) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Executing: " + queryCondition);
-        }
+        LOG.debug("Executing: {}", queryCondition);
 
-        Preconditions.checkArgument(offset >= 0, "Offset must be non-negative");
-        Preconditions.checkArgument(limit >= 0, "Limit must be non-negative");
+        checkArgument(offset >= 0, "Offset must be non-negative");
+        checkArgument(limit >= 0, "Limit must be non-negative");
 
         // Compute the overall result by combining the results of all the AndConditions (nested within OR) together.
-        Set<Object> result = new HashSet<>();
-        long resultIdx = 0;
-        for(AndCondition andExpr : queryCondition.getAndTerms()) {
+        Set<Object> result    = new HashSet<>();
+        long        resultIdx = 0;
+
+        for (AndCondition andExpr : queryCondition.getAndTerms()) {
             if (result.size() == limit) {
                 break;
             }
 
             NativeTinkerpopGraphQuery<V, E> andQuery = andExpr.create(getQueryFactory());
-            for(Object vertexId : andQuery.vertexIds(offset + limit)) {
+
+            for (Object vertexId : andQuery.vertexIds(offset + limit)) {
                 if (resultIdx >= offset) {
                     result.add(vertexId);
 
@@ -294,60 +304,59 @@ public abstract class TinkerpopGraphQuery<V, E> implements AtlasGraphQuery<V, E>
     }
 
     @Override
-    public AtlasGraphQuery<V, E> has(String propertyKey, QueryOperator operator,
-            Object value) {
+    public AtlasGraphQuery<V, E> has(String propertyKey, QueryOperator operator, Object value) {
         queryCondition.andWith(new HasPredicate(propertyKey, operator, value));
-        return this;
-    }
 
-
-    @Override
-    public AtlasGraphQuery<V, E> in(String propertyKey, Collection<?> values) {
-        queryCondition.andWith(new InPredicate(propertyKey, values));
-        return this;
-    }
-
-    @Override
-    public AtlasGraphQuery<V, E> or(List<AtlasGraphQuery<V, E>> childQueries) {
-
-        //Construct an overall OrCondition by combining all of the children for
-        //the OrConditions in all of the childQueries that we passed in.  Then, "and" the current
-        //query condition with this overall OrCondition.
-
-        OrCondition overallChildQuery = new OrCondition(false);
-
-        for(AtlasGraphQuery<V, E> atlasChildQuery : childQueries) {
-            if (!atlasChildQuery.isChildQuery()) {
-                throw new IllegalArgumentException(atlasChildQuery + " is not a child query");
-            }
-            TinkerpopGraphQuery<V, E> childQuery = (TinkerpopGraphQuery<V, E>)atlasChildQuery;
-            overallChildQuery.orWith(childQuery.getOrCondition());
-        }
-
-        queryCondition.andWith(overallChildQuery);
         return this;
     }
 
     @Override
     public AtlasGraphQuery<V, E> orderBy(final String propertyKey, final SortOrder order) {
         queryCondition.andWith(new OrderByPredicate(propertyKey, order));
+
         return this;
     }
 
-    private OrCondition getOrCondition() {
-        return queryCondition;
+    @Override
+    public AtlasGraphQuery<V, E> or(List<AtlasGraphQuery<V, E>> childQueries) {
+        //Construct an overall OrCondition by combining all of the children for
+        //the OrConditions in all of the childQueries that we passed in.  Then, "and" the current
+        //query condition with this overall OrCondition.
+
+        OrCondition overallChildQuery = new OrCondition(false);
+
+        for (AtlasGraphQuery<V, E> atlasChildQuery : childQueries) {
+            if (!atlasChildQuery.isChildQuery()) {
+                throw new IllegalArgumentException(atlasChildQuery + " is not a child query");
+            }
+
+            TinkerpopGraphQuery<V, E> childQuery = (TinkerpopGraphQuery<V, E>) atlasChildQuery;
+
+            overallChildQuery.orWith(childQuery.getOrCondition());
+        }
+
+        queryCondition.andWith(overallChildQuery);
+
+        return this;
     }
 
     @Override
     public AtlasGraphQuery<V, E> addConditionsFrom(AtlasGraphQuery<V, E> otherQuery) {
+        TinkerpopGraphQuery<V, E> childQuery = (TinkerpopGraphQuery<V, E>) otherQuery;
 
-        TinkerpopGraphQuery<V, E> childQuery = (TinkerpopGraphQuery<V, E>)otherQuery;
         queryCondition.andWith(childQuery.getOrCondition());
+
         return this;
     }
 
     @Override
     public boolean isChildQuery() {
         return isChildQuery;
+    }
+
+    protected abstract NativeTinkerpopQueryFactory<V, E> getQueryFactory();
+
+    private OrCondition getOrCondition() {
+        return queryCondition;
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,19 +18,18 @@
 
 package org.apache.atlas.repository.graphdb;
 
+import org.codehaus.jettison.json.JSONException;
+import org.codehaus.jettison.json.JSONObject;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
-
-import org.codehaus.jettison.json.JSONException;
-import org.codehaus.jettison.json.JSONObject;
 
 /**
  * Represents a graph element.
  *
  */
 public interface AtlasElement {
-
     /**
      * Gets the id of this element.  If the object has not been physically created in the underlying graph,
      * calling this method will force the element to be created so that a valid Id can be returned.
@@ -86,7 +85,6 @@ public interface AtlasElement {
      */
     void setListProperty(String propertyName, List<String> values);
 
-
     /**
      * Sets a multiplicity one property whose effective value is a String list whose
      * values consist of the ids of the supplied elements.  This is implemented efficiently
@@ -103,7 +101,6 @@ public interface AtlasElement {
      * creation to be deferred until commit time.
      */
     void setPropertyFromElementId(String propertyName, AtlasElement value);
-
 
     /**
      * Removes a property from the vertex.
@@ -129,7 +126,6 @@ public interface AtlasElement {
      * @param value
      */
     <T> void setProperty(String propertyName, T value);
-
 
     /**
      * Creates a Jettison JSONObject from this Element.

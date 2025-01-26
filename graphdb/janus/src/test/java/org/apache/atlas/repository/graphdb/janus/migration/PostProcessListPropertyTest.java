@@ -19,7 +19,7 @@
 package org.apache.atlas.repository.graphdb.janus.migration;
 
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graphdb.janus.migration.postProcess.PostProcessListProperty;
+import org.apache.atlas.repository.graphdb.janus.migration.postproc.PostProcessListProperty;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -27,7 +27,6 @@ import org.apache.tinkerpop.gremlin.tinkergraph.structure.TinkerGraph;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.testng.annotations.Test;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
@@ -39,14 +38,13 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class PostProcessListPropertyTest extends BaseUtils {
-    final String HIVE_TABLE_TYPE = "hive_table";
-    final String HIVE_COLUMNS_PROPERTY = "hive_table.columns";
-
-    final String col1EdgeId = "816u-35tc-ao0l-47so";
-    final String col2EdgeId = "82rq-35tc-ao0l-2glc";
+    private static final String HIVE_TABLE_TYPE       = "hive_table";
+    private static final String HIVE_COLUMNS_PROPERTY = "hive_table.columns";
+    private static final String COL_1_EDGE_ID         = "816u-35tc-ao0l-47so";
+    private static final String COL_2_EDGE_ID         = "82rq-35tc-ao0l-2glc";
 
     @Test
-    public void noRefNoUpdate() throws IOException {
+    public void noRefNoUpdate() {
         TestSetup ts = new TestSetup();
 
         ts.getPostProcessListProperty().process(ts.getTable(), HIVE_TABLE_TYPE, HIVE_COLUMNS_PROPERTY);
@@ -54,8 +52,9 @@ public class PostProcessListPropertyTest extends BaseUtils {
     }
 
     @Test
-    public void refFoundVertexUpdated() throws IOException {
+    public void refFoundVertexUpdated() {
         TestSetup ts = new TestSetup();
+
         assertNotNull(ts.getTable());
 
         ts.getPostProcessListProperty().process(ts.getTable(), HIVE_TABLE_TYPE, HIVE_COLUMNS_PROPERTY);
@@ -63,23 +62,34 @@ public class PostProcessListPropertyTest extends BaseUtils {
     }
 
     @Test
-    public void updateUsingPostProcessConsumer() throws IOException {
-        TestSetup ts = new TestSetup();
+    public void updateUsingPostProcessConsumer() {
+        TestSetup                   ts       = new TestSetup();
+        BlockingQueue<Object>       bc       = new BlockingArrayQueue<>();
+        PostProcessManager.Consumer consumer = new PostProcessManager.Consumer(bc, ts.getGraph(), getTypePropertyMap("hive_table", HIVE_COLUMNS_PROPERTY, "ARRAY"), 5);
+        Vertex                      tableV   = fetchTableVertex(ts.getGraph());
 
-        BlockingQueue<Object> bc = new BlockingArrayQueue<>();
-        PostProcessManager.Consumer consumer = new PostProcessManager.Consumer(bc, ts.getGraph(),
-                getTypePropertyMap("hive_table", HIVE_COLUMNS_PROPERTY, "ARRAY"), 5);
-
-        Vertex tableV = fetchTableVertex(ts.getGraph());
         consumer.processItem(tableV.id());
+
         ts.assertComplete();
     }
 
     private class TestSetup {
-        private PostProcessListProperty postProcessListProperty;
-        private TinkerGraph tg;
-        private MappedElementCache cache;
-        private Vertex tableV;
+        private final PostProcessListProperty postProcessListProperty;
+        private final TinkerGraph             tg;
+        private final MappedElementCache      cache;
+        private final Vertex                  tableV;
+
+        public TestSetup() {
+            postProcessListProperty = new PostProcessListProperty();
+            tg                      = TinkerGraph.open();
+            cache                   = new MappedElementCache();
+
+            addEdge(tg, cache);
+
+            tableV = fetchTableVertex(tg);
+
+            assertSetup();
+        }
 
         public PostProcessListProperty getPostProcessListProperty() {
             return postProcessListProperty;
@@ -97,29 +107,25 @@ public class PostProcessListPropertyTest extends BaseUtils {
             return tableV;
         }
 
-        public TestSetup() throws IOException {
-            postProcessListProperty = new PostProcessListProperty();
-            tg = TinkerGraph.open();
-            cache = new MappedElementCache();
-            addEdge(tg, cache);
-            tableV = fetchTableVertex(tg);
-
-            assertSetup();
-        }
-
         public void assertSetup() {
             assertTrue(tableV.property(HIVE_COLUMNS_PROPERTY).isPresent());
-            List list = (List) tableV.property(HIVE_COLUMNS_PROPERTY).value();
+
+            List<?> list = (List<?>) tableV.property(HIVE_COLUMNS_PROPERTY).value();
 
             assertEquals(list.size(), 2);
-            assertEquals(list.get(0), col1EdgeId);
-            assertEquals(list.get(1), col2EdgeId);
+            assertEquals(list.get(0), COL_1_EDGE_ID);
+            assertEquals(list.get(1), COL_2_EDGE_ID);
+        }
+
+        public String getEdgeLabel(String property) {
+            return Constants.INTERNAL_PROPERTY_KEY_PREFIX + property;
         }
 
         private void assertIncomplete() {
             assertPropertyRemoved(HIVE_COLUMNS_PROPERTY, tableV);
 
             Iterator<Edge> edges = tableV.edges(Direction.OUT, getEdgeLabel(HIVE_COLUMNS_PROPERTY));
+
             while (edges.hasNext()) {
                 Edge e = edges.next();
 
@@ -133,10 +139,6 @@ public class PostProcessListPropertyTest extends BaseUtils {
 
         private void assertPropertyRemoved(String property, Vertex tableV) {
             assertFalse(tableV.property(property).isPresent());
-        }
-
-        public String getEdgeLabel(String property ) {
-            return Constants.INTERNAL_PROPERTY_KEY_PREFIX + property;
         }
     }
 }

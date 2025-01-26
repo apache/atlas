@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.repository.graphdb.janus.migration.postProcess;
+package org.apache.atlas.repository.graphdb.janus.migration.postproc;
 
 import org.apache.atlas.repository.Constants;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -49,7 +49,7 @@ public class PostProcessListProperty {
     private boolean hasProperty(Vertex v, String propertyName) {
         try {
             return v.property(propertyName).isPresent();
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             // ...
         }
 
@@ -57,7 +57,7 @@ public class PostProcessListProperty {
     }
 
     private boolean isInstanceVertexOfType(Vertex v, String typeName) {
-        if(v.property(Constants.ENTITY_TYPE_PROPERTY_KEY).isPresent()) {
+        if (v.property(Constants.ENTITY_TYPE_PROPERTY_KEY).isPresent()) {
             String s = (String) v.property(Constants.ENTITY_TYPE_PROPERTY_KEY).value();
 
             return s.equals(typeName);

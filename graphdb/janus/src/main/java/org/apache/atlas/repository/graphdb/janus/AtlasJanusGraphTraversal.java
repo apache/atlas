@@ -41,29 +41,28 @@ import java.util.function.BiPredicate;
 public class AtlasJanusGraphTraversal extends AtlasGraphTraversal<AtlasJanusVertex, AtlasJanusEdge> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasJanusGraphTraversal.class);
 
-    private List resultList;
-    private Set  resultSet;
+    private List<?> resultList;
+    private Set<?>  resultSet;
 
     public AtlasJanusGraphTraversal() {
     }
 
-    public AtlasJanusGraphTraversal(final AtlasGraph<AtlasJanusVertex, AtlasJanusEdge> atlasGraph,
-                                    final GraphTraversalSource traversalSource) {
+    public AtlasJanusGraphTraversal(final AtlasGraph<AtlasJanusVertex, AtlasJanusEdge> atlasGraph, final GraphTraversalSource traversalSource) {
         super(atlasGraph, traversalSource);
     }
 
-    public AtlasJanusGraphTraversal(final AtlasGraph atlasGraph, final Graph graph) {
+    public AtlasJanusGraphTraversal(final AtlasGraph<AtlasJanusVertex, AtlasJanusEdge> atlasGraph, final Graph graph) {
         super(atlasGraph, graph);
     }
 
     @Override
-    public AtlasGraphTraversal startAnonymousTraversal() {
+    public AtlasGraphTraversal<AtlasJanusVertex, AtlasJanusEdge> startAnonymousTraversal() {
         return new AtlasJanusGraphTraversal();
     }
 
     @Override
     public List<AtlasJanusVertex> getAtlasVertexList() {
-        List                   list = getResultList();
+        List<?>                list = getResultList();
         List<AtlasJanusVertex> ret;
 
         if (CollectionUtils.isNotEmpty(list)) {
@@ -87,7 +86,7 @@ public class AtlasJanusGraphTraversal extends AtlasGraphTraversal<AtlasJanusVert
 
     @Override
     public Set<AtlasJanusVertex> getAtlasVertexSet() {
-        Set                   set = getResultSet();
+        Set<?>                set = getResultSet();
         Set<AtlasJanusVertex> ret;
 
         if (CollectionUtils.isNotEmpty(set)) {
@@ -106,11 +105,11 @@ public class AtlasJanusGraphTraversal extends AtlasGraphTraversal<AtlasJanusVert
 
     @Override
     public Map<String, Collection<AtlasJanusVertex>> getAtlasVertexMap() {
-        List                                      list = getResultList();
+        List<?>                                   list = getResultList();
         Map<String, Collection<AtlasJanusVertex>> ret;
 
         if (CollectionUtils.isNotEmpty(list) && (list.get(0) instanceof Map)) {
-            Map map = (Map) list.get(0);
+            Map<?, ?> map = (Map<?, ?>) list.get(0);
 
             ret = new HashMap<>(map.size());
 
@@ -124,7 +123,7 @@ public class AtlasJanusGraphTraversal extends AtlasGraphTraversal<AtlasJanusVert
                 if (value instanceof List) {
                     Collection<AtlasJanusVertex> values = new ArrayList<>();
 
-                    for (Object o : (List) value) {
+                    for (Object o : (List<?>) value) {
                         if (o instanceof Vertex) {
                             values.add(GraphDbObjectFactory.createVertex((AtlasJanusGraph) atlasGraph, (Vertex) o));
                         } else {
@@ -144,7 +143,7 @@ public class AtlasJanusGraphTraversal extends AtlasGraphTraversal<AtlasJanusVert
 
     @Override
     public Set<AtlasJanusEdge> getAtlasEdgeSet() {
-        Set                 set = getResultSet();
+        Set<?>              set = getResultSet();
         Set<AtlasJanusEdge> ret;
 
         if (CollectionUtils.isNotEmpty(set)) {
@@ -172,13 +171,28 @@ public class AtlasJanusGraphTraversal extends AtlasGraphTraversal<AtlasJanusVert
     }
 
     @Override
-    public AtlasGraphTraversal textRegEx(String key, String value) {
-        return (AtlasGraphTraversal) this.has(key, Text.textRegex(value));
+    public AtlasGraphTraversal<AtlasJanusVertex, AtlasJanusEdge> textRegEx(String key, String value) {
+        return (AtlasGraphTraversal<AtlasJanusVertex, AtlasJanusEdge>) this.has(key, Text.textRegex(value));
     }
 
     @Override
-    public AtlasGraphTraversal textContainsRegEx(String key, String value) {
-        return (AtlasGraphTraversal) this.has(key, Text.textContainsRegex(value));
+    public AtlasGraphTraversal<AtlasJanusVertex, AtlasJanusEdge> textContainsRegEx(String key, String value) {
+        return (AtlasGraphTraversal<AtlasJanusVertex, AtlasJanusEdge>) this.has(key, Text.textContainsRegex(value));
+    }
+
+    private List<?> getResultList() {
+        if (resultList == null) {
+            resultList = toList();
+        }
+
+        return resultList;
+    }
+
+    private Set<?> getResultSet() {
+        if (resultSet == null) {
+            resultSet = toSet();
+        }
+        return resultSet;
     }
 
     public static class JanusGraphPredicate implements TextPredicate {
@@ -207,19 +221,4 @@ public class AtlasJanusGraphTraversal extends AtlasGraphTraversal<AtlasJanusVert
             return Text.REGEX;
         }
     }
-
-    private List getResultList() {
-        if (resultList == null) {
-            resultList = toList();
-        }
-        return resultList;
-    }
-
-    private Set getResultSet() {
-        if (resultSet == null) {
-            resultSet = toSet();
-        }
-        return resultSet;
-    }
-
 }

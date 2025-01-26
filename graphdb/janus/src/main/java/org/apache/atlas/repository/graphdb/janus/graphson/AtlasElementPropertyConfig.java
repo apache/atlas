@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,73 +26,51 @@ import java.util.Set;
  * Configure how the GraphSON utility treats edge and vertex properties.
  */
 public class AtlasElementPropertyConfig {
-
-    /**
-     * Rules for element properties.
-     */
-    public enum ElementPropertiesRule {
-        INCLUDE, EXCLUDE
-    }
-
-    private final List<String> vertexPropertyKeys;
-    private final List<String> edgePropertyKeys;
-    private final ElementPropertiesRule vertexPropertiesRule;
-    private final ElementPropertiesRule edgePropertiesRule;
-    private final boolean normalized;
-
     /**
      * A configuration that includes all properties of vertices and edges.
      */
-    public static final AtlasElementPropertyConfig ALL_PROPERTIES = new AtlasElementPropertyConfig(null, null,
-            ElementPropertiesRule.INCLUDE, ElementPropertiesRule.INCLUDE, false);
+    public static final AtlasElementPropertyConfig ALL_PROPERTIES = new AtlasElementPropertyConfig(null, null, ElementPropertiesRule.INCLUDE, ElementPropertiesRule.INCLUDE, false);
 
-    public AtlasElementPropertyConfig(final Set<String> vertexPropertyKeys, final Set<String> edgePropertyKeys,
-            final ElementPropertiesRule vertexPropertiesRule, final ElementPropertiesRule edgePropertiesRule) {
+    private final List<String>          vertexPropertyKeys;
+    private final List<String>          edgePropertyKeys;
+    private final ElementPropertiesRule vertexPropertiesRule;
+    private final ElementPropertiesRule edgePropertiesRule;
+    private final boolean               normalized;
+
+    public AtlasElementPropertyConfig(final Set<String> vertexPropertyKeys, final Set<String> edgePropertyKeys, final ElementPropertiesRule vertexPropertiesRule, final ElementPropertiesRule edgePropertiesRule) {
         this(vertexPropertyKeys, edgePropertyKeys, vertexPropertiesRule, edgePropertiesRule, false);
     }
 
-    public AtlasElementPropertyConfig(final Set<String> vertexPropertyKeys, final Set<String> edgePropertyKeys,
-            final ElementPropertiesRule vertexPropertiesRule, final ElementPropertiesRule edgePropertiesRule,
-            final boolean normalized) {
+    public AtlasElementPropertyConfig(final Set<String> vertexPropertyKeys, final Set<String> edgePropertyKeys, final ElementPropertiesRule vertexPropertiesRule, final ElementPropertiesRule edgePropertiesRule, final boolean normalized) {
         this.vertexPropertiesRule = vertexPropertiesRule;
-        this.vertexPropertyKeys = sortKeys(vertexPropertyKeys, normalized);
-        this.edgePropertiesRule = edgePropertiesRule;
-        this.edgePropertyKeys = sortKeys(edgePropertyKeys, normalized);
-        this.normalized = normalized;
+        this.vertexPropertyKeys   = sortKeys(vertexPropertyKeys, normalized);
+        this.edgePropertiesRule   = edgePropertiesRule;
+        this.edgePropertyKeys     = sortKeys(edgePropertyKeys, normalized);
+        this.normalized           = normalized;
     }
 
     /**
      * Construct a configuration that includes the specified properties from
      * both vertices and edges.
      */
-    public static AtlasElementPropertyConfig includeProperties(final Set<String> vertexPropertyKeys,
-                                                               final Set<String> edgePropertyKeys) {
-        return new AtlasElementPropertyConfig(vertexPropertyKeys, edgePropertyKeys, ElementPropertiesRule.INCLUDE,
-                ElementPropertiesRule.INCLUDE);
+    public static AtlasElementPropertyConfig includeProperties(final Set<String> vertexPropertyKeys, final Set<String> edgePropertyKeys) {
+        return new AtlasElementPropertyConfig(vertexPropertyKeys, edgePropertyKeys, ElementPropertiesRule.INCLUDE, ElementPropertiesRule.INCLUDE);
     }
 
-    public static AtlasElementPropertyConfig includeProperties(final Set<String> vertexPropertyKeys,
-                                                               final Set<String> edgePropertyKeys,
-                                                               final boolean normalized) {
-        return new AtlasElementPropertyConfig(vertexPropertyKeys, edgePropertyKeys, ElementPropertiesRule.INCLUDE,
-                ElementPropertiesRule.INCLUDE, normalized);
+    public static AtlasElementPropertyConfig includeProperties(final Set<String> vertexPropertyKeys, final Set<String> edgePropertyKeys, final boolean normalized) {
+        return new AtlasElementPropertyConfig(vertexPropertyKeys, edgePropertyKeys, ElementPropertiesRule.INCLUDE, ElementPropertiesRule.INCLUDE, normalized);
     }
 
     /**
      * Construct a configuration that excludes the specified properties from
      * both vertices and edges.
      */
-    public static AtlasElementPropertyConfig excludeProperties(final Set<String> vertexPropertyKeys,
-                                                               final Set<String> edgePropertyKeys) {
-        return new AtlasElementPropertyConfig(vertexPropertyKeys, edgePropertyKeys, ElementPropertiesRule.EXCLUDE,
-                ElementPropertiesRule.EXCLUDE);
+    public static AtlasElementPropertyConfig excludeProperties(final Set<String> vertexPropertyKeys, final Set<String> edgePropertyKeys) {
+        return new AtlasElementPropertyConfig(vertexPropertyKeys, edgePropertyKeys, ElementPropertiesRule.EXCLUDE, ElementPropertiesRule.EXCLUDE);
     }
 
-    public static AtlasElementPropertyConfig excludeProperties(final Set<String> vertexPropertyKeys,
-                                                               final Set<String> edgePropertyKeys,
-                                                               final boolean normalized) {
-        return new AtlasElementPropertyConfig(vertexPropertyKeys, edgePropertyKeys, ElementPropertiesRule.EXCLUDE,
-                ElementPropertiesRule.EXCLUDE, normalized);
+    public static AtlasElementPropertyConfig excludeProperties(final Set<String> vertexPropertyKeys, final Set<String> edgePropertyKeys, final boolean normalized) {
+        return new AtlasElementPropertyConfig(vertexPropertyKeys, edgePropertyKeys, ElementPropertiesRule.EXCLUDE, ElementPropertiesRule.EXCLUDE, normalized);
     }
 
     public List<String> getVertexPropertyKeys() {
@@ -117,18 +95,28 @@ public class AtlasElementPropertyConfig {
 
     private static List<String> sortKeys(final Set<String> keys, final boolean normalized) {
         final List<String> propertyKeyList;
+
         if (keys != null) {
             if (normalized) {
-                final List<String> sorted = new ArrayList<String>(keys);
+                final List<String> sorted = new ArrayList<>(keys);
+
                 Collections.sort(sorted);
+
                 propertyKeyList = sorted;
             } else {
-                propertyKeyList = new ArrayList<String>(keys);
+                propertyKeyList = new ArrayList<>(keys);
             }
         } else {
             propertyKeyList = null;
         }
 
         return propertyKeyList;
+    }
+
+    /**
+     * Rules for element properties.
+     */
+    public enum ElementPropertiesRule {
+        INCLUDE, EXCLUDE
     }
 }

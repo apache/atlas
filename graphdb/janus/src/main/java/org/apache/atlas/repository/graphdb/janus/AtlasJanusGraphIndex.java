@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,28 +18,53 @@
 
 package org.apache.atlas.repository.graphdb.janus;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
-
 import org.janusgraph.core.PropertyKey;
 import org.janusgraph.core.schema.JanusGraphIndex;
+
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Represents an Index in Janus.
  */
 public class AtlasJanusGraphIndex implements AtlasGraphIndex {
-
-    private JanusGraphIndex wrapped;
+    private final JanusGraphIndex wrapped;
 
     public AtlasJanusGraphIndex(JanusGraphIndex toWrap) {
         this.wrapped = toWrap;
     }
 
+    @Override
+    public int hashCode() {
+        return wrapped.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object other) {
+        if (this == other) {
+            return true;
+        } else if (other == null || other.getClass() != getClass()) {
+            return false;
+        }
+
+        AtlasJanusGraphIndex otherKey = (AtlasJanusGraphIndex) other;
+
+        return otherKey.wrapped.equals(wrapped);
+    }
+
+    @Override
+    public boolean isMixedIndex() {
+        return wrapped.isMixedIndex();
+    }
+
+    @Override
+    public boolean isCompositeIndex() {
+        return wrapped.isCompositeIndex();
+    }
 
     @Override
     public boolean isEdgeIndex() {
@@ -56,45 +81,15 @@ public class AtlasJanusGraphIndex implements AtlasGraphIndex {
         return wrapped.isUnique();
     }
 
-
     @Override
     public Set<AtlasPropertyKey> getFieldKeys() {
-        PropertyKey[] keys = wrapped.getFieldKeys();
-        Set<AtlasPropertyKey> result = new HashSet<AtlasPropertyKey>();
-        for(PropertyKey key  : keys) {
+        PropertyKey[]         keys   = wrapped.getFieldKeys();
+        Set<AtlasPropertyKey> result = new HashSet<>();
+
+        for (PropertyKey key : keys) {
             result.add(GraphDbObjectFactory.createPropertyKey(key));
         }
+
         return result;
     }
-
-    @Override
-    public int hashCode() {
-        int result = 17;
-        result = 37*result + wrapped.hashCode();
-        return result;
-    }
-
-    @Override
-    public boolean equals(Object other) {
-        if (!(other instanceof AtlasJanusGraphIndex)) {
-            return false;
-        }
-        AtlasJanusGraphIndex otherKey = (AtlasJanusGraphIndex)other;
-        return otherKey.wrapped.equals(wrapped);
-
-    }
-
-
-    @Override
-    public boolean isMixedIndex() {
-        return wrapped.isMixedIndex();
-    }
-
-
-    @Override
-    public boolean isCompositeIndex() {
-        return wrapped.isCompositeIndex();
-    }
-
-
 }

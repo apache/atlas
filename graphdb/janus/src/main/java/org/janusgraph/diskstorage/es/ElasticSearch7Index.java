@@ -33,7 +33,7 @@ import java.lang.reflect.Field;
 public class ElasticSearch7Index extends ElasticSearchIndex {
     private static final Logger LOG = LoggerFactory.getLogger(ElasticSearch7Index.class);
 
-    private static ElasticSearch7Index INSTANCE;
+    private static ElasticSearch7Index instance;
 
     private final ElasticSearchClient client;
 
@@ -54,11 +54,11 @@ public class ElasticSearch7Index extends ElasticSearchIndex {
 
         this.client = client;
 
-        INSTANCE = this;
+        ElasticSearch7Index.instance = this;
     }
 
     public static ElasticSearchClient getElasticSearchClient() {
-        ElasticSearch7Index index = INSTANCE;
+        ElasticSearch7Index index = ElasticSearch7Index.instance;
 
         return index != null ? index.client : null;
     }

@@ -41,14 +41,7 @@ public class AggregationContext {
      * @param indexFieldNameCache
      * @param excludeDeletedEntities a boolean flag to indicate if the deleted entities need to be excluded in search
      */
-    public AggregationContext(String               queryString,
-                              FilterCriteria       filterCriteria,
-                              Set<AtlasEntityType> searchForEntityType,
-                              Set<String>          aggregationFieldNames,
-                              Set<AtlasAttribute>  aggregationAttributes,
-                              Map<String, String>  indexFieldNameCache,
-                              boolean              excludeDeletedEntities,
-                              boolean              includeSubTypes) {
+    public AggregationContext(String queryString, FilterCriteria filterCriteria, Set<AtlasEntityType> searchForEntityType, Set<String> aggregationFieldNames, Set<AtlasAttribute> aggregationAttributes, Map<String, String> indexFieldNameCache, boolean excludeDeletedEntities, boolean includeSubTypes) {
         this.queryString            = queryString;
         this.filterCriteria         = filterCriteria;
         this.searchForEntityTypes   = searchForEntityType;

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,7 +36,7 @@ import static org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase.
 
 @Component
 public class GraphDBGraphSONMigrator implements GraphDBMigrator {
-    private static final Logger LOG      = LoggerFactory.getLogger(GraphDBMigrator.class);
+    private static final Logger LOG      = LoggerFactory.getLogger(GraphDBGraphSONMigrator.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("GraphDBMigrator");
 
     private final TypesDefScrubber typesDefStrubberForMigrationImport = new TypesDefScrubber();
@@ -59,11 +59,11 @@ public class GraphDBGraphSONMigrator implements GraphDBMigrator {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "loadLegacyGraphSON");
             }
 
-            AtlasGraphSONReader legacyGraphSONReader = AtlasGraphSONReader.build().
-                    relationshipCache(new ElementProcessors(typeRegistry, typesDefStrubberForMigrationImport)).
-                    schemaDB(getGraphInstance()).
-                    bulkLoadingDB(getBulkLoadingGraphInstance()).
-                    create();
+            AtlasGraphSONReader legacyGraphSONReader = AtlasGraphSONReader.build()
+                    .relationshipCache(new ElementProcessors(typeRegistry, typesDefStrubberForMigrationImport))
+                    .schemaDB(getGraphInstance())
+                    .bulkLoadingDB(getBulkLoadingGraphInstance())
+                    .create();
 
             legacyGraphSONReader.readGraph(fs);
         } catch (Exception ex) {

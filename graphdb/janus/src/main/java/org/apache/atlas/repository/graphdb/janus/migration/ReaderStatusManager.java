@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,6 +33,11 @@ import java.util.Date;
 public class ReaderStatusManager {
     private static final Logger LOG = LoggerFactory.getLogger(ReaderStatusManager.class);
 
+    public static final String STATUS_NOT_STARTED = "NOT_STARTED";
+    public static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
+    public static final String STATUS_SUCCESS     = "SUCCESS";
+    public static final String STATUS_FAILED      = "FAILED";
+
     private static final String MIGRATION_STATUS_TYPE_NAME = "__MigrationStatus";
     private static final String CURRENT_INDEX_PROPERTY     = "currentIndex";
     private static final String CURRENT_COUNTER_PROPERTY   = "currentCounter";
@@ -41,27 +46,39 @@ public class ReaderStatusManager {
     private static final String END_TIME_PROPERTY          = "endTime";
     private static final String TOTAL_COUNT_PROPERTY       = "totalCount";
 
-    public static final String STATUS_NOT_STARTED = "NOT_STARTED";
-    public static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
-    public static final String STATUS_SUCCESS     = "SUCCESS";
-    public static final String STATUS_FAILED      = "FAILED";
-
     @VisibleForTesting
-    Object migrationStatusId = null;
-    private Vertex migrationStatus   = null;
+    Object migrationStatusId;
+
+    private Vertex migrationStatus;
 
     public ReaderStatusManager(Graph graph, Graph bulkLoadGraph) {
         init(graph, bulkLoadGraph);
     }
 
+    public static MigrationStatus get(Graph graph) {
+        MigrationStatus ms = new MigrationStatus();
+
+        try {
+            setValues(ms, fetchUsingTypeName(graph.traversal()));
+        } catch (Exception ex) {
+            if (LOG.isDebugEnabled()) {
+                LOG.error("get: failed!", ex);
+            }
+        }
+
+        return ms;
+    }
+
     public void init(Graph graph, Graph bulkLoadGraph) {
         migrationStatus = fetchUsingTypeName(bulkLoadGraph.traversal());
-        if(migrationStatus == null) {
+
+        if (migrationStatus == null) {
             createAndCommit(graph);
+
             migrationStatus = fetchUsingId(bulkLoadGraph.traversal());
         }
 
-        if(migrationStatus == null) {
+        if (migrationStatus == null) {
             migrationStatus = fetchUsingId(bulkLoadGraph.traversal());
         }
     }
@@ -76,17 +93,18 @@ public class ReaderStatusManager {
     public void update(Graph graph, Long counter, boolean stageEnd) {
         migrationStatus.property(CURRENT_COUNTER_PROPERTY, counter);
 
-        if(stageEnd) {
+        if (stageEnd) {
             migrationStatus.property(CURRENT_INDEX_PROPERTY, counter);
         }
 
-        if(graph.features().graph().supportsTransactions()) {
+        if (graph.features().graph().supportsTransactions()) {
             graph.tx().commit();
         }
     }
 
     public void update(Graph graph, Long counter, String status) {
         migrationStatus.property(OPERATION_STATUS_PROPERTY, status);
+
         update(graph, counter, true);
     }
 
@@ -103,14 +121,15 @@ public class ReaderStatusManager {
     }
 
     private static Vertex fetchUsingTypeName(GraphTraversalSource g) {
-        GraphTraversal src = g.V().has(Constants.ENTITY_TYPE_PROPERTY_KEY, MIGRATION_STATUS_TYPE_NAME);
-        return src.hasNext() ? (Vertex) src.next() : null;
+        GraphTraversal<Vertex, Vertex> src = g.V().has(Constants.ENTITY_TYPE_PROPERTY_KEY, MIGRATION_STATUS_TYPE_NAME);
+
+        return src.hasNext() ? src.next() : null;
     }
 
     private void createAndCommit(Graph rGraph) {
-        Vertex v = rGraph.addVertex();
+        Vertex v         = rGraph.addVertex();
+        long   longValue = 0L;
 
-        long longValue = 0L;
         v.property(Constants.ENTITY_TYPE_PROPERTY_KEY, MIGRATION_STATUS_TYPE_NAME);
         v.property(CURRENT_COUNTER_PROPERTY, longValue);
         v.property(CURRENT_INDEX_PROPERTY, longValue);
@@ -121,24 +140,11 @@ public class ReaderStatusManager {
 
         migrationStatusId = v.id();
 
-        if(rGraph.features().graph().supportsTransactions()) {
+        if (rGraph.features().graph().supportsTransactions()) {
             rGraph.tx().commit();
         }
 
         LOG.info("migrationStatus vertex created! v[{}]", migrationStatusId);
-    }
-
-    public static MigrationStatus get(Graph graph) {
-        MigrationStatus ms = new MigrationStatus();
-        try {
-            setValues(ms, fetchUsingTypeName(graph.traversal()));
-        } catch (Exception ex) {
-            if(LOG.isDebugEnabled()) {
-                LOG.error("get: failed!", ex);
-            }
-        }
-
-        return ms;
     }
 
     private static void setValues(MigrationStatus ms, Vertex vertex) {

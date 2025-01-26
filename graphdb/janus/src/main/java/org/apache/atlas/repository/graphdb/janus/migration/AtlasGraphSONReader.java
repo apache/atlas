@@ -25,7 +25,6 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.apache.tinkerpop.gremlin.structure.io.graphson.GraphSONMapper;
-import org.apache.tinkerpop.gremlin.structure.io.graphson.TypeInfo;
 import org.apache.tinkerpop.shaded.jackson.core.JsonFactory;
 import org.apache.tinkerpop.shaded.jackson.core.JsonParser;
 import org.apache.tinkerpop.shaded.jackson.core.JsonToken;
@@ -42,9 +41,9 @@ import java.util.concurrent.atomic.AtomicLong;
 public final class AtlasGraphSONReader {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasGraphSONReader.class);
 
-    private static String APPLICATION_PROPERTY_MIGRATION_START_INDEX      = "atlas.migration.mode.start.index";
-    private static String APPLICATION_PROPERTY_MIGRATION_NUMER_OF_WORKERS = "atlas.migration.mode.workers";
-    private static String APPLICATION_PROPERTY_MIGRATION_BATCH_SIZE       = "atlas.migration.mode.batch.size";
+    private static final String APPLICATION_PROPERTY_MIGRATION_START_INDEX      = "atlas.migration.mode.start.index";
+    private static final String APPLICATION_PROPERTY_MIGRATION_NUMER_OF_WORKERS = "atlas.migration.mode.workers";
+    private static final String APPLICATION_PROPERTY_MIGRATION_BATCH_SIZE       = "atlas.migration.mode.batch.size";
 
     private final ObjectMapper        mapper;
     private final ElementProcessors   relationshipCache;
@@ -57,16 +56,19 @@ public final class AtlasGraphSONReader {
     private       ReaderStatusManager readerStatusManager;
     private       AtomicLong          counter;
 
-    private AtlasGraphSONReader(ObjectMapper mapper, ElementProcessors relationshipLookup, Graph graph,
-                                Graph bulkLoadGraph, int numWorkers, int batchSize, long suppliedStartIndex) {
-        this.mapper                 = mapper;
-        this.relationshipCache      = relationshipLookup;
-        this.graph                  = graph;
-        this.bulkLoadGraph          = bulkLoadGraph;
-        this.numWorkers             = numWorkers;
-        this.batchSize              = batchSize;
-        this.suppliedStartIndex     = suppliedStartIndex;
-        this.graphSONUtility        = new GraphSONUtility(relationshipCache);
+    private AtlasGraphSONReader(ObjectMapper mapper, ElementProcessors relationshipLookup, Graph graph, Graph bulkLoadGraph, int numWorkers, int batchSize, long suppliedStartIndex) {
+        this.mapper             = mapper;
+        this.relationshipCache  = relationshipLookup;
+        this.graph              = graph;
+        this.bulkLoadGraph      = bulkLoadGraph;
+        this.numWorkers         = numWorkers;
+        this.batchSize          = batchSize;
+        this.suppliedStartIndex = suppliedStartIndex;
+        this.graphSONUtility    = new GraphSONUtility(relationshipCache);
+    }
+
+    public static Builder build() {
+        return new Builder();
     }
 
     public void readGraph(final InputStream inputStream) throws IOException {
@@ -148,8 +150,7 @@ public final class AtlasGraphSONReader {
 
             parseElement.setContext(graphSONUtility);
 
-            WorkItemManager wim = JsonNodeProcessManager.create(graph, bulkLoadGraph, parseElement,
-                                                                numWorkers, batchSize, shouldSkip(startIndex, counter.get()));
+            WorkItemManager wim = JsonNodeProcessManager.create(graph, bulkLoadGraph, parseElement, numWorkers, batchSize, shouldSkip(startIndex, counter.get()));
 
             parser.nextToken();
 
@@ -184,16 +185,16 @@ public final class AtlasGraphSONReader {
 
         try {
             PostProcessManager.WorkItemsManager wim   = PostProcessManager.create(bulkLoadGraph, relationshipCache.getPropertiesToPostProcess(), batchSize, numWorkers);
-            GraphTraversal                      query = bulkLoadGraph.traversal().V();
+            GraphTraversal<Vertex, Vertex>      query = bulkLoadGraph.traversal().V();
 
             while (query.hasNext()) {
                 handleInterrupt(bulkLoadGraph, counter.incrementAndGet());
 
-                if(shouldSkip(startIndex, counter.get())) {
+                if (shouldSkip(startIndex, counter.get())) {
                     continue;
                 }
 
-                Vertex v = (Vertex) query.next();
+                Vertex v = query.next();
 
                 wim.produce(v.id());
 
@@ -220,21 +221,19 @@ public final class AtlasGraphSONReader {
         }
 
         readerStatusManager.update(graph, counter, false);
+
         LOG.error("Thread interrupted: {}", counter);
+
         throw new InterruptedException();
     }
 
     private void updateStatusConditionally(Graph graph, long counter) {
-        if(counter % batchSize == 0) {
+        if (counter % batchSize == 0) {
             readerStatusManager.update(graph, counter, false);
         }
     }
 
-    public static Builder build() {
-        return new Builder();
-    }
-
-    public final static class Builder {
+    public static final class Builder {
         private int               batchSize = 500;
         private ElementProcessors relationshipCache;
         private Graph             graph;
@@ -245,27 +244,16 @@ public final class AtlasGraphSONReader {
         private Builder() {
         }
 
-        private void setDefaults() {
-            try {
-                this.startIndex(ApplicationProperties.get().getLong(APPLICATION_PROPERTY_MIGRATION_START_INDEX, 0L))
-                        .numWorkers(ApplicationProperties.get().getInt(APPLICATION_PROPERTY_MIGRATION_NUMER_OF_WORKERS, 4))
-                        .batchSize(ApplicationProperties.get().getInt(APPLICATION_PROPERTY_MIGRATION_BATCH_SIZE, 3000));
-            } catch (AtlasException ex) {
-                LOG.error("setDefaults: failed!", ex);
-            }
-        }
-
         public AtlasGraphSONReader create() {
             setDefaults();
-            if(bulkLoadGraph == null) {
+            if (bulkLoadGraph == null) {
                 bulkLoadGraph = graph;
             }
 
             final GraphSONMapper.Builder builder = GraphSONMapper.build();
             final GraphSONMapper         mapper  = builder.create();
 
-            return new AtlasGraphSONReader(mapper.createMapper(), relationshipCache, graph, bulkLoadGraph,
-                                                                    numWorkers, batchSize, suppliedStartIndex);
+            return new AtlasGraphSONReader(mapper.createMapper(), relationshipCache, graph, bulkLoadGraph, numWorkers, batchSize, suppliedStartIndex);
         }
 
         public Builder relationshipCache(ElementProcessors relationshipCache) {
@@ -287,7 +275,7 @@ public final class AtlasGraphSONReader {
         }
 
         public Builder numWorkers(int numWorkers) {
-            if(bulkLoadGraph == null || graph == null) {
+            if (bulkLoadGraph == null || graph == null) {
                 this.numWorkers = 1;
 
                 LOG.info("numWorkers: {}, since one of the 2 graphs is null.", this.numWorkers);
@@ -308,6 +296,16 @@ public final class AtlasGraphSONReader {
             this.suppliedStartIndex = suppliedStartIndex;
 
             return this;
+        }
+
+        private void setDefaults() {
+            try {
+                this.startIndex(ApplicationProperties.get().getLong(APPLICATION_PROPERTY_MIGRATION_START_INDEX, 0L))
+                        .numWorkers(ApplicationProperties.get().getInt(APPLICATION_PROPERTY_MIGRATION_NUMER_OF_WORKERS, 4))
+                        .batchSize(ApplicationProperties.get().getInt(APPLICATION_PROPERTY_MIGRATION_BATCH_SIZE, 3000));
+            } catch (AtlasException ex) {
+                LOG.error("setDefaults: failed!", ex);
+            }
         }
     }
 }

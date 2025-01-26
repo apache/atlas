@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,15 +37,16 @@ import java.util.List;
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 
 public abstract class AbstractGraphDatabaseTest {
-
-    protected static final String WEIGHT_PROPERTY = "weight";
-    protected static final String TRAIT_NAMES = Constants.TRAIT_NAMES_PROPERTY_KEY;
+    protected static final String WEIGHT_PROPERTY    = "weight";
+    protected static final String TRAIT_NAMES        = Constants.TRAIT_NAMES_PROPERTY_KEY;
     protected static final String TYPE_PROPERTY_NAME = "__type";
-    protected static final String TYPESYSTEM = "TYPESYSTEM";
+    protected static final String TYPESYSTEM         = "TYPESYSTEM";
 
     private static final String BACKING_INDEX_NAME = "backing";
 
-    private AtlasGraph<?, ?> graph = null;
+    protected List<AtlasVertex<?, ?>> newVertices = new ArrayList<>();
+
+    private AtlasGraph<?, ?> graph;
 
     @BeforeClass
     public static void createIndices() throws Exception {
@@ -55,8 +56,8 @@ public abstract class AbstractGraphDatabaseTest {
             LocalSolrRunner.start();
         }
 
-        AtlasJanusGraphDatabase db = new AtlasJanusGraphDatabase();
-        AtlasGraphManagement mgmt = db.getGraph().getManagementSystem();
+        AtlasJanusGraphDatabase db   = new AtlasJanusGraphDatabase();
+        AtlasGraphManagement    mgmt = db.getGraph().getManagementSystem();
 
         if (mgmt.getGraphIndex(BACKING_INDEX_NAME) == null) {
             mgmt.createVertexMixedIndex(BACKING_INDEX_NAME, Constants.BACKING_INDEX, Collections.emptyList());
@@ -71,7 +72,19 @@ public abstract class AbstractGraphDatabaseTest {
         createIndices(mgmt, Constants.GUID_PROPERTY_KEY, String.class, true, AtlasCardinality.SINGLE);
         createIndices(mgmt, Constants.TRAIT_NAMES_PROPERTY_KEY, String.class, false, AtlasCardinality.SET);
         createIndices(mgmt, Constants.SUPER_TYPES_PROPERTY_KEY, String.class, false, AtlasCardinality.SET);
+
         mgmt.commit();
+    }
+
+    @AfterClass
+    public static void cleanUp() throws Exception {
+        AtlasJanusGraph graph = new AtlasJanusGraph();
+
+        graph.clear();
+
+        if (useLocalSolr()) {
+            LocalSolrRunner.stop();
+        }
     }
 
     @AfterMethod
@@ -81,92 +94,86 @@ public abstract class AbstractGraphDatabaseTest {
         getGraph().commit();
     }
 
-    @AfterClass
-    public static void cleanUp() throws Exception {
-        AtlasJanusGraph graph = new AtlasJanusGraph();
-        graph.clear();
-
-        if (useLocalSolr()) {
-            LocalSolrRunner.stop();
+    @AfterMethod
+    public void removeVertices() {
+        for (AtlasVertex vertex : newVertices) {
+            if (vertex.exists()) {
+                getGraph().removeVertex(vertex);
+            }
         }
+
+        getGraph().commit();
+        newVertices.clear();
     }
 
     protected <V, E> void pushChangesAndFlushCache() {
         getGraph().commit();
     }
 
-    private static void createIndices(AtlasGraphManagement management, String propertyName, Class propertyClass,
-            boolean isUnique, AtlasCardinality cardinality) {
+    protected final <V, E> AtlasGraph<V, E> getGraph() {
+        if (graph == null) {
+            graph = new AtlasJanusGraph();
+        }
 
+        return (AtlasGraph<V, E>) graph;
+    }
+
+    protected AtlasJanusGraph getAtlasJanusGraph() {
+        AtlasGraph<?, ?> g = getGraph();
+
+        return (AtlasJanusGraph) g;
+    }
+
+    protected final <V, E> AtlasVertex<V, E> createVertex(AtlasGraph<V, E> theGraph) {
+        AtlasVertex<V, E> vertex = theGraph.addVertex();
+
+        newVertices.add(vertex);
+
+        return vertex;
+    }
+
+    protected void runSynchronouslyInNewThread(final Runnable r) throws Throwable {
+        RunnableWrapper wrapper = new RunnableWrapper(r);
+        Thread          th      = new Thread(wrapper);
+
+        th.start();
+        th.join();
+
+        Throwable ex = wrapper.getExceptionThrown();
+
+        if (ex != null) {
+            throw ex;
+        }
+    }
+
+    private static void createIndices(AtlasGraphManagement management, String propertyName, Class<?> propertyClass, boolean isUnique, AtlasCardinality cardinality) {
         if (management.containsPropertyKey(propertyName)) {
             //index was already created
             return;
         }
 
         AtlasPropertyKey key = management.makePropertyKey(propertyName, propertyClass, cardinality);
+
         try {
             if (propertyClass != Integer.class) {
                 management.addMixedIndex(BACKING_INDEX_NAME, key, false);
             }
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             //ok
             t.printStackTrace();
         }
+
         try {
             management.createVertexCompositeIndex(propertyName, isUnique, Collections.singletonList(key));
-
-        } catch(Throwable t) {
+        } catch (Throwable t) {
             //ok
             t.printStackTrace();
-        }
-    }
-
-    protected final <V, E> AtlasGraph<V, E> getGraph() {
-        if (graph == null) {
-            graph = new AtlasJanusGraph();
-        }
-        return (AtlasGraph<V, E>)graph;
-    }
-
-    protected AtlasJanusGraph getAtlasJanusGraph() {
-        AtlasGraph g = getGraph();
-        return (AtlasJanusGraph)g;
-    }
-
-
-    protected List<AtlasVertex> newVertices = new ArrayList<>();
-
-    protected final <V, E> AtlasVertex<V, E> createVertex(AtlasGraph<V, E> theGraph) {
-        AtlasVertex<V, E> vertex = theGraph.addVertex();
-        newVertices.add(vertex);
-        return vertex;
-    }
-
-    @AfterMethod
-    public void removeVertices() {
-        for(AtlasVertex vertex : newVertices) {
-            if (vertex.exists()) {
-                getGraph().removeVertex(vertex);
-            }
-        }
-        getGraph().commit();
-        newVertices.clear();
-    }
-
-    protected void runSynchronouslyInNewThread(final Runnable r) throws Throwable {
-        RunnableWrapper wrapper = new RunnableWrapper(r);
-        Thread th = new Thread(wrapper);
-        th.start();
-        th.join();
-        Throwable ex = wrapper.getExceptionThrown();
-        if (ex != null) {
-            throw ex;
         }
     }
 
     private static final class RunnableWrapper implements Runnable {
-        private final Runnable r;
-        private Throwable exceptionThrown = null;
+        private final Runnable  r;
+        private       Throwable exceptionThrown;
 
         private RunnableWrapper(Runnable r) {
             this.r = r;
@@ -176,10 +183,9 @@ public abstract class AbstractGraphDatabaseTest {
         public void run() {
             try {
                 r.run();
-            } catch(Throwable e) {
+            } catch (Throwable e) {
                 exceptionThrown = e;
             }
-
         }
 
         public Throwable getExceptionThrown() {

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,21 +17,22 @@
  */
 package org.apache.atlas.repository.graphdb.janus;
 
-import com.google.common.base.Preconditions;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
-
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraphVertexQuery;
+
+import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * Janus implementation of AtlasVertexQuery.
  */
 public class AtlasJanusVertexQuery implements AtlasVertexQuery<AtlasJanusVertex, AtlasJanusEdge> {
-
-    private AtlasJanusGraph graph;
-    private JanusGraphVertexQuery<?> query;
+    private final AtlasJanusGraph          graph;
+    private final JanusGraphVertexQuery<?> query;
 
     public AtlasJanusVertexQuery(AtlasJanusGraph graph, JanusGraphVertexQuery<?> query) {
         this.query = query;
@@ -41,33 +42,39 @@ public class AtlasJanusVertexQuery implements AtlasVertexQuery<AtlasJanusVertex,
     @Override
     public AtlasVertexQuery<AtlasJanusVertex, AtlasJanusEdge> direction(AtlasEdgeDirection queryDirection) {
         query.direction(AtlasJanusObjectFactory.createDirection(queryDirection));
-        return this;
 
+        return this;
     }
 
     @Override
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> vertices() {
-        Iterable vertices = query.vertices();
+        Iterable<? extends Vertex> vertices = query.vertices();
+
         return graph.wrapVertices(vertices);
     }
 
     @Override
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> vertices(int limit) {
-        Preconditions.checkArgument(limit >=0, "Limit should be greater than or equals to 0");
-        Iterable vertices = query.limit(limit).vertices();
+        checkArgument(limit >= 0, "Limit should be greater than or equals to 0");
+
+        Iterable<? extends Vertex> vertices = query.limit(limit).vertices();
+
         return graph.wrapVertices(vertices);
     }
 
     @Override
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> edges() {
-        Iterable edges = query.edges();
+        Iterable<? extends Edge> edges = query.edges();
+
         return graph.wrapEdges(edges);
     }
 
     @Override
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> edges(int limit) {
-        Preconditions.checkArgument(limit >=0, "Limit should be greater than or equals to 0");
-        Iterable edges = query.limit(limit).edges();
+        checkArgument(limit >= 0, "Limit should be greater than or equals to 0");
+
+        Iterable<? extends Edge> edges = query.limit(limit).edges();
+
         return graph.wrapEdges(edges);
     }
 
@@ -79,12 +86,14 @@ public class AtlasJanusVertexQuery implements AtlasVertexQuery<AtlasJanusVertex,
     @Override
     public AtlasVertexQuery<AtlasJanusVertex, AtlasJanusEdge> label(String label) {
         query.labels(label);
+
         return this;
     }
 
     @Override
     public AtlasVertexQuery<AtlasJanusVertex, AtlasJanusEdge> has(String key, Object value) {
         query.has(key, value);
+
         return this;
     }
 }

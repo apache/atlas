@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,7 +31,6 @@ import java.util.List;
  *
  */
 public class OrCondition {
-
     private List<AndCondition> children;
 
     public OrCondition() {
@@ -44,20 +43,20 @@ public class OrCondition {
 
     public OrCondition(boolean addInitialTerm) {
         this.children = new ArrayList<>();
+
         if (addInitialTerm) {
             children.add(new AndCondition());
         }
     }
 
     /**
-    /**
+     /**
      * Updates this OrCondition in place so that it  matches vertices that satisfy the current
      * OrCondition AND that match the specified predicate.
      *
-     * @param other
+     * @param predicate
      */
     public void andWith(QueryPredicate predicate) {
-
         for (AndCondition child : children) {
             child.andWith(predicate);
         }
@@ -74,7 +73,6 @@ public class OrCondition {
      * @param other
      */
     public void andWith(OrCondition other) {
-
         //Because Titan does not natively support Or conditions in Graph Queries,
         //we need to expand out the condition so it is in the form of a single OrCondition
         //that contains only AndConditions.  We do this by following the rules of boolean
@@ -97,13 +95,16 @@ public class OrCondition {
         //AndConditions become the new set of AndConditions in this OrCondition.
 
         List<AndCondition> expandedExpressionChildren = new ArrayList<>();
+
         for (AndCondition otherExprTerm : other.getAndTerms()) {
             for (AndCondition currentExpr : children) {
                 AndCondition currentAndConditionCopy = currentExpr.copy();
+
                 currentAndConditionCopy.andWith(otherExprTerm.getTerms());
                 expandedExpressionChildren.add(currentAndConditionCopy);
             }
         }
+
         children = expandedExpressionChildren;
     }
 
@@ -120,17 +121,22 @@ public class OrCondition {
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
+
         builder.append("OrCondition [andExprs=");
+
         Iterator<AndCondition> it = children.iterator();
         while (it.hasNext()) {
             AndCondition andExpr = it.next();
+
             builder.append(andExpr.toString());
+
             if (it.hasNext()) {
                 builder.append(",");
             }
         }
+
         builder.append("]");
+
         return builder.toString();
     }
-
 }
