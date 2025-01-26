@@ -27,26 +27,26 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.BiPredicate;
 
-
-public abstract class AtlasGraphTraversal<V extends AtlasVertex, E extends AtlasEdge> extends DefaultGraphTraversal {
-
-    protected AtlasGraph atlasGraph;
+public abstract class AtlasGraphTraversal<V extends AtlasVertex, E extends AtlasEdge> extends DefaultGraphTraversal<V, E> {
+    protected AtlasGraph<V, E> atlasGraph;
 
     // For anonymous/inner traversal
     public AtlasGraphTraversal() {
     }
 
-    public AtlasGraphTraversal(final AtlasGraph atlasGraph, final Graph graph) {
+    public AtlasGraphTraversal(final AtlasGraph<V, E> atlasGraph, final Graph graph) {
         super(graph);
+
         this.atlasGraph = atlasGraph;
     }
 
-    public AtlasGraphTraversal(final AtlasGraph atlasGraph, final GraphTraversalSource traversalSource) {
+    public AtlasGraphTraversal(final AtlasGraph<V, E> atlasGraph, final GraphTraversalSource traversalSource) {
         super(traversalSource);
+
         this.atlasGraph = atlasGraph;
     }
 
-    public abstract AtlasGraphTraversal startAnonymousTraversal();
+    public abstract AtlasGraphTraversal<V, E> startAnonymousTraversal();
 
     public abstract List<V> getAtlasVertexList();
 
@@ -60,34 +60,34 @@ public abstract class AtlasGraphTraversal<V extends AtlasVertex, E extends Atlas
 
     public abstract TextPredicate textPredicate();
 
-    public abstract AtlasGraphTraversal textRegEx(String key, String value);
+    public abstract AtlasGraphTraversal<V, E> textRegEx(String key, String value);
 
-    public abstract AtlasGraphTraversal textContainsRegEx(String value, String removeRedundantQuotes);
+    public abstract AtlasGraphTraversal<V, E> textContainsRegEx(String value, String removeRedundantQuotes);
 
     public interface TextPredicate {
-
         /**
          * Whether the text contains a given term as a token in the text (case insensitive)
          */
-        BiPredicate contains();
+        BiPredicate<?, ?> contains();
 
         /**
          * Whether the text contains a token that starts with a given term (case insensitive)
          */
-        BiPredicate containsPrefix();
+        BiPredicate<?, ?> containsPrefix();
+
         /**
          * Whether the text contains a token that matches a regular expression
          */
-        BiPredicate containsRegex();
+        BiPredicate<?, ?> containsRegex();
 
         /**
          * Whether the text starts with a given prefix (case sensitive)
          */
-        BiPredicate prefix();
+        BiPredicate<?, ?> prefix();
 
         /**
          * Whether the text matches a regular expression (case sensitive)
          */
-        BiPredicate regex();
+        BiPredicate<?, ?> regex();
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,37 +34,22 @@ import static org.apache.atlas.repository.Constants.VERTEX_ID_IN_IMPORT_KEY;
 public class JsonNodeParsers {
     private static final Logger LOG = LoggerFactory.getLogger(JsonNodeParsers.class);
 
-
-    static abstract class ParseElement {
+    abstract static class ParseElement {
         protected GraphSONUtility utility;
-
-        abstract String getMessage();
-
-        abstract Object getId(JsonNode node);
-
-        abstract boolean isTypeNode(JsonNode node);
-
-        abstract String getType(JsonNode node);
 
         public void setContext(GraphSONUtility utility) {
             this.utility = utility;
         }
 
-        abstract Map<String, Object> parse(Graph gr, MappedElementCache cache, JsonNode Node);
-
         public void commit(Graph graph) {
             graph.tx().commit();
         }
-
-        abstract Element get(Graph gr, Object id);
-
-        abstract  Element getByOriginalId(Graph gr, Object id);
 
         public Element getByOriginalId(Graph gr, JsonNode node) {
             return getByOriginalId(gr, getId(node));
         }
 
-        public Element update(Graph gr, Object id, Map<String,Object> schema) {
+        public Element update(Graph gr, Object id, Map<String, Object> schema) {
             Element el = get(gr, id);
 
             for (Map.Entry<String, Object> entry : schema.entrySet()) {
@@ -74,11 +59,23 @@ public class JsonNodeParsers {
             return el;
         }
 
+        abstract String getMessage();
+
+        abstract Object getId(JsonNode node);
+
+        abstract boolean isTypeNode(JsonNode node);
+
+        abstract String getType(JsonNode node);
+
+        abstract Map<String, Object> parse(Graph gr, MappedElementCache cache, JsonNode node);
+
+        abstract Element get(Graph gr, Object id);
+
+        abstract Element getByOriginalId(Graph gr, Object id);
     }
 
     static class ParseEdge extends ParseElement {
-        private static final String MESSAGE_EDGE          = "edge";
-
+        private static final String MESSAGE_EDGE = "edge";
 
         @Override
         public String getMessage() {
@@ -87,7 +84,17 @@ public class JsonNodeParsers {
 
         @Override
         Object getId(JsonNode node) {
-            return utility.getTypedValueFromJsonNode(node.get(GraphSONTokensTP2._ID));
+            return GraphSONUtility.getTypedValueFromJsonNode(node.get(GraphSONTokensTP2._ID));
+        }
+
+        @Override
+        public boolean isTypeNode(JsonNode node) {
+            return node.get(GraphSONTokensTP2._LABEL).textValue().startsWith(Constants.TYPENAME_PROPERTY_KEY);
+        }
+
+        @Override
+        public String getType(JsonNode node) {
+            return node.get(GraphSONTokensTP2._LABEL).textValue();
         }
 
         @Override
@@ -105,25 +112,14 @@ public class JsonNodeParsers {
             try {
                 return gr.traversal().E().has(EDGE_ID_IN_IMPORT_KEY, id).next();
             } catch (NoSuchElementException ex) {
-                if(LOG.isDebugEnabled()) {
+                if (LOG.isDebugEnabled()) {
                     LOG.debug("getByOriginalId: {}: failed: {}", getMessage(), id, ex);
                 }
-            }
-            catch (Exception ex) {
+            } catch (Exception ex) {
                 LOG.error("getByOriginalId: {}: failed: {}", getMessage(), id, ex);
             }
 
             return null;
-        }
-
-        @Override
-        public boolean isTypeNode(JsonNode node) {
-            return node.get(GraphSONTokensTP2._LABEL).textValue().startsWith(Constants.TYPENAME_PROPERTY_KEY);
-        }
-
-        @Override
-        public String getType(JsonNode node) {
-            return node.get(GraphSONTokensTP2._LABEL).textValue();
         }
     }
 
@@ -138,7 +134,17 @@ public class JsonNodeParsers {
 
         @Override
         Object getId(JsonNode node) {
-            return utility.getTypedValueFromJsonNode(node.get(GraphSONTokensTP2._ID));
+            return GraphSONUtility.getTypedValueFromJsonNode(node.get(GraphSONTokensTP2._ID));
+        }
+
+        @Override
+        public boolean isTypeNode(JsonNode node) {
+            return node.has(Constants.TYPENAME_PROPERTY_KEY);
+        }
+
+        @Override
+        public String getType(JsonNode node) {
+            return node.has(Constants.ENTITY_TYPE_PROPERTY_KEY) ? node.get(Constants.ENTITY_TYPE_PROPERTY_KEY).get(NODE_VALUE_KEY).toString() : "";
         }
 
         @Override
@@ -156,7 +162,7 @@ public class JsonNodeParsers {
             try {
                 return gr.traversal().V().has(VERTEX_ID_IN_IMPORT_KEY, id).next();
             } catch (NoSuchElementException ex) {
-                if(LOG.isDebugEnabled()) {
+                if (LOG.isDebugEnabled()) {
                     LOG.debug("getByOriginalId: {}: failed: {}", getMessage(), id, ex);
                 }
             } catch (Exception ex) {
@@ -164,16 +170,6 @@ public class JsonNodeParsers {
             }
 
             return null;
-        }
-
-        @Override
-        public boolean isTypeNode(JsonNode node) {
-            return node.has(Constants.TYPENAME_PROPERTY_KEY);
-        }
-
-        @Override
-        public String getType(JsonNode node) {
-            return node.has(Constants.ENTITY_TYPE_PROPERTY_KEY) ? node.get(Constants.ENTITY_TYPE_PROPERTY_KEY).get(NODE_VALUE_KEY).toString() : "";
         }
     }
 }

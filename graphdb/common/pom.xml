@@ -25,6 +25,11 @@ under the License. -->
     <name>Graph Database Common Code</name>
     <description>Adds IBM Graph Database Support to Apache Atlas</description>
 
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
+
     <dependencies>
 
         <dependency>

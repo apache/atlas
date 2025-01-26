@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,19 +25,18 @@ import org.apache.atlas.repository.graphdb.tinkerpop.query.NativeTinkerpopGraphQ
  * relationship with the value specified.
  */
 public class HasPredicate implements QueryPredicate {
-
-    private String propertyName;
-    private QueryOperator op;
-    private Object value;
+    private final String        propertyName;
+    private final QueryOperator op;
+    private final Object        value;
 
     public HasPredicate(String propertyName, QueryOperator op, Object value) {
         this.propertyName = propertyName;
-        this.op = op;
-        this.value = value;
+        this.op           = op;
+        this.value        = value;
     }
 
     @Override
-    public void addTo(NativeTinkerpopGraphQuery query) {
+    public void addTo(NativeTinkerpopGraphQuery<?, ?> query) {
         query.has(propertyName, op, value);
     }
 

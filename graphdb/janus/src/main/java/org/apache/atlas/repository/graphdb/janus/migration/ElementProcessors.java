@@ -40,20 +40,20 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_VERTEX_PROPAGATE_KEY;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.graphdb.janus.migration.TypesDefScrubber.*;
+import static org.apache.atlas.repository.graphdb.janus.migration.TypesDefScrubber.ClassificationToStructDefName;
 
 public class ElementProcessors {
     private static final Logger LOG = LoggerFactory.getLogger(ElementProcessors.class);
 
-    public  static final String   PRIMITIVE_MAP_CATEGORY       = "MAP_PRIMITIVE";
-    public  static final String   NON_PRIMITIVE_MAP_CATEGORY   = "MAP";
-    public  static final String   NON_PRIMITIVE_ARRAY_CATEGORY = "ARRAY";
-    private static final String[] NON_PRIMITIVE_KEYS           = { ElementProcessors.NON_PRIMITIVE_ARRAY_CATEGORY };
+    public static final  String PRIMITIVE_MAP_CATEGORY       = "MAP_PRIMITIVE";
+    public static final  String NON_PRIMITIVE_MAP_CATEGORY   = "MAP";
+    public static final  String NON_PRIMITIVE_ARRAY_CATEGORY = "ARRAY";
 
-    private final Map<String, RelationshipCacheGenerator.TypeInfo>  relationshipLookup;
-    private final Map<String, Map<String, List<String>>>            postProcessMap;
-    private final Map<String, ClassificationToStructDefName>        traitToTypeMap;
+    private static final String[] NON_PRIMITIVE_KEYS = {ElementProcessors.NON_PRIMITIVE_ARRAY_CATEGORY};
+
+    private final Map<String, RelationshipCacheGenerator.TypeInfo> relationshipLookup;
+    private final Map<String, Map<String, List<String>>>           postProcessMap;
+    private final Map<String, ClassificationToStructDefName>       traitToTypeMap;
 
     private final NonPrimitiveListPropertyProcessor nonPrimitiveListPropertyProcessor = new NonPrimitiveListPropertyProcessor();
     private final NonPrimitiveMapPropertyProcessor  nonPrimitiveMapPropertyProcessor  = new NonPrimitiveMapPropertyProcessor();
@@ -63,14 +63,10 @@ public class ElementProcessors {
     private final EdgeTraitTypesPropertyProcessor   edgeTraitTypesPropertyProcessor   = new EdgeTraitTypesPropertyProcessor();
 
     public ElementProcessors(AtlasTypeRegistry typeRegistry, TypesDefScrubber scrubber) {
-        this(RelationshipCacheGenerator.get(typeRegistry),
-             TypesWithCollectionsFinder.getVertexPropertiesForCollectionAttributes(typeRegistry),
-             scrubber.getTraitToTypeMap());
+        this(RelationshipCacheGenerator.get(typeRegistry), TypesWithCollectionsFinder.getVertexPropertiesForCollectionAttributes(typeRegistry), scrubber.getTraitToTypeMap());
     }
 
-    ElementProcessors(Map<String, RelationshipCacheGenerator.TypeInfo> lookup,
-                      Map<String, Map<String, List<String>>> postProcessMap,
-                      Map<String, ClassificationToStructDefName> traitToTypeMap) {
+    ElementProcessors(Map<String, RelationshipCacheGenerator.TypeInfo> lookup, Map<String, Map<String, List<String>>> postProcessMap, Map<String, ClassificationToStructDefName> traitToTypeMap) {
         this.relationshipLookup = lookup;
         this.postProcessMap     = postProcessMap;
         this.traitToTypeMap     = traitToTypeMap;
@@ -80,7 +76,7 @@ public class ElementProcessors {
         return NON_PRIMITIVE_KEYS;
     }
 
-    public Map<String,Map<String, List<String>>> getPropertiesToPostProcess() {
+    public Map<String, Map<String, List<String>>> getPropertiesToPostProcess() {
         return postProcessMap;
     }
 
@@ -88,7 +84,7 @@ public class ElementProcessors {
         return edgeCollectionPropertyProcessor.update(out, edgeId, label, edgeProperties);
     }
 
-    public void processCollections(String typeNameKey, Map<String,Object> vertexProperties) {
+    public void processCollections(String typeNameKey, Map<String, Object> vertexProperties) {
         if (!vertexProperties.containsKey(typeNameKey)) {
             return;
         }
@@ -104,14 +100,14 @@ public class ElementProcessors {
         nonPrimitiveListPropertyProcessor.update(typeName, vertexProperties);
     }
 
-    public String updateEdge(Vertex in, Vertex out, Object edgeId, String label, Map<String,Object> props) {
+    public String updateEdge(Vertex in, Vertex out, Object edgeId, String label, Map<String, Object> props) {
         return edgeRelationshipPropertyProcessor.update(in, out, edgeId, label, props);
     }
 
     private class NonPrimitiveMapPropertyProcessor {
         final String category = NON_PRIMITIVE_MAP_CATEGORY;
 
-        public void update(String typeName, Map<String,Object> vertexProperties) {
+        public void update(String typeName, Map<String, Object> vertexProperties) {
             if (!postProcessMap.containsKey(typeName)) {
                 return;
             }
@@ -137,9 +133,7 @@ public class ElementProcessors {
                     String key      = (String) listEntry;
                     String valueKey = getMapKey(property, key);
 
-                    if (vertexProperties.containsKey(valueKey)) {
-                        vertexProperties.remove(valueKey);
-                    }
+                    vertexProperties.remove(valueKey);
                 }
 
                 vertexProperties.remove(property);
@@ -213,20 +207,21 @@ public class ElementProcessors {
     private class NonPrimitiveListPropertyProcessor {
         private final String category = NON_PRIMITIVE_ARRAY_CATEGORY;
 
-        private void update(String typeName, Map<String,Object> props) {
-            if(!postProcessMap.get(typeName).containsKey(category)) {
+        private void update(String typeName, Map<String, Object> props) {
+            if (!postProcessMap.get(typeName).containsKey(category)) {
                 return;
             }
 
             List<String> propertyTypeList = postProcessMap.get(typeName).get(category);
+
             for (String property : propertyTypeList) {
-                if(!props.containsKey(property)) {
+                if (!props.containsKey(property)) {
                     continue;
                 }
 
                 Map<String, String> listMap = getUpdatedEdgeList(props.get(property));
 
-                if(listMap == null) {
+                if (listMap == null) {
                     continue;
                 }
 
@@ -237,14 +232,14 @@ public class ElementProcessors {
         private Map<String, String> getUpdatedEdgeList(Object o) {
             Map<String, String> listMap = new HashMap<>();
 
-            if(!(o instanceof List)) {
+            if (!(o instanceof List)) {
                 return null;
             }
 
-            List list = (List) o;
+            List<String> list = (List<String>) o;
 
             for (int i = 0; i < list.size(); i++) {
-                listMap.put((String) list.get(i), Integer.toString(i));
+                listMap.put(list.get(i), Integer.toString(i));
             }
 
             return listMap;
@@ -253,7 +248,7 @@ public class ElementProcessors {
 
     private class EdgeTraitTypesPropertyProcessor {
         private void update(String label, Vertex in) {
-            if (traitToTypeMap.size() == 0) {
+            if (traitToTypeMap.isEmpty()) {
                 return;
             }
 
@@ -267,7 +262,7 @@ public class ElementProcessors {
             if (!traitToTypeMap.containsKey(key)) {
                 key = StringUtils.substringBeforeLast(key, ".");
 
-                if(!traitToTypeMap.containsKey(key)) {
+                if (!traitToTypeMap.containsKey(key)) {
                     return;
                 }
             }
@@ -284,7 +279,7 @@ public class ElementProcessors {
         public String update(Vertex in, Vertex out, Object edgeId, String label, Map<String, Object> props) {
             edgeTraitTypesPropertyProcessor.update(label, in);
 
-            if(addRelationshipTypeForClassification(in, out, label, props)) {
+            if (addRelationshipTypeForClassification(in, out, label, props)) {
                 label = Constants.CLASSIFICATION_LABEL;
             } else {
                 addRelationshipTypeName(label, props);
@@ -302,14 +297,12 @@ public class ElementProcessors {
         }
 
         private PropagateTags getDefaultPropagateValue(String label) {
-            return relationshipLookup.containsKey(label) ?
-                    relationshipLookup.get(label).getPropagateTags() :
-                    AtlasRelationshipDef.PropagateTags.NONE;
+            return relationshipLookup.containsKey(label) ? relationshipLookup.get(label).getPropagateTags() : AtlasRelationshipDef.PropagateTags.NONE;
         }
 
         private boolean addRelationshipTypeForClassification(Vertex in, Vertex out, String label, Map<String, Object> props) {
             if (in.property(ENTITY_TYPE_PROPERTY_KEY).isPresent()) {
-                String inTypeName  = (String) in.property(ENTITY_TYPE_PROPERTY_KEY).value();
+                String inTypeName = (String) in.property(ENTITY_TYPE_PROPERTY_KEY).value();
 
                 if (StringUtils.isNotEmpty(inTypeName)) {
                     if (inTypeName.equals(label)) {
@@ -335,7 +328,7 @@ public class ElementProcessors {
                 entityGuid = (String) out.property(Constants.GUID_PROPERTY_KEY).value();
             }
 
-            if(StringUtils.isNotEmpty(entityGuid)) {
+            if (StringUtils.isNotEmpty(entityGuid)) {
                 in.property(CLASSIFICATION_ENTITY_GUID, entityGuid);
                 in.property(CLASSIFICATION_VERTEX_PROPAGATE_KEY, false);
             }
@@ -347,9 +340,7 @@ public class ElementProcessors {
             if (StringUtils.isNotEmpty(typeName)) {
                 props.put(ENTITY_TYPE_PROPERTY_KEY, typeName);
             } else {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Could not find relationship type for: {}", edgeLabel);
-                }
+                LOG.debug("Could not find relationship type for: {}", edgeLabel);
             }
         }
 
@@ -392,7 +383,7 @@ public class ElementProcessors {
             String typeName     = (String) v.property(ENTITY_TYPE_PROPERTY_KEY).value();
             String propertyName = StringUtils.remove(label, Constants.INTERNAL_PROPERTY_KEY_PREFIX);
 
-            if(!containsNonPrimitiveCollectionProperty(typeName, propertyName, NON_PRIMITIVE_ARRAY_CATEGORY)) {
+            if (!containsNonPrimitiveCollectionProperty(typeName, propertyName, NON_PRIMITIVE_ARRAY_CATEGORY)) {
                 return null;
             }
 
@@ -416,11 +407,11 @@ public class ElementProcessors {
 
             String typeName = (String) v.property(ENTITY_TYPE_PROPERTY_KEY).value();
 
-            if(!postProcessMap.containsKey(typeName)) {
+            if (!postProcessMap.containsKey(typeName)) {
                 return null;
             }
 
-            if(!postProcessMap.get(typeName).containsKey(NON_PRIMITIVE_MAP_CATEGORY)) {
+            if (!postProcessMap.get(typeName).containsKey(NON_PRIMITIVE_MAP_CATEGORY)) {
                 return null;
             }
 
@@ -429,9 +420,7 @@ public class ElementProcessors {
 
             for (String p : properties) {
                 if (propertyName.startsWith(p)) {
-                    return getLabelKeyPair(
-                            String.format("%s%s", Constants.INTERNAL_PROPERTY_KEY_PREFIX, p),
-                            StringUtils.remove(propertyName, p).substring(1).trim());
+                    return getLabelKeyPair(String.format("%s%s", Constants.INTERNAL_PROPERTY_KEY_PREFIX, p), StringUtils.remove(propertyName, p).substring(1).trim());
                 }
             }
 
@@ -459,7 +448,7 @@ public class ElementProcessors {
         }
 
         private String[] getLabelKeyPair(String label, String value) {
-            return new String[] { label, value };
+            return new String[] {label, value};
         }
     }
 }

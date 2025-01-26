@@ -18,11 +18,11 @@
 
 package org.apache.atlas.repository.graphdb.janus.migration;
 
-import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.apache.atlas.pc.WorkItemBuilder;
 import org.apache.atlas.pc.WorkItemConsumer;
 import org.apache.atlas.repository.graphdb.janus.migration.JsonNodeParsers.ParseElement;
 import org.apache.tinkerpop.gremlin.structure.Graph;
+import org.apache.tinkerpop.shaded.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,18 +34,30 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class JsonNodeProcessManager {
+    private JsonNodeProcessManager() {
+        // to block instantiation
+    }
+
+    public static WorkItemManager create(Graph rGraph, Graph bGraph, ParseElement parseElement, int numWorkers, int batchSize, boolean isResuming) {
+        ConsumerBuilder cb = new ConsumerBuilder(rGraph, bGraph, parseElement, batchSize, isResuming);
+
+        return new WorkItemManager(cb, batchSize, numWorkers);
+    }
+
     private static class Consumer extends WorkItemConsumer<JsonNode> {
         private static final Logger LOG = LoggerFactory.getLogger(Consumer.class);
 
         private static final int WAIT_DURATION_AFTER_COMMIT_EXCEPTION = 1000;
 
-        private   final Graph              graph;
-        protected final Graph              bulkLoadGraph;
-        protected final ParseElement       parseElement;
-        private   final long               batchSize;
-        private         AtomicLong         counter;
-        private   final MappedElementCache cache;
-        private   static ThreadLocal<List<JsonNode>> nodes = ThreadLocal.withInitial(() -> new ArrayList<>());
+        private static final ThreadLocal<List<JsonNode>> nodes = ThreadLocal.withInitial(ArrayList::new);
+
+        protected final Graph        bulkLoadGraph;
+        protected final ParseElement parseElement;
+
+        private final   Graph            graph;
+        private final   long             batchSize;
+        private final MappedElementCache cache;
+        private final AtomicLong         counter;
 
         public Consumer(BlockingQueue<JsonNode> workQueue, Graph graph, Graph bulkLoadGraph, ParseElement parseElement, long batchSize) {
             super(workQueue);
@@ -56,6 +68,18 @@ public class JsonNodeProcessManager {
             this.batchSize     = batchSize;
             this.counter       = new AtomicLong(0);
             this.cache         = new MappedElementCache();
+        }
+
+        @Override
+        protected void commitDirty() {
+            super.commitDirty();
+
+            cache.clearAll();
+        }
+
+        @Override
+        protected void doCommit() {
+            commitBulk();
         }
 
         @Override
@@ -80,17 +104,6 @@ public class JsonNodeProcessManager {
 
         private void addNode(JsonNode node) {
             nodes.get().add(node);
-        }
-
-        @Override
-        protected void commitDirty() {
-            super.commitDirty();
-            cache.clearAll();
-        }
-
-        @Override
-        protected void doCommit() {
-            commitBulk();
         }
 
         private void commitConditionally(long index) {
@@ -125,7 +138,9 @@ public class JsonNodeProcessManager {
                         parseElement.parse(graph, cache, node);
                     } else {
                         Object id = schema.get("id");
+
                         schema.remove("id");
+
                         parseElement.update(graph, id, schema);
                     }
 
@@ -134,10 +149,12 @@ public class JsonNodeProcessManager {
                     display("updateSchema: type: {}: Done!", typeName);
                 } catch (NoSuchElementException ex) {
                     parseElement.parse(graph, cache, node);
+
                     commitRegular();
                     display("updateSchema: NoSuchElementException processed!: type: {}: Done!", typeName);
                 } catch (Exception ex) {
                     graph.tx().rollback();
+
                     error("updateSchema: failed!: type: " + typeName, ex);
                 }
             }
@@ -148,10 +165,13 @@ public class JsonNodeProcessManager {
 
             try {
                 Thread.sleep(WAIT_DURATION_AFTER_COMMIT_EXCEPTION);
+
                 for (JsonNode n : nodes.get()) {
                     parseElement.parse(bulkLoadGraph, cache, n);
                 }
+
                 commitBulk();
+
                 display("Done!: After re-adding {}.", nodes.get().size());
             } catch (Exception ex) {
                 error("retryBatchCommit: Failed! Potential data loss.", ex);
@@ -205,9 +225,7 @@ public class JsonNodeProcessManager {
 
         @Override
         public Consumer build(BlockingQueue<JsonNode> queue) {
-            return (isResuming)
-                    ? new ResumingConsumer(queue, graph, bulkLoadGraph, parseElement, batchSize)
-                    : new Consumer(queue, graph, bulkLoadGraph, parseElement, batchSize);
+            return isResuming ? new ResumingConsumer(queue, graph, bulkLoadGraph, parseElement, batchSize) : new Consumer(queue, graph, bulkLoadGraph, parseElement, batchSize);
         }
     }
 
@@ -215,12 +233,5 @@ public class JsonNodeProcessManager {
         public WorkItemManager(WorkItemBuilder builder, int batchSize, int numWorkers) {
             super(builder, batchSize, numWorkers);
         }
-    }
-
-    public static WorkItemManager create(Graph rGraph, Graph bGraph,
-                                         ParseElement parseElement, int numWorkers, int batchSize, boolean isResuming) {
-        ConsumerBuilder cb = new ConsumerBuilder(rGraph, bGraph, parseElement, batchSize, isResuming);
-
-        return new WorkItemManager(cb, batchSize, numWorkers);
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,9 +17,20 @@
  */
 package org.apache.atlas.repository.graphdb.janus.query;
 
+import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery.MatchingOperator;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery.QueryOperator;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusEdge;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusVertex;
+import org.apache.atlas.repository.graphdb.tinkerpop.query.NativeTinkerpopGraphQuery;
+import org.apache.tinkerpop.gremlin.process.traversal.Compare;
 import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.core.JanusGraphEdge;
 import org.janusgraph.core.JanusGraphQuery;
 import org.janusgraph.core.JanusGraphVertex;
@@ -27,24 +38,17 @@ import org.janusgraph.core.attribute.Contain;
 import org.janusgraph.core.attribute.Text;
 import org.janusgraph.graphdb.internal.ElementCategory;
 import org.janusgraph.graphdb.query.JanusGraphPredicate;
-import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery.MatchingOperator;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery.QueryOperator;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.graphdb.tinkerpop.query.NativeTinkerpopGraphQuery;
-import org.apache.atlas.repository.graphdb.janus.AtlasJanusEdge;
-import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
-import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
-import org.apache.atlas.repository.graphdb.janus.AtlasJanusVertex;
-import org.apache.tinkerpop.gremlin.process.traversal.Compare;
-import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.janusgraph.graphdb.query.JanusGraphPredicateUtils;
 import org.janusgraph.graphdb.query.graph.GraphCentricQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 
 /**
  * Janus implementation of NativeTinkerpopGraphQuery.
@@ -52,8 +56,8 @@ import java.util.*;
 public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJanusVertex, AtlasJanusEdge> {
     private static final Logger LOG = LoggerFactory.getLogger(NativeJanusGraphQuery.class);
 
-    private AtlasJanusGraph graph;
-    private JanusGraphQuery<?> query;
+    private final AtlasJanusGraph    graph;
+    private final JanusGraphQuery<?> query;
 
     public NativeJanusGraphQuery(AtlasJanusGraph graph) {
         this.query = graph.getGraph().query();
@@ -63,12 +67,14 @@ public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJan
     @Override
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> vertices() {
         Iterable<JanusGraphVertex> it = query.vertices();
+
         return graph.wrapVertices(it);
     }
 
     @Override
     public Iterable<AtlasEdge<AtlasJanusVertex, AtlasJanusEdge>> edges() {
         Iterable<JanusGraphEdge> it = query.edges();
+
         return graph.wrapEdges(it);
     }
 
@@ -163,8 +169,8 @@ public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJan
         Set<Object>                result = new HashSet<>();
         Iterable<JanusGraphVertex> it     = query.vertices();
 
-        for (Iterator<? extends Vertex> iter = it.iterator(); iter.hasNext(); ) {
-            result.add(iter.next().id());
+        for (Vertex janusGraphVertex : it) {
+            result.add(janusGraphVertex.id());
         }
 
         return result;
@@ -183,8 +189,8 @@ public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJan
             }
         }
 
-        for (Iterator<? extends Vertex> iter = it.iterator(); iter.hasNext(); ) {
-            result.add(iter.next().id());
+        for (Vertex janusGraphVertex : it) {
+            result.add(janusGraphVertex.id());
         }
 
         return result;
@@ -217,26 +223,29 @@ public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJan
     }
 
     @Override
-    public void in(String propertyName, Collection<? extends Object> values) {
+    public void in(String propertyName, Collection<?> values) {
         query.has(propertyName, Contain.IN, values);
-
     }
 
     @Override
     public void has(String propertyName, QueryOperator op, Object value) {
-        JanusGraphPredicate pred;
+        final JanusGraphPredicate pred;
+
         if (op instanceof ComparisionOperator) {
             Compare c = getGremlinPredicate((ComparisionOperator) op);
+
             pred = JanusGraphPredicateUtils.convert(c);
         } else {
-            pred = getGremlinPredicate((MatchingOperator)op);
+            pred = getGremlinPredicate((MatchingOperator) op);
         }
+
         query.has(propertyName, pred, value);
     }
 
     @Override
     public void orderBy(final String propertyName, final AtlasGraphQuery.SortOrder sortOrder) {
         Order order = sortOrder == AtlasGraphQuery.SortOrder.ASC ? Order.asc : Order.desc;
+
         query.orderBy(propertyName, order);
     }
 
@@ -269,18 +278,17 @@ public class NativeJanusGraphQuery implements NativeTinkerpopGraphQuery<AtlasJan
                 return Compare.lte;
             case NOT_EQUAL:
                 return Compare.neq;
-
             default:
                 throw new RuntimeException("Unsupported comparison operator:" + op);
         }
     }
 
-    private int getCountForDebugLog(Iterable it) {
+    private int getCountForDebugLog(Iterable<?> it) {
         int ret = 0;
 
         if (LOG.isDebugEnabled()) {
             if (it != null) {
-                for (Iterator iter = it.iterator(); iter.hasNext(); iter.next()) {
+                for (Iterator<?> iter = it.iterator(); iter.hasNext(); iter.next()) {
                     ret++;
                 }
             }

@@ -31,22 +31,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class RelationshipCacheGenerator {
-
-    public static class TypeInfo extends TypesUtil.Pair<String, PropagateTags> {
-
-        public TypeInfo(String typeName, PropagateTags propagateTags) {
-            super(typeName, propagateTags);
-        }
-
-        public String getTypeName() {
-            return left;
-        }
-
-        public PropagateTags getPropagateTags() {
-            return right;
-        }
+    private RelationshipCacheGenerator() {
+        // to block instantiation
     }
-
 
     public static Map<String, TypeInfo> get(AtlasTypeRegistry typeRegistry) {
         Map<String, TypeInfo> ret = new HashMap<>();
@@ -93,6 +80,20 @@ public class RelationshipCacheGenerator {
             return PropagateTags.ONE_TO_TWO;
         } else {
             return end1PropagateTags;
+        }
+    }
+
+    public static class TypeInfo extends TypesUtil.Pair<String, PropagateTags> {
+        public TypeInfo(String typeName, PropagateTags propagateTags) {
+            super(typeName, propagateTags);
+        }
+
+        public String getTypeName() {
+            return left;
+        }
+
+        public PropagateTags getPropagateTags() {
+            return right;
         }
     }
 }

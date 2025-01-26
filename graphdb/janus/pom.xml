@@ -35,7 +35,8 @@
          Some dependencies, like slf4j are excluded from the jar because they are included in Atlas -->
 
     <properties>
-        <checkstyle.failOnViolation>false</checkstyle.failOnViolation>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
     </properties>
 
     <dependencies>

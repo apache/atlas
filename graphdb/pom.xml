@@ -39,4 +39,9 @@
         <module>janus</module>
     </modules>
 
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
+
 </project>

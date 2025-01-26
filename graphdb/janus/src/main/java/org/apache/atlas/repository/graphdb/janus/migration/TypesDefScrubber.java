@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,13 +45,21 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_MAP_SUF
 public class TypesDefScrubber {
     private static final Logger LOG = LoggerFactory.getLogger(TypesDefScrubber.class);
 
-    public  static final String LEGACY_TYPE_NAME_PREFIX = "legacy";
+    public static final String LEGACY_TYPE_NAME_PREFIX = "legacy";
 
     private final Map<String, ClassificationToStructDefName> edgeLabelToClassificationToStructDefMap = new HashMap<>();
     private final Map<String, Integer>                       classificationIndexMap                  = new HashMap<>();
     private       AtlasTypesDef                              typesDef;
 
     public TypesDefScrubber() {
+    }
+
+    public static String getEdgeLabel(String typeName, String attributeName) {
+        return String.format("%s%s.%s", Constants.INTERNAL_PROPERTY_KEY_PREFIX, typeName, attributeName);
+    }
+
+    public static String getLegacyTypeNameForStructDef(String name) {
+        return String.format("%s_%s", LEGACY_TYPE_NAME_PREFIX, name);
     }
 
     public AtlasTypesDef scrub(AtlasTypesDef typesDef) {
@@ -78,18 +86,8 @@ public class TypesDefScrubber {
         return edgeLabelToClassificationToStructDefMap;
     }
 
-    public static String getEdgeLabel(String typeName, String attributeName) {
-        return String.format("%s%s.%s", Constants.INTERNAL_PROPERTY_KEY_PREFIX, typeName, attributeName);
-    }
-
-    public static String getLegacyTypeNameForStructDef(String name) {
-        return String.format("%s_%s", LEGACY_TYPE_NAME_PREFIX, name);
-    }
-
     private void display(String s, AtlasTypesDef typesDef) {
-        if(LOG.isDebugEnabled()) {
-            LOG.debug(s + "{}", typesDef.toString());
-        }
+        LOG.debug("{}{}", s, typesDef);
     }
 
     private void checkAndUpdate(AtlasStructDef structDef) {
@@ -114,23 +112,21 @@ public class TypesDefScrubber {
         if (AtlasTypeUtil.isArrayType(typeName)) {
             int    startIdx        = ATLAS_TYPE_ARRAY_PREFIX.length();
             int    endIdx          = typeName.length() - ATLAS_TYPE_ARRAY_SUFFIX.length();
-            String elementTypeName = typeName.substring(startIdx, endIdx).trim();
 
-            return elementTypeName;
+            return typeName.substring(startIdx, endIdx).trim();
         } else if (AtlasTypeUtil.isMapType(typeName)) {
             int      startIdx      = ATLAS_TYPE_MAP_PREFIX.length();
             int      endIdx        = typeName.length() - ATLAS_TYPE_MAP_SUFFIX.length();
             String[] keyValueTypes = typeName.substring(startIdx, endIdx).split(ATLAS_TYPE_MAP_KEY_VAL_SEP, 2);
-            String   valueTypeName = keyValueTypes.length > 1 ? keyValueTypes[1].trim() : null;
 
-            return valueTypeName;
+            return keyValueTypes.length > 1 ? keyValueTypes[1].trim() : null;
         }
 
         return typeName;
     }
 
     private void updateAttributeWithNewType(String oldTypeName, String newTypeName, AtlasAttributeDef ad) {
-        if(StringUtils.isEmpty(newTypeName)) {
+        if (StringUtils.isEmpty(newTypeName)) {
             return;
         }
 
@@ -180,8 +176,7 @@ public class TypesDefScrubber {
     private AtlasStructDef getStructDefFromClassificationDef(AtlasClassificationDef classificationDef) {
         String legacyTypeName = getLegacyTypeNameForStructDef(classificationDef.getName());
 
-        return new AtlasStructDef(legacyTypeName, classificationDef.getDescription(), classificationDef.getTypeVersion(),
-                                  getDefaultAttributeDefsIfNecessary(classificationDef.getAttributeDefs()));
+        return new AtlasStructDef(legacyTypeName, classificationDef.getDescription(), classificationDef.getTypeVersion(), getDefaultAttributeDefsIfNecessary(classificationDef.getAttributeDefs()));
     }
 
     private List<AtlasAttributeDef> getDefaultAttributeDefsIfNecessary(List<AtlasAttributeDef> attributeDefs) {

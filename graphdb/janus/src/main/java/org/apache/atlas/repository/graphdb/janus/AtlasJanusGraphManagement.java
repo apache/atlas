@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.graphdb.janus;
 
-import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -68,6 +67,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static org.janusgraph.core.schema.SchemaAction.ENABLE_INDEX;
 import static org.janusgraph.core.schema.SchemaStatus.ENABLED;
 import static org.janusgraph.core.schema.SchemaStatus.INSTALLED;
@@ -77,19 +77,156 @@ import static org.janusgraph.core.schema.SchemaStatus.REGISTERED;
  * Janus implementation of AtlasGraphManagement.
  */
 public class AtlasJanusGraphManagement implements AtlasGraphManagement {
-    private static final boolean lockEnabled = AtlasConfiguration.STORAGE_CONSISTENCY_LOCK_ENABLED.getBoolean();
-    private static final Parameter[] STRING_PARAMETER_ARRAY = new Parameter[]{Mapping.STRING.asParameter()};
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasJanusGraphManagement.class);
 
-    private static final Logger LOG            = LoggerFactory.getLogger(AtlasJanusGraphManagement.class);
-    private static final char[] RESERVED_CHARS = { '{', '}', '"', '$', Token.SEPARATOR_CHAR };
+    private static final boolean        lockEnabled            = AtlasConfiguration.STORAGE_CONSISTENCY_LOCK_ENABLED.getBoolean();
+    private static final Parameter<?>[] STRING_PARAMETER_ARRAY = new Parameter[] {Mapping.STRING.asParameter()};
 
-    private AtlasJanusGraph      graph;
-    private JanusGraphManagement management;
-    private Set<String>          newMultProperties = new HashSet<>();
+    private static final char[] RESERVED_CHARS = {'{', '}', '"', '$', Token.SEPARATOR_CHAR};
+
+    private final AtlasJanusGraph      graph;
+    private final JanusGraphManagement management;
+    private final Set<String>          newMultProperties = new HashSet<>();
 
     public AtlasJanusGraphManagement(AtlasJanusGraph graph, JanusGraphManagement managementSystem) {
         this.management = managementSystem;
         this.graph      = graph;
+    }
+
+    public static void updateSchemaStatus(JanusGraphManagement mgmt, JanusGraph graph, Class<? extends Element> elementType) {
+        LOG.info("updating SchemaStatus for {}: Starting...", elementType.getSimpleName());
+
+        int                       count    = 0;
+        Iterable<JanusGraphIndex> iterable = mgmt.getGraphIndexes(elementType);
+
+        for (JanusGraphIndex index : iterable) {
+            if (index.isCompositeIndex()) {
+                PropertyKey[] propertyKeys = index.getFieldKeys();
+                SchemaStatus  status       = index.getIndexStatus(propertyKeys[0]);
+                String        indexName    = index.name();
+
+                try {
+                    if (status == REGISTERED) {
+                        JanusGraphManagement management    = graph.openManagement();
+                        JanusGraphIndex      indexToUpdate = management.getGraphIndex(indexName);
+
+                        management.updateIndex(indexToUpdate, ENABLE_INDEX).get();
+                        management.commit();
+
+                        GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, indexName).status(ENABLED).call();
+
+                        if (!report.getConvergedKeys().isEmpty() && report.getConvergedKeys().containsKey(indexName)) {
+                            LOG.info("SchemaStatus updated for index: {}, from {} to {}.", index.name(), REGISTERED, ENABLED);
+
+                            count++;
+                        } else if (!report.getNotConvergedKeys().isEmpty() && report.getNotConvergedKeys().containsKey(indexName)) {
+                            LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", index.name(), REGISTERED, ENABLED);
+                        }
+                    } else if (status == INSTALLED) {
+                        LOG.warn("SchemaStatus {} found for index: {}", INSTALLED, indexName);
+                    }
+                } catch (InterruptedException e) {
+                    LOG.error("IllegalStateException for indexName : {}, Exception: ", indexName, e);
+                } catch (ExecutionException e) {
+                    LOG.error("ExecutionException for indexName : {}, Exception: ", indexName, e);
+                }
+            }
+        }
+
+        LOG.info("updating SchemaStatus for {}: {}: Done!", elementType.getSimpleName(), count);
+    }
+
+    @Override
+    public boolean containsPropertyKey(String propertyName) {
+        return management.containsPropertyKey(propertyName);
+    }
+
+    @Override
+    public void rollback() {
+        management.rollback();
+    }
+
+    @Override
+    public void commit() {
+        graph.addMultiProperties(newMultProperties);
+        newMultProperties.clear();
+        management.commit();
+    }
+
+    @Override
+    public AtlasPropertyKey makePropertyKey(String propertyName, Class<?> propertyClass, AtlasCardinality cardinality) {
+        if (cardinality.isMany()) {
+            newMultProperties.add(propertyName);
+        }
+
+        PropertyKeyMaker propertyKeyBuilder = management.makePropertyKey(propertyName).dataType(propertyClass);
+        Cardinality      janusCardinality   = AtlasJanusObjectFactory.createCardinality(cardinality);
+
+        propertyKeyBuilder.cardinality(janusCardinality);
+
+        PropertyKey propertyKey = propertyKeyBuilder.make();
+
+        return GraphDbObjectFactory.createPropertyKey(propertyKey);
+    }
+
+    @Override
+    public AtlasEdgeLabel makeEdgeLabel(String label) {
+        EdgeLabel edgeLabel = management.makeEdgeLabel(label).make();
+
+        return GraphDbObjectFactory.createEdgeLabel(edgeLabel);
+    }
+
+    @Override
+    public void deletePropertyKey(String propertyKey) {
+        PropertyKey janusPropertyKey = management.getPropertyKey(propertyKey);
+
+        if (null == janusPropertyKey) {
+            return;
+        }
+
+        for (int i = 0; ; i++) {
+            String deletedKeyName = janusPropertyKey + "_deleted_" + i;
+
+            if (null == management.getPropertyKey(deletedKeyName)) {
+                management.changeName(janusPropertyKey, deletedKeyName);
+                break;
+            }
+        }
+    }
+
+    @Override
+    public AtlasPropertyKey getPropertyKey(String propertyName) {
+        checkName(propertyName);
+
+        return GraphDbObjectFactory.createPropertyKey(management.getPropertyKey(propertyName));
+    }
+
+    @Override
+    public AtlasEdgeLabel getEdgeLabel(String label) {
+        return GraphDbObjectFactory.createEdgeLabel(management.getEdgeLabel(label));
+    }
+
+    @Override
+    public void createVertexCompositeIndex(String propertyName, boolean isUnique, List<AtlasPropertyKey> propertyKeys) {
+        createCompositeIndex(propertyName, isUnique, propertyKeys, Vertex.class);
+    }
+
+    @Override
+    public void createEdgeCompositeIndex(String propertyName, boolean isUnique, List<AtlasPropertyKey> propertyKeys) {
+        createCompositeIndex(propertyName, isUnique, propertyKeys, Edge.class);
+    }
+
+    public AtlasGraphIndex getGraphIndex(String indexName) {
+        JanusGraphIndex index = management.getGraphIndex(indexName);
+
+        return GraphDbObjectFactory.createGraphIndex(index);
+    }
+
+    @Override
+    public boolean edgeIndexExist(String label, String indexName) {
+        EdgeLabel edgeLabel = management.getEdgeLabel(label);
+
+        return edgeLabel != null && management.getRelationIndex(edgeLabel, indexName) != null;
     }
 
     @Override
@@ -98,6 +235,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
         for (AtlasPropertyKey key : propertyKeys) {
             PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(key);
+
             indexBuilder.addKey(janusKey);
         }
 
@@ -110,6 +248,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
         for (AtlasPropertyKey key : propertyKeys) {
             PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(key);
+
             indexBuilder.addKey(janusKey);
         }
 
@@ -138,6 +277,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
         for (AtlasPropertyKey key : propertyKeys) {
             PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(key);
+
             indexBuilder.addKey(janusKey, org.janusgraph.core.schema.Parameter.of("mapping", Mapping.TEXT));
         }
 
@@ -145,106 +285,27 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     }
 
     @Override
-    public boolean containsPropertyKey(String propertyName) {
-        return management.containsPropertyKey(propertyName);
-    }
-
-    @Override
-    public void rollback() {
-        management.rollback();
-
-    }
-
-    @Override
-    public void commit() {
-        graph.addMultiProperties(newMultProperties);
-        newMultProperties.clear();
-        management.commit();
-    }
-
-    private static void checkName(String name) {
-        //for some reason, name checking was removed from StandardPropertyKeyMaker.make()
-        //in Janus.  For consistency, do the check here.
-        Preconditions.checkArgument(StringUtils.isNotBlank(name), "Need to specify name");
-
-        for (char c : RESERVED_CHARS) {
-            Preconditions.checkArgument(name.indexOf(c) < 0, "Name can not contains reserved character %s: %s", c, name);
-        }
-
-    }
-
-    @Override
-    public AtlasPropertyKey makePropertyKey(String propertyName, Class propertyClass, AtlasCardinality cardinality) {
-        if (cardinality.isMany()) {
-            newMultProperties.add(propertyName);
-        }
-
-        PropertyKeyMaker propertyKeyBuilder = management.makePropertyKey(propertyName).dataType(propertyClass);
-        if (cardinality != null) {
-            Cardinality janusCardinality = AtlasJanusObjectFactory.createCardinality(cardinality);
-            propertyKeyBuilder.cardinality(janusCardinality);
-        }
-
-        PropertyKey propertyKey = propertyKeyBuilder.make();
-
-        return GraphDbObjectFactory.createPropertyKey(propertyKey);
-    }
-
-    @Override
-    public AtlasEdgeLabel makeEdgeLabel(String label) {
-        EdgeLabel edgeLabel = management.makeEdgeLabel(label).make();
-
-        return GraphDbObjectFactory.createEdgeLabel(edgeLabel);
-    }
-
-    @Override
-    public void deletePropertyKey(String propertyKey) {
-        PropertyKey janusPropertyKey = management.getPropertyKey(propertyKey);
-
-        if (null == janusPropertyKey) return;
-
-        for (int i = 0;; i++) {
-            String deletedKeyName = janusPropertyKey + "_deleted_" + i;
-
-            if (null == management.getPropertyKey(deletedKeyName)) {
-                management.changeName(janusPropertyKey, deletedKeyName);
-                break;
-            }
-        }
-    }
-
-    @Override
-    public AtlasPropertyKey getPropertyKey(String propertyName) {
-        checkName(propertyName);
-
-        return GraphDbObjectFactory.createPropertyKey(management.getPropertyKey(propertyName));
-    }
-
-    @Override
-    public AtlasEdgeLabel getEdgeLabel(String label) {
-        return GraphDbObjectFactory.createEdgeLabel(management.getEdgeLabel(label));
-    }
-
-    @Override
     public String addMixedIndex(String indexName, AtlasPropertyKey propertyKey, boolean isStringField) {
         PropertyKey     janusKey        = AtlasJanusObjectFactory.createPropertyKey(propertyKey);
         JanusGraphIndex janusGraphIndex = management.getGraphIndex(indexName);
 
-        if(isStringField) {
+        if (isStringField) {
             management.addIndexKey(janusGraphIndex, janusKey, Mapping.STRING.asParameter());
+
             LOG.debug("created a string type for {} with janueKey {}.", propertyKey.getName(), janusKey);
         } else {
             management.addIndexKey(janusGraphIndex, janusKey);
+
             LOG.debug("created a default type for {} with janueKey {}.", propertyKey.getName(), janusKey);
         }
 
-        String encodedName = "";
-        if(isStringField) {
+        String encodedName;
+
+        if (isStringField) {
             encodedName = graph.getIndexFieldName(propertyKey, janusGraphIndex, STRING_PARAMETER_ARRAY);
         } else {
             encodedName = graph.getIndexFieldName(propertyKey, janusGraphIndex);
         }
-
 
         LOG.info("property '{}' is encoded to '{}'.", propertyKey.getName(), encodedName);
 
@@ -255,53 +316,10 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     public String getIndexFieldName(String indexName, AtlasPropertyKey propertyKey, boolean isStringField) {
         JanusGraphIndex janusGraphIndex = management.getGraphIndex(indexName);
 
-        if(isStringField) {
+        if (isStringField) {
             return graph.getIndexFieldName(propertyKey, janusGraphIndex, STRING_PARAMETER_ARRAY);
         } else {
             return graph.getIndexFieldName(propertyKey, janusGraphIndex);
-        }
-
-    }
-
-    public AtlasGraphIndex getGraphIndex(String indexName) {
-        JanusGraphIndex index = management.getGraphIndex(indexName);
-
-        return GraphDbObjectFactory.createGraphIndex(index);
-    }
-
-    @Override
-    public boolean edgeIndexExist(String label, String indexName) {
-        EdgeLabel edgeLabel = management.getEdgeLabel(label);
-
-        return edgeLabel != null && management.getRelationIndex(edgeLabel, indexName) != null;
-    }
-
-    @Override
-    public void createVertexCompositeIndex(String propertyName, boolean isUnique, List<AtlasPropertyKey> propertyKeys) {
-        createCompositeIndex(propertyName, isUnique, propertyKeys, Vertex.class);
-    }
-
-    @Override
-    public void createEdgeCompositeIndex(String propertyName, boolean isUnique, List<AtlasPropertyKey> propertyKeys) {
-        createCompositeIndex(propertyName, isUnique, propertyKeys, Edge.class);
-    }
-
-    private void createCompositeIndex(String propertyName, boolean isUnique, List<AtlasPropertyKey> propertyKeys, Class<? extends Element> elementType) {
-        IndexBuilder indexBuilder = management.buildIndex(propertyName, elementType);
-
-        for (AtlasPropertyKey key : propertyKeys) {
-            PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(key);
-            indexBuilder.addKey(janusKey);
-        }
-
-        if (isUnique) {
-            indexBuilder.unique();
-        }
-
-        JanusGraphIndex index = indexBuilder.buildCompositeIndex();
-
-        if (lockEnabled && isUnique) {
-            management.setConsistency(index, ConsistencyModifier.LOCK);
         }
     }
 
@@ -321,92 +339,26 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         updateSchemaStatus(this.management, this.graph.getGraph(), Edge.class);
     }
 
-    public static void updateSchemaStatus(JanusGraphManagement mgmt, JanusGraph graph, Class<? extends Element> elementType) {
-        LOG.info("updating SchemaStatus for {}: Starting...", elementType.getSimpleName());
-        int count = 0;
-
-        Iterable<JanusGraphIndex> iterable = mgmt.getGraphIndexes(elementType);
-
-        for (JanusGraphIndex index : iterable) {
-
-            if (index.isCompositeIndex()) {
-                PropertyKey[] propertyKeys = index.getFieldKeys();
-                SchemaStatus status       = index.getIndexStatus(propertyKeys[0]);
-                String        indexName    = index.name();
-
-                try {
-                    if (status == REGISTERED) {
-                        JanusGraphManagement management = graph.openManagement();
-                        JanusGraphIndex indexToUpdate   = management.getGraphIndex(indexName);
-                        management.updateIndex(indexToUpdate, ENABLE_INDEX).get();
-                        management.commit();
-
-                        GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, indexName).status(ENABLED).call();
-
-                        if (!report.getConvergedKeys().isEmpty() && report.getConvergedKeys().containsKey(indexName)) {
-                            LOG.info("SchemaStatus updated for index: {}, from {} to {}.", index.name(), REGISTERED, ENABLED);
-
-                            count++;
-                        } else if (!report.getNotConvergedKeys().isEmpty() && report.getNotConvergedKeys().containsKey(indexName)) {
-                            LOG.error("SchemaStatus failed to update index: {}, from {} to {}.", index.name(), REGISTERED, ENABLED);
-                        }
-
-                    } else if (status == INSTALLED) {
-                        LOG.warn("SchemaStatus {} found for index: {}", INSTALLED, indexName);
-
-                    }
-                } catch (InterruptedException e) {
-                    LOG.error("IllegalStateException for indexName : {}, Exception: ", indexName, e);
-                } catch (ExecutionException e) {
-                    LOG.error("ExecutionException for indexName : {}, Exception: ", indexName, e);
-                }
-            }
-        }
-
-        LOG.info("updating SchemaStatus for {}: {}: Done!", elementType.getSimpleName(), count);
-    }
-
-    private static void setConsistency(JanusGraphManagement mgmt, Class<? extends Element> elementType) {
-        LOG.info("setConsistency: {}: Starting...", elementType.getSimpleName());
-        int count = 0;
-
-        try {
-            Iterable<JanusGraphIndex> iterable = mgmt.getGraphIndexes(elementType);
-            for (JanusGraphIndex index : iterable) {
-                if (!index.isCompositeIndex() || !index.isUnique() || mgmt.getConsistency(index) == ConsistencyModifier.LOCK) {
-                    continue;
-                }
-
-                for (PropertyKey propertyKey : index.getFieldKeys()) {
-                    LOG.info("setConsistency: {}: {}", count, propertyKey.name());
-                }
-
-                mgmt.setConsistency(index, ConsistencyModifier.LOCK);
-                count++;
-            }
-        }
-        finally {
-            LOG.info("setConsistency: {}: {}: Done!", elementType.getSimpleName(), count);
-        }
-    }
-
     @Override
     public void reindex(String indexName, List<AtlasElement> elements) throws Exception {
         try {
             JanusGraphIndex index = management.getGraphIndex(indexName);
+
             if (index == null || !(management instanceof ManagementSystem) || !(graph.getGraph() instanceof StandardJanusGraph)) {
                 LOG.error("Could not retrieve index for name: {} ", indexName);
                 return;
             }
 
             ManagementSystem managementSystem = (ManagementSystem) management;
-            IndexType indexType = managementSystem.getSchemaVertex(index).asIndexType();
+            IndexType        indexType        = managementSystem.getSchemaVertex(index).asIndexType();
+
             if (!(indexType instanceof MixedIndexType)) {
                 LOG.warn("Index: {}: Not of MixedIndexType ", indexName);
                 return;
             }
 
             IndexSerializer indexSerializer = ((StandardJanusGraph) graph.getGraph()).getIndexSerializer();
+
             reindexElement(managementSystem, indexSerializer, (MixedIndexType) indexType, elements);
         } catch (Exception exception) {
             throw exception;
@@ -464,27 +416,80 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
                     LOG.info("Index Recovery: Stats: {}", statistics);
                 }
             } else {
-                LOG.error("Transaction stats: Invalid transaction recovery object!: Unexpected type: {}: Details: {}", txRecoveryObject.getClass().toString(), txRecoveryObject);
+                LOG.error("Transaction stats: Invalid transaction recovery object!: Unexpected type: {}: Details: {}", txRecoveryObject.getClass(), txRecoveryObject);
             }
         } catch (Exception e) {
             LOG.error("Error: Retrieving log transaction stats!", e);
         }
     }
 
-    private void reindexElement(ManagementSystem managementSystem, IndexSerializer indexSerializer, MixedIndexType indexType, List<AtlasElement> elements) throws Exception {
-        Map<String, Map<String, List<IndexEntry>>> documentsPerStore = new HashMap<>();
-        StandardJanusGraphTx tx = managementSystem.getWrappedTx();
-        BackendTransaction txHandle = tx.getTxHandle();
+    private static void checkName(String name) {
+        //for some reason, name checking was removed from StandardPropertyKeyMaker.make()
+        //in Janus.  For consistency, do the check here.
+        checkArgument(StringUtils.isNotBlank(name), "Need to specify name");
+
+        for (char c : RESERVED_CHARS) {
+            checkArgument(name.indexOf(c) < 0, "Name can not contains reserved character %s: %s", c, name);
+        }
+    }
+
+    private void createCompositeIndex(String propertyName, boolean isUnique, List<AtlasPropertyKey> propertyKeys, Class<? extends Element> elementType) {
+        IndexBuilder indexBuilder = management.buildIndex(propertyName, elementType);
+
+        for (AtlasPropertyKey key : propertyKeys) {
+            PropertyKey janusKey = AtlasJanusObjectFactory.createPropertyKey(key);
+            indexBuilder.addKey(janusKey);
+        }
+
+        if (isUnique) {
+            indexBuilder.unique();
+        }
+
+        JanusGraphIndex index = indexBuilder.buildCompositeIndex();
+
+        if (lockEnabled && isUnique) {
+            management.setConsistency(index, ConsistencyModifier.LOCK);
+        }
+    }
+
+    private static void setConsistency(JanusGraphManagement mgmt, Class<? extends Element> elementType) {
+        LOG.info("setConsistency: {}: Starting...", elementType.getSimpleName());
+
+        int count = 0;
 
         try {
-            JanusGraphElement janusGraphElement = null;
+            Iterable<JanusGraphIndex> iterable = mgmt.getGraphIndexes(elementType);
+            for (JanusGraphIndex index : iterable) {
+                if (!index.isCompositeIndex() || !index.isUnique() || mgmt.getConsistency(index) == ConsistencyModifier.LOCK) {
+                    continue;
+                }
+
+                for (PropertyKey propertyKey : index.getFieldKeys()) {
+                    LOG.info("setConsistency: {}: {}", count, propertyKey.name());
+                }
+
+                mgmt.setConsistency(index, ConsistencyModifier.LOCK);
+                count++;
+            }
+        } finally {
+            LOG.info("setConsistency: {}: {}: Done!", elementType.getSimpleName(), count);
+        }
+    }
+
+    private void reindexElement(ManagementSystem managementSystem, IndexSerializer indexSerializer, MixedIndexType indexType, List<AtlasElement> elements) throws Exception {
+        Map<String, Map<String, List<IndexEntry>>> documentsPerStore = new HashMap<>();
+        StandardJanusGraphTx                       tx                = managementSystem.getWrappedTx();
+        BackendTransaction                         txHandle          = tx.getTxHandle();
+
+        try {
             for (AtlasElement element : elements) {
                 try {
                     if (element == null || element.getWrappedElement() == null) {
                         continue;
                     }
 
-                    janusGraphElement = element.getWrappedElement();
+                    JanusGraphElement janusGraphElement = element.getWrappedElement();
+
                     indexSerializer.reindexElement(janusGraphElement, indexType, documentsPerStore);
                 } catch (Exception e) {
                     LOG.warn("{}: Exception: {}:{}", indexType.getName(), e.getClass().getSimpleName(), e.getMessage());

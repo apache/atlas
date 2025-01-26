@@ -41,7 +41,7 @@ public class MappedElementCache {
                 synchronized (lruVertexCache) {
                     ret = lruVertexCache.get(key);
 
-                    if(ret == null) {
+                    if (ret == null) {
                         ret = fetchVertex(gr, key);
                         lruVertexCache.put(key, ret);
                     }
@@ -55,6 +55,10 @@ public class MappedElementCache {
         }
     }
 
+    public void clearAll() {
+        lruVertexCache.clear();
+    }
+
     Vertex fetchVertex(Graph gr, Object key) {
         try {
             return gr.traversal().V().has(VERTEX_ID_IN_IMPORT_KEY, key).next();
@@ -62,9 +66,5 @@ public class MappedElementCache {
             LOG.error("fetchVertex: fetchFromDB failed: {}", key);
             return null;
         }
-    }
-
-    public void clearAll() {
-        lruVertexCache.clear();
     }
 }

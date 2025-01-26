@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,15 +31,23 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
-import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.LABELS_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
 
 public class AtlasSolrQueryBuilder {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasSolrQueryBuilder.class);
+
+    public static final char   CUSTOM_ATTR_SEPARATOR     = '=';
+    public static final String CUSTOM_ATTR_SEARCH_FORMAT = "\"\\\"%s\\\":\\\"%s\\\"\"";
 
     private Set<AtlasEntityType> entityTypes;
     private String               queryString;
@@ -47,9 +55,6 @@ public class AtlasSolrQueryBuilder {
     private boolean              excludeDeletedEntities;
     private boolean              includeSubtypes;
     private Map<String, String>  indexFieldNameCache;
-    public static final char     CUSTOM_ATTR_SEPARATOR      = '=';
-    public static final String   CUSTOM_ATTR_SEARCH_FORMAT  = "\"\\\"%s\\\":\\\"%s\\\"\"";
-
 
     public AtlasSolrQueryBuilder() {
     }
@@ -95,9 +100,7 @@ public class AtlasSolrQueryBuilder {
         boolean       isAndNeeded  = false;
 
         if (StringUtils.isNotEmpty(queryString)) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Initial query string is {}.", queryString);
-            }
+            LOG.debug("Initial query string is {}.", queryString);
 
             queryBuilder.append("+").append(queryString.trim()).append(" ");
 
@@ -134,7 +137,7 @@ public class AtlasSolrQueryBuilder {
                     queryBuilder.append(" AND ");
                 }
 
-                queryBuilder.append(" ").append(attrFilterQueryBuilder.toString());
+                queryBuilder.append(" ").append(attrFilterQueryBuilder);
             }
         }
 
@@ -142,16 +145,15 @@ public class AtlasSolrQueryBuilder {
     }
 
     private void buildForEntityType(StringBuilder queryBuilder) {
-
         String typeIndexFieldName = indexFieldNameCache.get(Constants.ENTITY_TYPE_PROPERTY_KEY);
 
         queryBuilder.append(" +")
-                    .append(typeIndexFieldName)
-                    .append(":(");
+                .append(typeIndexFieldName)
+                .append(":(");
 
         Set<String> typesToSearch = new HashSet<>();
-        for (AtlasEntityType type : entityTypes) {
 
+        for (AtlasEntityType type : entityTypes) {
             if (includeSubtypes) {
                 typesToSearch.addAll(type.getTypeAndAllSubTypes());
             } else {
@@ -160,19 +162,15 @@ public class AtlasSolrQueryBuilder {
         }
 
         queryBuilder.append(StringUtils.join(typesToSearch, " ")).append(" ) ");
-
     }
 
     private void dropDeletedEntities(StringBuilder queryBuilder) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("excluding the deleted entities.");
-        }
+        LOG.debug("excluding the deleted entities.");
 
         String indexFieldName = indexFieldNameCache.get(Constants.STATE_PROPERTY_KEY);
 
         if (indexFieldName == null) {
-            String msg = String.format("There is no index field name defined for attribute '%s'",
-                                       Constants.STATE_PROPERTY_KEY);
+            String msg = String.format("There is no index field name defined for attribute '%s'", Constants.STATE_PROPERTY_KEY);
 
             LOG.error(msg);
 
@@ -182,11 +180,11 @@ public class AtlasSolrQueryBuilder {
         queryBuilder.append(" -").append(indexFieldName).append(":").append(AtlasEntity.Status.DELETED.name());
     }
 
-    private  AtlasSolrQueryBuilder withCriteria(StringBuilder queryBuilder, FilterCriteria criteria) throws AtlasBaseException {
-        List<FilterCriteria> criterion = criteria.getCriterion();
-        Set<String> indexAttributes    = new HashSet<>();
-        if (StringUtils.isNotEmpty(criteria.getAttributeName()) && CollectionUtils.isEmpty(criterion)) { // no child criterion
+    private AtlasSolrQueryBuilder withCriteria(StringBuilder queryBuilder, FilterCriteria criteria) throws AtlasBaseException {
+        List<FilterCriteria> criterion       = criteria.getCriterion();
+        Set<String>          indexAttributes = new HashSet<>();
 
+        if (StringUtils.isNotEmpty(criteria.getAttributeName()) && CollectionUtils.isEmpty(criterion)) { // no child criterion
             String   attributeName  = criteria.getAttributeName();
             String   attributeValue = criteria.getAttributeValue();
             Operator operator       = criteria.getOperator();
@@ -198,17 +196,18 @@ public class AtlasSolrQueryBuilder {
 
                 //check to remove duplicate attribute query (for eg. name)
                 if (!indexAttributes.contains(indexAttributeName)) {
-                    StringBuilder sb   = new StringBuilder();
+                    StringBuilder sb = new StringBuilder();
 
                     if (attributeName.equals(CUSTOM_ATTRIBUTES_PROPERTY_KEY)) {
                         // CustomAttributes stores key value pairs in String format, so ideally it should be 'contains' operator to search for one pair,
                         // for use-case, E1 having key1=value1 and E2 having key1=value2, searching key1=value1 results both E1,E2
                         // surrounding inverted commas to attributeValue works
                         if (operator.equals(Operator.CONTAINS)) {
-                            operator   = Operator.EQ;
+                            operator = Operator.EQ;
                         } else if (operator.equals(Operator.NOT_CONTAINS)) {
-                            operator   = Operator.NEQ;
+                            operator = Operator.NEQ;
                         }
+
                         attributeValue = getIndexQueryAttributeValue(attributeValue);
                     }
 
@@ -221,23 +220,21 @@ public class AtlasSolrQueryBuilder {
 
                     //'CONTAINS and NOT_CONTAINS' operator with tokenize char in attributeValue doesn't guarantee correct results
                     // for aggregationMetrics
-                    boolean replaceWildcardChar = false;
+                    boolean                          replaceWildcardChar = false;
+                    AtlasStructDef.AtlasAttributeDef def                 = type.getAttributeDef(attributeName);
 
-                    AtlasStructDef.AtlasAttributeDef def = type.getAttributeDef(attributeName);
-                    if (!isPipeSeparatedSystemAttribute(attributeName)
-                            && isWildCardOperator(operator)
-                            && def.getTypeName().equalsIgnoreCase(AtlasBaseTypeDef.ATLAS_TYPE_STRING)) {
-
+                    if (!isPipeSeparatedSystemAttribute(attributeName) && isWildCardOperator(operator) && def.getTypeName().equalsIgnoreCase(AtlasBaseTypeDef.ATLAS_TYPE_STRING)) {
                         if (def.getIndexType() == null && AtlasAttribute.hastokenizeChar(attributeValue)) {
                             replaceWildcardChar = true;
                         }
-                        attributeValue  = AtlasAttribute.escapeIndexQueryValue(attributeValue, false, false);
 
+                        attributeValue = AtlasAttribute.escapeIndexQueryValue(attributeValue, false, false);
                     } else {
-                        attributeValue  = AtlasAttribute.escapeIndexQueryValue(attributeValue);
+                        attributeValue = AtlasAttribute.escapeIndexQueryValue(attributeValue);
                     }
 
                     withPropertyCondition(sb, indexAttributeName, operator, attributeValue, replaceWildcardChar);
+
                     indexAttributes.add(indexAttributeName);
                     orExpQuery.add(sb);
                 }
@@ -246,12 +243,12 @@ public class AtlasSolrQueryBuilder {
             if (CollectionUtils.isNotEmpty(orExpQuery)) {
                 if (orExpQuery.size() > 1) {
                     String orExpStr = StringUtils.join(orExpQuery, FilterCriteria.Condition.OR.name());
+
                     queryBuilder.append(" ( ").append(orExpStr).append(" ) ");
                 } else {
                     queryBuilder.append(orExpQuery.iterator().next());
                 }
             }
-
         } else if (CollectionUtils.isNotEmpty(criterion)) {
             beginCriteria(queryBuilder);
 
@@ -341,13 +338,13 @@ public class AtlasSolrQueryBuilder {
     }
 
     private String getIndexQueryAttributeValue(String attributeValue) {
-
         if (StringUtils.isNotEmpty(attributeValue)) {
             int    separatorIdx = attributeValue.indexOf(CUSTOM_ATTR_SEPARATOR);
             String key          = separatorIdx != -1 ? attributeValue.substring(0, separatorIdx) : null;
-            String value        = key != null ? attributeValue.substring(separatorIdx + 1) : null;
 
-            if (key != null && value != null) {
+            if (key != null) {
+                String value = attributeValue.substring(separatorIdx + 1);
+
                 return String.format(CUSTOM_ATTR_SEARCH_FORMAT, key, value);
             }
         }
@@ -389,11 +386,13 @@ public class AtlasSolrQueryBuilder {
 
     private void withEndsWith(StringBuilder queryBuilder, String indexFieldName, String attributeValue, boolean replaceWildCard) {
         String attrValuePrefix = replaceWildCard ? ":" : ":*";
+
         queryBuilder.append("+").append(indexFieldName).append(attrValuePrefix).append(attributeValue).append(" ");
     }
 
     private void withStartsWith(StringBuilder queryBuilder, String indexFieldName, String attributeValue, boolean replaceWildCard) {
         String attrValuePostfix = replaceWildCard ? " " : "* ";
+
         queryBuilder.append("+").append(indexFieldName).append(":").append(attributeValue).append(attrValuePostfix);
     }
 
@@ -445,7 +444,6 @@ public class AtlasSolrQueryBuilder {
         String attrValuePostfix = replaceWildCard ? " " : "* ";
 
         queryBuilder.append("*:* -").append(indexFieldName).append(attrValuePrefix).append(attributeValue).append(attrValuePostfix);
-
     }
 
     private void withIsNull(StringBuilder queryBuilder, String indexFieldName) {

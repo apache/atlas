@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,14 +18,13 @@
 
 package org.apache.atlas.repository.graphdb.janus;
 
-import org.janusgraph.core.EdgeLabel;
 import org.apache.atlas.repository.graphdb.AtlasEdgeLabel;
+import org.janusgraph.core.EdgeLabel;
 
 /**
  *
  */
 public class AtlasJanusEdgeLabel implements AtlasEdgeLabel {
-
     private final EdgeLabel wrapped;
 
     public AtlasJanusEdgeLabel(EdgeLabel toWrap) {
@@ -42,18 +41,19 @@ public class AtlasJanusEdgeLabel implements AtlasEdgeLabel {
 
     @Override
     public int hashCode() {
-        int result = 17;
-        result = 37*result + wrapped.hashCode();
-        return result;
+        return wrapped.hashCode();
     }
 
     @Override
     public boolean equals(Object other) {
-        if (!(other instanceof AtlasJanusEdgeLabel)) {
+        if (this == other) {
+            return true;
+        } else if (other == null || other.getClass() != getClass()) {
             return false;
         }
-        AtlasJanusEdgeLabel otherKey = (AtlasJanusEdgeLabel)other;
-        return otherKey.wrapped.equals(wrapped);
 
+        AtlasJanusEdgeLabel otherKey = (AtlasJanusEdgeLabel) other;
+
+        return otherKey.wrapped.equals(wrapped);
     }
 }

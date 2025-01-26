@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,18 +23,17 @@ import org.apache.atlas.graph.GraphSandboxUtil;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.runner.LocalSolrRunner;
 import org.apache.commons.configuration.Configuration;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
 import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
-
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 @Test
 public class JanusGraphProviderTest {
-
-    private Configuration configuration;
+    private Configuration    configuration;
     private AtlasGraph<?, ?> graph;
 
     @BeforeTest
@@ -74,18 +73,18 @@ public class JanusGraphProviderTest {
         try {
             AtlasJanusGraphDatabase.validateIndexBackend(configuration);
         } catch (Exception e) {
-            Assert.fail("Unexpected exception ", e);
+            fail("Unexpected exception ", e);
         }
 
         //Change backend
         configuration.setProperty(AtlasJanusGraphDatabase.INDEX_BACKEND_CONF, AtlasJanusGraphDatabase.INDEX_BACKEND_LUCENE);
+
         try {
             AtlasJanusGraphDatabase.validateIndexBackend(configuration);
-            Assert.fail("Expected exception");
+
+            fail("Expected exception");
         } catch (Exception e) {
-            Assert.assertEquals(e.getMessage(),
-                    "Configured Index Backend lucene differs from earlier configured "
-                    + "Index Backend solr. Aborting!");
+            assertEquals(e.getMessage(), "Configured Index Backend lucene differs from earlier configured Index Backend solr. Aborting!");
         }
     }
 }

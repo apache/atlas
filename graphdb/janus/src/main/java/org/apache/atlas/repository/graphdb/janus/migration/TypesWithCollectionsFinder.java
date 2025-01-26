@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,8 +19,8 @@
 package org.apache.atlas.repository.graphdb.janus.migration;
 
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasArrayType;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -36,12 +36,18 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.model.TypeCategory.*;
+import static org.apache.atlas.model.TypeCategory.ENTITY;
+import static org.apache.atlas.model.TypeCategory.OBJECT_ID_TYPE;
+import static org.apache.atlas.model.TypeCategory.STRUCT;
 
 public class TypesWithCollectionsFinder {
     private static final Logger LOG = LoggerFactory.getLogger(TypesWithCollectionsFinder.class);
 
     static final EnumSet<TypeCategory> nonPrimitives = EnumSet.of(ENTITY, STRUCT, OBJECT_ID_TYPE);
+
+    private TypesWithCollectionsFinder() {
+        // to block instantiation
+    }
 
     public static Map<String, Map<String, List<String>>> getVertexPropertiesForCollectionAttributes(AtlasTypeRegistry typeRegistry) {
         Map<String, Map<String, List<String>>> ret = new HashMap<>();
@@ -53,16 +59,6 @@ public class TypesWithCollectionsFinder {
         displayInfo("types with properties: ", ret);
 
         return ret;
-    }
-
-    private static void addVertexPropertiesForCollectionAttributes(Collection<? extends AtlasStructType> types, Map<String, Map<String, List<String>>> typeAttrMap) {
-        for (AtlasStructType type : types) {
-            Map<String, List<String>> collectionProperties = getVertexPropertiesForCollectionAttributes(type);
-
-            if(collectionProperties != null && collectionProperties.size() > 0) {
-                typeAttrMap.put(type.getTypeName(), collectionProperties);
-            }
-        }
     }
 
     static Map<String, List<String>> getVertexPropertiesForCollectionAttributes(AtlasStructType type) {
@@ -90,6 +86,24 @@ public class TypesWithCollectionsFinder {
         return null;
     }
 
+    static void displayInfo(String message, Map<String, Map<String, List<String>>> map) {
+        LOG.info(message);
+
+        for (Map.Entry<String, Map<String, List<String>>> e : map.entrySet()) {
+            LOG.info("  type: {} : {}", e.getKey(), e.getValue());
+        }
+    }
+
+    private static void addVertexPropertiesForCollectionAttributes(Collection<? extends AtlasStructType> types, Map<String, Map<String, List<String>>> typeAttrMap) {
+        for (AtlasStructType type : types) {
+            Map<String, List<String>> collectionProperties = getVertexPropertiesForCollectionAttributes(type);
+
+            if (collectionProperties != null && !collectionProperties.isEmpty()) {
+                typeAttrMap.put(type.getTypeName(), collectionProperties);
+            }
+        }
+    }
+
     private static void addIfCollectionAttribute(AtlasAttribute attr, Map<String, List<String>> collectionProperties) {
         AtlasType    attrType         = attr.getAttributeType();
         TypeCategory attrTypeCategory = attrType.getTypeCategory();
@@ -110,7 +124,7 @@ public class TypesWithCollectionsFinder {
                 if (nonPrimitives.contains(mapValueType)) {
                     addVertexProperty(attrTypeCategory.toString(), attr.getVertexPropertyName(), collectionProperties);
                 } else {
-                    addVertexProperty(attrTypeCategory.toString() + "_PRIMITIVE", attr.getVertexPropertyName(), collectionProperties);
+                    addVertexProperty(attrTypeCategory + "_PRIMITIVE", attr.getVertexPropertyName(), collectionProperties);
                 }
             }
             break;
@@ -118,17 +132,10 @@ public class TypesWithCollectionsFinder {
     }
 
     private static void addVertexProperty(String collectionType, String propertyName, Map<String, List<String>> collectionProperties) {
-        if(!collectionProperties.containsKey(collectionType)) {
+        if (!collectionProperties.containsKey(collectionType)) {
             collectionProperties.put(collectionType, new ArrayList<>());
         }
 
         collectionProperties.get(collectionType).add(propertyName);
-    }
-
-    static void displayInfo(String message, Map<String, Map<String, List<String>>> map) {
-        LOG.info(message);
-        for (Map.Entry<String, Map<String, List<String>>> e : map.entrySet()) {
-            LOG.info("  type: {} : {}", e.getKey(), e.getValue());
-        }
     }
 }

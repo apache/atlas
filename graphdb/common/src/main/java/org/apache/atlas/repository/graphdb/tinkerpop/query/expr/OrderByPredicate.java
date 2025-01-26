@@ -21,16 +21,16 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.tinkerpop.query.NativeTinkerpopGraphQuery;
 
 public class OrderByPredicate implements QueryPredicate {
-    private final String propertyKey;
+    private final String                    propertyKey;
     private final AtlasGraphQuery.SortOrder sortOrder;
 
     public OrderByPredicate(final String propertyKey, final AtlasGraphQuery.SortOrder sortOrder) {
         this.propertyKey = propertyKey;
-        this.sortOrder = sortOrder;
+        this.sortOrder   = sortOrder;
     }
 
     @Override
-    public void addTo(final NativeTinkerpopGraphQuery query) {
+    public void addTo(final NativeTinkerpopGraphQuery<?, ?> query) {
         query.orderBy(propertyKey, sortOrder);
     }
 

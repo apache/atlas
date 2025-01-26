@@ -32,6 +32,11 @@
     <name>Apache Atlas Graph Database Implementation Dependencies</name>
     <description>Apache Atlas Graph Database Implementation Dependencies</description>
 
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
+
     <dependencies>
         <!-- Use the single graph provider configured in root pom using graphGroup, graphArtifact properties -->
         <dependency>
