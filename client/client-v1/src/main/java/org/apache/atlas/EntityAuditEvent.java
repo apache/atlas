@@ -18,18 +18,17 @@
 
 package org.apache.atlas;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
-import org.apache.atlas.v1.model.instance.Referenceable;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.v1.model.instance.Referenceable;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -39,12 +38,136 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 /**
  * Structure of entity audit event
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.ALWAYS)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.ALWAYS)
+@JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
 public class EntityAuditEvent implements Serializable {
+    private String            entityId;
+    private long              timestamp;
+    private String            user;
+    private EntityAuditAction action;
+    private String            details;
+    private String            eventKey;
+    private Referenceable     entityDefinition;
+
+    public EntityAuditEvent() {
+    }
+
+    public EntityAuditEvent(String entityId, Long ts, String user, EntityAuditAction action, String details, Referenceable entityDefinition) throws AtlasException {
+        this.entityId         = entityId;
+        this.timestamp        = ts;
+        this.user             = user;
+        this.action           = action;
+        this.details          = details;
+        this.entityDefinition = entityDefinition;
+    }
+
+    @JsonIgnore
+    public static EntityAuditEvent fromString(String eventString) {
+        return AtlasType.fromV1Json(eventString, EntityAuditEvent.class);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entityDefinition);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        EntityAuditEvent that = (EntityAuditEvent) o;
+
+        return timestamp == that.timestamp &&
+                Objects.equals(entityId, that.entityId) &&
+                Objects.equals(user, that.user) &&
+                action == that.action &&
+                Objects.equals(details, that.details) &&
+                Objects.equals(eventKey, that.eventKey) &&
+                Objects.equals(entityDefinition, that.entityDefinition);
+    }
+
+    @Override
+    public String toString() {
+        return AtlasType.toV1Json(this);
+    }
+
+    public String getEntityId() {
+        return entityId;
+    }
+
+    public void setEntityId(String entityId) {
+        this.entityId = entityId;
+    }
+
+    public long getTimestamp() {
+        return timestamp;
+    }
+
+    public void setTimestamp(long timestamp) {
+        this.timestamp = timestamp;
+    }
+
+    public String getUser() {
+        return user;
+    }
+
+    public void setUser(String user) {
+        this.user = user;
+    }
+
+    public EntityAuditAction getAction() {
+        return action;
+    }
+
+    public void setAction(EntityAuditAction action) {
+        this.action = action;
+    }
+
+    public String getDetails() {
+        return details;
+    }
+
+    public void setDetails(String details) {
+        this.details = details;
+    }
+
+    public String getEventKey() {
+        return eventKey;
+    }
+
+    public void setEventKey(String eventKey) {
+        this.eventKey = eventKey;
+    }
+
+    public Referenceable getEntityDefinition() {
+        return entityDefinition;
+    }
+
+    public void setEntityDefinition(Referenceable entityDefinition) {
+        this.entityDefinition = entityDefinition;
+    }
+
+    @JsonIgnore
+    public void setEntityDefinition(String entityDefinition) {
+        this.entityDefinition = AtlasType.fromV1Json(entityDefinition, Referenceable.class);
+    }
+
+    @JsonIgnore
+    public String getEntityDefinitionString() {
+        if (entityDefinition != null) {
+            return AtlasType.toV1Json(entityDefinition);
+        }
+
+        return null;
+    }
+
     public enum EntityAuditAction {
         ENTITY_CREATE, ENTITY_UPDATE, ENTITY_DELETE, TAG_ADD, TAG_DELETE, TAG_UPDATE,
         PROPAGATED_TAG_ADD, PROPAGATED_TAG_DELETE, PROPAGATED_TAG_UPDATE,
@@ -92,124 +215,5 @@ public class EntityAuditEvent implements Serializable {
 
             throw new IllegalArgumentException("No enum constant " + EntityAuditAction.class.getCanonicalName() + "." + strValue);
         }
-    }
-
-    private String entityId;
-    private long timestamp;
-    private String user;
-    private EntityAuditAction action;
-    private String details;
-    private String eventKey;
-    private Referenceable entityDefinition;
-
-    public EntityAuditEvent() {
-    }
-
-    public EntityAuditEvent(String entityId, Long ts, String user, EntityAuditAction action, String details,
-                            Referenceable entityDefinition) throws AtlasException {
-        this.entityId = entityId;
-        this.timestamp = ts;
-        this.user = user;
-        this.action = action;
-        this.details = details;
-        this.entityDefinition = entityDefinition;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        EntityAuditEvent that = (EntityAuditEvent) o;
-        return timestamp == that.timestamp &&
-                Objects.equals(entityId, that.entityId) &&
-                Objects.equals(user, that.user) &&
-                action == that.action &&
-                Objects.equals(details, that.details) &&
-                Objects.equals(eventKey, that.eventKey) &&
-                Objects.equals(entityDefinition, that.entityDefinition);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(entityId, timestamp, user, action, details, eventKey, entityDefinition);
-    }
-
-    @Override
-    public String toString() {
-        return AtlasType.toV1Json(this);
-    }
-
-    public String getEntityId() {
-        return entityId;
-    }
-
-    public long getTimestamp() {
-        return timestamp;
-    }
-
-    public String getUser() {
-        return user;
-    }
-
-    public EntityAuditAction getAction() {
-        return action;
-    }
-
-    public String getDetails() {
-        return details;
-    }
-
-    public void setEntityId(String entityId) {
-        this.entityId = entityId;
-    }
-
-    public void setTimestamp(long timestamp) {
-        this.timestamp = timestamp;
-    }
-
-    public void setUser(String user) {
-        this.user = user;
-    }
-
-    public void setAction(EntityAuditAction action) {
-        this.action = action;
-    }
-
-    public void setDetails(String details) {
-        this.details = details;
-    }
-
-    public String getEventKey() {
-        return eventKey;
-    }
-
-    public void setEventKey(String eventKey) {
-        this.eventKey = eventKey;
-    }
-
-    public Referenceable getEntityDefinition() {
-        return entityDefinition;
-    }
-
-    public void setEntityDefinition(Referenceable entityDefinition) {
-        this.entityDefinition = entityDefinition;
-    }
-
-    @JsonIgnore
-    public String getEntityDefinitionString() {
-        if (entityDefinition != null) {
-            return AtlasType.toV1Json(entityDefinition);
-        }
-        return null;
-    }
-
-    @JsonIgnore
-    public void setEntityDefinition(String entityDefinition) {
-        this.entityDefinition = AtlasType.fromV1Json(entityDefinition, Referenceable.class);
-    }
-
-    @JsonIgnore
-    public static EntityAuditEvent fromString(String eventString) {
-        return AtlasType.fromV1Json(eventString, EntityAuditEvent.class);
     }
 }

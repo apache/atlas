@@ -38,6 +38,11 @@
         <module>common</module>
     </modules>
 
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.google.guava</groupId>
