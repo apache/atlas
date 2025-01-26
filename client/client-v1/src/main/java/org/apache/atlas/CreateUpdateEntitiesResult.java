@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,7 +29,6 @@ import java.util.List;
  */
 @Deprecated
 public class CreateUpdateEntitiesResult {
-
     /**
      * Guid mapping for the entities that were created/updated
      */
@@ -39,6 +38,26 @@ public class CreateUpdateEntitiesResult {
      * Entity result
      */
     private EntityResult entityResult;
+
+    /**
+     * Deserializes the given json into an instance of
+     * CreateUpdateEntitiesResult.
+     *
+     * @param json
+     *            the (unmodified) json that comes back from Atlas.
+     * @return
+     * @throws AtlasServiceException
+     */
+    public static CreateUpdateEntitiesResult fromJson(String json) throws AtlasServiceException {
+        GuidMapping                guidMapping  = AtlasType.fromJson(json, GuidMapping.class);
+        EntityResult               entityResult = EntityResult.fromString(json);
+        CreateUpdateEntitiesResult result       = new CreateUpdateEntitiesResult();
+
+        result.setEntityResult(entityResult);
+        result.setGuidMapping(guidMapping);
+
+        return result;
+    }
 
     /**
      * Gets the guid mapping
@@ -69,32 +88,14 @@ public class CreateUpdateEntitiesResult {
     }
 
     /**
-     * Deserializes the given json into an instance of
-     * CreateUpdateEntitiesResult.
-     *
-     * @param json
-     *            the (unmodified) json that comes back from Atlas.
-     * @return
-     * @throws AtlasServiceException
-     */
-    public static CreateUpdateEntitiesResult fromJson(String json) throws AtlasServiceException {
-
-        GuidMapping guidMapping = AtlasType.fromJson(json, GuidMapping.class);
-        EntityResult entityResult = EntityResult.fromString(json);
-        CreateUpdateEntitiesResult result = new CreateUpdateEntitiesResult();
-        result.setEntityResult(entityResult);
-        result.setGuidMapping(guidMapping);
-        return result;
-    }
-
-    /**
      * Convenience method to get the guids of the created entities from
      * the EntityResult.
      */
     public List<String> getCreatedEntities() {
-        if(entityResult == null) {
+        if (entityResult == null) {
             return Collections.emptyList();
         }
+
         return getEntityResult().getCreatedEntities();
     }
 
@@ -103,12 +104,12 @@ public class CreateUpdateEntitiesResult {
      * the EntityResult.
      */
     public List<String> getUpdatedEntities() {
-        if(entityResult == null) {
+        if (entityResult == null) {
             return Collections.emptyList();
         }
+
         return getEntityResult().getUpdateEntities();
     }
-
 
     /**
      * Convenience method to get the guids of the deleted entities
@@ -118,7 +119,7 @@ public class CreateUpdateEntitiesResult {
         if (entityResult == null) {
             return Collections.emptyList();
         }
+
         return getEntityResult().getDeletedEntities();
     }
-
 }

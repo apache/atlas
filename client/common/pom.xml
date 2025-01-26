@@ -27,6 +27,11 @@
 
     <artifactId>atlas-client-common</artifactId>
 
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
+
     <dependencies>
 
         <dependency>

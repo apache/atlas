@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,15 +21,17 @@ package org.apache.atlas;
 import com.sun.jersey.api.client.ClientResponse;
 
 public class AtlasServiceException extends Exception {
-    private ClientResponse.Status status;
+    private final ClientResponse.Status status;
 
     public AtlasServiceException(AtlasBaseClient.API api, Exception e) {
         super("Metadata service API " + api.getMethod() + " : " + api.getNormalizedPath() + " failed", e);
+
+        this.status = ClientResponse.Status.BAD_REQUEST;
     }
 
     private AtlasServiceException(AtlasBaseClient.API api, ClientResponse.Status status, String response) {
-        super("Metadata service API " + api + " failed with status " + (status != null ? status.getStatusCode() : -1)
-                + " (" + status + ") Response Body (" + response + ")");
+        super("Metadata service API " + api + " failed with status " + (status != null ? status.getStatusCode() : -1) + " (" + status + ") Response Body (" + response + ")");
+
         this.status = status;
     }
 
@@ -39,10 +41,13 @@ public class AtlasServiceException extends Exception {
 
     public AtlasServiceException(Exception e) {
         super(e);
+
+        this.status = ClientResponse.Status.BAD_REQUEST;
     }
 
     public AtlasServiceException(AtlasServiceException e) {
         super(e);
+
         this.status = e.status;
     }
 
