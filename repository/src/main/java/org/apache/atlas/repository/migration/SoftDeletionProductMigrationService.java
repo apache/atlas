@@ -44,28 +44,33 @@ public class SoftDeletionProductMigrationService {
                 if (productGuid != null && !productGuid.trim().isEmpty()) {
                     AtlasVertex productVertex = graphHelper.getVertexForGUID(productGuid);
 
-                    AtlasEntity.Status vertexStatus = getStatus(productVertex);
-
-                    if (ACTIVE.equals(vertexStatus)) {
-                        LOG.info("Removing edges for Active Product: {}", productGuid);
-                        boolean isCommitRequired = deleteEdgeForActiveProduct(productVertex);
-                        if (isCommitRequired) {
-                            count++;
-                            totalUpdatedCount++;
-                        }
+                    if (productVertex == null) {
+                        LOG.info("ProductGUID with no vertex found: {}", productGuid);
+                        continue;
                     } else {
-                        LOG.info("Restoring edges for Archived Product: {}", productGuid);
-                        boolean isCommitRequired = deleteEdgeForArchivedProduct(productVertex);
-                        if (isCommitRequired) {
-                            count++;
-                            totalUpdatedCount++;
-                        }
-                    }
+                        AtlasEntity.Status vertexStatus = getStatus(productVertex);
 
-                    if (count == 20) {
-                        LOG.info("Committing batch of 20 products...");
-                        commitChanges();
-                        count = 0;
+                        if (ACTIVE.equals(vertexStatus)) {
+                            LOG.info("Removing edges for Active Product: {}", productGuid);
+                            boolean isCommitRequired = deleteEdgeForActiveProduct(productVertex);
+                            if (isCommitRequired) {
+                                count++;
+                                totalUpdatedCount++;
+                            }
+                        } else {
+                            LOG.info("Removing edges for Archived Product: {}", productGuid);
+                            boolean isCommitRequired = deleteEdgeForArchivedProduct(productVertex);
+                            if (isCommitRequired) {
+                                count++;
+                                totalUpdatedCount++;
+                            }
+                        }
+
+                        if (count == 20) {
+                            LOG.info("Committing batch of 20 products...");
+                            commitChanges();
+                            count = 0;
+                        }
                     }
                 }
             }
@@ -125,9 +130,9 @@ public class SoftDeletionProductMigrationService {
 
             while (existingEdges.hasNext()) {
                 AtlasEdge edge = existingEdges.next();
-                Long modifiedTimestamp = edge.getProperty("__modificationTimestamp", Long.class);
+                Long modifiedEdgeTimestamp = edge.getProperty("__modificationTimestamp", Long.class);
 
-                if (!updatedTime.equals(modifiedTimestamp)) {
+                if (!updatedTime.equals(modifiedEdgeTimestamp)) {
                     LOG.info("Removing edge with different timestamp: {}", edge);
                     graph.removeEdge(edge);
                     isCommitRequired = true;

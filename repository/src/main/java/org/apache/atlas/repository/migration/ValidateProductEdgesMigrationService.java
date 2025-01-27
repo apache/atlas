@@ -45,23 +45,27 @@ public class ValidateProductEdgesMigrationService {
 
                     AtlasEntity.Status vertexStatus = getStatus(productVertex);
 
-                    if (ACTIVE.equals(vertexStatus)) {
-                        LOG.info("Validating edges for Active Product: {}", productGuid);
-                        boolean softDeletedEdgesFound = validateEdgeForActiveProduct(productVertex);
-                        if (softDeletedEdgesFound) {
-                            count++;
-                            totalProductChecked++;
-                        } else {
-                            totalProductChecked++;
-                        }
+                    if (vertexStatus == null) {
+                        LOG.info("ProductGUID with no vertex found: {}", productGuid);
                     } else {
-                        LOG.info("Validating edges for Archived Product: {}", productGuid);
-                        boolean edgeWithDifferentTimeStampFound = validateEdgeForArchivedProduct(productVertex);
-                        if (edgeWithDifferentTimeStampFound) {
-                            count++;
-                            totalProductChecked++;
+                        if (ACTIVE.equals(vertexStatus)) {
+                            LOG.info("Validating edges for Active Product: {}", productGuid);
+                            boolean softDeletedEdgesFound = validateEdgeForActiveProduct(productVertex);
+                            if (softDeletedEdgesFound) {
+                                count++;
+                                totalProductChecked++;
+                            } else {
+                                totalProductChecked++;
+                            }
                         } else {
-                            totalProductChecked++;
+                            LOG.info("Validating edges for Archived Product: {}", productGuid);
+                            boolean edgeWithDifferentTimeStampFound = validateEdgeForArchivedProduct(productVertex);
+                            if (edgeWithDifferentTimeStampFound) {
+                                count++;
+                                totalProductChecked++;
+                            } else {
+                                totalProductChecked++;
+                            }
                         }
                     }
                 }
@@ -123,9 +127,9 @@ public class ValidateProductEdgesMigrationService {
 
             while (existingEdges.hasNext()) {
                 AtlasEdge edge = existingEdges.next();
-                Long modifiedTimestamp = edge.getProperty("__modificationTimestamp", Long.class);
+                Long modifiedEdgeTimestamp = edge.getProperty("__modificationTimestamp", Long.class);
 
-                if (!updatedTime.equals(modifiedTimestamp)) {
+                if (!updatedTime.equals(modifiedEdgeTimestamp)) {
                     LOG.info("Found edge with different timestamp: {}", edge);
                     edgeWithDifferentTimeStampFound = true;
                 }
