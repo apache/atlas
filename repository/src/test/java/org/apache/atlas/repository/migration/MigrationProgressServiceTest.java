@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.migration;
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.graphdb.janus.migration.ReaderStatusManager;
@@ -84,7 +85,11 @@ public class MigrationProgressServiceTest {
     }
 
     private MigrationProgressService getMigrationStatusForTest(Configuration cfg, TinkerGraph tg) {
-        return new MigrationProgressService(cfg, createMigrator(tg));
+        try {
+            return new MigrationProgressService(cfg, createMigrator(tg));
+        } catch (AtlasBaseException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test

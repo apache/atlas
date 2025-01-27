@@ -6,7 +6,7 @@
 # "License"); you may not use this file except in compliance
 # with the License.  You may obtain a copy of the License at
 #
-#     http://www.apache.org/licenses/LICENSE-2.0
+#    http://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -55,13 +55,11 @@ Build Process
      $ git checkout tags/<tag>
 
 2. Execute the following commands to build Apache Atlas
-
    $ export MAVEN_OPTS="-Xms2g -Xmx2g"
    $ mvn clean install
    $ mvn clean package -Pdist
 
 3. After above build commands successfully complete, you should see the following files
-
    distro/target/apache-atlas-<version>-bin.tar.gz
    distro/target/apache-atlas-<version>-hbase-hook.tar.gz
    distro/target/apache-atlas-<version>-hive-hook.tar.gz

@@ -29,6 +29,10 @@ import org.apache.commons.collections.PredicateUtils;
 import org.apache.commons.collections.functors.NotPredicate;
 import org.apache.commons.lang.StringUtils;
 
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -173,5 +177,27 @@ public class FilterUtil {
     public static void addParamsToHideInternalType(SearchFilter searchFilter) {
         searchFilter.setParam(SearchFilter.PARAM_NOT_NAME, Constants.TYPE_NAME_INTERNAL);
         searchFilter.setParam(SearchFilter.PARAM_NOT_SUPERTYPE, Constants.TYPE_NAME_INTERNAL);
+    }
+
+    public static boolean validateFilePath(String fileToImport) {
+
+        try {
+            String decodedPath = URLDecoder.decode(fileToImport, "UTF-8");
+
+            Path normalizedPath = Paths.get(decodedPath).normalize();
+            if (decodedPath.contains("..") || decodedPath.contains("./") || decodedPath.contains(".\\")) {
+                return false;
+            }
+
+            if (!normalizedPath.isAbsolute()) {
+                return false;
+            }
+
+            return true;
+        } catch (UnsupportedEncodingException e) {
+            return false;
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

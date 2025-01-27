@@ -159,6 +159,14 @@ public interface AtlasDiscoveryService {
     AtlasSearchResult directIndexSearch(SearchParams searchParams) throws AtlasBaseException;
 
     /**
+     * Search for direct ES query in janusgraph_edge_index
+     * @param searchParams Search criteria
+     * @return Matching entities
+     * @throws AtlasBaseException
+     */
+    AtlasSearchResult directRelationshipIndexSearch(SearchParams searchParams) throws AtlasBaseException;
+
+    /**
      * Search for direct ES query on search logs index
      * @param searchParams Search criteria
      * @return Matching search logs

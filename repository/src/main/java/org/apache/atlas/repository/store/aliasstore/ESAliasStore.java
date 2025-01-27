@@ -26,6 +26,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.action.admin.indices.alias.get.GetAliasesRequest;
@@ -38,12 +39,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.ADD;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
@@ -51,6 +48,7 @@ import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPE
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_DOMAIN;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_METADATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_GLOSSARY;
@@ -65,11 +63,14 @@ import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyAsset
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyConnectionQN;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPurposeTags;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
+import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 
 
 @Component
 public class ESAliasStore implements IndexAliasStore {
     private static final Logger LOG = LoggerFactory.getLogger(ESAliasStore.class);
+    public static final String NEW_WILDCARD_DOMAIN_SUPER = "default/domain/*/super";
+    public static final String ENABLE_PERSONA_HIERARCHY_FILTER = "enable_persona_hierarchy_filter";
 
     private final AtlasGraph graph;
     private final EntityGraphRetriever entityRetriever;
@@ -90,7 +91,7 @@ public class ESAliasStore implements IndexAliasStore {
         ESAliasRequestBuilder requestBuilder = new ESAliasRequestBuilder();
 
         if (PERSONA_ENTITY_TYPE.equals(entity.getTypeName())) {
-            requestBuilder.addAction(ADD, new AliasAction(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName));
+            requestBuilder.addAction(ADD, new AliasAction(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName, getFilterForPersona(null, null)));
         } else {
             requestBuilder.addAction(ADD, new AliasAction(getIndexNameFromAliasIfExists(VERTEX_INDEX_NAME), aliasName, getFilterForPurpose(entity)));
         }
@@ -129,6 +130,9 @@ public class ESAliasStore implements IndexAliasStore {
 
         if (PERSONA_ENTITY_TYPE.equals(accessControl.getEntity().getTypeName())) {
             filter = getFilterForPersona(accessControl, policy);
+            if (filter == null || filter.isEmpty()) {
+                filter = getEmptyFilter();
+            }
         } else {
             filter = getFilterForPurpose(accessControl.getEntity());
         }
@@ -150,12 +154,17 @@ public class ESAliasStore implements IndexAliasStore {
     private Map<String, Object> getFilterForPersona(AtlasEntity.AtlasEntityWithExtInfo persona, AtlasEntity policy) throws AtlasBaseException {
         List<Map<String, Object>> allowClauseList = new ArrayList<>();
 
+        if (policy == null && persona == null){
+            return getEmptyFilter();
+        }
+
         List<AtlasEntity> policies = getPolicies(persona);
         if (policy != null) {
             policies.add(policy);
         }
         if (CollectionUtils.isNotEmpty(policies)) {
-            personaPolicyToESDslClauses(policies, allowClauseList);
+            boolean useHierarchicalQualifiedNameFilter =  FeatureFlagStore.evaluate(ENABLE_PERSONA_HIERARCHY_FILTER, "true");
+            personaPolicyToESDslClauses(policies, allowClauseList, useHierarchicalQualifiedNameFilter);
         }
 
         return esClausesToFilter(allowClauseList);
@@ -172,8 +181,10 @@ public class ESAliasStore implements IndexAliasStore {
     }
 
     private void personaPolicyToESDslClauses(List<AtlasEntity> policies,
-                                             List<Map<String, Object>> allowClauseList) throws AtlasBaseException {
-        List<String> terms = new ArrayList<>();
+                                             List<Map<String, Object>> allowClauseList, boolean useHierarchicalQualifiedNameFilter) throws AtlasBaseException {
+        Set<String> terms = new HashSet<>();
+        Set<String> glossaryQualifiedNames =new HashSet<>();
+        Set<String> metadataPolicyQualifiedNames = new HashSet<>();
         
         for (AtlasEntity policy: policies) {
 
@@ -192,28 +203,47 @@ public class ESAliasStore implements IndexAliasStore {
                     }
 
                     for (String asset : assets) {
-                        if (asset.contains("*") || asset.contains("?")) {
-                            //DG-898 Bug fix
+                        /*
+                        * We are introducing a hierarchical filter for qualifiedName.
+                        * This requires a migration of existing data to have a hierarchical qualifiedName.
+                        * So this will only work if migration is done, upon migration completion we will set the feature flag to true
+                        * This will be dictated by the feature flag ENABLE_PERSONA_HIERARCHY_FILTER
+                        */
+
+                        // If asset resource ends with /* then add it in hierarchical filter
+                        boolean isHierarchical = asset.endsWith("/*");
+                        if (isHierarchical) {
+                            asset = asset.substring(0, asset.length() - 2);
+                        }
+                        boolean isWildcard = asset.contains("*") || asset.contains("?");
+                        if (isWildcard) {
                             allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset)));
+                        } else if (useHierarchicalQualifiedNameFilter) {
+                            metadataPolicyQualifiedNames.add(asset);
                         } else {
                             terms.add(asset);
                         }
-                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
+
+                        if (!useHierarchicalQualifiedNameFilter || isWildcard) {
+                            allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
+                        }
                     }
 
                     terms.add(connectionQName);
 
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
-
-                    for (String glossaryQName : assets) {
-                        terms.add(glossaryQName);
-                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, "*@" + glossaryQName)));
+                    if (CollectionUtils.isNotEmpty(assets)) {
+                        terms.addAll(assets);
+                        glossaryQualifiedNames.addAll(assets);
                     }
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_DOMAIN)) {
-
                     for (String asset : assets) {
-                        terms.add(asset);
-                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
+                        if(!isAllDomain(asset)) {
+                            terms.add(asset);
+                        } else {
+                            asset = NEW_WILDCARD_DOMAIN_SUPER;
+                        }
+                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "*")));
                     }
 
                 } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_SUB_DOMAIN)) {
@@ -241,9 +271,19 @@ public class ESAliasStore implements IndexAliasStore {
             }
         }
 
-        allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, terms)));
+        allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, new ArrayList<>(terms))));
+        if (CollectionUtils.isNotEmpty(metadataPolicyQualifiedNames)) {
+            allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, new ArrayList<>(metadataPolicyQualifiedNames))));
+        }
+        
+        if (CollectionUtils.isNotEmpty(glossaryQualifiedNames)) {
+            allowClauseList.add(mapOf("terms", mapOf(GLOSSARY_PROPERTY_KEY, new ArrayList<>(glossaryQualifiedNames))));
+        }
     }
 
+    private boolean isAllDomain(String asset) {
+        return asset.equals("*/super") || asset.equals("*") || asset.equals(NEW_WILDCARD_DOMAIN_SUPER);
+    }
     private Map<String, Object> esClausesToFilter(List<Map<String, Object>> allowClauseList) {
         if (CollectionUtils.isNotEmpty(allowClauseList)) {
             return mapOf("bool", mapOf("should", allowClauseList));

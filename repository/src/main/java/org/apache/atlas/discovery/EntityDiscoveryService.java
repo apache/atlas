@@ -44,6 +44,7 @@ import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.userprofile.UserProfileService;
+import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.searchlog.ESSearchLogger;
 import org.apache.atlas.stats.StatsClient;
 import org.apache.atlas.type.*;
@@ -75,9 +76,7 @@ import static org.apache.atlas.AtlasErrorCode.*;
 import static org.apache.atlas.SortOrder.ASCENDING;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.repository.Constants.ASSET_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.OWNER_ATTRIBUTE;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.BASIC_SEARCH_STATE_FILTER;
 import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.TO_RANGE_LIST;
 
@@ -976,9 +975,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         IndexSearchParams params = (IndexSearchParams) searchParams;
         RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
         RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
+        RequestContext.get().setIncludeRelationshipAttributes(params.isIncludeRelationshipAttributes());
 
         AtlasSearchResult ret = new AtlasSearchResult();
-        AtlasIndexQuery indexQuery = null;
+        AtlasIndexQuery indexQuery;
 
         ret.setSearchParameters(searchParams);
         ret.setQueryType(AtlasQueryType.INDEX);
@@ -998,6 +998,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             indexQuery = graph.elasticsearchQuery(indexName);
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
+            if (indexQueryResult == null) {
+                return null;
+            }
             RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
             prepareSearchResult(ret, indexQueryResult, resultAttributes, true);
 
@@ -1005,6 +1008,38 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             ret.setApproximateCount(indexQuery.vertexTotals());
         } catch (Exception e) {
             LOG.error("Error while performing direct search for the params ({}), {}", searchParams, e.getMessage());
+            throw e;
+        }
+        return ret;
+    }
+
+    @Override
+    public AtlasSearchResult directRelationshipIndexSearch(SearchParams searchParams) throws AtlasBaseException {
+        AtlasSearchResult ret = new AtlasSearchResult();
+        AtlasIndexQuery indexQuery;
+
+        ret.setSearchParameters(searchParams);
+        ret.setQueryType(AtlasQueryType.INDEX);
+
+        try {
+            if(LOG.isDebugEnabled()){
+                LOG.debug("Performing ES relationship search for the params ({})", searchParams);
+            }
+
+            indexQuery = graph.elasticsearchQuery(EDGE_INDEX_NAME);
+            AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQueryEdge");
+            DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
+            if (indexQueryResult == null) {
+                return null;
+            }
+            RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
+
+            //Note: AtlasSearchResult.entities are not supported yet
+
+            ret.setAggregations(indexQueryResult.getAggregationMap());
+            ret.setApproximateCount(indexQuery.vertexTotals());
+        } catch (Exception e) {
+            LOG.error("Error while performing direct relationship search for the params ({}), {}", searchParams, e.getMessage());
             throw e;
         }
         return ret;
@@ -1044,6 +1079,9 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
             Iterator<Result> iterator = indexQueryResult.getIterator();
             boolean showSearchScore = searchParams.getShowSearchScore();
+            if (iterator == null) {
+                return;
+            }
 
             while (iterator.hasNext()) {
                 Result result = iterator.next();
@@ -1092,8 +1130,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                         header.setCollapse(collapse);
                     }
                 }
-
-                if (searchParams.isShowHighlights()) {
+                if (searchParams.getShowSearchMetadata()) {
+                    ret.addHighlights(header.getGuid(), result.getHighLights());
+                    ret.addSort(header.getGuid(), result.getSort());
+                } else if (searchParams.getShowHighlights()) {
                     ret.addHighlights(header.getGuid(), result.getHighLights());
                 }
 
@@ -1128,8 +1168,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     }
 
     private String getIndexName(IndexSearchParams params) throws AtlasBaseException {
+        String vertexIndexName = getESIndex();
+
         if (StringUtils.isEmpty(params.getPersona()) && StringUtils.isEmpty(params.getPurpose())) {
-            return VERTEX_INDEX_NAME;
+            return vertexIndexName;
         }
 
         String qualifiedName = "";
@@ -1139,13 +1181,60 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             qualifiedName = params.getPurpose();
         }
 
-        String[] parts = qualifiedName.split("/");
-        String aliasName = parts[parts.length - 1];
+        String aliasName = AccessControlUtils.getESAliasName(qualifiedName);
 
         if (StringUtils.isNotEmpty(aliasName)) {
+            if(params.isAccessControlExclusive()) {
+                accessControlExclusiveDsl(params, aliasName);
+                aliasName = aliasName+","+vertexIndexName;
+            }
             return aliasName;
         } else {
             throw new AtlasBaseException("ES alias not found for purpose/persona " + params.getPurpose());
         }
+    }
+
+    private void accessControlExclusiveDsl(IndexSearchParams params, String aliasName) {
+
+        List<Map<String, Object>> mustClauses = new ArrayList<>();
+        Map<String, Object> clientQuery = (Map<String, Object>) params.getDsl().get("query");
+
+        mustClauses.add(clientQuery);
+
+        List<Map<String, Object>>filterClauses = new ArrayList<>();
+        filterClauses.add(getMap("terms", getMap("_index", Collections.singletonList(aliasName))));
+
+        Map<String, Object> boolQuery = new HashMap<>();
+        boolQuery.put("must", mustClauses);
+        boolQuery.put("filter",filterClauses);
+
+        List<Map<String, Object>> shouldClauses = new ArrayList<>();
+        shouldClauses.add(getMap("bool", boolQuery));
+        shouldClauses.add(getStaticBoolQuery());
+
+        Map<String, Object> topBoolQuery = getMap("bool", getMap("should", shouldClauses));
+
+        Map copyOfDsl = new HashMap(params.getDsl());
+        copyOfDsl.put("query", topBoolQuery);
+
+        params.setDsl(copyOfDsl);
+    }
+
+    private Map<String, Object> getStaticBoolQuery() {
+        List<Map<String, Object>> mustClauses = new ArrayList<>();
+        Map<String, Object> mustClause = getMap("bool", getMap("should", Arrays.asList(
+                getMap("term", getMap("daapVisibility", "Public")),
+                getMap("term", getMap("daapVisibility", "Protected"))
+        )));
+        mustClauses.add(mustClause);
+
+        List<Map<String, Object>>filterClauses = new ArrayList<>();
+        filterClauses.add(getMap("terms", getMap("_index", Collections.singletonList(VERTEX_INDEX_NAME))));
+
+        Map<String, Object> boolQuery = new HashMap<>();
+        boolQuery.put("must", mustClauses);
+        boolQuery.put("filter", filterClauses);
+
+        return getMap("bool", boolQuery);
     }
 }

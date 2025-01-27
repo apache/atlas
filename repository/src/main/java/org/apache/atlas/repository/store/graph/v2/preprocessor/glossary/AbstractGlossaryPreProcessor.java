@@ -58,6 +58,7 @@ import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_TERM_ENTITY_T
 import static org.apache.atlas.repository.Constants.ELASTICSEARCH_PAGINATION_SIZE;
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.indexSearchPaginated;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
 import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
@@ -103,7 +104,7 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", mapOf("must", mustClauseList)));
 
-            List<AtlasEntityHeader> terms = indexSearchPaginated(dsl);
+            List<AtlasEntityHeader> terms = indexSearchPaginated(dsl, null, this.discovery);
 
             if (CollectionUtils.isNotEmpty(terms)) {
                 ret = terms.stream().map(term -> (String) term.getAttribute(NAME)).anyMatch(name -> termName.equals(name));
@@ -135,38 +136,6 @@ public abstract class AbstractGlossaryPreProcessor implements PreProcessor {
         List<AtlasEntityHeader> entityHeader;
         entityHeader = discovery.searchUsingTermQualifiedName(0,1,termQName,null,null);
         return entityHeader != null;
-    }
-
-    public List<AtlasEntityHeader> indexSearchPaginated(Map<String, Object> dsl) throws AtlasBaseException {
-        IndexSearchParams searchParams = new IndexSearchParams();
-        List<AtlasEntityHeader> ret = new ArrayList<>();
-
-        List<Map> sortList = new ArrayList<>(0);
-        sortList.add(mapOf("__timestamp", mapOf("order", "asc")));
-        sortList.add(mapOf("__guid", mapOf("order", "asc")));
-        dsl.put("sort", sortList);
-
-        int from = 0;
-        int size = 100;
-        boolean hasMore = true;
-        do {
-            dsl.put("from", from);
-            dsl.put("size", size);
-            searchParams.setDsl(dsl);
-
-            List<AtlasEntityHeader> headers = discovery.directIndexSearch(searchParams).getEntities();
-
-            if (CollectionUtils.isNotEmpty(headers)) {
-                ret.addAll(headers);
-            } else {
-                hasMore = false;
-            }
-
-            from += size;
-
-        } while (hasMore);
-
-        return ret;
     }
 
     public void updateMeaningsAttributesInEntitiesOnTermUpdate(String currentTermName, String updatedTermName,

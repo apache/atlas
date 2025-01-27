@@ -13,6 +13,7 @@
       "policyServiceName": "heka",
       "policyType": "deny",
       "policyPriority": 1,
+      "isPolicyEnabled": false,
       "policyUsers": [],
       "policyGroups": [],
       "policyRoles":

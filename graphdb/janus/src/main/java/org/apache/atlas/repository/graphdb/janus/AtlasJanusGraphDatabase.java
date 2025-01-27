@@ -225,7 +225,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
             updateGlobalConfiguration(properties);
 
-            LOG.info("Tx Log-based Index Recovery: {}!", recoveryEnabled ? "Enabled" : "Disabled");
+            LOG.debug("Tx Log-based Index Recovery: {}!", recoveryEnabled ? "Enabled" : "Disabled");
         } catch (Exception e) {
             LOG.error("Error: Failed!", e);
         }
@@ -243,7 +243,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
                 managementSystem.set(entry.getKey(), entry.getValue());
             }
 
-            LOG.info("Global properties updated!: {}", map);
+            LOG.debug("Global properties updated!: {}", map);
         } catch (Exception ex) {
             LOG.error("Error updating global configuration: {}", map, ex);
         } finally {
@@ -358,7 +358,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     }
 
     private static void startEmbeddedSolr() throws AtlasException {
-        LOG.info("==> startEmbeddedSolr()");
+        LOG.debug("==> startEmbeddedSolr()");
 
         try {
             Class<?> localSolrRunnerClz = Class.forName("org.apache.atlas.runner.LocalSolrRunner");
@@ -371,11 +371,11 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
             throw new AtlasException("startEmbeddedSolr(): failed", excp);
         }
 
-        LOG.info("<== startEmbeddedSolr()");
+        LOG.debug("<== startEmbeddedSolr()");
     }
 
     private static void stopEmbeddedSolr() throws AtlasException {
-        LOG.info("==> stopEmbeddedSolr()");
+        LOG.debug("==> stopEmbeddedSolr()");
 
         try {
             Class<?> localSolrRunnerClz = Class.forName("org.apache.atlas.runner.LocalSolrRunner");
@@ -388,7 +388,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
             throw new AtlasException("stopEmbeddedSolr(): failed", excp);
         }
 
-        LOG.info("<== stopEmbeddedSolr()");
+        LOG.debug("<== stopEmbeddedSolr()");
     }
 
     public static boolean isEmbeddedSolr() {

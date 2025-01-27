@@ -29,6 +29,7 @@ import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
@@ -47,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -60,6 +62,7 @@ import java.text.MessageFormat;
 import java.util.*;
 
 import static java.nio.charset.Charset.defaultCharset;
+import static org.apache.atlas.repository.Constants.DOMAIN_GUIDS;
 import static org.springframework.util.StreamUtils.copyToString;
 
 /**
@@ -85,6 +88,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String DETAIL = "detail";
     private static final String ENTITY = "entity";
     private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
+    private static final Set<String> ALLOWED_LINKED_ATTRIBUTES = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
 
     /*
     *    created   → event creation time
@@ -94,12 +98,13 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     private RestClient lowLevelClient;
     private final Configuration configuration;
+    private EntityGraphRetriever entityGraphRetriever;
 
     @Inject
-    public ESBasedAuditRepository(Configuration configuration) {
+    public ESBasedAuditRepository(Configuration configuration, EntityGraphRetriever entityGraphRetriever) {
         this.configuration = configuration;
+        this.entityGraphRetriever = entityGraphRetriever;
     }
-
 
     @Override
     public void putEventsV1(List<EntityAuditEvent> events) throws AtlasException {
@@ -220,6 +225,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
         Map<String, Object> hits_0 = (Map<String, Object>) responseMap.get("hits");
         List<LinkedHashMap> hits_1 = (List<LinkedHashMap>) hits_0.get("hits");
+        Map<String, AtlasEntityHeader> existingLinkedEntities = searchResult.getLinkedEntities();
+
         for (LinkedHashMap hit : hits_1) {
             Map source = (Map) hit.get("_source");
             String entityGuid = (String) source.get(ENTITYID);
@@ -243,6 +250,32 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 eventKey = event.getEntityId() + ":" + event.getTimestamp();
             }
 
+            Map<String, Object> detail = event.getDetail();
+            if (detail != null && detail.containsKey("attributes")) {
+                Map<String, Object> attributes = (Map<String, Object>) detail.get("attributes");
+
+                for (Map.Entry<String, Object> entry: attributes.entrySet()) {
+                    if (ALLOWED_LINKED_ATTRIBUTES.contains(entry.getKey())) {
+                        List<String> guids = (List<String>) entry.getValue();
+
+                        if (guids != null && !guids.isEmpty()){
+                            for (String guid: guids){
+                                if(!existingLinkedEntities.containsKey(guid)){
+                                    try {
+                                        AtlasEntityHeader entityHeader = fetchAtlasEntityHeader(guid);
+                                        if (entityHeader != null) {
+                                            existingLinkedEntities.put(guid, entityHeader);
+                                        }
+                                    } catch (AtlasBaseException e) {
+                                        LOG.error("Error while fetching entity header for guid: {}", guid, e);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             event.setHeaders((Map<String, String>) source.get("headers"));
 
             event.setEventKey(eventKey);
@@ -252,10 +285,20 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         Map<String, Object> countObject = (Map<String, Object>) hits_0.get("total");
         int totalCount = (int) countObject.get("value");
         searchResult.setEntityAudits(entityAudits);
+        searchResult.setLinkedEntities(existingLinkedEntities);
         searchResult.setAggregations(aggregationsMap);
         searchResult.setTotalCount(totalCount);
         searchResult.setCount(entityAudits.size());
         return searchResult;
+    }
+
+    private AtlasEntityHeader fetchAtlasEntityHeader(String domainGUID) throws AtlasBaseException {
+        try {
+            AtlasEntityHeader entityHeader = entityGraphRetriever.toAtlasEntityHeader(domainGUID);
+            return entityHeader;
+        } catch (AtlasBaseException e) {
+            throw new AtlasBaseException(e);
+        }
     }
 
     private String performSearchOnIndex(String queryString) throws IOException {

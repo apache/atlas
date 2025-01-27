@@ -104,12 +104,22 @@ public class AtlasPerfMetrics {
 
     public static class Metric {
         private final String name;
+
+        private AtlasMetricType metricType;
         private long invocations = 0;
         private long totalTimeMSecs = 0;
         HashMap<String, String> tags = new HashMap<>();
 
         public Metric(String name) {
             this.name = name;
+        }
+
+        public void setMetricType(AtlasMetricType metricType) {
+            this.metricType = metricType;
+        }
+
+        public AtlasMetricType getMetricType() {
+            return metricType;
         }
 
         public String getName() {
@@ -133,6 +143,10 @@ public class AtlasPerfMetrics {
         }
         public HashMap<String, String> getTags() {
             return tags;
+        }
+
+        public void incrementInvocations() {
+            invocations++;
         }
 
     }

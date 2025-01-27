@@ -18,7 +18,6 @@
 package org.apache.atlas.repository.util;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.featureflag.FeatureFlagStore;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -28,7 +27,6 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
-import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.util.NanoIdUtils;
 import org.apache.commons.collections.CollectionUtils;
@@ -43,17 +41,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.ACCESS_CONTROL_ALREADY_EXISTS;
-import static org.apache.atlas.AtlasErrorCode.DISABLED_OPERATION;
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_GROUPS;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_ROLES;
-import static org.apache.atlas.repository.Constants.ATTR_ADMIN_USERS;
-import static org.apache.atlas.repository.Constants.ATTR_TENANT_ID;
-import static org.apache.atlas.repository.Constants.CONNECTION_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.DEFAULT_TENANT_ID;
-import static org.apache.atlas.repository.Constants.NAME;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.getListAttribute;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.getQualifiedName;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.getStringAttribute;
@@ -72,6 +61,10 @@ public final class AccessControlUtils {
 
     public static final String ATTR_PURPOSE_CLASSIFICATIONS  = "purposeClassifications";
 
+    public static final String ATTR_SERVICE_SERVICE_TYPE = "authServiceType";
+    public static final String ATTR_SERVICE_TAG_SERVICE  = "tagService";
+    public static final String ATTR_SERVICE_IS_ENABLED   = "authServiceIsEnabled";
+    public static final String ATTR_SERVICE_LAST_SYNC    = "authServicePolicyLastSync";
     public static final String ATTR_POLICY_TYPE  = "policyType";
     public static final String ATTR_POLICY_USERS  = "policyUsers";
     public static final String ATTR_POLICY_GROUPS  = "policyGroups";
@@ -92,6 +85,8 @@ public final class AccessControlUtils {
     public static final String POLICY_TYPE_ALLOW  = "allow";
     public static final String POLICY_TYPE_DENY  = "deny";
 
+    public static final String ATTR_CHANNEL_LINK = "channelLink";
+
     public static final String ACCESS_READ_PURPOSE_METADATA = "entity-read";
     public static final String ACCESS_READ_PERSONA_METADATA = "persona-asset-read";
     public static final String ACCESS_READ_PERSONA_GLOSSARY = "persona-glossary-read";
@@ -101,6 +96,7 @@ public final class AccessControlUtils {
 
     public static final String POLICY_CATEGORY_PERSONA  = "persona";
     public static final String POLICY_CATEGORY_PURPOSE  = "purpose";
+    public static final String POLICY_CATEGORY_DATAMESH = "datamesh";
     public static final String POLICY_CATEGORY_BOOTSTRAP  = "bootstrap";
 
     public static final String POLICY_SUB_CATEGORY_COLLECTION = "collection";
@@ -113,6 +109,7 @@ public final class AccessControlUtils {
     public static final String POLICY_SUB_CATEGORY_GLOSSARY  = "glossary";
     public static final String POLICY_SUB_CATEGORY_DOMAIN  = "domain";
     public static final String POLICY_SUB_CATEGORY_DATA  = "data";
+    public static final String POLICY_SUB_CATEGORY_PRODUCT  = "dataProduct";
 
     public static final String RESOURCES_ENTITY = "entity:";
     public static final String RESOURCES_ENTITY_TYPE = "entity-type:";
@@ -123,6 +120,7 @@ public final class AccessControlUtils {
     public static final String CONN_NAME_PATTERN = "connection_admins_%s";
     public static final String ARGO_SERVICE_USER_NAME = "service-account-atlan-argo";
     public static final String BACKEND_SERVICE_USER_NAME = "service-account-atlan-backend";
+    public static final String GOVERNANCE_WORKFLOWS_SERVICE_USER_NAME = "atlan-governance-workflows";
 
     public static final String INSTANCE_DOMAIN_KEY = "instance";
 
@@ -258,19 +256,18 @@ public final class AccessControlUtils {
     }
 
     public static String getPersonaRoleName(AtlasEntity persona) {
-        String qualifiedName = getStringAttribute(persona, QUALIFIED_NAME);
-
-        String[] parts = qualifiedName.split("/");
-
-        return "persona_" + parts[parts.length - 1];
+        return "persona_" + getESAliasName(persona);
     }
 
     public static String getESAliasName(AtlasEntity entity) {
         String qualifiedName = getStringAttribute(entity, QUALIFIED_NAME);
+        return getESAliasName(qualifiedName);
+    }
 
+    public static String getESAliasName(String qualifiedName) {
         String[] parts = qualifiedName.split("/");
 
-        return parts[parts.length - 1];
+        return parts[1];
     }
 
     public static List<AtlasEntity> getPolicies(AtlasEntity.AtlasEntityWithExtInfo accessControl) {
@@ -343,7 +340,7 @@ public final class AccessControlUtils {
     public static void validateNoPoliciesAttached(AtlasEntity entity) throws AtlasBaseException {
         List<AtlasObjectId> policies = (List<AtlasObjectId>) entity.getRelationshipAttribute(REL_ATTR_POLICIES);
         if (CollectionUtils.isNotEmpty(policies)) {
-            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not attach a policy while creating/updating Persona/Purpose");
+            throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Can not attach a policy while creating/updating Persona/Purpose/Stakeholder");
         }
     }
 
@@ -377,7 +374,8 @@ public final class AccessControlUtils {
 
     private static boolean hasMatchingVertex(AtlasGraph graph, List<String> newTags,
                                                IndexSearchParams indexSearchParams) throws AtlasBaseException {
-        AtlasIndexQuery indexQuery = graph.elasticsearchQuery(VERTEX_INDEX_NAME);
+        String vertexIndexName = getESIndex();
+        AtlasIndexQuery indexQuery = graph.elasticsearchQuery(vertexIndexName);
 
         DirectIndexQueryResult indexQueryResult = indexQuery.vertices(indexSearchParams);
         Iterator<AtlasIndexQuery.Result> iterator = indexQueryResult.getIterator();

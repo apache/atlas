@@ -18,15 +18,16 @@ import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.collections.MapUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.lang.reflect.Field;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.TASK_GUID;
+import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID;
 import static org.apache.atlas.tasks.TaskRegistry.toAtlasTask;
@@ -148,8 +149,8 @@ public class AtlasTaskService implements TaskService {
                 if (!supportedTypes.contains(taskType)) {
                     throw new AtlasBaseException(AtlasErrorCode.TASK_TYPE_NOT_SUPPORTED, task.getType());
                 }
-                if (isClassificationTaskType(taskType)) {
-                    String classificationName = task.getClassificationName();
+                if (isClassificationTaskType(taskType) && !taskType.equals(ClassificationPropagateTaskFactory.CLEANUP_CLASSIFICATION_PROPAGATION)) {
+                    String classificationName = task.getClassificationTypeName();
                     String entityGuid = task.getEntityGuid();
                     String classificationId = StringUtils.isEmpty(task.getClassificationId()) ? resolveAndReturnClassificationId(classificationName, entityGuid) : task.getClassificationId();
                     if (StringUtils.isEmpty(classificationId)) {
@@ -185,7 +186,7 @@ public class AtlasTaskService implements TaskService {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, entityGuid);
         }
 
-        AtlasVertex classificationVertex = GraphHelper.getClassificationVertex(entityVertex, classificationName);
+        AtlasVertex classificationVertex = getClassificationVertex(null, entityVertex, classificationName);
 
         if (classificationVertex != null) {
             ret = classificationVertex.getIdForDisplay();
@@ -225,6 +226,7 @@ public class AtlasTaskService implements TaskService {
     @Override
     public AtlasVertex createTaskVertex(AtlasTask task) {
         AtlasVertex ret = graph.addVertex();
+        Map<String, String> requestContextHeaders = RequestContext.get().getRequestContextHeaders();
 
         setEncodedProperty(ret, Constants.TASK_GUID, task.getGuid());
         setEncodedProperty(ret, Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME);
@@ -233,6 +235,11 @@ public class AtlasTaskService implements TaskService {
         setEncodedProperty(ret, Constants.TASK_CREATED_BY, task.getCreatedBy());
         setEncodedProperty(ret, Constants.TASK_CREATED_TIME, task.getCreatedTime());
         setEncodedProperty(ret, Constants.TASK_UPDATED_TIME, task.getUpdatedTime());
+
+        if (task.getClassificationTypeName() != null) {
+            setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_TYPENAME, task.getClassificationTypeName());
+        }
+
         if (task.getClassificationId() != null) {
             setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_ID, task.getClassificationId());
         }
@@ -247,6 +254,16 @@ public class AtlasTaskService implements TaskService {
 
         if (task.getEndTime() != null) {
             setEncodedProperty(ret, Constants.TASK_END_TIME, task.getEndTime().getTime());
+        }
+
+        if (MapUtils.isNotEmpty(requestContextHeaders)) {
+            for (Map.Entry<String, String> entry : requestContextHeaders.entrySet()) {
+                String key = entry.getKey().toLowerCase().trim();
+                if (Constants.TASK_HEADER_SET.contains(key)) {
+                    String val = entry.getValue();
+                    setEncodedProperty(ret, key, val);
+                }
+            }
         }
 
         setEncodedProperty(ret, Constants.TASK_PARAMETERS, AtlasJson.toJson(task.getParameters()));

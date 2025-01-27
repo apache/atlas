@@ -47,6 +47,9 @@ public class RequestContext {
     private final Map<String, AtlasEntityHeader>         updatedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         deletedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         restoreEntities      = new HashMap<>();
+
+
+    private       Map<String, String>                    lexoRankCache        = null;
     private final Map<String, AtlasEntity>               entityCache          = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         entityHeaderCache    = new HashMap<>();
     private final Map<String, AtlasEntityWithExtInfo>    entityExtInfoCache   = new HashMap<>();
@@ -57,6 +60,7 @@ public class RequestContext {
     private final Set<String>                            deletedEdgesIds      = new HashSet<>();
     private final Set<String>                            processGuidIds      = new HashSet<>();
 
+    private       Map<String, String>                    evaluateEntityHeaderCache        = null;
     private final AtlasPerfMetrics metrics = isMetricsEnabled ? new AtlasPerfMetrics() : null;
     private final List<AtlasPerfMetrics.Metric> applicationMetrics = new ArrayList<>();
     private List<EntityGuidPair> entityGuidInRequest = null;
@@ -71,23 +75,31 @@ public class RequestContext {
     private final Map<String, List<Object>> newElementsCreatedMap = new HashMap<>();
 
     private final Map<String, Set<AtlasRelationship>> relationshipMutationMap = new HashMap<>();
+    private final Set<String> edgeLabels = new HashSet<>();
 
     private String user;
     private Set<String> userGroups;
     private String clientIPAddress;
     private List<String> forwardedAddresses;
+    private String clientOrigin;
     private DeleteType deleteType = DeleteType.DEFAULT;
     private boolean isPurgeRequested = false;
     private int maxAttempts = 1;
     private int attemptCount = 1;
     private boolean isImportInProgress = false;
     private boolean     isInNotificationProcessing = false;
+
+
+    private boolean     authorisedRemoveRelation = false;
     private boolean     isInTypePatching           = false;
     private boolean     createShellEntityForNonExistingReference = false;
     private boolean     skipFailedEntities = false;
     private boolean     allowDeletedRelationsIndexsearch = false;
     private boolean     includeMeanings = true;
     private boolean     includeClassifications = true;
+    private boolean     includeRelationshipAttributes;
+
+    private boolean     includeClassificationNames = false;
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
@@ -150,6 +162,7 @@ public class RequestContext {
         this.onlyCAUpdateEntities.clear();
         this.onlyBAUpdateEntities.clear();
         this.relationAttrsForSearch.clear();
+        this.includeRelationshipAttributes = false;
         this.queuedTasks.clear();
         this.newElementsCreatedMap.clear();
         this.removedElementsMap.clear();
@@ -159,6 +172,7 @@ public class RequestContext {
         this.requestContextHeaders.clear();
         this.relationshipEndToVertexIdMap.clear();
         this.relationshipMutationMap.clear();
+        this.lexoRankCache = null;
         this.currentTask = null;
         this.skipAuthorizationCheck = false;
         this.delayTagNotifications = false;
@@ -168,13 +182,13 @@ public class RequestContext {
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
             if (Objects.nonNull(this.metricsRegistry)){
-                this.metricsRegistry.collect(traceId, this.requestUri, metrics);
+                this.metricsRegistry.collect(traceId, this.requestUri, metrics, this.getClientOrigin());
             }
             metrics.clear();
         }
         if (CollectionUtils.isNotEmpty(applicationMetrics)) {
             if (Objects.nonNull(this.metricsRegistry)){
-                this.metricsRegistry.collect(traceId, this.requestUri, applicationMetrics);
+                this.metricsRegistry.collectApplicationMetrics(traceId, this.requestUri, applicationMetrics);
             }
             applicationMetrics.clear();
         }
@@ -193,6 +207,13 @@ public class RequestContext {
         this.entityCache.clear();
     }
 
+    public boolean isAuthorisedRemoveRelation() {
+        return authorisedRemoveRelation;
+    }
+
+    public void setAuthorisedRemoveRelation(boolean authorisedRemoveRelation) {
+        this.authorisedRemoveRelation = authorisedRemoveRelation;
+    }
     public Set<String> getRelationAttrsForSearch() {
         return relationAttrsForSearch;
     }
@@ -201,6 +222,14 @@ public class RequestContext {
         if (CollectionUtils.isNotEmpty(relationAttrsForSearch)){
             this.relationAttrsForSearch.addAll(relationAttrsForSearch);
         }
+    }
+
+    public boolean isIncludeRelationshipAttributes() {
+        return includeRelationshipAttributes;
+    }
+
+    public void setIncludeRelationshipAttributes(boolean includeRelationshipAttributes) {
+        this.includeRelationshipAttributes = includeRelationshipAttributes;
     }
 
     public Map<String, List<Object>> getRemovedElementsMap() {
@@ -548,17 +577,17 @@ public class RequestContext {
         }
     }
 
-    public void setEntityHeaderCache(AtlasEntityHeader headerCache){
-        if(headerCache != null && headerCache.getGuid() != null){
-            entityHeaderCache.put(headerCache.getGuid(), headerCache);
+    public void setEntityHeaderCache(String cacheKey, AtlasEntityHeader headerCache){
+        if(headerCache != null && StringUtils.isNotEmpty(cacheKey)){
+            entityHeaderCache.put(cacheKey, headerCache);
         }
     }
 
-    public AtlasEntityHeader getCachedEntityHeader(String guid){
-        if(guid == null){
+    public AtlasEntityHeader getCachedEntityHeader(String cacheKey){
+        if(cacheKey == null){
             return null;
         }
-        return entityHeaderCache.get(guid);
+        return entityHeaderCache.getOrDefault(cacheKey,null);
     }
 
     public AtlasEntity getDifferentialEntity(String guid) {
@@ -710,6 +739,30 @@ public class RequestContext {
         return this.requestUri;
     }
 
+    public boolean isIncludeClassificationNames() {
+        return includeClassificationNames;
+    }
+
+    public void setIncludeClassificationNames(boolean includeClassificationNames) {
+        this.includeClassificationNames = includeClassificationNames;
+    }
+
+    public String getClientOrigin() {
+        return clientOrigin;
+    }
+
+    public void setClientOrigin(String clientOrigin) {
+        this.clientOrigin = StringUtils.isEmpty(this.clientOrigin) ? "other" :clientOrigin;
+    }
+
+    public Map<String, String> getEvaluateEntityHeaderCache() {
+        return evaluateEntityHeaderCache;
+    }
+
+    public void setEvaluateEntityHeaderCache(Map<String, String> evaluateEntityHeaderCache) {
+        this.evaluateEntityHeaderCache = evaluateEntityHeaderCache;
+    }
+
     public class EntityGuidPair {
         private final Object entity;
         private final String guid;
@@ -769,4 +822,21 @@ public class RequestContext {
     public Map<String, Set<AtlasRelationship>> getRelationshipMutationMap() {
         return relationshipMutationMap;
     }
+
+    public Map<String, String> getLexoRankCache() {
+        return lexoRankCache;
+    }
+
+    public void setLexoRankCache(Map<String, String> lexoRankCache) {
+        this.lexoRankCache = lexoRankCache;
+    }
+
+    public void addEdgeLabel(String processEdgeLabel) {
+        edgeLabels.add(processEdgeLabel);
+    }
+
+    public boolean isEdgeLabelAlreadyProcessed(String processEdgeLabel) {
+        return edgeLabels.contains(processEdgeLabel);
+    }
+
 }

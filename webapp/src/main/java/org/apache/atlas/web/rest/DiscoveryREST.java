@@ -66,6 +66,8 @@ import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Arrays;
+
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_HOST;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_USER_AGENT;
@@ -92,6 +94,8 @@ public class DiscoveryREST {
     private final SearchLoggingManagement loggerManagement;
 
     private static final String INDEXSEARCH_TAG_NAME = "indexsearch";
+    private static final Set<String> TRACKING_UTM_TAGS = new HashSet<>(Arrays.asList("ui_main_list", "ui_popup_searchbar"));
+    private static final String UTM_TAG_FROM_PRODUCT = "project_webapp";
 
     @Inject
     public DiscoveryREST(AtlasTypeRegistry typeRegistry, AtlasDiscoveryService discoveryService,
@@ -391,9 +395,21 @@ public class DiscoveryREST {
 
         RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
         RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
+        RequestContext.get().setIncludeClassificationNames(parameters.isIncludeClassificationNames());
         try     {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearch(" + parameters + ")");
+            }
+
+            if (AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_API_LIMIT.getBoolean() && parameters.getQuerySize() > AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong()) {
+                if(CollectionUtils.isEmpty(parameters.getUtmTags())) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY_SIZE, String.valueOf(AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong()));
+                }
+                for (String utmTag : parameters.getUtmTags()) {
+                    if (Arrays.stream(AtlasConfiguration.ATLAS_INDEXSEARCH_LIMIT_UTM_TAGS.getStringArray()).anyMatch(utmTag::equalsIgnoreCase)) {
+                            throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY_SIZE, String.valueOf(AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong()));
+                    }
+                }
             }
 
             if (StringUtils.isEmpty(parameters.getQuery())) {
@@ -408,6 +424,9 @@ public class DiscoveryREST {
                 LOG.debug("Performing indexsearch for the params ({})", parameters);
             }
             AtlasSearchResult result = discoveryService.directIndexSearch(parameters);
+            if (result == null) {
+                return null;
+            }
             long endTime = System.currentTimeMillis();
 
             if (enableSearchLogging && parameters.isSaveSearchLog()) {
@@ -425,16 +444,64 @@ public class DiscoveryREST {
             if (enableSearchLogging && parameters.isSaveSearchLog()) {
                 logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
             }
+            abe.setStackTrace(e.getStackTrace());
             throw abe;
         } finally {
-            if(parameters.getUtmTags() != null) {
+            if(CollectionUtils.isNotEmpty(parameters.getUtmTags())) {
                 AtlasPerfMetrics.Metric indexsearchMetric = new AtlasPerfMetrics.Metric(INDEXSEARCH_TAG_NAME);
-                indexsearchMetric.addTag("utmTags", String.join(",", parameters.getUtmTags()));
+                indexsearchMetric.addTag("utmTag", "other");
+                indexsearchMetric.addTag("source", "other");
+                for (String utmTag : parameters.getUtmTags()) {
+                    if (TRACKING_UTM_TAGS.contains(utmTag)) {
+                        indexsearchMetric.addTag("utmTag", utmTag);
+                        break;
+                    }
+                }
+                if (parameters.getUtmTags().contains(UTM_TAG_FROM_PRODUCT)) {
+                    indexsearchMetric.addTag("source", UTM_TAG_FROM_PRODUCT);
+                }
                 indexsearchMetric.addTag("name", INDEXSEARCH_TAG_NAME);
-                indexsearchMetric.addTag("querySize",parameters.getDsl().getOrDefault("size", 20).toString());
                 indexsearchMetric.setTotalTimeMSecs(System.currentTimeMillis() - startTime);
                 RequestContext.get().addApplicationMetrics(indexsearchMetric);
             }
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+
+    /**
+     * Index based search for query direct on Elasticsearch Edge index
+     *
+     * @param parameters Index Search parameters @IndexSearchParams.java
+     * @return Atlas search result
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful search
+     */
+    @Path("/relationship/indexsearch")
+    @POST
+    @Timed
+    public AtlasSearchResult relationshipIndexSearch(@Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        
+        try     {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relationshipIndexSearch(" + parameters + ")");
+            }
+
+            if (StringUtils.isEmpty(parameters.getQuery())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
+            }
+
+            if(LOG.isDebugEnabled()){
+                LOG.debug("Performing relationship indexsearch for the params ({})", parameters);
+            }
+            return discoveryService.directRelationshipIndexSearch(parameters);
+
+        } catch (AtlasBaseException abe) {
+            throw abe;
+        } catch (Exception e) {
+            throw new AtlasBaseException(e.getMessage(), e.getCause());
+        } finally {
             AtlasPerfTracer.log(perf);
         }
     }
@@ -956,8 +1023,9 @@ public class DiscoveryREST {
     private void logSearchLog(IndexSearchParams parameters, HttpServletRequest servletRequest,
                               SearchRequestLogDataBuilder builder, long requestTime) {
 
-        if (StringUtils.isNotEmpty(parameters.getPersona())) {
-            builder.setPersona(parameters.getPersona());
+        String persona = StringUtils.isNotEmpty(parameters.getPersona()) ? parameters.getPersona() : parameters.getRequestMetadataPersona();
+        if (StringUtils.isNotEmpty(persona)) {
+            builder.setPersona(persona);
         } else {
             builder.setPurpose(parameters.getPurpose());
         }

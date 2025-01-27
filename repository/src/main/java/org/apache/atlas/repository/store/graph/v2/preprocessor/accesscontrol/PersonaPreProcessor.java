@@ -19,10 +19,13 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol;
 
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRelatedObjectId;
+import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -30,6 +33,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
 import org.apache.atlas.repository.store.aliasstore.IndexAliasStore;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
@@ -67,15 +71,15 @@ import static org.apache.atlas.repository.util.AccessControlUtils.getTenantId;
 import static org.apache.atlas.repository.util.AccessControlUtils.getUUID;
 import static org.apache.atlas.repository.util.AccessControlUtils.validateNoPoliciesAttached;
 
-public class PersonaPreProcessor implements PreProcessor {
+public class PersonaPreProcessor extends AccessControlPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(PersonaPreProcessor.class);
 
-    private final AtlasGraph graph;
-    private final AtlasTypeRegistry typeRegistry;
-    private final EntityGraphRetriever entityRetriever;
-    private IndexAliasStore aliasStore;
-    private AtlasEntityStore entityStore;
-    private KeycloakStore keycloakStore;
+    protected final AtlasGraph graph;
+    protected AtlasTypeRegistry typeRegistry;
+    protected final EntityGraphRetriever entityRetriever;
+    protected IndexAliasStore aliasStore;
+    protected AtlasEntityStore entityStore;
+    protected KeycloakStore keycloakStore;
 
     public PersonaPreProcessor(AtlasGraph graph,
                                AtlasTypeRegistry typeRegistry,
@@ -96,6 +100,7 @@ public class PersonaPreProcessor implements PreProcessor {
         if (LOG.isDebugEnabled()) {
             LOG.debug("PersonaPreProcessor.processAttributes: pre processing {}, {}", entityStruct.getAttribute(QUALIFIED_NAME), operation);
         }
+        super.processAttributes(entityStruct, context, operation);
 
         AtlasEntity entity = (AtlasEntity) entityStruct;
 
@@ -186,23 +191,28 @@ public class PersonaPreProcessor implements PreProcessor {
     private void updatePoliciesIsEnabledAttr(EntityMutationContext context, AtlasEntity existingPersonaEntity,
                                              boolean enable) throws AtlasBaseException {
 
-        List<AtlasObjectId> policies = (List<AtlasObjectId>) existingPersonaEntity.getRelationshipAttribute(REL_ATTR_POLICIES);
+        List<AtlasRelatedObjectId> policies = (List<AtlasRelatedObjectId>) existingPersonaEntity.getRelationshipAttribute(REL_ATTR_POLICIES);
 
         if (CollectionUtils.isNotEmpty(policies)) {
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(POLICY_ENTITY_TYPE);
 
-            for (AtlasObjectId policy : policies) {
-                AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
+            for (AtlasRelatedObjectId policy : policies) {
+                if (policy.getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
+                    AtlasVertex policyVertex = entityRetriever.getEntityVertex(policy.getGuid());
 
-                AtlasEntity policyToBeUpdated = entityRetriever.toAtlasEntity(policyVertex);
-                policyToBeUpdated.setAttribute(ATTR_POLICY_IS_ENABLED, enable);
+                    if (AtlasGraphUtilsV2.getState(policyVertex) == AtlasEntity.Status.ACTIVE) {
+                        AtlasEntity policyToBeUpdated = entityRetriever.toAtlasEntity(policyVertex);
+                        policyToBeUpdated.setAttribute(ATTR_POLICY_IS_ENABLED, enable);
 
-                context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
+                        context.addUpdated(policyToBeUpdated.getGuid(), policyToBeUpdated, entityType, policyVertex);
+                        RequestContext.get().cacheDifferentialEntity(policyToBeUpdated);
+                    }
+                }
             }
         }
     }
 
-    private String createKeycloakRole(AtlasEntity entity) throws AtlasBaseException {
+    protected String createKeycloakRole(AtlasEntity entity) throws AtlasBaseException {
         String roleName = getPersonaRoleName(entity);
         List<String> users = getPersonaUsers(entity);
         List<String> groups = getPersonaGroups(entity);
@@ -221,7 +231,7 @@ public class PersonaPreProcessor implements PreProcessor {
         return role.getId();
     }
 
-    private void updateKeycloakRole(AtlasEntity newPersona, AtlasEntity existingPersona) throws AtlasBaseException {
+    protected void updateKeycloakRole(AtlasEntity newPersona, AtlasEntity existingPersona) throws AtlasBaseException {
         String roleId = getPersonaRoleId(existingPersona);
         String roleName = getPersonaRoleName(existingPersona);
 

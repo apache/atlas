@@ -61,6 +61,8 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private String                          displayText         = null;
     private List<String>                    classificationNames = null;
     private List<AtlasClassification>       classifications     = null;
+    private List<AtlasClassification>       addOrUpdateClassifications = null;
+    private List<AtlasClassification>       removeClassifications     = null;
     private List<String>                    meaningNames        = null;
     private List<AtlasTermAssignmentHeader> meanings            = null;
     private Boolean                         isIncomplete        = Boolean.FALSE;
@@ -71,7 +73,15 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
     private Date                            createTime          = null;
     private Date                            updateTime          = null;
     private String                          deleteHandler       = null;
+    private Integer                         depth               = null;
+    private Integer                         traversalOrder      = null;
+    private Integer                         finishTime          = null;
+
     private Map<String, AtlasSearchResult>  collapse    = null;
+
+    private List<Map<String,String>> immediateUpstream;  // New field
+    private List<Map<String,String>> immediateDownstream;  // New field
+
 
     public AtlasEntityHeader() {
         this(null, null);
@@ -93,6 +103,21 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         setLabels(null);
     }
 
+    public List<AtlasClassification> getAddOrUpdateClassifications() {
+        return addOrUpdateClassifications;
+    }
+
+    public void setAddOrUpdateClassifications(List<AtlasClassification> addOrUpdateClassifications) {
+        this.addOrUpdateClassifications = addOrUpdateClassifications;
+    }
+
+    public List<AtlasClassification> getRemoveClassifications() {
+        return removeClassifications;
+    }
+
+    public void setRemoveClassifications(List<AtlasClassification> removeClassifications) {
+        this.removeClassifications = removeClassifications;
+    }
 
     public AtlasEntityHeader(String typeName, String guid, Map<String, Object> attributes) {
         super(typeName, attributes);
@@ -146,12 +171,24 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
         }
     }
 
-    public String getGuid() {
-        return guid;
+    public String getGuid() { return guid; }
+
+    public void setGuid(String guid) { this.guid = guid; }
+
+    public Integer getDepth() { return depth; }
+
+    public void setDepth(Integer depth) { this.depth = depth; }
+
+    public Integer getTraversalOrder() { return traversalOrder; }
+
+    public void setTraversalOrder(Integer traversalOrder) { this.traversalOrder = traversalOrder; }
+
+    public Integer getFinishTime() {
+        return finishTime;
     }
 
-    public void setGuid(String guid) {
-        this.guid = guid;
+    public void setFinishTime(Integer finishTime) {
+        this.finishTime = finishTime;
     }
 
     public AtlasEntity.Status getStatus() {
@@ -327,6 +364,22 @@ public class AtlasEntityHeader extends AtlasStruct implements Serializable {
 
     public void setMeanings(final List<AtlasTermAssignmentHeader> meanings) {
         this.meanings = meanings;
+    }
+
+    public List<Map<String,String>> getImmediateUpstream() {
+        return immediateUpstream;
+    }
+
+    public void setImmediateUpstream(List<Map<String,String>> immediateUpstream) {
+        this.immediateUpstream = immediateUpstream;
+    }
+
+    public List<Map<String,String>> getImmediateDownstream() {
+        return immediateDownstream;
+    }
+
+    public void setImmediateDownstream(List<Map<String,String>> immediateDownstream) {
+        this.immediateDownstream = immediateDownstream;
     }
 
     /**

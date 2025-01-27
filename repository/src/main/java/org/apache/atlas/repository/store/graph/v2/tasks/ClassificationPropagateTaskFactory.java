@@ -36,6 +36,7 @@ import java.util.List;
 public class ClassificationPropagateTaskFactory implements TaskFactory {
     private static final Logger LOG = LoggerFactory.getLogger(ClassificationPropagateTaskFactory.class);
 
+    public static final String CLASSIFICATION_PROPAGATION_TEXT_UPDATE                 = "CLASSIFICATION_PROPAGATION_TEXT_UPDATE";
     public static final String CLASSIFICATION_PROPAGATION_ADD                 = "CLASSIFICATION_PROPAGATION_ADD";
 
     //This should be used when referencing vertex to which classification is directly attached
@@ -54,15 +55,19 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
 
     public static final String CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE = "CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE";
 
+    public static final String CLEANUP_CLASSIFICATION_PROPAGATION = "CLEANUP_CLASSIFICATION_PROPAGATION";
+
 
 
     public static final List<String> supportedTypes = new ArrayList<String>() {{
+        add(CLASSIFICATION_PROPAGATION_TEXT_UPDATE);
         add(CLASSIFICATION_PROPAGATION_ADD);
         add(CLASSIFICATION_PROPAGATION_DELETE);
         add(CLASSIFICATION_ONLY_PROPAGATION_DELETE);
         add(CLASSIFICATION_ONLY_PROPAGATION_DELETE_ON_HARD_DELETE);
         add(CLASSIFICATION_REFRESH_PROPAGATION);
         add(CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE);
+        add(CLEANUP_CLASSIFICATION_PROPAGATION);
 
     }};
 
@@ -87,6 +92,9 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
             case CLASSIFICATION_PROPAGATION_ADD:
                 return new ClassificationPropagationTasks.Add(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
 
+            case CLASSIFICATION_PROPAGATION_TEXT_UPDATE:
+                return new ClassificationPropagationTasks.UpdateText(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+
             case CLASSIFICATION_PROPAGATION_DELETE:
                 return new ClassificationPropagationTasks.Delete(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
 
@@ -101,6 +109,10 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
 
             case CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE:
                 return new ClassificationPropagationTasks.UpdateRelationship(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+
+                case CLEANUP_CLASSIFICATION_PROPAGATION:
+                return new ClassificationPropagationTasks.CleanUpClassificationPropagation(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+
 
             default:
                 LOG.warn("Type: {} - {} not found!. The task will be ignored.", taskType, taskGuid);

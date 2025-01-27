@@ -121,6 +121,7 @@ public enum AtlasErrorCode {
     INVALID_DSL_DUPLICATE_ALIAS(400, "ATLAS-400-00-066", "DSL Semantic Error - Duplicate alias found: '{0}' for type '{1}' already present."),
     INVALID_DSL_INVALID_DATE(400, "ATLAS-400-00-067", "DSL Semantic Error - Date format: {0}."),
     INVALID_DSL_HAS_PROPERTY(400, "ATLAS-400-00-068", "DSL Semantic Error - Property needs to be a primitive type: {0}"),
+    INVALID_DSL_QUERY_SIZE(400, "ATLAS-400-00-103", "DSL Error - Please provide query size less than {0}"),
     RELATIONSHIP_UPDATE_END_CHANGE_NOT_ALLOWED(404, "ATLAS-400-00-069", "change of relationship end is not permitted. relationship-type={0}, relationship-guid={1}, end-guid={2}, updated-end-guid={3}"),
     RELATIONSHIP_UPDATE_TYPE_CHANGE_NOT_ALLOWED(404, "ATLAS-400-00-06A", "change of relationship type is not permitted. relationship-guid={0}, current-type={1}, new-type={2}"),
     CLASSIFICATION_UPDATE_FROM_PROPAGATED_ENTITY(400, "ATLAS-400-00-06B", "Update to classification {0} is not allowed from propagated entity"),
@@ -266,6 +267,9 @@ public enum AtlasErrorCode {
     FAILED_TO_UPDATE_GLOSSARY_TERM(500, "ATLAS-500-00-017", "Error occurred while updating glossary term: {0}"),
     REPAIR_INDEX_FAILED(500, "ATLAS-500-00-018", "Error occurred while repairing indices: {0}"),
     INDEX_SEARCH_FAILED(400, "ATLAS-400-00-102", "Error occurred while running direct index query on ES: {0}"),
+
+    INDEX_SEARCH_FAILED_DUE_TO_TIMEOUT(429, "ATLAS-400-00-502", "ES query exceeded timeout: {0}"),
+    INDEX_SEARCH_GATEWAY_TIMEOUT(504, "ATLAS-504-00-001", "ES query gateway timeout: {0}"),
     DEPRECATED_API(400, "ATLAS-400-00-103", "Deprecated API. Use {0} instead"),
     DISABLED_API(400, "ATLAS-400-00-104", "API temporarily disabled. Reason: {0}"),
     HAS_LINEAGE_GET_EDGE_FAILED(500, "ATLAS-500-00-019", "Error occurred while getting edge between vertices for hasLineage migration: {0}"),
@@ -273,6 +277,8 @@ public enum AtlasErrorCode {
     CINV_UNHEALTHY(500, "ATLAS-500-00-21", "Unable to process type-definition operations"),
     RUNTIME_EXCEPTION(500, "ATLAS-500-00-020", "Runtime exception {0}"),
     KEYCLOAK_INIT_FAILED(500, "ATLAS-500-00-022", "Failed to initialize keycloak client: {0}"),
+
+    MAINTENANCE_MODE_ENABLED(503, "ATLAS-503-00-001", "Atlas is in maintenance mode for this specific operation. Please try again later."),
 
     BATCH_SIZE_TOO_LARGE(406, "ATLAS-406-00-001", "Batch size is too large, please use a smaller batch size"),
 
@@ -288,8 +294,8 @@ public enum AtlasErrorCode {
     TASK_INVALID_PARAMETERS(400, "ATLAS-400-00-111", "Invalid parameters for task {0}"),
     TASK_TYPE_NOT_SUPPORTED(400, "ATLAS-400-00-112", "Task type {0} is not supported"),
 
-    PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED(400, "ATLAS-400-00-113", "Exceeded limit of maximum allowed assets across policies for a Persona: Limit: {0}, assets: {1}");
-
+    PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED(400, "ATLAS-400-00-113", "Exceeded limit of maximum allowed assets across policies for a Persona: Limit: {0}, assets: {1}"),
+    ADMIN_LIST_SHOULD_NOT_BE_EMPTY(400, "ATLAS-400-00-114", "Admin list should not be empty for type {0}");
 
     private String errorCode;
     private String errorMessage;

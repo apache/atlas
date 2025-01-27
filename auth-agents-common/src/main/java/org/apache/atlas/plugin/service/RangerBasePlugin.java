@@ -314,7 +314,7 @@ public class RangerBasePlugin {
 				Boolean hasPolicyDeltas = RangerPolicyDeltaUtil.hasPolicyDeltas(policies);
 
 				if (hasPolicyDeltas == null) {
-					LOG.info("Downloaded policies do not require policy change !! [" + policies + "]");
+					LOG.info("Downloaded policies do not require policy change !! [" + (policies.getPolicies() != null ? policies.getPolicies().size() : 0) + "]");
 
 					if (this.policyEngine == null) {
 
@@ -324,6 +324,7 @@ public class RangerBasePlugin {
 						if (defaultSvcPolicies == null) {
 							LOG.error("Could not get default Service Policies. Keeping old policy-engine! This is a FATAL error as the old policy-engine is null!");
 							isNewEngineNeeded = false;
+							throw new RuntimeException("PolicyRefresher("+policies.getServiceName()+").setPolicies: fetched service policies contains no policies or delta and current policy engine is null");
 						} else {
 							defaultSvcPolicies.setPolicyVersion(policies.getPolicyVersion());
 							policies = defaultSvcPolicies;
@@ -376,9 +377,8 @@ public class RangerBasePlugin {
 						}
 
 						if (oldPolicyEngine != null) {
-							RangerPolicyEngineImpl oldPolicyEngineImpl = (RangerPolicyEngineImpl) oldPolicyEngine;
-
-							newPolicyEngine = RangerPolicyEngineImpl.getPolicyEngine(oldPolicyEngineImpl, policies);
+							// Create new evaluator for the updated policies
+							newPolicyEngine = new RangerPolicyEngineImpl(servicePolicies, pluginContext, roles);
 						}
 
 						if (newPolicyEngine != null) {
@@ -420,6 +420,7 @@ public class RangerBasePlugin {
 					if (this.refresher != null) {
 						this.refresher.saveToCache(usePolicyDeltas ? servicePolicies : policies);
 					}
+					LOG.info("New RangerPolicyEngine created with policy count:"+ (usePolicyDeltas? servicePolicies.getPolicies().size() : policies.getPolicies().size()));
 				}
 
 			} else {
@@ -429,7 +430,8 @@ public class RangerBasePlugin {
 			}
 
 		} catch (Exception e) {
-			LOG.error("setPolicies: policy engine initialization failed!  Leaving current policy engine as-is. Exception : ", e);
+			LOG.error("setPolicies: Failed to set policies, didn't set policies", e);
+			throw e;
 		}
 		if (LOG.isDebugEnabled()) {
 			LOG.debug("<== setPolicies(" + policies + ")");

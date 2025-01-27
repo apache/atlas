@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
+import java.util.ArrayList;
 /**
  * A graph query that runs directly against a particular index.
  *
@@ -103,7 +103,7 @@ public interface AtlasIndexQuery<V, E> {
         DirectIndexQueryResult<V, E> getCollapseVertices(String key);
 
         Map<String, List<String>> getHighLights();
-
+        ArrayList<Object> getSort();
     }
 
 }

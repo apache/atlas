@@ -20,16 +20,12 @@ package org.apache.atlas.repository.store.graph.v2;
 
 
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.DeleteType;
-import org.apache.atlas.GraphTransactionInterceptor;
-import org.apache.atlas.RequestContext;
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.*;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder;
-import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.bulkimport.BulkImportResponse;
+import org.apache.atlas.bulkimport.BulkImportResponse.ImportInfo;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
@@ -49,40 +45,38 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.patches.PatchContext;
 import org.apache.atlas.repository.patches.ReIndexPatch;
+import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscovery;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
+import org.apache.atlas.repository.store.graph.v2.AtlasEntityComparator.AtlasEntityDiffResult;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.AssetPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.AuthPolicyPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.ConnectionPreProcessor;
-import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PersonaPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.PurposePreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.StakeholderPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.contract.ContractPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.DataDomainPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.DataProductPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.StakeholderTitlePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.CategoryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.GlossaryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.glossary.TermPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.LinkPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.ReadmePreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryFolderPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTask;
 import org.apache.atlas.tasks.TaskManagement;
-import org.apache.atlas.type.AtlasArrayType;
-import org.apache.atlas.type.AtlasBusinessMetadataType;
+import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
-import org.apache.atlas.type.AtlasClassificationType;
-import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.type.AtlasTypeUtil;
-import org.apache.atlas.bulkimport.BulkImportResponse;
-import org.apache.atlas.bulkimport.BulkImportResponse.ImportInfo;
 import org.apache.atlas.util.FileUtils;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -98,24 +92,25 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
+import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
+import static org.apache.atlas.authorize.AtlasPrivilege.*;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.EntityMutations.EntityOperation.*;
+import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
-import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
-import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.*;
-import static org.apache.atlas.type.Constants.HAS_LINEAGE;
-import static org.apache.atlas.type.Constants.HAS_LINEAGE_VALID;
-import static org.apache.atlas.type.Constants.MEANINGS_TEXT_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANINGS_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.MEANING_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
+import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE;
+import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE;
+import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
+import static org.apache.atlas.type.Constants.*;
 
 
 
@@ -142,10 +137,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final AtlasRelationshipStore atlasRelationshipStore;
     private final FeatureFlagStore featureFlagStore;
 
+    private final ESAliasStore esAliasStore;
+    private final IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier;
+
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
-                              AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore) {
+                              AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore,
+                              IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier) {
+
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
         this.restoreHandlerV1     = restoreHandlerV1;
@@ -158,7 +158,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.taskManagement = taskManagement;
         this.atlasRelationshipStore = atlasRelationshipStore;
         this.featureFlagStore = featureFlagStore;
-
+        this.esAliasStore = new ESAliasStore(graph, entityRetriever);
+        this.atlasAlternateChangeNotifier = atlasAlternateChangeNotifier;
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
         } catch (AtlasException e) {
@@ -760,6 +761,114 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return ret;
     }
 
+    private AtlasEntityHeader getAtlasEntityHeader(String entityGuid, String entityId, String entityType) throws AtlasBaseException {
+        // Metric logs
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getAtlasEntityHeader");
+        AtlasEntityHeader entityHeader = null;
+        String cacheKey = generateCacheKey(entityGuid, entityId, entityType);
+        entityHeader = RequestContext.get().getCachedEntityHeader(cacheKey);
+        if(Objects.nonNull(entityHeader)){
+            return entityHeader;
+        }
+        if (StringUtils.isNotEmpty(entityGuid)) {
+            AtlasEntityWithExtInfo ret = getByIdWithoutAuthorization(entityGuid);
+            entityHeader = new AtlasEntityHeader(ret.getEntity());
+        } else if (StringUtils.isNotEmpty(entityId) && StringUtils.isNotEmpty(entityType)) {
+            try {
+                entityHeader = getAtlasEntityHeaderWithoutAuthorization(null, entityId, entityType);
+            } catch (AtlasBaseException abe) {
+                if (abe.getAtlasErrorCode() == AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND) {
+                    Map<String, Object> attributes = new HashMap<>();
+                    attributes.put(QUALIFIED_NAME, entityId);
+                    entityHeader = new AtlasEntityHeader(entityType, attributes);
+                }
+            }
+        } else {
+            throw new AtlasBaseException(BAD_REQUEST, "requires entityGuid or typeName and qualifiedName for entity authorization");
+        }
+        RequestContext.get().setEntityHeaderCache(cacheKey, entityHeader);
+        RequestContext.get().endMetricRecord(metric);
+        return entityHeader;
+    }
+
+    @Override
+    public List<AtlasEvaluatePolicyResponse> evaluatePolicies(List<AtlasEvaluatePolicyRequest> entities) throws AtlasBaseException {
+        List<AtlasEvaluatePolicyResponse> response = new ArrayList<>();
+        HashMap<String, AtlasEntityHeader> atlasEntityHeaderCache = new HashMap<>();
+        for (AtlasEvaluatePolicyRequest entity : entities) {
+            String action = entity.getAction();
+
+            if (action == null) {
+                throw new AtlasBaseException(BAD_REQUEST, "action is null");
+            }
+            AtlasEntityHeader entityHeader = null;
+
+            if (ENTITY_READ.name().equals(action) || ENTITY_CREATE.name().equals(action) || ENTITY_UPDATE.name().equals(action)
+                    || ENTITY_DELETE.name().equals(action) || ENTITY_UPDATE_BUSINESS_METADATA.name().equals(action)) {
+
+                try {
+                    entityHeader = getAtlasEntityHeader(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
+                    AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder requestBuilder = new AtlasEntityAccessRequest.AtlasEntityAccessRequestBuilder(typeRegistry, AtlasPrivilege.valueOf(entity.getAction()), entityHeader);
+                    if (entity.getBusinessMetadata() != null) {
+                        requestBuilder.setBusinessMetadata(entity.getBusinessMetadata());
+                    }
+
+                    AtlasEntityAccessRequest entityAccessRequest = requestBuilder.build();
+
+                    AtlasAuthorizationUtils.verifyAccess(entityAccessRequest, entity.getAction() + "guid=" + entity.getEntityGuid());
+                    response.add(new AtlasEvaluatePolicyResponse(entity.getTypeName(), entity.getEntityGuid(), entity.getAction(), entity.getEntityId(), true, null , entity.getBusinessMetadata()));
+                } catch (AtlasBaseException e) {
+                    AtlasErrorCode code = e.getAtlasErrorCode();
+                    String errorCode = code.getErrorCode();
+                    response.add(new AtlasEvaluatePolicyResponse(entity.getTypeName(), entity.getEntityGuid(), entity.getAction(), entity.getEntityId(), false, errorCode, entity.getBusinessMetadata()));
+                }
+
+            } else if (ENTITY_REMOVE_CLASSIFICATION.name().equals(action) || ENTITY_ADD_CLASSIFICATION.name().equals(action) || ENTITY_UPDATE_CLASSIFICATION.name().equals(action)) {
+
+                if (entity.getClassification() == null) {
+                    throw new AtlasBaseException(BAD_REQUEST, "classification needed for " + action + " authorization");
+                }
+                try {
+                    entityHeader = getAtlasEntityHeader(entity.getEntityGuid(), entity.getEntityId(), entity.getTypeName());
+
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.valueOf(entity.getAction()), entityHeader, new AtlasClassification(entity.getClassification())));
+                    response.add(new AtlasEvaluatePolicyResponse(entity.getTypeName(), entity.getEntityGuid(), entity.getAction(), entity.getEntityId(), entity.getClassification(), true, null));
+
+                } catch (AtlasBaseException e) {
+                    AtlasErrorCode code = e.getAtlasErrorCode();
+                    String errorCode = code.getErrorCode();
+                    response.add(new AtlasEvaluatePolicyResponse(entity.getTypeName(), entity.getEntityGuid(), entity.getAction(), entity.getEntityId(), entity.getClassification(), false, errorCode));
+                }
+
+            }    else if (RELATIONSHIP_ADD.name().equals(action) || RELATIONSHIP_REMOVE.name().equals(action) || RELATIONSHIP_UPDATE.name().equals(action)) {
+
+                if (entity.getRelationShipTypeName() == null) {
+                    throw new AtlasBaseException(BAD_REQUEST, "RelationShip TypeName needed for " + action + " authorization");
+                }
+
+                try {
+                    AtlasEntityHeader end1Entity = getAtlasEntityHeader(entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd1());
+
+                    AtlasEntityHeader end2Entity = getAtlasEntityHeader(entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), entity.getEntityTypeEnd2());
+
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.valueOf(action), entity.getRelationShipTypeName(), end1Entity, end2Entity));
+                    response.add(new AtlasEvaluatePolicyResponse(action, entity.getRelationShipTypeName(), entity.getEntityTypeEnd1(), entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd2(), entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), true, null));
+                } catch (AtlasBaseException e) {
+                    AtlasErrorCode code = e.getAtlasErrorCode();
+                    String errorCode = code.getErrorCode();
+                    response.add(new AtlasEvaluatePolicyResponse(action, entity.getRelationShipTypeName(), entity.getEntityTypeEnd1(), entity.getEntityGuidEnd1(), entity.getEntityIdEnd1(), entity.getEntityTypeEnd2(), entity.getEntityGuidEnd2(), entity.getEntityIdEnd2(), false, errorCode));
+                }
+            }
+        }
+        return response;
+    }
+
+    private String generateCacheKey(String guid, String id, String typeName) {
+        return (guid != null ? guid : "") + "|" + (id != null ? id : "") + "|" + (typeName != null ? typeName : "");
+    }
+
+
+
     @Override
     @GraphTransaction
     public EntityMutationResponse deleteByUniqueAttributes(List<AtlasObjectId> objectIds) throws AtlasBaseException {
@@ -911,6 +1020,30 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @GraphTransaction
     public String getGuidByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException{
         return AtlasGraphUtilsV2.getGuidByUniqueAttributes(graph, entityType, uniqAttributes);
+    }
+
+    @Override
+    @GraphTransaction
+    public void repairClassificationMappings(final String guid) throws AtlasBaseException {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> repairClassificationMappings({})", guid);
+        }
+
+        if (StringUtils.isEmpty(guid)) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+
+        if (entityVertex == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+        }
+
+        entityGraphMapper.repairClassificationMappings(entityVertex);
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== repairClassificationMappings({})", guid);
+        }
     }
 
     @Override
@@ -1509,6 +1642,18 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             executePreProcessor(context);
 
+            // Updating hierarchy after preprocessor is executed so that qualifiedName update during preprocessor is considered
+            for (AtlasEntity entity : context.getCreatedEntities()) {
+                createQualifiedNameHierarchyField(entity, context.getVertex(entity.getGuid()));
+            }
+
+            for (Map.Entry<String, AtlasEntity> entry : RequestContext.get().getDifferentialEntitiesMap().entrySet()) {
+                if (entry.getValue().hasAttribute(QUALIFIED_NAME)) {
+                    createQualifiedNameHierarchyField(entry.getValue(), context.getVertex(entry.getKey()));
+                }
+            }
+
+
             EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate,
                     replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttribute);
 
@@ -1532,27 +1677,23 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private void executePreProcessor(EntityMutationContext context) throws AtlasBaseException {
         AtlasEntityType entityType;
-        PreProcessor preProcessor;
+        List<PreProcessor> preProcessors;
 
         List<AtlasEntity> copyOfCreated = new ArrayList<>(context.getCreatedEntities());
-        for (int i = 0; i < copyOfCreated.size() ; i++) {
-            AtlasEntity entity = ((List<AtlasEntity>) context.getCreatedEntities()).get(i);
+        for (AtlasEntity entity : copyOfCreated) {
             entityType = context.getType(entity.getGuid());
-            preProcessor = getPreProcessor(entityType.getTypeName());
-
-            if (preProcessor != null) {
-                preProcessor.processAttributes(entity, context, CREATE);
+            preProcessors = getPreProcessor(entityType.getTypeName());
+            for(PreProcessor processor : preProcessors){
+                processor.processAttributes(entity, context, CREATE);
             }
         }
 
         List<AtlasEntity> copyOfUpdated = new ArrayList<>(context.getUpdatedEntities());
-        for (int i = 0; i < copyOfUpdated.size() ; i++) {
-            AtlasEntity entity = ((List<AtlasEntity>) context.getUpdatedEntities()).get(i);
+        for (AtlasEntity entity: copyOfUpdated) {
             entityType = context.getType(entity.getGuid());
-            preProcessor = getPreProcessor(entityType.getTypeName());
-
-            if (preProcessor != null) {
-                preProcessor.processAttributes(entity, context, UPDATE);
+            preProcessors = getPreProcessor(entityType.getTypeName());
+            for(PreProcessor processor : preProcessors){
+                processor.processAttributes(entity, context, UPDATE);
             }
         }
     }
@@ -1784,60 +1925,123 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         return starredDetails;
     }
 
-    public PreProcessor getPreProcessor(String typeName) {
-        PreProcessor preProcessor = null;
+    private void createQualifiedNameHierarchyField(AtlasEntity entity, AtlasVertex vertex) {
+        MetricRecorder metric = RequestContext.get().startMetricRecord("createQualifiedNameHierarchyField");
+        boolean isDataMeshType = entity.getTypeName().equals(DATA_PRODUCT_ENTITY_TYPE) || entity.getTypeName().equals(DATA_DOMAIN_ENTITY_TYPE);
+        int qualifiedNameOffset = isDataMeshType ? 2 : 1;
+        try {
+            if (vertex == null) {
+                vertex = AtlasGraphUtilsV2.findByGuid(graph, entity.getGuid());
+            }
+            if (entity.hasAttribute(QUALIFIED_NAME)) {
+                String qualifiedName = (String) entity.getAttribute(QUALIFIED_NAME);
+                if (StringUtils.isNotEmpty(qualifiedName)) {
+                    vertex.removeProperty(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY);
+                    String[] parts = qualifiedName.split("/");
+                    StringBuilder currentPath = new StringBuilder();
+
+                    for (int i = 0; i < parts.length; i++) {
+                        String part = parts[i];
+                        if (StringUtils.isNotEmpty(part)) {
+                            if (i > 0) {
+                                currentPath.append("/");
+                            }
+                            currentPath.append(part);
+                            // i>1 reason: we don't want to add the first part of the qualifiedName as it is the entity name
+                            // Example qualifiedName : default/snowflake/123/db_name we only want `default/snowflake/123` and `default/snowflake/123/db_name`
+                            if (i > qualifiedNameOffset) {
+                                if (isDataMeshType && (part.equals("domain") || part.equals("product"))) {
+                                    continue;
+                                }
+                                AtlasGraphUtilsV2.addEncodedProperty(vertex, QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, currentPath.toString());
+                            }
+                        }
+                    }
+                }
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+
+    public List<PreProcessor> getPreProcessor(String typeName) {
+        List<PreProcessor> preProcessors = new ArrayList<>();
 
         switch (typeName) {
             case ATLAS_GLOSSARY_ENTITY_TYPE:
-                preProcessor = new GlossaryPreProcessor(typeRegistry, entityRetriever);
+                preProcessors.add(new GlossaryPreProcessor(typeRegistry, entityRetriever, graph));
                 break;
 
             case ATLAS_GLOSSARY_TERM_ENTITY_TYPE:
-                preProcessor = new TermPreProcessor(typeRegistry, entityRetriever, graph, taskManagement);
+                preProcessors.add(new TermPreProcessor(typeRegistry, entityRetriever, graph, taskManagement));
                 break;
 
             case ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE:
-                preProcessor = new CategoryPreProcessor(typeRegistry, entityRetriever, graph, taskManagement, entityGraphMapper);
+                preProcessors.add(new CategoryPreProcessor(typeRegistry, entityRetriever, graph, taskManagement, entityGraphMapper));
+                break;
+
+            case DATA_DOMAIN_ENTITY_TYPE:
+                preProcessors.add(new DataDomainPreProcessor(typeRegistry, entityRetriever, graph));
+                break;
+
+            case DATA_PRODUCT_ENTITY_TYPE:
+                preProcessors.add(new DataProductPreProcessor(typeRegistry, entityRetriever, graph, this));
                 break;
 
             case QUERY_ENTITY_TYPE:
-                preProcessor = new QueryPreProcessor(typeRegistry, entityRetriever);
+                preProcessors.add(new QueryPreProcessor(typeRegistry, entityRetriever));
                 break;
 
             case QUERY_FOLDER_ENTITY_TYPE:
-                preProcessor = new QueryFolderPreProcessor(typeRegistry, entityRetriever);
+                preProcessors.add(new QueryFolderPreProcessor(typeRegistry, entityRetriever));
                 break;
 
             case QUERY_COLLECTION_ENTITY_TYPE:
-                preProcessor = new QueryCollectionPreProcessor(typeRegistry, discovery, entityRetriever, featureFlagStore, this);
+                preProcessors.add(new QueryCollectionPreProcessor(typeRegistry, discovery, entityRetriever, featureFlagStore, this));
                 break;
 
             case PERSONA_ENTITY_TYPE:
-                preProcessor = new PersonaPreProcessor(graph, typeRegistry, entityRetriever, this);
+                preProcessors.add(new PersonaPreProcessor(graph, typeRegistry, entityRetriever, this));
                 break;
 
             case PURPOSE_ENTITY_TYPE:
-                preProcessor = new PurposePreProcessor(graph, typeRegistry, entityRetriever, this);
+                preProcessors.add(new PurposePreProcessor(graph, typeRegistry, entityRetriever, this));
                 break;
 
             case POLICY_ENTITY_TYPE:
-                preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever, featureFlagStore);
+                preProcessors.add(new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever));
+                break;
+
+            case STAKEHOLDER_ENTITY_TYPE:
+                preProcessors.add(new StakeholderPreProcessor(graph, typeRegistry, entityRetriever, this));
                 break;
 
             case CONNECTION_ENTITY_TYPE:
-                preProcessor = new ConnectionPreProcessor(graph, discovery, entityRetriever, featureFlagStore, deleteDelegate, this);
+                preProcessors.add(new ConnectionPreProcessor(graph, discovery, entityRetriever, featureFlagStore, deleteDelegate, this));
                 break;
 
             case LINK_ENTITY_TYPE:
-                preProcessor = new LinkPreProcessor(typeRegistry, entityRetriever);
+                preProcessors.add(new LinkPreProcessor(typeRegistry, entityRetriever));
                 break;
 
             case README_ENTITY_TYPE:
-                preProcessor = new ReadmePreProcessor(typeRegistry, entityRetriever);
+                preProcessors.add(new ReadmePreProcessor(typeRegistry, entityRetriever));
+                break;
+
+            case CONTRACT_ENTITY_TYPE:
+                preProcessors.add(new ContractPreProcessor(graph, typeRegistry, entityRetriever, storeDifferentialAudits, discovery));
+                break;
+
+            case STAKEHOLDER_TITLE_ENTITY_TYPE:
+                preProcessors.add(new StakeholderTitlePreProcessor(graph, typeRegistry, entityRetriever));
                 break;
         }
 
-        return preProcessor;
+        //  The default global pre-processor for all AssetTypes
+        preProcessors.add(new AssetPreProcessor(typeRegistry, entityRetriever, graph));
+
+        return preProcessors;
     }
 
     private AtlasVertex getResolvedEntityVertex(EntityGraphDiscoveryContext context, AtlasEntity entity) throws AtlasBaseException {
@@ -1881,11 +2085,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             MetricRecorder metric = RequestContext.get().startMetricRecord("filterCategoryVertices");
             for (AtlasVertex vertex : deletionCandidates) {
+                updateModificationMetadata(vertex);
+
                 String typeName = getTypeName(vertex);
 
-                PreProcessor preProcessor = getPreProcessor(typeName);
-                if (preProcessor != null) {
-                    preProcessor.processDelete(vertex);
+                List<PreProcessor> preProcessors = getPreProcessor(typeName);
+                for(PreProcessor processor : preProcessors){
+                    processor.processDelete(vertex);
                 }
 
                 if (ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE.equals(typeName)) {
@@ -2656,6 +2862,150 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
     }
+    @Override
+    public void repairAccesscontrolAlias(String guid) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("repairAlias");
+        // Fetch accesscontrolEntity with extInfo
+        AtlasEntity.AtlasEntityWithExtInfo accesscontrolEntity = entityRetriever.toAtlasEntityWithExtInfo(guid);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, new AtlasEntityHeader(accesscontrolEntity.getEntity())));
+
+        // Validate accesscontrolEntity status
+        if (accesscontrolEntity.getEntity().getStatus() != ACTIVE) {
+            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_DELETED, guid);
+        }
+
+        // Validate accesscontrolEntity type
+        String entityType = accesscontrolEntity.getEntity().getTypeName();
+        if (!PERSONA_ENTITY_TYPE.equals(entityType)) {
+            throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, entityType);
+        }
+
+        List<AtlasObjectId> policies = (List<AtlasObjectId>) accesscontrolEntity.getEntity().getRelationshipAttribute(REL_ATTR_POLICIES);
+        for (AtlasObjectId policy : policies) {
+            accesscontrolEntity.addReferredEntity(entityRetriever.toAtlasEntity(policy));
+        }
+
+        // Rebuild alias
+        this.esAliasStore.updateAlias(accesscontrolEntity, null);
+
+        RequestContext.get().endMetricRecord(metric);
+    }
+
+    @Override
+    @GraphTransaction
+    public void linkBusinessPolicy(String policyGuid, Set<String> linkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkBusinessPolicy.GraphTransaction");
+
+        try {
+            List<AtlasVertex> vertices = this.entityGraphMapper.linkBusinessPolicy(policyGuid, linkGuids);
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+
+            handleEntityMutation(vertices);
+        } catch (Exception e) {
+            LOG.error("Error during linkBusinessPolicy for policyGuid: {}", policyGuid, e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
+    @GraphTransaction
+    public void unlinkBusinessPolicy(String policyGuid, Set<String> unlinkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkBusinessPolicy.GraphTransaction");
+        try {
+            List<AtlasVertex> vertices = this.entityGraphMapper.unlinkBusinessPolicy(policyGuid, unlinkGuids);
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+
+            handleEntityMutation(vertices);
+        } catch (Exception e) {
+            LOG.error("Error during unlinkBusinessPolicy for policyGuid: {}", policyGuid, e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
+    @GraphTransaction
+    public void linkMeshEntityToAssets(String meshEntityGuid, Set<String> linkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("linkMeshEntityToAssets.GraphTransaction");
+
+        try {
+            List<String> assetGuids = new ArrayList<>(linkGuids);
+            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(assetGuids);
+            List<AtlasVertex> vertices = this.entityGraphMapper.linkMeshEntityToAssets(meshEntityGuid, linkGuids);
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+
+            LOG.info("linkMeshEntityToAssets: entityGuid={}", meshEntityGuid);
+
+            handleEntityMutation(vertices);
+        } catch (Exception e) {
+            LOG.error("Error during linkMeshEntity for entityGuid: {}", meshEntityGuid, e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
+    @GraphTransaction
+    public void unlinkMeshEntityFromAssets(String meshEntityGuid, Set<String> unlinkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkMeshEntityFromAssets.GraphTransaction");
+        try {
+            List<String> assetGuids = new ArrayList<>(unlinkGuids);
+            GraphTransactionInterceptor.lockObjectAndReleasePostCommit(assetGuids);
+            List<AtlasVertex> vertices = this.entityGraphMapper.unlinkMeshEntityFromAssets(meshEntityGuid, unlinkGuids);
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+
+            LOG.info("unlinkMeshEntityFromAssets: assetGuids={}", unlinkGuids);
+
+            handleEntityMutation(vertices);
+        } catch (Exception e) {
+            LOG.error("Error during unlinkMeshEntity for assetGuids: {}", unlinkGuids, e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    private void handleEntityMutation(List<AtlasVertex> vertices) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("handleEntityMutation");
+        this.atlasAlternateChangeNotifier.onEntitiesMutation(vertices);
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    @Override
+    @GraphTransaction
+    public void moveBusinessPolicies(Set<String> policyIds, String assetId, String type) throws AtlasBaseException {
+        // Start performance metric recording
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("moveBusinessPolicy.GraphTransaction");
+
+        try {
+            // Attempt to move the business policy using the entityGraphMapper
+            AtlasVertex vertex = entityGraphMapper.moveBusinessPolicies(policyIds, assetId, type);
+
+            if (vertex == null) {
+                LOG.warn("No vertex found for assetId: {}", assetId);
+                return;
+            }
+            handleEntityMutation(Collections.singletonList(vertex));
+        } catch (Exception e) {
+            // Log the error with context and rethrow it wrapped in an AtlasBaseException
+            LOG.error("Error during moveBusinessPolicy for assetId: {}", assetId, e);
+            throw new AtlasBaseException(e);
+        } finally {
+            // End the performance metric recording
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
 }
-
-

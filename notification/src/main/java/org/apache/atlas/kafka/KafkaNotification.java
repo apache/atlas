@@ -104,7 +104,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public KafkaNotification(Configuration applicationProperties) throws AtlasException {
         super(applicationProperties);
 
-        LOG.info("==> KafkaNotification()");
+        LOG.debug("==> KafkaNotification()");
 
         Configuration kafkaConf = ApplicationProperties.getSubsetConfiguration(applicationProperties, PROPERTY_PREFIX);
 
@@ -138,7 +138,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
         KafkaUtils.setKafkaJAASProperties(applicationProperties, properties);
 
-        LOG.info("<== KafkaNotification()");
+        LOG.debug("<== KafkaNotification()");
     }
 
     @VisibleForTesting

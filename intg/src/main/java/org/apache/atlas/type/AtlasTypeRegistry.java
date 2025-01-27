@@ -44,6 +44,9 @@ public class AtlasTypeRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasTypeRegistry.class);
     private static final int    DEFAULT_LOCK_MAX_WAIT_TIME_IN_SECONDS = 15;
 
+    public static final ArrayList<String> TYPENAMES_TO_SKIP_SUPER_TYPE_CHECK = new ArrayList<String>() {{
+        add("Table");
+    }};
     protected       RegistryData                   registryData;
     private   final TypeRegistryUpdateSynchronizer updateSynchronizer;
     private   final Set<String>                    missingRelationshipDefs;
@@ -87,7 +90,7 @@ public class AtlasTypeRegistry {
 
         AtlasType ret = registryData.allTypes.getTypeByName(typeName);
 
-        if (ret == null) {
+        if (ret == null ) {
             if (typeName.startsWith(ATLAS_TYPE_ARRAY_PREFIX) && typeName.endsWith(ATLAS_TYPE_ARRAY_SUFFIX)) {
                 int    startIdx        = ATLAS_TYPE_ARRAY_PREFIX.length();
                 int    endIdx          = typeName.length() - ATLAS_TYPE_ARRAY_SUFFIX.length();

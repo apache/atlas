@@ -51,7 +51,7 @@ public class RangerCustomConditionEvaluator {
 
             RangerPerfTracer perf = null;
 
-            long policyId = policy.getId();
+            String policyId = policy.getGuid();
 
             if(RangerPerfTracer.isPerfTraceEnabled(PERF_POLICY_INIT_LOG)) {
                 perf = RangerPerfTracer.getPerfTracer(PERF_POLICY_INIT_LOG, "RangerCustomConditionEvaluator.init(policyId=" + policyId + ")");

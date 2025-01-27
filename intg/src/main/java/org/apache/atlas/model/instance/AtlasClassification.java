@@ -62,6 +62,8 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
     private Boolean            removePropagationsOnEntityDelete  = null;
     private Boolean            restrictPropagationThroughLineage = null;
 
+    private Boolean            restrictPropagationThroughHierarchy = null;
+
     public AtlasClassification() {
         this(null, null);
     }
@@ -93,7 +95,16 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
             setDisplayName(other.getDisplayName());
             setRemovePropagationsOnEntityDelete(other.getRemovePropagationsOnEntityDelete());
             setRestrictPropagationThroughLineage(other.getRestrictPropagationThroughLineage());
+            setRestrictPropagationThroughHierarchy(other.getRestrictPropagationThroughHierarchy());
         }
+    }
+
+    public void setRestrictPropagationThroughHierarchy(Boolean restrictPropagationThroughHierarchy) {
+        this.restrictPropagationThroughHierarchy = restrictPropagationThroughHierarchy;
+    }
+
+    public Boolean getRestrictPropagationThroughHierarchy() {
+        return this.restrictPropagationThroughHierarchy;
     }
 
     public String getDisplayName() {
@@ -178,7 +189,8 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
                Objects.equals(removePropagationsOnEntityDelete, that.removePropagationsOnEntityDelete) &&
                Objects.equals(entityGuid, that.entityGuid) &&
                entityStatus == that.entityStatus &&
-               Objects.equals(validityPeriods, that.validityPeriods) && Objects.equals(restrictPropagationThroughLineage, that.restrictPropagationThroughLineage);
+               Objects.equals(validityPeriods, that.validityPeriods) && Objects.equals(restrictPropagationThroughLineage, that.restrictPropagationThroughLineage) &&
+                Objects.equals(restrictPropagationThroughHierarchy, that.restrictPropagationThroughHierarchy);
     }
 
     public boolean checkForUpdate(Object o) {
@@ -191,12 +203,13 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
                 Objects.equals(validityPeriods, that.validityPeriods) &&
                 (Objects.equals(propagate, that.propagate) || (propagate == null)) &&
                 (Objects.equals(removePropagationsOnEntityDelete, that.removePropagationsOnEntityDelete) || (removePropagationsOnEntityDelete == null)) &&
-                (Objects.equals(restrictPropagationThroughLineage, that.restrictPropagationThroughLineage) || (restrictPropagationThroughLineage == null));
+                (Objects.equals(restrictPropagationThroughLineage, that.restrictPropagationThroughLineage) || (restrictPropagationThroughLineage == null)) &&
+                (Objects.equals(restrictPropagationThroughHierarchy, that.restrictPropagationThroughHierarchy) || (restrictPropagationThroughHierarchy == null));
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), entityGuid, entityStatus, propagate, removePropagationsOnEntityDelete, restrictPropagationThroughLineage);
+        return Objects.hash(super.hashCode(), entityGuid, entityStatus, propagate, removePropagationsOnEntityDelete, restrictPropagationThroughLineage,restrictPropagationThroughHierarchy);
     }
 
     @Override
@@ -210,6 +223,7 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         sb.append(", displayName=").append(displayName);
         sb.append(", validityPeriods=").append(validityPeriods);
         sb.append(", restrictPropagationThroughLineage=").append(restrictPropagationThroughLineage);
+        sb.append(", restrictPropagationThroughHierarchy=").append(restrictPropagationThroughHierarchy);
         sb.append('}');
         return sb.toString();
     }

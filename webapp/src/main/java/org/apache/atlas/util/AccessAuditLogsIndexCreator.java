@@ -89,7 +89,7 @@ public class AccessAuditLogsIndexCreator extends Thread {
     private boolean is_completed = false;
 
     public AccessAuditLogsIndexCreator(Configuration configuration) throws IOException {
-        LOG.info("Starting Ranger audit schema setup in ElasticSearch.");
+        LOG.debug("Starting Ranger audit schema setup in ElasticSearch.");
         time_interval = configuration.getLong(ES_TIME_INTERVAL, DEFAULT_ES_TIME_INTERVAL_MS);
         user = configuration.getString(ES_CONFIG_USERNAME);
 
@@ -124,14 +124,14 @@ public class AccessAuditLogsIndexCreator extends Thread {
 
     @Override
     public void run() {
-        LOG.info("Started run method");
+        LOG.debug("Started run method");
         if (CollectionUtils.isNotEmpty(hosts)) {
-            LOG.info("Elastic search hosts=" + hosts + ", index=" + index);
+            LOG.debug("Elastic search hosts=" + hosts + ", index=" + index);
             while (!is_completed && (max_retry == TRY_UNTIL_SUCCESS || retry_counter < max_retry)) {
                 try {
-                    LOG.info("Trying to acquire elastic search connection");
+                    LOG.debug("Trying to acquire elastic search connection");
                     if (connect()) {
-                        LOG.info("Connection to elastic search established successfully");
+                        LOG.debug("Connection to elastic search established successfully");
                         if (createIndex()) {
                             is_completed = true;
                             break;
@@ -232,18 +232,18 @@ public class AccessAuditLogsIndexCreator extends Thread {
 
                 int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode == 200) {
-                    LOG.info("Entity audits index exists!");
+                    LOG.debug("Entity audits index exists!");
                     exists = true;
                 } else {
-                    LOG.info("Entity audits index does not exist!");
+                    LOG.debug("Entity audits index does not exist!");
                     exists = false;
                 }
 
             } catch (Exception e) {
-                LOG.info("Index " + this.index + " not available.");
+                LOG.warn("Index " + this.index + " not available.");
             }
             if (!exists) {
-                LOG.info("Index does not exist. Attempting to create index:" + this.index);
+                LOG.debug("Index does not exist. Attempting to create index:" + this.index);
                 try {
                     HttpEntity entity = new NStringEntity(es_ranger_audit_schema_json, ContentType.APPLICATION_JSON);
                     Request request = new Request("PUT", index);
@@ -257,7 +257,7 @@ public class AccessAuditLogsIndexCreator extends Thread {
                     Response response = client.performRequest(request);
 
                     if (response != null && response.getStatusLine().getStatusCode() == 200) {
-                        LOG.info("Index " + this.index + " created successfully.");
+                        LOG.debug("Index " + this.index + " created successfully.");
                         exists = true;
                     }
                 } catch (Exception e) {
@@ -265,7 +265,7 @@ public class AccessAuditLogsIndexCreator extends Thread {
                     e.printStackTrace();
                 }
             } else {
-                LOG.info("Index " + this.index + " is already created.");
+                LOG.debug("Index " + this.index + " is already created.");
             }
         }
         return exists;

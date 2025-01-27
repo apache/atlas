@@ -18,6 +18,7 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.GraphTransactionInterceptor;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
@@ -44,11 +45,11 @@ public class EntityNotificationSender<T> {
 
     public EntityNotificationSender(NotificationInterface notificationInterface, boolean sendPostCommit) {
         if (sendPostCommit) {
-            LOG.info("EntityNotificationSender: notifications will be sent after transaction commit");
+            LOG.debug("EntityNotificationSender: notifications will be sent after transaction commit");
 
             this.notificationSender = new PostCommitNotificationSender(notificationInterface);
         } else {
-            LOG.info("EntityNotificationSender: notifications will be sent inline (i.e. not waiting for transaction to commit)");
+            LOG.debug("EntityNotificationSender: notifications will be sent inline (i.e. not waiting for transaction to commit)");
 
             this.notificationSender = new InlineNotificationSender(notificationInterface);
         }
@@ -95,10 +96,8 @@ public class EntityNotificationSender<T> {
                 notificationHook = new PostCommitNotificationHook(operationType, notifications);
                 postCommitNotificationHooks.set(notificationHook);
             } else {
-                if (isRelationshipEvent(operationType))
-                    notificationHook.addRelationshipNotifications(notifications);
-                else
-                    notificationHook.addNotifications(notifications);
+                if (isRelationshipEvent(operationType)) notificationHook.addRelationshipNotifications(notifications);
+                else notificationHook.addNotifications(notifications);
             }
         }
 

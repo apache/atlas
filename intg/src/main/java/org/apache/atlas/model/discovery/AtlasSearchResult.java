@@ -37,6 +37,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.LinkedHashMap;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -59,7 +60,7 @@ public class AtlasSearchResult implements Serializable {
     private Map<String, Object>            aggregations;
     private Map<String,Double>             searchScore;
 
-    private Map<String, ElasticsearchMetadata>   searchMetadata;
+    private LinkedHashMap<String, ElasticsearchMetadata> searchMetadata;
 
 
 
@@ -162,11 +163,24 @@ public class AtlasSearchResult implements Serializable {
 
     public void addHighlights(String guid, Map<String, List<String>> highlights) {
         if(MapUtils.isEmpty(this.searchMetadata)) {
-            this.searchMetadata = new HashMap<>();
+            this.searchMetadata = new LinkedHashMap<>();
         }
         ElasticsearchMetadata v = this.searchMetadata.getOrDefault(guid, new ElasticsearchMetadata());
         v.addHighlights(highlights);
         this.searchMetadata.put(guid, v);
+    }
+
+    public void addSort(String guid, ArrayList sort) {
+        if(MapUtils.isEmpty(this.searchMetadata)) {
+            this.searchMetadata = new LinkedHashMap<>();
+        }
+        ElasticsearchMetadata sortMetadata = this.searchMetadata.getOrDefault(guid, new ElasticsearchMetadata());
+        sortMetadata.addSort(sort);
+        if (this.searchMetadata.containsKey(guid)) {
+           this.searchMetadata.replace(guid, sortMetadata);
+        } else {
+            this.searchMetadata.put(guid, sortMetadata);
+        }
     }
 
     @Override

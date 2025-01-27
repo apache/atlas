@@ -17,15 +17,20 @@
  */
 package org.apache.atlas.repository.graphdb.janus;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasMetricType;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.NotImplementedException;
+import org.apache.commons.lang.StringUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
@@ -36,6 +41,7 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.HttpAsyncResponseConsumerFactory;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.ResponseException;
+import org.elasticsearch.client.ResponseListener;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
@@ -43,11 +49,14 @@ import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.janusgraph.util.encoding.LongEncoding;
+import org.redisson.client.RedisException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Future;
 import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasErrorCode.INDEX_NOT_FOUND;
@@ -123,20 +132,19 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         DirectIndexQueryResult result = null;
 
         try {
-
-            String responseString =  performDirectIndexQuery(searchParams.getQuery(), false);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("runQueryWithLowLevelClient.response : {}", responseString);
+            if(searchParams.isCallAsync() || AtlasConfiguration.ENABLE_ASYNC_INDEXSEARCH.getBoolean()) {
+                return performAsyncDirectIndexQuery(searchParams);
+            } else{
+                String responseString =  performDirectIndexQuery(searchParams.getQuery(), false);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("runQueryWithLowLevelClient.response : {}", responseString);
+                }
+                return getResultFromResponse(responseString);
             }
-            
-            result = getResultFromResponse(responseString);
-
         } catch (IOException e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
         }
-
-        return result;
     }
 
     private Map<String, Object> runQueryWithLowLevelClient(String query) throws AtlasBaseException {
@@ -166,6 +174,261 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
     }
 
+    private Map<String, LinkedHashMap> runUpdateByQueryWithLowLevelClient(String query) throws AtlasBaseException {
+        try {
+            String responseString = performDirectUpdateByQuery(query);
+
+            Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(responseString, Map.class);
+            return responseMap;
+
+        } catch (IOException e) {
+            LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
+        }
+    }
+
+    private DirectIndexQueryResult performAsyncDirectIndexQuery(SearchParams searchParams) throws AtlasBaseException, IOException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("performAsyncDirectIndexQuery");
+        DirectIndexQueryResult result = null;
+        boolean contextIdExists = StringUtils.isNotEmpty(searchParams.getSearchContextId()) && searchParams.getSearchContextSequenceNo() != null;
+        try {
+            if(contextIdExists) {
+                // If the search context id and greater sequence no is present,
+                // then we need to delete the previous search context async
+                    processRequestWithSameSearchContextId(searchParams);
+            }
+
+            String KeepAliveTime = AtlasConfiguration.INDEXSEARCH_ASYNC_SEARCH_KEEP_ALIVE_TIME_IN_SECONDS.getLong() +"s";
+            if (searchParams.getRequestTimeoutInSecs() !=  null) {
+                KeepAliveTime = searchParams.getRequestTimeoutInSecs() +"s";
+            }
+            AsyncQueryResult response = submitAsyncSearch(searchParams, KeepAliveTime, false).get();
+            if(response.isRunning()) {
+                /*
+                    * If the response is still running, then we need to wait for the response
+                    * We need to check if the search context ID is present and update the cache
+                    * We also need to check if the search ID exists and delete if necessary, if the sequence number is greater than the cache sequence number
+                    *
+                 */
+                String esSearchId = response.getId();
+                String searchContextId = searchParams.getSearchContextId();
+                Integer searchContextSequenceNo = searchParams.getSearchContextSequenceNo();
+                if (contextIdExists) {
+                    CompletableFuture.runAsync(() -> SearchContextCache.put(searchContextId, searchContextSequenceNo, esSearchId));
+                }
+                response = getAsyncSearchResponse(searchParams, esSearchId).get();
+                if (response == null) {
+                    // If the response is null, we want to return a timeout exception to the user
+                    // This should correspond to a 504 Gateway Timeout since the issue is server-side (Elasticsearch timeout)
+                    throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_GATEWAY_TIMEOUT, KeepAliveTime);
+                }
+
+                if(response.isTimedOut()) {
+                    LOG.error("timeout exceeded for query {}:", searchParams.getQuery());
+                    RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("elasticQueryTimeout"));
+                    throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED_DUE_TO_TIMEOUT, KeepAliveTime);
+                }
+                result = getResultFromResponse(response.getFullResponse(), true);
+            } else {
+                result = getResultFromResponse(response.getFullResponse(), true);
+            }
+        }catch (Exception e) {
+            LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
+        } finally {
+            if (contextIdExists) {
+                // If the search context id is present, then we need to remove the search context from the cache
+                try {
+                    CompletableFuture.runAsync(() -> SearchContextCache.remove(searchParams.getSearchContextId()));
+                } catch (Exception e) {
+                    LOG.error("Failed to remove the search context from the cache {}", e.getMessage());
+                }
+            }
+            RequestContext.get().endMetricRecord(metric);
+        }
+        return result;
+    }
+
+    /*
+        * Process the request with the same search context ID and sequence number
+        * @param searchParams
+        * @return void
+        * Function to process the request with the same search context ID
+        * If the sequence number is greater than the cache sequence number,
+        * then we need to cancel the request and update the cache
+        * We also need to check if the search ID exists and delete if necessary
+     */
+    private void processRequestWithSameSearchContextId(SearchParams searchParams) {
+        AtlasPerfMetrics.MetricRecorder funcMetric = RequestContext.get().startMetricRecord("processRequestWithSameSearchContextId");
+        try {
+            // Extract search context ID and sequence number
+            String currentSearchContextId = searchParams.getSearchContextId();
+            Integer currentSequenceNumber = searchParams.getSearchContextSequenceNo();
+            // Get the search ID from the cache if sequence number is greater than the current sequence number
+            String previousESSearchId = SearchContextCache.getESAsyncSearchIdFromContextCache(currentSearchContextId, currentSequenceNumber);
+
+            if (StringUtils.isNotEmpty(previousESSearchId)) {
+                LOG.debug("Deleting the previous async search response with ID {}", previousESSearchId);
+                // If the search ID exists, then we need to delete the search context
+                deleteAsyncSearchResponse(previousESSearchId);
+            }
+        } catch (RedisException e) {
+            AtlasPerfMetrics.Metric failureCounter = new AtlasPerfMetrics.Metric("async_request_redis_failure_counter");
+            failureCounter.setMetricType(AtlasMetricType.COUNTER);
+            failureCounter.incrementInvocations();
+            LOG.error("Failed to process the request with the same search context ID {}", e.getMessage());
+            RequestContext.get().addApplicationMetrics(failureCounter);
+        }
+        catch (Exception e) {
+            LOG.error("Failed to process the request with the same search context ID {}", e.getMessage());
+        }
+        finally {
+            RequestContext.get().endMetricRecord(funcMetric);
+        }
+    }
+
+    /*
+        * Get the async search response
+        * @param searchParams
+        * @param esSearchId
+        * @return Future<AsyncQueryResult>
+        * Function to get the async search response after we submit the async search request
+     */
+    private Future<AsyncQueryResult> getAsyncSearchResponse(SearchParams searchParams, String esSearchId)  {
+        CompletableFuture<AsyncQueryResult> future = new CompletableFuture<>();
+        String endPoint = "_async_search/" + esSearchId;
+        Request request = new Request("GET", endPoint);
+        long waitTime = AtlasConfiguration.INDEXSEARCH_ASYNC_SEARCH_KEEP_ALIVE_TIME_IN_SECONDS.getLong();
+        if (searchParams.getRequestTimeoutInSecs()!= null) {
+            waitTime = searchParams.getRequestTimeoutInSecs();
+        }
+        request.addParameter("wait_for_completion_timeout", waitTime + "s");
+        ResponseListener responseListener = new ResponseListener() {
+            @Override
+            public void onSuccess(Response response) {
+                try {
+                    String respString = EntityUtils.toString(response.getEntity());
+                    Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(respString, Map.class);
+                    Boolean isInComplete = AtlasType.fromJson(AtlasType.toJson(responseMap.get("is_partial")), Boolean.class);
+                    String id = AtlasType.fromJson(AtlasType.toJson(responseMap.get("id")), String.class);
+                    boolean isTimedOut = AtlasType.fromJson(AtlasType.toJson(responseMap.get("response").get("timed_out")), Boolean.class);
+
+                    if (isInComplete != null && isInComplete) {
+                        /*
+                           * After the wait time, if the response is still incomplete, then we need to delete the search context
+                           * and complete the future with null
+                           * So that ES don't process the request later
+                         */
+                        deleteAsyncSearchResponse(id);
+                        future.complete(null);
+                    }
+                    AsyncQueryResult result = new AsyncQueryResult(respString, false, isTimedOut);
+                    future.complete(result);
+                } catch (IOException e) {
+                    future.completeExceptionally(e);
+                }
+            }
+
+            @Override
+            public void onFailure(Exception exception) {
+                if (exception instanceof ResponseException){
+                    int statusCode = ((ResponseException) exception).getResponse().getStatusLine().getStatusCode();
+                    if (statusCode == 400 || statusCode == 404) {
+                        /*
+                            * If the response is not found or deleted, then we need to complete the future with null
+                            * Else we need to complete the future with the exception
+                            * Sending null, would return 204 to the user
+                         */
+                        LOG.debug("Async search response not found or deleted", exception);
+                        future.complete(null);
+                    } else {
+                        future.completeExceptionally(exception);
+                    }
+                } else {
+                    future.completeExceptionally(exception);
+                }
+            }
+        };
+
+        lowLevelRestClient.performRequestAsync(request, responseListener);
+
+        return future;
+    }
+
+    private void deleteAsyncSearchResponse(String searchContextId) {
+        String endPoint = "_async_search/" + searchContextId;
+        Request request = new Request("DELETE", endPoint);
+        ResponseListener responseListener = new ResponseListener() {
+            @Override
+            public void onSuccess(Response response) {
+                LOG.debug("Deleted async search response");
+            }
+            @Override
+            public void onFailure(Exception exception) {
+                if (exception instanceof ResponseException && ((ResponseException) exception).getResponse().getStatusLine().getStatusCode() == 404) {
+                    LOG.debug("Async search response not found");
+                } else {
+                    LOG.error("Failed to delete async search response {}", exception.getMessage());
+                }
+            }
+        };
+        lowLevelRestClient.performRequestAsync(request, responseListener);
+    }
+
+    private Future<AsyncQueryResult> submitAsyncSearch(SearchParams searchParams, String KeepAliveTime, boolean source) {
+        CompletableFuture<AsyncQueryResult> future = new CompletableFuture<>();
+        HttpEntity entity = new NStringEntity(searchParams.getQuery(), ContentType.APPLICATION_JSON);
+        String endPoint;
+
+        if (source) {
+            endPoint = index + "/_async_search";
+        } else {
+            endPoint = index + "/_async_search?_source=false";
+        }
+
+        Request request = new Request("POST", endPoint);
+        request.setEntity(entity);
+
+        request.addParameter("wait_for_completion_timeout", "100ms");
+        request.addParameter("keep_alive", KeepAliveTime);
+
+        ResponseListener responseListener = new ResponseListener() {
+            @Override
+            public void onSuccess(Response response) {
+                try {
+                    String respString = EntityUtils.toString(response.getEntity());
+                    Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(respString, Map.class);
+                    boolean isRunning = AtlasType.fromJson(AtlasType.toJson(responseMap.get("is_running")), Boolean.class);
+                    String id = AtlasType.fromJson(AtlasType.toJson(responseMap.get("id")), String.class);
+                    boolean isTimedOut = AtlasType.fromJson(AtlasType.toJson(responseMap.get("response").get("timed_out")), Boolean.class);
+                    AsyncQueryResult result = new AsyncQueryResult(respString, isRunning, isTimedOut);
+                    /*
+                        * If the response is running, then we need to complete the future with the ID to retrieve this later
+                        * Else we will complete the future with the response, if it completes within default timeout of 100ms
+                     */
+                    if (isRunning && StringUtils.isNotEmpty(id)) {
+                        // response is still running, complete the future with the ID
+                        // use the ID to retrieve the response later
+                        result.setId(id);
+                        future.complete(result);
+                    } else {
+                        future.complete(result);
+                    }
+                } catch (IOException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            @Override
+            public void onFailure(Exception exception) {
+                future.completeExceptionally(exception);
+            }
+        };
+
+        lowLevelRestClient.performRequestAsync(request, responseListener);
+
+        return future;
+    }
+
     private String performDirectIndexQuery(String query, boolean source) throws AtlasBaseException, IOException {
         HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
         String endPoint;
@@ -187,20 +450,52 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 LOG.warn(String.format("ES index with name %s not found", index));
                 throw new AtlasBaseException(INDEX_NOT_FOUND, index);
             } else {
-                throw new AtlasBaseException(rex);
+                throw new AtlasBaseException(String.format("Error in executing elastic query: %s", EntityUtils.toString(entity)), rex);
             }
         }
 
         return EntityUtils.toString(response.getEntity());
     }
 
-    private DirectIndexQueryResult getResultFromResponse(String responseString) {
-        DirectIndexQueryResult result = new DirectIndexQueryResult();
+    private String performDirectUpdateByQuery(String query) throws AtlasBaseException, IOException {
+        HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
+        String endPoint;
 
+        endPoint = index + "/_update_by_query";
+
+        Request request = new Request("POST", endPoint);
+        request.setEntity(entity);
+
+        Response response;
+        try {
+            response = lowLevelRestClient.performRequest(request);
+        } catch (ResponseException rex) {
+            if (rex.getResponse().getStatusLine().getStatusCode() == 404) {
+                LOG.warn(String.format("ES index with name %s not found", index));
+                throw new AtlasBaseException(INDEX_NOT_FOUND, index);
+            } else {
+                throw new AtlasBaseException(String.format("Error in executing elastic query: %s", EntityUtils.toString(entity)), rex);
+            }
+        }
+
+        return EntityUtils.toString(response.getEntity());
+    }
+
+    private DirectIndexQueryResult getResultFromResponse(String responseString, boolean async) throws IOException {
         Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(responseString, Map.class);
+        return getResultFromResponse(responseMap.get("response"));
+    }
 
+    private DirectIndexQueryResult getResultFromResponse(Map<String, LinkedHashMap> responseMap) throws IOException {
+        DirectIndexQueryResult result = new DirectIndexQueryResult();
         Map<String, LinkedHashMap> hits_0 = AtlasType.fromJson(AtlasType.toJson(responseMap.get("hits")), Map.class);
-        this.vertexTotals = (Integer) hits_0.get("total").get("value");
+        if (hits_0 == null) {
+            return result;
+        }
+        LinkedHashMap approximateCount = hits_0.get("total");
+        if (approximateCount != null) {
+            this.vertexTotals = (Integer) approximateCount.get("value");
+        }
 
         List<LinkedHashMap> hits_1 = AtlasType.fromJson(AtlasType.toJson(hits_0.get("hits")), List.class);
 
@@ -214,7 +509,18 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
 
         return result;
+
     }
+
+
+    private DirectIndexQueryResult getResultFromResponse(String responseString) throws IOException {
+
+        Map<String, LinkedHashMap> responseMap = AtlasType.fromJson(responseString, Map.class);
+
+        return getResultFromResponse(responseMap);
+    }
+
+
 
     @Override
     public DirectIndexQueryResult<AtlasJanusVertex, AtlasJanusEdge> vertices(SearchParams searchParams) throws AtlasBaseException {
@@ -224,6 +530,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     @Override
     public Map<String, Object> directIndexQuery(String query) throws AtlasBaseException {
         return runQueryWithLowLevelClient(query);
+    }
+
+    public Map<String, LinkedHashMap> directUpdateByQuery(String query) throws AtlasBaseException {
+        return runUpdateByQueryWithLowLevelClient(query);
     }
 
     @Override
@@ -284,6 +594,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         @Override
         public Map<String, List<String>> getHighLights() {
             return new HashMap<>();
+        }
+
+        @Override
+        public ArrayList<Object> getSort() {
+            return new ArrayList<>();
         }
     }
 
@@ -350,5 +665,75 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             }
             return new HashMap<>();
         }
+
+        @Override
+        public ArrayList<Object> getSort() {
+            Object sort = this.hit.get("sort");
+            if (Objects.nonNull(sort) && sort instanceof List) {
+                return (ArrayList<Object>) sort;
+            }
+            return new ArrayList<>();
+        }
     }
+
+    public class AsyncQueryResult {
+        private boolean isRunning;
+        private String id;
+        private String fullResponse;
+        private boolean timedOut;
+
+        private boolean success;
+        // Constructor for a running process
+        public AsyncQueryResult(String id) {
+            this.isRunning = true;
+            this.id = id;
+            this.fullResponse = null;
+        }
+
+        // Constructor for a completed process
+        public AsyncQueryResult(String fullResponse, boolean isRunning, boolean timedOut) {
+            this.isRunning = isRunning;
+            this.id = null;
+            this.fullResponse = fullResponse;
+            this.timedOut = timedOut;
+        }
+
+        public void setRunning(boolean running) {
+            this.isRunning = running;
+        }
+
+        // Getters
+        public boolean isRunning() {
+            return isRunning;
+        }
+
+        public void setTimedOut(boolean timedOut) {
+            this.timedOut = timedOut;
+        }
+
+        // Getters
+        public boolean isTimedOut() {
+            return timedOut;
+        }
+
+        void setId(String id) {
+            this.id = id;
+        }
+        public String getId() {
+            return id;
+        }
+
+        public String getFullResponse() {
+            return fullResponse;
+        }
+
+        public void setSuccess(boolean success) {
+            this.success = success;
+        }
+
+        public boolean isSuccess() {
+            return success;
+        }
+    }
+
 }

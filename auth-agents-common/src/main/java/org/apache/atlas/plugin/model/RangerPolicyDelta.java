@@ -19,8 +19,8 @@
 
 package org.apache.atlas.plugin.model;
 
-import org.apache.htrace.shaded.fasterxml.jackson.annotation.JsonIgnore;
-import org.apache.htrace.shaded.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -74,6 +74,12 @@ public class RangerPolicyDelta implements java.io.Serializable {
     public Long getPolicyId() { return policy != null ? policy.getId() : null; }
 
     @JsonIgnore
+    public String getPolicyGuid() { return policy != null ? policy.getGuid() : null; }
+
+    @JsonIgnore
+    public String getPolicyAtlasGuid() { return policy != null ? policy.getAtlasGuid() : null; }
+
+    @JsonIgnore
     public String getZoneName() { return policy != null ? policy.getZoneName() : null; }
 
     public RangerPolicy getPolicy() { return policy; }
@@ -94,6 +100,7 @@ public class RangerPolicyDelta implements java.io.Serializable {
                 + ", serviceType:" + getServiceType()
                 + ", policyType:" + getPolicyType()
                 + ", policyId:[" + getPolicyId() + "]"
+                + ", policyGuid:[" + getPolicyGuid() + "]"
                 + ", policy:[" + policy +"]";
     }
 

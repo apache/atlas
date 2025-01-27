@@ -19,8 +19,14 @@ public class SearchParams {
     boolean excludeMeanings;
     boolean excludeClassifications;
 
+    boolean includeClassificationNames = false;
+
     RequestMetadata requestMetadata = new RequestMetadata();
+
+    Async async = new Async();
     boolean showHighlights;
+
+    boolean showSearchMetadata;
 
     public String getQuery() {
         return getQuery();
@@ -98,6 +104,14 @@ public class SearchParams {
         this.excludeMeanings = excludeMeanings;
     }
 
+    public boolean isIncludeClassificationNames() {
+        return includeClassificationNames;
+    }
+
+    public void setIncludeClassificationNames(boolean includeClassificationNames) {
+        this.includeClassificationNames = includeClassificationNames;
+    }
+
     public boolean isSaveSearchLog() {
         return requestMetadata.saveSearchLog;
     }
@@ -110,22 +124,61 @@ public class SearchParams {
         return requestMetadata;
     }
 
+    public String getRequestMetadataPersona() {
+        return requestMetadata.getPersona();
+    }
+
     public void setRequestMetadata(RequestMetadata requestMetadata) {
         this.requestMetadata = requestMetadata;
+    }
+
+    public void setQuery(String query) {
+        setQuery(query);
+    }
+
+    public Async getAsync() {
+        return async;
+    }
+
+    public void setAsync(Async async) {
+        this.async = async;
+    }
+
+    public boolean isCallAsync() {
+        return async.getIsCallAsync();
+    }
+
+    public String getSearchContextId() {
+        return async.getSearchContextId();
+    }
+
+    public Integer getSearchContextSequenceNo() {
+        return async.getSearchContextSequenceNo();
+    }
+
+    public Long getRequestTimeoutInSecs() {
+        return async.getRequestTimeoutInSecs();
     }
 
     public String getSearchInput() {
         return this.requestMetadata.getSearchInput();
     }
 
-    public boolean isShowHighlights() {
+    public boolean getShowHighlights() {
         return showHighlights;
     }
+
+    public boolean getShowSearchMetadata() {
+        return showSearchMetadata;
+    }
+
 
     static class RequestMetadata {
         private String searchInput;
         private Set<String> utmTags;
         private boolean saveSearchLog;
+
+        private String persona;
 
         public String getSearchInput() {
             return searchInput;
@@ -149,6 +202,41 @@ public class SearchParams {
 
         public void setSaveSearchLog(boolean saveSearchLog) {
             this.saveSearchLog = saveSearchLog;
+        }
+
+        public String getPersona() {
+            return persona;
+        }
+
+        public void setPersona(String persona) {
+            this.persona = persona;
+        }
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown=true)
+    static class Async {
+        private boolean isCallAsync;
+
+        private String searchContextId;
+
+        private Integer searchContextSequenceNo;
+
+        private Long requestTimeoutInSecs;
+
+        public boolean getIsCallAsync() {
+            return isCallAsync;
+        }
+
+        public String getSearchContextId() {
+            return searchContextId;
+        }
+
+        public Integer getSearchContextSequenceNo() {
+            return searchContextSequenceNo;
+        }
+
+        public Long getRequestTimeoutInSecs() {
+            return requestTimeoutInSecs;
         }
     }
 

@@ -22,18 +22,29 @@ public class LineageListRequest {
     private SearchParameters.FilterCriteria entityTraversalFilters;
     private SearchParameters.FilterCriteria relationshipTraversalFilters;
     private Set<String>                     attributes;
+    private Set<String>                     relationAttributes;
     private Boolean                         excludeMeanings;
     private Boolean                         excludeClassifications;
+    private Boolean                         immediateNeighbours=false;
+
+    public Boolean getImmediateNeighbours() {
+        return immediateNeighbours;
+    }
+
+    public void setImmediateNeighbours(Boolean immediateNeighbours) {
+        this.immediateNeighbours = immediateNeighbours;
+    }
 
     public enum LineageDirection {INPUT, OUTPUT}
 
     public LineageListRequest() {
         this.attributes = new HashSet<>();
+        this.relationAttributes = new HashSet<>();
     }
 
     public LineageListRequest(String guid, Integer size, Integer from, Integer depth, LineageDirection direction, SearchParameters.FilterCriteria entityFilters,
                               SearchParameters.FilterCriteria entityTraversalFilters, SearchParameters.FilterCriteria relationshipTraversalFilters,
-                              Set<String> attributes, boolean excludeMeanings, boolean excludeClassifications) {
+                              Set<String> attributes, boolean excludeMeanings, boolean excludeClassifications, Set<String> relationAttributes) {
         this.guid = guid;
         this.size = size;
         this.from = from;
@@ -45,6 +56,7 @@ public class LineageListRequest {
         this.attributes = attributes;
         this.excludeMeanings = excludeMeanings;
         this.excludeClassifications = excludeClassifications;
+        this.relationAttributes = relationAttributes;
     }
 
     public String getGuid() {
@@ -117,6 +129,14 @@ public class LineageListRequest {
 
     public void setAttributes(Set<String> attributes) {
         this.attributes = attributes;
+    }
+
+    public Set<String> getRelationAttributes() {
+        return relationAttributes;
+    }
+
+    public void setRelationAttributes(Set<String> relationAttributes) {
+        this.relationAttributes = relationAttributes;
     }
 
     public Boolean isExcludeMeanings() {

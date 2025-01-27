@@ -141,6 +141,10 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         return this.registry.createVertex(taskType, createdBy, parameters, classificationId, entityGuid);
     }
 
+    public AtlasTask createTask(String taskType, String createdBy, Map<String, Object> parameters, String classificationId, String classificationName, String entityGuid) {
+        return this.registry.createVertex(taskType, createdBy, parameters, classificationId, classificationName, entityGuid);
+    }
+
     public List<AtlasTask> getAll() {
         return this.registry.getAll();
     }
@@ -204,7 +208,11 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     }
 
     public List<AtlasTask> getInProgressTasks() {
-        return registry.getInProgressTasks();
+        if(AtlasConfiguration.TASKS_IN_PROGRESS_GRAPH_QUERY.getBoolean()) {
+            return registry.getInProgressTasks();
+        } else {
+            return registry.getInProgressTasksES();
+        }
     }
 
     public void deleteByGuid(String guid) throws AtlasBaseException {

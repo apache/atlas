@@ -51,6 +51,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -154,7 +155,7 @@ public class ClassificationAssociator {
             this(AtlasGraphProvider.getGraphInstance(), typeRegistry, entitiesStore, entityGraphMapper, entityChangeNotifier, instanceConverter);
         }
 
-        public void setClassifications(Map<String, AtlasEntityHeader> map) throws AtlasBaseException {
+        public void setClassifications(Map<String, AtlasEntityHeader> map, boolean overrideClassifications) throws AtlasBaseException {
             RequestContext.get().setDelayTagNotifications(true);
 
             for (String guid  : map.keySet()) {
@@ -178,8 +179,12 @@ public class ClassificationAssociator {
                 if (entityToBeChanged == null) {
                     throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
                 }
-
-                Map<String, List<AtlasClassification>> operationListMap = computeChanges(incomingEntityHeader, entityToBeChanged);
+                Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
+                if(overrideClassifications) {
+                    operationListMap = computeChanges(incomingEntityHeader, entityToBeChanged);
+                } else {
+                    operationListMap = validateAndTransfer(incomingEntityHeader, entityToBeChanged);
+                }
                 try {
                     commitChanges(guid, typeName, operationListMap);
                 } catch (AtlasBaseException e) {
@@ -236,6 +241,54 @@ public class ClassificationAssociator {
             RequestContext.get().setDelayTagNotifications(false);
         }
 
+        private Map<String, List<AtlasClassification>> validateAndTransfer(AtlasEntityHeader incomingEntityHeader, AtlasEntityHeader entityToBeChanged) throws AtlasBaseException {
+            Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
+
+            Set<String> preExistingClassificationKeys = new HashSet<>();
+            List<AtlasClassification> filteredRemoveClassifications = new ArrayList<>();
+
+            ListOps<AtlasClassification> listOps = new ListOps<>();
+
+            for (AtlasClassification classification : Optional.ofNullable(entityToBeChanged.getClassifications()).orElse(Collections.emptyList())) {
+                if (entityToBeChanged.getGuid().equals(classification.getEntityGuid())) {
+                    String key = generateClassificationComparisonKey(classification);
+                    preExistingClassificationKeys.add(key);  // Track pre-existing keys
+                }
+            }
+
+            for (AtlasClassification classification : Optional.ofNullable(incomingEntityHeader.getRemoveClassifications()).orElse(Collections.emptyList())) {
+                if (entityToBeChanged.getGuid().equals(classification.getEntityGuid())) {
+                    String key = generateClassificationComparisonKey(classification);
+                    // If the classification doesn't exist in pre-existing keys, log it
+                    if (!preExistingClassificationKeys.contains(key)) {
+                        String typeName = key.split("\\|")[1];
+                        LOG.info("Classification {} is not associated with entity {}", typeName, entityToBeChanged.getGuid());
+                    } else {
+                        filteredRemoveClassifications.add(classification);
+                    }
+                }
+            }
+
+            List<AtlasClassification> filteredClassifications = Optional.ofNullable(incomingEntityHeader.getAddOrUpdateClassifications())
+                    .orElse(Collections.emptyList())
+                    .stream()
+                    .filter(classification -> classification.getEntityGuid().equals(entityToBeChanged.getGuid()))
+                    .collect(Collectors.toList());
+
+            List<AtlasClassification> incomingClassifications = listOps.filter(incomingEntityHeader.getGuid(), filteredClassifications);
+            List<AtlasClassification> entityClassifications = listOps.filter(entityToBeChanged.getGuid(), entityToBeChanged.getClassifications());
+
+            bucket(PROCESS_DELETE, operationListMap, filteredRemoveClassifications);
+            bucket(PROCESS_UPDATE, operationListMap, listOps.intersect(incomingClassifications, entityClassifications));
+            bucket(PROCESS_ADD, operationListMap, listOps.subtract(incomingClassifications, entityClassifications));
+
+            return operationListMap;
+        }
+
+        private String generateClassificationComparisonKey(AtlasClassification classification) {
+            return classification.getEntityGuid() + "|" + classification.getTypeName();
+        }
+
         private void commitChanges(String entityGuid, String typeName, Map<String, List<AtlasClassification>> operationListMap) throws AtlasBaseException {
             if (MapUtils.isEmpty(operationListMap)) {
                 return;
@@ -248,7 +301,7 @@ public class ClassificationAssociator {
             operationListMap.clear();
         }
 
-        private Map<String, List<AtlasClassification>> computeChanges(AtlasEntityHeader incomingEntityHeader, AtlasEntityHeader entityToBeUpdated) {
+        private Map<String, List<AtlasClassification>> computeChanges(AtlasEntityHeader incomingEntityHeader, AtlasEntityHeader entityToBeUpdated) throws AtlasBaseException {
             if (incomingEntityHeader == null || entityToBeUpdated == null) {
                 return null;
             }
@@ -270,6 +323,8 @@ public class ClassificationAssociator {
             return operationListMap;
         }
 
+
+
         private void bucket(String op, Map<String, List<AtlasClassification>> operationListMap, List<AtlasClassification> results) {
             if (CollectionUtils.isEmpty(results)) {
                 return;
@@ -282,7 +337,6 @@ public class ClassificationAssociator {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
-
             String classificationNames = getClassificationNames(list);
             try {
                 entitiesStore.addClassifications(entityGuid, list);
@@ -296,7 +350,6 @@ public class ClassificationAssociator {
             if (CollectionUtils.isEmpty(list)) {
                 return;
             }
-
             String classificationNames = getClassificationNames(list);
             try {
                 entitiesStore.updateClassifications(entityGuid, list);

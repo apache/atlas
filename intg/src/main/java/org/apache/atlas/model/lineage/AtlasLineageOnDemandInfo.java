@@ -171,6 +171,8 @@ public class AtlasLineageOnDemandInfo implements Serializable {
         boolean                    hasMoreOutputs;
         int                        inputRelationsCount;
         int                        outputRelationsCount;
+        int                        totalInputRelationsCount;
+        int                        totalOutputRelationsCount;
         boolean                    isInputRelationsReachedLimit;
         boolean                    isOutputRelationsReachedLimit;
         @JsonProperty
@@ -188,13 +190,15 @@ public class AtlasLineageOnDemandInfo implements Serializable {
             this.hasMoreOutputs                = false;
             this.inputRelationsCount           = 0;
             this.outputRelationsCount          = 0;
+            this.totalInputRelationsCount      = 0;
+            this.totalOutputRelationsCount     = 0;
             this.isInputRelationsReachedLimit  = false;
             this.isOutputRelationsReachedLimit = false;
             this.hasUpstream                   = false;
             this.hasDownstream                 = false;
             this.fromCounter                   = 0;
         }
-
+        
         public boolean isInputRelationsReachedLimit() {
             return isInputRelationsReachedLimit;
         }
@@ -243,9 +247,17 @@ public class AtlasLineageOnDemandInfo implements Serializable {
             this.hasDownstream = hasDownstream;
         }
 
-        public int getFromCounter() {
-            return fromCounter;
+        public int getTotalInputRelationsCount() {
+            return totalInputRelationsCount;
         }
+
+        public void setTotalInputRelationsCount(int count) {this.totalInputRelationsCount = count;}
+
+        public int getTotalOutputRelationsCount() {
+            return totalOutputRelationsCount;
+        }
+
+        public void setTotalOutputRelationsCount(int count) {this.totalOutputRelationsCount = count;}
 
         public void incrementFromCounter() {
             fromCounter++;
@@ -253,6 +265,10 @@ public class AtlasLineageOnDemandInfo implements Serializable {
 
         public int getInputRelationsCount() {
             return inputRelationsCount;
+        }
+
+        public int getFromCounter() {
+            return fromCounter;
         }
 
         public void incrementInputRelationsCount() {

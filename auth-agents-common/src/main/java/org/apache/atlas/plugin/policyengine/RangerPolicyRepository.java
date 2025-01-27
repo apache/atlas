@@ -90,7 +90,7 @@ public class RangerPolicyRepository {
     private       List<RangerPolicyEvaluator>       dataMaskPolicyEvaluators;
     private       List<RangerPolicyEvaluator>       rowFilterPolicyEvaluators;
     private final List<RangerPolicyEvaluator>       auditPolicyEvaluators;
-    private       Map<Long, RangerPolicyEvaluator>  policyEvaluatorsMap;
+    private       Map<String, RangerPolicyEvaluator>  policyEvaluatorsMap;
     private       boolean                           isContextEnrichersShared = false;
     private       boolean                           isPreCleaned             = false;
 
@@ -654,9 +654,9 @@ public class RangerPolicyRepository {
     }
 
 
-    public Map<Long, RangerPolicyEvaluator> getPolicyEvaluatorsMap() { return policyEvaluatorsMap; }
+    public Map<String, RangerPolicyEvaluator> getPolicyEvaluatorsMap() { return policyEvaluatorsMap; }
 
-    RangerPolicyEvaluator getPolicyEvaluator(Long id) {
+    RangerPolicyEvaluator getPolicyEvaluator(String id) {
         return policyEvaluatorsMap.get(id);
     }
 
@@ -1252,17 +1252,17 @@ public class RangerPolicyRepository {
         }
     }
 
-    private Map<Long, RangerPolicyEvaluator> createPolicyEvaluatorsMap() {
-        Map<Long, RangerPolicyEvaluator> tmpPolicyEvaluatorMap = new HashMap<>();
+    private Map<String, RangerPolicyEvaluator> createPolicyEvaluatorsMap() {
+        Map<String, RangerPolicyEvaluator> tmpPolicyEvaluatorMap = new HashMap<>();
 
         for (RangerPolicyEvaluator evaluator : getPolicyEvaluators()) {
-            tmpPolicyEvaluatorMap.put(evaluator.getPolicy().getId(), evaluator);
+            tmpPolicyEvaluatorMap.put(evaluator.getPolicy().getGuid(), evaluator);
         }
         for (RangerPolicyEvaluator evaluator : getDataMaskPolicyEvaluators()) {
-            tmpPolicyEvaluatorMap.put(evaluator.getPolicy().getId(), evaluator);
+            tmpPolicyEvaluatorMap.put(evaluator.getPolicy().getGuid(), evaluator);
         }
         for (RangerPolicyEvaluator evaluator : getRowFilterPolicyEvaluators()) {
-            tmpPolicyEvaluatorMap.put(evaluator.getPolicy().getId(), evaluator);
+            tmpPolicyEvaluatorMap.put(evaluator.getPolicy().getGuid(), evaluator);
         }
 
         return  tmpPolicyEvaluatorMap;
@@ -1294,7 +1294,7 @@ public class RangerPolicyRepository {
                     }
 
                     if (!RangerPolicy.POLICY_TYPE_AUDIT.equals(policy.getPolicyType())) {
-                        policyEvaluatorsMap.put(policy.getId(), ret);
+                        policyEvaluatorsMap.put(policy.getGuid(), ret);
                     }
                 }
             }
@@ -1306,22 +1306,22 @@ public class RangerPolicyRepository {
         return ret;
     }
 
-    private void removePolicy(Long id) {
+    private void removePolicy(String guid) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> RangerPolicyRepository.removePolicy(" + id +")");
+            LOG.debug("==> RangerPolicyRepository.removePolicy(" + guid +")");
         }
         Iterator<RangerPolicy> iterator = policies.iterator();
         while (iterator.hasNext()) {
-            if (id.equals(iterator.next().getId())) {
+            if (guid.equals(iterator.next().getGuid())) {
                 iterator.remove();
                 //break;
             }
         }
 
-        policyEvaluatorsMap.remove(id);
+        policyEvaluatorsMap.remove(guid);
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== RangerPolicyRepository.removePolicy(" + id +")");
+            LOG.debug("<== RangerPolicyRepository.removePolicy(" + guid +")");
         }
     }
 
@@ -1355,13 +1355,12 @@ public class RangerPolicyRepository {
     }
 
     private RangerPolicyEvaluator update(final RangerPolicyDelta delta, final RangerPolicyEvaluator currentEvaluator) {
-
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> RangerPolicyRepository.update(delta=" + delta + ", currentEvaluator=" + (currentEvaluator == null ? null : currentEvaluator.getPolicy()) + ")");
         }
         Integer changeType = delta.getChangeType();
         String policyType  = delta.getPolicyType();
-        Long    policyId   = delta.getPolicyId();
+        String policyId    = delta.getPolicyGuid();
 
         RangerPolicy policy = delta.getPolicy();
 
@@ -1472,7 +1471,7 @@ public class RangerPolicyRepository {
         for (RangerPolicyDelta delta : deltas) {
             final Integer changeType  = delta.getChangeType();
             final String  serviceType = delta.getServiceType();
-            final Long    policyId    = delta.getPolicyId();
+            final String  policyId    = delta.getPolicyGuid();
             final String  policyType  = delta.getPolicyType();
 
             if (!serviceType.equals(this.serviceDef.getName())) {

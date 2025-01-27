@@ -41,8 +41,20 @@ public class ClassificationPropagationTasks {
             String classificationVertexId   = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
             String relationshipGuid         = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
             Boolean previousRestrictPropagationThroughLineage = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
+            Boolean previousRestrictPropagationThroughHierarchy = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
+            entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage,previousRestrictPropagationThroughHierarchy);
+        }
+    }
 
-            entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage);
+    public static class UpdateText extends ClassificationTask {
+        public UpdateText(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        }
+
+        @Override
+        protected void run(Map<String, Object> parameters) throws AtlasBaseException {
+            String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
+            entityGraphMapper.updateClassificationTextPropagation(classificationVertexId);
         }
     }
 
@@ -119,6 +131,22 @@ public class ClassificationPropagationTasks {
             AtlasRelationship relationship       = AtlasType.fromJson((String) parameters.get(PARAM_RELATIONSHIP_OBJECT), AtlasRelationship.class);
 
             entityGraphMapper.updateTagPropagations(relationshipEdgeId, relationship);
+        }
+    }
+
+    public static class CleanUpClassificationPropagation extends ClassificationTask {
+        public CleanUpClassificationPropagation(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
+            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+        }
+
+        @Override
+        protected void run(Map<String, Object> parameters) throws AtlasBaseException {
+            String            classificationName      = (String) parameters.get(PARAM_CLASSIFICATION_NAME);
+            int batchLimit = -1;
+            if(parameters.containsKey(PARAM_BATCH_LIMIT)) {
+                batchLimit = (int) parameters.get(PARAM_BATCH_LIMIT);
+            }
+            entityGraphMapper.cleanUpClassificationPropagation(classificationName, batchLimit);
         }
     }
 }

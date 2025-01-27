@@ -8,7 +8,7 @@ import org.apache.atlas.plugin.util.ServicePolicies;
 public interface AtlasAuthAdminClient {
     void init(RangerPluginConfig config);
 
-    ServicePolicies getServicePoliciesIfUpdated(long lastUpdatedTimeInMillis) throws Exception;
+    ServicePolicies getServicePoliciesIfUpdated(long lastUpdatedTimeInMillis, boolean usePolicyDelta) throws Exception;
 
     RangerRoles getRolesIfUpdated(long lastUpdatedTimeInMillis) throws Exception;
 

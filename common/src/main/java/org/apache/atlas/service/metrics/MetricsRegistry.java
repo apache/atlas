@@ -8,9 +8,9 @@ import java.util.List;
 
 public interface MetricsRegistry {
 
-    void collect(String requestId, String requestUri, AtlasPerfMetrics metrics);
+    void collect(String requestId, String requestUri, AtlasPerfMetrics metrics, String clientOrigin);
 
-    void collect(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics);
+    void collectApplicationMetrics(String requestId, String requestUri, List<AtlasPerfMetrics.Metric> applicationMetrics);
 
     void scrape(PrintWriter writer) throws IOException;
 

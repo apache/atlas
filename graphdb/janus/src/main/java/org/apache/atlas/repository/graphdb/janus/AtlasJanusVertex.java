@@ -22,12 +22,14 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.stream.StreamSupport;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasSchemaViolationException;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -90,9 +92,14 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
 
     @Override
     public boolean hasEdges(AtlasEdgeDirection dir, String edgeLabel) {
-        Direction      direction = AtlasJanusObjectFactory.createDirection(dir);
-        Iterator<Edge> edges     = getWrappedElement().edges(direction, edgeLabel);
-        return edges.hasNext();
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("hasEdges");
+        try {
+            Direction      direction = AtlasJanusObjectFactory.createDirection(dir);
+            Iterator<Edge> edges     = getWrappedElement().edges(direction, edgeLabel);
+            return edges.hasNext();
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
     }
 
     private JanusGraphVertex getAsJanusVertex() {

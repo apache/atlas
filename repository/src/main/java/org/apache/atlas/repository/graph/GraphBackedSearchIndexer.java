@@ -298,24 +298,24 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         AtlasGraphManagement management = graph.getManagementSystem();
 
         try {
-            LOG.info("Creating indexes for graph.");
+            LOG.debug("Creating indexes for graph.");
 
             if (management.getGraphIndex(VERTEX_INDEX) == null) {
                 management.createVertexMixedIndex(VERTEX_INDEX, BACKING_INDEX, Collections.emptyList());
 
-                LOG.info("Created index : {}", VERTEX_INDEX);
+                LOG.debug("Created index : {}", VERTEX_INDEX);
             }
 
             if (management.getGraphIndex(EDGE_INDEX) == null) {
                 management.createEdgeMixedIndex(EDGE_INDEX, BACKING_INDEX, Collections.emptyList());
 
-                LOG.info("Created index : {}", EDGE_INDEX);
+                LOG.debug("Created index : {}", EDGE_INDEX);
             }
 
             if (management.getGraphIndex(FULLTEXT_INDEX) == null) {
                 management.createFullTextMixedIndex(FULLTEXT_INDEX, BACKING_INDEX, Collections.emptyList());
 
-                LOG.info("Created index : {}", FULLTEXT_INDEX);
+                LOG.debug("Created index : {}", FULLTEXT_INDEX);
             }
 
             HashMap<String, Object> ES_DATE_FIELD = new HashMap<>();
@@ -329,6 +329,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             ES_KEYWORD_FIELD.put("normalizer", "atlan_normalizer");
             HashMap<String, HashMap<String, Object>> KEYWORD_MULTIFIELD = new HashMap<>();
             KEYWORD_MULTIFIELD.put("keyword", ES_KEYWORD_FIELD);
+
+            HashMap<String, Object> ES_KEYWORD_WO_NORMALIZER = new HashMap<>();
+            ES_KEYWORD_WO_NORMALIZER.put("type", "keyword");
+            HashMap<String, HashMap<String, Object>> KEYWORD_FIELD = new HashMap<>();
+            KEYWORD_FIELD.put("keyword", ES_KEYWORD_WO_NORMALIZER);
 
             HashMap<String, Object> ES_GLOSSARY_ANALYZER_TEXT_FIELD = new HashMap<>();
             ES_GLOSSARY_ANALYZER_TEXT_FIELD.put("type", "text");
@@ -351,6 +356,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             // create vertex indexes
             createCommonVertexIndex(management, GUID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false, true);
             createCommonVertexIndex(management, HISTORICAL_GUID_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
+            createCommonVertexIndex(management, QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, UniqueKind.NONE, String.class, SET, false, false, true);
 
             createCommonVertexIndex(management, TYPENAME_PROPERTY_KEY, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, TYPESERVICETYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
@@ -392,11 +398,12 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, TASK_GUID, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, TASK_TYPE_PROPERTY_KEY, UniqueKind.NONE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, TASK_CREATED_TIME, UniqueKind.NONE, Long.class, SINGLE, true, false);
-            createCommonVertexIndex(management, TASK_STATUS, UniqueKind.NONE, String.class, SINGLE, true, false);
+            createCommonVertexIndex(management, TASK_STATUS, UniqueKind.NONE, String.class, SINGLE, true, false, false, new HashMap<>(), KEYWORD_FIELD);
 
             createCommonVertexIndex(management, TASK_TYPE, UniqueKind.NONE, String.class, SINGLE, true, false, true);
             createCommonVertexIndex(management, TASK_CREATED_BY, UniqueKind.NONE, String.class, SINGLE, false, false, true);
             createCommonVertexIndex(management, TASK_CLASSIFICATION_ID, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_CLASSIFICATION_TYPENAME, UniqueKind.NONE, String.class, SINGLE, false, false, true);
             createCommonVertexIndex(management, TASK_ENTITY_GUID, UniqueKind.NONE, String.class, SINGLE, false, false, true);
             createCommonVertexIndex(management, TASK_ERROR_MESSAGE, UniqueKind.NONE, String.class, SINGLE, false, false);
             createCommonVertexIndex(management, TASK_ATTEMPT_COUNT, UniqueKind.NONE, Integer.class, SINGLE, false, false);
@@ -405,7 +412,15 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, TASK_TIME_TAKEN_IN_SECONDS, UniqueKind.NONE, Long.class, SINGLE, false, false);
             createCommonVertexIndex(management, TASK_START_TIME, UniqueKind.NONE, Long.class, SINGLE, false, false);
             createCommonVertexIndex(management, TASK_END_TIME, UniqueKind.NONE, Long.class, SINGLE, false, false);
-
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_AGENT, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_AGENT_ID, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_PKG_NAME, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_AGENT_WORKFLOW_ID, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_VIA_UI, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_REQUEST_ID, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_GOOGLE_SHEETS_ID, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            createCommonVertexIndex(management, TASK_HEADER_ATLAN_MS_EXCEL_ID, UniqueKind.NONE, String.class, SINGLE, false, false, true);
+            
             // index recovery
             createCommonVertexIndex(management, PROPERTY_KEY_INDEX_RECOVERY_NAME, UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
 
@@ -415,9 +430,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createVertexCentricIndex(management, CLASSIFICATION_LABEL, AtlasEdgeDirection.BOTH, Arrays.asList(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY));
 
             // create edge indexes
-            createEdgeIndex(management, RELATIONSHIP_GUID_PROPERTY_KEY, String.class, SINGLE, true);
-            createEdgeIndex(management, EDGE_ID_IN_IMPORT_KEY, String.class, SINGLE, true);
-            createEdgeIndex(management, ATTRIBUTE_INDEX_PROPERTY_KEY, Integer.class, SINGLE, true);
+            createEdgeIndex(management, RELATIONSHIP_GUID_PROPERTY_KEY, String.class, SINGLE, true, false);
+            createEdgeIndex(management, EDGE_ID_IN_IMPORT_KEY, String.class, SINGLE, true, false);
+            createEdgeIndex(management, ATTRIBUTE_INDEX_PROPERTY_KEY, Integer.class, SINGLE, true, false);
 
             // create fulltext indexes
             createFullTextIndex(management, ENTITY_TEXT_PROPERTY_KEY, String.class, SINGLE);
@@ -428,7 +443,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
             commit(management);
 
-            LOG.info("Index creation for global keys complete.");
+            LOG.debug("Index creation for global keys complete.");
         } catch (Throwable t) {
             LOG.error("GraphBackedSearchIndexer.initialize() failed", t);
 
@@ -647,21 +662,22 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 createEdgeLabel(management, propertyName);
 
             } else if (isBuiltInType || isArrayOfPrimitiveType || isArrayOfEnum) {
-                if (isRelationshipType(atlasType)) {
-                    createEdgeIndex(management, propertyName, getPrimitiveClass(attribTypeName), cardinality, false);
+                Class primitiveClassType;
+                boolean isStringField = false;
+
+                if (isArrayOfEnum) {
+                    primitiveClassType = String.class;
                 } else {
-                    Class primitiveClassType;
-                    boolean isStringField = false;
+                    primitiveClassType = isArrayOfPrimitiveType ? getPrimitiveClass(arrayElementType.getTypeName()): getPrimitiveClass(attribTypeName);
+                }
 
-                    if (isArrayOfEnum) {
-                        primitiveClassType = String.class;
-                    } else {
-                        primitiveClassType = isArrayOfPrimitiveType ? getPrimitiveClass(arrayElementType.getTypeName()): getPrimitiveClass(attribTypeName);
-                    }
+                if(primitiveClassType == String.class) {
+                    isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
+                }
 
-                    if(primitiveClassType == String.class) {
-                        isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
-                    }
+                if (isRelationshipType(atlasType)) {
+                    createEdgeIndex(management, propertyName, getPrimitiveClass(attribTypeName), cardinality, false, isStringField);
+                } else {
 
                     createVertexIndex(management, propertyName, UniqueKind.NONE, primitiveClassType, cardinality, isIndexable, false, isStringField, indexTypeESConfig, indexTypeESFields);
 
@@ -671,10 +687,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
                 }
             } else if (isEnumType(attributeType)) {
+                boolean isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
                 if (isRelationshipType(atlasType)) {
-                    createEdgeIndex(management, propertyName, String.class, cardinality, false);
+                    createEdgeIndex(management, propertyName, String.class, cardinality, false, isStringField);
                 } else {
-                    boolean isStringField = AtlasAttributeDef.IndexType.STRING.equals(indexType);
                     createVertexIndex(management, propertyName, UniqueKind.NONE, String.class, cardinality, isIndexable, false, isStringField, indexTypeESConfig, indexTypeESFields);
 
                     if (uniqPropName != null) {
@@ -834,7 +850,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                 }
 
                 indexFieldName = management.addMixedIndex(VERTEX_INDEX, propertyKey, isStringField, indexTypeESConfig, indexTypeESFields);
-                LOG.info("Created backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
+                LOG.debug("Created backing index for vertex property {} of type {} ", propertyName, propertyClass.getName());
             }
 
             if(indexFieldName == null && isIndexApplicable(propertyClass, cardinality)) {
@@ -908,21 +924,32 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
 
     private void createEdgeIndex(AtlasGraphManagement management, String propertyName, Class propertyClass,
-                                 AtlasCardinality cardinality, boolean createCompositeIndex) {
+                                 AtlasCardinality cardinality, boolean createCompositeIndex, boolean isStringField) {
         if (propertyName != null) {
             AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
+            boolean enforceMixedIndex = false;
+            //management.getGraphIndex("edge_index").getFieldKeys().stream().map(x -> x.getName()).collect(Collectors.toSet());
 
-            if (propertyKey == null) {
-                propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
+            if (propertyKey != null) {
+                // validate property present for EDGE_INDEX or not
+                // there are properties like __typeName, __state which might have been added as MixedIndex for VERTEX_INDEX but not for EDGE_INDEX
+                // in such case, enforceMixedIndex will ensure creation of nixed index for EDDGE_INDEX for the property
+                enforceMixedIndex = !management.getGraphIndex(EDGE_INDEX).getFieldKeys().contains(propertyKey);
+            }
+
+            if (propertyKey == null || enforceMixedIndex) {
+                if (propertyKey == null) {
+                    propertyKey = management.makePropertyKey(propertyName, propertyClass, cardinality);
+                }
 
                 if (isIndexApplicable(propertyClass, cardinality)) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Creating backing index for edge property {} of type {} ", propertyName, propertyClass.getName());
                     }
 
-                    management.addMixedIndex(EDGE_INDEX, propertyKey, false);
+                    management.addMixedIndex(EDGE_INDEX, propertyKey, isStringField);
 
-                    LOG.info("Created backing index for edge property {} of type {} ", propertyName, propertyClass.getName());
+                    LOG.info("Created backing index for edge property {} of type {} on index {}", propertyName, propertyClass.getName(), EDGE_INDEX);
                 }
             }
 

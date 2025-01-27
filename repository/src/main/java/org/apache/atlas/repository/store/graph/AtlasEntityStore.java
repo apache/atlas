@@ -25,7 +25,6 @@ import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasEntityHeaders;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasHasLineageRequests;
 import org.apache.atlas.model.instance.EntityMutationResponse;
@@ -267,6 +266,11 @@ public interface AtlasEntityStore {
     EntityMutationResponse deleteByIds(List<String> guid) throws AtlasBaseException;
 
     /*
+     * Repair classification mappings
+     */
+    public void repairClassificationMappings(final String guid) throws AtlasBaseException;
+
+    /*
      * Return list of deleted entity guids
      */
     EntityMutationResponse restoreByIds(List<String> guid) throws AtlasBaseException;
@@ -359,4 +363,24 @@ public interface AtlasEntityStore {
 
     void repairMeaningAttributeForTerms(List<String> termGuids) throws AtlasBaseException;
 
+    void repairAccesscontrolAlias(String guid) throws AtlasBaseException;
+
+    void linkMeshEntityToAssets(String meshEntityId, Set<String> linkGuids) throws AtlasBaseException;
+
+    void unlinkMeshEntityFromAssets(String meshEntityId, Set<String> unlinkGuids) throws AtlasBaseException;
+
+    void linkBusinessPolicy(String policyId, Set<String> linkGuids) throws AtlasBaseException;
+
+    void unlinkBusinessPolicy(String policyId, Set<String> unlinkGuids) throws AtlasBaseException;
+
+    void moveBusinessPolicies(Set<String> policyId, String assetId, String type) throws AtlasBaseException;
+
+    /**
+     *
+     * @param entities
+     * @throws AtlasBaseException
+     *
+     *  For evaluations of policies
+     */
+    List<AtlasEvaluatePolicyResponse> evaluatePolicies(List<AtlasEvaluatePolicyRequest> entities) throws AtlasBaseException;
 }

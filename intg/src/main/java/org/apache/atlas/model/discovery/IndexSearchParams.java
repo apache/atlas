@@ -27,6 +27,8 @@ public class IndexSearchParams extends SearchParams {
     * (this will include related attributes which has relationshipStatus as DELETED along with ACTIVE ones)
     * */
     private boolean allowDeletedRelations;
+    private boolean accessControlExclusive;
+    private boolean includeRelationshipAttributes;
 
     @Override
     public String getQuery() {
@@ -42,8 +44,20 @@ public class IndexSearchParams extends SearchParams {
         queryString = AtlasType.toJson(dsl);
     }
 
+    public long getQuerySize() {
+        return dsl.get("size") != null ? ((Number)dsl.get("size")).longValue() : 10;
+    }
+
     public boolean isAllowDeletedRelations() {
         return allowDeletedRelations;
+    }
+
+    public boolean isAccessControlExclusive() {
+        return accessControlExclusive;
+    }
+
+    public void setAccessControlExclusive(boolean accessControlExclusive) {
+        this.accessControlExclusive = accessControlExclusive;
     }
 
     public void setAllowDeletedRelations(boolean allowDeletedRelations) {
@@ -70,6 +84,14 @@ public class IndexSearchParams extends SearchParams {
         this.relationAttributes = relationAttributes;
     }
 
+    public boolean isIncludeRelationshipAttributes() {
+        return includeRelationshipAttributes;
+    }
+
+    public void setIncludeRelationshipAttributes(boolean includeRelationshipAttributes) {
+        this.includeRelationshipAttributes = includeRelationshipAttributes;
+    }
+
     @Override
     public String toString() {
         return "IndexSearchParams{" +
@@ -78,6 +100,15 @@ public class IndexSearchParams extends SearchParams {
                 ", persona='" + persona + '\'' +
                 ", queryString='" + queryString + '\'' +
                 ", allowDeletedRelations=" + allowDeletedRelations +
+                ", accessControlExclusive=" + accessControlExclusive +
+                ", includeRelationshipAttributes=" + includeRelationshipAttributes +
+                ", utmTags="+ getUtmTags() +
                 '}';
     }
+
+    @Override
+    public void setQuery(String query) {
+        this.queryString = query;
+    }
+
 }
