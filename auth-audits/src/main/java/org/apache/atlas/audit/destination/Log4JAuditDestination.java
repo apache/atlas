@@ -46,7 +46,6 @@ public class Log4JAuditDestination extends AuditDestination {
 	private static final String AUTH_AUDIT_RESOURCE= "resource";
 	private static final String AUTH_AUDIT_CLIENT_IP = "cliIP";
 	private static final String AUTH_AUDIT_AGENT = "agent";
-	private static final String TRACE_ID = "trace_id";
 
 
 	public Log4JAuditDestination() {
@@ -105,7 +104,6 @@ public class Log4JAuditDestination extends AuditDestination {
             MDC.put(AUTH_AUDIT_RESULT, String.valueOf(((AuthzAuditEvent) event).getAccessResult()));
 			MDC.put(AUTH_AUDIT_CLIENT_IP, ((AuthzAuditEvent) event).getClientIP());
 			MDC.put(AUTH_AUDIT_AGENT, ((AuthzAuditEvent) event).getAgentId());
-			MDC.put(TRACE_ID, MDC.get(TRACE_ID));
         }
     }
 
