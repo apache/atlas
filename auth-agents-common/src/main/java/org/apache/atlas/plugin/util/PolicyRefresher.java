@@ -332,6 +332,7 @@ public class PolicyRefresher extends Thread {
 						lastUpdatedTimeInMillis);
 			} else {
 				LOG.info("PolicyRefresher(serviceName=" + serviceName + "): loading delta policies from last known version=" + lastKnownVersion + ", lastUpdatedTime=" + lastUpdatedTimeInMillis);
+
 				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTimeInMillis, this.enableDeltaBasedRefresh);
 			}
 
