@@ -86,39 +86,40 @@ public class Log4JAuditDestination extends AuditDestination {
 		}
 
 		if (event != null) {
-            recordLogAttributes(event);
+			recordLogAttributes(event);
 			String eventStr = MiscUtil.stringify(event);
 			logJSON(eventStr);
-            clearLogAttributes(event);
+			clearLogAttributes(event);
 		}
 		return true;
 	}
 
-    private void recordLogAttributes(AuditEventBase event) {
-        if (event instanceof AuthzAuditEvent) {
-            MDC.put(AUTH_AUDIT_USER, ((AuthzAuditEvent) event).getUser());
-            MDC.put(AUTH_AUDIT_ACTION, ((AuthzAuditEvent) event).getAction());
-            MDC.put(AUTH_AUDIT_ENTITY_GUID, ((AuthzAuditEvent) event).getEntityGuid());
-            MDC.put(AUTH_AUDIT_POLICY_ID, ((AuthzAuditEvent) event).getPolicyId());
-            MDC.put(AUTH_AUDIT_RESOURCE, ((AuthzAuditEvent) event).getResourceType());
-            MDC.put(AUTH_AUDIT_RESULT, String.valueOf(((AuthzAuditEvent) event).getAccessResult()));
-			MDC.put(AUTH_AUDIT_CLIENT_IP, ((AuthzAuditEvent) event).getClientIP());
-			MDC.put(AUTH_AUDIT_AGENT, ((AuthzAuditEvent) event).getAgentId());
-        }
-    }
+	private void recordLogAttributes(AuditEventBase eventBase) {
+		if (eventBase instanceof AuthzAuditEvent) {
+			AuthzAuditEvent event = (AuthzAuditEvent) eventBase;
+			MDC.put(AUTH_AUDIT_USER, event.getUser());
+			MDC.put(AUTH_AUDIT_ACTION, event.getAction());
+			MDC.put(AUTH_AUDIT_ENTITY_GUID, event.getEntityGuid());
+			MDC.put(AUTH_AUDIT_POLICY_ID, event.getPolicyId());
+			MDC.put(AUTH_AUDIT_RESOURCE, event.getResourceType());
+			MDC.put(AUTH_AUDIT_RESULT, String.valueOf(event.getAccessResult()));
+			MDC.put(AUTH_AUDIT_CLIENT_IP, event.getClientIP());
+			MDC.put(AUTH_AUDIT_AGENT, event.getAgentId());
+		}
+	}
 
-    private void clearLogAttributes(AuditEventBase event) {
-        if (event instanceof AuthzAuditEvent) {
-            MDC.remove(AUTH_AUDIT_USER);
-            MDC.remove(AUTH_AUDIT_ACTION);
-            MDC.remove(AUTH_AUDIT_ENTITY_GUID);
-            MDC.remove(AUTH_AUDIT_POLICY_ID);
-            MDC.remove(AUTH_AUDIT_RESOURCE);
-            MDC.remove(AUTH_AUDIT_RESULT);
+	private void clearLogAttributes(AuditEventBase event) {
+		if (event instanceof AuthzAuditEvent) {
+			MDC.remove(AUTH_AUDIT_USER);
+			MDC.remove(AUTH_AUDIT_ACTION);
+			MDC.remove(AUTH_AUDIT_ENTITY_GUID);
+			MDC.remove(AUTH_AUDIT_POLICY_ID);
+			MDC.remove(AUTH_AUDIT_RESOURCE);
+			MDC.remove(AUTH_AUDIT_RESULT);
 			MDC.remove(AUTH_AUDIT_CLIENT_IP);
 			MDC.remove(AUTH_AUDIT_AGENT);
-        }
-    }
+		}
+	}
 
 	@Override
 	public boolean log(Collection<AuditEventBase> events) {
