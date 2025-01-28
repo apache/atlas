@@ -20,9 +20,11 @@
 package org.apache.atlas.audit.destination;
 
 import org.apache.atlas.audit.model.AuditEventBase;
+import org.apache.atlas.audit.model.AuthzAuditEvent;
 import org.apache.atlas.audit.provider.MiscUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.util.Collection;
 import java.util.Properties;
@@ -36,6 +38,16 @@ public class Log4JAuditDestination extends AuditDestination {
 	public static final String PROP_LOG4J_LOGGER = "logger";
 	public static final String DEFAULT_LOGGER_PREFIX = "ranger.audit";
 	private String loggerName = null;
+	private static final String AUTH_AUDIT_USER = "reqUser";
+	private static final String AUTH_AUDIT_ACTION = "access";
+	private static final String AUTH_AUDIT_ENTITY_GUID = "entityGuid";
+	private static final String AUTH_AUDIT_POLICY_ID = "policyId";
+	private static final String AUTH_AUDIT_RESULT = "result";
+	private static final String AUTH_AUDIT_RESOURCE= "resource";
+	private static final String AUTH_AUDIT_CLIENT_IP = "cliIP";
+	private static final String AUTH_AUDIT_AGENT = "agent";
+	private static final String TRACE_ID = "trace_id";
+
 
 	public Log4JAuditDestination() {
 		logger.info("Log4JAuditDestination() called.");
@@ -75,11 +87,40 @@ public class Log4JAuditDestination extends AuditDestination {
 		}
 
 		if (event != null) {
+            recordLogAttributes(event);
 			String eventStr = MiscUtil.stringify(event);
 			logJSON(eventStr);
+            clearLogAttributes(event);
 		}
 		return true;
 	}
+
+    private void recordLogAttributes(AuditEventBase event) {
+        if (event instanceof AuthzAuditEvent) {
+            MDC.put(AUTH_AUDIT_USER, ((AuthzAuditEvent) event).getUser());
+            MDC.put(AUTH_AUDIT_ACTION, ((AuthzAuditEvent) event).getAction());
+            MDC.put(AUTH_AUDIT_ENTITY_GUID, ((AuthzAuditEvent) event).getEntityGuid());
+            MDC.put(AUTH_AUDIT_POLICY_ID, ((AuthzAuditEvent) event).getPolicyId());
+            MDC.put(AUTH_AUDIT_RESOURCE, ((AuthzAuditEvent) event).getResourceType());
+            MDC.put(AUTH_AUDIT_RESULT, String.valueOf(((AuthzAuditEvent) event).getAccessResult()));
+			MDC.put(AUTH_AUDIT_CLIENT_IP, ((AuthzAuditEvent) event).getClientIP());
+			MDC.put(AUTH_AUDIT_AGENT, ((AuthzAuditEvent) event).getAgentId());
+			MDC.put(TRACE_ID, MDC.get(TRACE_ID));
+        }
+    }
+
+    private void clearLogAttributes(AuditEventBase event) {
+        if (event instanceof AuthzAuditEvent) {
+            MDC.remove(AUTH_AUDIT_USER);
+            MDC.remove(AUTH_AUDIT_ACTION);
+            MDC.remove(AUTH_AUDIT_ENTITY_GUID);
+            MDC.remove(AUTH_AUDIT_POLICY_ID);
+            MDC.remove(AUTH_AUDIT_RESOURCE);
+            MDC.remove(AUTH_AUDIT_RESULT);
+			MDC.remove(AUTH_AUDIT_CLIENT_IP);
+			MDC.remove(AUTH_AUDIT_AGENT);
+        }
+    }
 
 	@Override
 	public boolean log(Collection<AuditEventBase> events) {
