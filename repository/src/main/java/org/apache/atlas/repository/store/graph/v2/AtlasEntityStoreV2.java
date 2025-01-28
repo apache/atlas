@@ -2698,8 +2698,15 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             while (lineageEdges.hasNext()) {
                 AtlasEdge edge = lineageEdges.next();
                 if (getStatus(edge) == ACTIVE) {
-                    foundActiveRel = true;
-                    break;
+                    AtlasVertex vertexB = edge.getOutVertex();
+                    if (vertexB.equals(assetVertex)) {
+                        vertexB = edge.getInVertex();
+                    }
+
+                    if (getStatus(vertexB) == ACTIVE) {
+                        foundActiveRel = true;
+                        break;
+                    }
                 }
             }
 
