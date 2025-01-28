@@ -263,6 +263,23 @@ public class AtlasBusinessMetadataDefStoreV2Test {
     }
 
     @Test
+    public void deleteBusinessMetadataDefWithNoAssignedTypes() throws AtlasBaseException {
+        createBusinessMetadataTypesWithoutAssignedTypes(businessMetadataName);
+        for (AtlasBusinessMetadataDef atlasBusinessMetaDataDef : typesDefs.getBusinessMetadataDefs()) {
+            if (atlasBusinessMetaDataDef.getName().equals(businessMetadataName)) {
+                typesDefs = new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.emptyList(),
+                        Collections.emptyList());
+                typesDefs.setBusinessMetadataDefs(Arrays.asList(atlasBusinessMetaDataDef));
+                typeDefStore.deleteTypesDef(typesDefs);
+            }
+        }
+
+        for (AtlasBusinessMetadataDef businessMetadataDef : typeRegistry.getAllBusinessMetadataDefs()) {
+            Assert.assertNotEquals(businessMetadataDef.getName(), businessMetadataName);
+        }
+    }
+
+    @Test
     public void updateBusinessMetadataDefs() throws AtlasBaseException {
         createBusinessMetadataTypes(businessMetadataName);
         AtlasBusinessMetadataDef businessMetadataDef = findBusinessMetadataDef(businessMetadataName);
@@ -410,6 +427,23 @@ public class AtlasBusinessMetadataDefStoreV2Test {
 
         TestUtilsV2.populateSystemAttributes(businessMetadataDef1);
 
+        return businessMetadataDef1;
+    }
+
+    private void createBusinessMetadataTypesWithoutAssignedTypes(String businessMetadataName) throws AtlasBaseException {
+        List<AtlasBusinessMetadataDef> businessMetadataDefs = new ArrayList(typesDefs.getBusinessMetadataDefs());
+        businessMetadataDefs.add(createBusinessMetadataDefWithoutAssignedTypes(businessMetadataName));
+        typesDefs.setBusinessMetadataDefs(businessMetadataDefs);
+        AtlasTypesDef createdTypesDef = typeDefStore.createTypesDef(typesDefs);
+
+        Assert.assertEquals(createdTypesDef.getBusinessMetadataDefs(), businessMetadataDefs, "Data integrity issue while persisting");
+    }
+
+    private AtlasBusinessMetadataDef createBusinessMetadataDefWithoutAssignedTypes(String businessMetadataName) {
+        AtlasBusinessMetadataDef businessMetadataDef1 = new AtlasBusinessMetadataDef(businessMetadataName, "test_no_attributes", null);
+        addBusinessAttribute(businessMetadataDef1, "test_businessMetadata_attribute1", Collections.emptySet(), "int",
+                AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE);
+        TestUtilsV2.populateSystemAttributes(businessMetadataDef1);
         return businessMetadataDef1;
     }
 
