@@ -56,36 +56,39 @@ public class AssetPreProcessor implements PreProcessor {
 
         switch (operation) {
             case CREATE:
-                processCreateAsset(entity, vertex);
+                processCreateAsset(entity, vertex, operation);
                 break;
             case UPDATE:
-                processUpdateAsset(entity, vertex);
+                processUpdateAsset(entity, vertex, operation);
+                break;
+            case DELETE:
+                processDelete(vertex);
                 break;
         }
     }
 
-    private void processCreateAsset(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+    private void processCreateAsset(AtlasEntity entity, AtlasVertex vertex, EntityMutations.EntityOperation operation) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processCreateAsset");
 
-        processDomainLinkAttribute(entity, vertex);
+        processDomainLinkAttribute(entity, vertex, operation);
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
 
-    private void processUpdateAsset(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+    private void processUpdateAsset(AtlasEntity entity, AtlasVertex vertex, EntityMutations.EntityOperation operation) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateAsset");
 
-        processDomainLinkAttribute(entity, vertex);
+        processDomainLinkAttribute(entity, vertex, operation);
 
         RequestContext.get().endMetricRecord(metricRecorder);
 
     }
 
-    private void processDomainLinkAttribute(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
+    private void processDomainLinkAttribute(AtlasEntity entity, AtlasVertex vertex, EntityMutations.EntityOperation operation) throws AtlasBaseException {
         if(entity.hasAttribute(DOMAIN_GUIDS)){
             validateDomainAssetLinks(entity);
-            isAuthorized(vertex);
+            isAuthorized(vertex, operation);
         }
     }
 
@@ -116,16 +119,36 @@ public class AssetPreProcessor implements PreProcessor {
         }
     }
 
-    private void isAuthorized(AtlasVertex vertex) throws AtlasBaseException {
+    @Override
+    public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
+        //remove the domain link
+        if (vertex != null) {
+            vertex.removeProperty(DOMAIN_GUIDS);
+        }
+    }
+
+    private void isAuthorized(AtlasVertex vertex, EntityMutations.EntityOperation operation) throws AtlasBaseException {
         AtlasEntityHeader sourceEntity = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(vertex);
 
-        // source -> UPDATE + READ
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceEntity),
-                "update on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
+        switch (operation) {
+            case CREATE:
+                // source -> CREATE + READ
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, sourceEntity),
+                        "create on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
 
-        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, sourceEntity),
-                "read on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
+                break;
 
+            case UPDATE:
+                // source -> UPDATE + READ
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceEntity),
+                        "update on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
+
+                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, sourceEntity),
+                        "read on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
+                break;
+        }
     }
 
 }
+
+
