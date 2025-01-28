@@ -404,7 +404,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
                 String      vertexPropertyName  = AtlasStructType.AtlasAttribute.generateVertexPropertyName(businessMetadataDef, attributeDef, qualifiedName);
                 Set<String> applicableTypes     = AtlasJson.fromJson(attributeDef.getOption(AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES), Set.class);
 
-                if (isBusinessAttributePresent(vertexPropertyName, applicableTypes)) {
+                if (CollectionUtils.isNotEmpty(applicableTypes) && isBusinessAttributePresent(vertexPropertyName, applicableTypes)) {
                     throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, typeName);
                 }
             }
