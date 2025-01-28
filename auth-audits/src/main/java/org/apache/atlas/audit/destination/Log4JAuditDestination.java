@@ -39,7 +39,7 @@ public class Log4JAuditDestination extends AuditDestination {
 	public static final String DEFAULT_LOGGER_PREFIX = "ranger.audit";
 	private String loggerName = null;
 	private static final String AUTH_AUDIT_USER = "reqUser";
-	private static final String AUTH_AUDIT_ACTION = "access";
+	private static final String AUTH_AUDIT_ACTION = "action";
 	private static final String AUTH_AUDIT_ENTITY_GUID = "entityGuid";
 	private static final String AUTH_AUDIT_POLICY_ID = "policyId";
 	private static final String AUTH_AUDIT_RESULT = "result";
