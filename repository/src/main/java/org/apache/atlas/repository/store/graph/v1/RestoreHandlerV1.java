@@ -396,13 +396,13 @@ public class RestoreHandlerV1 {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Setting the external references to {} to null(removing edges)", string(instanceVertex));
             }
-            Iterable<AtlasEdge> incomingEdges = IteratorChain::new;
+            Iterable<AtlasEdge> incomingEdges;
 
         // Restore external references to this vertex - incoming edges from lineage or glossary term edges
             if (RequestContext.get().isSkipProcessEdgeRestoration())
-                    incomingEdges = GraphHelper.getEdges(instanceVertex, AtlasEdgeDirection.IN, PROCESS_EDGE_TYPE_NAMES);
+                    incomingEdges = instanceVertex.getInEdges(PROCESS_EDGE_LABELS);
             else
-                    incomingEdges = instanceVertex.getEdges(AtlasEdgeDirection.IN);
+                    incomingEdges = instanceVertex.getInEdges(null);
 
             for (AtlasEdge edge : incomingEdges) {
                 AtlasEntity.Status edgeStatus = getStatus(edge);

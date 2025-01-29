@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.repository.graphdb;
 
+import java.util.Set;
+
 /**
  * Represents a Vertex.
  *
@@ -44,6 +46,8 @@ public interface AtlasVertex<V, E> extends AtlasElement {
      * @return
      */
     Iterable<AtlasEdge<V, E>> getEdges(AtlasEdgeDirection direction, String[] edgeLabels);
+
+    Set<E> getInEdges(String[] edgeLabelsToExclude);
 
     long getEdgesCount(AtlasEdgeDirection direction, String edgeLabel);
 
