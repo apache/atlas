@@ -399,7 +399,7 @@ public class RestoreHandlerV1 {
             Iterable<AtlasEdge> incomingEdges = IteratorChain::new;
 
         // Restore external references to this vertex - incoming edges from lineage or glossary term edges
-            if (RequestContext.get().isSkipEdgeRestoration())
+            if (!RequestContext.get().isSkipEdgeRestoration())
                     incomingEdges = instanceVertex.getEdges(AtlasEdgeDirection.IN);
 
             for (AtlasEdge edge : incomingEdges) {
