@@ -368,7 +368,7 @@ public class MigrationREST {
             }
 
             SoftDeletionProductMigrationService migrationService = new SoftDeletionProductMigrationService(graph, guids, new GraphHelper(graph), transactionInterceptHelper);
-            migrationService.productState();
+            migrationService.startEdgeMigration();
 
         } catch (Exception e) {
             LOG.error("Error while removing edges for guid: {}", guids, e);
@@ -397,7 +397,7 @@ public class MigrationREST {
             }
 
             ValidateProductEdgesMigrationService migrationService = new ValidateProductEdgesMigrationService(graph, guids, new GraphHelper(graph));
-            flag = migrationService.productState();
+            flag = migrationService.validateEdgeMigration();
 
         } catch (Exception e) {
             LOG.error("Error while validating edges for guid: {}", guids, e);

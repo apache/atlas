@@ -31,7 +31,7 @@ public class ValidateProductEdgesMigrationService {
         this.graphHelper = graphHelper;
     }
 
-    public boolean productState() throws AtlasBaseException {
+    public boolean validateEdgeMigration() throws AtlasBaseException {
         try {
             int count = 0;
             int totalProductChecked = 0;

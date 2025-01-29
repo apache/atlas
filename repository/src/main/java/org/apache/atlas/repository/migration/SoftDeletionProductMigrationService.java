@@ -34,7 +34,7 @@ public class SoftDeletionProductMigrationService {
         this.transactionInterceptHelper = transactionInterceptHelper;
     }
 
-    public void productState() throws AtlasBaseException {
+    public void startEdgeMigration() throws AtlasBaseException {
         try {
             int count = 0;
             int totalUpdatedCount = 0;

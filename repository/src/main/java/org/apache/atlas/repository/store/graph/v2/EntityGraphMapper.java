@@ -3046,11 +3046,18 @@ public class EntityGraphMapper {
                         recordEntityUpdateForNonRelationsipAttribute(edge.getInVertex());
                         recordEntityUpdateForNonRelationsipAttribute(edge.getOutVertex());
 
-                        deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
-                                true, attribute.getRelationshipEdgeDirection(), entityVertex);
+                        boolean deleted = false;
 
-                        additionalElements.add(edge);
+                        if (edgeLabelsForHardDeletion.contains(edge.getLabel())) {
+                            graph.removeEdge(edge);
+                        } else {
+                            deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
+                                    true, attribute.getRelationshipEdgeDirection(), entityVertex);
+                        }
 
+                        if (!deleted) {
+                            additionalElements.add(edge);
+                        }
                     }
 
                     return additionalElements;
