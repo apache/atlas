@@ -19,7 +19,6 @@ package org.apache.atlas.kafka;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.notification.LogConfigUtils;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.notification.spool.AtlasFileSpool;
 import org.apache.commons.configuration.Configuration;

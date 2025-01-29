@@ -157,7 +157,14 @@ public class AuditFilter implements Filter {
 
     public static void audit(AuditLog auditLog) {
         if (AUDIT_LOG.isInfoEnabled() && auditLog != null) {
-            AUDIT_LOG.info(auditLog.toString());
+            MDC.put("requestTime", DateTimeHelper.formatDateUTC(auditLog.requestTime));
+            MDC.put("user", auditLog.userName);
+            MDC.put("from", auditLog.fromAddress);
+            MDC.put("requestMethod", auditLog.requestMethod);
+            MDC.put("requestUrl", auditLog.requestUrl);
+            MDC.put("httpStatus", String.valueOf(auditLog.httpStatus));
+            MDC.put("timeTaken", String.valueOf(auditLog.timeTaken));
+            AUDIT_LOG.info("Capturing audit log");
         }
     }
 

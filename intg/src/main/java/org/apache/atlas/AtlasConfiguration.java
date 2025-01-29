@@ -119,10 +119,17 @@ public enum AtlasConfiguration {
     ATLAS_INDEXSEARCH_ENABLE_API_LIMIT("atlas.indexsearch.enable.api.limit", false),
     ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION("atlas.indexsearch.enable.janus.optimization", false),
     ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false),
-
     DELTA_BASED_REFRESH_ENABLED("atlas.authorizer.enable.delta_based_refresh", false),
 
-    ATLAS_UD_RELATIONSHIPS_MAX_COUNT("atlas.ud.relationship.max.count", 100);
+    ATLAS_UD_RELATIONSHIPS_MAX_COUNT("atlas.ud.relationship.max.count", 100),
+
+    /***
+     * OTEL Configuration
+     */
+    OTEL_RESOURCE_ATTRIBUTES("OTEL_RESOURCE_ATTRIBUTES", "service.name=atlas"),
+    OTEL_SERVICE_NAME(" OTEL_SERVICE_NAME", "atlas"),
+    OTEL_EXPORTER_OTLP_ENDPOINT("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317");
+
 
 
     private static final Configuration APPLICATION_PROPERTIES;

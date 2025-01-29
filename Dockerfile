@@ -56,8 +56,7 @@ COPY atlas-hub/repair_index.py /opt/apache-atlas/bin/
 RUN chmod +x /opt/apache-atlas/bin/repair_index.py
 
 COPY atlas-hub/atlas_start.py.patch atlas-hub/atlas_config.py.patch /opt/apache-atlas/bin/
-COPY atlas-hub/pre-conf/atlas-log4j.xml /opt/apache-atlas/conf/
-COPY atlas-hub/pre-conf/atlas-log4j2.xml /opt/apache-atlas/conf/
+COPY atlas-hub/pre-conf/atlas-logback.xml /opt/apache-atlas/conf/
 COPY atlas-hub/pre-conf/atlas-auth/ /opt/apache-atlas/conf/
 
 RUN curl https://repo1.maven.org/maven2/org/jolokia/jolokia-jvm/1.6.2/jolokia-jvm-1.6.2-agent.jar -o /opt/apache-atlas/libext/jolokia-jvm-agent.jar
