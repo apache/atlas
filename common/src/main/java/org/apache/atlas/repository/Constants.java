@@ -207,7 +207,7 @@ public final class Constants {
     public static final String PROCESS_INPUTS = "__Process.inputs";
 
     public static final String PROCESS_INPUTS_EDGE_TYPENAME = "catalog_process_inputs";
-    public static final String PROCESS_OUTPUTS_EDGE_TYPENAME = "catalog_process_outputs";
+    public static final String PROCESS_OUTPUTS_EDGE_TYPENAME = "process_catalog_outputs";
 
 
 
