@@ -809,11 +809,11 @@ public class EntityREST {
                                                  @QueryParam("replaceClassifications") @DefaultValue("false") boolean replaceClassifications,
                                                  @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
                                                  @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes,
-                                                 @QueryParam("skipEdgeRestoration") @DefaultValue("false") boolean skipEdgeRestoration
+                                                 @QueryParam("skipProcessEdgeRestoration") @DefaultValue("false") boolean skipProcessEdgeRestoration
     ) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         RequestContext.get().setEnableCache(false);
-        RequestContext.get().setSkipEdgeRestoration(skipEdgeRestoration);
+        RequestContext.get().setSkipProcessEdgeRestoration(skipProcessEdgeRestoration);
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" +

@@ -93,4 +93,10 @@ public class AtlasJanusVertexQuery implements AtlasVertexQuery<AtlasJanusVertex,
         query.has(key, value);
         return this;
     }
+
+    @Override
+    public AtlasVertexQuery<AtlasJanusVertex, AtlasJanusEdge> hasNot(String key, Object value) {
+        query.hasNot(key, value);
+        return this;
+    }
 }

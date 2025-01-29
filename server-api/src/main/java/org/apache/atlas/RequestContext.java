@@ -100,7 +100,7 @@ public class RequestContext {
     private boolean     includeRelationshipAttributes;
 
     private boolean     includeClassificationNames = false;
-    private boolean skipEdgeRestoration = false;
+    private boolean     skipProcessEdgeRestoration = false;
     private String      currentTypePatchAction = "";
     private AtlasTask   currentTask;
     private String traceId;
@@ -773,12 +773,12 @@ public class RequestContext {
         this.evaluateEntityHeaderCache = evaluateEntityHeaderCache;
     }
 
-    public boolean isSkipEdgeRestoration() {
-        return skipEdgeRestoration;
+    public boolean isSkipProcessEdgeRestoration() {
+        return skipProcessEdgeRestoration;
     }
 
-    public void setSkipEdgeRestoration(boolean skipEdgeRestoration) {
-        this.skipEdgeRestoration = skipEdgeRestoration;
+    public void setSkipProcessEdgeRestoration(boolean skipProcessEdgeRestoration) {
+        this.skipProcessEdgeRestoration = skipProcessEdgeRestoration;
     }
 
     public class EntityGuidPair {

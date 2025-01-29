@@ -92,4 +92,5 @@ public interface AtlasVertexQuery<V, E> {
      * @return
      */
     AtlasVertexQuery<V, E> has(String key, Object value);
+    AtlasVertexQuery<V, E> hasNot(String key, Object value);
 }
