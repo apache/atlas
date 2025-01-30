@@ -808,9 +808,12 @@ public class EntityREST {
     public EntityMutationResponse createOrUpdate(AtlasEntitiesWithExtInfo entities,
                                                  @QueryParam("replaceClassifications") @DefaultValue("false") boolean replaceClassifications,
                                                  @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
-                                                 @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes) throws AtlasBaseException {
+                                                 @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes,
+                                                 @QueryParam("skipProcessEdgeRestoration") @DefaultValue("false") boolean skipProcessEdgeRestoration
+    ) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         RequestContext.get().setEnableCache(false);
+        RequestContext.get().setSkipProcessEdgeRestoration(skipProcessEdgeRestoration);
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" +
