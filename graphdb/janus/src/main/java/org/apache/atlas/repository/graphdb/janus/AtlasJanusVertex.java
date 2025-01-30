@@ -20,6 +20,7 @@ package org.apache.atlas.repository.graphdb.janus;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Set;
 import java.util.stream.StreamSupport;
 
 import org.apache.atlas.RequestContext;
@@ -30,6 +31,9 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
 import org.apache.atlas.repository.graphdb.utils.IteratorToIterableAdapter;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.lang.ArrayUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
@@ -80,6 +84,20 @@ public class AtlasJanusVertex extends AtlasJanusElement<Vertex> implements Atlas
         Iterator<Edge> edges     = getWrappedElement().edges(direction, edgeLabels);
 
         return graph.wrapEdges(edges);
+    }
+
+    public Set<AtlasJanusEdge> getInEdges(String[] edgeLabelsToExclude) {
+        GraphTraversal t = graph.V(getWrappedElement().id())
+                        .inE();
+
+        if(ArrayUtils.isNotEmpty(edgeLabelsToExclude)) {
+            for(String edgeLabelToExclude : edgeLabelsToExclude) {
+                t = t.not(__.hasLabel(edgeLabelToExclude));
+            }
+        }
+
+        return ((AtlasJanusGraphTraversal) t).getAtlasEdgeSet();
+
     }
 
     @Override
