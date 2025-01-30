@@ -386,12 +386,7 @@ public abstract class DeleteHandlerV1 {
             // for relationship edges, inverse vertex's relationship attribute doesn't need to be updated.
             // only delete the reference relationship edge
             if (GraphHelper.isRelationshipEdge(edge)) {
-                if (edgeLabelsForHardDeletion.contains(edge.getLabel())) {
-                    //Hard delete for product relationships
-                    deleteEdge(edge, true, isHardDeletionEdge(edge));
-                } else {
-                    deleteEdge(edge, isInternalType || isCustomRelationship(edge));
-                }
+                deleteEdge(edge, isInternalType || isCustomRelationship(edge) || isHardDeletionRelationship(edge));
 
                 AtlasVertex referencedVertex = entityRetriever.getReferencedEntityVertex(edge, relationshipDirection, entityVertex);
 
@@ -409,13 +404,7 @@ public abstract class DeleteHandlerV1 {
                 //legacy case - not a relationship edge
                 //If deleting just the edge, reverse attribute should be updated for any references
                 //For example, for the department type system, if the person's manager edge is deleted, subordinates of manager should be updated
-                if(edgeLabelsForHardDeletion.contains(edge.getLabel())) {
-                    //Hard delete for product relationships
-                    deleteEdge(edge, true, isHardDeletionEdge(edge));
-                }
-                else {
-                    deleteEdge(edge, true, isInternalType || isCustomRelationship(edge));
-                }
+                deleteEdge(edge, true, isInternalType || isCustomRelationship(edge) || isHardDeletionRelationship(edge));
             }
         }
 
@@ -1091,7 +1080,7 @@ public abstract class DeleteHandlerV1 {
         return edge.getLabel().equals(UD_RELATIONSHIP_EDGE_LABEL);
     }
 
-    private boolean isHardDeletionEdge(final AtlasEdge edge) {
+    private boolean isHardDeletionRelationship(final AtlasEdge edge) {
         return edgeLabelsForHardDeletion.contains(edge.getLabel());
     }
 
