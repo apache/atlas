@@ -17,22 +17,6 @@
  */
 package org.apache.atlas.web.adapters;
 
-import static org.apache.atlas.TestUtilsV2.CLASSIFICATION;
-import static org.apache.atlas.TestUtilsV2.COLUMN_TYPE;
-import static org.apache.atlas.TestUtilsV2.DATABASE_TYPE;
-import static org.apache.atlas.TestUtilsV2.FETL_CLASSIFICATION;
-import static org.apache.atlas.TestUtilsV2.PHI;
-import static org.apache.atlas.TestUtilsV2.PII;
-import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
-import static org.apache.atlas.model.discovery.SearchParameters.FilterCriteria.Condition.AND;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
-import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
-import static org.apache.atlas.utils.TestLoadModelUtils.createTypesAsNeeded;
-
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
@@ -73,7 +57,6 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -83,6 +66,22 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.apache.atlas.TestUtilsV2.CLASSIFICATION;
+import static org.apache.atlas.TestUtilsV2.COLUMN_TYPE;
+import static org.apache.atlas.TestUtilsV2.DATABASE_TYPE;
+import static org.apache.atlas.TestUtilsV2.FETL_CLASSIFICATION;
+import static org.apache.atlas.TestUtilsV2.PHI;
+import static org.apache.atlas.TestUtilsV2.PII;
+import static org.apache.atlas.TestUtilsV2.TABLE_TYPE;
+import static org.apache.atlas.model.discovery.SearchParameters.FilterCriteria.Condition.AND;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.utils.TestLoadModelUtils.createTypesAsNeeded;
 
 @Guice(modules = {TestModules.TestOnlyModule.class})
 public class TestEntitiesREST {
@@ -162,7 +161,7 @@ public class TestEntitiesREST {
         dbWithCustomAttr.setCustomAttributes(customAttr);
 
         AtlasEntitiesWithExtInfo atlasEntitiesWithExtInfo = new AtlasEntitiesWithExtInfo(dbWithCustomAttr);
-        EntityMutationResponse   response                 = entityREST.createOrUpdate(atlasEntitiesWithExtInfo, false, false, false);
+        EntityMutationResponse   response                 = entityREST.createOrUpdate(atlasEntitiesWithExtInfo, false, false, false, false);
 
         Assert.assertNotNull(response.getUpdatedEntitiesByTypeName(DATABASE_TYPE));
 
@@ -646,7 +645,7 @@ public class TestEntitiesREST {
             newEntities.addReferredEntity(serDeserEntity(column));
         }
 
-        EntityMutationResponse response2 = entityREST.createOrUpdate(newEntities, false, false, false);
+        EntityMutationResponse response2 = entityREST.createOrUpdate(newEntities, false, false, false, false);
 
         List<AtlasEntityHeader> newGuids = response2.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
         Assert.assertNotNull(newGuids);
@@ -775,7 +774,7 @@ public class TestEntitiesREST {
             entities.addReferredEntity(column);
         }
 
-        EntityMutationResponse response = entityREST.createOrUpdate(entities, false, false, false);
+        EntityMutationResponse response = entityREST.createOrUpdate(entities, false, false, false, false);
         List<AtlasEntityHeader> guids = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
 
         Assert.assertNotNull(guids);
