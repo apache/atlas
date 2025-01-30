@@ -148,11 +148,7 @@
                                     <artifactId>slf4j-api</artifactId>
                                     <version>${slf4j.version}</version>
                                 </artifactItem>
-                                <artifactItem>
-                                    <groupId>org.slf4j</groupId>
-                                    <artifactId>slf4j-log4j12</artifactId>
-                                    <version>${slf4j.version}</version>
-                                </artifactItem>
+
                                 <artifactItem>
                                     <groupId>org.apache.kafka</groupId>
                                     <artifactId>kafka_${kafka.scala.binary.version}</artifactId>
