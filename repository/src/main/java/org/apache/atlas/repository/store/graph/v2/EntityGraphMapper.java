@@ -1976,8 +1976,14 @@ public class EntityGraphMapper {
        for (int index = 0; allArrayElements != null && index < allArrayElements.size(); index++) {
            Object element = allArrayElements.get(index);
 
-           if (element instanceof AtlasEdge) {
-               AtlasGraphUtilsV2.setEncodedProperty((AtlasEdge) element, ATTRIBUTE_INDEX_PROPERTY_KEY, index);
+           if ((element instanceof AtlasEdge)) {
+               AtlasEdge edge = (AtlasEdge) element;
+               if ((removedElements.contains(element) && (edgeLabelsForHardDeletion.contains(edge.getLabel())))) {
+                   continue;
+               }
+               else {
+                   AtlasGraphUtilsV2.setEncodedProperty((AtlasEdge) element, ATTRIBUTE_INDEX_PROPERTY_KEY, index);
+               }
             }
         }
 
@@ -3006,14 +3012,8 @@ public class EntityGraphMapper {
                             continue;
                         }
 
-                        boolean deleted = false;
-                        if (edgeLabelsForHardDeletion.contains(edge.getLabel())) {
-                            graph.removeEdge(edge);
-                        } else {
-                            deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
-                                    true, attribute.getRelationshipEdgeDirection(), entityVertex);
-                        }
-
+                        boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
+                                true, attribute.getRelationshipEdgeDirection(), entityVertex);
 
                         if (!deleted) {
                             additionalElements.add(edge);
@@ -3047,14 +3047,8 @@ public class EntityGraphMapper {
                         recordEntityUpdateForNonRelationsipAttribute(edge.getInVertex());
                         recordEntityUpdateForNonRelationsipAttribute(edge.getOutVertex());
 
-                        boolean deleted = false;
-
-                        if (edgeLabelsForHardDeletion.contains(edge.getLabel())) {
-                            graph.removeEdge(edge);
-                        } else {
-                            deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
-                                    true, attribute.getRelationshipEdgeDirection(), entityVertex);
-                        }
+                        boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
+                                true, attribute.getRelationshipEdgeDirection(), entityVertex);
 
                         if (!deleted) {
                             additionalElements.add(edge);
