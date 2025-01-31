@@ -434,10 +434,16 @@ public class TaskRegistry {
                                 LOG.info(String.format("Fetched task from index search: %s", atlasTask.toString()));
                                 ret.add(atlasTask);
                             } else {
+                                RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("elasticSearchTaskMismatch"));
                                 LOG.warn("Status mismatch for task with guid: {}. Expected PENDING/IN_PROGRESS but found: {}",
                                         atlasTask.getGuid(), atlasTask.getStatus());
-                                String docId = LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay()));
-                                repairMismatchedTask(atlasTask, docId);
+                                try {
+                                    String docId = LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay()));
+                                    repairMismatchedTask(atlasTask, docId);
+                                }
+                                catch (Exception e){
+                                    e.printStackTrace();
+                                }
                             }
                         } else {
                             LOG.warn("Null vertex while re-queuing tasks at index {}", fetched);
@@ -466,10 +472,11 @@ public class TaskRegistry {
         try {
             // Create a map for the fields to be updated
             Map<String, Object> fieldsToUpdate = new HashMap<>();
-            fieldsToUpdate.put("__task_endTime", atlasTask.getEndTime().getTime());
-            fieldsToUpdate.put("__task_timeTakenInSeconds", atlasTask.getTimeTakenInSeconds());
+
+            fieldsToUpdate.put("__task_endTime", atlasTask.getEndTime().getTime());// add try for this, what if FAILED
+            fieldsToUpdate.put("__task_timeTakenInSeconds", atlasTask.getTimeTakenInSeconds());// add try for this, what if FAILED
             fieldsToUpdate.put("__task_status", atlasTask.getStatus().toString());
-            fieldsToUpdate.put("__task_modificationTimestamp", atlasTask.getUpdatedTime().getTime()); // Set current timestamp
+            fieldsToUpdate.put("__task_modificationTimestamp", atlasTask.getUpdatedTime().getTime());
 
             // Convert fieldsToUpdate map to JSON using Jackson
             ObjectMapper objectMapper = new ObjectMapper();

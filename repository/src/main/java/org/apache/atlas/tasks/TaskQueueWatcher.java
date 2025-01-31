@@ -20,7 +20,9 @@ package org.apache.atlas.tasks;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.ICuratorFactory;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
@@ -41,6 +43,7 @@ public class TaskQueueWatcher implements Runnable {
     private static final TaskExecutor.TaskLogger TASK_LOG = TaskExecutor.TaskLogger.getLogger();
     private final String zkRoot;
     private final boolean isActiveActiveHAEnabled;
+    private final MetricsRegistry metricRegistry;
 
     private TaskRegistry registry;
     private final ExecutorService executorService;
@@ -57,7 +60,7 @@ public class TaskQueueWatcher implements Runnable {
 
     public TaskQueueWatcher(ExecutorService executorService, TaskRegistry registry,
                             Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
-                            ICuratorFactory curatorFactory, RedisService redisService, final String zkRoot, boolean isActiveActiveHAEnabled) {
+                            ICuratorFactory curatorFactory, RedisService redisService, final String zkRoot, boolean isActiveActiveHAEnabled, MetricsRegistry metricsRegistry) {
 
         this.registry = registry;
         this.executorService = executorService;
@@ -67,6 +70,7 @@ public class TaskQueueWatcher implements Runnable {
         this.redisService = redisService;
         this.zkRoot = zkRoot;
         this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
+        this.metricRegistry = metricsRegistry;
     }
 
     public void shutdown() {
@@ -87,6 +91,8 @@ public class TaskQueueWatcher implements Runnable {
             LOG.debug("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
         }
         while (shouldRun.get()) {
+            RequestContext requestContext = RequestContext.get();
+            requestContext.setMetricRegistry(this.metricRegistry);
             TasksFetcher fetcher = new TasksFetcher(registry);
             try {
                 if (!redisService.acquireDistributedLock(ATLAS_TASK_LOCK)) {
@@ -156,6 +162,8 @@ public class TaskQueueWatcher implements Runnable {
             }
 
             this.tasks = registry.getTasksForReQueue();
+            RequestContext requestContext = RequestContext.get();
+            requestContext.clearCache();
         }
 
         public List<AtlasTask> getTasks() {
