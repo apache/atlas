@@ -29,8 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
@@ -90,6 +90,11 @@ public class AddMandatoryAttributesPatch extends AtlasPatchHandler {
         }
 
         @Override
+        protected void prepareForExecution() {
+            //do nothing
+        }
+
+        @Override
         public void submitVerticesToUpdate(WorkItemManager manager) {
             if (CollectionUtils.isNotEmpty(typeAndAllSubTypes)) {
                 LOG.info("Entity types to be updated with mandatory attributes: {}", typeAndAllSubTypes.size());
@@ -135,11 +140,6 @@ public class AddMandatoryAttributesPatch extends AtlasPatchHandler {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("<== AddMandatoryAttributesPatchProcessor.processVertexItem(typeName={}, vertexId={})", typeName, vertexId);
             }
-        }
-
-        @Override
-        protected void prepareForExecution() {
-            //do nothing
         }
     }
 }

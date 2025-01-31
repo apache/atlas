@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,6 @@
  */
 
 package org.apache.atlas.repository.impexp;
-
 
 import com.google.common.collect.ImmutableList;
 import org.apache.atlas.RequestContext;
@@ -30,8 +29,8 @@ import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.AtlasTestBase;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -47,6 +46,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -56,28 +56,18 @@ import java.util.List;
 import static org.apache.atlas.model.impexp.AtlasExportRequest.OPTION_KEY_REPLICATED_TO;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runExportWithParameters;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithParameters;
-import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ReplicationEntityAttributeTest extends AtlasTestBase {
-    private final String ENTITIES_SUB_DIR = "stocksDB-Entities";
-    private final String EXPORT_REQUEST_FILE = "export-replicatedTo";
-    private final String IMPORT_REQUEST_FILE = "import-replicatedFrom";
-
-    private  String REPLICATED_TO_CLUSTER_NAME = "";
-    private  String REPLICATED_FROM_CLUSTER_NAME = "";
+    private static final String ENTITIES_SUB_DIR    = "stocksDB-Entities";
+    private static final String EXPORT_REQUEST_FILE = "export-replicatedTo";
+    private static final String IMPORT_REQUEST_FILE = "import-replicatedFrom";
 
     @Inject
     AtlasTypeRegistry typeRegistry;
-
-    @Inject
-    private AtlasTypeDefStore typeDefStore;
-
-    @Inject
-    private EntityGraphMapper graphMapper;
 
     @Inject
     ExportService exportService;
@@ -88,6 +78,16 @@ public class ReplicationEntityAttributeTest extends AtlasTestBase {
     @Inject
     AtlasServerService atlasServerService;
 
+    private String replicatedToClusterName = "";
+
+    private String replicatedFromClusterName = "";
+
+    @Inject
+    private AtlasTypeDefStore typeDefStore;
+
+    @Inject
+    private EntityGraphMapper graphMapper;
+
     @Inject
     private AtlasEntityStoreV2 entityStore;
 
@@ -96,10 +96,11 @@ public class ReplicationEntityAttributeTest extends AtlasTestBase {
     @BeforeClass
     public void setup() throws IOException, AtlasBaseException {
         basicSetup(typeDefStore, typeRegistry);
-        createEntities(entityStore, ENTITIES_SUB_DIR, new String[]{"db", "table-columns"});
+        createEntities(entityStore, ENTITIES_SUB_DIR, new String[] {"db", "table-columns"});
 
-        AtlasType refType = typeRegistry.getType("Referenceable");
+        AtlasType      refType   = typeRegistry.getType("Referenceable");
         AtlasEntityDef entityDef = (AtlasEntityDef) typeDefStore.getByName(refType.getTypeName());
+
         assertNotNull(entityDef);
     }
 
@@ -113,22 +114,23 @@ public class ReplicationEntityAttributeTest extends AtlasTestBase {
     public void exportWithReplicationToOption_AddsClusterObjectIdToReplicatedFromAttribute() throws AtlasBaseException, IOException {
         final int expectedEntityCount = 2;
 
-        AtlasExportRequest request = getUpdateMetaInfoUpdateRequest();
-        InputStream inputStream = runExportWithParameters(exportService, request);
+        AtlasExportRequest request     = getUpdateMetaInfoUpdateRequest();
+        InputStream        inputStream = runExportWithParameters(exportService, request);
 
         assertNotNull(inputStream);
 
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
         IOUtils.copy(inputStream, baos);
+
         this.inputStream = new ByteArrayInputStream(baos.toByteArray());
 
         ZipSource zipSource = new ZipSource(new ByteArrayInputStream(baos.toByteArray()));
+
         assertNotNull(zipSource.getCreationOrder());
         assertEquals(zipSource.getCreationOrder().size(), expectedEntityCount);
 
-        assertCluster(
-                AuditsWriter.getServerNameFromFullName(REPLICATED_TO_CLUSTER_NAME),
-                REPLICATED_TO_CLUSTER_NAME, null);
+        assertCluster(AuditsWriter.getServerNameFromFullName(replicatedToClusterName), replicatedToClusterName, null);
 
         assertReplicationAttribute(Constants.ATTR_NAME_REPLICATED_TO);
     }
@@ -144,15 +146,12 @@ public class ReplicationEntityAttributeTest extends AtlasTestBase {
         assertEquals(AuditsWriter.getServerNameFromFullName("$cl1"), expectedClusterName);
     }
 
-
     @Test(dependsOnMethods = "exportWithReplicationToOption_AddsClusterObjectIdToReplicatedFromAttribute")
     public void importWithReplicationFromOption_AddsClusterObjectIdToReplicatedFromAttribute() throws AtlasBaseException, IOException {
-        AtlasImportRequest request = getImportRequestWithReplicationOption();
-        AtlasImportResult importResult = runImportWithParameters(importService, request, inputStream);
+        AtlasImportRequest request      = getImportRequestWithReplicationOption();
+        AtlasImportResult  importResult = runImportWithParameters(importService, request, inputStream);
 
-        assertCluster(
-                AuditsWriter.getServerNameFromFullName(REPLICATED_FROM_CLUSTER_NAME),
-                REPLICATED_FROM_CLUSTER_NAME, importResult);
+        assertCluster(AuditsWriter.getServerNameFromFullName(replicatedFromClusterName), replicatedFromClusterName, importResult);
         assertReplicationAttribute(Constants.ATTR_NAME_REPLICATED_FROM);
     }
 
@@ -166,12 +165,16 @@ public class ReplicationEntityAttributeTest extends AtlasTestBase {
 
     private void assertReplicationAttribute(String attrNameReplication) throws AtlasBaseException {
         pauseForIndexCreation();
+
         AtlasEntity.AtlasEntitiesWithExtInfo entities = entityStore.getByIds(ImmutableList.of(DB_GUID, TABLE_GUID));
+
         for (AtlasEntity e : entities.getEntities()) {
             Object ex = e.getAttribute(attrNameReplication);
+
             assertNotNull(ex);
 
-            List<String> attrValue = (List) ex;
+            List<String> attrValue = (List<String>) ex;
+
             assertEquals(attrValue.size(), 1);
         }
     }
@@ -183,24 +186,25 @@ public class ReplicationEntityAttributeTest extends AtlasTestBase {
         assertEquals(actual.getName(), name);
         assertEquals(actual.getFullName(), fullName);
 
-        if(importResult != null) {
+        if (importResult != null) {
             assertClusterAdditionalInfo(actual, importResult);
         }
     }
 
     private void assertClusterAdditionalInfo(AtlasServer cluster, AtlasImportResult importResult) throws AtlasBaseException {
-        AtlasExportRequest request = importResult.getExportResult().getRequest();
-        AtlasEntityType type = (AtlasEntityType) typeRegistry.getType(request.getItemsToExport().get(0).getTypeName());
-        AtlasEntity.AtlasEntityWithExtInfo entity = entityStore.getByUniqueAttributes(type, request.getItemsToExport().get(0).getUniqueAttributes());
-        long actualLastModifiedTimestamp = (long) cluster.getAdditionalInfoRepl(entity.getEntity().getGuid());
+        AtlasExportRequest                 request                     = importResult.getExportResult().getRequest();
+        AtlasEntityType                    type                        = (AtlasEntityType) typeRegistry.getType(request.getItemsToExport().get(0).getTypeName());
+        AtlasEntity.AtlasEntityWithExtInfo entity                      = entityStore.getByUniqueAttributes(type, request.getItemsToExport().get(0).getUniqueAttributes());
+        long                               actualLastModifiedTimestamp = (long) cluster.getAdditionalInfoRepl(entity.getEntity().getGuid());
 
-        assertTrue(cluster.getAdditionalInfo().size() > 0);
+        assertFalse(cluster.getAdditionalInfo().isEmpty());
         assertEquals(actualLastModifiedTimestamp, importResult.getExportResult().getChangeMarker());
     }
 
     private AtlasExportRequest getUpdateMetaInfoUpdateRequest() {
         AtlasExportRequest request = getExportRequestWithReplicationOption();
-        request.getOptions().put(AtlasExportRequest.OPTION_KEY_REPLICATED_TO, REPLICATED_TO_CLUSTER_NAME);
+
+        request.getOptions().put(AtlasExportRequest.OPTION_KEY_REPLICATED_TO, replicatedToClusterName);
 
         return request;
     }
@@ -208,7 +212,9 @@ public class ReplicationEntityAttributeTest extends AtlasTestBase {
     private AtlasExportRequest getExportRequestWithReplicationOption() {
         try {
             AtlasExportRequest request = TestResourceFileUtils.readObjectFromJson(ENTITIES_SUB_DIR, EXPORT_REQUEST_FILE, AtlasExportRequest.class);
-            REPLICATED_TO_CLUSTER_NAME = (String) request.getOptions().get(OPTION_KEY_REPLICATED_TO);
+
+            replicatedToClusterName = (String) request.getOptions().get(OPTION_KEY_REPLICATED_TO);
+
             return request;
         } catch (IOException e) {
             throw new SkipException(String.format("getExportRequestWithReplicationOption: '%s' could not be loaded.", EXPORT_REQUEST_FILE));
@@ -218,7 +224,9 @@ public class ReplicationEntityAttributeTest extends AtlasTestBase {
     private AtlasImportRequest getImportRequestWithReplicationOption() {
         try {
             AtlasImportRequest request = TestResourceFileUtils.readObjectFromJson(ENTITIES_SUB_DIR, IMPORT_REQUEST_FILE, AtlasImportRequest.class);
-            REPLICATED_FROM_CLUSTER_NAME = request.getOptions().get(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM);
+
+            replicatedFromClusterName = request.getOptions().get(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM);
+
             return request;
         } catch (IOException e) {
             throw new SkipException(String.format("getExportRequestWithReplicationOption: '%s' could not be loaded.", IMPORT_REQUEST_FILE));

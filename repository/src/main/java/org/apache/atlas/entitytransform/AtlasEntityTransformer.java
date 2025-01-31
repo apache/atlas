@@ -25,11 +25,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-
 public class AtlasEntityTransformer {
     private final List<Condition> conditions;
     private final List<Action>    actions;
-
 
     public AtlasEntityTransformer(AttributeTransform attributeTransform, TransformerContext context) {
         this(attributeTransform.getConditions(), attributeTransform.getAction(), context);

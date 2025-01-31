@@ -18,13 +18,17 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.model.instance.AtlasEntity;
-
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.commons.lang.StringUtils;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 
 public class EntityMutationContext {
     private final EntityGraphDiscoveryContext  context;
@@ -33,7 +37,7 @@ public class EntityMutationContext {
     private final Map<String, AtlasEntityType> entityVsType     = new HashMap<>();
     private final Map<String, AtlasVertex>     entityVsVertex   = new HashMap<>();
     private final Map<String, String>          guidAssignments  = new HashMap<>();
-    private       List<AtlasVertex>            entitiesToDelete = null;
+    private       List<AtlasVertex>            entitiesToDelete;
 
     public EntityMutationContext(final EntityGraphDiscoveryContext context) {
         this.context = context;
@@ -104,41 +108,43 @@ public class EntityMutationContext {
         return entityVsType.get(guid);
     }
 
-    public AtlasVertex getVertex(String guid) { return entityVsVertex.get(guid); }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-
-        final EntityMutationContext that = (EntityMutationContext) o;
-
-        return Objects.equals(context, that.context) &&
-               Objects.equals(entitiesCreated, that.entitiesCreated) &&
-               Objects.equals(entitiesUpdated, that.entitiesUpdated) &&
-               Objects.equals(entityVsType, that.entityVsType) &&
-               Objects.equals(entityVsVertex, that.entityVsVertex);
+    public AtlasVertex getVertex(String guid) {
+        return entityVsVertex.get(guid);
     }
 
     @Override
     public int hashCode() {
-        int result = (context != null ? context.hashCode() : 0);
-        result = 31 * result + entitiesCreated.hashCode();
-        result = 31 * result + entitiesUpdated.hashCode();
-        result = 31 * result + entityVsType.hashCode();
-        result = 31 * result + entityVsVertex.hashCode();
-        return result;
+        return Objects.hash(context, entitiesCreated, entitiesUpdated, entitiesToDelete, entityVsType, entityVsVertex);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        final EntityMutationContext that = (EntityMutationContext) o;
+
+        return Objects.equals(context, that.context) &&
+                Objects.equals(entitiesCreated, that.entitiesCreated) &&
+                Objects.equals(entitiesUpdated, that.entitiesUpdated) &&
+                Objects.equals(entitiesToDelete, that.entitiesToDelete) &&
+                Objects.equals(entityVsType, that.entityVsType) &&
+                Objects.equals(entityVsVertex, that.entityVsVertex);
     }
 
     @Override
     public String toString() {
         return "EntityMutationContext{" +
-            "context=" + context +
-            ", entitiesCreated=" + entitiesCreated +
-            ", entitiesUpdated=" + entitiesUpdated +
-            ", entityVsType=" + entityVsType +
-            ", entityVsVertex=" + entityVsVertex +
-            '}';
+                "context=" + context +
+                ", entitiesCreated=" + entitiesCreated +
+                ", entitiesUpdated=" + entitiesUpdated +
+                ", entitiesToDelete=" + entitiesToDelete +
+                ", entityVsType=" + entityVsType +
+                ", entityVsVertex=" + entityVsVertex +
+                '}';
     }
 
     public AtlasEntity getCreatedEntity(String parentGuid) {
@@ -153,22 +159,23 @@ public class EntityMutationContext {
         return entitiesToDelete != null && entitiesToDelete.contains(vertex);
     }
 
+    public AtlasEntity getCreatedOrUpdatedEntity(String parentGuid) {
+        AtlasEntity e = getCreatedEntity(parentGuid);
+
+        if (e == null) {
+            return getUpdatedEntity(parentGuid);
+        }
+
+        return e;
+    }
+
     private AtlasEntity getFromCollection(String parentGuid, Collection<AtlasEntity> coll) {
         for (AtlasEntity e : coll) {
-            if(e.getGuid().equalsIgnoreCase(parentGuid)) {
+            if (e.getGuid().equalsIgnoreCase(parentGuid)) {
                 return e;
             }
         }
 
         return null;
-    }
-
-    public AtlasEntity getCreatedOrUpdatedEntity(String parentGuid) {
-        AtlasEntity e = getCreatedEntity(parentGuid);
-        if(e == null) {
-            return getUpdatedEntity(parentGuid);
-        }
-
-        return e;
     }
 }

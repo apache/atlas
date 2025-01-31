@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,6 +33,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.io.IOException;
 import java.util.Date;
 import java.util.List;
@@ -41,26 +42,22 @@ import static org.apache.atlas.utils.TestLoadModelUtils.loadBaseModel;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class AtlasAuditServiceTest {
-
-    private static final int WAIT_TIME_FOR_INDEX_CREATION_IN_MILLI = 5000;
-
-    private static final String AUDIT_PARAMETER_RESOURCE_DIR = "auditSearchParameters";
-
-    private static final String DEFAULT_USER = "admin";
+    private static final int    WAIT_TIME_FOR_INDEX_CREATION_IN_MILLI = 5000;
+    private static final String AUDIT_PARAMETER_RESOURCE_DIR          = "auditSearchParameters";
+    private static final String DEFAULT_USER                          = "admin";
 
     @Inject
     AtlasTypeRegistry typeRegistry;
 
     @Inject
-    private AtlasTypeDefStore typeDefStore;
+    AtlasAuditService auditService;
 
     @Inject
-    AtlasAuditService auditService;
+    private AtlasTypeDefStore typeDefStore;
 
     @BeforeClass
     public void setup() throws IOException, AtlasBaseException {
@@ -70,18 +67,20 @@ public class AtlasAuditServiceTest {
     @Test
     public void checkTypeRegistered() throws AtlasBaseException {
         AtlasType auditEntryType = typeRegistry.getType("__" + AtlasAuditEntry.class.getSimpleName());
+
         assertNotNull(auditEntryType);
     }
 
     @Test
     public void checkStoringOfAuditEntry() throws AtlasBaseException {
-        final String clientId1 = "client1";
+        final String    clientId1        = "client1";
         AtlasAuditEntry entryTobeStored1 = saveEntry(AuditOperation.PURGE, clientId1);
 
-        String clientId2 = "client2";
+        String          clientId2        = "client2";
         AtlasAuditEntry entryTobeStored2 = saveEntry(AuditOperation.PURGE, clientId2);
 
         waitForIndexCreation();
+
         AtlasAuditEntry storedEntry1 = retrieveEntry(entryTobeStored1);
         AtlasAuditEntry storedEntry2 = retrieveEntry(entryTobeStored2);
 
@@ -101,27 +100,40 @@ public class AtlasAuditServiceTest {
     }
 
     @Test
-    public void checkStoringMultipleAuditEntries() throws AtlasBaseException, InterruptedException {
-        final String clientId = "client1";
-        final int MAX_ENTRIES = 5;
-        final int LIMIT_PARAM = 3;
+    public void checkStoringMultipleAuditEntries() throws AtlasBaseException {
+        final String clientId   = "client1";
+        final int    maxEntries = 5;
+        final int    limitParam = 3;
 
-        for (int i = 0; i < MAX_ENTRIES; i++) {
+        for (int i = 0; i < maxEntries; i++) {
             saveEntry(AuditOperation.PURGE, clientId);
         }
 
         waitForIndexCreation();
+
         AuditSearchParameters auditSearchParameters = createAuditParameter("audit-search-parameter-purge");
-        auditSearchParameters.setLimit(LIMIT_PARAM);
+
+        auditSearchParameters.setLimit(limitParam);
         auditSearchParameters.setOffset(0);
 
         List<AtlasAuditEntry> resultLimitedByParam = auditService.get(auditSearchParameters);
-        assertTrue(resultLimitedByParam.size() == LIMIT_PARAM);
 
-        auditSearchParameters.setLimit(MAX_ENTRIES);
-        auditSearchParameters.setOffset(LIMIT_PARAM);
+        assertEquals(resultLimitedByParam.size(), limitParam);
+
+        auditSearchParameters.setLimit(maxEntries);
+        auditSearchParameters.setOffset(limitParam);
+
         List<AtlasAuditEntry> results = auditService.get(auditSearchParameters);
-        assertTrue(results.size() == (MAX_ENTRIES - LIMIT_PARAM));
+
+        assertEquals(results.size(), (maxEntries - limitParam));
+    }
+
+    protected void waitForIndexCreation() {
+        try {
+            Thread.sleep(WAIT_TIME_FOR_INDEX_CREATION_IN_MILLI);
+        } catch (InterruptedException ex) {
+            throw new SkipException("Wait interrupted.");
+        }
     }
 
     private AuditSearchParameters createAuditParameter(String fileName) {
@@ -135,11 +147,12 @@ public class AtlasAuditServiceTest {
 
     private AtlasAuditEntry retrieveEntry(AtlasAuditEntry entry) throws AtlasBaseException {
         AuditSearchParameters auditSearchParameters = createAuditParameter("audit-search-parameter-purge");
-        AtlasAuditEntry result = auditService.get(entry);
+        AtlasAuditEntry       result                = auditService.get(entry);
 
         assertNotNull(result);
 
         entry.setGuid(result.getGuid());
+
         return auditService.get(entry);
     }
 
@@ -148,15 +161,9 @@ public class AtlasAuditServiceTest {
 
         entry.setStartTime(new Date());
         entry.setEndTime(new Date());
-        auditService.save(entry);
-        return entry;
-    }
 
-    protected void waitForIndexCreation() {
-        try {
-            Thread.sleep(WAIT_TIME_FOR_INDEX_CREATION_IN_MILLI);
-        } catch (InterruptedException ex) {
-            throw new SkipException("Wait interrupted.");
-        }
+        auditService.save(entry);
+
+        return entry;
     }
 }

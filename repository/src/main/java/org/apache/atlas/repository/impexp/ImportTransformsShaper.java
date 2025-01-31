@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,10 +31,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @Component
 public class ImportTransformsShaper {
@@ -56,12 +56,13 @@ public class ImportTransformsShaper {
 
     private void getCreateClassifications(ImportTransforms importTransform, AtlasExportRequest request) throws AtlasBaseException {
         Map<String, Map<String, List<ImportTransformer>>> mapMapList = importTransform.getTransforms();
+
         for (Map<String, List<ImportTransformer>> mapList : mapMapList.values()) {
             for (List<ImportTransformer> list : mapList.values()) {
                 for (ImportTransformer importTransformer : list) {
-                    if((importTransformer instanceof ImportTransformer.AddClassification)) {
-
+                    if ((importTransformer instanceof ImportTransformer.AddClassification)) {
                         ImportTransformer.AddClassification addClassification = (ImportTransformer.AddClassification) importTransformer;
+
                         addFilters(request, addClassification);
                         getCreateTag(addClassification.getClassificationName());
                     }
@@ -71,16 +72,17 @@ public class ImportTransformsShaper {
     }
 
     private void addFilters(AtlasExportRequest request, ImportTransformer.AddClassification transformer) {
-        for(AtlasObjectId objectId : request.getItemsToExport()) {
+        for (AtlasObjectId objectId : request.getItemsToExport()) {
             transformer.addFilter(objectId);
         }
     }
 
     private void updateTransformsWithSubTypes(ImportTransforms importTransforms) {
         String[] transformTypes = importTransforms.getTypes().toArray(new String[importTransforms.getTypes().size()]);
-        for (int i = 0; i < transformTypes.length; i++) {
-            String typeName = transformTypes[i];
+
+        for (String typeName : transformTypes) {
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
             if (entityType == null) {
                 continue;
             }
@@ -91,15 +93,21 @@ public class ImportTransformsShaper {
 
     private String getCreateTag(String classificationName) throws AtlasBaseException {
         AtlasClassificationDef classificationDef = typeRegistry.getClassificationDefByName(classificationName);
-        if(classificationDef != null) {
+
+        if (classificationDef != null) {
             return classificationName;
         }
 
         classificationDef = new AtlasClassificationDef(classificationName);
+
         AtlasTypesDef typesDef = new AtlasTypesDef();
+
         typesDef.setClassificationDefs(Collections.singletonList(classificationDef));
+
         typeDefStore.createTypesDef(typesDef);
+
         LOG.info("created classification: {}", classificationName);
+
         return classificationName;
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,7 +38,8 @@ import static org.testng.Assert.assertTrue;
 
 public class TypesDefScrubberTest {
     private static final String resourcesDirRelativePath = "/src/test/resources/";
-    private final String LEGACY_TYPESDEF_JSON = "legacy-typesdef.json";
+    private static final String LEGACY_TYPESDEF_JSON     = "legacy-typesdef.json";
+
     private String resourceDir;
 
     @BeforeClass
@@ -46,8 +47,33 @@ public class TypesDefScrubberTest {
         resourceDir = System.getProperty("user.dir") + resourcesDirRelativePath;
     }
 
+    @Test
+    public void performScrub() {
+        TypesDefScrubber typesDefScrubber = new TypesDefScrubber();
+        AtlasTypesDef    td               = getTypesDefFromFile(LEGACY_TYPESDEF_JSON);
+
+        int traitPrayIndex = 1;
+        int vendorPIIIndex = 2;
+        int financeIndex   = 3;
+
+        int classificationTraitPrayIndex = 0;
+        int classificationVendorPiiIndex = 2;
+        int classificationFinancendex    = 3;
+
+        String expectedTraitPrayStructName = TypesDefScrubber.getLegacyTypeNameForStructDef(td.getClassificationDefs().get(classificationTraitPrayIndex).getName());
+        String expectedVendorPIIStructName = TypesDefScrubber.getLegacyTypeNameForStructDef(td.getClassificationDefs().get(classificationVendorPiiIndex).getName());
+        String expectedFinanceStructName   = TypesDefScrubber.getLegacyTypeNameForStructDef(td.getClassificationDefs().get(classificationFinancendex).getName());
+
+        assertNewTypesDef(typesDefScrubber.scrub(td), traitPrayIndex, vendorPIIIndex, financeIndex, expectedTraitPrayStructName, expectedVendorPIIStructName, expectedFinanceStructName);
+
+        assertTraitMap(typesDefScrubber, td, classificationTraitPrayIndex, expectedTraitPrayStructName, 0);
+        assertTraitMap(typesDefScrubber, td, classificationVendorPiiIndex, expectedVendorPIIStructName, 1);
+        assertTraitMap(typesDefScrubber, td, classificationFinancendex, expectedFinanceStructName, 2);
+    }
+
     protected AtlasTypesDef getTypesDefFromFile(String s) {
         File f = new File(getFilePath(s));
+
         try {
             return AtlasType.fromJson(FileUtils.readFileToString(f), AtlasTypesDef.class);
         } catch (IOException e) {
@@ -59,38 +85,15 @@ public class TypesDefScrubberTest {
         return Paths.get(resourceDir, fileName).toString();
     }
 
-    @Test
-    public void performScrub() {
-        TypesDefScrubber typesDefScrubber = new TypesDefScrubber();
-        AtlasTypesDef td = getTypesDefFromFile(LEGACY_TYPESDEF_JSON);
-
-        int traitPrayIndex = 1;
-        int vendorPIIIndex = 2;
-        int financeIndex = 3;
-
-        int classificationTraitPrayIndex = 0;
-        int classificationVendorPiiIndex = 2;
-        int classificationFinancendex = 3;
-
-        String expectedTraitPrayStructName = TypesDefScrubber.getLegacyTypeNameForStructDef(td.getClassificationDefs().get(classificationTraitPrayIndex).getName());
-        String expectedVendorPIIStructName = TypesDefScrubber.getLegacyTypeNameForStructDef(td.getClassificationDefs().get(classificationVendorPiiIndex).getName());
-        String expectedFinanceStructName = TypesDefScrubber.getLegacyTypeNameForStructDef(td.getClassificationDefs().get(classificationFinancendex).getName());
-
-        assertNewTypesDef(typesDefScrubber.scrub(td), traitPrayIndex, vendorPIIIndex, financeIndex, expectedTraitPrayStructName, expectedVendorPIIStructName, expectedFinanceStructName);
-
-        assertTraitMap(typesDefScrubber, td, classificationTraitPrayIndex, expectedTraitPrayStructName, 0);
-        assertTraitMap(typesDefScrubber, td, classificationVendorPiiIndex, expectedVendorPIIStructName, 1);
-        assertTraitMap(typesDefScrubber, td, classificationFinancendex, expectedFinanceStructName, 2);
-    }
-
     private void assertTraitMap(TypesDefScrubber typesDefScrubber, AtlasTypesDef td, int classificationIndex, String expectedStructName, int attrIndex) {
         String label = typesDefScrubber.getEdgeLabel(td.getEntityDefs().get(0).getName(), td.getEntityDefs().get(0).getAttributeDefs().get(attrIndex).getName());
+
         assertTrue(typesDefScrubber.getTraitToTypeMap().containsKey(label));
         assertEquals(typesDefScrubber.getTraitToTypeMap().get(label).getTypeName(), td.getClassificationDefs().get(classificationIndex).getName());
         assertEquals(typesDefScrubber.getTraitToTypeMap().get(label).getLegacyTypeName(), expectedStructName);
     }
 
-    private void assertTraitMap(Map<String,TypesDefScrubber.ClassificationToStructDefName> traitToTypeMap, AtlasTypesDef td) {
+    private void assertTraitMap(Map<String, TypesDefScrubber.ClassificationToStructDefName> traitToTypeMap, AtlasTypesDef td) {
     }
 
     private void assertNewTypesDef(AtlasTypesDef newTypes, int traitPrayIndex, int vendorPIIIndex, int financeIndex, String expectedTraitPrayStructName, String expectedVendorPIIStructName, String expectedFinanceStructName) {

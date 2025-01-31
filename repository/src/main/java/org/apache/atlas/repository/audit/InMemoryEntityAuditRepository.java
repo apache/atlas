@@ -28,6 +28,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Singleton;
+
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -66,8 +67,8 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
     //while we are iterating through the map
     @Override
     public synchronized List<EntityAuditEvent> listEventsV1(String entityId, String startKey, short maxResults) {
-        List<EntityAuditEvent> events = new ArrayList<>();
-        String myStartKey = startKey;
+        List<EntityAuditEvent> events     = new ArrayList<>();
+        String                 myStartKey = startKey;
         if (myStartKey == null) {
             myStartKey = entityId;
         }
@@ -78,16 +79,6 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
             }
         }
         return events;
-    }
-
-    @Override
-    public long repositoryMaxSize() {
-        return -1;
-    }
-
-    @Override
-    public List<String> getAuditExcludeAttributes(String entityType) {
-        return null;
     }
 
     @Override
@@ -102,64 +93,6 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
             event.setEventKey(rowKey);
             auditEventsV2.put(rowKey, event);
         }
-    }
-
-    @Override
-    public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException {
-        return listEventsV2(entityId, auditAction, sortByColumn, sortOrderDesc, 0, offset, limit, true, true);
-    }
-
-    private List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int ttlInDays, int offset, short limit, boolean allowMaxResults, boolean createEventsAgeoutAllowed) throws AtlasBaseException {
-        List<EntityAuditEventV2> events     = new ArrayList<>();
-        SortedMap<String, EntityAuditEventV2> subMap = auditEventsV2.tailMap(entityId);
-        for (EntityAuditEventV2 event : subMap.values()) {
-            if (event.getEntityId().equals(entityId)) {
-                if (auditAction == null || event.getAction() == auditAction) {
-                    if (event.getAction() == EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE && !createEventsAgeoutAllowed) {
-                        continue;
-                    }
-                    events.add(event);
-                }
-            }
-        }
-
-        if (allowMaxResults && limit == -1) {
-            limit = (short) events.size();
-        }
-        EntityAuditEventV2.sortEvents(events, sortByColumn, sortOrderDesc);
-        int fromIndex = Math.min(events.size(), offset);
-        int endIndex  = Math.min(events.size(), offset + limit);
-
-        List<EntityAuditEventV2> possibleExpiredEvents = events.subList(0, fromIndex);
-
-        events = new ArrayList<>(events.subList(fromIndex, endIndex));
-
-        // This is only for Audit Aging, including expired audit events to result
-        if (CollectionUtils.isNotEmpty(possibleExpiredEvents) && ttlInDays > 0 ) {
-            LocalDateTime now = LocalDateTime.now();
-            long ttlTimestamp = Timestamp.valueOf(now.minusDays(ttlInDays)).getTime();
-            possibleExpiredEvents.removeIf(e -> (auditAction!= null && e.getAction() != auditAction) || e.getTimestamp() > ttlTimestamp);
-            if (CollectionUtils.isNotEmpty(possibleExpiredEvents)) {
-                events.addAll(possibleExpiredEvents);
-            }
-        }
-        return events;
-    }
-
-    @Override
-    public List<EntityAuditEventV2> deleteEventsV2(String entityId, Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions, short auditCount, int ttlInDays, boolean createEventsAgeoutAllowed, AtlasAuditAgingType auditAgingType) throws AtlasBaseException, AtlasException {
-        List<EntityAuditEventV2> events = new ArrayList<>();
-        if (CollectionUtils.isEmpty(entityAuditActions)) {
-            events = listEventsV2(entityId, null, "timestamp", true, ttlInDays, auditCount, (short) -1, true, createEventsAgeoutAllowed);
-        } else {
-            for (EntityAuditEventV2.EntityAuditActionV2 auditAction : entityAuditActions) {
-                List<EntityAuditEventV2> eventsByAction = listEventsV2(entityId, auditAction, "timestamp", true, ttlInDays, auditCount, (short) -1, true, createEventsAgeoutAllowed);
-                if (CollectionUtils.isNotEmpty(eventsByAction)) {
-                    events.addAll(eventsByAction);
-                }
-            }
-        }
-        return events;
     }
 
     @Override
@@ -179,6 +112,27 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
             }
         }
 
+        return events;
+    }
+
+    @Override
+    public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException {
+        return listEventsV2(entityId, auditAction, sortByColumn, sortOrderDesc, 0, offset, limit, true, true);
+    }
+
+    @Override
+    public List<EntityAuditEventV2> deleteEventsV2(String entityId, Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions, short auditCount, int ttlInDays, boolean createEventsAgeoutAllowed, AtlasAuditAgingType auditAgingType) throws AtlasBaseException, AtlasException {
+        List<EntityAuditEventV2> events = new ArrayList<>();
+        if (CollectionUtils.isEmpty(entityAuditActions)) {
+            events = listEventsV2(entityId, null, "timestamp", true, ttlInDays, auditCount, (short) -1, true, createEventsAgeoutAllowed);
+        } else {
+            for (EntityAuditEventV2.EntityAuditActionV2 auditAction : entityAuditActions) {
+                List<EntityAuditEventV2> eventsByAction = listEventsV2(entityId, auditAction, "timestamp", true, ttlInDays, auditCount, (short) -1, true, createEventsAgeoutAllowed);
+                if (CollectionUtils.isNotEmpty(eventsByAction)) {
+                    events.addAll(eventsByAction);
+                }
+            }
+        }
         return events;
     }
 
@@ -204,6 +158,53 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
             events = listEventsV1(entityId, startKey, maxResults);
         }
 
+        return events;
+    }
+
+    @Override
+    public long repositoryMaxSize() {
+        return -1;
+    }
+
+    @Override
+    public List<String> getAuditExcludeAttributes(String entityType) {
+        return null;
+    }
+
+    private List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int ttlInDays, int offset, short limit, boolean allowMaxResults, boolean createEventsAgeoutAllowed) throws AtlasBaseException {
+        List<EntityAuditEventV2>              events = new ArrayList<>();
+        SortedMap<String, EntityAuditEventV2> subMap = auditEventsV2.tailMap(entityId);
+        for (EntityAuditEventV2 event : subMap.values()) {
+            if (event.getEntityId().equals(entityId)) {
+                if (auditAction == null || event.getAction() == auditAction) {
+                    if (event.getAction() == EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE && !createEventsAgeoutAllowed) {
+                        continue;
+                    }
+                    events.add(event);
+                }
+            }
+        }
+
+        if (allowMaxResults && limit == -1) {
+            limit = (short) events.size();
+        }
+        EntityAuditEventV2.sortEvents(events, sortByColumn, sortOrderDesc);
+        int fromIndex = Math.min(events.size(), offset);
+        int endIndex  = Math.min(events.size(), offset + limit);
+
+        List<EntityAuditEventV2> possibleExpiredEvents = events.subList(0, fromIndex);
+
+        events = new ArrayList<>(events.subList(fromIndex, endIndex));
+
+        // This is only for Audit Aging, including expired audit events to result
+        if (CollectionUtils.isNotEmpty(possibleExpiredEvents) && ttlInDays > 0) {
+            LocalDateTime now          = LocalDateTime.now();
+            long          ttlTimestamp = Timestamp.valueOf(now.minusDays(ttlInDays)).getTime();
+            possibleExpiredEvents.removeIf(e -> (auditAction != null && e.getAction() != auditAction) || e.getTimestamp() > ttlTimestamp);
+            if (CollectionUtils.isNotEmpty(possibleExpiredEvents)) {
+                events.addAll(possibleExpiredEvents);
+            }
+        }
         return events;
     }
 }

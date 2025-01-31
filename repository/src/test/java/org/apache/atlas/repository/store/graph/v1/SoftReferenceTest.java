@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,6 +18,7 @@
 
 package org.apache.atlas.repository.store.graph.v1;
 
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
@@ -34,7 +35,6 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.DeleteType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -44,6 +44,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
@@ -56,15 +57,15 @@ import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class SoftReferenceTest {
-    private static final String TYPE_RDBMS_DB = "rdbms_db";
-    private static final String RDBMS_DB_FILE = "rdbms-db";
-    private static final String TYPE_RDBMS_STORAGE = "rdbms_storage";
-    private static final String TYPESDEF_FILE_NAME = "typesDef-soft-ref";
+    private static final String TYPE_RDBMS_DB             = "rdbms_db";
+    private static final String RDBMS_DB_FILE             = "rdbms-db";
+    private static final String TYPE_RDBMS_STORAGE        = "rdbms_storage";
+    private static final String TYPESDEF_FILE_NAME        = "typesDef-soft-ref";
     private static final String RDBMS_DB_STORAGE_PROPERTY = "sd";
-    private static final String RDBMS_DB_TABLES_PROPERTY = "tables";
+    private static final String RDBMS_DB_TABLES_PROPERTY  = "tables";
     private static final String RDBMS_DB_REGIONS_PROPERTY = "regions";
-    private static final String RDBMS_SD_PROPERTY = "rdbms_db.sd";
-    private static final String TYPE_RDBMS_TABLES = "rdbms_table";
+    private static final String RDBMS_SD_PROPERTY         = "rdbms_db.sd";
+    private static final String TYPE_RDBMS_TABLES         = "rdbms_table";
 
     @Inject
     AtlasTypeRegistry typeRegistry;
@@ -76,8 +77,8 @@ public class SoftReferenceTest {
     private AtlasEntityStore entityStore;
 
     private AtlasType dbType;
-    private String dbGuid;
-    private String storageGuid;
+    private String    dbGuid;
+    private String    storageGuid;
 
     @BeforeMethod
     public void init() throws Exception {
@@ -87,16 +88,19 @@ public class SoftReferenceTest {
 
     @Test
     public void typeCreationFromFile() throws IOException, AtlasBaseException {
-        String typesDefJson = TestResourceFileUtils.getJson(TYPESDEF_FILE_NAME);
+        String        typesDefJson = TestResourceFileUtils.getJson(TYPESDEF_FILE_NAME);
+        AtlasTypesDef typesDef     = AtlasType.fromJson(typesDefJson, AtlasTypesDef.class);
 
-        AtlasTypesDef typesDef = AtlasType.fromJson(typesDefJson, AtlasTypesDef.class);
         assertNotNull(typesDef);
 
         typeDefStore.createTypesDef(typesDef);
 
         dbType = typeRegistry.getType(TYPE_RDBMS_DB);
+
         assertNotNull(dbType);
+
         AtlasEntityDef dbType = typeRegistry.getEntityDefByName(TYPE_RDBMS_DB);
+
         assertNotNull(dbType);
         assertTrue(dbType.getAttribute(RDBMS_DB_STORAGE_PROPERTY).isSoftReferenced());
         assertTrue(dbType.getAttribute(RDBMS_DB_TABLES_PROPERTY).isSoftReferenced());
@@ -107,18 +111,15 @@ public class SoftReferenceTest {
 
     @Test(dependsOnMethods = "typeCreationFromFile")
     public void entityCreationUsingSoftRef() throws IOException, AtlasBaseException {
-        final int EXPECTED_ENTITY_COUNT = 6;
-        AtlasEntity.AtlasEntityWithExtInfo dbEntity = AtlasType.fromJson(
-                TestResourceFileUtils.getJson(RDBMS_DB_FILE), AtlasEntity.AtlasEntityWithExtInfo.class);
-
-        EntityMutationResponse  response = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
+        final int                          expectedEntityCount = 6;
+        AtlasEntity.AtlasEntityWithExtInfo dbEntity            = AtlasType.fromJson(TestResourceFileUtils.getJson(RDBMS_DB_FILE), AtlasEntity.AtlasEntityWithExtInfo.class);
+        EntityMutationResponse             response            = entityStore.createOrUpdate(new AtlasEntityStream(dbEntity), false);
 
         assertNotNull(response);
-        assertTrue(response.getCreatedEntities().size() == EXPECTED_ENTITY_COUNT);
-        assertGraphStructure(response.getCreatedEntities().get(0).getGuid(),
-                response.getCreatedEntities().get(1).getGuid(), RDBMS_SD_PROPERTY);
+        assertEquals(response.getCreatedEntities().size(), expectedEntityCount);
+        assertGraphStructure(response.getCreatedEntities().get(0).getGuid(), response.getCreatedEntities().get(1).getGuid(), RDBMS_SD_PROPERTY);
 
-        dbGuid = response.getCreatedEntities().get(0).getGuid();
+        dbGuid      = response.getCreatedEntities().get(0).getGuid();
         storageGuid = response.getCreatedEntities().get(1).getGuid();
     }
 
@@ -127,13 +128,17 @@ public class SoftReferenceTest {
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityStore.getById(dbGuid);
 
         assertNotNull(entityWithExtInfo);
-        List list = (List)entityWithExtInfo.getEntity().getAttribute(RDBMS_DB_TABLES_PROPERTY);
+
+        List list = (List) entityWithExtInfo.getEntity().getAttribute(RDBMS_DB_TABLES_PROPERTY);
+
         list.remove(1);
 
         Map map = (Map) entityWithExtInfo.getEntity().getAttribute(RDBMS_DB_REGIONS_PROPERTY);
+
         map.remove("east");
 
-        EntityMutationResponse  response = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), true);
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), true);
+
         assertNotNull(response);
         assertTrue(response.getPartialUpdatedEntities().size() > 0);
         assertAttribute(dbGuid, storageGuid, 1, 1);
@@ -147,7 +152,8 @@ public class SoftReferenceTest {
         addNewTables(entityWithExtInfo);
         addNewRegions(entityWithExtInfo);
 
-        EntityMutationResponse  response = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), true);
+        EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), true);
+
         assertNotNull(response);
         assertTrue(response.getPartialUpdatedEntities().size() > 0);
         assertAttribute(dbGuid, storageGuid, 3, 3);
@@ -167,7 +173,7 @@ public class SoftReferenceTest {
     }
 
     private void addNewTables(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
-        List list = (List)entityWithExtInfo.getEntity().getAttribute(RDBMS_DB_TABLES_PROPERTY);
+        List        list   = (List) entityWithExtInfo.getEntity().getAttribute(RDBMS_DB_TABLES_PROPERTY);
         AtlasEntity table1 = getDefaultTableEntity("newTable-1");
         AtlasEntity table2 = getDefaultTableEntity("newTable-2");
 
@@ -180,19 +186,18 @@ public class SoftReferenceTest {
 
     private AtlasEntity getDefaultTableEntity(String name) throws AtlasBaseException {
         AtlasEntityType type = (AtlasEntityType) typeRegistry.getType(TYPE_RDBMS_TABLES);
+        AtlasEntity     ret  = type.createDefaultValue();
 
-        AtlasEntity ret = type.createDefaultValue();
         ret.setAttribute("name", name);
 
         return ret;
     }
 
     private void assertGraphStructure(String dbGuid, String storageGuid, String propertyName) throws AtlasBaseException {
-        AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(dbGuid);
+        AtlasVertex         vertex   = AtlasGraphUtilsV2.findByGuid(dbGuid);
         Iterator<AtlasEdge> edgesOut = vertex.getEdges(AtlasEdgeDirection.OUT).iterator();
-        Iterator<AtlasEdge> edgesIn = vertex.getEdges(AtlasEdgeDirection.IN).iterator();
-
-        String sd = AtlasGraphUtilsV2.getProperty(vertex, propertyName, String.class);
+        Iterator<AtlasEdge> edgesIn  = vertex.getEdges(AtlasEdgeDirection.IN).iterator();
+        String              sd       = AtlasGraphUtilsV2.getProperty(vertex, propertyName, String.class);
 
         assertNotNull(sd);
         assertAttribute(dbGuid, storageGuid, 2, 2);
@@ -203,9 +208,9 @@ public class SoftReferenceTest {
 
     private void assertAttribute(String dbGuid, String storageGuid, int expectedTableCount, int expectedRegionCount) throws AtlasBaseException {
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityStore.getById(dbGuid);
-        AtlasEntity entity = entityWithExtInfo.getEntity();
+        AtlasEntity                        entity            = entityWithExtInfo.getEntity();
+        Object                             val               = entity.getAttribute(RDBMS_DB_STORAGE_PROPERTY);
 
-        Object val = entity.getAttribute(RDBMS_DB_STORAGE_PROPERTY);
         assertTrue(val instanceof AtlasObjectId);
         assertEquals(((AtlasObjectId) val).getTypeName(), TYPE_RDBMS_STORAGE);
         assertEquals(((AtlasObjectId) val).getGuid(), storageGuid);

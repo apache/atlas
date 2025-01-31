@@ -20,7 +20,6 @@ package org.apache.atlas.repository.patches;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +28,7 @@ import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 public class IndexConsistencyPatch extends AtlasPatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(IndexConsistencyPatch.class);
 
-    private static final String PATCH_ID = "JAVA_PATCH_0000_005";
+    private static final String PATCH_ID          = "JAVA_PATCH_0000_005";
     private static final String PATCH_DESCRIPTION = "Sets index consistency for vertices and edges.";
 
     private final PatchContext context;

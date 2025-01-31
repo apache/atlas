@@ -20,24 +20,17 @@ package org.apache.atlas.repository.patches;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.pc.WorkItemManager;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_TYPE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
-
 
 public class RelationshipTypeNamePatch extends AtlasPatchHandler {
-
     private static final Logger LOG = LoggerFactory.getLogger(RelationshipTypeNamePatch.class);
 
     private static final String PATCH_ID          = "JAVA_PATCH_0000_0011";
@@ -53,11 +46,14 @@ public class RelationshipTypeNamePatch extends AtlasPatchHandler {
 
     @Override
     public void apply() throws AtlasBaseException {
-        if (AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getBoolean() == false) {
+        if (!AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getBoolean()) {
             LOG.info("RelationshipTypeNamePatch: Skipped, since not enabled!");
+
             return;
         }
+
         LOG.info("RelationshipTypeNamePatch: Starting...");
+
         EdgePatchProcessor patchProcessor = new RelationshipTypeNamePatchProcessor(context);
 
         patchProcessor.apply();
@@ -68,7 +64,6 @@ public class RelationshipTypeNamePatch extends AtlasPatchHandler {
     }
 
     public static class RelationshipTypeNamePatchProcessor extends EdgePatchProcessor {
-
         public RelationshipTypeNamePatchProcessor(PatchContext context) {
             super(context);
         }
@@ -80,19 +75,16 @@ public class RelationshipTypeNamePatch extends AtlasPatchHandler {
 
         @Override
         protected void submitEdgesToUpdate(WorkItemManager manager) {
-
-            AtlasGraph graph = getGraph();
-
+            AtlasGraph          graph    = getGraph();
             Iterable<AtlasEdge> iterable = graph.getEdges();
-            int count = 0;
+            int                 count    = 0;
 
-            for (Iterator<AtlasEdge> iter = iterable.iterator(); iter.hasNext(); ) {
-                AtlasEdge edge = iter.next();
-
+            for (AtlasEdge edge : iterable) {
                 if (edge.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class) != null) {
                     String edgeId = edge.getId().toString();
 
                     manager.checkProduce(edgeId);
+
                     count++;
                 }
             }
@@ -102,12 +94,9 @@ public class RelationshipTypeNamePatch extends AtlasPatchHandler {
 
         @Override
         protected void processEdgesItem(String edgeId, AtlasEdge edge, String typeName, AtlasRelationshipType type) {
-
             edge.setProperty(RELATIONSHIP_TYPE_PROPERTY_KEY, typeName);
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("processItem(typeName={}, edgeId={}): Done!", typeName, edgeId);
-            }
+            LOG.debug("processItem(typeName={}, edgeId={}): Done!", typeName, edgeId);
         }
     }
 }

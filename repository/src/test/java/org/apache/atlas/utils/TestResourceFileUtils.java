@@ -31,11 +31,14 @@ import java.io.IOException;
 public class TestResourceFileUtils {
     private static final Logger LOG = LoggerFactory.getLogger(TestResourceFileUtils.class);
 
+    private TestResourceFileUtils() {
+        // to block instantiation
+    }
 
     public static String getTestFilePath(String fileName) {
-        final String userDir = System.getProperty("user.dir");
-        String filePath = getTestFilePath(userDir, "", fileName);
-        return filePath;
+        final String userDir  = System.getProperty("user.dir");
+
+        return getTestFilePath(userDir, "", fileName);
     }
 
     public static FileInputStream getFileInputStream(String fileName) {
@@ -43,27 +46,31 @@ public class TestResourceFileUtils {
     }
 
     public static FileInputStream getFileInputStream(String subDir, String fileName) {
-        final String userDir = System.getProperty("user.dir");
-        String filePath = getTestFilePath(userDir, subDir, fileName);
-        File f = new File(filePath);
-        FileInputStream fs = null;
+        final String    userDir  = System.getProperty("user.dir");
+        String          filePath = getTestFilePath(userDir, subDir, fileName);
+        File            f        = new File(filePath);
+        FileInputStream fs       = null;
+
         try {
             fs = new FileInputStream(f);
         } catch (FileNotFoundException e) {
             LOG.error("File could not be found at: {}", filePath, e);
         }
+
         return fs;
     }
 
     public static String getDirectory(String subDir) {
         final String userDir = System.getProperty("user.dir");
+
         return getTestFilePath(userDir, subDir, "");
     }
 
     public static <T> T readObjectFromJson(String subDir, String filename, Class<T> objectClass) throws IOException {
-        final String userDir = System.getProperty("user.dir");
-        String filePath = getTestJsonPath(userDir, subDir, filename);
-        String json = FileUtils.readFileToString(new File(filePath));
+        final String userDir  = System.getProperty("user.dir");
+        String       filePath = getTestJsonPath(userDir, subDir, filename);
+        String       json     = FileUtils.readFileToString(new File(filePath));
+
         return AtlasType.fromJson(json, objectClass);
     }
 
@@ -72,8 +79,9 @@ public class TestResourceFileUtils {
     }
 
     public static String getJson(String subDir, String filename) throws IOException {
-        final String userDir = System.getProperty("user.dir");
-        String filePath = getTestJsonPath(userDir, subDir, filename);
+        final String userDir  = System.getProperty("user.dir");
+        String       filePath = getTestJsonPath(userDir, subDir, filename);
+
         return FileUtils.readFileToString(new File(filePath));
     }
 

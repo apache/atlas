@@ -38,8 +38,8 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropert
 import static org.apache.atlas.type.Constants.INTERNAL_PROPERTY_KEY_PREFIX;
 
 public class DataMigrationStatusService {
-    private static final Logger LOG = LoggerFactory.getLogger(DataMigrationStatusService.class);
-    private final MigrationStatusVertexManagement migrationStatusVertexManagement;
+    private static final Logger                          LOG = LoggerFactory.getLogger(DataMigrationStatusService.class);
+    private final        MigrationStatusVertexManagement migrationStatusVertexManagement;
 
     private MigrationImportStatus status;
 
@@ -51,11 +51,10 @@ public class DataMigrationStatusService {
         this.migrationStatusVertexManagement = new MigrationStatusVertexManagement(graph);
     }
 
-
     public void init(String fileToImport) {
         String fileHash = null;
         try {
-            fileHash = DigestUtils.md5Hex(new FileInputStream(fileToImport));
+            fileHash    = DigestUtils.md5Hex(new FileInputStream(fileToImport));
             this.status = new MigrationImportStatus(fileToImport, fileHash);
         } catch (IOException e) {
             LOG.error("Not able to create Migration status", e);
@@ -100,6 +99,11 @@ public class DataMigrationStatusService {
         return this.status;
     }
 
+    public void setStatus(String status) {
+        this.status.setOperationStatus(status);
+        this.migrationStatusVertexManagement.updateVertexPartialStatus(this.status);
+    }
+
     public MigrationImportStatus getByName(String name) {
         return this.migrationStatusVertexManagement.findByName(name);
     }
@@ -119,18 +123,13 @@ public class DataMigrationStatusService {
         this.migrationStatusVertexManagement.updateVertexPartialPosition(this.status);
     }
 
-    public void setStatus(String status) {
-        this.status.setOperationStatus(status);
-        this.migrationStatusVertexManagement.updateVertexPartialStatus(this.status);
-    }
-
     private static class MigrationStatusVertexManagement {
         public static final String PROPERTY_KEY_START_TIME = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "migration.startTime");
-        public static final String PROPERTY_KEY_SIZE = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "migration.size");
-        public static final String PROPERTY_KEY_POSITION = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "migration.position");
-        public static final String PROPERTY_KEY_STATUS = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "migration.status");
+        public static final String PROPERTY_KEY_SIZE       = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "migration.size");
+        public static final String PROPERTY_KEY_POSITION   = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "migration.position");
+        public static final String PROPERTY_KEY_STATUS     = encodePropertyKey(INTERNAL_PROPERTY_KEY_PREFIX + "migration.status");
 
-        private AtlasGraph graph;
+        private AtlasGraph  graph;
         private AtlasVertex vertex;
 
         public MigrationStatusVertexManagement(AtlasGraph graph) {
@@ -178,18 +177,6 @@ public class DataMigrationStatusService {
             }
         }
 
-        private AtlasVertex findByNameInternal(String name) {
-            try {
-                return AtlasGraphUtilsV2.findByGuid(graph, name);
-            } catch (Exception e) {
-                LOG.error("MigrationStatusVertexManagement.findByNameInternal: Failed!", e);
-            } finally {
-                graph.commit();
-            }
-
-            return null;
-        }
-
         public void updateVertexPartialPosition(MigrationImportStatus status) {
             try {
                 setEncodedProperty(vertex, PROPERTY_KEY_POSITION, status.getCurrentIndex());
@@ -208,6 +195,18 @@ public class DataMigrationStatusService {
             } finally {
                 graph.commit();
             }
+        }
+
+        private AtlasVertex findByNameInternal(String name) {
+            try {
+                return AtlasGraphUtilsV2.findByGuid(graph, name);
+            } catch (Exception e) {
+                LOG.error("MigrationStatusVertexManagement.findByNameInternal: Failed!", e);
+            } finally {
+                graph.commit();
+            }
+
+            return null;
         }
 
         private void updateVertex(AtlasVertex vertex, MigrationImportStatus status) {

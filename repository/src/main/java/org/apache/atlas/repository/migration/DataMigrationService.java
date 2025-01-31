@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,6 +38,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -51,29 +52,29 @@ public class DataMigrationService implements Service {
 
     private static final String FILE_EXTENSION_ZIP = ".zip";
 
-    private static String ATLAS_MIGRATION_DATA_NAME     = "atlas-migration-data.json";
-    private static String ATLAS_MIGRATION_TYPESDEF_NAME = "atlas-migration-typesdef.json";
+    private static final String ATLAS_MIGRATION_DATA_NAME     = "atlas-migration-data.json";
+    private static final String ATLAS_MIGRATION_TYPESDEF_NAME = "atlas-migration-typesdef.json";
 
     private final Configuration configuration;
     private final Thread        thread;
 
     @Inject
     public DataMigrationService(GraphDBMigrator migrator, AtlasTypeDefStore typeDefStore, Configuration configuration,
-                                GraphBackedSearchIndexer indexer, AtlasTypeDefStoreInitializer storeInitializer,
-                                AtlasTypeRegistry typeRegistry, ImportService importService) {
+            GraphBackedSearchIndexer indexer, AtlasTypeDefStoreInitializer storeInitializer, AtlasTypeRegistry typeRegistry, ImportService importService) {
         this.configuration = configuration;
 
-
-        String fileName = getFileName();
+        String  fileName                    = getFileName();
         boolean zipFileBasedMigrationImport = StringUtils.endsWithIgnoreCase(fileName, FILE_EXTENSION_ZIP);
-        this.thread        = (zipFileBasedMigrationImport)
-            ?  new Thread(new ZipFileMigrationImporter(importService, fileName), "zipFileBasedMigrationImporter")
-            :  new Thread(new FileImporter(migrator, typeDefStore, typeRegistry, storeInitializer, fileName, indexer));
+
+        this.thread = (zipFileBasedMigrationImport)
+                ? new Thread(new ZipFileMigrationImporter(importService, fileName), "zipFileBasedMigrationImporter")
+                : new Thread(new FileImporter(migrator, typeDefStore, typeRegistry, storeInitializer, fileName, indexer));
     }
 
     @Override
     public void start() {
         Runtime.getRuntime().addShutdownHook(thread);
+
         thread.start();
     }
 
@@ -99,8 +100,7 @@ public class DataMigrationService implements Service {
         private final AtlasTypeDefStoreInitializer storeInitializer;
 
         public FileImporter(GraphDBMigrator migrator, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
-                            AtlasTypeDefStoreInitializer storeInitializer,
-                            String directoryName, GraphBackedSearchIndexer indexer) {
+                AtlasTypeDefStoreInitializer storeInitializer, String directoryName, GraphBackedSearchIndexer indexer) {
             this.migrator         = migrator;
             this.typeDefStore     = typeDefStore;
             this.typeRegistry     = typeRegistry;
@@ -120,7 +120,7 @@ public class DataMigrationService implements Service {
 
         private void performImport() throws AtlasBaseException {
             try {
-                if(!performAccessChecks(importDirectory)) {
+                if (!performAccessChecks(importDirectory)) {
                     return;
                 }
 
@@ -138,7 +138,7 @@ public class DataMigrationService implements Service {
         private boolean performAccessChecks(String path) {
             final boolean ret;
 
-            if(StringUtils.isEmpty(path)) {
+            if (StringUtils.isEmpty(path)) {
                 ret = false;
             } else {
                 File f = new File(path);

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -98,19 +99,6 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     }
 
     @Override
-    public void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
-        super.validateType(typeDef);
-        AtlasBusinessMetadataDef businessMetadataDef = (AtlasBusinessMetadataDef) typeDef;
-        if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
-            for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
-                if (!isValidName(attributeDef.getName())) {
-                    throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_INVALID_CHARS, attributeDef.getName());
-                }
-            }
-        }
-    }
-
-    @Override
     public AtlasBusinessMetadataDef create(AtlasBusinessMetadataDef businessMetadataDef, AtlasVertex preCreateResult) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasBusinessMetadataDefStoreV2.create({}, {})", businessMetadataDef, preCreateResult);
@@ -125,7 +113,6 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
                 verifyTypesReadAccess(bmAttribute.getApplicableEntityTypes());
             }
         }
-
 
         AtlasVertex vertex = (preCreateResult == null) ? preCreate(businessMetadataDef) : preCreateResult;
 
@@ -253,8 +240,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, name);
         }
 
-
-        updateVertexPreUpdate(typeDef, (AtlasBusinessMetadataType)type, vertex);
+        updateVertexPreUpdate(typeDef, (AtlasBusinessMetadataType) type, vertex);
 
         AtlasBusinessMetadataDef ret = toBusinessMetadataDef(vertex);
 
@@ -270,7 +256,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             LOG.debug("==> AtlasBusinessMetadataDefStoreV2.updateByGuid({})", guid);
         }
 
-        AtlasBusinessMetadataDef existingDef   = typeRegistry.getBusinessMetadataDefByGuid(guid);
+        AtlasBusinessMetadataDef existingDef = typeRegistry.getBusinessMetadataDefByGuid(guid);
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_UPDATE, existingDef), "update businessMetadata-def ", (existingDef != null ? existingDef.getName() : guid));
 
@@ -288,7 +274,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
-        updateVertexPreUpdate(typeDef, (AtlasBusinessMetadataType)type, vertex);
+        updateVertexPreUpdate(typeDef, (AtlasBusinessMetadataType) type, vertex);
 
         AtlasBusinessMetadataDef ret = toBusinessMetadataDef(vertex);
 
@@ -347,13 +333,26 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         return ret;
     }
 
+    @Override
+    public void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
+        super.validateType(typeDef);
+        AtlasBusinessMetadataDef businessMetadataDef = (AtlasBusinessMetadataDef) typeDef;
+        if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
+            for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
+                if (!isValidName(attributeDef.getName())) {
+                    throw new AtlasBaseException(AtlasErrorCode.ATTRIBUTE_NAME_INVALID_CHARS, attributeDef.getName());
+                }
+            }
+        }
+    }
+
     private void updateVertexPreCreate(AtlasBusinessMetadataDef businessMetadataDef, AtlasBusinessMetadataType businessMetadataType,
-                                       AtlasVertex vertex) throws AtlasBaseException {
+            AtlasVertex vertex) throws AtlasBaseException {
         AtlasStructDefStoreV2.updateVertexPreCreate(businessMetadataDef, businessMetadataType, vertex, typeDefStore);
     }
 
     private void updateVertexPreUpdate(AtlasBusinessMetadataDef businessMetadataDef, AtlasBusinessMetadataType businessMetadataType,
-                                       AtlasVertex vertex) throws AtlasBaseException {
+            AtlasVertex vertex) throws AtlasBaseException {
         // Load up current struct definition for matching attributes
         AtlasBusinessMetadataDef currentBusinessMetadataDef = toBusinessMetadataDef(vertex);
 
@@ -361,13 +360,13 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         // entity types
         if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
             for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
-                String updatedApplicableEntityTypesString = attributeDef.getOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES);
-                Set<String> updatedApplicableEntityTypes = StringUtils.isBlank(updatedApplicableEntityTypesString) ? null : AtlasType.fromJson(updatedApplicableEntityTypesString, Set.class);
+                String      updatedApplicableEntityTypesString = attributeDef.getOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES);
+                Set<String> updatedApplicableEntityTypes       = StringUtils.isBlank(updatedApplicableEntityTypesString) ? null : AtlasType.fromJson(updatedApplicableEntityTypesString, Set.class);
 
                 AtlasStructDef.AtlasAttributeDef existingAttribute = currentBusinessMetadataDef.getAttribute(attributeDef.getName());
                 if (existingAttribute != null) {
-                    String existingApplicableEntityTypesString = existingAttribute.getOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES);
-                    Set<String> existingApplicableEntityTypes = StringUtils.isBlank(existingApplicableEntityTypesString) ? null : AtlasType.fromJson(existingApplicableEntityTypesString, Set.class);
+                    String      existingApplicableEntityTypesString = existingAttribute.getOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES);
+                    Set<String> existingApplicableEntityTypes       = StringUtils.isBlank(existingApplicableEntityTypesString) ? null : AtlasType.fromJson(existingApplicableEntityTypesString, Set.class);
 
                     if (existingApplicableEntityTypes != null) {
                         if (!updatedApplicableEntityTypes.containsAll(existingApplicableEntityTypes)) {
@@ -400,9 +399,9 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             List<AtlasStructDef.AtlasAttributeDef> attributeDefs = businessMetadataDef.getAttributeDefs();
 
             for (AtlasStructDef.AtlasAttributeDef attributeDef : attributeDefs) {
-                String      qualifiedName       = AtlasStructType.AtlasAttribute.getQualifiedAttributeName(businessMetadataDef, attributeDef.getName());
-                String      vertexPropertyName  = AtlasStructType.AtlasAttribute.generateVertexPropertyName(businessMetadataDef, attributeDef, qualifiedName);
-                Set<String> applicableTypes     = AtlasJson.fromJson(attributeDef.getOption(AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES), Set.class);
+                String      qualifiedName      = AtlasStructType.AtlasAttribute.getQualifiedAttributeName(businessMetadataDef, attributeDef.getName());
+                String      vertexPropertyName = AtlasStructType.AtlasAttribute.generateVertexPropertyName(businessMetadataDef, attributeDef, qualifiedName);
+                Set<String> applicableTypes    = AtlasJson.fromJson(attributeDef.getOption(AtlasBusinessMetadataDef.ATTR_OPTION_APPLICABLE_ENTITY_TYPES), Set.class);
 
                 if (CollectionUtils.isNotEmpty(applicableTypes) && isBusinessAttributePresent(vertexPropertyName, applicableTypes)) {
                     throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, typeName);
@@ -433,5 +432,4 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         return CollectionUtils.isNotEmpty(atlasSearchResult.getEntities());
     }
-
 }

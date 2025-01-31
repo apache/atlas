@@ -39,7 +39,9 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.apache.atlas.repository.Constants.SupportedFileExtensions.*;
+import static org.apache.atlas.repository.Constants.SupportedFileExtensions.CSV;
+import static org.apache.atlas.repository.Constants.SupportedFileExtensions.XLS;
+import static org.apache.atlas.repository.Constants.SupportedFileExtensions.XLSX;
 
 public class FileUtils {
     public static final String PIPE_CHARACTER   = "|";
@@ -47,15 +49,19 @@ public class FileUtils {
     public static final String ESCAPE_CHARACTER = "\\";
 
     //BusinessMetadata attributes association uploads
-    public static final int TYPENAME_COLUMN_INDEX = 0;
+    public static final int TYPENAME_COLUMN_INDEX          = 0;
     public static final int UNIQUE_ATTR_VALUE_COLUMN_INDEX = 1;
-    public static final int BM_ATTR_NAME_COLUMN_INDEX = 2;
-    public static final int BM_ATTR_VALUE_COLUMN_INDEX = 3;
-    public static final int UNIQUE_ATTR_NAME_COLUMN_INDEX = 4;
+    public static final int BM_ATTR_NAME_COLUMN_INDEX      = 2;
+    public static final int BM_ATTR_VALUE_COLUMN_INDEX     = 3;
+    public static final int UNIQUE_ATTR_NAME_COLUMN_INDEX  = 4;
+
+    private FileUtils() {
+        // to block instantiation
+    }
 
     public static List<String[]> readFileData(String fileName, InputStream inputStream) throws AtlasBaseException {
-        List<String[]>                        ret;
-        String                                extension     = FilenameUtils.getExtension(fileName);
+        List<String[]> ret;
+        String         extension = FilenameUtils.getExtension(fileName);
 
         if (extension.equalsIgnoreCase(CSV.name())) {
             ret = readCSV(inputStream);
@@ -97,19 +103,19 @@ public class FileUtils {
     }
 
     public static List<String[]> readExcel(InputStream inputStream, String extension) throws AtlasBaseException {
-        List<String[]> ret        = new ArrayList<>();
+        List<String[]> ret = new ArrayList<>();
 
         try (Workbook excelBook = extension.equalsIgnoreCase(XLS.name()) ? new HSSFWorkbook(inputStream) : new XSSFWorkbook(inputStream)) {
-            Sheet          excelSheet = excelBook.getSheetAt(0);
-            Iterator       itr        = excelSheet.rowIterator();
-            Row            headerRow  = (Row) itr.next();
+            Sheet         excelSheet = excelBook.getSheetAt(0);
+            Iterator<Row> itr        = excelSheet.rowIterator();
+            Row           headerRow  = itr.next();
 
             if (isRowEmpty(headerRow)) {
                 return ret;
             }
 
             while (itr.hasNext()) {
-                Row row = (Row) itr.next();
+                Row row = itr.next();
 
                 if (!isRowEmpty(row)) {
                     String[] data = new String[row.getLastCellNum()];
@@ -128,18 +134,6 @@ public class FileUtils {
         return ret;
     }
 
-    private static boolean isRowEmpty(Row row) {
-        for (int c = row.getFirstCellNum(); c < row.getLastCellNum(); c++) {
-            Cell cell = row.getCell(c);
-
-            if (cell != null && cell.getCellType() != CellType.BLANK) {
-                return false;
-            }
-        }
-
-        return true;
-    }
-
     public static String getBusinessMetadataHeaders() {
         List<String> bMHeader = new ArrayList<>();
 
@@ -150,5 +144,17 @@ public class FileUtils {
         bMHeader.add("EntityUniqueAttributeName[optional]");
 
         return StringUtils.join(bMHeader, ",");
+    }
+
+    private static boolean isRowEmpty(Row row) {
+        for (int c = row.getFirstCellNum(); c < row.getLastCellNum(); c++) {
+            Cell cell = row.getCell(c);
+
+            if (cell != null && cell.getCellType() != CellType.BLANK) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

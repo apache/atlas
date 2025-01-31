@@ -46,12 +46,12 @@ import java.io.InputStream;
 import java.util.List;
 
 import static org.apache.atlas.AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getInputStreamFrom;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getDefaultImportRequest;
-import static org.apache.atlas.utils.TestLoadModelUtils.loadFsModel;
-import static org.apache.atlas.utils.TestLoadModelUtils.loadHiveModel;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getInputStreamFrom;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithParameters;
 import static org.apache.atlas.type.AtlasTypeUtil.toAtlasRelatedObjectId;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadFsModel;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadHiveModel;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 
@@ -61,10 +61,10 @@ public class ImportReactivateTableTest extends AtlasTestBase {
 
     private static final String ENTITY_TYPE_COL = "hive_column";
 
-    private static final String ENTITY_GUID_TABLE_WITH_REL_ATTRS = "e19e5683-d9ae-436a-af1e-0873582d0f1e";
+    private static final String ENTITY_GUID_TABLE_WITH_REL_ATTRS    = "e19e5683-d9ae-436a-af1e-0873582d0f1e";
     private static final String ENTITY_GUID_TABLE_WITHOUT_REL_ATTRS = "027a987e-867a-4c98-ac1e-c5ded41130d3";
 
-    private static final String REPL_FROM = "cl1";
+    private static final String REPL_FROM        = "cl1";
     private static final String REPL_TRANSFORMER = "[{\"conditions\":{\"__entity\":\"topLevel: \"}," +
             "\"action\":{\"__entity\":\"ADD_CLASSIFICATION: cl1_replicated\"}}," +
             "{\"action\":{\"__entity.replicatedTo\":\"CLEAR:\",\"__entity.replicatedFrom\":\"CLEAR:\"}}," +
@@ -86,6 +86,14 @@ public class ImportReactivateTableTest extends AtlasTestBase {
     @Inject
     private AtlasTypeDefStore typeDefStore;
 
+    public static InputStream getDataWithRelationshipAttrs() {
+        return getInputStreamFrom("repl_exp_1.zip");
+    }
+
+    public static InputStream getDataWithoutRelationshipAttrs() {
+        return getInputStreamFrom("stocks.zip");
+    }
+
     @BeforeClass
     public void initialize() throws Exception {
         super.initialize();
@@ -105,26 +113,6 @@ public class ImportReactivateTableTest extends AtlasTestBase {
         super.cleanup();
     }
 
-    private void importSeedData() throws AtlasBaseException, IOException {
-        loadFsModel(typeDefStore, typeRegistry);
-        loadHiveModel(typeDefStore, typeRegistry);
-        AtlasImportRequest atlasImportRequest = getDefaultImportRequest();
-
-        atlasImportRequest.setOption("replicatedFrom", REPL_FROM);
-        atlasImportRequest.setOption("transformers", REPL_TRANSFORMER);
-
-        runImportWithParameters(importService, atlasImportRequest, getDataWithoutRelationshipAttrs());
-        runImportWithParameters(importService, atlasImportRequest, getDataWithRelationshipAttrs());
-    }
-
-    public static InputStream getDataWithRelationshipAttrs() {
-        return getInputStreamFrom("repl_exp_1.zip");
-    }
-
-    public static InputStream getDataWithoutRelationshipAttrs() {
-        return getInputStreamFrom("stocks.zip");
-    }
-
     @Test
     public void testWithRelationshipAttr() throws AtlasBaseException, IOException {
         testReactivation(ENTITY_GUID_TABLE_WITH_REL_ATTRS, 2);
@@ -138,9 +126,9 @@ public class ImportReactivateTableTest extends AtlasTestBase {
     public void testReactivation(String tableEntityGuid, int columnCount) throws AtlasBaseException, IOException {
         importSeedData();
 
-        AtlasEntity.AtlasEntityWithExtInfo entity = entityStore.getById(tableEntityGuid);
-        EntityMutationResponse response = createColumn(entity.getEntity());
-        String columnGuid = response.getCreatedEntities().get(0).getGuid();
+        AtlasEntity.AtlasEntityWithExtInfo entity     = entityStore.getById(tableEntityGuid);
+        EntityMutationResponse             response   = createColumn(entity.getEntity());
+        String                             columnGuid = response.getCreatedEntities().get(0).getGuid();
         assertNotNull(columnGuid);
         columnCount++;
 
@@ -156,14 +144,14 @@ public class ImportReactivateTableTest extends AtlasTestBase {
         List<AtlasRelatedObjectId> columns = (List<AtlasRelatedObjectId>) atlasEntity.getRelationshipAttribute("columns");
         assertEquals(columns.size(), columnCount);
 
-        int activeColumnCount = 0;
+        int activeColumnCount  = 0;
         int deletedColumnCount = 0;
         for (AtlasRelatedObjectId column : columns) {
-            if (column.getGuid().equals(columnGuid)){
+            if (column.getGuid().equals(columnGuid)) {
                 assertEquals(column.getEntityStatus(), AtlasEntity.Status.DELETED);
                 assertEquals(column.getRelationshipStatus(), AtlasRelationship.Status.DELETED);
                 deletedColumnCount++;
-            }else{
+            } else {
                 assertEquals(column.getEntityStatus(), AtlasEntity.Status.ACTIVE);
                 assertEquals(column.getRelationshipStatus(), AtlasRelationship.Status.ACTIVE);
                 activeColumnCount++;
@@ -173,9 +161,21 @@ public class ImportReactivateTableTest extends AtlasTestBase {
         assertEquals(deletedColumnCount, 1);
     }
 
+    private void importSeedData() throws AtlasBaseException, IOException {
+        loadFsModel(typeDefStore, typeRegistry);
+        loadHiveModel(typeDefStore, typeRegistry);
+        AtlasImportRequest atlasImportRequest = getDefaultImportRequest();
+
+        atlasImportRequest.setOption("replicatedFrom", REPL_FROM);
+        atlasImportRequest.setOption("transformers", REPL_TRANSFORMER);
+
+        runImportWithParameters(importService, atlasImportRequest, getDataWithoutRelationshipAttrs());
+        runImportWithParameters(importService, atlasImportRequest, getDataWithRelationshipAttrs());
+    }
+
     private EntityMutationResponse createColumn(AtlasEntity tblEntity) throws AtlasBaseException {
-        AtlasEntity ret = new AtlasEntity(ENTITY_TYPE_COL);
-        String name = "new_column";
+        AtlasEntity ret  = new AtlasEntity(ENTITY_TYPE_COL);
+        String      name = "new_column";
 
         ret.setAttribute("name", name);
         ret.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, name + REPL_FROM);

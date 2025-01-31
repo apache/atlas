@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
@@ -42,25 +41,28 @@ import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
 public class ReIndexPatch extends AtlasPatchHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ReIndexPatch.class);
 
-    private static final String PATCH_ID = "JAVA_PATCH_0000_006";
+    private static final String PATCH_ID          = "JAVA_PATCH_0000_006";
     private static final String PATCH_DESCRIPTION = "Performs reindex on all the indexes.";
 
     private final PatchContext context;
 
     public ReIndexPatch(PatchContext context) {
         super(context.getPatchRegistry(), PATCH_ID, PATCH_DESCRIPTION);
+
         this.context = context;
     }
 
     @Override
     public void apply() throws AtlasBaseException {
-        if (AtlasConfiguration.REBUILD_INDEX.getBoolean() == false) {
+        if (!AtlasConfiguration.REBUILD_INDEX.getBoolean()) {
             LOG.info("ReIndexPatch: Skipped, since not enabled!");
+
             return;
         }
 
         try {
             LOG.info("ReIndexPatch: Starting...");
+
             ReindexPatchProcessor reindexPatchProcessor = new ReindexPatchProcessor(context);
 
             reindexPatchProcessor.repairVertices();
@@ -77,31 +79,32 @@ public class ReIndexPatch extends AtlasPatchHandler {
     }
 
     public static class ReindexPatchProcessor {
-        private static String[] vertexIndexNames = new String[]{ Constants.VERTEX_INDEX, Constants.FULLTEXT_INDEX };
-        private static String[] edgeIndexNames = new String[]{ Constants.EDGE_INDEX };
-        private static String WORKER_PREFIX = "reindex";
+        private static final String[] VERTEX_INDEX_NAMES = new String[] {Constants.VERTEX_INDEX, Constants.FULLTEXT_INDEX};
+        private static final String[] EDGE_INDEX_NAMES   = new String[] {Constants.EDGE_INDEX};
+        private static final String   WORKER_PREFIX      = "reindex";
 
-        private PatchContext context;
+        private final PatchContext context;
 
         public ReindexPatchProcessor(PatchContext context) {
             this.context = context;
         }
 
         public void repairVertices() {
-            repairElements(ReindexPatchProcessor::vertices, vertexIndexNames);
+            repairElements(ReindexPatchProcessor::vertices, VERTEX_INDEX_NAMES);
         }
 
         public void repairEdges() {
-            repairElements(ReindexPatchProcessor::edges, edgeIndexNames);
+            repairElements(ReindexPatchProcessor::edges, EDGE_INDEX_NAMES);
         }
 
         private void repairElements(BiConsumer<WorkItemManager, AtlasGraph> action, String[] indexNames) {
-            WorkItemManager manager = new WorkItemManager(new ReindexConsumerBuilder(context.getGraph(), indexNames),
-                    WORKER_PREFIX, ConcurrentPatchProcessor.BATCH_SIZE, ConcurrentPatchProcessor.NUM_WORKERS, false);
+            WorkItemManager manager = new WorkItemManager(new ReindexConsumerBuilder(context.getGraph(), indexNames), WORKER_PREFIX, ConcurrentPatchProcessor.BATCH_SIZE, ConcurrentPatchProcessor.NUM_WORKERS, false);
 
             try {
                 LOG.info("repairElements.execute(): {}: Starting...", indexNames);
+
                 action.accept(manager, context.getGraph());
+
                 manager.drain();
             } finally {
                 try {
@@ -110,32 +113,33 @@ public class ReIndexPatch extends AtlasPatchHandler {
                     LOG.error("repairEdges.execute(): interrupted during WorkItemManager shutdown.", e);
                 }
 
-                LOG.info("repairElements.execute(): {}: Done!", indexNames);
+                LOG.info("repairElements.execute(): {}: Done!", String.valueOf(indexNames));
             }
         }
 
         private static void edges(WorkItemManager manager, AtlasGraph graph) {
             Iterable<AtlasEdge> iterable = graph.getEdges();
-            for (Iterator<AtlasEdge> iter = iterable.iterator(); iter.hasNext(); ) {
-                manager.checkProduce(iter.next());
+
+            for (AtlasEdge atlasEdge : iterable) {
+                manager.checkProduce(atlasEdge);
             }
         }
 
         private static void vertices(WorkItemManager manager, AtlasGraph graph) {
             Iterable<AtlasVertex> iterable = graph.getVertices();
-            for (Iterator<AtlasVertex> iter = iterable.iterator(); iter.hasNext(); ) {
-                AtlasVertex vertex = iter.next();
+
+            for (AtlasVertex vertex : iterable) {
                 manager.checkProduce(vertex);
             }
         }
     }
 
     private static class ReindexConsumerBuilder implements WorkItemBuilder<ReindexConsumer, AtlasElement> {
-        private AtlasGraph graph;
-        private String[] indexNames;
+        private final AtlasGraph graph;
+        private final String[]   indexNames;
 
         public ReindexConsumerBuilder(AtlasGraph graph, String[] indexNames) {
-            this.graph = graph;
+            this.graph      = graph;
             this.indexNames = indexNames;
         }
 
@@ -146,16 +150,26 @@ public class ReIndexPatch extends AtlasPatchHandler {
     }
 
     private static class ReindexConsumer extends WorkItemConsumer<AtlasElement> {
-        private final List<AtlasElement> list = new ArrayList();
-        private final String[] indexNames;
-        private final AtlasGraph graph;
-        private final AtomicLong counter;
+        private final List<AtlasElement> list = new ArrayList<>();
+        private final String[]           indexNames;
+        private final AtlasGraph         graph;
+        private final AtomicLong         counter;
 
         public ReindexConsumer(BlockingQueue queue, AtlasGraph graph, String[] indexNames) {
             super(queue);
-            this.graph = graph;
+
+            this.graph      = graph;
             this.indexNames = indexNames;
-            this.counter = new AtomicLong(0);
+            this.counter    = new AtomicLong(0);
+        }
+
+        @Override
+        protected void commitDirty() {
+            attemptCommit();
+
+            LOG.info("Total: Commit: {}", counter.get());
+
+            super.commitDirty();
         }
 
         @Override
@@ -166,36 +180,28 @@ public class ReIndexPatch extends AtlasPatchHandler {
         }
 
         @Override
-        protected void commitDirty() {
-            attemptCommit();
-
-            LOG.info("Total: Commit: {}", counter.get());
-            super.commitDirty();
+        protected void processItem(AtlasElement item) {
+            counter.incrementAndGet();
+            list.add(item);
+            commit();
         }
 
         private void attemptCommit() {
             for (String indexName : indexNames) {
                 try {
                     this.graph.getManagementSystem().reindex(indexName, list);
-                }
-                catch (IllegalStateException e) {
+                } catch (IllegalStateException e) {
                     LOG.error("IllegalStateException: Exception", e);
+
                     return;
-                }
-                catch (Exception exception) {
+                } catch (Exception exception) {
                     LOG.error("Exception: {}", indexName, exception);
                 }
             }
 
             list.clear();
-            LOG.info("Processed: {}", counter.get());
-        }
 
-        @Override
-        protected void processItem(AtlasElement item) {
-            counter.incrementAndGet();
-            list.add(item);
-            commit();
+            LOG.info("Processed: {}", counter.get());
         }
     }
 }

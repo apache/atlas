@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 package org.apache.atlas.repository.impexp;
-
 
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
@@ -38,7 +37,6 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
@@ -46,17 +44,20 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
@@ -65,13 +66,10 @@ public class ExportServiceTest extends AtlasTestBase {
 
     @Inject
     AtlasTypeRegistry typeRegistry;
-
-    @Inject
-    private AtlasTypeDefStore typeDefStore;
-
     @Inject
     ExportService exportService;
-
+    @Inject
+    private AtlasTypeDefStore typeDefStore;
     @Inject
     private ExportImportAuditService auditService;
 
@@ -89,19 +87,19 @@ public class ExportServiceTest extends AtlasTestBase {
     public void setupSampleData() throws Exception {
         super.initialize();
 
-        AtlasTypesDef sampleTypes = TestUtilsV2.defineDeptEmployeeTypes();
+        AtlasTypesDef sampleTypes   = TestUtilsV2.defineDeptEmployeeTypes();
         AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(sampleTypes, typeRegistry);
 
         if (!typesToCreate.isEmpty()) {
             typeDefStore.createTypesDef(typesToCreate);
         }
 
-        AtlasEntity.AtlasEntitiesWithExtInfo  deptEg2 = TestUtilsV2.createDeptEg2();
-        AtlasEntityStream entityStream = new AtlasEntityStream(deptEg2);
-        EntityMutationResponse emr = entityStore.createOrUpdate(entityStream, false);
+        AtlasEntity.AtlasEntitiesWithExtInfo deptEg2      = TestUtilsV2.createDeptEg2();
+        AtlasEntityStream                    entityStream = new AtlasEntityStream(deptEg2);
+        EntityMutationResponse               emr          = entityStore.createOrUpdate(entityStream, false);
         assertNotNull(emr);
         assertNotNull(emr.getCreatedEntities());
-        assertTrue(emr.getCreatedEntities().size() > 0);
+        assertFalse(emr.getCreatedEntities().isEmpty());
     }
 
     @AfterClass
@@ -113,88 +111,15 @@ public class ExportServiceTest extends AtlasTestBase {
         super.cleanup();
     }
 
-    private AtlasExportRequest getRequestForFullFetch() {
-        AtlasExportRequest request = new AtlasExportRequest();
-
-        List<AtlasObjectId> itemsToExport = new ArrayList<>();
-        itemsToExport.add(new AtlasObjectId("hive_db", "qualifiedName", "default@cl1"));
-        request.setItemsToExport(itemsToExport);
-
-        return request;
-    }
-
-    private AtlasExportRequest getRequestForDept(boolean addFetchType, String fetchTypeValue, boolean addMatchType, String matchTypeValue) {
-        AtlasExportRequest request = new AtlasExportRequest();
-
-        List<AtlasObjectId> itemsToExport = new ArrayList<>();
-        itemsToExport.add(new AtlasObjectId("Department", "name", "hr"));
-        request.setItemsToExport(itemsToExport);
-
-        setOptionsMap(request, addFetchType, fetchTypeValue, addMatchType, matchTypeValue);
-        return request;
-    }
-
-    private AtlasExportRequest getRequestForEmployee() {
-        AtlasExportRequest request = new AtlasExportRequest();
-
-        List<AtlasObjectId> itemsToExport = new ArrayList<>();
-        itemsToExport.add(new AtlasObjectId("Employee", "name", "Max"));
-        request.setItemsToExport(itemsToExport);
-
-        setOptionsMap(request, true, "CONNECTED", false, "");
-        return request;
-    }
-
-    private void setOptionsMap(AtlasExportRequest request,
-                               boolean addFetchType, String fetchTypeValue, boolean addMatchType, String matchTypeValue) {
-        Map<String, Object> optionsMap = null;
-        if(addFetchType) {
-            if(optionsMap == null) {
-                optionsMap = new HashMap<>();
-            }
-
-            optionsMap.put("fetchType", fetchTypeValue);
-            request.setOptions(optionsMap);
-        }
-
-        if(addMatchType) {
-            if(optionsMap == null) {
-                optionsMap = new HashMap<>();
-            }
-
-            optionsMap.put("matchType", matchTypeValue);
-        }
-
-        if(optionsMap != null) {
-            request.setOptions(optionsMap);
-        }
-    }
-
-    private ZipSource runExportWithParameters(AtlasExportRequest request) throws AtlasBaseException, IOException {
-        final String requestingIP = "1.0.0.0";
-        final String hostName = "localhost";
-        final String userName = "admin";
-
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ZipSink zipSink = new ZipSink(baos);
-        AtlasExportResult result = exportService.run(zipSink, request, userName, hostName, requestingIP);
-
-        zipSink.close();
-
-        ByteArrayInputStream bis = new ByteArrayInputStream(baos.toByteArray());
-        ZipSource zipSource = new ZipSource(bis);
-        return zipSource;
-    }
-
     @Test
     public void exportType() throws AtlasBaseException {
         String requestingIP = "1.0.0.0";
-        String hostName = "root";
+        String hostName     = "root";
 
-        AtlasExportRequest request = getRequestForFullFetch();
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ZipSink zipSink = new ZipSink(baos);
-        AtlasExportResult result = exportService.run(zipSink, request, "admin", hostName, requestingIP);
+        AtlasExportRequest    request = getRequestForFullFetch();
+        ByteArrayOutputStream baos    = new ByteArrayOutputStream();
+        ZipSink               zipSink = new ZipSink(baos);
+        AtlasExportResult     result  = exportService.run(zipSink, request, "admin", hostName, requestingIP);
 
         assertNotNull(exportService);
         assertEquals(result.getHostName(), hostName);
@@ -206,14 +131,14 @@ public class ExportServiceTest extends AtlasTestBase {
     @Test(expectedExceptions = AtlasBaseException.class)
     public void requestingEntityNotFound_NoData() throws AtlasBaseException, IOException {
         String requestingIP = "1.0.0.0";
-        String hostName = "root";
+        String hostName     = "root";
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ZipSink zipSink = new ZipSink(baos);
+        ByteArrayOutputStream baos    = new ByteArrayOutputStream();
+        ZipSink               zipSink = new ZipSink(baos);
         AtlasExportResult result = exportService.run(
                 zipSink, getRequestForFullFetch(), "admin", hostName, requestingIP);
 
-        Assert.assertNull(result.getData());
+        assertNull(result.getData());
 
         ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
         new ZipSource(bais);
@@ -262,29 +187,29 @@ public class ExportServiceTest extends AtlasTestBase {
 
     @Test
     public void verifyOverallStatus() {
-        assertEquals(AtlasExportResult.OperationStatus.FAIL, exportService.getOverallOperationStatus());
+        assertEquals(exportService.getOverallOperationStatus(), AtlasExportResult.OperationStatus.FAIL);
 
-        assertEquals(AtlasExportResult.OperationStatus.SUCCESS, exportService.getOverallOperationStatus(AtlasExportResult.OperationStatus.SUCCESS));
+        assertEquals(exportService.getOverallOperationStatus(AtlasExportResult.OperationStatus.SUCCESS), AtlasExportResult.OperationStatus.SUCCESS);
 
-        assertEquals(AtlasExportResult.OperationStatus.SUCCESS, exportService.getOverallOperationStatus(
-                                AtlasExportResult.OperationStatus.SUCCESS,
-                                AtlasExportResult.OperationStatus.SUCCESS,
-                                AtlasExportResult.OperationStatus.SUCCESS));
+        assertEquals(exportService.getOverallOperationStatus(
+                AtlasExportResult.OperationStatus.SUCCESS,
+                AtlasExportResult.OperationStatus.SUCCESS,
+                AtlasExportResult.OperationStatus.SUCCESS), AtlasExportResult.OperationStatus.SUCCESS);
 
-        assertEquals(AtlasExportResult.OperationStatus.PARTIAL_SUCCESS, exportService.getOverallOperationStatus(
+        assertEquals(exportService.getOverallOperationStatus(
                 AtlasExportResult.OperationStatus.FAIL,
                 AtlasExportResult.OperationStatus.PARTIAL_SUCCESS,
-                AtlasExportResult.OperationStatus.SUCCESS));
+                AtlasExportResult.OperationStatus.SUCCESS), AtlasExportResult.OperationStatus.PARTIAL_SUCCESS);
 
-        assertEquals(AtlasExportResult.OperationStatus.PARTIAL_SUCCESS, exportService.getOverallOperationStatus(
+        assertEquals(exportService.getOverallOperationStatus(
                 AtlasExportResult.OperationStatus.FAIL,
                 AtlasExportResult.OperationStatus.FAIL,
-                AtlasExportResult.OperationStatus.PARTIAL_SUCCESS));
+                AtlasExportResult.OperationStatus.PARTIAL_SUCCESS), AtlasExportResult.OperationStatus.PARTIAL_SUCCESS);
 
-        assertEquals(AtlasExportResult.OperationStatus.FAIL, exportService.getOverallOperationStatus(
+        assertEquals(exportService.getOverallOperationStatus(
                 AtlasExportResult.OperationStatus.FAIL,
                 AtlasExportResult.OperationStatus.FAIL,
-                AtlasExportResult.OperationStatus.FAIL));
+                AtlasExportResult.OperationStatus.FAIL), AtlasExportResult.OperationStatus.FAIL);
     }
 
     @Test(expectedExceptions = AtlasBaseException.class)
@@ -309,6 +234,79 @@ public class ExportServiceTest extends AtlasTestBase {
         verifyExportForFullEmployeeData(zipSource);
     }
 
+    private AtlasExportRequest getRequestForFullFetch() {
+        AtlasExportRequest request = new AtlasExportRequest();
+
+        List<AtlasObjectId> itemsToExport = new ArrayList<>();
+        itemsToExport.add(new AtlasObjectId("hive_db", "qualifiedName", "default@cl1"));
+        request.setItemsToExport(itemsToExport);
+
+        return request;
+    }
+
+    private AtlasExportRequest getRequestForDept(boolean addFetchType, String fetchTypeValue, boolean addMatchType, String matchTypeValue) {
+        AtlasExportRequest request = new AtlasExportRequest();
+
+        List<AtlasObjectId> itemsToExport = new ArrayList<>();
+        itemsToExport.add(new AtlasObjectId("Department", "name", "hr"));
+        request.setItemsToExport(itemsToExport);
+
+        setOptionsMap(request, addFetchType, fetchTypeValue, addMatchType, matchTypeValue);
+        return request;
+    }
+
+    private AtlasExportRequest getRequestForEmployee() {
+        AtlasExportRequest request = new AtlasExportRequest();
+
+        List<AtlasObjectId> itemsToExport = new ArrayList<>();
+        itemsToExport.add(new AtlasObjectId("Employee", "name", "Max"));
+        request.setItemsToExport(itemsToExport);
+
+        setOptionsMap(request, true, "CONNECTED", false, "");
+        return request;
+    }
+
+    private void setOptionsMap(AtlasExportRequest request,
+            boolean addFetchType, String fetchTypeValue, boolean addMatchType, String matchTypeValue) {
+        Map<String, Object> optionsMap = null;
+        if (addFetchType) {
+            if (optionsMap == null) {
+                optionsMap = new HashMap<>();
+            }
+
+            optionsMap.put("fetchType", fetchTypeValue);
+            request.setOptions(optionsMap);
+        }
+
+        if (addMatchType) {
+            if (optionsMap == null) {
+                optionsMap = new HashMap<>();
+            }
+
+            optionsMap.put("matchType", matchTypeValue);
+        }
+
+        if (optionsMap != null) {
+            request.setOptions(optionsMap);
+        }
+    }
+
+    private ZipSource runExportWithParameters(AtlasExportRequest request) throws AtlasBaseException, IOException {
+        final String requestingIP = "1.0.0.0";
+        final String hostName     = "localhost";
+        final String userName     = "admin";
+
+        ByteArrayOutputStream baos    = new ByteArrayOutputStream();
+        ZipSink               zipSink = new ZipSink(baos);
+        AtlasExportResult     result  = exportService.run(zipSink, request, userName, hostName, requestingIP);
+
+        zipSink.close();
+
+        ByteArrayInputStream bis = new ByteArrayInputStream(baos.toByteArray());
+
+        return new ZipSource(bis);
+    }
+
     private AtlasExportRequest getRequestForTypeFull(String type) {
         String jsonRequest = "{ \"itemsToExport\": [ { \"typeName\": \"%s\" } ], \"options\": {  \"fetchType\": \"FULL\", \"matchType\": \"forType\"} }";
         return AtlasType.fromJson(String.format(jsonRequest, type), AtlasExportRequest.class);
@@ -321,7 +319,7 @@ public class ExportServiceTest extends AtlasTestBase {
     }
 
     private void verifyExportForEmployeeData(ZipSource zipSource) throws AtlasBaseException {
-        final List<String> expectedEntityTypes = Arrays.asList(new String[]{"Manager", "Employee", "Department"});
+        final List<String> expectedEntityTypes = Arrays.asList("Manager", "Employee", "Department");
 
         assertNotNull(zipSource.getCreationOrder());
         assertEquals(zipSource.getCreationOrder().size(), 2);
@@ -331,7 +329,7 @@ public class ExportServiceTest extends AtlasTestBase {
             AtlasEntity entity = zipSource.next();
 
             assertNotNull(entity);
-            assertEquals(AtlasEntity.Status.ACTIVE, entity.getStatus());
+            assertEquals(entity.getStatus(), AtlasEntity.Status.ACTIVE);
             assertTrue(expectedEntityTypes.contains(entity.getTypeName()));
         }
 
@@ -339,7 +337,7 @@ public class ExportServiceTest extends AtlasTestBase {
     }
 
     private void verifyExportForFullEmployeeData(ZipSource zipSource) throws AtlasBaseException {
-        final List<String> expectedEntityTypes = Arrays.asList(new String[]{"Manager", "Employee", "Department"});
+        final List<String> expectedEntityTypes = Arrays.asList("Manager", "Employee", "Department");
 
         assertNotNull(zipSource.getCreationOrder());
         assertTrue(zipSource.hasNext());
@@ -348,27 +346,14 @@ public class ExportServiceTest extends AtlasTestBase {
             AtlasEntity entity = zipSource.next();
 
             assertNotNull(entity);
-            assertEquals(AtlasEntity.Status.ACTIVE, entity.getStatus());
+            assertEquals(entity.getStatus(), AtlasEntity.Status.ACTIVE);
             assertTrue(expectedEntityTypes.contains(entity.getTypeName()));
         }
 
         verifyTypeDefs(zipSource);
     }
 
-    private void verifyExportForHrData(ZipSource zipSource) throws IOException, AtlasBaseException {
-        assertNotNull(zipSource.getCreationOrder());
-        assertTrue(zipSource.getCreationOrder().size() == 1);
-        assertTrue(zipSource.hasNext());
-
-        AtlasEntity entity = zipSource.next();
-
-        assertNotNull(entity);
-        assertTrue(entity.getTypeName().equals("Department"));
-        assertEquals(entity.getStatus(), AtlasEntity.Status.ACTIVE);
-        verifyTypeDefs(zipSource);
-    }
-
-    private void verifyExportForHrDataForConnected(ZipSource zipSource) throws IOException, AtlasBaseException {
+    private void verifyExportForHrData(ZipSource zipSource) throws AtlasBaseException {
         assertNotNull(zipSource.getCreationOrder());
         assertEquals(zipSource.getCreationOrder().size(), 1);
         assertTrue(zipSource.hasNext());
@@ -376,7 +361,20 @@ public class ExportServiceTest extends AtlasTestBase {
         AtlasEntity entity = zipSource.next();
 
         assertNotNull(entity);
-        assertTrue(entity.getTypeName().equals("Department"));
+        assertEquals(entity.getTypeName(), "Department");
+        assertEquals(entity.getStatus(), AtlasEntity.Status.ACTIVE);
+        verifyTypeDefs(zipSource);
+    }
+
+    private void verifyExportForHrDataForConnected(ZipSource zipSource) throws AtlasBaseException {
+        assertNotNull(zipSource.getCreationOrder());
+        assertEquals(zipSource.getCreationOrder().size(), 1);
+        assertTrue(zipSource.hasNext());
+
+        AtlasEntity entity = zipSource.next();
+
+        assertNotNull(entity);
+        assertEquals(entity.getTypeName(), "Department");
         assertEquals(entity.getStatus(), AtlasEntity.Status.ACTIVE);
         verifyTypeDefs(zipSource);
     }

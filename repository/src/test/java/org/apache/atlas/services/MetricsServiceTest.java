@@ -38,6 +38,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.time.Clock;
@@ -47,16 +48,71 @@ import java.time.ZoneOffset;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.apache.atlas.model.metrics.AtlasMetrics.*;
-import static org.apache.atlas.services.MetricsService.*;
-import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_COUNT_CURR_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_COUNT_CURR_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_COUNT_PREV_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_COUNT_PREV_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_FAILED_COUNT_CURR_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_FAILED_COUNT_CURR_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_FAILED_COUNT_PREV_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_FAILED_COUNT_PREV_HOUR;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
-import static org.testng.Assert.*;
+import static org.apache.atlas.services.MetricsService.ENTITY;
+import static org.apache.atlas.services.MetricsService.GENERAL;
+import static org.apache.atlas.services.MetricsService.METRIC_COLLECTION_TIME;
+import static org.apache.atlas.services.MetricsService.METRIC_ENTITIES_PER_TAG;
+import static org.apache.atlas.services.MetricsService.METRIC_ENTITY_ACTIVE;
+import static org.apache.atlas.services.MetricsService.METRIC_ENTITY_COUNT;
+import static org.apache.atlas.services.MetricsService.METRIC_ENTITY_DELETED;
+import static org.apache.atlas.services.MetricsService.METRIC_TAG_COUNT;
+import static org.apache.atlas.services.MetricsService.METRIC_TYPE_COUNT;
+import static org.apache.atlas.services.MetricsService.METRIC_TYPE_UNUSED_COUNT;
+import static org.apache.atlas.services.MetricsService.TAG;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class MetricsServiceTest extends AtlasTestBase {
-
     public static final String IMPORT_FILE = "metrics-entities-data.zip";
+
+    private final Map<String, Long>   activeEntityMetricsExpected  = new HashMap<>();
+    private final Map<String, Long>   deletedEntityMetricsExpected = new HashMap<>();
+    private final Map<String, Long>   tagMetricsExpected           = new HashMap<>();
+    private final Map<String, Object> metricExpected               = new HashMap<>();
+
+    {
+        activeEntityMetricsExpected.put("hive_storagedesc", 5L);
+        activeEntityMetricsExpected.put("AtlasServer", 1L);
+        activeEntityMetricsExpected.put("hive_column_lineage", 8L);
+        activeEntityMetricsExpected.put("hive_table", 5L);
+        activeEntityMetricsExpected.put("hive_column", 13L);
+        activeEntityMetricsExpected.put("hive_db", 2L);
+        activeEntityMetricsExpected.put("hive_process", 3L);
+
+        deletedEntityMetricsExpected.put("hive_storagedesc", 1L);
+        deletedEntityMetricsExpected.put("hive_table", 1L);
+        deletedEntityMetricsExpected.put("hive_column", 2L);
+        deletedEntityMetricsExpected.put("hive_db", 1L);
+
+        tagMetricsExpected.put("PII", 1L);
+
+        metricExpected.put(STAT_NOTIFY_COUNT_CURR_HOUR, 11L);
+        metricExpected.put(STAT_NOTIFY_FAILED_COUNT_CURR_HOUR, 1L);
+        metricExpected.put(STAT_NOTIFY_COUNT_PREV_HOUR, 11L);
+        metricExpected.put(STAT_NOTIFY_FAILED_COUNT_PREV_HOUR, 1L);
+        metricExpected.put(STAT_NOTIFY_COUNT_CURR_DAY, 33L);
+        metricExpected.put(STAT_NOTIFY_FAILED_COUNT_CURR_DAY, 3L);
+        metricExpected.put(STAT_NOTIFY_COUNT_PREV_DAY, 11L);
+        metricExpected.put(STAT_NOTIFY_FAILED_COUNT_PREV_DAY, 1L);
+    }
+
+    TestClock clock = new TestClock(Clock.systemUTC(), ZoneOffset.UTC);
+
+    long msgOffset;
 
     @Inject
     private AtlasTypeDefStore typeDefStore;
@@ -73,46 +129,13 @@ public class MetricsServiceTest extends AtlasTestBase {
     @Inject
     private AtlasMetricsUtil metricsUtil;
 
-    TestClock clock = new TestClock(Clock.systemUTC(), ZoneOffset.UTC);
+    private AtlasMetrics     metrics;
+    private AtlasMetricsStat blankMetricsStat;
+    private AtlasMetricsStat metricsStatInGraph;
 
-    long msgOffset = 0;
-
-
-    private final Map<String, Long> activeEntityMetricsExpected = new HashMap<String, Long>() {{
-        put("hive_storagedesc", 5L);
-        put("AtlasServer", 1L);
-        put("hive_column_lineage", 8L);
-        put("hive_table", 5L);
-        put("hive_column", 13L);
-        put("hive_db", 2L);
-        put("hive_process", 3L);
-    }};
-
-    private final Map<String, Long> deletedEntityMetricsExpected = new HashMap<String, Long>() {{
-        put("hive_storagedesc", 1L);
-        put("hive_table", 1L);
-        put("hive_column", 2L);
-        put("hive_db", 1L);
-    }};
-
-
-    private final Map<String, Long> tagMetricsExpected = new HashMap<String, Long>() {{
-        put("PII", 1L);
-    }};
-
-    private final Map<String, Object> metricExpected = new HashMap<String, Object>() {{
-        put(STAT_NOTIFY_COUNT_CURR_HOUR, 11L);
-        put(STAT_NOTIFY_FAILED_COUNT_CURR_HOUR, 1L);
-        put(STAT_NOTIFY_COUNT_PREV_HOUR, 11L);
-        put(STAT_NOTIFY_FAILED_COUNT_PREV_HOUR, 1L);
-        put(STAT_NOTIFY_COUNT_CURR_DAY, 33L);
-        put(STAT_NOTIFY_FAILED_COUNT_CURR_DAY, 3L);
-        put(STAT_NOTIFY_COUNT_PREV_DAY, 11L);
-        put(STAT_NOTIFY_FAILED_COUNT_PREV_DAY, 1L);
-    }};
-
-    private AtlasMetrics metrics;
-    private AtlasMetricsStat blankMetricsStat, metricsStatInGraph;
+    public static InputStream getZipSource(String fileName) throws AtlasBaseException {
+        return ZipFileResourceTestUtils.getFileInputStream(fileName);
+    }
 
     @BeforeClass
     public void setup() throws Exception {
@@ -124,14 +147,6 @@ public class MetricsServiceTest extends AtlasTestBase {
 
         // sleep for sometime for import to complete
         sleep();
-    }
-
-    private void sleep() {
-        try {
-            Thread.sleep(5000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
     }
 
     @AfterClass
@@ -170,7 +185,7 @@ public class MetricsServiceTest extends AtlasTestBase {
     @Test(groups = "Metrics.CREATE", dependsOnMethods = "testGetMetrics")
     public void testSaveMetricsStat() {
         try {
-            blankMetricsStat = new AtlasMetricsStat(metrics);
+            blankMetricsStat   = new AtlasMetricsStat(metrics);
             metricsStatInGraph = metricsService.saveMetricsStat(blankMetricsStat);
         } catch (AtlasBaseException e) {
             fail("Save metricsStat should've succeeded", e);
@@ -206,8 +221,8 @@ public class MetricsServiceTest extends AtlasTestBase {
 
         // collectionTime is NOT existed
         try {
-            Long collectionTimeInGraph = System.currentTimeMillis();
-            AtlasMetricsStat metricsStatRet = metricsService.getMetricsStatByCollectionTime(String.valueOf(collectionTimeInGraph));
+            Long             collectionTimeInGraph = System.currentTimeMillis();
+            AtlasMetricsStat metricsStatRet        = metricsService.getMetricsStatByCollectionTime(String.valueOf(collectionTimeInGraph));
             fail("Get metricsStat by collectionTime should've failed, when collectionTime is NOT existed.");
         } catch (AtlasBaseException e) {
             assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND);
@@ -215,8 +230,8 @@ public class MetricsServiceTest extends AtlasTestBase {
 
         // collectionTime is correct
         try {
-            Long collectionTimeInGraph = (Long) metrics.getMetric(GENERAL, METRIC_COLLECTION_TIME);
-            AtlasMetricsStat metricsStatRet = metricsService.getMetricsStatByCollectionTime(String.valueOf(collectionTimeInGraph));
+            Long             collectionTimeInGraph = (Long) metrics.getMetric(GENERAL, METRIC_COLLECTION_TIME);
+            AtlasMetricsStat metricsStatRet        = metricsService.getMetricsStatByCollectionTime(String.valueOf(collectionTimeInGraph));
             assertNotNull(metricsStatRet);
             assertEquals(metricsStatRet.getGuid(), metricsStatInGraph.getGuid());
             assertEquals(metricsStatRet.getMetricsId(), metricsStatInGraph.getMetricsId());
@@ -243,6 +258,13 @@ public class MetricsServiceTest extends AtlasTestBase {
         verifyNotificationMetric(metricExpected, notificationMetricMap);
     }
 
+    private void sleep() {
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+    }
 
     private void loadModelFilesAndImportTestData() {
         try {
@@ -297,14 +319,10 @@ public class MetricsServiceTest extends AtlasTestBase {
         }
     }
 
-    public static InputStream getZipSource(String fileName) throws AtlasBaseException {
-        return ZipFileResourceTestUtils.getFileInputStream(fileName);
-    }
-
     private static class TestClock extends Clock {
         private final Clock   baseClock;
         private final ZoneId  zone;
-        private       Instant instant = null;
+        private       Instant instant;
 
         public TestClock(Clock baseClock, ZoneId zone) {
             this.baseClock = baseClock;

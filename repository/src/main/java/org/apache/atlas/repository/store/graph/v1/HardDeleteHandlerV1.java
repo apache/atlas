@@ -33,7 +33,6 @@ import javax.inject.Inject;
 @Component
 @ConditionalOnAtlasProperty(property = "atlas.DeleteHandlerV1.impl")
 public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
-
     @Inject
     public HardDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement) {
         super(graph, typeRegistry, true, false, taskManagement);

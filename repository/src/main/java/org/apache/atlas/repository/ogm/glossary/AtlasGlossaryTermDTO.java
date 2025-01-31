@@ -30,11 +30,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 @Component
 public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm> {
@@ -47,11 +49,9 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
 
     @Override
     public AtlasGlossaryTerm from(final AtlasEntity entity) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasGlossaryTermDTO.from()", entity);
-        }
+        LOG.debug("==> AtlasGlossaryTermDTO.from({})", entity);
 
-        Objects.requireNonNull(entity, "entity");
+        requireNonNull(entity, "entity");
 
         AtlasGlossaryTerm ret = new AtlasGlossaryTerm();
 
@@ -66,15 +66,19 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
         ret.setAdditionalAttributes((Map) entity.getAttribute("additionalAttributes"));
 
         Object anchor = entity.getRelationshipAttribute("anchor");
+
         if (anchor instanceof AtlasRelatedObjectId) {
             LOG.debug("Processing anchor");
+
             ret.setAnchor(constructGlossaryId((AtlasRelatedObjectId) anchor));
         }
 
         Object categories = entity.getRelationshipAttribute("categories");
+
         if (categories instanceof Collection) {
             LOG.debug("Processing categories");
-            for (Object category : (Collection) categories) {
+
+            for (Object category : (Collection<?>) categories) {
                 if (category instanceof AtlasRelatedObjectId) {
                     ret.addCategory(constructTermCategorizationId((AtlasRelatedObjectId) category));
                 }
@@ -84,11 +88,14 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
 //        ret.setUsedInContexts(toRelatedObjectIdsSet(entity.getRelationshipAttribute("usedInContexts")));
 
         Object assignedEntities = entity.getRelationshipAttribute("assignedEntities");
+
         if (assignedEntities instanceof Collection) {
             LOG.debug("Processing assigned entities");
-            for (Object assignedEntity : (Collection) assignedEntities) {
+
+            for (Object assignedEntity : (Collection<?>) assignedEntities) {
                 if (assignedEntity instanceof AtlasRelatedObjectId) {
                     AtlasRelatedObjectId id = (AtlasRelatedObjectId) assignedEntity;
+
                     // Since the edges are not a hard delete we need to filter the DELETED ones
                     if (id.getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
                         ret.addAssignedEntity(id);
@@ -98,118 +105,140 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
         }
 
         Object seeAlso = entity.getRelationshipAttribute("seeAlso");
-        if (seeAlso instanceof Collection && CollectionUtils.isNotEmpty((Collection) seeAlso)) {
+
+        if (seeAlso instanceof Collection && CollectionUtils.isNotEmpty((Collection<?>) seeAlso)) {
             LOG.debug("Processing RelatedTerm(seeAlso)");
+
             ret.setSeeAlso(toRelatedTermIdsSet(seeAlso));
         }
 
         Object synonyms = entity.getRelationshipAttribute("synonyms");
-        if (synonyms instanceof Collection && CollectionUtils.isNotEmpty((Collection) synonyms)) {
+
+        if (synonyms instanceof Collection && CollectionUtils.isNotEmpty((Collection<?>) synonyms)) {
             LOG.debug("Processing Synonym(synonyms)");
+
             ret.setSynonyms(toRelatedTermIdsSet(synonyms));
         }
 
         Object antonyms = entity.getRelationshipAttribute("antonyms");
-        if (antonyms instanceof Collection && CollectionUtils.isNotEmpty((Collection) antonyms)) {
+
+        if (antonyms instanceof Collection && CollectionUtils.isNotEmpty((Collection<?>) antonyms)) {
             LOG.debug("Processing Antonym(antonyms)");
+
             ret.setAntonyms(toRelatedTermIdsSet(antonyms));
         }
 
         Object preferredTerms = entity.getRelationshipAttribute("preferredTerms");
-        if (preferredTerms instanceof Collection && CollectionUtils.isNotEmpty((Collection) preferredTerms)) {
+
+        if (preferredTerms instanceof Collection && CollectionUtils.isNotEmpty((Collection<?>) preferredTerms)) {
             LOG.debug("Processing preferredTerm(preferredTerms)");
+
             ret.setPreferredTerms(toRelatedTermIdsSet(preferredTerms));
         }
 
         Object preferredToTerms = entity.getRelationshipAttribute("preferredToTerms");
-        if (preferredToTerms instanceof Collection && CollectionUtils.isNotEmpty((Collection) preferredToTerms)) {
+
+        if (preferredToTerms instanceof Collection && CollectionUtils.isNotEmpty((Collection<?>) preferredToTerms)) {
             LOG.debug("Processing preferredTerm(preferredToTerms)");
+
             ret.setPreferredToTerms(toRelatedTermIdsSet(preferredToTerms));
         }
 
         Object replacementTerms = entity.getRelationshipAttribute("replacementTerms");
-        if (replacementTerms instanceof Collection && CollectionUtils.isNotEmpty((Collection) replacementTerms)) {
+
+        if (replacementTerms instanceof Collection && CollectionUtils.isNotEmpty((Collection<?>) replacementTerms)) {
             LOG.debug("Processing ReplacementTerm(replacementTerms)");
+
             ret.setReplacementTerms(toRelatedTermIdsSet(replacementTerms));
         }
 
         Object replacedBy = entity.getRelationshipAttribute("replacedBy");
-        if (replacedBy instanceof Collection && CollectionUtils.isNotEmpty((Collection) replacedBy)) {
+
+        if (replacedBy instanceof Collection && CollectionUtils.isNotEmpty((Collection<?>) replacedBy)) {
             LOG.debug("Processing ReplacementTerm(replacedBy)");
+
             ret.setReplacedBy(toRelatedTermIdsSet(replacedBy));
         }
 
         Object translationTerms = entity.getRelationshipAttribute("translationTerms");
-        if (translationTerms instanceof Collection && CollectionUtils.isNotEmpty((Collection) translationTerms)) {
+
+        if (translationTerms instanceof Collection && CollectionUtils.isNotEmpty((Collection<?>) translationTerms)) {
             LOG.debug("Processing Translation(translationTerms)");
+
             ret.setTranslationTerms(toRelatedTermIdsSet(translationTerms));
         }
 
         Object translatedTerms = entity.getRelationshipAttribute("translatedTerms");
-        if (translatedTerms instanceof Collection && CollectionUtils.isNotEmpty((Collection) translatedTerms)) {
+
+        if (translatedTerms instanceof Collection && CollectionUtils.isNotEmpty((Collection<?>) translatedTerms)) {
             LOG.debug("Processing Translation(translatedTerms)");
+
             ret.setTranslatedTerms(toRelatedTermIdsSet(translatedTerms));
         }
 
         Object isA = entity.getRelationshipAttribute("isA");
-        if (isA instanceof Collection && CollectionUtils.isNotEmpty((Collection) isA)) {
+
+        if (isA instanceof Collection && CollectionUtils.isNotEmpty((Collection<?>) isA)) {
             LOG.debug("Processing Classifies(isA)");
+
             ret.setIsA(toRelatedTermIdsSet(isA));
         }
 
         Object classifies = entity.getRelationshipAttribute("classifies");
-        if (classifies instanceof Collection && CollectionUtils.isNotEmpty((Collection) classifies)) {
+
+        if (classifies instanceof Collection && CollectionUtils.isNotEmpty((Collection<?>) classifies)) {
             LOG.debug("Processing Classifies(classifies)");
+
             ret.setClassifies(toRelatedTermIdsSet(classifies));
         }
 
         Object validValues = entity.getRelationshipAttribute("validValues");
-        if (validValues instanceof Collection && CollectionUtils.isNotEmpty((Collection) validValues)) {
+
+        if (validValues instanceof Collection && CollectionUtils.isNotEmpty((Collection<?>) validValues)) {
             LOG.debug("Processing validValue(validValues)");
+
             ret.setValidValues(toRelatedTermIdsSet(validValues));
         }
 
         Object validValuesFor = entity.getRelationshipAttribute("validValuesFor");
-        if (validValuesFor instanceof Collection && CollectionUtils.isNotEmpty((Collection) validValuesFor)) {
+
+        if (validValuesFor instanceof Collection && CollectionUtils.isNotEmpty((Collection<?>) validValuesFor)) {
             LOG.debug("Processing validValue(validValuesFor)");
+
             ret.setValidValuesFor(toRelatedTermIdsSet(validValuesFor));
         }
 
         if (CollectionUtils.isNotEmpty(entity.getClassifications())) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Processing term classifications");
-            }
+            LOG.debug("Processing term classifications");
+
             ret.setClassifications(entity.getClassifications());
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasGlossaryTermDTO.from() : {}", ret);
-        }
+        LOG.debug("<== AtlasGlossaryTermDTO.from() : {}", ret);
+
         return ret;
     }
 
     @Override
     public AtlasGlossaryTerm from(final AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasGlossaryTermDTO.from()", entityWithExtInfo);
-        }
-        Objects.requireNonNull(entityWithExtInfo, "entityWithExtInfo");
+        LOG.debug("==> AtlasGlossaryTermDTO.from({})", entityWithExtInfo);
+
+        requireNonNull(entityWithExtInfo, "entityWithExtInfo");
+
         AtlasGlossaryTerm ret = from(entityWithExtInfo.getEntity());
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasGlossaryTermDTO.from() : {}", ret);
-        }
+        LOG.debug("<== AtlasGlossaryTermDTO.from() : {}", ret);
+
         return ret;
     }
 
     @Override
     public AtlasEntity toEntity(final AtlasGlossaryTerm obj) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasGlossaryTermDTO.toEntity()", obj);
-        }
-        Objects.requireNonNull(obj, "atlasGlossaryTerm");
-        Objects.requireNonNull(obj.getQualifiedName(), "atlasGlossaryTerm qualifiedName must be specified");
-        Objects.requireNonNull(obj.getAnchor(), "atlasGlossaryTerm anchor must be specified");
+        LOG.debug("==> AtlasGlossaryTermDTO.toEntity({})", obj);
+
+        requireNonNull(obj, "atlasGlossaryTerm");
+        requireNonNull(obj.getQualifiedName(), "atlasGlossaryTerm qualifiedName must be specified");
+        requireNonNull(obj.getAnchor(), "atlasGlossaryTerm anchor must be specified");
 
         AtlasEntity ret = getDefaultAtlasEntity(obj);
 
@@ -224,38 +253,36 @@ public class AtlasGlossaryTermDTO extends AbstractGlossaryDTO<AtlasGlossaryTerm>
         ret.setAttribute("additionalAttributes", obj.getAdditionalAttributes());
 
         if (CollectionUtils.isNotEmpty(obj.getClassifications())) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Processing term classifications");
-            }
+            LOG.debug("Processing term classifications");
+
             ret.setClassifications(obj.getClassifications());
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasGlossaryTermDTO.toEntity() : {}", ret);
-        }
+        LOG.debug("<== AtlasGlossaryTermDTO.toEntity() : {}", ret);
+
         return ret;
     }
 
     @Override
     public AtlasEntity.AtlasEntityWithExtInfo toEntityWithExtInfo(final AtlasGlossaryTerm obj) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasGlossaryTermDTO.toEntityWithExtInfo()", obj);
-        }
+        LOG.debug("==> AtlasGlossaryTermDTO.toEntityWithExtInfo({})", obj);
 
-        Objects.requireNonNull(obj, "atlasGlossaryTerm");
-        AtlasEntity entity = toEntity(obj);
-        AtlasEntity.AtlasEntityWithExtInfo ret = new AtlasEntity.AtlasEntityWithExtInfo(entity);
+        requireNonNull(obj, "atlasGlossaryTerm");
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasGlossaryTermDTO.toEntityWithExtInfo() : {}", ret);
-        }
+        AtlasEntity                        entity = toEntity(obj);
+        AtlasEntity.AtlasEntityWithExtInfo ret    = new AtlasEntity.AtlasEntityWithExtInfo(entity);
+
+        LOG.debug("<== AtlasGlossaryTermDTO.toEntityWithExtInfo() : {}", ret);
+
         return ret;
     }
 
     @Override
     public Map<String, Object> getUniqueAttributes(final AtlasGlossaryTerm obj) {
         Map<String, Object> ret = new HashMap<>();
+
         ret.put("qualifiedName", obj.getQualifiedName());
+
         return ret;
     }
 }

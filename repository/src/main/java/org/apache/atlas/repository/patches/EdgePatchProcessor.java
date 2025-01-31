@@ -39,35 +39,18 @@ import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 public abstract class EdgePatchProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(EdgePatchProcessor.class);
 
-    private static final String NUM_WORKERS_PROPERTY = "atlas.patch.numWorkers";
-    private static final String BATCH_SIZE_PROPERTY  = "atlas.patch.batchSize";
-    private static final String ATLAS_SOLR_SHARDS    = "ATLAS_SOLR_SHARDS";
-    private static final String WORKER_NAME_PREFIX   = "patchWorkItem";
     public static final int NUM_WORKERS;
     public static final int BATCH_SIZE;
+
+    private static final String NUM_WORKERS_PROPERTY   = "atlas.patch.numWorkers";
+    private static final String BATCH_SIZE_PROPERTY    = "atlas.patch.batchSize";
+    private static final String ATLAS_SOLR_SHARDS      = "ATLAS_SOLR_SHARDS";
+    private static final String WORKER_NAME_PREFIX     = "patchWorkItem";
+    private static final int    MAX_COMMIT_RETRY_COUNT = 3;
 
     private final AtlasGraph               graph;
     private final GraphBackedSearchIndexer indexer;
     private final AtlasTypeRegistry        typeRegistry;
-
-    static {
-        int numWorkers = 3;
-        int batchSize  = 300;
-
-        try {
-            Configuration config = ApplicationProperties.get();
-
-            numWorkers = config.getInt(NUM_WORKERS_PROPERTY, config.getInt(ATLAS_SOLR_SHARDS, 1) * 3);
-            batchSize  = config.getInt(BATCH_SIZE_PROPERTY, 300);
-
-            LOG.info("EdgePatchProcessor: {}={}, {}={}", NUM_WORKERS_PROPERTY, numWorkers, BATCH_SIZE_PROPERTY, batchSize);
-        } catch (Exception e) {
-            LOG.error("Error retrieving configuration.", e);
-        }
-
-        NUM_WORKERS = numWorkers;
-        BATCH_SIZE  = batchSize;
-    }
 
     public EdgePatchProcessor(PatchContext context) {
         this.graph        = context.getGraph();
@@ -99,8 +82,7 @@ public abstract class EdgePatchProcessor {
     protected abstract void processEdgesItem(String edgeId, AtlasEdge edge, String typeName, AtlasRelationshipType type) throws AtlasBaseException;
 
     private void execute() {
-        WorkItemManager manager = new WorkItemManager(new ConsumerBuilder(graph, typeRegistry, this),
-                WORKER_NAME_PREFIX, BATCH_SIZE, NUM_WORKERS, false);
+        WorkItemManager manager = new WorkItemManager(new ConsumerBuilder(graph, typeRegistry, this), WORKER_NAME_PREFIX, BATCH_SIZE, NUM_WORKERS, false);
 
         try {
             submitEdgesToUpdate(manager);
@@ -133,10 +115,8 @@ public abstract class EdgePatchProcessor {
     }
 
     private static class Consumer extends WorkItemConsumer<String> {
-        private       int                MAX_COMMIT_RETRY_COUNT = 3;
-        private final AtlasGraph         graph;
-        private final AtlasTypeRegistry  typeRegistry;
-
+        private final AtlasGraph        graph;
+        private final AtlasTypeRegistry typeRegistry;
         private final AtomicLong         counter;
         private final EdgePatchProcessor individualItemProcessor;
 
@@ -150,6 +130,15 @@ public abstract class EdgePatchProcessor {
         }
 
         @Override
+        protected void commitDirty() {
+            attemptCommit();
+
+            LOG.info("Total: Commit: {}", counter.get());
+
+            super.commitDirty();
+        }
+
+        @Override
         protected void doCommit() {
             if (counter.get() % BATCH_SIZE == 0) {
                 LOG.info("Processed: {}", counter.get());
@@ -159,12 +148,31 @@ public abstract class EdgePatchProcessor {
         }
 
         @Override
-        protected void commitDirty() {
-            attemptCommit();
+        protected void processItem(String edgeId) {
+            counter.incrementAndGet();
 
-            LOG.info("Total: Commit: {}", counter.get());
+            AtlasEdge edge = graph.getEdge(edgeId);
 
-            super.commitDirty();
+            if (edge == null) {
+                LOG.warn("processItem(edgeId={}): AtlasEdge not found!", edgeId);
+
+                return;
+            }
+
+            String                typeName         = edge.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
+            AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(typeName);
+
+            if (relationshipType == null) {
+                return;
+            }
+
+            try {
+                individualItemProcessor.processEdgesItem(edgeId, edge, typeName, relationshipType);
+
+                doCommit();
+            } catch (AtlasBaseException e) {
+                LOG.error("Error processing: edgeId={}", edgeId, e);
+            }
         }
 
         private void attemptCommit() {
@@ -174,40 +182,34 @@ public abstract class EdgePatchProcessor {
 
                     break;
                 } catch (Exception ex) {
-                    LOG.error("Commit exception: ", retryCount, ex);
+                    LOG.error("Commit exception: attempt {} of {}", retryCount, MAX_COMMIT_RETRY_COUNT, ex);
 
                     try {
-                        Thread.currentThread().sleep(300 * retryCount);
+                        Thread.sleep(300 * retryCount);
                     } catch (InterruptedException e) {
-                        LOG.error("Commit exception: Pause: Interrputed!", e);
+                        LOG.error("Commit exception: Pause: Interrupted!", e);
                     }
                 }
             }
         }
+    }
 
-        @Override
-        protected void processItem(String edgeId) {
-            counter.incrementAndGet();
-            AtlasEdge edge = graph.getEdge(edgeId);
+    static {
+        int numWorkers = 3;
+        int batchSize  = 300;
 
-            if (edge == null) {
-                LOG.warn("processItem(edgeId={}): AtlasEdge not found!", edgeId);
+        try {
+            Configuration config = ApplicationProperties.get();
 
-                return;
-            }
+            numWorkers = config.getInt(NUM_WORKERS_PROPERTY, config.getInt(ATLAS_SOLR_SHARDS, 1) * 3);
+            batchSize  = config.getInt(BATCH_SIZE_PROPERTY, 300);
 
-            String typeName                        = edge.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
-            AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(typeName);
-            if (relationshipType == null) {
-                return;
-            }
-
-            try {
-                individualItemProcessor.processEdgesItem(edgeId, edge, typeName, relationshipType);
-                doCommit();
-            } catch (AtlasBaseException e) {
-                LOG.error("Error processing: {}", edgeId, e);
-            }
+            LOG.info("EdgePatchProcessor: {}={}, {}={}", NUM_WORKERS_PROPERTY, numWorkers, BATCH_SIZE_PROPERTY, batchSize);
+        } catch (Exception e) {
+            LOG.error("Error retrieving configuration.", e);
         }
+
+        NUM_WORKERS = numWorkers;
+        BATCH_SIZE  = batchSize;
     }
 }

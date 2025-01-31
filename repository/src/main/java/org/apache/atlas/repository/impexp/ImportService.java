@@ -36,13 +36,13 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasStringUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -57,12 +57,12 @@ import static org.apache.atlas.model.impexp.AtlasImportRequest.TRANSFORMS_KEY;
 public class ImportService {
     private static final Logger LOG = LoggerFactory.getLogger(ImportService.class);
 
-    private static final String ATLAS_TYPE_HIVE_TABLE = "hive_table";
-    private final AtlasTypeDefStore typeDefStore;
-    private final AtlasTypeRegistry typeRegistry;
-    private final BulkImporter bulkImporter;
-    private final AuditsWriter auditsWriter;
-    private final ImportTransformsShaper importTransformsShaper;
+    private static final String                 ATLAS_TYPE_HIVE_TABLE = "hive_table";
+    private final        AtlasTypeDefStore      typeDefStore;
+    private final        AtlasTypeRegistry      typeRegistry;
+    private final        BulkImporter           bulkImporter;
+    private final        AuditsWriter           auditsWriter;
+    private final        ImportTransformsShaper importTransformsShaper;
 
     private TableReplicationRequestProcessor tableReplicationRequestProcessor;
 
@@ -71,119 +71,29 @@ public class ImportService {
 
     @Inject
     public ImportService(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry, BulkImporter bulkImporter,
-                         AuditsWriter auditsWriter, ImportTransformsShaper importTransformsShaper,
-                         TableReplicationRequestProcessor tableReplicationRequestProcessor) {
-        this.typeDefStore = typeDefStore;
-        this.typeRegistry = typeRegistry;
-        this.bulkImporter = bulkImporter;
-        this.auditsWriter = auditsWriter;
-        this.importTransformsShaper = importTransformsShaper;
+            AuditsWriter auditsWriter, ImportTransformsShaper importTransformsShaper,
+            TableReplicationRequestProcessor tableReplicationRequestProcessor) {
+        this.typeDefStore                     = typeDefStore;
+        this.typeRegistry                     = typeRegistry;
+        this.bulkImporter                     = bulkImporter;
+        this.auditsWriter                     = auditsWriter;
+        this.importTransformsShaper           = importTransformsShaper;
         this.tableReplicationRequestProcessor = tableReplicationRequestProcessor;
     }
 
     public AtlasImportResult run(InputStream inputStream, String userName,
-                                 String hostName, String requestingIP) throws AtlasBaseException {
+            String hostName, String requestingIP) throws AtlasBaseException {
         return run(inputStream, null, userName, hostName, requestingIP);
     }
 
-
     public AtlasImportResult run(InputStream inputStream, AtlasImportRequest request, String userName,
-                                 String hostName, String requestingIP) throws AtlasBaseException {
+            String hostName, String requestingIP) throws AtlasBaseException {
         if (request == null) {
             request = new AtlasImportRequest();
         }
 
         EntityImportStream source = createZipSource(request, inputStream, AtlasConfiguration.IMPORT_TEMP_DIRECTORY.getString());
         return run(source, request, userName, hostName, requestingIP);
-    }
-
-    @VisibleForTesting
-    AtlasImportResult run(EntityImportStream source, AtlasImportRequest request, String userName,
-                                 String hostName, String requestingIP) throws AtlasBaseException {
-        AtlasImportResult result = new AtlasImportResult(request, userName, requestingIP, hostName, System.currentTimeMillis());
-
-        try {
-            LOG.info("==> import(user={}, from={}, request={})", userName, requestingIP, request);
-
-            RequestContext.get().setImportInProgress(true);
-
-            String transforms = AtlasStringUtil.getOption(request.getOptions(), TRANSFORMS_KEY);
-            setImportTransform(source, transforms);
-
-            String transformers = AtlasStringUtil.getOption(request.getOptions(), TRANSFORMERS_KEY);
-            setEntityTransformerHandlers(source, transformers);
-
-            startTimestamp = System.currentTimeMillis();
-            processTypes(source.getTypesDef(), result);
-            setStartPosition(request, source);
-
-            processEntities(userName, source, result);
-
-            processReplicationDeletion(source.getExportResult().getRequest(), request);
-
-        } catch (AtlasBaseException excp) {
-            LOG.error("import(user={}, from={}): failed", userName, requestingIP, excp);
-
-            throw excp;
-        } catch (Exception excp) {
-            LOG.error("import(user={}, from={}): failed", userName, requestingIP, excp);
-
-            throw new AtlasBaseException(excp);
-        } finally {
-            RequestContext.get().setImportInProgress(false);
-
-            if (source != null) {
-                source.close();
-            }
-
-            LOG.info("<== import(user={}, from={}): status={}", userName, requestingIP, result.getOperationStatus());
-        }
-
-        return result;
-    }
-
-    @VisibleForTesting
-    void setImportTransform(EntityImportStream source, String transforms) throws AtlasBaseException {
-        ImportTransforms importTransform = ImportTransforms.fromJson(transforms);
-        if (importTransform == null) {
-            return;
-        }
-
-        importTransformsShaper.shape(importTransform, source.getExportResult().getRequest());
-
-        source.setImportTransform(importTransform);
-        if(LOG.isDebugEnabled()) {
-            debugLog("   => transforms: {}", AtlasType.toJson(importTransform));
-        }
-    }
-
-    @VisibleForTesting
-    void setEntityTransformerHandlers(EntityImportStream source, String transformersJson) throws AtlasBaseException {
-        if (StringUtils.isEmpty(transformersJson)) {
-            return;
-        }
-
-        TransformerContext context = new TransformerContext(typeRegistry, typeDefStore, source.getExportResult().getRequest());
-        List<BaseEntityHandler> entityHandlers = BaseEntityHandler.fromJson(transformersJson, context);
-        if (CollectionUtils.isEmpty(entityHandlers)) {
-            return;
-        }
-
-        source.setEntityHandlers(entityHandlers);
-    }
-
-    private void debugLog(String s, Object... params) {
-        if(!LOG.isDebugEnabled()) return;
-
-        LOG.debug(s, params);
-    }
-
-    private void setStartPosition(AtlasImportRequest request, EntityImportStream source) throws AtlasBaseException {
-        if (request.getStartGuid() != null) {
-            source.setPositionUsingEntityGuid(request.getStartGuid());
-        } else if (request.getStartPosition() != null) {
-            source.setPosition(Integer.parseInt(request.getStartPosition()));
-        }
     }
 
     public AtlasImportResult run(AtlasImportRequest request, String userName, String hostName, String requestingIP) throws AtlasBaseException {
@@ -217,6 +127,113 @@ public class ImportService {
         }
 
         return result;
+    }
+
+    @VisibleForTesting
+    AtlasImportResult run(EntityImportStream source, AtlasImportRequest request, String userName,
+            String hostName, String requestingIP) throws AtlasBaseException {
+        AtlasImportResult result = new AtlasImportResult(request, userName, requestingIP, hostName, System.currentTimeMillis());
+
+        try {
+            LOG.info("==> import(user={}, from={}, request={})", userName, requestingIP, request);
+
+            RequestContext.get().setImportInProgress(true);
+
+            String transforms = AtlasStringUtil.getOption(request.getOptions(), TRANSFORMS_KEY);
+            setImportTransform(source, transforms);
+
+            String transformers = AtlasStringUtil.getOption(request.getOptions(), TRANSFORMERS_KEY);
+            setEntityTransformerHandlers(source, transformers);
+
+            startTimestamp = System.currentTimeMillis();
+            processTypes(source.getTypesDef(), result);
+            setStartPosition(request, source);
+
+            processEntities(userName, source, result);
+
+            processReplicationDeletion(source.getExportResult().getRequest(), request);
+        } catch (AtlasBaseException excp) {
+            LOG.error("import(user={}, from={}): failed", userName, requestingIP, excp);
+
+            throw excp;
+        } catch (Exception excp) {
+            LOG.error("import(user={}, from={}): failed", userName, requestingIP, excp);
+
+            throw new AtlasBaseException(excp);
+        } finally {
+            RequestContext.get().setImportInProgress(false);
+
+            if (source != null) {
+                source.close();
+            }
+
+            LOG.info("<== import(user={}, from={}): status={}", userName, requestingIP, result.getOperationStatus());
+        }
+
+        return result;
+    }
+
+    @VisibleForTesting
+    void setImportTransform(EntityImportStream source, String transforms) throws AtlasBaseException {
+        ImportTransforms importTransform = ImportTransforms.fromJson(transforms);
+        if (importTransform == null) {
+            return;
+        }
+
+        importTransformsShaper.shape(importTransform, source.getExportResult().getRequest());
+
+        source.setImportTransform(importTransform);
+        if (LOG.isDebugEnabled()) {
+            debugLog("   => transforms: {}", AtlasType.toJson(importTransform));
+        }
+    }
+
+    @VisibleForTesting
+    void setEntityTransformerHandlers(EntityImportStream source, String transformersJson) throws AtlasBaseException {
+        if (StringUtils.isEmpty(transformersJson)) {
+            return;
+        }
+
+        TransformerContext      context        = new TransformerContext(typeRegistry, typeDefStore, source.getExportResult().getRequest());
+        List<BaseEntityHandler> entityHandlers = BaseEntityHandler.fromJson(transformersJson, context);
+        if (CollectionUtils.isEmpty(entityHandlers)) {
+            return;
+        }
+
+        source.setEntityHandlers(entityHandlers);
+    }
+
+    @VisibleForTesting
+    boolean checkHiveTableIncrementalSkipLineage(AtlasImportRequest importRequest, AtlasExportRequest exportRequest) {
+        if (exportRequest == null || CollectionUtils.isEmpty(exportRequest.getItemsToExport())) {
+            return false;
+        }
+
+        for (AtlasObjectId itemToExport : exportRequest.getItemsToExport()) {
+            if (!itemToExport.getTypeName().equalsIgnoreCase(ATLAS_TYPE_HIVE_TABLE)) {
+                return false;
+            }
+        }
+
+        return importRequest.isReplicationOptionSet() && exportRequest.isReplicationOptionSet() &&
+                exportRequest.getFetchTypeOptionValue().equalsIgnoreCase(AtlasExportRequest.FETCH_TYPE_INCREMENTAL) &&
+                exportRequest.getSkipLineageOptionValue();
+    }
+
+    private void debugLog(String s, Object... params) {
+        if (!LOG.isDebugEnabled()) {
+            return;
+        }
+
+        LOG.debug(s, params);
+    }
+
+    private void setStartPosition(AtlasImportRequest request, EntityImportStream source) throws AtlasBaseException {
+        if (request.getStartGuid() != null) {
+            source.setPositionUsingEntityGuid(request.getStartGuid());
+        } else if (request.getStartPosition() != null) {
+            source.setPosition(Integer.parseInt(request.getStartPosition()));
+        }
     }
 
     private void processTypes(AtlasTypesDef typeDefinitionMap, AtlasImportResult result) throws AtlasBaseException {
@@ -274,23 +291,6 @@ public class ImportService {
         ZipSourceDirect zipSourceDirect = new ZipSourceDirect(inputStream, request.getSizeOption());
         LOG.info("Using ZipSourceDirect: Size: {} entities", zipSourceDirect.size());
         return zipSourceDirect;
-    }
-
-    @VisibleForTesting
-    boolean checkHiveTableIncrementalSkipLineage(AtlasImportRequest importRequest, AtlasExportRequest exportRequest) {
-        if (exportRequest == null || CollectionUtils.isEmpty(exportRequest.getItemsToExport())) {
-            return false;
-        }
-
-        for (AtlasObjectId itemToExport : exportRequest.getItemsToExport()) {
-            if (!itemToExport.getTypeName().equalsIgnoreCase(ATLAS_TYPE_HIVE_TABLE)){
-                return false;
-            }
-        }
-
-        return importRequest.isReplicationOptionSet() && exportRequest.isReplicationOptionSet() &&
-                exportRequest.getFetchTypeOptionValue().equalsIgnoreCase(AtlasExportRequest.FETCH_TYPE_INCREMENTAL) &&
-                exportRequest.getSkipLineageOptionValue();
     }
 
     private boolean isMigrationMode(AtlasImportRequest request) {

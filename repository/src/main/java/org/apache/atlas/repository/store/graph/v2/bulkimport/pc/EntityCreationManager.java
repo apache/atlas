@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,27 +31,27 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class EntityCreationManager<AtlasEntityWithExtInfo> extends WorkItemManager {
-    private static final Logger LOG = LoggerFactory.getLogger(EntityCreationManager.class);
-    private static final String WORKER_PREFIX = "migration-import";
-    private static final long STATUS_REPORT_TIMEOUT_DURATION = 1 * 60 * 1000; // 5 min
+    private static final Logger LOG                            = LoggerFactory.getLogger(EntityCreationManager.class);
+    private static final String WORKER_PREFIX                  = "migration-import";
+    private static final long   STATUS_REPORT_TIMEOUT_DURATION = 1 * 60 * 1000; // 5 min
 
     private final StatusReporter<String, Long> statusReporter;
-    private final AtlasImportResult importResult;
-    private final DataMigrationStatusService dataMigrationStatusService;
-    private String currentTypeName;
-    private float currentPercent;
-    private EntityImportStream entityImportStream;
+    private final AtlasImportResult            importResult;
+    private final DataMigrationStatusService   dataMigrationStatusService;
+    private       String                       currentTypeName;
+    private       float                        currentPercent;
+    private       EntityImportStream           entityImportStream;
 
     public EntityCreationManager(WorkItemBuilder builder, int batchSize, int numWorkers, AtlasImportResult importResult, DataMigrationStatusService dataMigrationStatusService) {
         super(builder, WORKER_PREFIX, batchSize, numWorkers, true);
-        this.importResult = importResult;
+        this.importResult               = importResult;
         this.dataMigrationStatusService = dataMigrationStatusService;
 
         this.statusReporter = new StatusReporter<>(STATUS_REPORT_TIMEOUT_DURATION);
     }
 
     public long read(EntityImportStream entityStream) {
-        long currentIndex = entityStream.getPosition();
+        long                               currentIndex = entityStream.getPosition();
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo;
         this.entityImportStream = entityStream;
         this.dataMigrationStatusService.setStatus("IN_PROGRESS");
@@ -73,6 +73,15 @@ public class EntityCreationManager<AtlasEntityWithExtInfo> extends WorkItemManag
         return currentIndex;
     }
 
+    public void extractResults() {
+        Object result;
+        while (((result = getResults().poll())) != null) {
+            statusReporter.processed((String) result);
+        }
+
+        logStatus();
+    }
+
     private void produce(long currentIndex, String typeName, AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
         String previousTypeName = getCurrentTypeName();
 
@@ -88,15 +97,6 @@ public class EntityCreationManager<AtlasEntityWithExtInfo> extends WorkItemManag
         statusReporter.produced(entityWithExtInfo.getEntity().getGuid(), currentIndex);
         super.checkProduce(entityWithExtInfo);
         extractResults();
-    }
-
-    public void extractResults() {
-        Object result;
-        while (((result = getResults().poll())) != null) {
-            statusReporter.processed((String) result);
-        }
-
-        logStatus();
     }
 
     private void logStatus() {

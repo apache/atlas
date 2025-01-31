@@ -18,14 +18,6 @@
 
 package org.apache.atlas.repository.converters;
 
-import static org.apache.atlas.AtlasErrorCode.INVALID_TYPE_DEFINITION;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
-import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
-import static org.apache.atlas.type.AtlasTypeUtil.isArrayType;
-
-import java.util.*;
-
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
@@ -37,13 +29,6 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinali
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.model.typedef.AtlasTypeDefHeader;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.apache.atlas.v1.model.typedef.AttributeDefinition;
-import org.apache.atlas.v1.model.typedef.ClassTypeDefinition;
-import org.apache.atlas.v1.model.typedef.EnumTypeDefinition;
-import org.apache.atlas.v1.model.typedef.Multiplicity;
-import org.apache.atlas.v1.model.typedef.StructTypeDefinition;
-import org.apache.atlas.v1.model.typedef.TraitTypeDefinition;
-import org.apache.atlas.v1.model.typedef.TypesDef;
 import org.apache.atlas.repository.store.graph.v2.AtlasStructDefStoreV2;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -53,16 +38,36 @@ import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
+import org.apache.atlas.v1.model.typedef.AttributeDefinition;
+import org.apache.atlas.v1.model.typedef.ClassTypeDefinition;
+import org.apache.atlas.v1.model.typedef.EnumTypeDefinition;
 import org.apache.atlas.v1.model.typedef.EnumTypeDefinition.EnumValue;
+import org.apache.atlas.v1.model.typedef.Multiplicity;
+import org.apache.atlas.v1.model.typedef.StructTypeDefinition;
+import org.apache.atlas.v1.model.typedef.TraitTypeDefinition;
+import org.apache.atlas.v1.model.typedef.TypesDef;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import static org.apache.atlas.AtlasErrorCode.INVALID_TYPE_DEFINITION;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
+import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
+import static org.apache.atlas.type.AtlasTypeUtil.isArrayType;
 
 public final class TypeConverterUtil {
-    private TypeConverterUtil() {}
     private static final Logger LOG = LoggerFactory.getLogger(TypeConverterUtil.class);
+
+    private TypeConverterUtil() {}
 
     public static TypesDef toTypesDef(AtlasType type, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         final TypesDef ret;
@@ -77,6 +82,107 @@ public final class TypeConverterUtil {
             ret = TypeConverterUtil.structToTypesDef((AtlasStructType) type, typeRegistry);
         } else {
             ret = new TypesDef();
+        }
+
+        return ret;
+    }
+
+    public static AtlasTypesDef toAtlasTypesDef(String typeDefinition, AtlasTypeRegistry registry) throws AtlasBaseException {
+        AtlasTypesDef ret = new AtlasTypesDef();
+
+        try {
+            if (StringUtils.isEmpty(typeDefinition)) {
+                throw new AtlasBaseException(INVALID_TYPE_DEFINITION, typeDefinition);
+            }
+
+            TypesDef typesDef = AtlasType.fromV1Json(typeDefinition, TypesDef.class);
+            if (CollectionUtils.isNotEmpty(typesDef.getEnumTypes())) {
+                List<AtlasEnumDef> enumDefs = toAtlasEnumDefs(typesDef.getEnumTypes());
+                ret.setEnumDefs(enumDefs);
+            }
+
+            if (CollectionUtils.isNotEmpty(typesDef.getStructTypes())) {
+                List<AtlasStructDef> structDefs = toAtlasStructDefs(typesDef.getStructTypes());
+                ret.setStructDefs(structDefs);
+            }
+
+            if (CollectionUtils.isNotEmpty(typesDef.getClassTypes())) {
+                List<AtlasEntityDef> entityDefs = toAtlasEntityDefs(typesDef.getClassTypes(), registry);
+                ret.setEntityDefs(entityDefs);
+            }
+
+            if (CollectionUtils.isNotEmpty(typesDef.getTraitTypes())) {
+                List<AtlasClassificationDef> classificationDefs = toAtlasClassificationDefs(typesDef.getTraitTypes());
+                ret.setClassificationDefs(classificationDefs);
+            }
+        } catch (Exception e) {
+            LOG.error("Invalid type definition = {}", typeDefinition, e);
+            throw new AtlasBaseException(INVALID_TYPE_DEFINITION, typeDefinition);
+        }
+
+        return ret;
+    }
+
+    public static List<String> getTypeNames(List<AtlasTypeDefHeader> atlasTypesDefs) {
+        List<String> ret = new ArrayList<String>();
+        if (CollectionUtils.isNotEmpty(atlasTypesDefs)) {
+            for (AtlasTypeDefHeader atlasTypesDef : atlasTypesDefs) {
+                ret.add(atlasTypesDef.getName());
+            }
+        }
+
+        return ret;
+    }
+
+    public static List<String> getTypeNames(AtlasTypesDef typesDef) {
+        List<AtlasTypeDefHeader> atlasTypesDefs = AtlasTypeUtil.toTypeDefHeader(typesDef);
+        return getTypeNames(atlasTypesDefs);
+    }
+
+    public static AtlasAttributeDef toAtlasAttributeDef(final AttributeDefinition attrDefinition) {
+        AtlasAttributeDef ret = new AtlasAttributeDef(attrDefinition.getName(),
+                attrDefinition.getDataTypeName(),
+                attrDefinition.getSearchWeight(),
+                attrDefinition.getIndexType());
+
+        ret.setIsIndexable(attrDefinition.getIsIndexable());
+        ret.setIsUnique(attrDefinition.getIsUnique());
+        if (attrDefinition.getIsComposite()) {
+            ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_OWNED_REF));
+        }
+
+        if (StringUtils.isNotBlank(attrDefinition.getReverseAttributeName())) {
+            ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_INVERSE_REF,
+                    new HashMap<String, Object>() {{
+                        put(CONSTRAINT_PARAM_ATTRIBUTE, attrDefinition.getReverseAttributeName());
+                    }}));
+        }
+
+        // Multiplicity attribute mapping
+        Multiplicity multiplicity = attrDefinition.getMultiplicity();
+        int          minCount     = multiplicity.getLower();
+        int          maxCount     = multiplicity.getUpper();
+        boolean      isUnique     = multiplicity.getIsUnique();
+
+        if (minCount == 0) {
+            ret.setIsOptional(true);
+            ret.setValuesMinCount(0);
+        } else {
+            ret.setIsOptional(false);
+            ret.setValuesMinCount(minCount);
+        }
+
+        if (maxCount < 2) {
+            ret.setCardinality(Cardinality.SINGLE);
+            ret.setValuesMaxCount(1);
+        } else {
+            if (!isUnique) {
+                ret.setCardinality(Cardinality.LIST);
+            } else {
+                ret.setCardinality(Cardinality.SET);
+            }
+
+            ret.setValuesMaxCount(maxCount);
         }
 
         return ret;
@@ -103,7 +209,7 @@ public final class TypeConverterUtil {
         String                    typeVersion = structType.getStructDef().getTypeVersion();
         List<AttributeDefinition> attributes  = getAttributes(structType, registry);
 
-        StructTypeDefinition  structTypeDef = new StructTypeDefinition(typeName, typeDesc, typeVersion, attributes);
+        StructTypeDefinition structTypeDef = new StructTypeDefinition(typeName, typeDesc, typeVersion, attributes);
 
         TypesDef ret = new TypesDef(null, Arrays.asList(structTypeDef), null, null);
 
@@ -138,61 +244,6 @@ public final class TypeConverterUtil {
         return ret;
     }
 
-
-
-    public static AtlasTypesDef toAtlasTypesDef(String typeDefinition, AtlasTypeRegistry registry) throws AtlasBaseException {
-        AtlasTypesDef ret = new AtlasTypesDef();
-
-        try {
-            if (StringUtils.isEmpty(typeDefinition)) {
-                throw new AtlasBaseException(INVALID_TYPE_DEFINITION, typeDefinition);
-            }
-
-            TypesDef typesDef = AtlasType.fromV1Json(typeDefinition, TypesDef.class);
-            if (CollectionUtils.isNotEmpty(typesDef.getEnumTypes())) {
-                List<AtlasEnumDef> enumDefs = toAtlasEnumDefs(typesDef.getEnumTypes());
-                ret.setEnumDefs(enumDefs);
-            }
-
-            if (CollectionUtils.isNotEmpty(typesDef.getStructTypes())) {
-                List<AtlasStructDef> structDefs = toAtlasStructDefs(typesDef.getStructTypes());
-                ret.setStructDefs(structDefs);
-            }
-
-            if (CollectionUtils.isNotEmpty(typesDef.getClassTypes())) {
-                List<AtlasEntityDef> entityDefs = toAtlasEntityDefs(typesDef.getClassTypes(), registry);
-                ret.setEntityDefs(entityDefs);
-            }
-
-            if (CollectionUtils.isNotEmpty(typesDef.getTraitTypes())) {
-                List<AtlasClassificationDef> classificationDefs = toAtlasClassificationDefs(typesDef.getTraitTypes());
-                ret.setClassificationDefs(classificationDefs);
-            }
-
-        } catch (Exception e) {
-            LOG.error("Invalid type definition = {}", typeDefinition, e);
-            throw new AtlasBaseException(INVALID_TYPE_DEFINITION, typeDefinition);
-        }
-
-        return ret;
-    }
-
-    public static List<String> getTypeNames(List<AtlasTypeDefHeader> atlasTypesDefs) {
-        List<String> ret = new ArrayList<String>();
-        if (CollectionUtils.isNotEmpty(atlasTypesDefs)) {
-            for (AtlasTypeDefHeader atlasTypesDef : atlasTypesDefs) {
-                ret.add(atlasTypesDef.getName());
-            }
-        }
-
-        return ret;
-    }
-
-    public static List<String> getTypeNames(AtlasTypesDef typesDef) {
-        List<AtlasTypeDefHeader> atlasTypesDefs = AtlasTypeUtil.toTypeDefHeader(typesDef);
-        return getTypeNames(atlasTypesDefs);
-    }
-
     private static List<AtlasEnumDef> toAtlasEnumDefs(List<EnumTypeDefinition> enumTypeDefinitions) {
         List<AtlasEnumDef> ret = new ArrayList<AtlasEnumDef>();
 
@@ -213,7 +264,7 @@ public final class TypeConverterUtil {
         List<AtlasStructDef> ret = new ArrayList<>();
 
         for (StructTypeDefinition structType : structTypeDefinitions) {
-            List<AtlasAttributeDef> attrDefs  = new ArrayList<AtlasAttributeDef>();
+            List<AtlasAttributeDef> attrDefs = new ArrayList<AtlasAttributeDef>();
 
             if (CollectionUtils.isNotEmpty(structType.getAttributeDefinitions())) {
                 for (AttributeDefinition attrDefinition : structType.getAttributeDefinitions()) {
@@ -233,7 +284,7 @@ public final class TypeConverterUtil {
         List<AtlasClassificationDef> ret = new ArrayList<>();
 
         for (TraitTypeDefinition traitType : traitTypeDefinitions) {
-            List<AtlasAttributeDef> attrDefs   = new ArrayList<AtlasAttributeDef>();
+            List<AtlasAttributeDef> attrDefs = new ArrayList<AtlasAttributeDef>();
 
             if (CollectionUtils.isNotEmpty(traitType.getAttributeDefinitions())) {
                 for (AttributeDefinition attrDefinition : traitType.getAttributeDefinitions()) {
@@ -253,7 +304,7 @@ public final class TypeConverterUtil {
         List<AtlasEntityDef> ret = new ArrayList<>();
 
         for (ClassTypeDefinition classType : classTypeDefinitions) {
-            List<AtlasAttributeDef> attrDefs         = new ArrayList<AtlasAttributeDef>();
+            List<AtlasAttributeDef> attrDefs = new ArrayList<AtlasAttributeDef>();
 
             if (CollectionUtils.isNotEmpty(classType.getAttributeDefinitions())) {
                 for (AttributeDefinition oldAttr : classType.getAttributeDefinitions()) {
@@ -306,55 +357,6 @@ public final class TypeConverterUtil {
         return ret;
     }
 
-    public static AtlasAttributeDef toAtlasAttributeDef(final AttributeDefinition attrDefinition) {
-        AtlasAttributeDef ret = new AtlasAttributeDef(attrDefinition.getName(),
-                                                      attrDefinition.getDataTypeName(),
-                                                      attrDefinition.getSearchWeight(),
-                                                      attrDefinition.getIndexType());
-
-        ret.setIsIndexable(attrDefinition.getIsIndexable());
-        ret.setIsUnique(attrDefinition.getIsUnique());
-        if (attrDefinition.getIsComposite()) {
-            ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_OWNED_REF));
-        }
-
-        if (StringUtils.isNotBlank(attrDefinition.getReverseAttributeName())) {
-            ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_INVERSE_REF,
-                                       new HashMap<String, Object>() {{
-                                           put(CONSTRAINT_PARAM_ATTRIBUTE, attrDefinition.getReverseAttributeName());
-                                       }}));
-        }
-
-        // Multiplicity attribute mapping
-        Multiplicity multiplicity = attrDefinition.getMultiplicity();
-        int          minCount     = multiplicity.getLower();
-        int          maxCount     = multiplicity.getUpper();
-        boolean      isUnique     = multiplicity.getIsUnique();
-
-        if (minCount == 0) {
-            ret.setIsOptional(true);
-            ret.setValuesMinCount(0);
-        } else {
-            ret.setIsOptional(false);
-            ret.setValuesMinCount(minCount);
-        }
-
-        if (maxCount < 2) {
-            ret.setCardinality(Cardinality.SINGLE);
-            ret.setValuesMaxCount(1);
-        } else {
-            if (!isUnique) {
-                ret.setCardinality(Cardinality.LIST);
-            } else {
-                ret.setCardinality(Cardinality.SET);
-            }
-
-            ret.setValuesMaxCount(maxCount);
-        }
-
-        return ret;
-    }
-
     private static List<AttributeDefinition> getAttributes(AtlasStructType structType, AtlasTypeRegistry registry) {
         List<AttributeDefinition> ret      = new ArrayList<>();
         List<AtlasAttributeDef>   attrDefs = structType.getStructDef().getAttributeDefs();
@@ -366,15 +368,15 @@ public final class TypeConverterUtil {
                 AttributeDefinition oldAttrDef = AtlasStructDefStoreV2.toAttributeDefinition(attribute);
 
                 ret.add(new AttributeDefinition(oldAttrDef.getName(),
-                                                oldAttrDef.getDataTypeName(),
-                                                new Multiplicity(oldAttrDef.getMultiplicity()),
-                                                oldAttrDef.getIsComposite(),
-                                                oldAttrDef.getIsUnique(),
-                                                oldAttrDef.getIsIndexable(),
-                                                oldAttrDef.getReverseAttributeName(),
-                                                oldAttrDef.getOptions(),
-                                                oldAttrDef.getSearchWeight(),
-                                                oldAttrDef.getIndexType()));
+                        oldAttrDef.getDataTypeName(),
+                        new Multiplicity(oldAttrDef.getMultiplicity()),
+                        oldAttrDef.getIsComposite(),
+                        oldAttrDef.getIsUnique(),
+                        oldAttrDef.getIsIndexable(),
+                        oldAttrDef.getReverseAttributeName(),
+                        oldAttrDef.getOptions(),
+                        oldAttrDef.getSearchWeight(),
+                        oldAttrDef.getIndexType()));
             }
         }
 

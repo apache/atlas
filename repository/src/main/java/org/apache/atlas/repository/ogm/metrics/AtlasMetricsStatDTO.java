@@ -32,21 +32,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.apache.atlas.model.metrics.AtlasMetricsStat.METRICS_ID_PREFIX_PROPERTY;
-
 
 /**
  * AtlasMetricsStatDTO is the bridge class in between AtlasMetricsStat and AtlasEntity.
  */
 @Component
 public class AtlasMetricsStatDTO extends AbstractDataTransferObject<AtlasMetricsStat> {
+    public static final  String METRICS_ENTITY_TYPE_NAME = "__AtlasMetricsStat";
+    public static final  String METRICS_ID_PROPERTY      = "metricsId";
     private static final Logger LOG = LoggerFactory.getLogger(AtlasMetricsStatDTO.class);
-
-    public static final String METRICS_ENTITY_TYPE_NAME  = "__AtlasMetricsStat";
-    public static final String METRICS_ID_PROPERTY       = "metricsId";
     private static final String METRICS_PROPERTY         = "metrics";
     private static final String COLLECTION_TIME_PROPERTY = "collectionTime";
     private static final String TIME_TO_LIVE_PROPERTY    = "timeToLiveMillis";

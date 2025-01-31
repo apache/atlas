@@ -27,12 +27,11 @@ import static org.apache.atlas.entitytransform.TransformationConstants.CLUSTER_D
 import static org.apache.atlas.entitytransform.TransformationConstants.CLUSTER_NAME_ATTRIBUTE;
 import static org.apache.atlas.entitytransform.TransformationConstants.HDFS_CLUSTER_NAME_ATTRIBUTE;
 import static org.apache.atlas.entitytransform.TransformationConstants.HDFS_PATH;
-import static org.apache.atlas.entitytransform.TransformationConstants.HDFS_PATH_PATH_ATTRIBUTE;
 import static org.apache.atlas.entitytransform.TransformationConstants.HDFS_PATH_NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.HDFS_PATH_PATH_ATTRIBUTE;
 import static org.apache.atlas.entitytransform.TransformationConstants.NAME_ATTRIBUTE;
 import static org.apache.atlas.entitytransform.TransformationConstants.PATH_ATTRIBUTE;
 import static org.apache.atlas.entitytransform.TransformationConstants.QUALIFIED_NAME_ATTRIBUTE;
-
 
 public class HdfsPathEntityHandler extends BaseEntityHandler {
     static final List<String> CUSTOM_TRANSFORM_ATTRIBUTES = Arrays.asList(HDFS_PATH_NAME_ATTRIBUTE, HDFS_PATH_PATH_ATTRIBUTE, HDFS_CLUSTER_NAME_ATTRIBUTE);
@@ -50,15 +49,13 @@ public class HdfsPathEntityHandler extends BaseEntityHandler {
         return StringUtils.equals(entity.getTypeName(), HDFS_PATH);
     }
 
-
     public static class HdfsPathEntity extends AtlasTransformableEntity {
         private String  clusterName;
         private String  path;
         private String  name;
         private String  pathPrefix;
-        private boolean isPathUpdated            = false;
-        private boolean isCustomAttributeUpdated = false;
-
+        private boolean isPathUpdated;
+        private boolean isCustomAttributeUpdated;
 
         public HdfsPathEntity(AtlasEntity entity) {
             super(entity);
@@ -115,24 +112,24 @@ public class HdfsPathEntityHandler extends BaseEntityHandler {
                     clusterName = attributeValue;
 
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 case HDFS_PATH_NAME_ATTRIBUTE:
                     name = attributeValue;
 
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 case HDFS_PATH_PATH_ATTRIBUTE:
                     path = attributeValue;
 
-                    isPathUpdated              = true;
+                    isPathUpdated = true;
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 default:
                     super.setAttribute(attribute, attributeValue);
-                break;
+                    break;
             }
         }
 
@@ -145,7 +142,6 @@ public class HdfsPathEntityHandler extends BaseEntityHandler {
                 entity.setAttribute(QUALIFIED_NAME_ATTRIBUTE, toQualifiedName());
             }
         }
-
 
         private String toQualifiedName() {
             return StringUtils.isEmpty(clusterName) ? toPath() : String.format("%s@%s", toPath(), clusterName);

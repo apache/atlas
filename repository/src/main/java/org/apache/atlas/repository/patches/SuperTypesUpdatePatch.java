@@ -27,7 +27,9 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.Set;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
@@ -75,6 +77,11 @@ public class SuperTypesUpdatePatch extends AtlasPatchHandler {
         }
 
         @Override
+        protected void prepareForExecution() {
+            //do nothing
+        }
+
+        @Override
         public void submitVerticesToUpdate(WorkItemManager manager) {
             if (CollectionUtils.isNotEmpty(typeAndAllSubTypes)) {
                 LOG.info("Entity types to be updated with supertypes :{}", typeAndAllSubTypes.size());
@@ -119,11 +126,6 @@ public class SuperTypesUpdatePatch extends AtlasPatchHandler {
                     LOG.debug("Updated superTypes for entity of typeName={}, vertexId={}): Done!", typeName, vertex.getId());
                 }
             }
-        }
-
-        @Override
-        protected void prepareForExecution() {
-            //do nothing
         }
     }
 }

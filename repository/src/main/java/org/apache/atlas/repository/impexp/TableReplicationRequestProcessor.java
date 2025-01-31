@@ -34,42 +34,44 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.Map;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 @Component
 public class TableReplicationRequestProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(TableReplicationRequestProcessor.class);
 
-    private static final String QUERY_DB_NAME_EQUALS = "qualifiedName startsWith '%s'";
-    private static final String ATTR_NAME_KEY = "name";
-    private static final String TYPE_HIVE_TABLE = "hive_table";
+    private static final String QUERY_DB_NAME_EQUALS    = "qualifiedName startsWith '%s'";
+    private static final String ATTR_NAME_KEY           = "name";
+    private static final String TYPE_HIVE_TABLE         = "hive_table";
     private static final String ATTR_QUALIFIED_NAME_KEY = "qualifiedName";
-    private static final String REPLICATED_TAG_NAME = "%s_replicated";
+    private static final String REPLICATED_TAG_NAME     = "%s_replicated";
 
-    private long startTstamp;
-    private long endTstamp;
-    private AuditsWriter auditsWriter;
-    private AtlasEntityStore entityStore;
-    private AtlasTypeRegistry typeRegistry;
-    private AtlasDiscoveryService discoveryService;
+    private       long                  startTstamp;
+    private       long                  endTstamp;
+    private final AuditsWriter          auditsWriter;
+    private final AtlasEntityStore      entityStore;
+    private final AtlasTypeRegistry     typeRegistry;
+    private final AtlasDiscoveryService discoveryService;
 
     @Inject
-    public TableReplicationRequestProcessor(AuditsWriter auditsWriter, AtlasEntityStore entityStore,
-                                            AtlasDiscoveryService atlasDiscoveryService, AtlasTypeRegistry typeRegistry) {
-        this.auditsWriter = auditsWriter;
-        this.entityStore = entityStore;
-        this.typeRegistry = typeRegistry;
+    public TableReplicationRequestProcessor(AuditsWriter auditsWriter, AtlasEntityStore entityStore, AtlasDiscoveryService atlasDiscoveryService, AtlasTypeRegistry typeRegistry) {
+        this.auditsWriter     = auditsWriter;
+        this.entityStore      = entityStore;
+        this.typeRegistry     = typeRegistry;
         this.discoveryService = atlasDiscoveryService;
     }
 
     public void process(AtlasExportRequest exportRequest, AtlasImportRequest importRequest) throws AtlasBaseException {
         startTstamp = System.currentTimeMillis();
+
         LOG.info("process: deleting entities with type hive_table which are not imported.");
+
         String sourceCluster = importRequest.getOptionKeyReplicatedFrom();
 
         List<String> qualifiedNames = getQualifiedNamesFromRequest(exportRequest);
@@ -89,16 +91,19 @@ public class TableReplicationRequestProcessor {
         for (AtlasObjectId objectId : exportRequest.getItemsToExport()) {
             qualifiedNames.add(objectId.getUniqueAttributes().get(ATTR_QUALIFIED_NAME_KEY).toString());
         }
+
         return qualifiedNames;
     }
 
     private List<String> getEntitiesFromQualifiedNames(List<String> qualifiedNames) throws AtlasBaseException {
-
         List<String> safeGUIDs = new ArrayList<>();
+
         for (String qualifiedName : qualifiedNames) {
             String guid = getGuidByUniqueAttributes(Collections.singletonMap(ATTR_QUALIFIED_NAME_KEY, qualifiedName));
+
             safeGUIDs.add(guid);
         }
+
         return safeGUIDs;
     }
 
@@ -108,25 +113,25 @@ public class TableReplicationRequestProcessor {
 
     private String getDbName(String tableGuid) throws AtlasBaseException {
         String dbGuid = AuditsWriter.ReplKeyGuidFinder.get(typeRegistry, entityStore, tableGuid);
+
         return (String) entityStore.getById(dbGuid).getEntity().getAttribute(ATTR_NAME_KEY);
     }
 
     private Set<String> getGuidsToDelete(String dbName, List<String> excludeGUIDs, String sourceCluster) throws AtlasBaseException {
+        SearchParameters parameters  = getSearchParameters(dbName, sourceCluster);
+        Set<String>      unsafeGUIDs = new HashSet<>();
 
-        SearchParameters parameters = getSearchParameters(dbName, sourceCluster);
-        Set<String> unsafeGUIDs = new HashSet<>();
+        final int max         = 10000;
+        int       fetchedSize = 0;
+        int       i           = 0;
 
-        final int max = 10000;
-        int fetchedSize = 0;
-        int i = 0;
         parameters.setLimit(max);
 
         while (fetchedSize == (max * i)) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("i={}, fetchedSize={}, unsafeGUIDs.size()={}", i, fetchedSize, unsafeGUIDs.size());
-            }
+            LOG.debug("i={}, fetchedSize={}, unsafeGUIDs.size()={}", i, fetchedSize, unsafeGUIDs.size());
 
             int offset = max * i;
+
             parameters.setOffset(offset);
 
             AtlasSearchResult searchResult = discoveryService.searchWithParameters(parameters);
@@ -134,22 +139,23 @@ public class TableReplicationRequestProcessor {
             if (CollectionUtils.isEmpty(searchResult.getEntities())) {
                 break;
             } else {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("getGuidsToDelete: {}", searchResult.getApproximateCount());
-                }
+                LOG.debug("getGuidsToDelete: {}", searchResult.getApproximateCount());
             }
 
             String classificationName = String.format(REPLICATED_TAG_NAME, sourceCluster);
+
             for (AtlasEntityHeader entityHeader : searchResult.getEntities()) {
                 if (!entityHeader.getClassificationNames().contains(classificationName)) {
                     continue;
                 }
 
                 String guid = entityHeader.getGuid();
+
                 if (!excludeGUIDs.contains(guid)) {
                     unsafeGUIDs.add(guid);
                 }
             }
+
             fetchedSize = searchResult.getEntities().size();
             i++;
         }
@@ -160,11 +166,11 @@ public class TableReplicationRequestProcessor {
         String query = String.format(QUERY_DB_NAME_EQUALS, dbName);
 
         SearchParameters parameters = new SearchParameters();
+
         parameters.setExcludeDeletedEntities(false);
         parameters.setTypeName(TYPE_HIVE_TABLE);
         parameters.setExcludeDeletedEntities(true);
-
-        parameters.setAttributes(new HashSet<String>() {{ add(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM); }});
+        parameters.setAttributes(new HashSet<>(Collections.singleton(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM)));
         parameters.setQuery(query);
 
         return parameters;
@@ -175,6 +181,7 @@ public class TableReplicationRequestProcessor {
             entityStore.deleteByIds(new ArrayList<>(guidsToDelete));
 
             endTstamp = System.currentTimeMillis();
+
             createAuditEntry(sourceCluster, guidsToDelete);
         }
     }
@@ -182,8 +189,6 @@ public class TableReplicationRequestProcessor {
     private void createAuditEntry(String sourceCluster, Set<String> guidsToDelete) throws AtlasBaseException {
         auditsWriter.write(AtlasAuthorizationUtils.getCurrentUserName(), sourceCluster, startTstamp, endTstamp, guidsToDelete);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Deleted entities => {}", guidsToDelete);
-        }
+        LOG.debug("Deleted entities => {}", guidsToDelete);
     }
 }

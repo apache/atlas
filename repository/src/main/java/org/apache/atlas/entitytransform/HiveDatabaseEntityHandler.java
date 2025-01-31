@@ -23,7 +23,13 @@ import org.apache.commons.lang.StringUtils;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.apache.atlas.entitytransform.TransformationConstants.*;
+import static org.apache.atlas.entitytransform.TransformationConstants.CLUSTER_DELIMITER;
+import static org.apache.atlas.entitytransform.TransformationConstants.CLUSTER_NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_DATABASE;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_DB_CLUSTER_NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_DB_NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.QUALIFIED_NAME_ATTRIBUTE;
 
 public class HiveDatabaseEntityHandler extends BaseEntityHandler {
     static final List<String> CUSTOM_TRANSFORM_ATTRIBUTES = Arrays.asList(HIVE_DB_NAME_ATTRIBUTE, HIVE_DB_CLUSTER_NAME_ATTRIBUTE);
@@ -37,7 +43,6 @@ public class HiveDatabaseEntityHandler extends BaseEntityHandler {
         return isHiveDatabaseEntity(entity) ? new HiveDatabaseEntity(entity) : null;
     }
 
-
     private boolean isHiveDatabaseEntity(AtlasEntity entity) {
         return StringUtils.equals(entity.getTypeName(), HIVE_DATABASE);
     }
@@ -45,7 +50,7 @@ public class HiveDatabaseEntityHandler extends BaseEntityHandler {
     private static class HiveDatabaseEntity extends AtlasTransformableEntity {
         private String  databaseName;
         private String  clusterName;
-        private boolean isCustomAttributeUpdated = false;
+        private boolean isCustomAttributeUpdated;
 
         public HiveDatabaseEntity(AtlasEntity entity) {
             super(entity);
@@ -83,17 +88,17 @@ public class HiveDatabaseEntityHandler extends BaseEntityHandler {
                     databaseName = attributeValue;
 
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 case HIVE_DB_CLUSTER_NAME_ATTRIBUTE:
                     clusterName = attributeValue;
 
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 default:
                     super.setAttribute(attribute, attributeValue);
-                break;
+                    break;
             }
         }
 

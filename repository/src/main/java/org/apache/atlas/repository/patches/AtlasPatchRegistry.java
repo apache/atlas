@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,7 +44,15 @@ import java.util.Map;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.FAILED;
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.UNKNOWN;
-import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.Constants.CREATED_BY_KEY;
+import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
+import static org.apache.atlas.repository.Constants.PATCH_ACTION_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.PATCH_DESCRIPTION_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.PATCH_ID_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.PATCH_STATE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.PATCH_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.ComparisionOperator.EQUAL;
 import static org.apache.atlas.repository.patches.AtlasPatchHandler.JAVA_PATCH_TYPE;
 import static org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer.TYPEDEF_PATCH_TYPE;
@@ -112,6 +120,17 @@ public class AtlasPatchRegistry {
         }
     }
 
+    public AtlasPatches getAllPatches() {
+        return getAllPatches(graph);
+    }
+
+    public AtlasVertex findByPatchId(String patchId) {
+        AtlasGraphQuery       query   = graph.query().has(Constants.PATCH_ID_PROPERTY_KEY, patchId);
+        Iterator<AtlasVertex> results = query.vertices().iterator();
+
+        return results.hasNext() ? results.next() : null;
+    }
+
     private static String getId(String incomingId, String patchFile, int index) {
         String patchId = incomingId;
 
@@ -122,12 +141,8 @@ public class AtlasPatchRegistry {
         return patchId;
     }
 
-    public AtlasPatches getAllPatches() {
-        return getAllPatches(graph);
-    }
-
     private void createOrUpdatePatchVertex(AtlasGraph graph, String patchId, String description,
-                                           String patchType, String action, PatchStatus patchStatus) {
+            String patchType, String action, PatchStatus patchStatus) {
         try {
             AtlasVertex patchVertex = findByPatchId(patchId);
 
@@ -169,8 +184,8 @@ public class AtlasPatchRegistry {
 
     private static AtlasPatches getAllPatches(AtlasGraph graph) {
         List<AtlasGraphQuery> orConditions = new ArrayList<>();
-        List<AtlasPatch> ret = new ArrayList<>();
-        AtlasGraphQuery query = graph.query();
+        List<AtlasPatch>      ret          = new ArrayList<>();
+        AtlasGraphQuery       query        = graph.query();
 
         orConditions.add(query.createChildQuery().has(PATCH_TYPE_PROPERTY_KEY, EQUAL, TYPEDEF_PATCH_TYPE));
         orConditions.add(query.createChildQuery().has(PATCH_TYPE_PROPERTY_KEY, EQUAL, JAVA_PATCH_TYPE));
@@ -182,7 +197,7 @@ public class AtlasPatchRegistry {
 
             while (results != null && results.hasNext()) {
                 AtlasVertex patchVertex = results.next();
-                AtlasPatch patch = toAtlasPatch(patchVertex);
+                AtlasPatch  patch       = toAtlasPatch(patchVertex);
                 ret.add(patch);
             }
 
@@ -198,7 +213,6 @@ public class AtlasPatchRegistry {
         return new AtlasPatches(ret);
     }
 
-
     private static AtlasPatch toAtlasPatch(AtlasVertex vertex) {
         AtlasPatch ret = new AtlasPatch();
 
@@ -213,13 +227,6 @@ public class AtlasPatchRegistry {
         ret.setStatus(getPatchStatus(vertex));
 
         return ret;
-    }
-
-    public AtlasVertex findByPatchId(String patchId) {
-        AtlasGraphQuery       query   = graph.query().has(Constants.PATCH_ID_PROPERTY_KEY, patchId);
-        Iterator<AtlasVertex> results = query.vertices().iterator();
-
-        return results.hasNext() ? results.next() : null;
     }
 
     private static PatchStatus getPatchStatus(AtlasVertex vertex) {

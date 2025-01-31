@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.entitytransform;
 
+import org.apache.atlas.entitytransform.BaseEntityHandler.AtlasTransformableEntity;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -25,14 +26,11 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
-import org.apache.atlas.entitytransform.BaseEntityHandler.AtlasTransformableEntity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collections;
-
-
 
 public abstract class Action {
     private static final Logger LOG = LoggerFactory.getLogger(Action.class);
@@ -47,24 +45,12 @@ public abstract class Action {
 
     protected final EntityAttribute attribute;
 
-
     protected Action(EntityAttribute attribute) {
         this.attribute = attribute;
     }
 
-    public EntityAttribute getAttribute() { return attribute; }
-
-    public boolean isValid() {
-        return true;
-    }
-
-    public abstract void apply(AtlasTransformableEntity entity);
-
-
     public static Action createAction(String key, String value, TransformerContext context) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> Action.createAction(key={}, value={})", key, value);
-        }
+        LOG.debug("==> Action.createAction(key={}, value={})", key, value);
 
         final Action ret;
 
@@ -81,40 +67,47 @@ public abstract class Action {
         switch (actionName.toUpperCase()) {
             case ACTION_ADD_CLASSIFICATION:
                 ret = new AddClassificationAction(attribute, actionValue, context);
-            break;
+                break;
 
             case ACTION_NAME_REPLACE_PREFIX:
                 ret = new PrefixReplaceAction(attribute, actionValue);
-            break;
+                break;
 
             case ACTION_NAME_TO_LOWER:
                 ret = new ToLowerCaseAction(attribute);
-            break;
+                break;
 
             case ACTION_NAME_TO_UPPER:
                 ret = new ToUpperCaseAction(attribute);
-            break;
+                break;
 
             case ACTION_NAME_SET:
                 ret = new SetAction(attribute, actionValue);
-            break;
+                break;
 
             case ACTION_NAME_CLEAR:
                 ret = new ClearAction(attribute);
-            break;
+                break;
 
             default:
                 ret = new SetAction(attribute, value); // treat unspecified/unknown action as 'SET'
-            break;
+                break;
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== Action.createAction(key={}, value={}): actionName={}, actionValue={}, ret={}", key, value, actionName, actionValue, ret);
-        }
+        LOG.debug("<== Action.createAction(key={}, value={}): actionName={}, actionValue={}, ret={}", key, value, actionName, actionValue, ret);
 
         return ret;
     }
 
+    public EntityAttribute getAttribute() {
+        return attribute;
+    }
+
+    public boolean isValid() {
+        return true;
+    }
+
+    public abstract void apply(AtlasTransformableEntity entity);
 
     public static class SetAction extends Action {
         private final String attributeValue;

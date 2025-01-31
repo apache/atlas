@@ -28,30 +28,17 @@ import org.apache.atlas.repository.impexp.ImportTransforms;
 import java.util.List;
 
 public class AtlasEntityStreamForImport extends AtlasEntityStream implements EntityImportStream {
-    private int currentPosition = 0;
+    private int currentPosition;
 
     public AtlasEntityStreamForImport(AtlasEntityWithExtInfo entityWithExtInfo, EntityStream entityStream) {
         super(entityWithExtInfo, entityStream);
     }
 
     @Override
-    public AtlasEntityWithExtInfo getNextEntityWithExtInfo() {
-        currentPosition++;
-        AtlasEntity entity = next();
-
-        return entity != null ? new AtlasEntityWithExtInfo(entity, super.entitiesWithExtInfo) : null;
-    }
-
-    @Override
-    public AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) throws AtlasBaseException {
-        return null;
-    }
-
-    @Override
     public AtlasEntity getByGuid(String guid) {
         AtlasEntity ent = super.entitiesWithExtInfo.getEntity(guid);
 
-        if(ent == null && entityStream != null) {
+        if (ent == null && entityStream != null) {
             return entityStream.getByGuid(guid);
         }
 
@@ -64,13 +51,13 @@ public class AtlasEntityStreamForImport extends AtlasEntityStream implements Ent
     }
 
     @Override
-    public void setPosition(int position) {
-        // not applicable for a single entity stream
+    public int getPosition() {
+        return currentPosition;
     }
 
     @Override
-    public int getPosition() {
-        return currentPosition;
+    public void setPosition(int position) {
+        // not applicable for a single entity stream
     }
 
     @Override
@@ -78,13 +65,21 @@ public class AtlasEntityStreamForImport extends AtlasEntityStream implements Ent
     }
 
     @Override
-    public void onImportComplete(String guid) {
+    public AtlasEntityWithExtInfo getNextEntityWithExtInfo() {
+        currentPosition++;
 
+        AtlasEntity entity = next();
+
+        return entity != null ? new AtlasEntityWithExtInfo(entity, super.entitiesWithExtInfo) : null;
     }
 
     @Override
-    public void setImportTransform(ImportTransforms importTransform) {
+    public AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) throws AtlasBaseException {
+        return null;
+    }
 
+    @Override
+    public void onImportComplete(String guid) {
     }
 
     @Override
@@ -93,13 +88,16 @@ public class AtlasEntityStreamForImport extends AtlasEntityStream implements Ent
     }
 
     @Override
-    public void setEntityHandlers(List<BaseEntityHandler> entityHandlers) {
-
+    public void setImportTransform(ImportTransforms importTransform) {
     }
 
     @Override
     public List<BaseEntityHandler> getEntityHandlers() {
         return null;
+    }
+
+    @Override
+    public void setEntityHandlers(List<BaseEntityHandler> entityHandlers) {
     }
 
     @Override
@@ -119,6 +117,5 @@ public class AtlasEntityStreamForImport extends AtlasEntityStream implements Ent
 
     @Override
     public void close() {
-
     }
 }

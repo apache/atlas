@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,8 +19,8 @@ package org.apache.atlas.query.executors;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
-import org.apache.atlas.model.discovery.AtlasSearchResult.AttributeSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType;
+import org.apache.atlas.model.discovery.AtlasSearchResult.AttributeSearchResult;
 import org.apache.atlas.query.AtlasDSL;
 import org.apache.atlas.query.GremlinQuery;
 import org.apache.atlas.query.QueryParams;
@@ -40,9 +40,9 @@ import java.util.Map;
 public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
     private static final Logger LOG = LoggerFactory.getLogger(ScriptEngineBasedExecutor.class);
 
-    private final AtlasTypeRegistry     typeRegistry;
-    private final AtlasGraph            graph;
-    private final EntityGraphRetriever  entityRetriever;
+    private final AtlasTypeRegistry    typeRegistry;
+    private final AtlasGraph           graph;
+    private final EntityGraphRetriever entityRetriever;
 
     public ScriptEngineBasedExecutor(AtlasTypeRegistry typeRegistry, AtlasGraph graph, EntityGraphRetriever entityRetriever) {
         this.typeRegistry    = typeRegistry;
@@ -57,14 +57,14 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
         String            queryStr     = gremlinQuery.queryStr();
         Object            result       = graph.executeGremlinScript(queryStr, false);
 
-        if (result instanceof List && CollectionUtils.isNotEmpty((List)result)) {
+        if (result instanceof List && CollectionUtils.isNotEmpty((List) result)) {
             List   queryResult  = (List) result;
             Object firstElement = queryResult.get(0);
 
             if (firstElement instanceof AtlasVertex) {
                 for (Object element : queryResult) {
                     if (element instanceof AtlasVertex) {
-                        ret.addEntity(entityRetriever.toAtlasEntityHeaderWithClassifications((AtlasVertex)element));
+                        ret.addEntity(entityRetriever.toAtlasEntityHeaderWithClassifications((AtlasVertex) element));
                     } else {
                         LOG.warn("searchUsingDslQuery({}): expected an AtlasVertex; found unexpected entry in result {}", dslQuery, element);
                     }
@@ -74,17 +74,15 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
             } else if (firstElement instanceof Map) {
                 for (Object element : queryResult) {
                     if (element instanceof Map) {
-                        Map map = (Map)element;
+                        Map map = (Map) element;
 
                         for (Object key : map.keySet()) {
                             Object value = map.get(key);
 
-                            if (value instanceof List && CollectionUtils.isNotEmpty((List)value)) {
+                            if (value instanceof List && CollectionUtils.isNotEmpty((List) value)) {
                                 for (Object o : (List) value) {
-                                    Object entry = o;
-
-                                    if (entry instanceof AtlasVertex) {
-                                        ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex) entry));
+                                    if (o instanceof AtlasVertex) {
+                                        ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex) o));
                                     }
                                 }
                             }
@@ -103,9 +101,7 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
         QueryParams  params       = QueryParams.getNormalizedParams(limit, offset);
         GremlinQuery gremlinQuery = new AtlasDSL.Translator(query, typeRegistry, params.offset(), params.limit()).translate();
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Translated Gremlin Query: {}", gremlinQuery.queryStr());
-        }
+        LOG.debug("Translated Gremlin Query: {}", gremlinQuery.queryStr());
 
         return gremlinQuery;
     }
@@ -133,7 +129,7 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
                     for (Object key : map.keySet()) {
                         Object vals = map.get(key);
 
-                        if(vals instanceof List) {
+                        if (vals instanceof List) {
                             List l = (List) vals;
 
                             list.addAll(l);

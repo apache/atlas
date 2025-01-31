@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -46,19 +46,16 @@ import java.util.regex.Pattern;
 /**
  * Abstract typedef-store for v1 format.
  */
-  abstract class AtlasAbstractDefStoreV2<T extends AtlasBaseTypeDef> implements AtlasDefStore<T> {
+abstract class AtlasAbstractDefStoreV2<T extends AtlasBaseTypeDef> implements AtlasDefStore<T> {
+    public static final String ALLOW_RESERVED_KEYWORDS = "atlas.types.allowReservedKeywords";
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAbstractDefStoreV2.class);
-
+    private static final String      NAME_REGEX                 = "[a-zA-Z][a-zA-Z0-9_ ]*";
+    private static final String      INTERNAL_NAME_REGEX        = "__" + NAME_REGEX;
+    private static final Pattern     INTERNAL_NAME_PATTERN      = Pattern.compile(INTERNAL_NAME_REGEX);
+    private static final Pattern     NAME_PATTERN               = Pattern.compile(NAME_REGEX);
+    private static final Set<String> INVALID_TYPEDEF_NAMES_LIST = new HashSet<String>(Arrays.asList("description", "version", "options", "name", "servicetype"));
     protected final AtlasTypeDefGraphStoreV2 typeDefStore;
     protected final AtlasTypeRegistry        typeRegistry;
-
-    private static final String  NAME_REGEX            = "[a-zA-Z][a-zA-Z0-9_ ]*";
-    private static final String  INTERNAL_NAME_REGEX   = "__" + NAME_REGEX;
-    private static final Pattern NAME_PATTERN          = Pattern.compile(NAME_REGEX);
-    private static final Pattern INTERNAL_NAME_PATTERN = Pattern.compile(INTERNAL_NAME_REGEX);
-    private static final Set<String> INVALID_TYPEDEF_NAMES_LIST = new HashSet<String>(Arrays.asList("description", "version", "options", "name", "servicetype"));
-
-    public static final String ALLOW_RESERVED_KEYWORDS = "atlas.types.allowReservedKeywords";
 
     public AtlasAbstractDefStoreV2(AtlasTypeDefGraphStoreV2 typeDefStore, AtlasTypeRegistry typeRegistry) {
         this.typeDefStore = typeDefStore;
@@ -89,10 +86,10 @@ import java.util.regex.Pattern;
 
     public void verifyTypeReadAccess(String type) throws AtlasBaseException {
         if (StringUtils.isNotEmpty(type)) {
-                AtlasBaseTypeDef def = typeRegistry.getTypeDefByName(type);
-                if (def != null) {
-                    AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, def), "read type-def of category ", def.getCategory(), " ", def.getName());
-                }
+            AtlasBaseTypeDef def = typeRegistry.getTypeDefByName(type);
+            if (def != null) {
+                AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_READ, def), "read type-def of category ", def.getCategory(), " ", def.getName());
+            }
         }
     }
 
@@ -166,7 +163,7 @@ import java.util.regex.Pattern;
             LOG.debug("<== AtlasAbstractDefStoreV1.deleteByGuid({}, {})", guid, preDeleteResult);
         }
     }
-    
+
     public boolean isInvalidTypeDefName(String typeName) {
         return INVALID_TYPEDEF_NAMES_LIST.contains(typeName);
     }

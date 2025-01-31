@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -41,8 +41,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
@@ -50,44 +50,52 @@ import static org.testng.Assert.assertTrue;
 public class TestLoadModelUtils {
     public static final Logger LOG = LoggerFactory.getLogger(TestLoadModelUtils.class);
 
+    private TestLoadModelUtils() {
+        // to block instantiation
+    }
+
     public static List<String> getAllModels(String dirName) throws IOException {
         List<String> ret                  = null;
         File         topModelsDir         = new File(System.getProperty("user.dir") + "/../addons/models");
         File[]       topModelsDirContents = topModelsDir.exists() ? topModelsDir.listFiles() : null;
 
-        assertTrue(topModelsDirContents != null, topModelsDir.getAbsolutePath() + ": unable to find/read directory");
-        if(topModelsDirContents != null) {
-            Arrays.sort(topModelsDirContents);
-            for (File modelDir : topModelsDirContents) {
-                if (modelDir.exists() && modelDir.isDirectory() && modelDir.getAbsolutePath().contains(dirName)) {
-                    File[] models = modelDir.listFiles();
-                    Arrays.sort(models);
-                    ret = new ArrayList<>();
-                    for (File model : Objects.requireNonNull(models)) {
-                        ret.add(getFileContents(modelDir, model.getName()));
-                    }
+        assertNotNull(topModelsDirContents, topModelsDir.getAbsolutePath() + ": unable to find/read directory");
 
+        Arrays.sort(topModelsDirContents);
+
+        for (File modelDir : topModelsDirContents) {
+            if (modelDir.exists() && modelDir.isDirectory() && modelDir.getAbsolutePath().contains(dirName)) {
+                File[] models = modelDir.listFiles();
+
+                if (models != null) {
+                    Arrays.sort(models);
                 }
 
-                if (ret != null && ret.size() > 0) {
-                    break;
+                ret = new ArrayList<>();
+
+                for (File model : requireNonNull(models)) {
+                    ret.add(getFileContents(modelDir, model.getName()));
                 }
             }
-        } else {
-            throw new IOException("Unable to retrieve model contents.");
+
+            if (ret != null && !ret.isEmpty()) {
+                break;
+            }
         }
 
         return ret;
     }
 
     public static String getModelJson(String fileName) throws IOException {
-        String  ret                 = null;
+        String ret                  = null;
         File   topModelsDir         = new File(System.getProperty("user.dir") + "/../addons/models");
         File[] topModelsDirContents = topModelsDir.exists() ? topModelsDir.listFiles() : null;
 
-        assertTrue(topModelsDirContents != null, topModelsDir.getAbsolutePath() + ": unable to find/read directory");
-        if(topModelsDirContents != null) {
+        assertNotNull(topModelsDirContents, topModelsDir.getAbsolutePath() + ": unable to find/read directory");
+
+        if (topModelsDirContents != null) {
             Arrays.sort(topModelsDirContents);
+
             for (File modelDir : topModelsDirContents) {
                 if (modelDir.exists() && modelDir.isDirectory()) {
                     ret = getFileContents(modelDir, fileName);
@@ -102,7 +110,7 @@ public class TestLoadModelUtils {
                 ret = getFileContents(topModelsDir, fileName);
             }
 
-            assertTrue(ret != null, fileName + ": unable to find model file");
+            assertNotNull(ret, fileName + ": unable to find model file");
         } else {
             throw new IOException("Unable to retrieve model contents.");
         }
@@ -124,8 +132,9 @@ public class TestLoadModelUtils {
 
     public static String getModelJsonFromResources(String fileName) throws IOException {
         String filePath = TestResourceFileUtils.getTestFilePath(fileName);
-        File f = new File(filePath);
-        String s = FileUtils.readFileToString(f);
+        File   f        = new File(filePath);
+        String s        = FileUtils.readFileToString(f);
+
         assertFalse(StringUtils.isEmpty(s), "Model file read correctly from resources!");
 
         return s;
@@ -138,7 +147,6 @@ public class TestLoadModelUtils {
             throw new SkipException(String.format("loadTypes: '%s' could not be loaded.", fileName));
         }
     }
-
 
     public static AtlasEntity.AtlasEntityWithExtInfo loadEntity(String entitiesSubDir, String fileName) {
         try {
@@ -159,9 +167,9 @@ public class TestLoadModelUtils {
     public static void createAtlasEntity(AtlasEntityStoreV2 entityStoreV1, AtlasEntity.AtlasEntityWithExtInfo atlasEntity) {
         try {
             EntityMutationResponse response = entityStoreV1.createOrUpdateForImport(new AtlasEntityStreamForImport(atlasEntity, null));
+
             assertNotNull(response);
-            assertTrue((response.getCreatedEntities() != null && response.getCreatedEntities().size() > 0) ||
-                    (response.getMutatedEntities() != null && response.getMutatedEntities().size() > 0));
+            assertTrue((response.getCreatedEntities() != null && !response.getCreatedEntities().isEmpty()) || (response.getMutatedEntities() != null && !response.getMutatedEntities().isEmpty()));
         } catch (AtlasBaseException e) {
             throw new SkipException(String.format("createAtlasEntity: could not loaded '%s'.", atlasEntity.getEntity().getTypeName()));
         }
@@ -169,56 +177,37 @@ public class TestLoadModelUtils {
 
     public static void loadModelFromJson(String fileName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
         AtlasTypesDef typesFromJson = getAtlasTypesDefFromFile(fileName);
+
         addReplicationAttributes(typesFromJson);
         createTypesAsNeeded(typesFromJson, typeDefStore, typeRegistry);
     }
 
     public static void loadAllModels(String dirName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
-        List<String>  allModels     = getAllModels(dirName);
+        List<String> allModels = getAllModels(dirName);
+
         for (String model : allModels) {
             AtlasTypesDef typesFromJson = AtlasJson.fromJson(model, AtlasTypesDef.class);
+
             createTypesAsNeeded(typesFromJson, typeDefStore, typeRegistry);
         }
     }
 
-    private static void addReplicationAttributes(AtlasTypesDef typesFromJson) throws IOException {
-        if(typesFromJson.getEntityDefs() == null || typesFromJson.getEntityDefs().size() == 0) return;
-
-        AtlasEntityDef ed = typesFromJson.getEntityDefs().get(0);
-        if(!ed.getName().equals("Referenceable")) return;
-
-        String replAttr1Json = TestResourceFileUtils.getJson("stocksDB-Entities","replicationAttrs");
-        String replAttr2Json = StringUtils.replace(replAttr1Json, "From", "To");
-
-        ed.addAttribute(AtlasType.fromJson(replAttr1Json, AtlasStructDef.AtlasAttributeDef.class));
-        ed.addAttribute(AtlasType.fromJson(replAttr2Json, AtlasStructDef.AtlasAttributeDef.class));
-    }
-
     public static void loadModelFromResourcesJson(String fileName, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
         AtlasTypesDef typesFromJson = getAtlasTypesDefFromResourceFile(fileName);
+
         createTypesAsNeeded(typesFromJson, typeDefStore, typeRegistry);
     }
 
     public static void createTypesAsNeeded(AtlasTypesDef typesFromJson, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
-        if(typesFromJson == null) {
+        if (typesFromJson == null) {
             return;
         }
 
         AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typesFromJson, typeRegistry);
+
         if (typesToCreate != null && !typesToCreate.isEmpty()) {
             typeDefStore.createTypesDef(typesToCreate);
         }
-    }
-
-    private static AtlasTypesDef getAtlasTypesDefFromFile(String fileName) throws IOException {
-        String sampleTypes = getModelJson(fileName);
-        if(sampleTypes == null) return null;
-        return AtlasType.fromJson(sampleTypes, AtlasTypesDef.class);
-    }
-
-    private static AtlasTypesDef getAtlasTypesDefFromResourceFile(String fileName) throws IOException {
-        String sampleTypes = getModelJsonFromResources(fileName);
-        return AtlasType.fromJson(sampleTypes, AtlasTypesDef.class);
     }
 
     public static void loadBaseModel(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
@@ -231,5 +220,39 @@ public class TestLoadModelUtils {
 
     public static void loadHiveModel(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) throws IOException, AtlasBaseException {
         loadModelFromJson("1030-hive_model.json", typeDefStore, typeRegistry);
+    }
+
+    private static void addReplicationAttributes(AtlasTypesDef typesFromJson) throws IOException {
+        if (typesFromJson.getEntityDefs() == null || typesFromJson.getEntityDefs().isEmpty()) {
+            return;
+        }
+
+        AtlasEntityDef ed = typesFromJson.getEntityDefs().get(0);
+
+        if (!ed.getName().equals("Referenceable")) {
+            return;
+        }
+
+        String replAttr1Json = TestResourceFileUtils.getJson("stocksDB-Entities", "replicationAttrs");
+        String replAttr2Json = StringUtils.replace(replAttr1Json, "From", "To");
+
+        ed.addAttribute(AtlasType.fromJson(replAttr1Json, AtlasStructDef.AtlasAttributeDef.class));
+        ed.addAttribute(AtlasType.fromJson(replAttr2Json, AtlasStructDef.AtlasAttributeDef.class));
+    }
+
+    private static AtlasTypesDef getAtlasTypesDefFromFile(String fileName) throws IOException {
+        String sampleTypes = getModelJson(fileName);
+
+        if (sampleTypes == null) {
+            return null;
+        }
+
+        return AtlasType.fromJson(sampleTypes, AtlasTypesDef.class);
+    }
+
+    private static AtlasTypesDef getAtlasTypesDefFromResourceFile(String fileName) throws IOException {
+        String sampleTypes = getModelJsonFromResources(fileName);
+
+        return AtlasType.fromJson(sampleTypes, AtlasTypesDef.class);
     }
 }

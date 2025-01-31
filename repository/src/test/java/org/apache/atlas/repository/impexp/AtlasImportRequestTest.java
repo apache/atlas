@@ -21,7 +21,10 @@ import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.type.AtlasType;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 
 public class AtlasImportRequestTest {
     @Test
@@ -41,8 +44,8 @@ public class AtlasImportRequestTest {
 
     @Test
     public void serializeOptions_VerifyAccessors() {
-        String guid = "\"abcd\"";
-        String pos = "\"1\"";
+        String guid    = "\"abcd\"";
+        String pos     = "\"1\"";
         String trueVal = "\"true\"";
 
         String jsonData = "{ \"options\": " +
@@ -69,7 +72,7 @@ public class AtlasImportRequestTest {
     public void optionsDefaultsTest() {
         String jsonData = "{ \"options\": " +
                 "               {" +
-                    "}" +
+                "}" +
                 "}";
 
         AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);

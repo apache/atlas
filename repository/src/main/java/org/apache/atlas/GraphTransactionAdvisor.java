@@ -27,6 +27,7 @@ import org.springframework.aop.support.StaticMethodMatcherPointcut;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.lang.reflect.Method;
 
 @Component

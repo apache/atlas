@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -35,18 +35,19 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.TimeZone;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.HashMap;
-import java.util.Map;
 
 import static org.apache.atlas.ApplicationProperties.DEFAULT_INDEX_RECOVERY;
-import static org.apache.atlas.repository.Constants.PROPERTY_KEY_INDEX_RECOVERY_NAME;
 import static org.apache.atlas.repository.Constants.PROPERTY_KEY_INDEX_RECOVERY_CUSTOM_TIME;
+import static org.apache.atlas.repository.Constants.PROPERTY_KEY_INDEX_RECOVERY_NAME;
 import static org.apache.atlas.repository.Constants.PROPERTY_KEY_INDEX_RECOVERY_PREV_TIME;
 import static org.apache.atlas.repository.Constants.PROPERTY_KEY_INDEX_RECOVERY_START_TIME;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
@@ -54,46 +55,32 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEn
 @Component
 @Order(8)
 public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
-    private static final Logger LOG                                       = LoggerFactory.getLogger(IndexRecoveryService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(IndexRecoveryService.class);
+
     private static final String DATE_FORMAT                               = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
     private static final String INDEX_HEALTH_MONITOR_THREAD_NAME          = "index-health-monitor";
     private static final String SOLR_STATUS_CHECK_RETRY_INTERVAL          = "atlas.graph.index.status.check.frequency";
     private static final String SOLR_INDEX_RECOVERY_CONFIGURED_START_TIME = "atlas.index.recovery.start.time";
     private static final long   SOLR_STATUS_RETRY_DEFAULT_MS              = 30000; // 30 secs default
 
-    private final Thread                 indexHealthMonitor;
-    public  final RecoveryInfoManagement recoveryInfoManagement;
-    private       Configuration          configuration;
-    private       boolean                isIndexRecoveryEnabled;
+    public final  RecoveryInfoManagement recoveryInfoManagement;
     public        RecoveryThread         recoveryThread;
+
+    private final Thread        indexHealthMonitor;
+    private final Configuration configuration;
+    private final boolean       isIndexRecoveryEnabled;
 
     @Inject
     public IndexRecoveryService(Configuration config, AtlasGraph graph) {
-        this.configuration               = config;
-        this.isIndexRecoveryEnabled      = config.getBoolean(ApplicationProperties.INDEX_RECOVERY_CONF, DEFAULT_INDEX_RECOVERY);
+        this.configuration          = config;
+        this.isIndexRecoveryEnabled = config.getBoolean(ApplicationProperties.INDEX_RECOVERY_CONF, DEFAULT_INDEX_RECOVERY);
+
         long recoveryStartTimeFromConfig = getRecoveryStartTimeFromConfig(config);
         long healthCheckFrequencyMillis  = config.getLong(SOLR_STATUS_CHECK_RETRY_INTERVAL, SOLR_STATUS_RETRY_DEFAULT_MS);
-        this.recoveryInfoManagement      = new RecoveryInfoManagement(graph);
 
-        this.recoveryThread = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis);
-        this.indexHealthMonitor = new Thread(recoveryThread, INDEX_HEALTH_MONITOR_THREAD_NAME);
-    }
-
-    private long getRecoveryStartTimeFromConfig(Configuration config) {
-        long ret = 0L;
-
-        try {
-            String time = config.getString(SOLR_INDEX_RECOVERY_CONFIGURED_START_TIME);
-
-            SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
-            dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-            ret = dateFormat.parse(time).toInstant().toEpochMilli();
-        } catch (Exception e) {
-            LOG.debug("Error fetching: {}", SOLR_INDEX_RECOVERY_CONFIGURED_START_TIME);
-        }
-
-        return ret;
+        this.recoveryInfoManagement = new RecoveryInfoManagement(graph);
+        this.recoveryThread         = new RecoveryThread(recoveryInfoManagement, graph, recoveryStartTimeFromConfig, healthCheckFrequencyMillis);
+        this.indexHealthMonitor     = new Thread(recoveryThread, INDEX_HEALTH_MONITOR_THREAD_NAME);
     }
 
     @Override
@@ -141,6 +128,23 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         return ActiveStateChangeHandler.HandlerOrder.INDEX_RECOVERY.getOrder();
     }
 
+    private long getRecoveryStartTimeFromConfig(Configuration config) {
+        long ret = 0L;
+
+        try {
+            String           time       = config.getString(SOLR_INDEX_RECOVERY_CONFIGURED_START_TIME);
+            SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
+
+            dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+            ret = dateFormat.parse(time).toInstant().toEpochMilli();
+        } catch (Exception e) {
+            LOG.error("Error fetching: {}", SOLR_INDEX_RECOVERY_CONFIGURED_START_TIME, e);
+        }
+
+        return ret;
+    }
+
     private void startTxLogMonitoring() {
         if (!isIndexRecoveryEnabled) {
             LOG.warn("IndexRecoveryService: Recovery should be enabled.");
@@ -160,10 +164,9 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
     public static class RecoveryThread implements Runnable {
         private final AtlasGraph             graph;
         private final RecoveryInfoManagement recoveryInfoManagement;
-        private       long                   indexStatusCheckRetryMillis;
-        private       Object                 txRecoveryObject;
-
         private final AtomicBoolean          shouldRun = new AtomicBoolean(false);
+        private final long                   indexStatusCheckRetryMillis;
+        private       Object                 txRecoveryObject;
 
         private RecoveryThread(RecoveryInfoManagement recoveryInfoManagement, AtlasGraph graph, long startTimeFromConfig, long healthCheckFrequencyMillis) {
             this.graph                       = graph;
@@ -203,7 +206,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
                 // handle the case where thread was not started at all
                 // and shutdown called
-                if (shouldRun.get() == false) {
+                if (!shouldRun.get()) {
                     return;
                 }
 
@@ -211,12 +214,6 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             } finally {
                 LOG.info("Index Health Monitor: Shutdown: Done!");
             }
-        }
-
-        private boolean waitAndCheckIfIndexBackendHealthy() throws AtlasException, InterruptedException {
-            Thread.sleep(indexStatusCheckRetryMillis);
-
-            return isIndexBackendHealthy();
         }
 
         public boolean isIndexBackendHealthy() throws AtlasException {
@@ -227,6 +224,18 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             startMonitoring(startTime);
         }
 
+        public void stopMonitoringByUserRequest() {
+            stopIndexRecovery();
+
+            LOG.info("Index Recovery: Stopped!");
+        }
+
+        private boolean waitAndCheckIfIndexBackendHealthy() throws AtlasException, InterruptedException {
+            Thread.sleep(indexStatusCheckRetryMillis);
+
+            return isIndexBackendHealthy();
+        }
+
         private void startMonitoring() {
             startMonitoring(recoveryInfoManagement.getStartTime());
         }
@@ -234,6 +243,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         private void startMonitoring(Long startTime) {
             if (startTime == null || startTime == 0L) {
                 LOG.error("Index Recovery requested without start time");
+
                 return;
             }
 
@@ -248,11 +258,6 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             }
         }
 
-        public void stopMonitoringByUserRequest() {
-            stopIndexRecovery();
-            LOG.info("Index Recovery: Stopped!");
-        }
-
         private void stopMonitoring() {
             stopIndexRecoveryAndUpdateStartTime();
         }
@@ -261,6 +266,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             Instant newStartTime = Instant.now().minusMillis(2 * indexStatusCheckRetryMillis);
 
             stopIndexRecovery();
+
             recoveryInfoManagement.updateStartTime(newStartTime.toEpochMilli());
 
             LOG.info("Index Recovery: Stopped! Recovery time: {}", newStartTime);
@@ -303,7 +309,9 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
         public void updateIndexRecoveryTime(String timePropertyKey, long time) {
             Map<String, String> indexRecoveryData = new HashMap<>();
+
             indexRecoveryData.put(timePropertyKey, String.valueOf(time));
+
             updateIndexRecoveryData(indexRecoveryData);
         }
 
@@ -312,11 +320,12 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
                 Long        startTime          = NumberUtils.createLong(indexRecoveryData.get(PROPERTY_KEY_INDEX_RECOVERY_START_TIME));
                 Long        prevStartTime      = NumberUtils.createLong(indexRecoveryData.get(PROPERTY_KEY_INDEX_RECOVERY_PREV_TIME));
                 Long        customStartTime    = NumberUtils.createLong(indexRecoveryData.get(PROPERTY_KEY_INDEX_RECOVERY_CUSTOM_TIME));
-                boolean     isStartTimeUpdated = startTime != null ? true : false;
+                boolean     isStartTimeUpdated = startTime != null;
+                AtlasVertex vertex             = findVertex();
 
-                AtlasVertex vertex = findVertex();
                 if (vertex == null) {
                     vertex = graph.addVertex();
+
                     setEncodedProperty(vertex, PROPERTY_KEY_INDEX_RECOVERY_NAME, INDEX_RECOVERY_TYPE_NAME);
                 } else {
                     prevStartTime = isStartTimeUpdated ? getStartTime(vertex) : prevStartTime;
@@ -333,9 +342,8 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
                 if (customStartTime != null) {
                     setEncodedProperty(vertex, PROPERTY_KEY_INDEX_RECOVERY_CUSTOM_TIME, customStartTime);
                 }
-
             } catch (Exception ex) {
-                LOG.error("Error: Updating: {}!", ex);
+                LOG.error("Error updating index recovery data", ex);
             } finally {
                 graph.commit();
             }
@@ -345,6 +353,13 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             AtlasVertex vertex = findVertex();
 
             return getStartTime(vertex);
+        }
+
+        public AtlasVertex findVertex() {
+            AtlasGraphQuery       query   = graph.query().has(PROPERTY_KEY_INDEX_RECOVERY_NAME, INDEX_RECOVERY_TYPE_NAME);
+            Iterator<AtlasVertex> results = query.vertices().iterator();
+
+            return results.hasNext() ? results.next() : null;
         }
 
         private Long getStartTime(AtlasVertex vertex) {
@@ -370,13 +385,6 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         private Long getStartTimeByTxLogTTL() {
             long ttl = AtlasConfiguration.SOLR_INDEX_TX_LOG_TTL_CONF.getLong();
             return Instant.now().minus(ttl, ChronoUnit.HOURS).toEpochMilli();
-        }
-
-        public AtlasVertex findVertex() {
-            AtlasGraphQuery       query   = graph.query().has(PROPERTY_KEY_INDEX_RECOVERY_NAME, INDEX_RECOVERY_TYPE_NAME);
-            Iterator<AtlasVertex> results = query.vertices().iterator();
-
-            return results.hasNext() ? results.next() : null;
         }
     }
 }

@@ -87,7 +87,6 @@ import static org.apache.atlas.graph.GraphSandboxUtil.useLocalSolr;
 
 @Test(enabled = false)
 public class TestModules {
-
     static class MockNotifier implements Provider<AtlasEntityChangeNotifier> {
         @Override
         public AtlasEntityChangeNotifier get() {
@@ -97,26 +96,12 @@ public class TestModules {
 
     // Test only DI modules
     public static class TestOnlyModule extends AbstractModule {
-
         private static final Logger LOG = LoggerFactory.getLogger(TestOnlyModule.class);
 
-        static class AtlasConfigurationProvider implements Provider<Configuration> {
-
-            @Override
-            public Configuration get() {
-                try {
-                    return ApplicationProperties.get();
-                } catch (AtlasException e) {
-                    throw new RuntimeException(e);
-                }
-            }
-        }
-
-        static class AtlasGraphProvider implements Provider<AtlasGraph> {
-            @Override
-            public AtlasGraph get() {
-                return org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance();
-            }
+        @Singleton
+        @Provides
+        public List<TypeDefChangeListener> getTypeDefChangeListenerList(GraphBackedSearchIndexer indexer) {
+            return Arrays.asList(indexer);
         }
 
         @Override
@@ -195,24 +180,35 @@ public class TestModules {
             bindInterceptor(Matchers.any(), Matchers.annotatedWith(GraphTransaction.class), graphTransactionInterceptor);
         }
 
-        @Singleton
-        @Provides
-        public List<TypeDefChangeListener> getTypeDefChangeListenerList(GraphBackedSearchIndexer indexer) {
-            return Arrays.asList(indexer);
-        }
-
         protected void bindAuditRepository(Binder binder) {
-
             Class<? extends EntityAuditRepository> auditRepoImpl = AtlasRepositoryConfiguration.getAuditRepositoryImpl();
 
             //Map EntityAuditRepository interface to configured implementation
             binder.bind(EntityAuditRepository.class).to(auditRepoImpl).asEagerSingleton();
 
-            if(Service.class.isAssignableFrom(auditRepoImpl)) {
-                Class<? extends Service> auditRepoService = (Class<? extends Service>)auditRepoImpl;
+            if (Service.class.isAssignableFrom(auditRepoImpl)) {
+                Class<? extends Service> auditRepoService = (Class<? extends Service>) auditRepoImpl;
                 //if it's a service, make sure that it gets properly closed at shutdown
                 Multibinder<Service> serviceBinder = Multibinder.newSetBinder(binder, Service.class);
                 serviceBinder.addBinding().to(auditRepoService);
+            }
+        }
+
+        static class AtlasConfigurationProvider implements Provider<Configuration> {
+            @Override
+            public Configuration get() {
+                try {
+                    return ApplicationProperties.get();
+                } catch (AtlasException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+        }
+
+        static class AtlasGraphProvider implements Provider<AtlasGraph> {
+            @Override
+            public AtlasGraph get() {
+                return org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance();
             }
         }
     }

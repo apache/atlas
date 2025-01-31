@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,15 +17,12 @@
  */
 package org.apache.atlas.repository.converters;
 
-
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.apache.atlas.v1.model.instance.Id;
-import org.apache.atlas.v1.model.instance.Referenceable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,7 +45,8 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
 
         if (v1Obj == null) {
             return true;
-        } if (type instanceof AtlasArrayType) {
+        }
+        if (type instanceof AtlasArrayType) {
             AtlasArrayType       arrType       = (AtlasArrayType) type;
             AtlasType            elemType      = arrType.getElementType();
             AtlasFormatConverter elemConverter = null;
@@ -78,9 +76,7 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
             }
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("AtlasArrayFormatConverter.isValidValueV1(type={}, value={}): {}", (v1Obj != null ? v1Obj.getClass().getCanonicalName() : null), v1Obj, ret);
-        }
+        LOG.debug("AtlasArrayFormatConverter.isValidValueV1(type={}, value={}): {}", (v1Obj != null ? v1Obj.getClass().getCanonicalName() : null), v1Obj, ret);
 
         return ret;
     }
@@ -128,8 +124,7 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
             } else if (v2Obj instanceof Set) {
                 ret = new LinkedHashSet();
             } else {
-                throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, "List or Set",
-                                             v2Obj.getClass().getCanonicalName());
+                throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, "List or Set", v2Obj.getClass().getCanonicalName());
             }
 
             AtlasArrayType       arrType       = (AtlasArrayType) type;
@@ -147,4 +142,3 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
         return ret;
     }
 }
-

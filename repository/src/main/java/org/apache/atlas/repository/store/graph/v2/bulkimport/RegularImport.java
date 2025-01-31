@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,6 @@
  */
 
 package org.apache.atlas.repository.store.graph.v2.bulkimport;
-
 
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
@@ -57,21 +56,32 @@ import static org.apache.atlas.repository.Constants.HISTORICAL_GUID_PROPERTY_KEY
 import static org.apache.atlas.repository.store.graph.v2.BulkImporterImpl.updateImportProgress;
 
 public class RegularImport extends ImportStrategy {
-    private static final Logger LOG = LoggerFactory.getLogger(RegularImport.class);
-    private static final int MAX_ATTEMPTS = 3;
+    private static final Logger LOG          = LoggerFactory.getLogger(RegularImport.class);
+    private static final int    MAX_ATTEMPTS = 3;
 
-    private final AtlasGraph graph;
-    private final AtlasEntityStore entityStore;
-    private final AtlasTypeRegistry typeRegistry;
+    private final AtlasGraph           graph;
+    private final AtlasEntityStore     entityStore;
+    private final AtlasTypeRegistry    typeRegistry;
     private final EntityGraphRetriever entityGraphRetriever;
-    private boolean directoryBasedImportConfigured;
+    private       boolean              directoryBasedImportConfigured;
 
     public RegularImport(AtlasGraph graph, AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
-        this.graph       = graph;
-        this.entityStore = entityStore;
-        this.typeRegistry = typeRegistry;
-        this.entityGraphRetriever = new EntityGraphRetriever(graph, typeRegistry);
+        this.graph                          = graph;
+        this.entityStore                    = entityStore;
+        this.typeRegistry                   = typeRegistry;
+        this.entityGraphRetriever           = new EntityGraphRetriever(graph, typeRegistry);
         this.directoryBasedImportConfigured = StringUtils.isNotEmpty(AtlasConfiguration.IMPORT_TEMP_DIRECTORY.getString());
+    }
+
+    @VisibleForTesting
+    static String getJsonArray(String json, String vertexGuid) {
+        String quotedGuid = String.format("\"%s\"", vertexGuid);
+        if (StringUtils.isEmpty(json)) {
+            json = String.format("[%s]", quotedGuid);
+        } else {
+            json = json.replace("]", "").concat(",").concat(quotedGuid).concat("]");
+        }
+        return json;
     }
 
     @Override
@@ -87,7 +97,7 @@ public class RegularImport extends ImportStrategy {
         EntityMutationResponse ret = new EntityMutationResponse();
         ret.setGuidAssignments(new HashMap<>());
 
-        Set<String> processedGuids = new HashSet<>();
+        Set<String>  processedGuids = new HashSet<>();
         float        currentPercent = 0f;
         List<String> residualList   = new ArrayList<>();
 
@@ -104,7 +114,7 @@ public class RegularImport extends ImportStrategy {
             for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
                 try {
                     AtlasEntityStreamForImport oneEntityStream = new AtlasEntityStreamForImport(entityWithExtInfo, null);
-                    EntityMutationResponse resp = entityStore.createOrUpdateForImport(oneEntityStream);
+                    EntityMutationResponse     resp            = entityStore.createOrUpdateForImport(oneEntityStream);
 
                     if (resp.getGuidAssignments() != null) {
                         ret.getGuidAssignments().putAll(resp.getGuidAssignments());
@@ -163,12 +173,13 @@ public class RegularImport extends ImportStrategy {
             updateVertexGuid(entity);
         }
     }
+
     public void updateVertexGuid(AtlasEntity entity) {
-        String entityGuid = entity.getGuid();
-        AtlasObjectId objectId = entityGraphRetriever.toAtlasObjectIdWithoutGuid(entity);
+        String        entityGuid = entity.getGuid();
+        AtlasObjectId objectId   = entityGraphRetriever.toAtlasObjectIdWithoutGuid(entity);
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-        String vertexGuid = null;
+        String          vertexGuid = null;
         try {
             vertexGuid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(this.graph, entityType, objectId.getUniqueAttributes());
         } catch (AtlasBaseException e) {
@@ -197,17 +208,6 @@ public class RegularImport extends ImportStrategy {
         AtlasGraphUtilsV2.setProperty(v, HISTORICAL_GUID_PROPERTY_KEY, getJsonArray(existingJson, vertexGuid));
     }
 
-    @VisibleForTesting
-    static String getJsonArray(String json, String vertexGuid) {
-        String quotedGuid = String.format("\"%s\"", vertexGuid);
-        if (StringUtils.isEmpty(json)) {
-            json = String.format("[%s]", quotedGuid);
-        } else {
-            json = json.replace("]", "").concat(",").concat(quotedGuid).concat("]");
-        }
-        return json;
-    }
-
     private boolean updateResidualList(AtlasBaseException e, List<String> lineageList, String guid) {
         if (!e.getAtlasErrorCode().getErrorCode().equals(AtlasErrorCode.INVALID_OBJECT_ID.getErrorCode())) {
             return false;
@@ -219,10 +219,10 @@ public class RegularImport extends ImportStrategy {
     }
 
     private float updateImportMetrics(AtlasEntity.AtlasEntityWithExtInfo currentEntity,
-                                      EntityMutationResponse             resp,
-                                      AtlasImportResult                  importResult,
-                                      Set<String>                        processedGuids,
-                                      int currentIndex, int streamSize, float currentPercent) {
+            EntityMutationResponse resp,
+            AtlasImportResult importResult,
+            Set<String> processedGuids,
+            int currentIndex, int streamSize, float currentPercent) {
         if (!directoryBasedImportConfigured) {
             BulkImporterImpl.updateImportMetrics("entity:%s:created", resp.getCreatedEntities(), processedGuids, importResult);
             BulkImporterImpl.updateImportMetrics("entity:%s:updated", resp.getUpdatedEntities(), processedGuids, importResult);
@@ -239,7 +239,6 @@ public class RegularImport extends ImportStrategy {
         private final List<String>       residualList;
         private       boolean            navigateResidualList;
         private       int                currentResidualListIndex;
-
 
         public EntityImportStreamWithResidualList(EntityImportStream stream, List<String> residualList) {
             this.stream                   = stream;

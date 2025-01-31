@@ -29,7 +29,6 @@ public class AtlasEntityStream implements EntityStream {
     protected final EntityStream             entityStream;
     private         Iterator<AtlasEntity>    iterator;
 
-
     public AtlasEntityStream(AtlasEntity entity) {
         this(new AtlasEntitiesWithExtInfo(entity), null);
     }
@@ -77,7 +76,7 @@ public class AtlasEntityStream implements EntityStream {
 
     @Override
     public AtlasEntity getByGuid(String guid) {
-        return entityStream != null ?  entityStream.getByGuid(guid) : entitiesWithExtInfo.getEntity(guid);
+        return entityStream != null ? entityStream.getByGuid(guid) : entitiesWithExtInfo.getEntity(guid);
     }
 
     @Override

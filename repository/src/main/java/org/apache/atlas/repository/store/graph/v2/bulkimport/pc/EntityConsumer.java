@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,7 +33,6 @@ import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.MapUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,40 +42,57 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWithExtInfo> {
-    private static final Logger LOG = LoggerFactory.getLogger(EntityConsumer.class);
-    private static final int MAX_COMMIT_RETRY_COUNT = 3;
+    private static final Logger LOG                    = LoggerFactory.getLogger(EntityConsumer.class);
+    private static final int    MAX_COMMIT_RETRY_COUNT = 3;
 
-    private final int batchSize;
-    private AtomicLong counter = new AtomicLong(1);
-    private AtomicLong currentBatch = new AtomicLong(1);
-
-    private AtlasGraph atlasGraph;
-    private final AtlasEntityStore entityStore;
-    private final AtlasGraph atlasGraphBulk;
-    private final AtlasEntityStore entityStoreBulk;
-    private final AtlasTypeRegistry typeRegistry;
+    private final int        batchSize;
+    private final AtlasEntityStore     entityStore;
+    private final AtlasGraph           atlasGraphBulk;
+    private final AtlasEntityStore     entityStoreBulk;
+    private final AtlasTypeRegistry    typeRegistry;
     private final EntityGraphRetriever entityRetrieverBulk;
-    private final boolean isMigrationImport;
-
+    private final boolean              isMigrationImport;
+    private       AtomicLong counter      = new AtomicLong(1);
+    private       AtomicLong currentBatch = new AtomicLong(1);
+    private       AtlasGraph           atlasGraph;
     private List<AtlasEntity.AtlasEntityWithExtInfo> entityBuffer = new ArrayList<>();
-    private List<String> localResults = new ArrayList<>();
+    private List<String>                             localResults = new ArrayList<>();
 
     public EntityConsumer(AtlasTypeRegistry typeRegistry,
-                          AtlasGraph atlasGraph, AtlasEntityStore entityStore,
-                          AtlasGraph atlasGraphBulk, AtlasEntityStore entityStoreBulk, EntityGraphRetriever entityRetrieverBulk,
-                          BlockingQueue queue, int batchSize , boolean isMigrationImport) {
+            AtlasGraph atlasGraph, AtlasEntityStore entityStore,
+            AtlasGraph atlasGraphBulk, AtlasEntityStore entityStoreBulk, EntityGraphRetriever entityRetrieverBulk,
+            BlockingQueue queue, int batchSize, boolean isMigrationImport) {
         super(queue);
         this.typeRegistry = typeRegistry;
 
-        this.atlasGraph = atlasGraph;
+        this.atlasGraph  = atlasGraph;
         this.entityStore = entityStore;
 
-        this.atlasGraphBulk = atlasGraphBulk;
-        this.entityStoreBulk = entityStoreBulk;
+        this.atlasGraphBulk      = atlasGraphBulk;
+        this.entityStoreBulk     = entityStoreBulk;
         this.entityRetrieverBulk = entityRetrieverBulk;
 
-        this.batchSize = batchSize;
+        this.batchSize         = batchSize;
         this.isMigrationImport = isMigrationImport;
+    }
+
+    @Override
+    protected void commitDirty() {
+        super.commitDirty();
+        LOG.info("Total: Commit: {}", counter.get());
+        counter.set(0);
+    }
+
+    @Override
+    protected void doCommit() {
+        for (int retryCount = 1; retryCount <= MAX_COMMIT_RETRY_COUNT; retryCount++) {
+            if (commitWithRetry(retryCount)) {
+                return;
+            }
+        }
+
+        LOG.error("Retries exceeded! Potential data loss! Please correct data and re-attempt. Buffer: {}: Counter: {}", entityBuffer.size(), counter.get());
+        clear();
     }
 
     @Override
@@ -119,8 +135,8 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
     }
 
     private void importUsingBulkEntityStore(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
-        EntityStream oneEntityStream = new AtlasEntityStreamForImport(entityWithExtInfo, null);
-        EntityMutationResponse result = entityStoreBulk.createOrUpdateForImportNoCommit(oneEntityStream);
+        EntityStream           oneEntityStream = new AtlasEntityStreamForImport(entityWithExtInfo, null);
+        EntityMutationResponse result          = entityStoreBulk.createOrUpdateForImportNoCommit(oneEntityStream);
         localResults.add(entityWithExtInfo.getEntity().getGuid());
         entityBuffer.add(entityWithExtInfo);
     }
@@ -157,8 +173,7 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
             LOG.info("Validated Entities: Commit: Starting...");
             rollbackPauseRetry(1, ex);
             doCommit();
-        }
-        finally {
+        } finally {
             LOG.info("Validated Entities: Commit: Done!");
         }
     }
@@ -169,25 +184,6 @@ public class EntityConsumer extends WorkItemConsumer<AtlasEntity.AtlasEntityWith
         }
 
         doCommit();
-    }
-
-    @Override
-    protected void doCommit() {
-        for (int retryCount = 1; retryCount <= MAX_COMMIT_RETRY_COUNT; retryCount++) {
-            if (commitWithRetry(retryCount)) {
-                return;
-            }
-        }
-
-        LOG.error("Retries exceeded! Potential data loss! Please correct data and re-attempt. Buffer: {}: Counter: {}", entityBuffer.size(), counter.get());
-        clear();
-    }
-
-    @Override
-    protected void commitDirty() {
-        super.commitDirty();
-        LOG.info("Total: Commit: {}", counter.get());
-        counter.set(0);
     }
 
     private boolean commitWithRetry(int retryCount) {

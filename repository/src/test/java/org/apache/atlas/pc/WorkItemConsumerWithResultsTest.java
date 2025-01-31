@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,57 +28,11 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 public class WorkItemConsumerWithResultsTest {
-    private class IntegerConsumerSpy extends WorkItemConsumer<Integer> {
-        int payload = -1;
-
-        public IntegerConsumerSpy(BlockingQueue<Integer> queue) {
-            super(queue);
-        }
-
-        @Override
-        protected void doCommit() {
-            addResult(payload);
-        }
-
-        @Override
-        protected void processItem(Integer item) {
-            payload = item.intValue();
-        }
-
-        @Override
-        protected void commitDirty() {
-            super.commitDirty();
-        }
-    }
-
-    private class IntegerConsumerThrowingError extends WorkItemConsumer<Integer> {
-        int payload = -1;
-
-        public IntegerConsumerThrowingError(BlockingQueue<Integer> queue) {
-            super(queue);
-        }
-
-        @Override
-        protected void doCommit() {
-            throw new NullPointerException();
-        }
-
-        @Override
-        protected void processItem(Integer item) {
-            payload = item.intValue();
-        }
-
-        @Override
-        protected void commitDirty() {
-            super.commitDirty();
-        }
-    }
-
     @Test
     public void runningConsumerWillPopulateResults() {
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        BlockingQueue<Integer> bc = new LinkedBlockingQueue<>(5);
-        LinkedBlockingQueue<Object> results = new LinkedBlockingQueue<>();
+        CountDownLatch              countDownLatch = new CountDownLatch(1);
+        BlockingQueue<Integer>      bc             = new LinkedBlockingQueue<>(5);
+        LinkedBlockingQueue<Object> results        = new LinkedBlockingQueue<>();
 
         IntegerConsumerSpy ic = new IntegerConsumerSpy(bc);
         ic.setResults(results);
@@ -92,9 +46,9 @@ public class WorkItemConsumerWithResultsTest {
 
     @Test
     public void errorInConsumerWillDecrementCountdownLatch() {
-        CountDownLatch countDownLatch = new CountDownLatch(1);
-        BlockingQueue<Integer> bc = new LinkedBlockingQueue<>(5);
-        LinkedBlockingQueue<Object> results = new LinkedBlockingQueue<>();
+        CountDownLatch              countDownLatch = new CountDownLatch(1);
+        BlockingQueue<Integer>      bc             = new LinkedBlockingQueue<>(5);
+        LinkedBlockingQueue<Object> results        = new LinkedBlockingQueue<>();
 
         IntegerConsumerThrowingError ic = new IntegerConsumerThrowingError(bc);
         ic.setCountDownLatch(countDownLatch);
@@ -104,5 +58,51 @@ public class WorkItemConsumerWithResultsTest {
         assertTrue(bc.isEmpty());
         assertTrue(results.isEmpty());
         assertEquals(countDownLatch.getCount(), 0);
+    }
+
+    private class IntegerConsumerSpy extends WorkItemConsumer<Integer> {
+        int payload = -1;
+
+        public IntegerConsumerSpy(BlockingQueue<Integer> queue) {
+            super(queue);
+        }
+
+        @Override
+        protected void commitDirty() {
+            super.commitDirty();
+        }
+
+        @Override
+        protected void doCommit() {
+            addResult(payload);
+        }
+
+        @Override
+        protected void processItem(Integer item) {
+            payload = item.intValue();
+        }
+    }
+
+    private class IntegerConsumerThrowingError extends WorkItemConsumer<Integer> {
+        int payload = -1;
+
+        public IntegerConsumerThrowingError(BlockingQueue<Integer> queue) {
+            super(queue);
+        }
+
+        @Override
+        protected void commitDirty() {
+            super.commitDirty();
+        }
+
+        @Override
+        protected void doCommit() {
+            throw new NullPointerException();
+        }
+
+        @Override
+        protected void processItem(Integer item) {
+            payload = item.intValue();
+        }
     }
 }

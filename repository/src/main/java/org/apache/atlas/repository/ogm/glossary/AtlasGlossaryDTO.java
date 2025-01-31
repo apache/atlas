@@ -27,10 +27,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
+
+import static java.util.Objects.nonNull;
+import static java.util.Objects.requireNonNull;
 
 @Component
 public class AtlasGlossaryDTO extends AbstractGlossaryDTO<AtlasGlossary> {
@@ -43,11 +46,9 @@ public class AtlasGlossaryDTO extends AbstractGlossaryDTO<AtlasGlossary> {
 
     @Override
     public AtlasGlossary from(final AtlasEntity entity) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasGlossaryDTO.from()", entity);
-        }
+        LOG.debug("==> AtlasGlossaryDTO.from({})", entity);
 
-        Objects.requireNonNull(entity, "entity");
+        requireNonNull(entity, "entity");
 
         AtlasGlossary ret = new AtlasGlossary();
 
@@ -61,13 +62,14 @@ public class AtlasGlossaryDTO extends AbstractGlossaryDTO<AtlasGlossary> {
         ret.setAdditionalAttributes((Map) entity.getAttribute("additionalAttributes"));
 
         Object categoriesAttr = entity.getRelationshipAttribute("categories");
-        Object termsAttr = entity.getRelationshipAttribute("terms");
+        Object termsAttr      = entity.getRelationshipAttribute("terms");
 
         // Populate categories
-        if (Objects.nonNull(categoriesAttr)) {
+        if (nonNull(categoriesAttr)) {
             LOG.debug("Processing categories");
+
             if (categoriesAttr instanceof Collection) {
-                for (Object o : (Collection) categoriesAttr) {
+                for (Object o : (Collection<?>) categoriesAttr) {
                     if (o instanceof AtlasRelatedObjectId) {
                         ret.addCategory(constructRelatedCategoryId((AtlasRelatedObjectId) o));
                     }
@@ -76,10 +78,11 @@ public class AtlasGlossaryDTO extends AbstractGlossaryDTO<AtlasGlossary> {
         }
 
         // Populate terms
-        if (Objects.nonNull(termsAttr)) {
+        if (nonNull(termsAttr)) {
             LOG.debug("Processing terms");
+
             if (termsAttr instanceof Collection) {
-                for (Object o : (Collection) termsAttr) {
+                for (Object o : (Collection<?>) termsAttr) {
                     if (o instanceof AtlasRelatedObjectId) {
                         ret.addTerm(constructRelatedTermId((AtlasRelatedObjectId) o));
                     }
@@ -92,25 +95,23 @@ public class AtlasGlossaryDTO extends AbstractGlossaryDTO<AtlasGlossary> {
 
     @Override
     public AtlasGlossary from(final AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasGlossaryDTO.from()", entityWithExtInfo);
-        }
-        Objects.requireNonNull(entityWithExtInfo, "entity");
+        LOG.debug("==> AtlasGlossaryDTO.from({})", entityWithExtInfo);
+
+        requireNonNull(entityWithExtInfo, "entity");
+
         AtlasGlossary ret = from(entityWithExtInfo.getEntity());
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasGlossaryDTO.from() : {}", ret);
-        }
+        LOG.debug("<== AtlasGlossaryDTO.from() : {}", ret);
+
         return ret;
     }
 
     @Override
     public AtlasEntity toEntity(final AtlasGlossary obj) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasGlossaryDTO.toEntity()", obj);
-        }
-        Objects.requireNonNull(obj, "atlasGlossary");
-        Objects.requireNonNull(obj.getQualifiedName(), "atlasGlossary qualifiedName must be specified");
+        LOG.debug("==> AtlasGlossaryDTO.toEntity({})", obj);
+
+        requireNonNull(obj, "atlasGlossary");
+        requireNonNull(obj.getQualifiedName(), "atlasGlossary qualifiedName must be specified");
 
         AtlasEntity ret = getDefaultAtlasEntity(obj);
 
@@ -122,31 +123,31 @@ public class AtlasGlossaryDTO extends AbstractGlossaryDTO<AtlasGlossary> {
         ret.setAttribute("usage", obj.getUsage());
         ret.setAttribute("additionalAttributes", obj.getAdditionalAttributes());
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasGlossaryDTO.toEntity() : {}", ret);
-        }
+        LOG.debug("<== AtlasGlossaryDTO.toEntity() : {}", ret);
+
         return ret;
     }
 
     @Override
     public AtlasEntity.AtlasEntityWithExtInfo toEntityWithExtInfo(final AtlasGlossary obj) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasGlossaryDTO.toEntityWithExtInfo()", obj);
-        }
-        Objects.requireNonNull(obj, "atlasGlossary");
-        AtlasEntity                        entity = toEntity(obj);
-        AtlasEntity.AtlasEntityWithExtInfo ret = new AtlasEntity.AtlasEntityWithExtInfo(entity);
+        LOG.debug("==> AtlasGlossaryDTO.toEntityWithExtInfo({})", obj);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasGlossaryDTO.toEntityWithExtInfo() : {}", ret);
-        }
+        requireNonNull(obj, "atlasGlossary");
+
+        AtlasEntity                        entity = toEntity(obj);
+        AtlasEntity.AtlasEntityWithExtInfo ret    = new AtlasEntity.AtlasEntityWithExtInfo(entity);
+
+        LOG.debug("<== AtlasGlossaryDTO.toEntityWithExtInfo() : {}", ret);
+
         return ret;
     }
 
     @Override
     public Map<String, Object> getUniqueAttributes(final AtlasGlossary obj) {
         Map<String, Object> ret = new HashMap<>();
+
         ret.put("qualifiedName", obj.getQualifiedName());
+
         return ret;
     }
 }
