@@ -1887,15 +1887,23 @@ public class EntityGraphRetriever {
                 } else {
                     ret = toAtlasObjectId(referenceVertex);
                 }
+
+                if (ret == null) {
+                    LOG.warn("Found corrupted vertex with Id: {}", referenceVertex.getIdForDisplay());
+                }
             }
 
-            if (RequestContext.get().isIncludeRelationshipAttributes()) {
+            if (ret != null && RequestContext.get().isIncludeRelationshipAttributes()) {
                 String relationshipTypeName = GraphHelper.getTypeName(edge);
                 boolean isRelationshipAttribute = typeRegistry.getRelationshipDefByName(relationshipTypeName) != null;
                 if (isRelationshipAttribute) {
                     AtlasRelationship relationship = mapEdgeToAtlasRelationship(edge);
                     Map<String, Object> relationshipAttributes = mapOf("typeName", relationshipTypeName);
                     relationshipAttributes.put("attributes", relationship.getAttributes());
+
+                    if (ret.getAttributes() == null) {
+                        ret.setAttributes(new HashMap<>());
+                    }
                     ret.getAttributes().put("relationshipAttributes", relationshipAttributes);
                 }
             }
