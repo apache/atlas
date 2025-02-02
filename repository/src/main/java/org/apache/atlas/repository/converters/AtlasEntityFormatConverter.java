@@ -118,15 +118,15 @@ public class AtlasEntityFormatConverter extends AtlasStructFormatConverter {
             AtlasEntityType entityType = (AtlasEntityType) type;
 
             if (v2Obj instanceof Map) {
-                Map    v2Map    = (Map) v2Obj;
-                String idStr    = (String) v2Map.get(AtlasObjectId.KEY_GUID);
-                String typeName = type.getTypeName();
+                Map<?, ?> v2Map    = (Map<?, ?>) v2Obj;
+                String    idStr    = (String) v2Map.get(AtlasObjectId.KEY_GUID);
+                String    typeName = type.getTypeName();
 
                 if (StringUtils.isEmpty(idStr)) {
                     throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);
                 }
 
-                final Map v2Attribs = (Map) v2Map.get(ATTRIBUTES_PROPERTY_KEY);
+                final Map<String, Object> v2Attribs = (Map<String, Object>) v2Map.get(ATTRIBUTES_PROPERTY_KEY);
 
                 if (MapUtils.isEmpty(v2Attribs)) {
                     ret = new Id(idStr, 0, typeName);

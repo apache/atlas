@@ -61,22 +61,20 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     @Inject
     public AtlasBusinessMetadataDefStoreV2(AtlasTypeDefGraphStoreV2 typeDefStore, AtlasTypeRegistry typeRegistry, EntityDiscoveryService entityDiscoveryService) {
         super(typeDefStore, typeRegistry);
+
         this.entityDiscoveryService = entityDiscoveryService;
     }
 
     @Override
     public AtlasVertex preCreate(AtlasBusinessMetadataDef businessMetadataDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasBusinessMetadataDefStoreV2.preCreate({})", businessMetadataDef);
-        }
+        LOG.debug("==> AtlasBusinessMetadataDefStoreV2.preCreate({})", businessMetadataDef);
 
         validateType(businessMetadataDef);
 
         AtlasType type = typeRegistry.getType(businessMetadataDef.getName());
 
         if (type.getTypeCategory() != TypeCategory.BUSINESS_METADATA) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, businessMetadataDef.getName(),
-                    DataTypes.TypeCategory.BUSINESS_METADATA.name());
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_MATCH_FAILED, businessMetadataDef.getName(), DataTypes.TypeCategory.BUSINESS_METADATA.name());
         }
 
         AtlasAuthorizationUtils.verifyAccess(new AtlasTypeAccessRequest(AtlasPrivilege.TYPE_CREATE, businessMetadataDef), "create businessMetadata-def ", businessMetadataDef.getName());
@@ -91,25 +89,23 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         updateVertexPreCreate(businessMetadataDef, (AtlasBusinessMetadataType) type, ret);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasBusinessMetadataDefStoreV2.preCreate({}): {}", businessMetadataDef, ret);
-        }
+        LOG.debug("<== AtlasBusinessMetadataDefStoreV2.preCreate({}): {}", businessMetadataDef, ret);
 
         return ret;
     }
 
     @Override
     public AtlasBusinessMetadataDef create(AtlasBusinessMetadataDef businessMetadataDef, AtlasVertex preCreateResult) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasBusinessMetadataDefStoreV2.create({}, {})", businessMetadataDef, preCreateResult);
-        }
+        LOG.debug("==> AtlasBusinessMetadataDefStoreV2.create({}, {})", businessMetadataDef, preCreateResult);
 
         verifyAttributeTypeReadAccess(businessMetadataDef.getAttributeDefs());
 
         if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
             AtlasBusinessMetadataType businessMetadataType = typeRegistry.getBusinessMetadataTypeByName(businessMetadataDef.getName());
+
             for (AtlasStructType.AtlasAttribute attribute : businessMetadataType.getAllAttributes().values()) {
                 AtlasBusinessMetadataType.AtlasBusinessAttribute bmAttribute = (AtlasBusinessMetadataType.AtlasBusinessAttribute) attribute;
+
                 verifyTypesReadAccess(bmAttribute.getApplicableEntityTypes());
             }
         }
@@ -118,37 +114,31 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         AtlasBusinessMetadataDef ret = toBusinessMetadataDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasBusinessMetadataDefStoreV2.create({}, {}): {}", businessMetadataDef, preCreateResult, ret);
-        }
+        LOG.debug("<== AtlasBusinessMetadataDefStoreV2.create({}, {}): {}", businessMetadataDef, preCreateResult, ret);
 
         return ret;
     }
 
     @Override
     public List<AtlasBusinessMetadataDef> getAll() throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasBusinessMetadataDef.getAll()");
-        }
+        LOG.debug("==> AtlasBusinessMetadataDef.getAll()");
 
         List<AtlasBusinessMetadataDef> ret = new ArrayList<>();
 
         Iterator<AtlasVertex> vertices = typeDefStore.findTypeVerticesByCategory(DataTypes.TypeCategory.BUSINESS_METADATA);
+
         while (vertices.hasNext()) {
             ret.add(toBusinessMetadataDef(vertices.next()));
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasBusinessMetadataDefStoreV2.getAll(): count={}", ret.size());
-        }
+        LOG.debug("<== AtlasBusinessMetadataDefStoreV2.getAll(): count={}", ret.size());
+
         return ret;
     }
 
     @Override
     public AtlasBusinessMetadataDef getByName(String name) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasBusinessMetadataDefStoreV2.getByName({})", name);
-        }
+        LOG.debug("==> AtlasBusinessMetadataDefStoreV2.getByName({})", name);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByNameAndCategory(name, DataTypes.TypeCategory.BUSINESS_METADATA);
 
@@ -160,18 +150,14 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         AtlasBusinessMetadataDef ret = toBusinessMetadataDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasBusinessMetadataDefStoreV2.getByName({}): {}", name, ret);
-        }
+        LOG.debug("<== AtlasBusinessMetadataDefStoreV2.getByName({}): {}", name, ret);
 
         return ret;
     }
 
     @Override
     public AtlasBusinessMetadataDef getByGuid(String guid) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasBusinessMetadataDefStoreV2.getByGuid({})", guid);
-        }
+        LOG.debug("==> AtlasBusinessMetadataDefStoreV2.getByGuid({})", guid);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByGuidAndCategory(guid, DataTypes.TypeCategory.BUSINESS_METADATA);
 
@@ -181,46 +167,39 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         AtlasBusinessMetadataDef ret = toBusinessMetadataDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasBusinessMetadataDefStoreV2.getByGuid({}): {}", guid, ret);
-        }
+        LOG.debug("<== AtlasBusinessMetadataDefStoreV2.getByGuid({}): {}", guid, ret);
 
         return ret;
     }
 
     @Override
     public AtlasBusinessMetadataDef update(AtlasBusinessMetadataDef typeDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasBusinessMetadataDefStoreV2.update({})", typeDef);
-        }
+        LOG.debug("==> AtlasBusinessMetadataDefStoreV2.update({})", typeDef);
 
         verifyAttributeTypeReadAccess(typeDef.getAttributeDefs());
 
         if (CollectionUtils.isNotEmpty(typeDef.getAttributeDefs())) {
             AtlasBusinessMetadataType businessMetadataType = typeRegistry.getBusinessMetadataTypeByName(typeDef.getName());
+
             for (AtlasStructType.AtlasAttribute attribute : businessMetadataType.getAllAttributes().values()) {
                 AtlasBusinessMetadataType.AtlasBusinessAttribute bmAttribute = (AtlasBusinessMetadataType.AtlasBusinessAttribute) attribute;
+
                 verifyTypesReadAccess(bmAttribute.getApplicableEntityTypes());
             }
         }
 
         validateType(typeDef);
 
-        AtlasBusinessMetadataDef ret = StringUtils.isNotBlank(typeDef.getGuid()) ? updateByGuid(typeDef.getGuid(), typeDef)
-                : updateByName(typeDef.getName(), typeDef);
+        AtlasBusinessMetadataDef ret = StringUtils.isNotBlank(typeDef.getGuid()) ? updateByGuid(typeDef.getGuid(), typeDef) : updateByName(typeDef.getName(), typeDef);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasBusinessMetadataDefStoreV2.update({}): {}", typeDef, ret);
-        }
+        LOG.debug("<== AtlasBusinessMetadataDefStoreV2.update({}): {}", typeDef, ret);
 
         return ret;
     }
 
     @Override
     public AtlasBusinessMetadataDef updateByName(String name, AtlasBusinessMetadataDef typeDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasBusinessMetadataDefStoreV2.updateByName({}, {})", name, typeDef);
-        }
+        LOG.debug("==> AtlasBusinessMetadataDefStoreV2.updateByName({}, {})", name, typeDef);
 
         AtlasBusinessMetadataDef existingDef = typeRegistry.getBusinessMetadataDefByName(name);
 
@@ -244,17 +223,13 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         AtlasBusinessMetadataDef ret = toBusinessMetadataDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasBusinessMetadataDefStoreV2.updateByName({}, {}): {}", name, typeDef, ret);
-        }
+        LOG.debug("<== AtlasBusinessMetadataDefStoreV2.updateByName({}, {}): {}", name, typeDef, ret);
 
         return ret;
     }
 
     public AtlasBusinessMetadataDef updateByGuid(String guid, AtlasBusinessMetadataDef typeDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasBusinessMetadataDefStoreV2.updateByGuid({})", guid);
-        }
+        LOG.debug("==> AtlasBusinessMetadataDefStoreV2.updateByGuid({})", guid);
 
         AtlasBusinessMetadataDef existingDef = typeRegistry.getBusinessMetadataDefByGuid(guid);
 
@@ -278,17 +253,13 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         AtlasBusinessMetadataDef ret = toBusinessMetadataDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasBusinessMetadataDefStoreV2.updateByGuid({}): {}", guid, ret);
-        }
+        LOG.debug("<== AtlasBusinessMetadataDefStoreV2.updateByGuid({}): {}", guid, ret);
 
         return ret;
     }
 
     public AtlasVertex preDeleteByName(String name) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasBusinessMetadataDefStoreV2.preDeleteByName({})", name);
-        }
+        LOG.debug("==> AtlasBusinessMetadataDefStoreV2.preDeleteByName({})", name);
 
         AtlasBusinessMetadataDef existingDef = typeRegistry.getBusinessMetadataDefByName(name);
 
@@ -302,17 +273,13 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
         checkBusinessMetadataRef(existingDef.getName());
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasBusinessMetadataDefStoreV2.preDeleteByName({}): {}", name, ret);
-        }
+        LOG.debug("<== AtlasBusinessMetadataDefStoreV2.preDeleteByName({}): {}", name, ret);
 
         return ret;
     }
 
     public AtlasVertex preDeleteByGuid(String guid) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasBusinessMetadataDefStoreV2.preDeleteByGuid({})", guid);
-        }
+        LOG.debug("==> AtlasBusinessMetadataDefStoreV2.preDeleteByGuid({})", guid);
 
         AtlasBusinessMetadataDef existingDef = typeRegistry.getBusinessMetadataDefByGuid(guid);
 
@@ -324,11 +291,11 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
             throw new AtlasBaseException(AtlasErrorCode.TYPE_GUID_NOT_FOUND, guid);
         }
 
-        checkBusinessMetadataRef(existingDef.getName());
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasBusinessMetadataDefStoreV2.preDeleteByGuid({}): ret={}", guid, ret);
+        if (existingDef != null) {
+            checkBusinessMetadataRef(existingDef.getName());
         }
+
+        LOG.debug("<== AtlasBusinessMetadataDefStoreV2.preDeleteByGuid({}): ret={}", guid, ret);
 
         return ret;
     }
@@ -336,7 +303,9 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
     @Override
     public void validateType(AtlasBaseTypeDef typeDef) throws AtlasBaseException {
         super.validateType(typeDef);
+
         AtlasBusinessMetadataDef businessMetadataDef = (AtlasBusinessMetadataDef) typeDef;
+
         if (CollectionUtils.isNotEmpty(businessMetadataDef.getAttributeDefs())) {
             for (AtlasStructDef.AtlasAttributeDef attributeDef : businessMetadataDef.getAttributeDefs()) {
                 if (!isValidName(attributeDef.getName())) {
@@ -346,13 +315,11 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
         }
     }
 
-    private void updateVertexPreCreate(AtlasBusinessMetadataDef businessMetadataDef, AtlasBusinessMetadataType businessMetadataType,
-            AtlasVertex vertex) throws AtlasBaseException {
+    private void updateVertexPreCreate(AtlasBusinessMetadataDef businessMetadataDef, AtlasBusinessMetadataType businessMetadataType, AtlasVertex vertex) throws AtlasBaseException {
         AtlasStructDefStoreV2.updateVertexPreCreate(businessMetadataDef, businessMetadataType, vertex, typeDefStore);
     }
 
-    private void updateVertexPreUpdate(AtlasBusinessMetadataDef businessMetadataDef, AtlasBusinessMetadataType businessMetadataType,
-            AtlasVertex vertex) throws AtlasBaseException {
+    private void updateVertexPreUpdate(AtlasBusinessMetadataDef businessMetadataDef, AtlasBusinessMetadataType businessMetadataType, AtlasVertex vertex) throws AtlasBaseException {
         // Load up current struct definition for matching attributes
         AtlasBusinessMetadataDef currentBusinessMetadataDef = toBusinessMetadataDef(vertex);
 
@@ -364,14 +331,14 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
                 Set<String> updatedApplicableEntityTypes       = StringUtils.isBlank(updatedApplicableEntityTypesString) ? null : AtlasType.fromJson(updatedApplicableEntityTypesString, Set.class);
 
                 AtlasStructDef.AtlasAttributeDef existingAttribute = currentBusinessMetadataDef.getAttribute(attributeDef.getName());
+
                 if (existingAttribute != null) {
                     String      existingApplicableEntityTypesString = existingAttribute.getOption(ATTR_OPTION_APPLICABLE_ENTITY_TYPES);
                     Set<String> existingApplicableEntityTypes       = StringUtils.isBlank(existingApplicableEntityTypesString) ? null : AtlasType.fromJson(existingApplicableEntityTypesString, Set.class);
 
-                    if (existingApplicableEntityTypes != null) {
+                    if (existingApplicableEntityTypes != null && updatedApplicableEntityTypes != null) {
                         if (!updatedApplicableEntityTypes.containsAll(existingApplicableEntityTypes)) {
-                            throw new AtlasBaseException(AtlasErrorCode.APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED,
-                                    attributeDef.getName(), businessMetadataDef.getName());
+                            throw new AtlasBaseException(AtlasErrorCode.APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED, attributeDef.getName(), businessMetadataDef.getName());
                         }
                     }
                 }
@@ -395,6 +362,7 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
     private void checkBusinessMetadataRef(String typeName) throws AtlasBaseException {
         AtlasBusinessMetadataDef businessMetadataDef = typeRegistry.getBusinessMetadataDefByName(typeName);
+
         if (businessMetadataDef != null) {
             List<AtlasStructDef.AtlasAttributeDef> attributeDefs = businessMetadataDef.getAttributeDefs();
 
@@ -412,14 +380,17 @@ public class AtlasBusinessMetadataDefStoreV2 extends AtlasAbstractDefStoreV2<Atl
 
     private boolean isBusinessAttributePresent(String attrName, Set<String> applicableTypes) throws AtlasBaseException {
         SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
+
         criteria.setAttributeName(attrName);
         criteria.setOperator(SearchParameters.Operator.NOT_EMPTY);
 
         SearchParameters.FilterCriteria entityFilters = new SearchParameters.FilterCriteria();
+
         entityFilters.setCondition(SearchParameters.FilterCriteria.Condition.OR);
         entityFilters.setCriterion(Collections.singletonList(criteria));
 
         SearchParameters searchParameters = new SearchParameters();
+
         searchParameters.setTypeName(String.join(SearchContext.TYPENAME_DELIMITER, applicableTypes));
         searchParameters.setExcludeDeletedEntities(true);
         searchParameters.setIncludeSubClassifications(false);

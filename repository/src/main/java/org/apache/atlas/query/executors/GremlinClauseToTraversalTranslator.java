@@ -143,7 +143,7 @@ public class GremlinClauseToTraversalTranslator {
                     break;
 
                 case HAS_OPERATOR:
-                    P predicate = getPredicate(values[1], values[2], clauseValue.getRawValue());
+                    P<?> predicate = getPredicate(values[1], values[2], clauseValue.getRawValue());
 
                     traversal.has(values[0], predicate);
                     break;
@@ -256,7 +256,7 @@ public class GremlinClauseToTraversalTranslator {
             return traversal;
         }
 
-        private P getPredicate(String operator, String strRhs, Object rhs) {
+        private P<?> getPredicate(String operator, String strRhs, Object rhs) {
             switch (operator.toUpperCase()) {
                 case "LT":
                     return P.lt(rhs);

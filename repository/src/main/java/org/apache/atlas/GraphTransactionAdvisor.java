@@ -38,9 +38,11 @@ public class GraphTransactionAdvisor extends AbstractPointcutAdvisor {
         @Override
         public boolean matches(Method method, Class<?> targetClass) {
             boolean annotationPresent = method.isAnnotationPresent(GraphTransaction.class);
+
             if (annotationPresent) {
                 LOG.info("GraphTransaction intercept for {}.{}", targetClass.getName(), method.getName());
             }
+
             return annotationPresent;
         }
     };

@@ -349,7 +349,7 @@ public class EntityAuditListener implements EntityChangeListener {
                     entityAttributes.remove(attrName);
                 } else if (attribute.isOwnedRef()) {
                     if (attrValue instanceof Collection) {
-                        for (Object arrElem : (Collection) attrValue) {
+                        for (Object arrElem : (Collection<?>) attrValue) {
                             if (arrElem instanceof Referenceable) {
                                 ret = pruneAttributes(ret, (Referenceable) arrElem);
                             }
@@ -397,7 +397,7 @@ public class EntityAuditListener implements EntityChangeListener {
                     entity.set(attrName, prunedAttributes.get(attrName));
                 } else if (attribute.isOwnedRef()) {
                     if (attrValue instanceof Collection) {
-                        for (Object arrElem : (Collection) attrValue) {
+                        for (Object arrElem : (Collection<?>) attrValue) {
                             if (arrElem instanceof Referenceable) {
                                 restoreAttributes(prunedAttributes, (Referenceable) arrElem);
                             }
@@ -414,7 +414,7 @@ public class EntityAuditListener implements EntityChangeListener {
         Object obj = prunedAttributes.get(attributeEntity.getId()._getId());
 
         if (obj instanceof Map) {
-            restoreEntityAttributes(attributeEntity, (Map) obj);
+            restoreEntityAttributes(attributeEntity, (Map<String, Object>) obj);
         }
     }
 }

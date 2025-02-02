@@ -687,11 +687,11 @@ public class EntityGraphMapper {
         LOG.debug("<== removeBusinessAttributes(entityVertex={}, entityType={}, businessAttributes={}", entityVertex, entityType.getTypeName(), businessAttributes);
     }
 
-    public List mapArrayValue(AttributeMutationContext ctx, EntityMutationContext context) throws AtlasBaseException {
+    public List<?> mapArrayValue(AttributeMutationContext ctx, EntityMutationContext context) throws AtlasBaseException {
         LOG.debug("==> mapArrayValue({})", ctx);
 
         AtlasAttribute attribute           = ctx.getAttribute();
-        List           newElements         = (List) ctx.getValue();
+        List<?>        newElements         = (List<?>) ctx.getValue();
         AtlasArrayType arrType             = (AtlasArrayType) attribute.getAttributeType();
         AtlasType      elementType         = arrType.getElementType();
         boolean        isReference         = isReference(elementType);
@@ -699,13 +699,13 @@ public class EntityGraphMapper {
         AtlasAttribute inverseRefAttribute = attribute.getInverseRefAttribute();
         Cardinality    cardinality         = attribute.getAttributeDef().getCardinality();
         List<Object>   newElementsCreated  = new ArrayList<>();
-        List<Object>   allArrayElements    = null;
+        List<Object>   allArrayElements;
         List<Object>   currentElements;
 
         if (isReference && !isSoftReference) {
             currentElements = (List) getCollectionElementsUsingRelationship(ctx.getReferringVertex(), attribute);
         } else {
-            currentElements = (List) getArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty());
+            currentElements = getArrayElementsProperty(elementType, isSoftReference, ctx.getReferringVertex(), ctx.getVertexProperty());
         }
 
         if (PARTIAL_UPDATE.equals(ctx.getOp()) && attribute.getAttributeDef().isAppendOnPartialUpdate() && CollectionUtils.isNotEmpty(currentElements)) {
@@ -727,15 +727,13 @@ public class EntityGraphMapper {
         }
 
         if (cardinality == SET) {
-            newElements = (List) newElements.stream().distinct().collect(Collectors.toList());
+            newElements = newElements.stream().distinct().collect(Collectors.toList());
         }
 
         for (int index = 0; index < newElements.size(); index++) {
-            AtlasEdge existingEdge = (isSoftReference) ? null : getEdgeAt(currentElements, index, elementType);
-            AttributeMutationContext arrCtx = new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), ctx.getAttribute(), newElements.get(index),
-                    ctx.getVertexProperty(), elementType, existingEdge);
-
-            Object newEntry = mapCollectionElementsToVertex(arrCtx, context);
+            AtlasEdge                existingEdge = (isSoftReference) ? null : getEdgeAt(currentElements, index, elementType);
+            AttributeMutationContext arrCtx       = new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), ctx.getAttribute(), newElements.get(index), ctx.getVertexProperty(), elementType, existingEdge);
+            Object                   newEntry     = mapCollectionElementsToVertex(arrCtx, context);
 
             if (isReference && newEntry != null && newEntry instanceof AtlasEdge && inverseRefAttribute != null) {
                 // Update the inverse reference value.
@@ -1910,7 +1908,7 @@ public class EntityGraphMapper {
             if (ctx.getValue() instanceof AtlasStruct) {
                 structVal = (AtlasStruct) ctx.getValue();
             } else if (ctx.getValue() instanceof Map) {
-                structVal = new AtlasStruct(ctx.getAttrType().getTypeName(), (Map) AtlasTypeUtil.toStructAttributes((Map) ctx.getValue()));
+                structVal = new AtlasStruct(ctx.getAttrType().getTypeName(), AtlasTypeUtil.toStructAttributes((Map) ctx.getValue()));
             }
 
             if (structVal != null) {
@@ -2262,12 +2260,12 @@ public class EntityGraphMapper {
             if (val instanceof AtlasObjectId) {
                 ret = ((AtlasObjectId) val);
             } else if (val instanceof Map) {
-                Map map = (Map) val;
+                Map<?, ?> map = (Map<?, ?>) val;
 
                 if (map.containsKey(AtlasRelatedObjectId.KEY_RELATIONSHIP_TYPE)) {
                     ret = new AtlasRelatedObjectId(map);
                 } else {
-                    ret = new AtlasObjectId((Map) val);
+                    ret = new AtlasObjectId((Map<?, ?>) val);
                 }
 
                 if (!AtlasTypeUtil.isValid(ret)) {
@@ -2281,12 +2279,12 @@ public class EntityGraphMapper {
         return ret;
     }
 
-    private static String getGuid(Object val) throws AtlasBaseException {
+    private static String getGuid(Object val) {
         if (val != null) {
             if (val instanceof AtlasObjectId) {
                 return ((AtlasObjectId) val).getGuid();
             } else if (val instanceof Map) {
-                Object guidVal = ((Map) val).get(AtlasObjectId.KEY_GUID);
+                Object guidVal = ((Map<?, ?>) val).get(AtlasObjectId.KEY_GUID);
 
                 return guidVal != null ? guidVal.toString() : null;
             }
@@ -2322,7 +2320,7 @@ public class EntityGraphMapper {
                     objId.setGuid(assignedGuid);
                 }
             } else if (val instanceof Map) {
-                Map    mapObjId     = (Map) val;
+                Map    mapObjId     = (Map<?, ?>) val;
                 Object guidVal      = mapObjId.get(AtlasObjectId.KEY_GUID);
                 String guid         = guidVal != null ? guidVal.toString() : null;
                 String assignedGuid = null;
@@ -2354,10 +2352,10 @@ public class EntityGraphMapper {
 
             return (relationshipStruct != null) ? relationshipStruct.getAttributes() : null;
         } else if (val instanceof Map) {
-            Object relationshipStruct = ((Map) val).get(KEY_RELATIONSHIP_ATTRIBUTES);
+            Object relationshipStruct = ((Map<?, ?>) val).get(KEY_RELATIONSHIP_ATTRIBUTES);
 
             if (relationshipStruct instanceof Map) {
-                return AtlasTypeUtil.toStructAttributes(((Map) relationshipStruct));
+                return AtlasTypeUtil.toStructAttributes(((Map<?, ?>) relationshipStruct));
             }
         }
 
@@ -2368,7 +2366,7 @@ public class EntityGraphMapper {
         if (val instanceof AtlasRelatedObjectId) {
             return ((AtlasRelatedObjectId) val).getRelationshipGuid();
         } else if (val instanceof Map) {
-            Object relationshipGuidVal = ((Map) val).get(AtlasRelatedObjectId.KEY_RELATIONSHIP_GUID);
+            Object relationshipGuidVal = ((Map<?, ?>) val).get(AtlasRelatedObjectId.KEY_RELATIONSHIP_GUID);
 
             return relationshipGuidVal != null ? relationshipGuidVal.toString() : null;
         }
@@ -2389,7 +2387,7 @@ public class EntityGraphMapper {
                 typeName = objId.getTypeName();
                 guid     = objId.getGuid();
             } else if (val instanceof Map) {
-                Map map = (Map) val;
+                Map<?, ?> map = (Map<?, ?>) val;
 
                 Object typeNameVal = map.get(AtlasObjectId.KEY_TYPENAME);
                 Object guidVal     = map.get(AtlasObjectId.KEY_GUID);

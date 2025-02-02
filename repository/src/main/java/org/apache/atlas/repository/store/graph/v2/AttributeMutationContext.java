@@ -38,12 +38,12 @@ public class AttributeMutationContext {
      * The current edge(in case of updates) from the parent entity/struct to the complex attribute like struct, trait
      */
     AtlasEdge existingEdge;
-    private       EntityOperation op;
+    private final EntityOperation op;
     /**
      * Atlas Attribute
      */
 
-    private final AtlasAttribute attribute;
+    private final AtlasAttribute  attribute;
     /**
      * Overriding type for which elements are being mapped
      */

@@ -74,8 +74,8 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
             AtlasStructType structType = (AtlasStructType) type;
 
             if (v1Obj instanceof Map) {
-                final Map v1Map     = (Map) v1Obj;
-                final Map v1Attribs = (Map) v1Map.get(ATTRIBUTES_PROPERTY_KEY);
+                final Map<String, Object> v1Map     = (Map<String, Object>) v1Obj;
+                final Map<String, Object> v1Attribs = (Map<String, Object>) v1Map.get(ATTRIBUTES_PROPERTY_KEY);
 
                 if (MapUtils.isNotEmpty(v1Attribs)) {
                     ret = new AtlasStruct(type.getTypeName(), fromV1ToV2(structType, v1Attribs, converterContext));
@@ -102,11 +102,11 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
             AtlasStructType structType = (AtlasStructType) type;
 
             if (v2Obj instanceof Map) {
-                final Map v2Map = (Map) v2Obj;
-                final Map v2Attribs;
+                final Map<String, Object> v2Map = (Map<String, Object>) v2Obj;
+                final Map<String, Object> v2Attribs;
 
                 if (v2Map.containsKey(ATTRIBUTES_PROPERTY_KEY)) {
-                    v2Attribs = (Map) v2Map.get(ATTRIBUTES_PROPERTY_KEY);
+                    v2Attribs = (Map<String, Object>) v2Map.get(ATTRIBUTES_PROPERTY_KEY);
                 } else {
                     v2Attribs = v2Map;
                 }
@@ -225,7 +225,7 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
         return ret;
     }
 
-    protected Map<String, Object> fromV1ToV2(AtlasStructType structType, Map attributes, ConverterContext context) throws AtlasBaseException {
+    protected Map<String, Object> fromV1ToV2(AtlasStructType structType, Map<String, Object> attributes, ConverterContext context) throws AtlasBaseException {
         Map<String, Object> ret        = null;
         AtlasEntityType     entityType = (structType instanceof AtlasEntityType) ? ((AtlasEntityType) structType) : null;
 
@@ -273,7 +273,7 @@ public class AtlasStructFormatConverter extends AtlasAbstractFormatConverter {
 
             ret = objId.getGuid();
         } else if (obj instanceof Map) {
-            Map v2Map = (Map) obj;
+            Map<String, Object> v2Map = (Map<String, Object>) obj;
 
             ret = (String) v2Map.get(AtlasObjectId.KEY_GUID);
         } else {

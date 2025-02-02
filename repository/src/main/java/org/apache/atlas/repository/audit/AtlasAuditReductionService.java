@@ -63,14 +63,15 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.AuditReductionTas
 @Component
 public class AtlasAuditReductionService implements SchedulingConfigurer {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuditReductionService.class);
-    private static final String VALUE_DELIMITER = ",";
-    private static final String ATLAS_AUDIT_SWEEP_OUT_ENTITY_TYPES = "atlas.audit.sweep.out.entity.types";
-    private static final String ATLAS_AUDIT_SWEEP_OUT_ACTION_TYPES = "atlas.audit.sweep.out.action.types";
-    private static final String ATLAS_AUDIT_CUSTOM_AGEOUT_ENTITY_TYPES = "atlas.audit.custom.ageout.entity.types";
-    private static final String ATLAS_AUDIT_CUSTOM_AGEOUT_ACTION_TYPES = "atlas.audit.custom.ageout.action.types";
+
+    private static final String VALUE_DELIMITER                           = ",";
+    private static final String ATLAS_AUDIT_SWEEP_OUT_ENTITY_TYPES        = "atlas.audit.sweep.out.entity.types";
+    private static final String ATLAS_AUDIT_SWEEP_OUT_ACTION_TYPES        = "atlas.audit.sweep.out.action.types";
+    private static final String ATLAS_AUDIT_CUSTOM_AGEOUT_ENTITY_TYPES    = "atlas.audit.custom.ageout.entity.types";
+    private static final String ATLAS_AUDIT_CUSTOM_AGEOUT_ACTION_TYPES    = "atlas.audit.custom.ageout.action.types";
     private static final String ATLAS_AUDIT_AGING_SCHEDULER_INITIAL_DELAY = "atlas.audit.aging.scheduler.initial.delay.in.min";
-    private static final int MIN_TTL_TO_MAINTAIN         = AtlasConfiguration.MIN_TTL_TO_MAINTAIN.getInt();
-    private static final int MIN_AUDIT_COUNT_TO_MAINTAIN = AtlasConfiguration.MIN_AUDIT_COUNT_TO_MAINTAIN.getInt();
+    private static final int    MIN_TTL_TO_MAINTAIN                       = AtlasConfiguration.MIN_TTL_TO_MAINTAIN.getInt();
+    private static final int    MIN_AUDIT_COUNT_TO_MAINTAIN               = AtlasConfiguration.MIN_AUDIT_COUNT_TO_MAINTAIN.getInt();
 
     private final AtlasGraph            graph;
     private final AtlasDiscoveryService discoveryService;

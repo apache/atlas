@@ -193,7 +193,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         }
     }
 
-    public static AtlasStructDef toStructDef(AtlasVertex vertex, AtlasStructDef structDef, AtlasTypeDefGraphStoreV2 typeDefStore) throws AtlasBaseException {
+    public static AtlasStructDef toStructDef(AtlasVertex vertex, AtlasStructDef structDef, AtlasTypeDefGraphStoreV2 typeDefStore) {
         AtlasStructDef ret = (structDef != null) ? structDef : new AtlasStructDef();
 
         typeDefStore.vertexToTypeDef(vertex, ret);
@@ -275,7 +275,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
     }
 
     @VisibleForTesting
-    public static AtlasAttributeDef toAttributeDefFromJson(AtlasStructDef structDef, Map attribInfo, AtlasTypeDefGraphStoreV2 typeDefStore) throws AtlasBaseException {
+    public static AtlasAttributeDef toAttributeDefFromJson(AtlasStructDef structDef, Map<?, ?> attribInfo, AtlasTypeDefGraphStoreV2 typeDefStore) {
         AtlasAttributeDef ret = new AtlasAttributeDef();
 
         ret.setName((String) attribInfo.get("name"));
@@ -604,7 +604,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         return ret;
     }
 
-    private AtlasStructDef toStructDef(AtlasVertex vertex) throws AtlasBaseException {
+    private AtlasStructDef toStructDef(AtlasVertex vertex) {
         AtlasStructDef ret = null;
 
         if (vertex != null && typeDefStore.isTypeVertex(vertex, TypeCategory.STRUCT)) {

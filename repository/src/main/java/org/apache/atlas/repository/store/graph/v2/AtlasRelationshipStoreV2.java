@@ -186,10 +186,13 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         boolean relationshipTypeNotExists = false;
+
         if (StringUtils.isEmpty(relationship.getTypeName())) {
             relationship.setTypeName(edgeType);
+
             relationshipTypeNotExists = true;
         }
+
         validateRelationship(end1Vertex, end2Vertex, relationship);
 
         if (relationshipTypeNotExists) {
@@ -197,6 +200,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         }
 
         AtlasRelationship ret = updateRelationship(edge, relationship);
+
         sendNotifications(ret, OperationType.RELATIONSHIP_UPDATE);
 
         LOG.debug("<== update({}): {}", relationship, ret);
@@ -327,8 +331,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                 ret = getRelationshipEdge(end1Vertex, end2Vertex, relationshipLabel);
 
                 if (ret != null) {
-                    throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_EXISTS, relationship.getTypeName(),
-                            AtlasGraphUtilsV2.getIdFromVertex(end1Vertex), AtlasGraphUtilsV2.getIdFromVertex(end2Vertex));
+                    throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_ALREADY_EXISTS, relationship.getTypeName(), AtlasGraphUtilsV2.getIdFromVertex(end1Vertex), AtlasGraphUtilsV2.getIdFromVertex(end2Vertex));
                 }
             }
 
@@ -338,8 +341,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
                 AtlasEntityHeader end1Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end1Vertex);
                 AtlasEntityHeader end2Entity = entityRetriever.toAtlasEntityHeaderWithClassifications(end2Vertex);
 
-                AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD,
-                        relationship.getTypeName(), end1Entity, end2Entity));
+                AtlasAuthorizationUtils.verifyAccess(new AtlasRelationshipAccessRequest(typeRegistry, AtlasPrivilege.RELATIONSHIP_ADD, relationship.getTypeName(), end1Entity, end2Entity));
             }
 
             if (existingRelationshipCheck) {
@@ -760,6 +762,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
 
     private void sendNotifications(AtlasRelationship ret, OperationType relationshipUpdate) throws AtlasBaseException {
         entityChangeNotifier.notifyPropagatedEntities();
+
         if (NOTIFICATIONS_ENABLED) {
             entityChangeNotifier.notifyRelationshipMutation(ret, relationshipUpdate);
         }

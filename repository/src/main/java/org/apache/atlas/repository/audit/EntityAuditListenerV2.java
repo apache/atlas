@@ -77,10 +77,9 @@ import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV
 
 @Component
 public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
-    private static final Logger                                           LOG                 = LoggerFactory.getLogger(EntityAuditListenerV2.class);
-    private static final ThreadLocal<FixedBufferList<EntityAuditEventV2>> AUDIT_EVENTS_BUFFER =
-            ThreadLocal.withInitial(() -> new FixedBufferList<>(EntityAuditEventV2.class,
-                    AtlasConfiguration.NOTIFICATION_FIXED_BUFFER_ITEMS_INCREMENT_COUNT.getInt()));
+    private static final Logger LOG = LoggerFactory.getLogger(EntityAuditListenerV2.class);
+
+    private static final ThreadLocal<FixedBufferList<EntityAuditEventV2>> AUDIT_EVENTS_BUFFER = ThreadLocal.withInitial(() -> new FixedBufferList<>(EntityAuditEventV2.class, AtlasConfiguration.NOTIFICATION_FIXED_BUFFER_ITEMS_INCREMENT_COUNT.getInt()));
 
     private final EntityAuditRepository  auditRepository;
     private final AtlasTypeRegistry      typeRegistry;
@@ -98,6 +97,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
         FixedBufferList<EntityAuditEventV2> entitiesAdded = getAuditEventsList();
+
         for (AtlasEntity entity : entities) {
             createEvent(entitiesAdded.next(), entity, isImport ? ENTITY_IMPORT_CREATE : ENTITY_CREATE);
         }
@@ -148,6 +148,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
         FixedBufferList<EntityAuditEventV2> deletedEntities = getAuditEventsList();
+
         for (AtlasEntity entity : entities) {
             createEvent(deletedEntities.next(), entity, isImport ? ENTITY_IMPORT_DELETE : ENTITY_DELETE, "Deleted entity");
         }
@@ -162,6 +163,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
         FixedBufferList<EntityAuditEventV2> eventsPurged = getAuditEventsList();
+
         for (AtlasEntity entity : entities) {
             createEvent(eventsPurged.next(), entity, ENTITY_PURGE);
         }
@@ -177,6 +179,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
             FixedBufferList<EntityAuditEventV2> classificationsAdded = getAuditEventsList();
+
             for (AtlasClassification classification : classifications) {
                 if (entity.getGuid().equals(classification.getEntityGuid())) {
                     createEvent(classificationsAdded.next(), entity, CLASSIFICATION_ADD, "Added classification: " + AtlasType.toJson(classification));
@@ -327,31 +330,23 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
-    public void onRelationshipsAdded(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("New relationship(s) added to repository(" + relationships.size() + ")");
-        }
+    public void onRelationshipsAdded(List<AtlasRelationship> relationships, boolean isImport) {
+        LOG.debug("New relationship(s) added to repository({})", relationships.size());
     }
 
     @Override
-    public void onRelationshipsUpdated(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Relationship(s) updated(" + relationships.size() + ")");
-        }
+    public void onRelationshipsUpdated(List<AtlasRelationship> relationships, boolean isImport) {
+        LOG.debug("Relationship(s) updated({})", relationships.size());
     }
 
     @Override
-    public void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Relationship(s) deleted from repository(" + relationships.size() + ")");
-        }
+    public void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) {
+        LOG.debug("Relationship(s) deleted from repository({})", relationships.size());
     }
 
     @Override
-    public void onRelationshipsPurged(List<AtlasRelationship> relationships) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Relationship(s) purged from repository(" + relationships.size() + ")");
-        }
+    public void onRelationshipsPurged(List<AtlasRelationship> relationships) {
+        LOG.debug("Relationship(s) purged from repository({})", relationships.size());
     }
 
     @Override
@@ -649,7 +644,9 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
     private FixedBufferList<EntityAuditEventV2> getAuditEventsList() {
         FixedBufferList<EntityAuditEventV2> ret = AUDIT_EVENTS_BUFFER.get();
+
         ret.reset();
+
         return ret;
     }
 
@@ -657,6 +654,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         if (entity.getIsIncomplete() != null && entity.getCreateTime() != null && entity.getUpdateTime() != null) {
             return entity.getIsIncomplete() && entity.getCreateTime().getTime() == entity.getUpdateTime().getTime();
         }
+
         return false;
     }
 }

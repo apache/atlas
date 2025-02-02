@@ -88,11 +88,7 @@ public class AtlasPatchRegistry {
 
         PatchStatus status = patchNameStatusMap.get(patchId);
 
-        if (status == FAILED || status == UNKNOWN) {
-            return true;
-        }
-
-        return false;
+        return status == FAILED || status == UNKNOWN;
     }
 
     public PatchStatus getStatus(String id) {
@@ -202,7 +198,7 @@ public class AtlasPatchRegistry {
             }
 
             if (CollectionUtils.isNotEmpty(ret)) {
-                Collections.sort(ret, Comparator.comparing(AtlasPatch::getId));
+                ret.sort(Comparator.comparing(AtlasPatch::getId));
             }
         } catch (Throwable t) {
             LOG.warn("getAllPatches(): Returned empty result!");

@@ -165,6 +165,7 @@ public class GlossaryService {
             if (StringUtils.isEmpty(atlasGlossary.getName())) {
                 throw new AtlasBaseException(AtlasErrorCode.GLOSSARY_QUALIFIED_NAME_CANT_BE_DERIVED);
             }
+
             if (isNameInvalid(atlasGlossary.getName())) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_DISPLAY_NAME);
             } else {
@@ -234,7 +235,9 @@ public class GlossaryService {
                     .stream()
                     .map(id -> getAtlasGlossaryTermSkeleton(id.getTermGuid()))
                     .collect(Collectors.toList());
+
             Iterable<AtlasGlossaryTerm> glossaryTerms = dataAccess.load(termsToLoad);
+
             glossaryTerms.forEach(ret::addTermInfo);
         }
 
@@ -244,7 +247,9 @@ public class GlossaryService {
                     .stream()
                     .map(id -> getAtlasGlossaryCategorySkeleton(id.getCategoryGuid()))
                     .collect(Collectors.toList());
+
             Iterable<AtlasGlossaryCategory> glossaryCategories = dataAccess.load(categoriesToLoad);
+
             glossaryCategories.forEach(ret::addCategoryInfo);
         }
 
@@ -276,6 +281,7 @@ public class GlossaryService {
             atlasGlossary.setQualifiedName(storeObject.getQualifiedName());
 
             storeObject = dataAccess.save(atlasGlossary);
+
             setInfoForRelations(storeObject);
         }
 
@@ -295,9 +301,11 @@ public class GlossaryService {
         AtlasGlossary storeObject = dataAccess.load(getGlossarySkeleton(glossaryGuid));
 
         Set<AtlasRelatedTermHeader> terms = storeObject.getTerms();
+
         deleteTerms(storeObject, terms);
 
         Set<AtlasRelatedCategoryHeader> categories = storeObject.getCategories();
+
         deleteCategories(storeObject, categories);
 
         // Once all relations are deleted, then delete the Glossary
@@ -386,6 +394,7 @@ public class GlossaryService {
         }
 
         List<AtlasGlossaryTerm> ret = new ArrayList<>();
+
         for (AtlasGlossaryTerm glossaryTerm : glossaryTerms) {
             AtlasGlossaryTerm term = createTerm(glossaryTerm);
 
@@ -549,6 +558,7 @@ public class GlossaryService {
             // Derive the qualifiedName
             String        anchorGlossaryGuid = glossaryCategory.getAnchor().getGlossaryGuid();
             AtlasGlossary glossary           = dataAccess.load(getGlossarySkeleton(anchorGlossaryGuid));
+
             glossaryCategory.setQualifiedName(glossaryCategory.getName() + "@" + glossary.getQualifiedName());
 
             LOG.debug("Derived qualifiedName = {}", glossaryCategory.getQualifiedName());

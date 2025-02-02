@@ -90,9 +90,9 @@ public class AtlasObjectIdConverter extends AtlasAbstractFormatConverter {
 
         if (v2Obj != null) {
             if (v2Obj instanceof Map) {
-                Map    v2Map    = (Map) v2Obj;
-                String idStr    = (String) v2Map.get(AtlasObjectId.KEY_GUID);
-                String typeName = (String) v2Map.get(AtlasObjectId.KEY_TYPENAME);
+                Map<?, ?> v2Map    = (Map<?, ?>) v2Obj;
+                String    idStr    = (String) v2Map.get(AtlasObjectId.KEY_GUID);
+                String    typeName = (String) v2Map.get(AtlasObjectId.KEY_TYPENAME);
 
                 if (StringUtils.isEmpty(idStr)) {
                     throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);

@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.apache.atlas.model.tasks.AtlasTask.Status.COMPLETE;
 import static org.apache.atlas.model.tasks.AtlasTask.Status.FAILED;
@@ -88,7 +89,7 @@ public abstract class ClassificationTask extends AbstractTask {
         super.setStatus(status);
 
         try {
-            if (getTaskType() == CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE) {
+            if (Objects.equals(getTaskType(), CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE)) {
                 entityGraphMapper.removePendingTaskFromEdge((String) getTaskDef().getParameters().get(PARAM_RELATIONSHIP_EDGE_ID), getTaskGuid());
             } else {
                 entityGraphMapper.removePendingTaskFromEntity((String) getTaskDef().getParameters().get(PARAM_ENTITY_GUID), getTaskGuid());

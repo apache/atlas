@@ -440,7 +440,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         throw new IllegalArgumentException(String.format("Bad cardinality %s", cardinality));
     }
 
-    public String createVertexIndex(AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class propertyClass, AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes, boolean isStringField) {
+    public String createVertexIndex(AtlasGraphManagement management, String propertyName, UniqueKind uniqueKind, Class<?> propertyClass, AtlasCardinality cardinality, boolean createCompositeIndex, boolean createCompositeIndexWithTypeAndSuperTypes, boolean isStringField) {
         String indexFieldName = null;
 
         if (propertyName != null) {
@@ -479,7 +479,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         return indexFieldName;
     }
 
-    public void createEdgeIndex(AtlasGraphManagement management, String propertyName, Class propertyClass, AtlasCardinality cardinality, boolean createCompositeIndex) {
+    public void createEdgeIndex(AtlasGraphManagement management, String propertyName, Class<?> propertyClass, AtlasCardinality cardinality, boolean createCompositeIndex) {
         if (propertyName != null) {
             AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
 
@@ -920,7 +920,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
-    private AtlasPropertyKey createPropertyKey(AtlasGraphManagement management, String propertyName, Class propertyClass, AtlasCardinality cardinality) {
+    private AtlasPropertyKey createPropertyKey(AtlasGraphManagement management, String propertyName, Class<?> propertyClass, AtlasCardinality cardinality) {
         AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
 
         if (propertyKey == null) {
@@ -930,7 +930,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         return propertyKey;
     }
 
-    private void createVertexCentricIndex(AtlasGraphManagement management, String edgeLabel, AtlasEdgeDirection edgeDirection, String propertyName, Class propertyClass, AtlasCardinality cardinality) {
+    private void createVertexCentricIndex(AtlasGraphManagement management, String edgeLabel, AtlasEdgeDirection edgeDirection, String propertyName, Class<?> propertyClass, AtlasCardinality cardinality) {
         AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
 
         if (propertyKey == null) {
@@ -971,7 +971,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
-    private AtlasPropertyKey createFullTextIndex(AtlasGraphManagement management, String propertyName, Class propertyClass, AtlasCardinality cardinality) {
+    private AtlasPropertyKey createFullTextIndex(AtlasGraphManagement management, String propertyName, Class<?> propertyClass, AtlasCardinality cardinality) {
         AtlasPropertyKey propertyKey = management.getPropertyKey(propertyName);
 
         if (propertyKey == null) {
@@ -991,7 +991,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         return propertyKey;
     }
 
-    private void createVertexCompositeIndex(AtlasGraphManagement management, Class propertyClass, AtlasPropertyKey propertyKey, boolean enforceUniqueness) {
+    private void createVertexCompositeIndex(AtlasGraphManagement management, Class<?> propertyClass, AtlasPropertyKey propertyKey, boolean enforceUniqueness) {
         String propertyName = propertyKey.getName();
 
         LOG.debug("Creating composite index for property {} of type {}; isUnique={} ", propertyName, propertyClass.getName(), enforceUniqueness);
@@ -1005,7 +1005,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
-    private void createEdgeCompositeIndex(AtlasGraphManagement management, Class propertyClass, AtlasPropertyKey propertyKey) {
+    private void createEdgeCompositeIndex(AtlasGraphManagement management, Class<?> propertyClass, AtlasPropertyKey propertyKey) {
         String propertyName = propertyKey.getName();
 
         LOG.debug("Creating composite index for property {} of type {}", propertyName, propertyClass.getName());
@@ -1019,15 +1019,15 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
-    private void createVertexCompositeIndexWithTypeName(AtlasGraphManagement management, Class propertyClass, AtlasPropertyKey propertyKey, boolean isUnique) {
+    private void createVertexCompositeIndexWithTypeName(AtlasGraphManagement management, Class<?> propertyClass, AtlasPropertyKey propertyKey, boolean isUnique) {
         createVertexCompositeIndexWithSystemProperty(management, propertyClass, propertyKey, ENTITY_TYPE_PROPERTY_KEY, SINGLE, isUnique);
     }
 
-    private void createVertexCompositeIndexWithSuperTypeName(AtlasGraphManagement management, Class propertyClass, AtlasPropertyKey propertyKey) {
+    private void createVertexCompositeIndexWithSuperTypeName(AtlasGraphManagement management, Class<?> propertyClass, AtlasPropertyKey propertyKey) {
         createVertexCompositeIndexWithSystemProperty(management, propertyClass, propertyKey, SUPER_TYPES_PROPERTY_KEY, SET, false);
     }
 
-    private void createVertexCompositeIndexWithSystemProperty(AtlasGraphManagement management, Class propertyClass, AtlasPropertyKey propertyKey, final String systemPropertyKey, AtlasCardinality cardinality, boolean isUnique) {
+    private void createVertexCompositeIndexWithSystemProperty(AtlasGraphManagement management, Class<?> propertyClass, AtlasPropertyKey propertyKey, final String systemPropertyKey, AtlasCardinality cardinality, boolean isUnique) {
         LOG.debug("Creating composite index for property {} of type {} and {}", propertyKey.getName(), propertyClass.getName(), systemPropertyKey);
 
         AtlasPropertyKey typePropertyKey = management.getPropertyKey(systemPropertyKey);
@@ -1051,7 +1051,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
-    private boolean isIndexApplicable(Class propertyClass, AtlasCardinality cardinality) {
+    private boolean isIndexApplicable(Class<?> propertyClass, AtlasCardinality cardinality) {
         return !(INDEX_EXCLUSION_CLASSES.contains(propertyClass) || cardinality.isMany());
     }
 

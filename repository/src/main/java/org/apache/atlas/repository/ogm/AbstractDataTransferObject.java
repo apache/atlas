@@ -39,15 +39,13 @@ public abstract class AbstractDataTransferObject<T extends AtlasBaseModelObject>
     }
 
     @Override
-    public Class getObjectType() {
+    public Class<T> getObjectType() {
         return objectType;
     }
 
     @Override
     public AtlasEntityType getEntityType() {
-        AtlasEntityType ret = typeRegistry.getEntityTypeByName(entityTypeName);
-
-        return ret;
+        return typeRegistry.getEntityTypeByName(entityTypeName);
     }
 
     public void setGuid(T o, AtlasEntity entity) {

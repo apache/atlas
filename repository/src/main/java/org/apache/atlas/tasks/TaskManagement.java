@@ -216,8 +216,10 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
 
         LOG.info("TaskManagement: Started!");
+
         if (this.taskTypeFactoryMap.isEmpty()) {
             LOG.warn("Not factories registered! Pending tasks will be queued once factories are registered!");
+
             return;
         }
 

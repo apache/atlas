@@ -123,7 +123,8 @@ import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.
 
 @Component
 public class EntityDiscoveryService implements AtlasDiscoveryService {
-    private static final Logger LOG                         = LoggerFactory.getLogger(EntityDiscoveryService.class);
+    private static final Logger LOG = LoggerFactory.getLogger(EntityDiscoveryService.class);
+
     private static final String DEFAULT_SORT_ATTRIBUTE_NAME = "name";
 
     private final AtlasGraph                graph;
@@ -147,7 +148,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         this.entityRetriever          = new EntityGraphRetriever(this.graph, typeRegistry);
         this.indexer                  = indexer;
         this.searchTracker            = searchTracker;
-        this.gremlinQueryProvider     = AtlasGremlinQueryProvider.INSTANCE;
+        this.gremlinQueryProvider     = AtlasGremlinQueryProvider.getInstance();
         this.typeRegistry             = typeRegistry;
         this.maxResultSetSize         = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_MAX_RESULT_SET_SIZE, 150);
         this.maxTypesLengthInIdxQuery = ApplicationProperties.get().getInt(Constants.INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH, 512);
@@ -752,11 +753,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
         SearchContext searchContext = new SearchContext(createSearchParameters(quickSearchParameters), typeRegistry, graph, indexer.getVertexIndexKeys());
 
-        LOG.debug("Generating the search results for the query {} .", searchContext.getSearchParameters().getQuery());
+        LOG.debug("Generating the search results for the query {}", searchContext.getSearchParameters().getQuery());
 
         AtlasSearchResult searchResult = searchWithSearchContext(searchContext);
 
-        LOG.debug("Generating the aggregated metrics for the query {} .", searchContext.getSearchParameters().getQuery());
+        LOG.debug("Generating the aggregated metrics for the query {}", searchContext.getSearchParameters().getQuery());
 
         // load the facet fields and attributes.
         Set<String>                              aggregationFields     = getAggregationFields();

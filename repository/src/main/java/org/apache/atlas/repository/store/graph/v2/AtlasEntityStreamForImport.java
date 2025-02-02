@@ -74,7 +74,7 @@ public class AtlasEntityStreamForImport extends AtlasEntityStream implements Ent
     }
 
     @Override
-    public AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) throws AtlasBaseException {
+    public AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) {
         return null;
     }
 

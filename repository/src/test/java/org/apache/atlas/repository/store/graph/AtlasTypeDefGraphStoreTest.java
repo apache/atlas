@@ -307,10 +307,10 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
         List<AtlasStructDef>         structDefsToUpdate         = atlasTypesDef.getStructDefs();
         List<AtlasEntityDef>         entityDefsToUpdate         = atlasTypesDef.getEntityDefs();
 
-        AtlasTypesDef onlyEnums          = new AtlasTypesDef(enumDefsToUpdate, Collections.EMPTY_LIST, Collections.EMPTY_LIST, Collections.EMPTY_LIST);
-        AtlasTypesDef onlyStructs        = new AtlasTypesDef(Collections.EMPTY_LIST, structDefsToUpdate, Collections.EMPTY_LIST, Collections.EMPTY_LIST);
-        AtlasTypesDef onlyClassification = new AtlasTypesDef(Collections.EMPTY_LIST, Collections.EMPTY_LIST, classificationDefsToUpdate, Collections.EMPTY_LIST);
-        AtlasTypesDef onlyEntities       = new AtlasTypesDef(Collections.EMPTY_LIST, Collections.EMPTY_LIST, Collections.EMPTY_LIST, entityDefsToUpdate);
+        AtlasTypesDef onlyEnums          = new AtlasTypesDef(enumDefsToUpdate, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+        AtlasTypesDef onlyStructs        = new AtlasTypesDef(Collections.emptyList(), structDefsToUpdate, Collections.emptyList(), Collections.emptyList());
+        AtlasTypesDef onlyClassification = new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), classificationDefsToUpdate, Collections.emptyList());
+        AtlasTypesDef onlyEntities       = new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), entityDefsToUpdate);
 
         try {
             AtlasTypesDef updated = typeDefStore.updateTypesDef(onlyEnums);

@@ -52,8 +52,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -98,25 +97,30 @@ public final class TypeConverterUtil {
             TypesDef typesDef = AtlasType.fromV1Json(typeDefinition, TypesDef.class);
             if (CollectionUtils.isNotEmpty(typesDef.getEnumTypes())) {
                 List<AtlasEnumDef> enumDefs = toAtlasEnumDefs(typesDef.getEnumTypes());
+
                 ret.setEnumDefs(enumDefs);
             }
 
             if (CollectionUtils.isNotEmpty(typesDef.getStructTypes())) {
                 List<AtlasStructDef> structDefs = toAtlasStructDefs(typesDef.getStructTypes());
+
                 ret.setStructDefs(structDefs);
             }
 
             if (CollectionUtils.isNotEmpty(typesDef.getClassTypes())) {
                 List<AtlasEntityDef> entityDefs = toAtlasEntityDefs(typesDef.getClassTypes(), registry);
+
                 ret.setEntityDefs(entityDefs);
             }
 
             if (CollectionUtils.isNotEmpty(typesDef.getTraitTypes())) {
                 List<AtlasClassificationDef> classificationDefs = toAtlasClassificationDefs(typesDef.getTraitTypes());
+
                 ret.setClassificationDefs(classificationDefs);
             }
         } catch (Exception e) {
             LOG.error("Invalid type definition = {}", typeDefinition, e);
+
             throw new AtlasBaseException(INVALID_TYPE_DEFINITION, typeDefinition);
         }
 
@@ -124,7 +128,8 @@ public final class TypeConverterUtil {
     }
 
     public static List<String> getTypeNames(List<AtlasTypeDefHeader> atlasTypesDefs) {
-        List<String> ret = new ArrayList<String>();
+        List<String> ret = new ArrayList<>();
+
         if (CollectionUtils.isNotEmpty(atlasTypesDefs)) {
             for (AtlasTypeDefHeader atlasTypesDef : atlasTypesDefs) {
                 ret.add(atlasTypesDef.getName());
@@ -136,26 +141,22 @@ public final class TypeConverterUtil {
 
     public static List<String> getTypeNames(AtlasTypesDef typesDef) {
         List<AtlasTypeDefHeader> atlasTypesDefs = AtlasTypeUtil.toTypeDefHeader(typesDef);
+
         return getTypeNames(atlasTypesDefs);
     }
 
     public static AtlasAttributeDef toAtlasAttributeDef(final AttributeDefinition attrDefinition) {
-        AtlasAttributeDef ret = new AtlasAttributeDef(attrDefinition.getName(),
-                attrDefinition.getDataTypeName(),
-                attrDefinition.getSearchWeight(),
-                attrDefinition.getIndexType());
+        AtlasAttributeDef ret = new AtlasAttributeDef(attrDefinition.getName(), attrDefinition.getDataTypeName(), attrDefinition.getSearchWeight(), attrDefinition.getIndexType());
 
         ret.setIsIndexable(attrDefinition.getIsIndexable());
         ret.setIsUnique(attrDefinition.getIsUnique());
+
         if (attrDefinition.getIsComposite()) {
             ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_OWNED_REF));
         }
 
         if (StringUtils.isNotBlank(attrDefinition.getReverseAttributeName())) {
-            ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_INVERSE_REF,
-                    new HashMap<String, Object>() {{
-                        put(CONSTRAINT_PARAM_ATTRIBUTE, attrDefinition.getReverseAttributeName());
-                    }}));
+            ret.addConstraint(new AtlasConstraintDef(CONSTRAINT_TYPE_INVERSE_REF, Collections.singletonMap(CONSTRAINT_PARAM_ATTRIBUTE, attrDefinition.getReverseAttributeName())));
         }
 
         // Multiplicity attribute mapping
@@ -198,9 +199,7 @@ public final class TypeConverterUtil {
 
         EnumTypeDefinition enumTypeDef = new EnumTypeDefinition(enumName, enumDesc, enumVersion, enumValues);
 
-        TypesDef ret = new TypesDef(Arrays.asList(enumTypeDef), null, null, null);
-
-        return ret;
+        return new TypesDef(Collections.singletonList(enumTypeDef), null, null, null);
     }
 
     private static TypesDef structToTypesDef(AtlasStructType structType, AtlasTypeRegistry registry) {
@@ -211,9 +210,7 @@ public final class TypeConverterUtil {
 
         StructTypeDefinition structTypeDef = new StructTypeDefinition(typeName, typeDesc, typeVersion, attributes);
 
-        TypesDef ret = new TypesDef(null, Arrays.asList(structTypeDef), null, null);
-
-        return ret;
+        return new TypesDef(null, Collections.singletonList(structTypeDef), null, null);
     }
 
     private static TypesDef entityToTypesDef(AtlasEntityType entityType, AtlasTypeRegistry registry) {
@@ -225,9 +222,7 @@ public final class TypeConverterUtil {
 
         ClassTypeDefinition classTypeDef = new ClassTypeDefinition(typeName, typeDesc, typeVersion, attributes, superTypes);
 
-        TypesDef ret = new TypesDef(null, null, null, Arrays.asList(classTypeDef));
-
-        return ret;
+        return new TypesDef(null, null, null, Collections.singletonList(classTypeDef));
     }
 
     private static TypesDef classificationToTypesDef(AtlasClassificationType classificationType, AtlasTypeRegistry registry) {
@@ -239,16 +234,15 @@ public final class TypeConverterUtil {
 
         TraitTypeDefinition traitTypeDef = new TraitTypeDefinition(typeName, typeDesc, typeVersion, attributes, superTypes);
 
-        TypesDef ret = new TypesDef(null, null, Arrays.asList(traitTypeDef), null);
-
-        return ret;
+        return new TypesDef(null, null, Collections.singletonList(traitTypeDef), null);
     }
 
     private static List<AtlasEnumDef> toAtlasEnumDefs(List<EnumTypeDefinition> enumTypeDefinitions) {
-        List<AtlasEnumDef> ret = new ArrayList<AtlasEnumDef>();
+        List<AtlasEnumDef> ret = new ArrayList<>();
 
         for (EnumTypeDefinition enumType : enumTypeDefinitions) {
             AtlasEnumDef enumDef = new AtlasEnumDef();
+
             enumDef.setName(enumType.getName());
             enumDef.setDescription(enumType.getDescription());
             enumDef.setTypeVersion(enumType.getVersion());
@@ -264,7 +258,7 @@ public final class TypeConverterUtil {
         List<AtlasStructDef> ret = new ArrayList<>();
 
         for (StructTypeDefinition structType : structTypeDefinitions) {
-            List<AtlasAttributeDef> attrDefs = new ArrayList<AtlasAttributeDef>();
+            List<AtlasAttributeDef> attrDefs = new ArrayList<>();
 
             if (CollectionUtils.isNotEmpty(structType.getAttributeDefinitions())) {
                 for (AttributeDefinition attrDefinition : structType.getAttributeDefinitions()) {
@@ -284,7 +278,7 @@ public final class TypeConverterUtil {
         List<AtlasClassificationDef> ret = new ArrayList<>();
 
         for (TraitTypeDefinition traitType : traitTypeDefinitions) {
-            List<AtlasAttributeDef> attrDefs = new ArrayList<AtlasAttributeDef>();
+            List<AtlasAttributeDef> attrDefs = new ArrayList<>();
 
             if (CollectionUtils.isNotEmpty(traitType.getAttributeDefinitions())) {
                 for (AttributeDefinition attrDefinition : traitType.getAttributeDefinitions()) {
@@ -304,11 +298,12 @@ public final class TypeConverterUtil {
         List<AtlasEntityDef> ret = new ArrayList<>();
 
         for (ClassTypeDefinition classType : classTypeDefinitions) {
-            List<AtlasAttributeDef> attrDefs = new ArrayList<AtlasAttributeDef>();
+            List<AtlasAttributeDef> attrDefs = new ArrayList<>();
 
             if (CollectionUtils.isNotEmpty(classType.getAttributeDefinitions())) {
                 for (AttributeDefinition oldAttr : classType.getAttributeDefinitions()) {
                     AtlasAttributeDef newAttr = toAtlasAttributeDef(oldAttr);
+
                     attrDefs.add(newAttr);
                 }
             }
@@ -323,9 +318,11 @@ public final class TypeConverterUtil {
 
     private static String getArrayTypeName(String attrType) {
         String ret = null;
+
         if (isArrayType(attrType)) {
             Set<String> typeNames = AtlasTypeUtil.getReferencedTypeNames(attrType);
-            if (typeNames.size() > 0) {
+
+            if (!typeNames.isEmpty()) {
                 ret = typeNames.iterator().next();
             }
         }
@@ -344,7 +341,7 @@ public final class TypeConverterUtil {
     }
 
     private static List<EnumValue> getEnumValues(List<AtlasEnumElementDef> enumDefs) {
-        List<EnumValue> ret = new ArrayList<EnumValue>();
+        List<EnumValue> ret = new ArrayList<>();
 
         if (CollectionUtils.isNotEmpty(enumDefs)) {
             for (AtlasEnumElementDef enumDef : enumDefs) {

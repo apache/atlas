@@ -87,6 +87,7 @@ public class ZipFileMigrationImporter implements Runnable {
                 MigrationImportStatus migrationImportStatus = getCreateMigrationStatus(fileToImport, streamSize);
 
                 performImport(fileToImport, streamSize, Long.toString(migrationImportStatus.getCurrentIndex()));
+
                 dataMigrationStatusService.setStatus("DONE");
 
                 moveZipFileToArchiveDir(fileToImport);
@@ -273,6 +274,7 @@ public class ZipFileMigrationImporter implements Runnable {
                     getUserNameFromEnvironment(), InetAddress.getLocalHost().getHostName(), InetAddress.getLocalHost().getHostAddress());
         } catch (Exception ex) {
             LOG.error("Migration Import: Error loading zip for migration!", ex);
+
             throw new AtlasBaseException(ex);
         } finally {
             LOG.info("Migration Import: {}: Done!", fileToImport);

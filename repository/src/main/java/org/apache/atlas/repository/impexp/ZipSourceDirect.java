@@ -47,20 +47,22 @@ import java.util.zip.ZipInputStream;
 import static org.apache.atlas.AtlasErrorCode.IMPORT_ATTEMPTING_EMPTY_ZIP;
 
 public class ZipSourceDirect implements EntityImportStream {
-    private static final Logger LOG                = LoggerFactory.getLogger(ZipSourceDirect.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ZipSourceDirect.class);
+
     private static final String ZIP_ENTRY_ENTITIES = "entities.json";
 
-    private final ZipInputStream zipInputStream;
-    EntitiesArrayParser entitiesArrayParser;
-    private       int            currentPosition;
-    private ImportTransforms        importTransform;
-    private List<BaseEntityHandler> entityHandlers;
-    private AtlasTypesDef           typesDef;
-    private int                     streamSize = 1;
+    private final ZipInputStream          zipInputStream;
+    private       EntitiesArrayParser     entitiesArrayParser;
+    private       int                     currentPosition;
+    private       ImportTransforms        importTransform;
+    private       List<BaseEntityHandler> entityHandlers;
+    private       AtlasTypesDef           typesDef;
+    private final int                     streamSize;
 
     public ZipSourceDirect(InputStream inputStream, int streamSize) throws IOException, AtlasBaseException {
         this.zipInputStream = new ZipInputStream(inputStream);
         this.streamSize     = streamSize;
+
         prepareStreamForFetch();
 
         if (this.streamSize == 1) {
@@ -124,11 +126,13 @@ public class ZipSourceDirect implements EntityImportStream {
         try {
             if (hasNext()) {
                 String json = moveNext();
+
                 return getEntityWithExtInfo(json);
             }
         } catch (AtlasBaseException e) {
             LOG.error("getNextEntityWithExtInfo", e);
         }
+
         return null;
     }
 
@@ -227,12 +231,14 @@ public class ZipSourceDirect implements EntityImportStream {
 
     private AtlasEntity getEntity(String guid) throws AtlasBaseException {
         AtlasEntity.AtlasEntityWithExtInfo extInfo = getEntityWithExtInfo(guid);
+
         return (extInfo != null) ? extInfo.getEntity() : null;
     }
 
     private String moveNext() {
         try {
             moveNextEntry();
+
             return entitiesArrayParser.next();
         } catch (IOException e) {
             LOG.error("moveNext failed!", e);
@@ -247,13 +253,16 @@ public class ZipSourceDirect implements EntityImportStream {
 
     private void prepareStreamForFetch() throws AtlasBaseException, IOException {
         ZipEntry zipEntryNext = zipInputStream.getNextEntry();
+
         if (zipEntryNext == null) {
             throw new AtlasBaseException(IMPORT_ATTEMPTING_EMPTY_ZIP, "Attempting to import empty ZIP.");
         }
 
         if (zipEntryNext.getName().equals(ZipExportFileNames.ATLAS_TYPESDEF_NAME.toEntryFileName())) {
             String json = getJsonPayloadFromZipEntryStream(this.zipInputStream);
+
             this.typesDef = AtlasType.fromJson(json, AtlasTypesDef.class);
+
             zipEntryNext  = zipInputStream.getNextEntry();
         }
 
@@ -266,12 +275,14 @@ public class ZipSourceDirect implements EntityImportStream {
 
     private String getJsonPayloadFromZipEntryStream(ZipInputStream zipInputStream) {
         ByteArrayOutputStream bos = new ByteArrayOutputStream();
+
         try {
             IOUtils.copy(zipInputStream, bos);
         } catch (IOException e) {
             LOG.error("Streaming copying failed!", e);
             return null;
         }
+
         return bos.toString();
     }
 
@@ -291,14 +302,17 @@ public class ZipSourceDirect implements EntityImportStream {
 
         public String next() throws IOException {
             JsonToken jsonToken = parseNext();
+
             if (!hasNext) {
                 return null;
             }
 
-            if (jsonToken != null && jsonToken == JsonToken.START_OBJECT) {
+            if (jsonToken == JsonToken.START_OBJECT) {
                 JsonNode node = parser.readValueAsTree();
+
                 return validate(node.toString());
             }
+
             return null;
         }
 
@@ -316,14 +330,18 @@ public class ZipSourceDirect implements EntityImportStream {
 
         private JsonToken parseNext() throws IOException {
             JsonToken jsonToken = this.parser.nextToken();
+
             hasNext = (jsonToken != null) && (jsonToken != JsonToken.END_ARRAY);
+
             return jsonToken;
         }
 
         private String validate(String payload) {
             if (payload.equals(EMPTY_OBJECT)) {
                 hasNext = false;
+
                 close();
+
                 return null;
             }
 

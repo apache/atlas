@@ -48,14 +48,14 @@ import java.util.concurrent.locks.ReentrantLock;
 public class GraphTransactionInterceptor implements MethodInterceptor {
     private static final Logger LOG = LoggerFactory.getLogger(GraphTransactionInterceptor.class);
 
-    private static final ObjectUpdateSynchronizer               OBJECT_UPDATE_SYNCHRONIZER = new ObjectUpdateSynchronizer();
-    private static final ThreadLocal<List<PostTransactionHook>> postTransactionHooks       = new ThreadLocal<>();
-    private static final ThreadLocal<Boolean>                   isTxnOpen                  = ThreadLocal.withInitial(() -> Boolean.FALSE);
-    private static final ThreadLocal<Boolean>                   innerFailure               = ThreadLocal.withInitial(() -> Boolean.FALSE);
-    private static final ThreadLocal<Map<String, AtlasVertex>>  guidVertexCache            = ThreadLocal.withInitial(HashMap::new);
-    private static final ThreadLocal<Map<Object, String>>       vertexGuidCache            = ThreadLocal.withInitial(HashMap::new);
-    private static final ThreadLocal<Map<Object, AtlasEntity.Status>> vertexStateCache     = ThreadLocal.withInitial(HashMap::new);
-    private static final ThreadLocal<Map<Object, AtlasEntity.Status>> edgeStateCache       = ThreadLocal.withInitial(HashMap::new);
+    private static final ObjectUpdateSynchronizer                     OBJECT_UPDATE_SYNCHRONIZER = new ObjectUpdateSynchronizer();
+    private static final ThreadLocal<List<PostTransactionHook>>       postTransactionHooks       = new ThreadLocal<>();
+    private static final ThreadLocal<Boolean>                         isTxnOpen                  = ThreadLocal.withInitial(() -> Boolean.FALSE);
+    private static final ThreadLocal<Boolean>                         innerFailure               = ThreadLocal.withInitial(() -> Boolean.FALSE);
+    private static final ThreadLocal<Map<String, AtlasVertex>>        guidVertexCache            = ThreadLocal.withInitial(HashMap::new);
+    private static final ThreadLocal<Map<Object, String>>             vertexGuidCache            = ThreadLocal.withInitial(HashMap::new);
+    private static final ThreadLocal<Map<Object, AtlasEntity.Status>> vertexStateCache           = ThreadLocal.withInitial(HashMap::new);
+    private static final ThreadLocal<Map<Object, AtlasEntity.Status>> edgeStateCache             = ThreadLocal.withInitial(HashMap::new);
 
     private final AtlasGraph     graph;
     private final TaskManagement taskManagement;
@@ -167,12 +167,14 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
 
     @Override
     public Object invoke(MethodInvocation invocation) throws Throwable {
-        Method  method            = invocation.getMethod();
-        String  invokingClass     = method.getDeclaringClass().getSimpleName();
-        String  invokedMethodName = method.getName();
-        boolean logRollback       = method.getAnnotation(GraphTransaction.class) == null || method.getAnnotation(GraphTransaction.class).logRollback();
+        Method           method            = invocation.getMethod();
+        String           invokingClass     = method.getDeclaringClass().getSimpleName();
+        String           invokedMethodName = method.getName();
+        GraphTransaction annotation        = method.getAnnotation(GraphTransaction.class);
+        boolean          logRollback       = annotation == null || annotation.logRollback();
 
         boolean isInnerTxn = isTxnOpen.get();
+
         // Outermost txn marks any subsequent transaction as inner
         isTxnOpen.set(Boolean.TRUE);
 
@@ -206,6 +208,7 @@ public class GraphTransactionInterceptor implements MethodInterceptor {
                 } else {
                     doRollback(logRollback, t);
                 }
+
                 throw t;
             }
         } finally {

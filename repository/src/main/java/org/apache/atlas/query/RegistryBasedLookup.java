@@ -66,14 +66,19 @@ class RegistryBasedLookup implements Lookup {
     public AtlasType getType(String typeName) throws AtlasBaseException {
         AtlasType ret;
 
-        if (typeName.equals(ALL_CLASSIFICATIONS)) {
-            ret = MATCH_ALL_CLASSIFIED;
-        } else if (typeName.equals(NO_CLASSIFICATIONS)) {
-            ret = MATCH_ALL_NOT_CLASSIFIED;
-        } else if (typeName.equals(ALL_ENTITY_TYPES)) {
-            ret = MATCH_ALL_ENTITY_TYPES;
-        } else {
-            ret = typeRegistry.getType(typeName);
+        switch (typeName) {
+            case ALL_CLASSIFICATIONS:
+                ret = MATCH_ALL_CLASSIFIED;
+                break;
+            case NO_CLASSIFICATIONS:
+                ret = MATCH_ALL_NOT_CLASSIFIED;
+                break;
+            case ALL_ENTITY_TYPES:
+                ret = MATCH_ALL_ENTITY_TYPES;
+                break;
+            default:
+                ret = typeRegistry.getType(typeName);
+                break;
         }
 
         return ret;
@@ -296,7 +301,7 @@ class RegistryBasedLookup implements Lookup {
     }
 
     private boolean isPrimitiveUsingTypeCategory(TypeCategory tc) {
-        return ((tc != null) && (tc == TypeCategory.PRIMITIVE || tc == TypeCategory.ENUM));
+        return (tc == TypeCategory.PRIMITIVE || tc == TypeCategory.ENUM);
     }
 
     private boolean isTraitType(AtlasType t) {
@@ -312,31 +317,25 @@ class RegistryBasedLookup implements Lookup {
     }
 
     private AtlasStructType.AtlasAttribute getAttribute(AtlasStructType type, String attrName) {
-        AtlasStructType.AtlasAttribute ret = null;
-
         if (type == null) {
-            return ret;
-        }
-
-        if (type instanceof AtlasEntityType) {
+            return null;
+        } else if (type instanceof AtlasEntityType) {
             AtlasEntityType entityType = (AtlasEntityType) type;
 
-            ret = entityType.getAttribute(attrName);
+            AtlasStructType.AtlasAttribute ret = entityType.getAttribute(attrName);
 
             if (ret == null) {
                 ret = entityType.getRelationshipAttribute(attrName, null);
             }
 
             return ret;
-        }
-
-        if (type instanceof AtlasClassificationType) {
+        } else if (type instanceof AtlasClassificationType) {
             AtlasClassificationType classificationType = (AtlasClassificationType) type;
 
             return classificationType.getAttribute(attrName);
         }
 
-        return ret;
+        return null;
     }
 
     private AtlasType getAttributeType(AtlasStructType entityType, String attrName) {

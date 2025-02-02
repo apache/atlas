@@ -91,7 +91,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
 
     @VisibleForTesting
     public AtlasVertex findTypeVertexByName(String typeName) {
-        Iterator results = atlasGraph.query().has(VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE)
+        Iterator<?> results = atlasGraph.query().has(VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE)
                 .has(Constants.TYPENAME_PROPERTY_KEY, typeName)
                 .vertices().iterator();
 
@@ -195,7 +195,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
     }
 
     AtlasVertex findTypeVertexByNameAndCategory(String typeName, TypeCategory category) {
-        Iterator results = atlasGraph.query().has(VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE)
+        Iterator<?> results = atlasGraph.query().has(VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE)
                 .has(Constants.TYPENAME_PROPERTY_KEY, typeName)
                 .has(TYPE_CATEGORY_PROPERTY_KEY, category)
                 .vertices().iterator();

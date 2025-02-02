@@ -26,7 +26,7 @@ import java.util.Set;
 
 @AtlasService
 public class SearchTracker {
-    private Map<String, SearchContext> activeSearches = new HashMap<>();
+    private final Map<String, SearchContext> activeSearches = new HashMap<>();
 
     /**
      * @param context

@@ -252,7 +252,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         }
 
         if (Map.class.isAssignableFrom(val.getClass())) {
-            for (Map.Entry e : (Iterable<Map.Entry>) ((Map) val).entrySet()) {
+            for (Map.Entry<?, ?> e : ((Map<?, ?>) val).entrySet()) {
                 visitAttribute(keyType, e.getKey());
                 visitAttribute(valueType, e.getValue());
             }
@@ -264,14 +264,14 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
             return;
         }
 
-        Iterator it = null;
+        Iterator<?> it = null;
 
         if (val instanceof Collection) {
-            it = ((Collection) val).iterator();
+            it = ((Collection<?>) val).iterator();
         } else if (val instanceof Iterable) {
-            it = ((Iterable) val).iterator();
+            it = ((Iterable<?>) val).iterator();
         } else if (val instanceof Iterator) {
-            it = (Iterator) val;
+            it = (Iterator<?>) val;
         }
 
         if (it != null) {
@@ -292,7 +292,7 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         if (val instanceof AtlasStruct) {
             struct = (AtlasStruct) val;
         } else if (val instanceof Map) {
-            Map attributes = AtlasTypeUtil.toStructAttributes((Map) val);
+            Map<String, Object> attributes = AtlasTypeUtil.toStructAttributes((Map) val);
 
             struct = new AtlasStruct(structType.getTypeName(), attributes);
         } else {

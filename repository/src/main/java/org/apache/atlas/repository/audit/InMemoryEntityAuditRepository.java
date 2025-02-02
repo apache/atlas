@@ -18,10 +18,8 @@
 
 package org.apache.atlas.repository.audit;
 
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.apache.commons.collections.CollectionUtils;
@@ -46,16 +44,16 @@ import java.util.TreeMap;
 @Component
 @ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl")
 public class InMemoryEntityAuditRepository implements EntityAuditRepository {
-    private TreeMap<String, EntityAuditEvent>   auditEvents   = new TreeMap<>();
-    private TreeMap<String, EntityAuditEventV2> auditEventsV2 = new TreeMap<>();
+    private final TreeMap<String, EntityAuditEvent>   auditEvents   = new TreeMap<>();
+    private final TreeMap<String, EntityAuditEventV2> auditEventsV2 = new TreeMap<>();
 
     @Override
-    public void putEventsV1(EntityAuditEvent... events) throws AtlasException {
+    public void putEventsV1(EntityAuditEvent... events) {
         putEventsV1(Arrays.asList(events));
     }
 
     @Override
-    public synchronized void putEventsV1(List<EntityAuditEvent> events) throws AtlasException {
+    public synchronized void putEventsV1(List<EntityAuditEvent> events) {
         for (EntityAuditEvent event : events) {
             String rowKey = event.getEntityId() + (Long.MAX_VALUE - event.getTimestamp());
             event.setEventKey(rowKey);
@@ -116,12 +114,12 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
     }
 
     @Override
-    public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException {
+    public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) {
         return listEventsV2(entityId, auditAction, sortByColumn, sortOrderDesc, 0, offset, limit, true, true);
     }
 
     @Override
-    public List<EntityAuditEventV2> deleteEventsV2(String entityId, Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions, short auditCount, int ttlInDays, boolean createEventsAgeoutAllowed, AtlasAuditAgingType auditAgingType) throws AtlasBaseException, AtlasException {
+    public List<EntityAuditEventV2> deleteEventsV2(String entityId, Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions, short auditCount, int ttlInDays, boolean createEventsAgeoutAllowed, AtlasAuditAgingType auditAgingType) {
         List<EntityAuditEventV2> events = new ArrayList<>();
         if (CollectionUtils.isEmpty(entityAuditActions)) {
             events = listEventsV2(entityId, null, "timestamp", true, ttlInDays, auditCount, (short) -1, true, createEventsAgeoutAllowed);
@@ -137,7 +135,7 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
     }
 
     @Override
-    public Set<String> getEntitiesWithTagChanges(long fromTimestamp, long toTimestamp) throws AtlasBaseException {
+    public Set<String> getEntitiesWithTagChanges(long fromTimestamp, long toTimestamp) {
         Set<String> events = new HashSet<>();
 
         for (EntityAuditEventV2 event : auditEventsV2.values()) {
@@ -171,7 +169,7 @@ public class InMemoryEntityAuditRepository implements EntityAuditRepository {
         return null;
     }
 
-    private List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int ttlInDays, int offset, short limit, boolean allowMaxResults, boolean createEventsAgeoutAllowed) throws AtlasBaseException {
+    private List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int ttlInDays, int offset, short limit, boolean allowMaxResults, boolean createEventsAgeoutAllowed) {
         List<EntityAuditEventV2>              events = new ArrayList<>();
         SortedMap<String, EntityAuditEventV2> subMap = auditEventsV2.tailMap(entityId);
         for (EntityAuditEventV2 event : subMap.values()) {

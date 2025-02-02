@@ -1231,7 +1231,7 @@ public abstract class SearchProcessor {
         String bindName  = "__bind_" + queryBindings.size();
         Object bindValue = attribute.getAttributeType().getNormalizedValue(attrValue);
 
-        AtlasGremlinQueryProvider queryProvider = AtlasGremlinQueryProvider.INSTANCE;
+        AtlasGremlinQueryProvider queryProvider = AtlasGremlinQueryProvider.getInstance();
         String                    queryTemplate = null;
 
         switch (operator) {

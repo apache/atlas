@@ -138,7 +138,7 @@ public class SearchAggregatorImpl implements SearchAggregator {
         private static final String SERVICE_TYPE = "ServiceType";
 
         private final AtlasTypeRegistry                  typeRegistry;
-        private final List<AtlasAggregationEntry>        entries = new ArrayList<>();
+        private final List<AtlasAggregationEntry>        entries               = new ArrayList<>();
         private final Map<String, AtlasAggregationEntry> entityType2MetricsMap = new HashMap<>();
 
         public ServiceTypeAggregator(AtlasTypeRegistry typeRegistry) {

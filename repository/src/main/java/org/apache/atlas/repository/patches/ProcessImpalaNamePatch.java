@@ -49,10 +49,12 @@ public class ProcessImpalaNamePatch extends AtlasPatchHandler {
 
     @Override
     public void apply() throws AtlasBaseException {
-        if (AtlasConfiguration.PROCESS_IMPALA_NAME_UPDATE_PATCH.getBoolean() == false) {
+        if (!AtlasConfiguration.PROCESS_IMPALA_NAME_UPDATE_PATCH.getBoolean()) {
             LOG.info("ProcessImpalaNamePatch: Skipped, since not enabled!");
+
             return;
         }
+
         ConcurrentPatchProcessor patchProcessor = new ProcessImpalaNamePatchProcessor(context);
 
         patchProcessor.apply();
@@ -101,20 +103,17 @@ public class ProcessImpalaNamePatch extends AtlasPatchHandler {
 
         @Override
         protected void processVertexItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("processItem(typeName={}, vertexId={})", typeName, vertexId);
-            }
+            LOG.debug("processItem(typeName={}, vertexId={})", typeName, vertexId);
 
             try {
                 String qualifiedName = AtlasGraphUtilsV2.getProperty(vertex, entityType.getVertexPropertyName(ATTR_NAME_QUALIFIED_NAME), String.class);
+
                 AtlasGraphUtilsV2.setEncodedProperty(vertex, entityType.getVertexPropertyName(ATTR_NAME_NAME), qualifiedName);
             } catch (AtlasBaseException e) {
                 LOG.error("Error updating: {}", vertexId);
             }
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("processItem(typeName={}, vertexId={}): Done!", typeName, vertexId);
-            }
+            LOG.debug("processItem(typeName={}, vertexId={}): Done!", typeName, vertexId);
         }
     }
 }

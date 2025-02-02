@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -345,9 +346,9 @@ public class ClassificationAssociator {
                 return list;
             }
 
-            return list.stream().filter(x -> x != null &&
-                    (StringUtils.isEmpty(guid) || StringUtils.isEmpty(x.getEntityGuid()))
-                    || x.getEntityGuid().equals(guid)).collect(Collectors.toList());
+            final boolean isEmptyGuid = StringUtils.isEmpty(guid);
+
+            return list.stream().filter(Objects::nonNull).filter(x -> isEmptyGuid || StringUtils.isEmpty(x.getEntityGuid()) || x.getEntityGuid().equals(guid)).collect(Collectors.toList());
         }
 
         private V findFrom(List<V> reference, V check) {

@@ -57,9 +57,9 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
         String            queryStr     = gremlinQuery.queryStr();
         Object            result       = graph.executeGremlinScript(queryStr, false);
 
-        if (result instanceof List && CollectionUtils.isNotEmpty((List) result)) {
-            List   queryResult  = (List) result;
-            Object firstElement = queryResult.get(0);
+        if (result instanceof List && CollectionUtils.isNotEmpty((List<?>) result)) {
+            List<?> queryResult  = (List<?>) result;
+            Object  firstElement = queryResult.get(0);
 
             if (firstElement instanceof AtlasVertex) {
                 for (Object element : queryResult) {
@@ -74,13 +74,13 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
             } else if (firstElement instanceof Map) {
                 for (Object element : queryResult) {
                     if (element instanceof Map) {
-                        Map map = (Map) element;
+                        Map<?, ?> map = (Map<?, ?>) element;
 
                         for (Object key : map.keySet()) {
                             Object value = map.get(key);
 
-                            if (value instanceof List && CollectionUtils.isNotEmpty((List) value)) {
-                                for (Object o : (List) value) {
+                            if (value instanceof List && CollectionUtils.isNotEmpty((List<?>) value)) {
+                                for (Object o : (List<?>) value) {
                                     if (o instanceof AtlasVertex) {
                                         ret.addEntity(entityRetriever.toAtlasEntityHeader((AtlasVertex) o));
                                     }
@@ -106,7 +106,7 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
         return gremlinQuery;
     }
 
-    private AttributeSearchResult toAttributesResult(List results, GremlinQuery query) {
+    private AttributeSearchResult toAttributesResult(List<?> results, GremlinQuery query) {
         AttributeSearchResult ret    = new AttributeSearchResult();
         List<String>          names  = (List<String>) results.get(0);
         List<List<Object>>    values = extractValues(results.subList(1, results.size()));
@@ -117,12 +117,12 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
         return ret;
     }
 
-    private List<List<Object>> extractValues(List results) {
+    private List<List<Object>> extractValues(List<?> results) {
         List<List<Object>> values = new ArrayList<>();
 
         for (Object obj : results) {
             if (obj instanceof Map) {
-                Map          map  = (Map) obj;
+                Map<?, ?>    map  = (Map<?, ?>) obj;
                 List<Object> list = new ArrayList<>();
 
                 if (MapUtils.isNotEmpty(map)) {
@@ -130,7 +130,7 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
                         Object vals = map.get(key);
 
                         if (vals instanceof List) {
-                            List l = (List) vals;
+                            List<?> l = (List<?>) vals;
 
                             list.addAll(l);
                         }
@@ -139,7 +139,7 @@ public class ScriptEngineBasedExecutor implements DSLQueryExecutor {
                     values.add(list);
                 }
             } else if (obj instanceof List) {
-                List list = (List) obj;
+                List<Object> list = (List<Object>) obj;
 
                 if (CollectionUtils.isNotEmpty(list)) {
                     values.add(list);

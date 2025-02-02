@@ -100,7 +100,7 @@ public class EntityLineageService implements AtlasLineageService {
     @Inject
     EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph) {
         this.graph                = atlasGraph;
-        this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
+        this.gremlinQueryProvider = AtlasGremlinQueryProvider.getInstance();
         this.entityRetriever      = new EntityGraphRetriever(atlasGraph, typeRegistry);
         this.atlasTypeRegistry    = typeRegistry;
     }

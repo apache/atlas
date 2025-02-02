@@ -32,34 +32,28 @@ public class EntityConsumerBuilder implements WorkItemBuilder<EntityConsumer, At
     private final EntityGraphRetriever entityRetriever;
     private final AtlasTypeRegistry    typeRegistry;
     private final boolean              isMigrationImport;
-    private       AtlasGraph           atlasGraph;
-    private       AtlasEntityStore     entityStore;
-    private       AtlasGraph           atlasGraphBulk;
-    private       AtlasEntityStore     entityStoreBulk;
-    private       EntityGraphRetriever entityRetrieverBulk;
-    private       int                  batchSize;
+    private final AtlasGraph           atlasGraph;
+    private final AtlasEntityStore     entityStore;
+    private final AtlasGraph           atlasGraphBulk;
+    private final AtlasEntityStore     entityStoreBulk;
+    private final EntityGraphRetriever entityRetrieverBulk;
+    private final int                  batchSize;
 
     public EntityConsumerBuilder(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, AtlasEntityStoreV2 entityStore, EntityGraphRetriever entityRetriever,
-            AtlasGraph atlasGraphBulk, AtlasEntityStoreV2 entityStoreBulk, EntityGraphRetriever entityRetrieverBulk,
-            int batchSize, boolean isMigrationImport) {
-        this.typeRegistry = typeRegistry;
-
-        this.atlasGraph      = atlasGraph;
-        this.entityStore     = entityStore;
-        this.entityRetriever = entityRetriever;
-
+            AtlasGraph atlasGraphBulk, AtlasEntityStoreV2 entityStoreBulk, EntityGraphRetriever entityRetrieverBulk, int batchSize, boolean isMigrationImport) {
+        this.typeRegistry        = typeRegistry;
+        this.atlasGraph          = atlasGraph;
+        this.entityStore         = entityStore;
+        this.entityRetriever     = entityRetriever;
         this.atlasGraphBulk      = atlasGraphBulk;
         this.entityStoreBulk     = entityStoreBulk;
         this.entityRetrieverBulk = entityRetrieverBulk;
-
-        this.batchSize         = batchSize;
-        this.isMigrationImport = isMigrationImport;
+        this.batchSize           = batchSize;
+        this.isMigrationImport   = isMigrationImport;
     }
 
     @Override
     public EntityConsumer build(BlockingQueue<AtlasEntity.AtlasEntityWithExtInfo> queue) {
-        return new EntityConsumer(typeRegistry, atlasGraph, entityStore,
-                atlasGraphBulk, entityStoreBulk, entityRetrieverBulk,
-                queue, this.batchSize, this.isMigrationImport);
+        return new EntityConsumer(typeRegistry, atlasGraph, entityStore, atlasGraphBulk, entityStoreBulk, entityRetrieverBulk, queue, this.batchSize, this.isMigrationImport);
     }
 }

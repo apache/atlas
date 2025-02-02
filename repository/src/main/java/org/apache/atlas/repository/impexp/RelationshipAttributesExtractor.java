@@ -144,7 +144,7 @@ public class RelationshipAttributesExtractor implements ExtractStrategy {
             if (o instanceof AtlasRelatedObjectId) {
                 relatedObjectIds.add((AtlasRelatedObjectId) o);
             } else if (o instanceof Collection) {
-                relatedObjectIds.addAll((List) o);
+                relatedObjectIds.addAll((List<AtlasRelatedObjectId>) o);
             }
         }
 

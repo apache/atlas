@@ -35,13 +35,15 @@ public class IndexConsistencyPatch extends AtlasPatchHandler {
 
     public IndexConsistencyPatch(PatchContext context) {
         super(context.getPatchRegistry(), PATCH_ID, PATCH_DESCRIPTION);
+
         this.context = context;
     }
 
     @Override
     public void apply() throws AtlasBaseException {
-        if (AtlasConfiguration.STORAGE_CONSISTENCY_LOCK_ENABLED.getBoolean() == false) {
+        if (!AtlasConfiguration.STORAGE_CONSISTENCY_LOCK_ENABLED.getBoolean()) {
             LOG.info("IndexConsistencyPatch: Not enabled: Skipped!");
+
             return;
         }
 
@@ -49,6 +51,7 @@ public class IndexConsistencyPatch extends AtlasPatchHandler {
 
         try {
             LOG.info("IndexConsistencyPatch: Starting...");
+
             graph.getManagementSystem().updateUniqueIndexesForConsistencyLock();
         } finally {
             LOG.info("IndexConsistencyPatch: Done!");

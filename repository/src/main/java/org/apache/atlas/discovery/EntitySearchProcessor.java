@@ -89,7 +89,7 @@ public class EntitySearchProcessor extends SearchProcessor {
         }
 
         final Predicate typeNamePredicate;
-        final Predicate traitPredicate = buildTraitPredict(classificationTypes);
+        final Predicate traitPredicate  = buildTraitPredict(classificationTypes);
         final Predicate activePredicate = SearchPredicateUtil.getEQPredicateGenerator().generatePredicate(Constants.STATE_PROPERTY_KEY, "ACTIVE", String.class);
 
         if (!isEntityRootType()) {

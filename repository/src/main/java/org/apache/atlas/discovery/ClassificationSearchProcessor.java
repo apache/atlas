@@ -150,7 +150,7 @@ public class ClassificationSearchProcessor extends SearchProcessor {
             indexQueryString = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
             indexQuery       = graph.indexQuery(Constants.VERTEX_INDEX, indexQueryString);
 
-            LOG.debug("Using query string  '{}'.", indexQuery);
+            LOG.debug("Using query string '{}'.", indexQuery);
         } else {
             indexQuery = null;
         }

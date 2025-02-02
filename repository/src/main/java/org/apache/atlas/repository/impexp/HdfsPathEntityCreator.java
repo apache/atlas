@@ -50,8 +50,8 @@ public class HdfsPathEntityCreator {
     private static final String QUALIFIED_NAME_FORMAT = "%s@%s";
     private static final String PATH_SEPARATOR        = "/";
 
-    private AtlasTypeRegistry  typeRegistry;
-    private AtlasEntityStoreV2 entityStore;
+    private final AtlasTypeRegistry  typeRegistry;
+    private final AtlasEntityStoreV2 entityStore;
 
     @Inject
     public HdfsPathEntityCreator(AtlasTypeRegistry typeRegistry, AtlasEntityStoreV2 entityStore) {
@@ -79,6 +79,7 @@ public class HdfsPathEntityCreator {
         String                             pathWithTrailingSeparator = getPathWithTrailingSeparator(path);
         AtlasEntityType                    hdfsPathEntityType        = getHdfsPathEntityType();
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo         = getHDFSPathEntity(hdfsPathEntityType, pathWithTrailingSeparator, clusterName);
+
         if (entityWithExtInfo != null) {
             return entityWithExtInfo;
         }
@@ -86,7 +87,8 @@ public class HdfsPathEntityCreator {
         AtlasEntity            entity                 = createHDFSPathEntity(hdfsPathEntityType, pathWithTrailingSeparator, clusterName);
         AtlasEntityStream      entityStream           = new AtlasEntityStream(entity);
         EntityMutationResponse entityMutationResponse = entityStore.createOrUpdate(entityStream, false);
-        if (entityMutationResponse.getCreatedEntities().size() == 0) {
+
+        if (entityMutationResponse.getCreatedEntities().isEmpty()) {
             return null;
         }
 
@@ -117,8 +119,10 @@ public class HdfsPathEntityCreator {
     }
 
     private Map<String, Object> getUniqueAttributes(String path, String clusterName) {
-        Map<String, Object> ret = new HashMap<String, Object>();
+        Map<String, Object> ret = new HashMap<>();
+
         ret.put(HDFS_PATH_ATTRIBUTE_QUALIFIED_NAME, getQualifiedName(path, clusterName));
+
         return ret;
     }
 

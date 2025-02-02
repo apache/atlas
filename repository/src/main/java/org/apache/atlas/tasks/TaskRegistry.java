@@ -165,6 +165,7 @@ public class TaskRegistry {
     @GraphTransaction
     public List<AtlasTask> getAll() {
         List<AtlasTask> ret = new ArrayList<>();
+
         AtlasGraphQuery query = graph.query()
                 .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
                 .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);

@@ -54,6 +54,7 @@ public class MigrationImport extends ImportStrategy {
         this.graph         = graph;
         this.graphProvider = graphProvider;
         this.typeRegistry  = typeRegistry;
+
         LOG.info("MigrationImport: Using bulkLoading...");
     }
 
@@ -75,7 +76,9 @@ public class MigrationImport extends ImportStrategy {
 
         try {
             LOG.info("Migration Import: Size: {}: Starting...", streamSize);
+
             index = creationManager.read(entityStream);
+
             creationManager.drain();
             creationManager.extractResults();
         } catch (Exception ex) {
@@ -85,42 +88,45 @@ public class MigrationImport extends ImportStrategy {
         }
 
         LOG.info("Migration Import: Size: {}: Done!", streamSize);
+
         return ret;
     }
 
     private DataMigrationStatusService createMigrationStatusService(AtlasImportResult importResult) {
         DataMigrationStatusService dataMigrationStatusService = new DataMigrationStatusService();
+
         dataMigrationStatusService.init(AtlasStringUtil.getOption(importResult.getRequest().getOptions(), AtlasImportRequest.OPTION_KEY_MIGRATION_FILE_NAME));
+
         return dataMigrationStatusService;
     }
 
-    private EntityCreationManager createEntityCreationManager(AtlasImportResult importResult,
-            DataMigrationStatusService dataMigrationStatusService) {
-        AtlasGraph graphBulk = graphProvider.getBulkLoading();
-
+    private EntityCreationManager createEntityCreationManager(AtlasImportResult importResult, DataMigrationStatusService dataMigrationStatusService) {
+        AtlasGraph           graphBulk                = graphProvider.getBulkLoading();
         EntityGraphRetriever entityGraphRetriever     = new EntityGraphRetriever(this.graph, typeRegistry);
         EntityGraphRetriever entityGraphRetrieverBulk = new EntityGraphRetriever(graphBulk, typeRegistry);
-
-        AtlasEntityStoreV2 entityStore     = createEntityStore(this.graph, typeRegistry);
-        AtlasEntityStoreV2 entityStoreBulk = createEntityStore(graphBulk, typeRegistry);
+        AtlasEntityStoreV2   entityStore              = createEntityStore(this.graph, typeRegistry);
+        AtlasEntityStoreV2   entityStoreBulk          = createEntityStore(graphBulk, typeRegistry);
 
         int     batchSize         = importResult.getRequest().getOptionKeyBatchSize();
         int     numWorkers        = getNumWorkers(importResult.getRequest().getOptionKeyNumWorkers());
         boolean isMigrationImport = false;
+
         if (importResult.getRequest().getOptions().get("migration") != null) {
-            isMigrationImport = Boolean.valueOf(importResult.getRequest().getOptions().get("migration"));
+            isMigrationImport = Boolean.parseBoolean(importResult.getRequest().getOptions().get("migration"));
         }
-        EntityConsumerBuilder consumerBuilder =
-                new EntityConsumerBuilder(typeRegistry, this.graph, entityStore, entityGraphRetriever, graphBulk,
-                        entityStoreBulk, entityGraphRetrieverBulk, batchSize, isMigrationImport);
+
+        EntityConsumerBuilder consumerBuilder = new EntityConsumerBuilder(typeRegistry, this.graph, entityStore, entityGraphRetriever, graphBulk, entityStoreBulk, entityGraphRetrieverBulk, batchSize, isMigrationImport);
 
         LOG.info("MigrationImport: EntityCreationManager: Created!");
+
         return new EntityCreationManager(consumerBuilder, batchSize, numWorkers, importResult, dataMigrationStatusService);
     }
 
     private static int getNumWorkers(int numWorkersFromOptions) {
         int ret = (numWorkersFromOptions > 0) ? numWorkersFromOptions : 1;
+
         LOG.info("Migration Import: Setting numWorkers: {}", ret);
+
         return ret;
     }
 

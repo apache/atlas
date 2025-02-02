@@ -62,6 +62,7 @@ public class AtlasPatchManager {
 
     public void applyAll() {
         LOG.info("==> AtlasPatchManager.applyAll()");
+
         init();
 
         try {

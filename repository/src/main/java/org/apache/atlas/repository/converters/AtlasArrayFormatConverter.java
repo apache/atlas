@@ -41,11 +41,12 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
 
     @Override
     public boolean isValidValueV1(Object v1Obj, AtlasType type) {
-        boolean ret = false;
-
         if (v1Obj == null) {
             return true;
         }
+
+        boolean ret = false;
+
         if (type instanceof AtlasArrayType) {
             AtlasArrayType       arrType       = (AtlasArrayType) type;
             AtlasType            elemType      = arrType.getElementType();
@@ -55,15 +56,13 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
                 elemConverter = converterRegistry.getConverter(elemType.getTypeCategory());
             } catch (AtlasBaseException excp) {
                 LOG.warn("failed to get element converter. type={}", type.getTypeName(), excp);
-
-                ret = false;
             }
 
             if (elemConverter != null) {
                 if (v1Obj instanceof Collection) {
                     ret = true; // for empty array
 
-                    for (Object v1Elem : (Collection) v1Obj) {
+                    for (Object v1Elem : (Collection<?>) v1Obj) {
                         ret = elemConverter.isValidValueV1(v1Elem, elemType);
 
                         if (!ret) {
@@ -76,20 +75,20 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
             }
         }
 
-        LOG.debug("AtlasArrayFormatConverter.isValidValueV1(type={}, value={}): {}", (v1Obj != null ? v1Obj.getClass().getCanonicalName() : null), v1Obj, ret);
+        LOG.debug("AtlasArrayFormatConverter.isValidValueV1(type={}, value={}): {}", v1Obj.getClass().getCanonicalName(), v1Obj, ret);
 
         return ret;
     }
 
     @Override
-    public Collection fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
-        Collection ret = null;
+    public Collection<Object> fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
+        Collection<Object> ret = null;
 
         if (v1Obj != null) {
             if (v1Obj instanceof Set) {
-                ret = new LinkedHashSet();
+                ret = new LinkedHashSet<>();
             } else {
-                ret = new ArrayList();
+                ret = new ArrayList<>();
             }
 
             AtlasArrayType       arrType       = (AtlasArrayType) type;
@@ -97,7 +96,7 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
             AtlasFormatConverter elemConverter = converterRegistry.getConverter(elemType.getTypeCategory());
 
             if (v1Obj instanceof Collection) {
-                Collection v1List = (Collection) v1Obj;
+                Collection<?> v1List = (Collection<?>) v1Obj;
 
                 for (Object v1Elem : v1List) {
                     Object convertedVal = elemConverter.fromV1ToV2(v1Elem, elemType, ctx);
@@ -115,14 +114,14 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
     }
 
     @Override
-    public Collection fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
-        Collection ret = null;
+    public Collection<Object> fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
+        Collection<Object> ret = null;
 
         if (v2Obj != null) {
             if (v2Obj instanceof List) {
-                ret = new ArrayList();
+                ret = new ArrayList<>();
             } else if (v2Obj instanceof Set) {
-                ret = new LinkedHashSet();
+                ret = new LinkedHashSet<>();
             } else {
                 throw new AtlasBaseException(AtlasErrorCode.UNEXPECTED_TYPE, "List or Set", v2Obj.getClass().getCanonicalName());
             }
@@ -130,7 +129,7 @@ public class AtlasArrayFormatConverter extends AtlasAbstractFormatConverter {
             AtlasArrayType       arrType       = (AtlasArrayType) type;
             AtlasType            elemType      = arrType.getElementType();
             AtlasFormatConverter elemConverter = converterRegistry.getConverter(elemType.getTypeCategory());
-            Collection           v2List        = (Collection) v2Obj;
+            Collection<?>        v2List        = (Collection<?>) v2Obj;
 
             for (Object v2Elem : v2List) {
                 Object convertedVal = elemConverter.fromV2ToV1(v2Elem, elemType, ctx);

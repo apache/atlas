@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.store.graph.v2.bulkimport;
 
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graph.IFullTextMapper;
@@ -26,32 +25,32 @@ import java.util.List;
 
 public class FullTextMapperV2Nop implements IFullTextMapper {
     @Override
-    public String getIndexTextForClassifications(String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
+    public String getIndexTextForClassifications(String guid, List<AtlasClassification> classifications) {
         return null;
     }
 
     @Override
-    public String getIndexTextForEntity(String guid) throws AtlasBaseException {
+    public String getIndexTextForEntity(String guid) {
         return null;
     }
 
     @Override
-    public String getClassificationTextForEntity(AtlasEntity entity) throws AtlasBaseException {
+    public String getClassificationTextForEntity(AtlasEntity entity) {
         return null;
     }
 
     @Override
-    public AtlasEntity getAndCacheEntity(String guid) throws AtlasBaseException {
+    public AtlasEntity getAndCacheEntity(String guid) {
         return null;
     }
 
     @Override
-    public AtlasEntity getAndCacheEntity(String guid, boolean includeReferences) throws AtlasBaseException {
+    public AtlasEntity getAndCacheEntity(String guid, boolean includeReferences) {
         return null;
     }
 
     @Override
-    public AtlasEntity.AtlasEntityWithExtInfo getAndCacheEntityWithExtInfo(String guid) throws AtlasBaseException {
+    public AtlasEntity.AtlasEntityWithExtInfo getAndCacheEntityWithExtInfo(String guid) {
         return null;
     }
 }

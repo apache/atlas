@@ -602,8 +602,9 @@ public class SearchContext {
         AtlasAttribute      attr     = termType.getRelationshipAttribute(TermSearchProcessor.ATLAS_GLOSSARY_TERM_ATTR_ASSIGNED_ENTITIES, EntityGraphRetriever.TERM_RELATION_NAME);
         Iterator<AtlasEdge> edges    = GraphHelper.getEdgesForLabel(glossaryTerm, attr.getRelationshipEdgeLabel(), attr.getRelationshipEdgeDirection());
 
-        boolean excludeDeletedEntities = searchParameters.getExcludeDeletedEntities();
         if (edges != null) {
+            boolean excludeDeletedEntities = searchParameters.getExcludeDeletedEntities();
+
             while (edges.hasNext()) {
                 AtlasEdge   edge     = edges.next();
                 AtlasVertex inVertex = edge.getInVertex();
@@ -659,8 +660,8 @@ public class SearchContext {
         @VisibleForTesting
         static final int MARKER_END = -1;
 
-        private static final int    IDX_HASH_CODE = 0;
-        private static final int    IDX_OFFSET    = 1;
+        private static final int    IDX_HASH_CODE    = 0;
+        private static final int    IDX_OFFSET       = 1;
         private static final String MARKER_DELIMITER = ":";
 
         public static String getNextEncMarker(SearchParameters searchParameters, Integer nextOffset) {

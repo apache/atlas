@@ -38,26 +38,25 @@ public class AtlasMapFormatConverter extends AtlasAbstractFormatConverter {
 
     @Override
     public boolean isValidValueV1(Object v1Obj, AtlasType type) {
-        boolean ret = false;
-
         if (v1Obj == null) {
             return true;
         }
+
+        boolean ret = false;
+
         if (type instanceof AtlasMapType && v1Obj instanceof Map) {
             AtlasMapType         mapType        = (AtlasMapType) type;
             AtlasType            keyType        = mapType.getKeyType();
             AtlasType            valueType      = mapType.getValueType();
             AtlasFormatConverter keyConverter   = null;
             AtlasFormatConverter valueConverter = null;
-            Map                  v1Map          = (Map) v1Obj;
+            Map<?, ?>            v1Map          = (Map<?, ?>) v1Obj;
 
             try {
                 keyConverter   = converterRegistry.getConverter(keyType.getTypeCategory());
                 valueConverter = converterRegistry.getConverter(valueType.getTypeCategory());
             } catch (AtlasBaseException excp) {
                 LOG.warn("failed to get key/value converter. type={}", type.getTypeName(), excp);
-
-                ret = false;
             }
 
             if (keyConverter != null && valueConverter != null) {
@@ -75,14 +74,14 @@ public class AtlasMapFormatConverter extends AtlasAbstractFormatConverter {
             }
         }
 
-        LOG.debug("AtlasArrayFormatConverter.isValidValueV1(type={}, value={}): {}", (v1Obj != null ? v1Obj.getClass().getCanonicalName() : null), v1Obj, ret);
+        LOG.debug("AtlasArrayFormatConverter.isValidValueV1(type={}, value={}): {}", v1Obj.getClass().getCanonicalName(), v1Obj, ret);
 
         return ret;
     }
 
     @Override
-    public Map fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
-        Map ret = null;
+    public Map<?, ?> fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
+        Map<Object, Object> ret = null;
 
         if (v1Obj != null) {
             if (v1Obj instanceof Map) {
@@ -91,7 +90,7 @@ public class AtlasMapFormatConverter extends AtlasAbstractFormatConverter {
                 AtlasType            valueType      = mapType.getValueType();
                 AtlasFormatConverter keyConverter   = converterRegistry.getConverter(keyType.getTypeCategory());
                 AtlasFormatConverter valueConverter = converterRegistry.getConverter(valueType.getTypeCategory());
-                Map                  v1Map          = (Map) v1Obj;
+                Map<?, ?>            v1Map          = (Map<?, ?>) v1Obj;
 
                 ret = new HashMap<>();
 
@@ -112,8 +111,8 @@ public class AtlasMapFormatConverter extends AtlasAbstractFormatConverter {
     }
 
     @Override
-    public Map fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
-        Map ret = null;
+    public Map<?, ?> fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
+        Map<Object, Object> ret = null;
 
         if (v2Obj != null) {
             if (v2Obj instanceof Map) {
@@ -122,7 +121,7 @@ public class AtlasMapFormatConverter extends AtlasAbstractFormatConverter {
                 AtlasType            valueType      = mapType.getValueType();
                 AtlasFormatConverter keyConverter   = converterRegistry.getConverter(keyType.getTypeCategory());
                 AtlasFormatConverter valueConverter = converterRegistry.getConverter(valueType.getTypeCategory());
-                Map                  v2Map          = (Map) v2Obj;
+                Map<?, ?>            v2Map          = (Map<?, ?>) v2Obj;
 
                 ret = new HashMap<>();
 

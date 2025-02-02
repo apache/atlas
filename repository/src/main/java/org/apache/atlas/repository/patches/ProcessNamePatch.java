@@ -28,8 +28,6 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Iterator;
-
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 
 public class ProcessNamePatch extends AtlasPatchHandler {
@@ -48,8 +46,9 @@ public class ProcessNamePatch extends AtlasPatchHandler {
 
     @Override
     public void apply() throws AtlasBaseException {
-        if (AtlasConfiguration.PROCESS_NAME_UPDATE_PATCH.getBoolean() == false) {
+        if (!AtlasConfiguration.PROCESS_NAME_UPDATE_PATCH.getBoolean()) {
             LOG.info("ProcessNamePatch: Skipped, since not enabled!");
+
             return;
         }
 
@@ -65,9 +64,8 @@ public class ProcessNamePatch extends AtlasPatchHandler {
     public static class ProcessNamePatchProcessor extends ConcurrentPatchProcessor {
         private static final String TYPE_NAME_HIVE_PROCESS        = "hive_process";
         private static final String TYPE_NAME_HIVE_COLUMN_LINEAGE = "hive_column_lineage";
-
-        private static final String ATTR_NAME_QUALIFIED_NAME = "qualifiedName";
-        private static final String ATTR_NAME_NAME           = "name";
+        private static final String ATTR_NAME_QUALIFIED_NAME      = "qualifiedName";
+        private static final String ATTR_NAME_NAME                = "name";
 
         private static final String[] processTypes = {TYPE_NAME_HIVE_PROCESS, TYPE_NAME_HIVE_COLUMN_LINEAGE};
 
@@ -89,9 +87,7 @@ public class ProcessNamePatch extends AtlasPatchHandler {
                 Iterable<Object> iterable = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName).vertexIds();
                 int              count    = 0;
 
-                for (Iterator<Object> iter = iterable.iterator(); iter.hasNext(); ) {
-                    Object vertexId = iter.next();
-
+                for (Object vertexId : iterable) {
                     manager.checkProduce(vertexId);
 
                     count++;
@@ -103,20 +99,17 @@ public class ProcessNamePatch extends AtlasPatchHandler {
 
         @Override
         protected void processVertexItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("processItem(typeName={}, vertexId={})", typeName, vertexId);
-            }
+            LOG.debug("processItem(typeName={}, vertexId={})", typeName, vertexId);
 
             try {
                 String qualifiedName = AtlasGraphUtilsV2.getProperty(vertex, entityType.getVertexPropertyName(ATTR_NAME_QUALIFIED_NAME), String.class);
+
                 AtlasGraphUtilsV2.setEncodedProperty(vertex, entityType.getVertexPropertyName(ATTR_NAME_NAME), qualifiedName);
             } catch (AtlasBaseException e) {
                 LOG.error("Error updating: {}", vertexId);
             }
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("processItem(typeName={}, vertexId={}): Done!", typeName, vertexId);
-            }
+            LOG.debug("processItem(typeName={}, vertexId={}): Done!", typeName, vertexId);
         }
     }
 }

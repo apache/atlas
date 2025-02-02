@@ -54,7 +54,7 @@ public class TypeDefAuditListener implements TypeDefChangeListener {
     }
 
     @Override
-    public void onLoadCompletion() throws AtlasBaseException {
+    public void onLoadCompletion() {
     }
 
     private void createAuditEntry(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException {
@@ -71,14 +71,13 @@ public class TypeDefAuditListener implements TypeDefChangeListener {
 
     private List<AtlasBaseTypeDef> removeDuplicateEntries(List<AtlasBaseTypeDef> createdTypes, List<AtlasBaseTypeDef> updatedTypes) {
         if (CollectionUtils.isNotEmpty(createdTypes)) {
-            List<String> createdTypeNames = createdTypes.stream().map(obj -> obj.getName()).collect(Collectors.toList());
+            List<String> createdTypeNames = createdTypes.stream().map(AtlasBaseTypeDef::getName).collect(Collectors.toList());
 
             updatedTypes.removeIf(obj -> createdTypeNames.contains(obj.getName()));
         }
 
         if (CollectionUtils.isNotEmpty(updatedTypes)) {
-            Set<AtlasBaseTypeDef> baseTypeDefs = updatedTypes.stream().collect(Collectors.toCollection(() ->
-                            new TreeSet<>(Comparator.comparing(AtlasBaseTypeDef::getName))));
+            Set<AtlasBaseTypeDef> baseTypeDefs = updatedTypes.stream().collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(AtlasBaseTypeDef::getName))));
 
             updatedTypes = new ArrayList<>(baseTypeDefs);
         }

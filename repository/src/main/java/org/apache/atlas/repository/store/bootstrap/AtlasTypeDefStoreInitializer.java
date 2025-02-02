@@ -19,7 +19,7 @@ package org.apache.atlas.repository.store.bootstrap;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
@@ -528,7 +528,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
      * typedef patch details
      */
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
@@ -656,7 +656,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
      * list of typedef patches
      */
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-    @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
@@ -699,7 +699,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         }
     }
 
-    class UpdateEnumDefPatchHandler extends PatchHandler {
+    static class UpdateEnumDefPatchHandler extends PatchHandler {
         public UpdateEnumDefPatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
             super(typeDefStore, typeRegistry, new String[] {"UPDATE_ENUMDEF"});
         }
@@ -735,7 +735,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         }
     }
 
-    class AddAttributePatchHandler extends PatchHandler {
+    static class AddAttributePatchHandler extends PatchHandler {
         public AddAttributePatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
             super(typeDefStore, typeRegistry, new String[] {"ADD_ATTRIBUTE"});
         }
@@ -917,7 +917,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         }
     }
 
-    class UpdateAttributePatchHandler extends PatchHandler {
+    static class UpdateAttributePatchHandler extends PatchHandler {
         public UpdateAttributePatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
             super(typeDefStore, typeRegistry, new String[] {"UPDATE_ATTRIBUTE"});
         }
@@ -988,7 +988,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         }
     }
 
-    class RemoveLegacyRefAttributesPatchHandler extends PatchHandler {
+    static class RemoveLegacyRefAttributesPatchHandler extends PatchHandler {
         public RemoveLegacyRefAttributesPatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
             super(typeDefStore, typeRegistry, new String[] {"REMOVE_LEGACY_REF_ATTRIBUTES"});
         }
@@ -1029,7 +1029,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
                         }
 
                         if (relSwapEnds != null) {
-                            swapEnds = Boolean.valueOf(relSwapEnds.toString());
+                            swapEnds = Boolean.parseBoolean(relSwapEnds.toString());
                         }
                     }
 
@@ -1105,7 +1105,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         }
     }
 
-    class UpdateTypeDefOptionsPatchHandler extends PatchHandler {
+    static class UpdateTypeDefOptionsPatchHandler extends PatchHandler {
         public UpdateTypeDefOptionsPatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
             super(typeDefStore, typeRegistry, new String[] {"UPDATE_TYPEDEF_OPTIONS"});
         }
@@ -1146,7 +1146,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         }
     }
 
-    class SetServiceTypePatchHandler extends PatchHandler {
+    static class SetServiceTypePatchHandler extends PatchHandler {
         public SetServiceTypePatchHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
             super(typeDefStore, typeRegistry, new String[] {"SET_SERVICE_TYPE"});
         }
@@ -1178,7 +1178,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         }
     }
 
-    class UpdateAttributeMetadataHandler extends PatchHandler {
+    static class UpdateAttributeMetadataHandler extends PatchHandler {
         public UpdateAttributeMetadataHandler(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
             super(typeDefStore, typeRegistry, new String[] {"UPDATE_ATTRIBUTE_METADATA"});
         }

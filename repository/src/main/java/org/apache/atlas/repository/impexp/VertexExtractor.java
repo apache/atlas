@@ -48,19 +48,21 @@ public class VertexExtractor implements ExtractStrategy {
     private final AtlasGremlinQueryProvider gremlinQueryProvider;
 
     private final Map<String, Object> bindings;
-    private       AtlasGraph          atlasGraph;
-    private       AtlasTypeRegistry   typeRegistry;
+    private final AtlasGraph          atlasGraph;
+    private final AtlasTypeRegistry   typeRegistry;
     private       ScriptEngine        scriptEngine;
 
     public VertexExtractor(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry) {
         this.atlasGraph   = atlasGraph;
         this.typeRegistry = typeRegistry;
+
         try {
             this.scriptEngine = atlasGraph.getGremlinScriptEngine();
         } catch (AtlasBaseException e) {
             LOG.error("Script Engine: Instantiation failed!");
         }
-        this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
+
+        this.gremlinQueryProvider = AtlasGremlinQueryProvider.getInstance();
         this.bindings             = new HashMap<>();
     }
 
@@ -180,7 +182,7 @@ public class VertexExtractor implements ExtractStrategy {
         try {
             return (List<Map<String, Object>>) atlasGraph.executeGremlinScript(scriptEngine, bindings, query, false);
         } catch (ScriptException e) {
-            LOG.error("Script execution failed for query: ", query, e);
+            LOG.error("Script execution failed for query: {}", query, e);
             return null;
         }
     }

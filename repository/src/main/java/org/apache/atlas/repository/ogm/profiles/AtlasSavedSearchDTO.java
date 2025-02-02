@@ -37,7 +37,7 @@ import java.util.Map;
 
 @Component
 public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSavedSearch> {
-    public static final  String PROPERTY_USER_PROFILE      = "userProfile";
+    public  static final String PROPERTY_USER_PROFILE      = "userProfile";
     private static final String ENTITY_TYPE_NAME           = "__AtlasUserSavedSearch";
     private static final String PROPERTY_NAME              = "name";
     private static final String PROPERTY_OWNER_NAME        = "ownerName";

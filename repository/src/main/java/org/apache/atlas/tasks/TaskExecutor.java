@@ -31,7 +31,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TaskExecutor {
-    private static final Logger     LOG              = LoggerFactory.getLogger(TaskExecutor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TaskExecutor.class);
+
     private static final TaskLogger TASK_LOG         = TaskLogger.getLogger();
     private static final String     TASK_NAME_FORMAT = "atlas-task-%d-";
 

@@ -160,23 +160,23 @@ public class IdentifierHelper {
     }
 
     public static class Info {
-        private String                         raw;
-        private String                         actual;
-        private String[]                       parts;
-        private String                         typeName;
-        private String                         attributeName;
-        private boolean                        isPrimitive;
-        private AtlasRelationshipEdgeDirection edgeDirection;
-        private String                         edgeLabel;
-        private boolean                        introduceType;
-        private boolean                        hasSubtypes;
-        private String                         subTypes;
-        private boolean                        isTrait;
-        private boolean                        newContext;
-        private boolean                        isAttribute;
-        private String                         qualifiedName;
-        private boolean                        isDate;
-        private boolean                        isNumeric;
+        private       String                         raw;
+        private final String                         actual;
+        private       String[]                       parts;
+        private       String                         typeName;
+        private       String                         attributeName;
+        private       boolean                        isPrimitive;
+        private       AtlasRelationshipEdgeDirection edgeDirection;
+        private       String                         edgeLabel;
+        private       boolean                        introduceType;
+        private       boolean                        hasSubtypes;
+        private       String                         subTypes;
+        private       boolean                        isTrait;
+        private       boolean                        newContext;
+        private       boolean                        isAttribute;
+        private       String                         qualifiedName;
+        private       boolean                        isDate;
+        private       boolean                        isNumeric;
 
         public Info(String s) {
             this.raw    = removeQuotes(s);

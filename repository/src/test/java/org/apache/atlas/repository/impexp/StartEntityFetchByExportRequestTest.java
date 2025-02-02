@@ -109,7 +109,7 @@ public class StartEntityFetchByExportRequestTest extends AtlasTestBase {
             this.generatedQuery      = query;
             this.suppliedBindingsMap = bindings;
 
-            return Collections.EMPTY_LIST;
+            return Collections.emptyList();
         }
     }
 }

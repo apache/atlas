@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.Set;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
@@ -36,7 +35,8 @@ import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
 
 public class SuperTypesUpdatePatch extends AtlasPatchHandler {
-    private static final Logger LOG               = LoggerFactory.getLogger(SuperTypesUpdatePatch.class);
+    private static final Logger LOG = LoggerFactory.getLogger(SuperTypesUpdatePatch.class);
+
     private static final String PATCH_ID          = "JAVA_PATCH_0000_007";
     private static final String PATCH_DESCRIPTION = "Update supertypes for all existing entities for given typeName";
 
@@ -93,9 +93,7 @@ public class SuperTypesUpdatePatch extends AtlasPatchHandler {
                     Iterable<Object> vertexIds = graph.query().has(ENTITY_TYPE_PROPERTY_KEY, typeName).vertexIds();
                     int              count     = 0;
 
-                    for (Iterator<Object> iterator = vertexIds.iterator(); iterator.hasNext(); ) {
-                        Object vertexId = iterator.next();
-
+                    for (Object vertexId : vertexIds) {
                         manager.checkProduce(vertexId);
 
                         count++;
@@ -108,9 +106,7 @@ public class SuperTypesUpdatePatch extends AtlasPatchHandler {
 
         @Override
         protected void processVertexItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("processVertexItem(typeName={}, vertexId={})", typeName, vertexId);
-            }
+            LOG.debug("processVertexItem(typeName={}, vertexId={})", typeName, vertexId);
 
             Set<String> allSuperTypes = entityType.getAllSuperTypes();
 
@@ -122,9 +118,7 @@ public class SuperTypesUpdatePatch extends AtlasPatchHandler {
                     AtlasGraphUtilsV2.addEncodedProperty(vertex, SUPER_TYPES_PROPERTY_KEY, superType);
                 }
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Updated superTypes for entity of typeName={}, vertexId={}): Done!", typeName, vertex.getId());
-                }
+                LOG.debug("Updated superTypes for entity of typeName={}, vertexId={}): Done!", typeName, vertex.getId());
             }
         }
     }

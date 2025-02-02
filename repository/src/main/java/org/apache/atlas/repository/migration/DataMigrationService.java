@@ -59,8 +59,7 @@ public class DataMigrationService implements Service {
     private final Thread        thread;
 
     @Inject
-    public DataMigrationService(GraphDBMigrator migrator, AtlasTypeDefStore typeDefStore, Configuration configuration,
-            GraphBackedSearchIndexer indexer, AtlasTypeDefStoreInitializer storeInitializer, AtlasTypeRegistry typeRegistry, ImportService importService) {
+    public DataMigrationService(GraphDBMigrator migrator, AtlasTypeDefStore typeDefStore, Configuration configuration, GraphBackedSearchIndexer indexer, AtlasTypeDefStoreInitializer storeInitializer, AtlasTypeRegistry typeRegistry, ImportService importService) {
         this.configuration = configuration;
 
         String  fileName                    = getFileName();
@@ -99,8 +98,7 @@ public class DataMigrationService implements Service {
         private final AtlasTypeRegistry            typeRegistry;
         private final AtlasTypeDefStoreInitializer storeInitializer;
 
-        public FileImporter(GraphDBMigrator migrator, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
-                AtlasTypeDefStoreInitializer storeInitializer, String directoryName, GraphBackedSearchIndexer indexer) {
+        public FileImporter(GraphDBMigrator migrator, AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry, AtlasTypeDefStoreInitializer storeInitializer, String directoryName, GraphBackedSearchIndexer indexer) {
             this.migrator         = migrator;
             this.typeDefStore     = typeDefStore;
             this.typeRegistry     = typeRegistry;

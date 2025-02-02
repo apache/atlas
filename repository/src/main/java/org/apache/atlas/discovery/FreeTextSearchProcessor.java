@@ -73,7 +73,7 @@ public class FreeTextSearchProcessor extends SearchProcessor {
         }
 
         // just use the query string as is
-        LOG.debug("Using query string  '{}'.", queryString);
+        LOG.debug("Using query string '{}'.", queryString);
 
         indexQuery = context.getGraph().indexQuery(prepareGraphIndexQueryParameters(context, queryString));
     }

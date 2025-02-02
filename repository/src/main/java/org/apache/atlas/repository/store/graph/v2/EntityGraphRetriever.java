@@ -433,7 +433,7 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    public AtlasVertex getReferencedEntityVertex(AtlasEdge edge, AtlasRelationshipEdgeDirection relationshipDirection, AtlasVertex parentVertex) throws AtlasBaseException {
+    public AtlasVertex getReferencedEntityVertex(AtlasEdge edge, AtlasRelationshipEdgeDirection relationshipDirection, AtlasVertex parentVertex) {
         AtlasVertex entityVertex = null;
 
         if (relationshipDirection == OUT) {
@@ -592,7 +592,7 @@ public class EntityGraphRetriever {
     }
 
     public List<AtlasVertex> getIncludedImpactedVerticesV2(AtlasVertex entityVertex, String relationshipGuidToExclude, String classificationId) {
-        List<AtlasVertex> ret = new ArrayList<>(Arrays.asList(entityVertex));
+        List<AtlasVertex> ret = new ArrayList<>(Collections.singletonList(entityVertex));
 
         traverseImpactedVertices(entityVertex, relationshipGuidToExclude, classificationId, ret);
 
@@ -753,11 +753,11 @@ public class EntityGraphRetriever {
     }
 
     private AtlasVertex getEntityVertex(AtlasObjectId objId) throws AtlasBaseException {
-        AtlasVertex ret = null;
-
         if (!AtlasTypeUtil.isValid(objId)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_OBJECT_ID, objId.toString());
         }
+
+        AtlasVertex ret;
 
         if (AtlasTypeUtil.isAssignedGuid(objId)) {
             ret = AtlasGraphUtilsV2.findByGuid(this.graph, objId.getGuid());

@@ -38,8 +38,8 @@ import java.util.Map;
 
 @Component
 public class AtlasUserProfileDTO extends AbstractDataTransferObject<AtlasUserProfile> {
-    public static final  String ENTITY_TYPE_NAME        = "__AtlasUserProfile";
-    public static final  String PROPERTY_USER_NAME      = "name";
+    public  static final String ENTITY_TYPE_NAME        = "__AtlasUserProfile";
+    public  static final String PROPERTY_USER_NAME      = "name";
     private static final String PROPERTY_FULL_NAME      = "fullName";
     private static final String PROPERTY_SAVED_SEARCHES = "savedSearches";
 
@@ -68,7 +68,7 @@ public class AtlasUserProfileDTO extends AbstractDataTransferObject<AtlasUserPro
         Object savedSearches = entityWithExtInfo.getEntity().getAttribute(PROPERTY_SAVED_SEARCHES);
 
         if (savedSearches instanceof Collection) {
-            for (Object o : (Collection) savedSearches) {
+            for (Object o : (Collection<?>) savedSearches) {
                 if (o instanceof AtlasObjectId) {
                     AtlasObjectId ssObjId  = (AtlasObjectId) o;
                     AtlasEntity   ssEntity = entityWithExtInfo.getReferredEntity(ssObjId.getGuid());
@@ -114,7 +114,7 @@ public class AtlasUserProfileDTO extends AbstractDataTransferObject<AtlasUserPro
             objectIds.add(new AtlasObjectId(ssEntity.getGuid(), savedSearchDTO.getEntityType().getTypeName(), savedSearchDTO.getUniqueAttributes(ss)));
         }
 
-        if (objectIds.size() > 0) {
+        if (!objectIds.isEmpty()) {
             entity.setAttribute(PROPERTY_SAVED_SEARCHES, objectIds);
         }
 

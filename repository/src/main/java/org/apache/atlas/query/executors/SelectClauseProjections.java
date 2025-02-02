@@ -59,7 +59,7 @@ public class SelectClauseProjections {
         Collection<List<Object>> values = getProjectionRows(resultList, selectClauseInfo, entityRetriever);
 
         if (values instanceof List) {
-            attributeSearchResult.setValues((List) values);
+            attributeSearchResult.setValues((List<List<Object>>) values);
         } else if (values instanceof Set) {
             attributeSearchResult.setValues(new ArrayList<>(values));
         }

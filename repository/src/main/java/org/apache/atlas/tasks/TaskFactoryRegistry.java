@@ -36,6 +36,7 @@ public class TaskFactoryRegistry {
     @Inject
     public TaskFactoryRegistry(TaskManagement taskManagement, Set<TaskFactory> factories) {
         this.taskManagement = taskManagement;
+
         for (TaskFactory factory : factories) {
             taskManagement.addFactory(factory);
         }
@@ -48,10 +49,12 @@ public class TaskFactoryRegistry {
         try {
             if (!taskManagement.hasStarted()) {
                 LOG.info("TaskFactoryRegistry: TaskManagement start skipped! Someone else will start it.");
+
                 return;
             }
 
             LOG.info("TaskFactoryRegistry: Starting TaskManagement...");
+
             taskManagement.start();
         } catch (AtlasException e) {
             LOG.error("Error starting TaskManagement!", e);

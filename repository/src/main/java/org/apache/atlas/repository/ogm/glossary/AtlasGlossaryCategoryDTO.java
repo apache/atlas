@@ -81,7 +81,7 @@ public class AtlasGlossaryCategoryDTO extends AbstractGlossaryDTO<AtlasGlossaryC
         if (childrenCategories instanceof Collection) {
             LOG.debug("Processing childrenCategories");
 
-            for (Object child : (Collection) childrenCategories) {
+            for (Object child : (Collection<?>) childrenCategories) {
                 if (child instanceof AtlasRelatedObjectId) {
                     if (((AtlasRelatedObjectId) child).getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
                         ret.addChild(constructRelatedCategoryId((AtlasRelatedObjectId) child));
@@ -110,6 +110,7 @@ public class AtlasGlossaryCategoryDTO extends AbstractGlossaryDTO<AtlasGlossaryC
         LOG.debug("==> AtlasGlossaryCategoryDTO.from({})", entityWithExtInfo);
 
         requireNonNull(entityWithExtInfo, "entity");
+
         AtlasGlossaryCategory ret = from(entityWithExtInfo.getEntity());
 
         LOG.debug("<== AtlasGlossaryCategoryDTO.from() : {}", ret);

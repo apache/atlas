@@ -108,6 +108,7 @@ public class AtlasInstanceConverter {
         AtlasFormatConverter.ConverterContext ctx = new AtlasFormatConverter.ConverterContext();
 
         ctx.addEntity(entity.getEntity());
+
         for (Map.Entry<String, AtlasEntity> entry : entity.getReferredEntities().entrySet()) {
             ctx.addEntity(entry.getValue());
         }
@@ -157,9 +158,7 @@ public class AtlasInstanceConverter {
     }
 
     public AtlasEntity.AtlasEntitiesWithExtInfo toAtlasEntities(List<Referenceable> referenceables) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> toAtlasEntities({})", referenceables);
-        }
+        LOG.debug("==> toAtlasEntities({})", referenceables);
 
         AtlasFormatConverter.ConverterContext context = new AtlasFormatConverter.ConverterContext();
 
@@ -171,9 +170,7 @@ public class AtlasInstanceConverter {
 
         AtlasEntity.AtlasEntitiesWithExtInfo ret = context.getEntities();
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== toAtlasEntities({}): ret={}", referenceables, ret);
-        }
+        LOG.debug("<== toAtlasEntities({}): ret={}", referenceables, ret);
 
         return ret;
     }
@@ -309,9 +306,7 @@ public class AtlasInstanceConverter {
             if (entityWithExtInfo != null) {
                 context.cache(entityWithExtInfo);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Cache miss -> GUID = {}", guid);
-                }
+                LOG.debug("Cache miss -> GUID = {}", guid);
             }
         }
 
@@ -326,7 +321,6 @@ public class AtlasInstanceConverter {
         ret.setUser(v2Event.getUser());
         ret.setDetails(v2Event.getDetails());
         ret.setEventKey(v2Event.getEventKey());
-
         ret.setAction(getV1AuditAction(v2Event.getAction()));
         ret.setEntityDefinition(getReferenceable(v2Event.getEntityId()));
 
@@ -356,17 +350,13 @@ public class AtlasInstanceConverter {
     }
 
     private AtlasEntity fromV1toV2Entity(Referenceable referenceable, AtlasFormatConverter.ConverterContext context) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> fromV1toV2Entity({})", referenceable);
-        }
+        LOG.debug("==> fromV1toV2Entity({})", referenceable);
 
         AtlasEntityFormatConverter converter = (AtlasEntityFormatConverter) instanceFormatters.getConverter(TypeCategory.ENTITY);
 
         AtlasEntity entity = converter.fromV1ToV2(referenceable, typeRegistry.getType(referenceable.getTypeName()), context);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== fromV1toV2Entity({}): {}", referenceable, entity);
-        }
+        LOG.debug("<== fromV1toV2Entity({}): {}", referenceable, entity);
 
         return entity;
     }

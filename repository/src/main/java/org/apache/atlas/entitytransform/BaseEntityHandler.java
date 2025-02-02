@@ -84,8 +84,8 @@ public class BaseEntityHandler {
             return null;
         }
 
-        Object transformersObj = AtlasType.fromJson(transformersString, Object.class);
-        List   transformers    = (transformersObj instanceof List) ? (List) transformersObj : null;
+        Object  transformersObj = AtlasType.fromJson(transformersString, Object.class);
+        List<?> transformers    = (transformersObj instanceof List) ? (List<?>) transformersObj : null;
 
         List<AttributeTransform> attributeTransforms = new ArrayList<>();
 

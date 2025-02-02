@@ -57,9 +57,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
     @Override
     public AtlasVertex preCreate(AtlasClassificationDef classificationDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasClassificationDefStoreV1.preCreate({})", classificationDef);
-        }
+        LOG.debug("==> AtlasClassificationDefStoreV1.preCreate({})", classificationDef);
 
         validateType(classificationDef);
 
@@ -84,18 +82,14 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
         updateVertexPreCreate(classificationDef, (AtlasClassificationType) type, ret);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasClassificationDefStoreV1.preCreate({}): {}", classificationDef, ret);
-        }
+        LOG.debug("<== AtlasClassificationDefStoreV1.preCreate({}): {}", classificationDef, ret);
 
         return ret;
     }
 
     @Override
     public AtlasClassificationDef create(AtlasClassificationDef classificationDef, AtlasVertex preCreateResult) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasClassificationDefStoreV1.create({}, {})", classificationDef, preCreateResult);
-        }
+        LOG.debug("==> AtlasClassificationDefStoreV1.create({}, {})", classificationDef, preCreateResult);
 
         AtlasVertex vertex = (preCreateResult == null) ? preCreate(classificationDef) : preCreateResult;
 
@@ -103,18 +97,14 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
         AtlasClassificationDef ret = toClassificationDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasClassificationDefStoreV1.create({}, {}): {}", classificationDef, preCreateResult, ret);
-        }
+        LOG.debug("<== AtlasClassificationDefStoreV1.create({}, {}): {}", classificationDef, preCreateResult, ret);
 
         return ret;
     }
 
     @Override
     public List<AtlasClassificationDef> getAll() throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasClassificationDefStoreV1.getAll()");
-        }
+        LOG.debug("==> AtlasClassificationDefStoreV1.getAll()");
 
         List<AtlasClassificationDef> ret = new ArrayList<>();
 
@@ -123,17 +113,14 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
             ret.add(toClassificationDef(vertices.next()));
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasClassificationDefStoreV1.getAll(): count={}", ret.size());
-        }
+        LOG.debug("<== AtlasClassificationDefStoreV1.getAll(): count={}", ret.size());
+
         return ret;
     }
 
     @Override
     public AtlasClassificationDef getByName(String name) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasClassificationDefStoreV1.getByName({})", name);
-        }
+        LOG.debug("==> AtlasClassificationDefStoreV1.getByName({})", name);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.TRAIT);
 
@@ -145,18 +132,14 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
         AtlasClassificationDef ret = toClassificationDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasClassificationDefStoreV1.getByName({}): {}", name, ret);
-        }
+        LOG.debug("<== AtlasClassificationDefStoreV1.getByName({}): {}", name, ret);
 
         return ret;
     }
 
     @Override
     public AtlasClassificationDef getByGuid(String guid) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasClassificationDefStoreV1.getByGuid({})", guid);
-        }
+        LOG.debug("==> AtlasClassificationDefStoreV1.getByGuid({})", guid);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.TRAIT);
 
@@ -166,40 +149,30 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
         AtlasClassificationDef ret = toClassificationDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasClassificationDefStoreV1.getByGuid({}): {}", guid, ret);
-        }
+        LOG.debug("<== AtlasClassificationDefStoreV1.getByGuid({}): {}", guid, ret);
 
         return ret;
     }
 
     @Override
     public AtlasClassificationDef update(AtlasClassificationDef classifiDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasClassificationDefStoreV1.update({})", classifiDef);
-        }
+        LOG.debug("==> AtlasClassificationDefStoreV1.update({})", classifiDef);
 
         verifyTypeReadAccess(classifiDef.getSuperTypes());
         verifyTypeReadAccess(classifiDef.getEntityTypes());
 
         validateType(classifiDef);
 
-        AtlasClassificationDef ret = StringUtils.isNotBlank(classifiDef.getGuid())
-                ? updateByGuid(classifiDef.getGuid(), classifiDef) : updateByName(classifiDef.getName(), classifiDef);
+        AtlasClassificationDef ret = StringUtils.isNotBlank(classifiDef.getGuid()) ? updateByGuid(classifiDef.getGuid(), classifiDef) : updateByName(classifiDef.getName(), classifiDef);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasClassificationDefStoreV1.update({}): {}", classifiDef, ret);
-        }
+        LOG.debug("<== AtlasClassificationDefStoreV1.update({}): {}", classifiDef, ret);
 
         return ret;
     }
 
     @Override
-    public AtlasClassificationDef updateByName(String name, AtlasClassificationDef classificationDef)
-            throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasClassificationDefStoreV1.updateByName({}, {})", name, classificationDef);
-        }
+    public AtlasClassificationDef updateByName(String name, AtlasClassificationDef classificationDef) throws AtlasBaseException {
+        LOG.debug("==> AtlasClassificationDefStoreV1.updateByName({}, {})", name, classificationDef);
 
         AtlasClassificationDef existingDef = typeRegistry.getClassificationDefByName(name);
 
@@ -224,18 +197,14 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
         AtlasClassificationDef ret = toClassificationDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasClassificationDefStoreV1.updateByName({}, {}): {}", name, classificationDef, ret);
-        }
+        LOG.debug("<== AtlasClassificationDefStoreV1.updateByName({}, {}): {}", name, classificationDef, ret);
 
         return ret;
     }
 
     @Override
     public AtlasClassificationDef updateByGuid(String guid, AtlasClassificationDef classificationDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasClassificationDefStoreV1.updateByGuid({})", guid);
-        }
+        LOG.debug("==> AtlasClassificationDefStoreV1.updateByGuid({})", guid);
 
         AtlasClassificationDef existingDef = typeRegistry.getClassificationDefByGuid(guid);
 
@@ -260,18 +229,14 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
         AtlasClassificationDef ret = toClassificationDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasClassificationDefStoreV1.updateByGuid({}): {}", guid, ret);
-        }
+        LOG.debug("<== AtlasClassificationDefStoreV1.updateByGuid({}): {}", guid, ret);
 
         return ret;
     }
 
     @Override
     public AtlasVertex preDeleteByName(String name) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasClassificationDefStoreV1.preDeleteByName({})", name);
-        }
+        LOG.debug("==> AtlasClassificationDefStoreV1.preDeleteByName({})", name);
 
         AtlasClassificationDef existingDef = typeRegistry.getClassificationDefByName(name);
 
@@ -289,18 +254,14 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
         typeDefStore.deleteTypeVertexOutEdges(ret);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasClassificationDefStoreV1.preDeleteByName({}): ret=", name, ret);
-        }
+        LOG.debug("<== AtlasClassificationDefStoreV1.preDeleteByName({}): ret={}", name, ret);
 
         return ret;
     }
 
     @Override
     public AtlasVertex preDeleteByGuid(String guid) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasClassificationDefStoreV1.preDeleteByGuid({})", guid);
-        }
+        LOG.debug("==> AtlasClassificationDefStoreV1.preDeleteByGuid({})", guid);
 
         AtlasClassificationDef existingDef = typeRegistry.getClassificationDefByGuid(guid);
 
@@ -320,9 +281,7 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
 
         typeDefStore.deleteTypeVertexOutEdges(ret);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasClassificationDefStoreV1.preDeleteByGuid({}): ret=", guid, ret);
-        }
+        LOG.debug("<== AtlasClassificationDefStoreV1.preDeleteByGuid({}): ret={}", guid, ret);
 
         return ret;
     }
@@ -334,15 +293,11 @@ class AtlasClassificationDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasClassif
         return m.matches();
     }
 
-    private void updateVertexPreCreate(AtlasClassificationDef classificationDef,
-            AtlasClassificationType classificationType,
-            AtlasVertex vertex) throws AtlasBaseException {
+    private void updateVertexPreCreate(AtlasClassificationDef classificationDef, AtlasClassificationType classificationType, AtlasVertex vertex) throws AtlasBaseException {
         AtlasStructDefStoreV2.updateVertexPreCreate(classificationDef, classificationType, vertex, typeDefStore);
     }
 
-    private void updateVertexPreUpdate(AtlasClassificationDef classificationDef,
-            AtlasClassificationType classificationType,
-            AtlasVertex vertex) throws AtlasBaseException {
+    private void updateVertexPreUpdate(AtlasClassificationDef classificationDef, AtlasClassificationType classificationType, AtlasVertex vertex) throws AtlasBaseException {
         AtlasStructDefStoreV2.updateVertexPreUpdate(classificationDef, classificationType, vertex, typeDefStore);
     }
 

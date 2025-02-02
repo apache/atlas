@@ -78,34 +78,18 @@ public class ChangedTypeDefs {
     }
 
     private boolean hasEntityDef(List<? extends AtlasBaseTypeDef> typeDefs) {
-        boolean ret = false;
-
         if (CollectionUtils.isNotEmpty(typeDefs)) {
-            for (AtlasBaseTypeDef typeDef : typeDefs) {
-                if (typeDef instanceof AtlasEntityDef) {
-                    ret = true;
-
-                    break;
-                }
-            }
+            return typeDefs.stream().anyMatch(typeDef -> typeDef instanceof AtlasEntityDef);
         }
 
-        return ret;
+        return false;
     }
 
     private boolean hasBusinessMetadataDef(List<? extends AtlasBaseTypeDef> typeDefs) {
-        boolean ret = false;
-
         if (CollectionUtils.isNotEmpty(typeDefs)) {
-            for (AtlasBaseTypeDef typeDef : typeDefs) {
-                if (typeDef instanceof AtlasBusinessMetadataDef) {
-                    ret = true;
-
-                    break;
-                }
-            }
+            return typeDefs.stream().anyMatch(typeDef -> typeDef instanceof AtlasBusinessMetadataDef);
         }
 
-        return ret;
+        return false;
     }
 }

@@ -52,12 +52,12 @@ public class AtlasEnumFormatConverter extends AtlasAbstractFormatConverter {
                     ret = enumType.getEnumDef().hasElement(enumValue.toString());
                 }
             } else if (v1Obj instanceof Map) {
-                Object enumValue = ((Map) v1Obj).get("value");
+                Object enumValue = ((Map<?, ?>) v1Obj).get("value");
 
                 if (enumValue != null) {
                     ret = enumType.getEnumDef().hasElement(enumValue.toString());
                 } else {
-                    Object enumOrdinal = ((Map) v1Obj).get("ordinal");
+                    Object enumOrdinal = ((Map<?, ?>) v1Obj).get("ordinal");
 
                     if (enumOrdinal != null) {
                         ret = enumType.getEnumElementDef((Number) enumOrdinal) != null;
@@ -77,12 +77,11 @@ public class AtlasEnumFormatConverter extends AtlasAbstractFormatConverter {
 
     @Override
     public Object fromV1ToV2(Object v1Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
-        String ret = null;
-
         if (v1Obj == null || !(type instanceof AtlasEnumType)) {
-            return ret;
+            return null;
         }
 
+        String ret     = null;
         Object v1Value = null;
 
         if (v1Obj instanceof EnumValue) {
@@ -94,7 +93,7 @@ public class AtlasEnumFormatConverter extends AtlasAbstractFormatConverter {
                 v1Value = enumValue.getOrdinal();
             }
         } else if (v1Obj instanceof Map) {
-            Map mapValue = (Map) v1Obj;
+            Map<?, ?> mapValue = (Map<?, ?>) v1Obj;
 
             v1Value = mapValue.get("value");
 
@@ -123,13 +122,12 @@ public class AtlasEnumFormatConverter extends AtlasAbstractFormatConverter {
     }
 
     @Override
-    public Object fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
-        EnumValue ret = null;
-
+    public Object fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext ctx) {
         if (v2Obj == null || !(type instanceof AtlasEnumType)) {
-            return ret;
+            return null;
         }
 
+        EnumValue           ret        = null;
         AtlasEnumType       enumType   = (AtlasEnumType) type;
         AtlasEnumElementDef elementDef = enumType.getEnumElementDef(v2Obj.toString());
 

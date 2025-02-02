@@ -562,9 +562,9 @@ public final class GraphHelper {
         return value != null && value.equals(INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
     }
 
-    public static Map getCustomAttributes(AtlasElement element) {
-        Map    ret               = null;
-        String customAttrsString = element.getProperty(CUSTOM_ATTRIBUTES_PROPERTY_KEY, String.class);
+    public static Map<String, String> getCustomAttributes(AtlasElement element) {
+        Map<String, String> ret               = null;
+        String              customAttrsString = element.getProperty(CUSTOM_ATTRIBUTES_PROPERTY_KEY, String.class);
 
         if (customAttrsString != null) {
             ret = AtlasType.fromJson(customAttrsString, Map.class);
@@ -650,7 +650,7 @@ public final class GraphHelper {
             Boolean isPropagated = edge.getProperty(Constants.CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, Boolean.class);
 
             if (isPropagated != null) {
-                ret = isPropagated.booleanValue();
+                ret = isPropagated;
             }
         }
 
@@ -776,7 +776,7 @@ public final class GraphHelper {
         if (isReference(mapValueType)) {
             return getReferenceMap(instanceVertex, attribute);
         } else {
-            return (Map) instanceVertex.getProperty(propertyName, Map.class);
+            return (Map<String, Object>) instanceVertex.getProperty(propertyName, Map.class);
         }
     }
 
@@ -1154,7 +1154,7 @@ public final class GraphHelper {
 
                 return addEdge(outVertex, inVertex, edgeLabel);
             } catch (Exception e) {
-                LOG.warn(String.format("Exception while trying to create edge from %s to %s with label %s. Retrying", vertexString(outVertex), vertexString(inVertex), edgeLabel), e);
+                LOG.warn("Exception while trying to create edge from {} to {} with label {}. Retrying", vertexString(outVertex), vertexString(inVertex), edgeLabel, e);
 
                 if (numRetries == (maxRetries - 1)) {
                     LOG.error("Max retries exceeded for edge creation {} {} {} ", outVertex, inVertex, edgeLabel, e);

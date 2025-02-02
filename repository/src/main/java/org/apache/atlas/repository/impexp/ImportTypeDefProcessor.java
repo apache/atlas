@@ -33,7 +33,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 public class ImportTypeDefProcessor {
     private final AtlasTypeDefStore       typeDefStore;
     private final AtlasTypeRegistry       typeRegistry;
-    private       TypeAttributeDifference typeAttributeDifference;
+    private final TypeAttributeDifference typeAttributeDifference;
 
     public ImportTypeDefProcessor(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry) {
         this.typeDefStore            = typeDefStore;
@@ -45,6 +45,7 @@ public class ImportTypeDefProcessor {
         setGuidToEmpty(typeDefinitionMap);
 
         AtlasTypesDef typesToCreate = AtlasTypeDefStoreInitializer.getTypesToCreate(typeDefinitionMap, this.typeRegistry);
+
         if (!typesToCreate.isEmpty()) {
             typeDefStore.createTypesDef(typesToCreate);
             updateMetricsForTypesDef(typesToCreate, result);

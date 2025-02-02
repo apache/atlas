@@ -19,7 +19,6 @@ package org.apache.atlas.repository.store.graph.v1;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -128,12 +127,13 @@ public abstract class DeleteHandlerV1 {
 
     private static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
-    protected final GraphHelper          graphHelper;
-    private final   AtlasTypeRegistry    typeRegistry;
-    private final   EntityGraphRetriever entityRetriever;
-    private final   boolean              shouldUpdateInverseReferences;
-    private final   boolean              softDelete;
-    private final   TaskManagement       taskManagement;
+    protected final GraphHelper graphHelper;
+
+    private final AtlasTypeRegistry    typeRegistry;
+    private final EntityGraphRetriever entityRetriever;
+    private final boolean              shouldUpdateInverseReferences;
+    private final boolean              softDelete;
+    private final TaskManagement       taskManagement;
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
         this.typeRegistry                  = typeRegistry;
@@ -150,7 +150,7 @@ public abstract class DeleteHandlerV1 {
      * Also deletes all the references from/to the entity.
      *
      * @param instanceVertices
-     * @throws AtlasException
+     * @throws AtlasBaseException
      */
     public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException {
         final RequestContext   requestContext            = RequestContext.get();
@@ -238,7 +238,7 @@ public abstract class DeleteHandlerV1 {
      *
      * @param entityVertex the root entity vertex
      * @return set of VertexInfo for all composite entities
-     * @throws AtlasException
+     * @throws AtlasBaseException
      */
     public Collection<GraphHelper.VertexInfo> getOwnedVertices(AtlasVertex entityVertex) throws AtlasBaseException {
         final Map<String, GraphHelper.VertexInfo> vertexInfoMap    = new HashMap<>();
@@ -247,7 +247,7 @@ public abstract class DeleteHandlerV1 {
 
         vertices.push(entityVertex);
 
-        while (vertices.size() > 0) {
+        while (!vertices.isEmpty()) {
             AtlasVertex        vertex = vertices.pop();
             AtlasEntity.Status state  = getState(vertex);
 
@@ -364,7 +364,7 @@ public abstract class DeleteHandlerV1 {
      * @param isOwned
      * @param forceDeleteStructTrait
      * @return returns true if the edge reference is hard deleted
-     * @throws AtlasException
+     * @throws AtlasBaseException
      */
     public boolean deleteEdgeReference(AtlasEdge edge, TypeCategory typeCategory, boolean isOwned,
             boolean forceDeleteStructTrait, AtlasVertex vertex) throws AtlasBaseException {
@@ -381,14 +381,11 @@ public abstract class DeleteHandlerV1 {
         boolean isInternalType = isInternalType(entityVertex);
         boolean forceDelete    = (typeCategory == STRUCT || typeCategory == CLASSIFICATION) && (forceDeleteStructTrait || isInternalType);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("isInternal = {}, forceDelete = {}", isInternalType, forceDelete);
-        }
+        LOG.debug("isInternal = {}, forceDelete = {}", isInternalType, forceDelete);
 
         if (typeCategory == STRUCT || typeCategory == CLASSIFICATION || (typeCategory == OBJECT_ID_TYPE && isOwned)) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Processing delete for typeCategory={}, isOwned={}", typeCategory, isOwned);
-            }
+            LOG.debug("Processing delete for typeCategory={}, isOwned={}", typeCategory, isOwned);
+
             //If the vertex is of type struct delete the edge and then the reference vertex as the vertex is not shared by any other entities.
             //If the vertex is of type classification, delete the edge and then the reference vertex only if the vertex is not shared by any other propagated entities.
             //If the vertex is of type class, and its composite attribute, this reference vertex' lifecycle is controlled
@@ -535,8 +532,8 @@ public abstract class DeleteHandlerV1 {
             removePropagationsMap.putAll(currentClassificationsMap);
         } else {
             for (AtlasVertex classificationVertex : updatedClassificationsMap.keySet()) {
-                List<AtlasVertex> currentPropagatingEntities = currentClassificationsMap.containsKey(classificationVertex) ? currentClassificationsMap.get(classificationVertex) : Collections.emptyList();
-                List<AtlasVertex> updatedPropagatingEntities = updatedClassificationsMap.containsKey(classificationVertex) ? updatedClassificationsMap.get(classificationVertex) : Collections.emptyList();
+                List<AtlasVertex> currentPropagatingEntities = currentClassificationsMap.getOrDefault(classificationVertex, Collections.emptyList());
+                List<AtlasVertex> updatedPropagatingEntities = updatedClassificationsMap.getOrDefault(classificationVertex, Collections.emptyList());
                 List<AtlasVertex> entitiesRemoved            = (List<AtlasVertex>) CollectionUtils.subtract(currentPropagatingEntities, updatedPropagatingEntities);
 
                 if (CollectionUtils.isNotEmpty(entitiesRemoved)) {
@@ -672,7 +669,7 @@ public abstract class DeleteHandlerV1 {
 
     public void deleteClassificationVertex(AtlasVertex classificationVertex, boolean force) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Deleting classification vertex", string(classificationVertex));
+            LOG.debug("Deleting classification vertex {}", string(classificationVertex));
         }
 
         // delete classification vertex only if it has no more entity references (direct or propagated)
@@ -726,8 +723,8 @@ public abstract class DeleteHandlerV1 {
                 removePropagationsMap.putAll(currentClassificationsMap);
             } else {
                 for (AtlasVertex classificationVertex : updatedClassificationsMap.keySet()) {
-                    List<AtlasVertex> currentPropagatingEntities = currentClassificationsMap.containsKey(classificationVertex) ? currentClassificationsMap.get(classificationVertex) : Collections.emptyList();
-                    List<AtlasVertex> updatedPropagatingEntities = updatedClassificationsMap.containsKey(classificationVertex) ? updatedClassificationsMap.get(classificationVertex) : Collections.emptyList();
+                    List<AtlasVertex> currentPropagatingEntities = currentClassificationsMap.getOrDefault(classificationVertex, Collections.emptyList());
+                    List<AtlasVertex> updatedPropagatingEntities = updatedClassificationsMap.getOrDefault(classificationVertex, Collections.emptyList());
                     List<AtlasVertex> entitiesAdded              = (List<AtlasVertex>) CollectionUtils.subtract(updatedPropagatingEntities, currentPropagatingEntities);
                     List<AtlasVertex> entitiesRemoved            = (List<AtlasVertex>) CollectionUtils.subtract(currentPropagatingEntities, updatedPropagatingEntities);
 
@@ -871,7 +868,7 @@ public abstract class DeleteHandlerV1 {
     /**
      * Deleting any type vertex. Goes over the complex attributes and removes the references
      * @param instanceVertex
-     * @throws AtlasException
+     * @throws AtlasBaseException
      */
     protected void deleteTypeVertex(AtlasVertex instanceVertex, boolean force) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
@@ -964,7 +961,7 @@ public abstract class DeleteHandlerV1 {
      * @param outVertex
      * @param inVertex
      * @param attribute
-     * @throws AtlasException
+     * @throws AtlasBaseException
      */
     protected void deleteEdgeBetweenVertices(AtlasVertex outVertex, AtlasVertex inVertex, AtlasAttribute attribute) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
@@ -1153,6 +1150,7 @@ public abstract class DeleteHandlerV1 {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Adding property {} = \"{}\" to vertex {}", PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName, string(entityVertex));
         }
+
         entityVertex.addListProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
 
         entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, getDelimitedPropagatedClassificationNames(entityVertex, classificationName));
@@ -1173,7 +1171,7 @@ public abstract class DeleteHandlerV1 {
     /**
      * Delete all associated classifications from the specified entity vertex.
      * @param instanceVertex
-     * @throws AtlasException
+     * @throws AtlasBaseException
      */
     private void deleteAllClassifications(AtlasVertex instanceVertex) throws AtlasBaseException {
         List<AtlasEdge> classificationEdges = getAllClassificationEdges(instanceVertex);

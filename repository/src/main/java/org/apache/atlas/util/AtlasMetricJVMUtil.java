@@ -18,9 +18,6 @@
  */
 package org.apache.atlas.util;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
 import java.lang.management.MemoryPoolMXBean;
@@ -32,8 +29,6 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public class AtlasMetricJVMUtil {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasMetricJVMUtil.class);
-
     private static final RuntimeMXBean         RUNTIME;
     private static final OperatingSystemMXBean OS;
     private static final MemoryMXBean          memBean;

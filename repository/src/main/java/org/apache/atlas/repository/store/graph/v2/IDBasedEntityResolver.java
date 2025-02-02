@@ -29,12 +29,8 @@ import org.apache.atlas.repository.store.graph.EntityResolver;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class IDBasedEntityResolver implements EntityResolver {
-    private static final Logger LOG = LoggerFactory.getLogger(IDBasedEntityResolver.class);
-
     private final AtlasGraph        graph;
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphMapper entityGraphMapper;

@@ -73,7 +73,7 @@ public class DataAccess {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataAccess.save()");
             }
 
-            DataTransferObject<T> dto = (DataTransferObject<T>) dtoRegistry.get(obj.getClass());
+            DataTransferObject<T> dto = dtoRegistry.get((Class<T>) obj.getClass());
 
             AtlasEntityWithExtInfo entityWithExtInfo      = dto.toEntityWithExtInfo(obj);
             EntityMutationResponse entityMutationResponse = entityStore.createOrUpdate(new AtlasEntityStream(entityWithExtInfo), false);
@@ -155,7 +155,7 @@ public class DataAccess {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataAccess.load()");
             }
 
-            DataTransferObject<T> dto = (DataTransferObject<T>) dtoRegistry.get(obj.getClass());
+            DataTransferObject<T> dto = dtoRegistry.get((Class<T>) obj.getClass());
 
             AtlasEntityWithExtInfo entityWithExtInfo;
 
@@ -189,8 +189,8 @@ public class DataAccess {
         }
     }
 
-    public <T extends AtlasBaseModelObject> T load(String guid, Class<? extends AtlasBaseModelObject> clazz) throws AtlasBaseException {
-        DataTransferObject<T> dto = (DataTransferObject<T>) dtoRegistry.get(clazz);
+    public <T extends AtlasBaseModelObject> T load(String guid, Class<T> clazz) throws AtlasBaseException {
+        DataTransferObject<T> dto = dtoRegistry.get(clazz);
 
         AtlasEntityWithExtInfo entityWithExtInfo = null;
 

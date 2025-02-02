@@ -109,16 +109,14 @@ public class FullTextMapperV2 implements IFullTextMapper {
 
                     sb.append(classification.getTypeName()).append(FULL_TEXT_DELIMITER);
 
-                    mapAttributes(classificationType, classification.getAttributes(), entityWithExtInfo, sb, new HashSet<String>(), excludeAttributes, false); //false because of full text context.
+                    mapAttributes(classificationType, classification.getAttributes(), entityWithExtInfo, sb, new HashSet<>(), excludeAttributes, false); //false because of full text context.
                 }
             }
 
             ret = sb.toString();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("FullTextMapperV2.map({}): {}", guid, ret);
-        }
+        LOG.debug("FullTextMapperV2.map({}): {}", guid, ret);
 
         return ret;
     }
@@ -142,14 +140,12 @@ public class FullTextMapperV2 implements IFullTextMapper {
         if (entity != null) {
             StringBuilder sb = new StringBuilder();
 
-            map(entity, entityExtInfo, sb, new HashSet<String>(), false);
+            map(entity, entityExtInfo, sb, new HashSet<>(), false);
 
             ret = sb.toString();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("FullTextMapperV2.map({}): {}", guid, ret);
-        }
+        LOG.debug("FullTextMapperV2.map({}): {}", guid, ret);
 
         return ret;
     }
@@ -160,13 +156,14 @@ public class FullTextMapperV2 implements IFullTextMapper {
 
         if (entity != null) {
             StringBuilder sb = new StringBuilder();
-            map(entity, null, sb, new HashSet<String>(), true);
+
+            map(entity, null, sb, new HashSet<>(), true);
+
             ret = sb.toString();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.info("FullTextMapperV2.getClassificationTextForEntity({}): {}", entity.getGuid(), ret);
-        }
+        LOG.info("FullTextMapperV2.getClassificationTextForEntity({}): {}", entity != null ? entity.getGuid() : "null", ret);
+
         return ret;
     }
 
@@ -186,9 +183,7 @@ public class FullTextMapperV2 implements IFullTextMapper {
             if (entity != null) {
                 context.cache(entity);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Cache miss -> GUID = {}", guid);
-                }
+                LOG.debug("Cache miss -> GUID = {}", guid);
             }
         }
 
@@ -207,9 +202,7 @@ public class FullTextMapperV2 implements IFullTextMapper {
             if (entityWithExtInfo != null) {
                 context.cache(entityWithExtInfo);
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Cache miss -> GUID = {}", guid);
-                }
+                LOG.debug("Cache miss -> GUID = {}", guid);
             }
         }
         return entityWithExtInfo;
@@ -291,20 +284,20 @@ public class FullTextMapperV2 implements IFullTextMapper {
                 }
             }
         } else if (value instanceof List) {
-            List valueList = (List) value;
+            List<?> valueList = (List<?>) value;
 
             for (Object listElement : valueList) {
                 mapAttribute(listElement, entityExtInfo, sb, processedGuids, isClassificationOnly);
             }
         } else if (value instanceof Map) {
-            Map valueMap = (Map) value;
+            Map<?, ?> valueMap = (Map<?, ?>) value;
 
             for (Object key : valueMap.keySet()) {
                 mapAttribute(key, entityExtInfo, sb, processedGuids, isClassificationOnly);
                 mapAttribute(valueMap.get(key), entityExtInfo, sb, processedGuids, isClassificationOnly);
             }
         } else if (value instanceof Enum) {
-            Enum enumValue = (Enum) value;
+            Enum<?> enumValue = (Enum<?>) value;
 
             sb.append(enumValue.name()).append(FULL_TEXT_DELIMITER);
         } else if (value instanceof AtlasStruct) {
@@ -315,7 +308,7 @@ public class FullTextMapperV2 implements IFullTextMapper {
                 mapAttribute(entry.getValue(), entityExtInfo, sb, processedGuids, isClassificationOnly);
             }
         } else {
-            sb.append(String.valueOf(value)).append(FULL_TEXT_DELIMITER);
+            sb.append(value).append(FULL_TEXT_DELIMITER);
         }
     }
 

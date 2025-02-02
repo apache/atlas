@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.util;
 
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.v1.model.instance.Referenceable;
 
 import java.util.Collection;
@@ -28,8 +27,6 @@ import java.util.Set;
 
 /**
  * Map of attribute values to a collection of IndexedInstances with that attribute value.
- *
- * @see GraphHelper#getVerticesForInstancesByUniqueAttributes
  *
  */
 public class AttributeValueMap {

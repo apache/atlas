@@ -32,8 +32,8 @@ public class EntitiesExtractor {
     private static final String INCREMENTAL_EXTRACT    = "incremental";
     private static final String RELATION_BASED_EXTRACT = "relationship";
 
-    private Map<String, ExtractStrategy> extractors = new HashMap<>();
-    private ExtractStrategy              extractor;
+    private final Map<String, ExtractStrategy> extractors = new HashMap<>();
+    private       ExtractStrategy              extractor;
 
     public EntitiesExtractor(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry) {
         extractors.put(VERTEX_BASED_EXTRACT, new VertexExtractor(atlasGraph, typeRegistry));
@@ -81,8 +81,6 @@ public class EntitiesExtractor {
     }
 
     private ExtractStrategy extractUsing(AtlasEntityDef atlasEntityDef) {
-        return (atlasEntityDef == null || atlasEntityDef.getRelationshipAttributeDefs().size() == 0)
-                ? extractors.get(VERTEX_BASED_EXTRACT)
-                : extractors.get(RELATION_BASED_EXTRACT);
+        return (atlasEntityDef == null || atlasEntityDef.getRelationshipAttributeDefs().isEmpty()) ? extractors.get(VERTEX_BASED_EXTRACT) : extractors.get(RELATION_BASED_EXTRACT);
     }
 }

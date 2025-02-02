@@ -81,7 +81,7 @@ public class AtlasEntityStream implements EntityStream {
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer("AtlasEntityStream{");
+        StringBuilder sb = new StringBuilder("AtlasEntityStream{");
 
         sb.append("entitiesWithExtInfo=").append(entitiesWithExtInfo);
         sb.append(", iterator=").append(iterator);

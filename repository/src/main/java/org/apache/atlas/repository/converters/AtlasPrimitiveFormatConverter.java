@@ -33,7 +33,7 @@ public class AtlasPrimitiveFormatConverter extends AtlasAbstractFormatConverter 
     }
 
     @Override
-    public Object fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext ctx) throws AtlasBaseException {
+    public Object fromV2ToV1(Object v2Obj, AtlasType type, ConverterContext ctx) {
         return type.getNormalizedValue(v2Obj);
     }
 }

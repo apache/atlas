@@ -29,7 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -106,9 +105,7 @@ public class AddMandatoryAttributesPatch extends AtlasPatchHandler {
                     Iterable<Object> vertexIds = graph.query().has(ENTITY_TYPE_PROPERTY_KEY, typeName).vertexIds();
                     int              count     = 0;
 
-                    for (Iterator<Object> iterator = vertexIds.iterator(); iterator.hasNext(); ) {
-                        Object vertexId = iterator.next();
-
+                    for (Object vertexId : vertexIds) {
                         manager.checkProduce(vertexId);
 
                         count++;
@@ -121,9 +118,7 @@ public class AddMandatoryAttributesPatch extends AtlasPatchHandler {
 
         @Override
         protected void processVertexItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("==> AddMandatoryAttributesPatchProcessor.processVertexItem(typeName={}, vertexId={})", typeName, vertexId);
-            }
+            LOG.debug("==> AddMandatoryAttributesPatchProcessor.processVertexItem(typeName={}, vertexId={})", typeName, vertexId);
 
             for (AtlasAttributeDef attributeDef : attributesToAdd) {
                 AtlasAttribute attribute = entityType.getAttribute(attributeDef.getName());
@@ -137,9 +132,7 @@ public class AddMandatoryAttributesPatch extends AtlasPatchHandler {
                 }
             }
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== AddMandatoryAttributesPatchProcessor.processVertexItem(typeName={}, vertexId={})", typeName, vertexId);
-            }
+            LOG.debug("<== AddMandatoryAttributesPatchProcessor.processVertexItem(typeName={}, vertexId={})", typeName, vertexId);
         }
     }
 }

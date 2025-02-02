@@ -88,7 +88,7 @@ public class SearchResultDownloadTaskFactory implements TaskFactory {
 
     @Override
     public List<String> getSupportedTypes() {
-        return this.SUPPORTED_TYPES;
+        return SUPPORTED_TYPES;
     }
 
     @Scheduled(cron = "#{getCronExpressionForCleanup}")
@@ -124,9 +124,7 @@ public class SearchResultDownloadTaskFactory implements TaskFactory {
                         long fileAgeInMillis = now.getTime() - attr.creationTime().toMillis();
 
                         if (FILE_EXP_DURATION_IN_MILLIS < fileAgeInMillis) {
-                            if (LOG.isDebugEnabled()) {
-                                LOG.debug("deleting file: {}", csv.getName());
-                            }
+                            LOG.debug("deleting file: {}", csv.getName());
 
                             csv.delete();
                         }

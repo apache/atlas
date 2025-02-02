@@ -39,6 +39,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -127,7 +128,7 @@ public class AuditReductionTask extends AbstractTask {
         Map<String, List<EntityAuditEventV2>> entitiesWithSucceededAgeout = new HashMap<>();
 
         AtlasAuditAgingType auditAgingType            = AtlasAuditAgingType.valueOf(String.valueOf(parameters.get(AUDIT_AGING_TYPE_KEY)));
-        Set<String>         actionTypes               = ((Collection<String>) parameters.get(AUDIT_AGING_ACTION_TYPES_KEY)).stream().collect(Collectors.toSet());
+        Set<String>         actionTypes               = new HashSet<>(((Collection<String>) parameters.get(AUDIT_AGING_ACTION_TYPES_KEY)));
         int                 auditCountInput           = (int) parameters.get(AUDIT_AGING_COUNT_KEY);
         short               auditCount                = auditCountInput > Short.MAX_VALUE ? Short.MAX_VALUE : auditCountInput < Short.MIN_VALUE ? Short.MIN_VALUE : (short) auditCountInput;
         int                 ttl                       = (int) parameters.get(AUDIT_AGING_TTL_KEY);
@@ -138,7 +139,7 @@ public class AuditReductionTask extends AbstractTask {
         int          guidsCount                        = CollectionUtils.isNotEmpty(entityGuidsEligibleForAuditAgeout) ? entityGuidsEligibleForAuditAgeout.size() : 0;
         int          batchIndex                        = 1;
 
-        Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions = actionTypes.stream().map(x -> EntityAuditEventV2.EntityAuditActionV2.fromString(x)).collect(Collectors.toSet());
+        Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions = actionTypes.stream().map(EntityAuditEventV2.EntityAuditActionV2::fromString).collect(Collectors.toSet());
 
         for (int startIndex = 0; startIndex < guidsCount; ) {
             int          endIndex   = startIndex + GUID_BATCH_SIZE_PER_AGE_OUT_TASK < guidsCount ? startIndex + GUID_BATCH_SIZE_PER_AGE_OUT_TASK : guidsCount;

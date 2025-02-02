@@ -48,21 +48,20 @@ import static org.apache.atlas.AtlasErrorCode.IMPORT_ATTEMPTING_EMPTY_ZIP;
 import static org.apache.atlas.AtlasErrorCode.IMPORT_INVALID_ZIP_ENTRY;
 
 public class ZipSourceWithBackingDirectory implements EntityImportStream {
-    private static final Logger LOG                                  = LoggerFactory.getLogger(ZipSourceWithBackingDirectory.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ZipSourceWithBackingDirectory.class);
+
     private static final String TEMPORARY_DIRECTORY_PREFIX           = "atlas-import-temp-";
     private static final String EXT_JSON                             = ".json";
     private static final String RELATIVE_PARENT_PATH                 = "..";
     private static final String RELATIVE_PARENT_PATH_WITH_SEP_PREFIX = File.separator + RELATIVE_PARENT_PATH;
     private static final String RELATIVE_PARENT_PATH_WITH_SEP_SUFFIX = RELATIVE_PARENT_PATH + File.separator;
 
-    private Path tempDirectory;
-
+    private Path                    tempDirectory;
     private ImportTransforms        importTransform;
     private List<BaseEntityHandler> entityHandlers;
-
-    private ArrayList<String> creationOrder = new ArrayList<>();
-    private int               currentPosition;
-    private int               numberOfEntries;
+    private ArrayList<String>       creationOrder = new ArrayList<>();
+    private int                     currentPosition;
+    private int                     numberOfEntries;
 
     public ZipSourceWithBackingDirectory(InputStream inputStream) throws IOException, AtlasBaseException {
         this(inputStream, null);

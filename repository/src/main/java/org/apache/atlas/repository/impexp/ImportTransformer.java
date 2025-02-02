@@ -324,10 +324,10 @@ public abstract class ImportTransformer {
             if (attrExistingValue == null) {
                 entity.setAttribute(attrName, attrValue);
             } else if (attrExistingValue instanceof List) {
-                List list = (List) attrExistingValue;
+                List list = (List<?>) attrExistingValue;
 
                 if (attrValue instanceof List) {
-                    list.addAll((List) attrValue);
+                    list.addAll((List<?>) attrValue);
                 } else {
                     list.add(attrValue);
                 }

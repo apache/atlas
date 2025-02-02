@@ -50,7 +50,7 @@ public class SuggestionsProviderImpl implements SuggestionsProvider {
         } catch (AtlasException e) {
             LOG.error("Error encountered in performing quick suggestions. Will return no suggestions.", e);
 
-            result.setSuggestions(Collections.EMPTY_LIST);
+            result.setSuggestions(Collections.emptyList());
         }
 
         return result;

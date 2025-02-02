@@ -42,7 +42,7 @@ public class SelectClauseComposer {
     private final int                          minIdx;
     private final int                          maxIdx;
     private final int                          aggCount;
-    private final Map<Integer, AggregatorFlag> aggregatorFlags      = new HashMap();
+    private final Map<Integer, AggregatorFlag> aggregatorFlags      = new HashMap<>();
     private final Set<Integer>                 isNumericAggregator  = new HashSet<>();
     private final Set<Integer>                 isPrimitiveAttr      = new HashSet<>();
     private final Map<String, String>          itemAssignmentExprs  = new LinkedHashMap<>();

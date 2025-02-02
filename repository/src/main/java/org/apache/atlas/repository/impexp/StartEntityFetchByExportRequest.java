@@ -94,16 +94,19 @@ public class StartEntityFetchByExportRequest {
         try {
             if (StringUtils.isNotEmpty(item.getGuid())) {
                 ret.add(item.getGuid());
+
                 return ret;
             }
 
             if (StringUtils.equalsIgnoreCase(matchType, MATCH_TYPE_FOR_TYPE) && StringUtils.isNotEmpty(item.getTypeName())) {
                 ret = getEntitiesForMatchTypeType(item, matchType);
+
                 return ret;
             }
 
             if (StringUtils.isNotEmpty(item.getTypeName()) && MapUtils.isNotEmpty(item.getUniqueAttributes())) {
                 ret = getEntitiesForMatchTypeUsingUniqueAttributes(item, matchType);
+
                 return ret;
             }
         } catch (AtlasBaseException ex) {

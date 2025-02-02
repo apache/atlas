@@ -44,11 +44,12 @@ import java.util.List;
 import java.util.Map;
 
 class ExportTypeProcessor {
-    private static final Logger LOG                        = LoggerFactory.getLogger(ExportTypeProcessor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ExportTypeProcessor.class);
+
     private static final String RELATIONSHIP_ATTR_MEANINGS = "meanings";
 
-    private AtlasTypeRegistry typeRegistry;
-    private GlossaryService   glossaryService;
+    private final AtlasTypeRegistry typeRegistry;
+    private final GlossaryService   glossaryService;
 
     ExportTypeProcessor(AtlasTypeRegistry typeRegistry, GlossaryService glossaryService) {
         this.typeRegistry    = typeRegistry;
@@ -69,11 +70,12 @@ class ExportTypeProcessor {
 
     private void addTerms(AtlasEntity entity, ExportService.ExportContext context) {
         Object relAttrMeanings = entity.getRelationshipAttribute(RELATIONSHIP_ATTR_MEANINGS);
-        if (relAttrMeanings == null || !(relAttrMeanings instanceof List)) {
+        if (!(relAttrMeanings instanceof List)) {
             return;
         }
 
-        List list = (List) relAttrMeanings;
+        List<?> list = (List<?>) relAttrMeanings;
+
         if (CollectionUtils.isEmpty(list)) {
             return;
         }

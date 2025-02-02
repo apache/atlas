@@ -355,7 +355,7 @@ public class AtlasGraphUtilsV2 {
                 .has(Constants.QUALIFIED_NAME, qualifiedName)
                 .orderBy(Constants.ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY, ASC);
 
-        Iterator iterator = query.vertices().iterator();
+        Iterator<?> iterator = query.vertices().iterator();
 
         String ret = iterator.hasNext() ? GraphHelper.getGuid((AtlasVertex) iterator.next()) : null;
 
@@ -420,11 +420,11 @@ public class AtlasGraphUtilsV2 {
         return ret;
     }
 
-    public static boolean typeHasInstanceVertex(String typeName) throws AtlasBaseException {
+    public static boolean typeHasInstanceVertex(String typeName) {
         return typeHasInstanceVertex(getGraphInstance(), typeName);
     }
 
-    public static boolean typeHasInstanceVertex(AtlasGraph graph, String typeName) throws AtlasBaseException {
+    public static boolean typeHasInstanceVertex(AtlasGraph graph, String typeName) {
         AtlasGraphQuery query = graph.query().has(TYPE_NAME_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.EQUAL, typeName);
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
@@ -759,7 +759,7 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static void addItemToListProperty(AtlasEdge edge, String property, String value) {
-        List list = getListFromProperty(edge, property);
+        List<String> list = (List<String>) getListFromProperty(edge, property);
 
         list.add(value);
 
@@ -767,7 +767,7 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static void removeItemFromListProperty(AtlasEdge edge, String property, String value) {
-        List list = getListFromProperty(edge, property);
+        List<String> list = (List<String>) getListFromProperty(edge, property);
 
         list.remove(value);
 
@@ -830,8 +830,8 @@ public class AtlasGraphUtilsV2 {
         return classificationNames;
     }
 
-    private static List getListFromProperty(AtlasEdge edge, String property) {
-        List list = edge.getListProperty(property);
+    private static List<?> getListFromProperty(AtlasEdge edge, String property) {
+        List<?> list = edge.getListProperty(property);
 
         return CollectionUtils.isEmpty(list) ? new ArrayList<>() : list;
     }

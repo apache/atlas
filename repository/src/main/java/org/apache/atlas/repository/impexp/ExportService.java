@@ -77,7 +77,7 @@ public class ExportService {
         this.auditsWriter                    = auditsWriter;
         this.hdfsPathEntityCreator           = hdfsPathEntityCreator;
         this.glossaryService                 = glossaryService;
-        this.startEntityFetchByExportRequest = new StartEntityFetchByExportRequest(graph, typeRegistry, AtlasGremlinQueryProvider.INSTANCE);
+        this.startEntityFetchByExportRequest = new StartEntityFetchByExportRequest(graph, typeRegistry, AtlasGremlinQueryProvider.getInstance());
         this.entitiesExtractor               = new EntitiesExtractor(graph, typeRegistry);
     }
 
@@ -263,9 +263,8 @@ public class ExportService {
             return AtlasExportResult.OperationStatus.FAIL;
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== processObjectId({})", item);
-        }
+        LOG.debug("<== processObjectId({})", item);
+
         return AtlasExportResult.OperationStatus.SUCCESS;
     }
 

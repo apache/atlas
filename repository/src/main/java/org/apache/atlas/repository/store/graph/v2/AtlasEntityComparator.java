@@ -169,6 +169,7 @@ public class AtlasEntityComparator {
                 diffEntity.setBusinessAttributes(newBusinessMetadata);
 
                 hasDiffInBusinessAttributes = true;
+
                 sectionsWithDiff++;
 
                 if (findOnlyFirstDiff && sectionsWithDiff > 1) {

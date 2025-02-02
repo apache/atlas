@@ -49,9 +49,7 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
     @Override
     public AtlasVertex preCreate(AtlasEnumDef enumDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV2.preCreate({})", enumDef);
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.preCreate({})", enumDef);
 
         validateType(enumDef);
 
@@ -67,55 +65,44 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         toVertex(enumDef, vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.preCreate({}): {}", enumDef, vertex);
-        }
+        LOG.debug("<== AtlasEnumDefStoreV2.preCreate({}): {}", enumDef, vertex);
 
         return vertex;
     }
 
     @Override
     public AtlasEnumDef create(AtlasEnumDef enumDef, AtlasVertex preCreateResult) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV2.create({}, {})", enumDef, preCreateResult);
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.create({}, {})", enumDef, preCreateResult);
 
         AtlasVertex vertex = (preCreateResult == null) ? preCreate(enumDef) : preCreateResult;
 
         AtlasEnumDef ret = toEnumDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEntityDefStoreV2.create({}, {}): {}", enumDef, preCreateResult, ret);
-        }
+        LOG.debug("<== AtlasEntityDefStoreV2.create({}, {}): {}", enumDef, preCreateResult, ret);
 
         return ret;
     }
 
     @Override
     public List<AtlasEnumDef> getAll() throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV2.getAll()");
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.getAll()");
 
         List<AtlasEnumDef> ret = new ArrayList<>();
 
         Iterator<AtlasVertex> vertices = typeDefStore.findTypeVerticesByCategory(TypeCategory.ENUM);
+
         while (vertices.hasNext()) {
             ret.add(toEnumDef(vertices.next()));
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.getAll(): count={}", ret.size());
-        }
+        LOG.debug("<== AtlasEnumDefStoreV2.getAll(): count={}", ret.size());
 
         return ret;
     }
 
     @Override
     public AtlasEnumDef getByName(String name) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV2.getByName({})", name);
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.getByName({})", name);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.ENUM);
 
@@ -127,18 +114,14 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         AtlasEnumDef ret = toEnumDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.getByName({}): {}", name, ret);
-        }
+        LOG.debug("<== AtlasEnumDefStoreV2.getByName({}): {}", name, ret);
 
         return ret;
     }
 
     @Override
     public AtlasEnumDef getByGuid(String guid) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV2.getByGuid({})", guid);
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.getByGuid({})", guid);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.ENUM);
 
@@ -148,36 +131,28 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         AtlasEnumDef ret = toEnumDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.getByGuid({}): {}", guid, ret);
-        }
+        LOG.debug("<== AtlasEnumDefStoreV2.getByGuid({}): {}", guid, ret);
 
         return ret;
     }
 
     @Override
     public AtlasEnumDef update(AtlasEnumDef enumDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV2.update({})", enumDef);
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.update({})", enumDef);
 
         validateType(enumDef);
 
         AtlasEnumDef ret = StringUtils.isNotBlank(enumDef.getGuid()) ? updateByGuid(enumDef.getGuid(), enumDef)
                 : updateByName(enumDef.getName(), enumDef);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.update({}): {}", enumDef, ret);
-        }
+        LOG.debug("<== AtlasEnumDefStoreV2.update({}): {}", enumDef, ret);
 
         return ret;
     }
 
     @Override
     public AtlasEnumDef updateByName(String name, AtlasEnumDef enumDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV2.updateByName({}, {})", name, enumDef);
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.updateByName({}, {})", name, enumDef);
 
         AtlasEnumDef existingDef = typeRegistry.getEnumDefByName(name);
 
@@ -197,18 +172,14 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         AtlasEnumDef ret = toEnumDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.updateByName({}, {}): {}", name, enumDef, ret);
-        }
+        LOG.debug("<== AtlasEnumDefStoreV2.updateByName({}, {}): {}", name, enumDef, ret);
 
         return ret;
     }
 
     @Override
     public AtlasEnumDef updateByGuid(String guid, AtlasEnumDef enumDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV2.updateByGuid({})", guid);
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.updateByGuid({})", guid);
 
         AtlasEnumDef existingDef = typeRegistry.getEnumDefByGuid(guid);
 
@@ -228,9 +199,7 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         AtlasEnumDef ret = toEnumDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.updateByGuid({}): {}", guid, ret);
-        }
+        LOG.debug("<== AtlasEnumDefStoreV2.updateByGuid({}): {}", guid, ret);
 
         return ret;
     }

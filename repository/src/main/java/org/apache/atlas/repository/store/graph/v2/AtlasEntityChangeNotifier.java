@@ -649,6 +649,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         }
 
         AtlasVertex atlasVertex = AtlasGraphUtilsV2.findByGuid(entityId);
+
         if (atlasVertex == null || GraphHelper.isInternalType(atlasVertex)) {
             return;
         }
@@ -680,6 +681,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         }
 
         AtlasEntityHeader entityHeader = new AtlasEntityHeader();
+
         entityHeader.setGuid(guid);
 
         doFullTextMapping(Collections.singletonList(entityHeader));

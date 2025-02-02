@@ -78,6 +78,6 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
 
     @Override
     public List<String> getSupportedTypes() {
-        return this.SUPPORTED_TYPES;
+        return SUPPORTED_TYPES;
     }
 }

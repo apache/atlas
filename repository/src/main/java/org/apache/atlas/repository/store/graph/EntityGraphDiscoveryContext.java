@@ -24,8 +24,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,8 +33,6 @@ import java.util.Map;
 import java.util.Set;
 
 public final class EntityGraphDiscoveryContext {
-    private static final Logger LOG = LoggerFactory.getLogger(EntityGraphDiscoveryContext.class);
-
     private final AtlasTypeRegistry               typeRegistry;
     private final EntityStream                    entityStream;
     private final List<String>                    referencedGuids          = new ArrayList<>();
@@ -104,7 +100,7 @@ public final class EntityGraphDiscoveryContext {
         return resolvedIdsByUniqAttribs.containsKey(objId);
     }
 
-    public AtlasVertex getResolvedEntityVertex(String guid) throws AtlasBaseException {
+    public AtlasVertex getResolvedEntityVertex(String guid) {
         return resolvedGuids.get(guid);
     }
 
@@ -149,6 +145,7 @@ public final class EntityGraphDiscoveryContext {
 
     private AtlasVertex getAtlasVertexFromResolvedIdsByAttribs(AtlasObjectId objId) {
         AtlasVertex vertex = resolvedIdsByUniqAttribs.get(objId);
+
         // check also for sub-types; ref={typeName=Asset; guid=abcd} should match {typeName=hive_table; guid=abcd}
         if (vertex == null) {
             final AtlasEntityType entityType  = typeRegistry.getEntityTypeByName(objId.getTypeName());

@@ -99,7 +99,7 @@ public class ImportTransforms {
 
     public AtlasEntity.AtlasEntityWithExtInfo apply(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) throws AtlasBaseException {
         if (entityWithExtInfo == null) {
-            return entityWithExtInfo;
+            return null;
         }
 
         apply(entityWithExtInfo.getEntity());
@@ -115,7 +115,7 @@ public class ImportTransforms {
 
     public AtlasEntity apply(AtlasEntity entity) throws AtlasBaseException {
         if (entity == null) {
-            return entity;
+            return null;
         }
 
         Map<String, List<ImportTransformer>> entityTransforms = getTransforms(entity.getTypeName());
@@ -157,7 +157,7 @@ public class ImportTransforms {
         }
     }
 
-    private void addOuterMap(Map typeTransforms) {
+    private void addOuterMap(Map<?, ?> typeTransforms) {
         for (Object key : typeTransforms.keySet()) {
             Object              value               = typeTransforms.get(key);
             String              entityType          = (String) key;

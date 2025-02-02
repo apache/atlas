@@ -56,14 +56,15 @@ import static org.apache.atlas.repository.Constants.HISTORICAL_GUID_PROPERTY_KEY
 import static org.apache.atlas.repository.store.graph.v2.BulkImporterImpl.updateImportProgress;
 
 public class RegularImport extends ImportStrategy {
-    private static final Logger LOG          = LoggerFactory.getLogger(RegularImport.class);
-    private static final int    MAX_ATTEMPTS = 3;
+    private static final Logger LOG = LoggerFactory.getLogger(RegularImport.class);
+
+    private static final int MAX_ATTEMPTS = 3;
 
     private final AtlasGraph           graph;
     private final AtlasEntityStore     entityStore;
     private final AtlasTypeRegistry    typeRegistry;
     private final EntityGraphRetriever entityGraphRetriever;
-    private       boolean              directoryBasedImportConfigured;
+    private final boolean              directoryBasedImportConfigured;
 
     public RegularImport(AtlasGraph graph, AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
         this.graph                          = graph;
@@ -76,25 +77,26 @@ public class RegularImport extends ImportStrategy {
     @VisibleForTesting
     static String getJsonArray(String json, String vertexGuid) {
         String quotedGuid = String.format("\"%s\"", vertexGuid);
+
         if (StringUtils.isEmpty(json)) {
             json = String.format("[%s]", quotedGuid);
         } else {
             json = json.replace("]", "").concat(",").concat(quotedGuid).concat("]");
         }
+
         return json;
     }
 
     @Override
     public EntityMutationResponse run(EntityImportStream entityStream, AtlasImportResult importResult) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> bulkImport()");
-        }
+        LOG.debug("==> bulkImport()");
 
         if (entityStream == null || !entityStream.hasNext()) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
         }
 
         EntityMutationResponse ret = new EntityMutationResponse();
+
         ret.setGuidAssignments(new HashMap<>());
 
         Set<String>  processedGuids = new HashSet<>();
@@ -120,10 +122,7 @@ public class RegularImport extends ImportStrategy {
                         ret.getGuidAssignments().putAll(resp.getGuidAssignments());
                     }
 
-                    currentPercent = updateImportMetrics(entityWithExtInfo, resp, importResult, processedGuids,
-                            entityStream.getPosition(),
-                            entityImportStreamWithResidualList.getStreamSize(),
-                            currentPercent);
+                    currentPercent = updateImportMetrics(entityWithExtInfo, resp, importResult, processedGuids, entityStream.getPosition(), entityImportStreamWithResidualList.getStreamSize(), currentPercent);
 
                     entityStream.onImportComplete(entity.getGuid());
                     break;
@@ -133,9 +132,7 @@ public class RegularImport extends ImportStrategy {
                     }
                     break;
                 } catch (AtlasSchemaViolationException e) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("Entity: {}", entity.getGuid(), e);
-                    }
+                    LOG.debug("Entity: {}", entity.getGuid(), e);
 
                     if (attempt == 0) {
                         updateVertexGuid(entityWithExtInfo);
@@ -145,6 +142,7 @@ public class RegularImport extends ImportStrategy {
                     }
                 } catch (Throwable e) {
                     AtlasBaseException abe = new AtlasBaseException(e);
+
                     if (!updateResidualList(abe, residualList, entityWithExtInfo.getEntity().getGuid())) {
                         throw abe;
                     }
@@ -158,6 +156,7 @@ public class RegularImport extends ImportStrategy {
         }
 
         importResult.getProcessedEntities().addAll(processedGuids);
+
         LOG.info("bulkImport(): done. Total number of entities (including referred entities) imported: {}", processedGuids.size());
 
         return ret;
@@ -166,24 +165,27 @@ public class RegularImport extends ImportStrategy {
     @GraphTransaction
     public void updateVertexGuid(AtlasEntityWithExtInfo entityWithExtInfo) {
         updateVertexGuid(entityWithExtInfo.getEntity());
+
         if (MapUtils.isEmpty(entityWithExtInfo.getReferredEntities())) {
             return;
         }
+
         for (AtlasEntity entity : entityWithExtInfo.getReferredEntities().values()) {
             updateVertexGuid(entity);
         }
     }
 
     public void updateVertexGuid(AtlasEntity entity) {
-        String        entityGuid = entity.getGuid();
-        AtlasObjectId objectId   = entityGraphRetriever.toAtlasObjectIdWithoutGuid(entity);
-
+        String          entityGuid = entity.getGuid();
+        AtlasObjectId   objectId   = entityGraphRetriever.toAtlasObjectIdWithoutGuid(entity);
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-        String          vertexGuid = null;
+        String          vertexGuid;
+
         try {
             vertexGuid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(this.graph, entityType, objectId.getUniqueAttributes());
         } catch (AtlasBaseException e) {
             LOG.warn("Entity: {}: Does not exist!", objectId);
+
             return;
         }
 
@@ -192,11 +194,13 @@ public class RegularImport extends ImportStrategy {
         }
 
         AtlasVertex v = AtlasGraphUtilsV2.findByGuid(this.graph, vertexGuid);
+
         if (v == null) {
             return;
         }
 
         addHistoricalGuid(v, vertexGuid);
+
         AtlasGraphUtilsV2.setProperty(v, Constants.GUID_PROPERTY_KEY, entityGuid);
 
         LOG.warn("GUID Updated: Entity: {}: from: {}: to: {}", objectId, vertexGuid, entity.getGuid());
@@ -218,11 +222,7 @@ public class RegularImport extends ImportStrategy {
         return true;
     }
 
-    private float updateImportMetrics(AtlasEntity.AtlasEntityWithExtInfo currentEntity,
-            EntityMutationResponse resp,
-            AtlasImportResult importResult,
-            Set<String> processedGuids,
-            int currentIndex, int streamSize, float currentPercent) {
+    private float updateImportMetrics(AtlasEntity.AtlasEntityWithExtInfo currentEntity, EntityMutationResponse resp, AtlasImportResult importResult, Set<String> processedGuids, int currentIndex, int streamSize, float currentPercent) {
         if (!directoryBasedImportConfigured) {
             BulkImporterImpl.updateImportMetrics("entity:%s:created", resp.getCreatedEntities(), processedGuids, importResult);
             BulkImporterImpl.updateImportMetrics("entity:%s:updated", resp.getUpdatedEntities(), processedGuids, importResult);
@@ -248,7 +248,7 @@ public class RegularImport extends ImportStrategy {
         }
 
         public AtlasEntity.AtlasEntityWithExtInfo getNextEntityWithExtInfo() {
-            if (navigateResidualList == false) {
+            if (!navigateResidualList) {
                 return stream.getNextEntityWithExtInfo();
             } else {
                 stream.setPositionUsingEntityGuid(residualList.get(currentResidualListIndex++));
@@ -259,7 +259,9 @@ public class RegularImport extends ImportStrategy {
         public boolean hasNext() {
             if (!navigateResidualList) {
                 boolean streamHasNext = stream.hasNext();
-                navigateResidualList = (streamHasNext == false);
+
+                navigateResidualList = (!streamHasNext);
+
                 return streamHasNext ? streamHasNext : (currentResidualListIndex < residualList.size());
             } else {
                 return (currentResidualListIndex < residualList.size());
