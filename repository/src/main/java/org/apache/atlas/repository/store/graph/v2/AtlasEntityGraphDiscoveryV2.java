@@ -170,7 +170,9 @@ public class AtlasEntityGraphDiscoveryV2 implements EntityGraphDiscovery {
         // referencedGuids will be updated within this for() loop; avoid use of iterators
         List<String> referencedGuids = discoveryContext.getReferencedGuids();
 
-        for (String guid : referencedGuids) {
+        for (int i = 0; i < referencedGuids.size(); i++) {
+            String guid = referencedGuids.get(i);
+
             if (walkedEntities.contains(guid)) {
                 continue;
             }
