@@ -47,6 +47,8 @@ public class LinkBusinessPolicyRequest implements Serializable {
     private Set<String> linkGuids;
     private Set<String> unlinkGuids;
 
+    private Set<String> businessPolicyGuids;
+
     public Set<String> getLinkGuids() {
         return linkGuids;
     }
@@ -63,11 +65,20 @@ public class LinkBusinessPolicyRequest implements Serializable {
         this.unlinkGuids = unlinkGuids;
     }
 
+    public Set<String> getBusinessPolicyGuids() {
+        return businessPolicyGuids;
+    }
+
+    public void setBusinessPolicyGuids(Set<String> businessPolicyGuids) {
+        this.businessPolicyGuids = businessPolicyGuids;
+    }
+
     @Override
     public String toString() {
         final StringBuilder sb = new StringBuilder("LinkBusinessPolicyRequest{");
         sb.append("linkGuids=").append(linkGuids);
         sb.append(", unlinkGuids=").append(unlinkGuids);
+        sb.append(", businessPolicyGuids=").append(businessPolicyGuids);
         sb.append('}');
         return sb.toString();
     }

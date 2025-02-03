@@ -35,8 +35,10 @@ import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.*;
 import org.apache.atlas.utils.AtlasEntityUtil;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.collections.iterators.IteratorChain;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -71,7 +73,7 @@ public class RestoreHandlerV1 {
 
     private void restoreEdge(AtlasEdge edge) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> RestoreHandlerV1.restoreEdge({})", GraphHelper.string(edge));
+            LOG.debug("==> RestoreHandlerV1.restoreEdge({})", string(edge));
         }
 
         if (isClassificationEdge(edge)) {
@@ -91,111 +93,123 @@ public class RestoreHandlerV1 {
 
 
     public void restoreEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException {
-        final RequestContext requestContext = RequestContext.get();
-        final Set<AtlasVertex> restoreCandidateVertices = new HashSet<>();
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("RestoreHandlerV1.restoreEntities");
 
-        for (AtlasVertex instanceVertex : instanceVertices) {
-            final String guid = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
+        try {
+            final RequestContext requestContext = RequestContext.get();
+            final Set<AtlasVertex> restoreCandidateVertices = new HashSet<>();
 
-            if (skipVertexForRestore(instanceVertex)) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Skipping restoring of entity={} as it is already active", guid);
+            for (AtlasVertex instanceVertex : instanceVertices) {
+                final String guid = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
+
+                if (skipVertexForRestore(instanceVertex)) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Skipping restoring of entity={} as it is already active", guid);
+                    }
+                    continue;
                 }
-                continue;
+
+                // Record all restoring candidate entities in RequestContext
+                // and gather restoring candidate vertices.
+                for (VertexInfo vertexInfo : getOwnedVertices(instanceVertex)) {
+                    requestContext.recordEntityRestore(vertexInfo.getEntity());
+                    restoreCandidateVertices.add(vertexInfo.getVertex());
+                }
             }
 
-            // Record all restoring candidate entities in RequestContext
-            // and gather restoring candidate vertices.
-            for (GraphHelper.VertexInfo vertexInfo : getOwnedVertices(instanceVertex)) {
-                requestContext.recordEntityRestore(vertexInfo.getEntity());
-                restoreCandidateVertices.add(vertexInfo.getVertex());
+            // Restore traits and vertices.
+            for (AtlasVertex restoreCandidateVertex : restoreCandidateVertices) {
+                restoreAllClassifications(restoreCandidateVertex);
+                restoreTypeVertex(restoreCandidateVertex);
             }
-        }
-
-        // Restore traits and vertices.
-        for (AtlasVertex restoreCandidateVertex : restoreCandidateVertices) {
-            restoreAllClassifications(restoreCandidateVertex);
-            restoreTypeVertex(restoreCandidateVertex);
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 
     private void restoreEdgeBetweenVertices(AtlasVertex outVertex, AtlasVertex inVertex, AtlasStructType.AtlasAttribute attribute) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Removing edge from {} to {} with attribute name {}", string(outVertex), string(inVertex), attribute.getName());
-        }
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("RestoreHandlerV1.restoreEdgeBetweenVertices");
 
-
-        String edgeLabel = attribute.getRelationshipEdgeLabel();
-        AtlasEdge edge = null;
-        AtlasStructDef.AtlasAttributeDef attrDef = attribute.getAttributeDef();
-        AtlasType attrType = attribute.getAttributeType();
-
-        switch (attrType.getTypeCategory()) {
-            case OBJECT_ID_TYPE: {
-                if (attrDef.getIsOptional()) {
-                    edge = graphHelper.getEdgeForLabel(outVertex, edgeLabel);
-                }
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Removing edge from {} to {} with attribute name {}", string(outVertex), string(inVertex), attribute.getName());
             }
-            break;
-            case ARRAY: {
-                //If its array attribute, find the right edge between the two vertices and update array property
-                List<AtlasEdge> elementEdges = getCollectionElementsUsingRelationship(outVertex, attribute);
-                if (elementEdges != null) {
-                    elementEdges = new ArrayList<>(elementEdges);
 
-                    for (AtlasEdge elementEdge : elementEdges) {
-                        if (elementEdge == null) {
-                            continue;
-                        }
 
-                        AtlasVertex elementVertex = elementEdge.getInVertex();
-                        if (elementVertex.equals(inVertex)) {
-                            edge = elementEdge;
-                        }
+            String edgeLabel = attribute.getRelationshipEdgeLabel();
+            AtlasEdge edge = null;
+            AtlasStructDef.AtlasAttributeDef attrDef = attribute.getAttributeDef();
+            AtlasType attrType = attribute.getAttributeType();
+
+            switch (attrType.getTypeCategory()) {
+                case OBJECT_ID_TYPE: {
+                    if (attrDef.getIsOptional()) {
+                        edge = graphHelper.getEdgeForLabel(outVertex, edgeLabel);
                     }
                 }
-            }
-            break;
-            case MAP: {
-                List<AtlasEdge> mapEdges = getMapValuesUsingRelationship(outVertex, attribute);
-                if (mapEdges != null) {
-                    mapEdges = new ArrayList<>(mapEdges);
-                    for (AtlasEdge mapEdge : mapEdges) {
-                        if (mapEdge != null) {
-                            AtlasVertex mapVertex = mapEdge.getInVertex();
-                            if (mapVertex.getId().toString().equals(inVertex.getId().toString())) {
-                                edge = mapEdge;
+                break;
+                case ARRAY: {
+                    //If its array attribute, find the right edge between the two vertices and update array property
+                    List<AtlasEdge> elementEdges = getCollectionElementsUsingRelationship(outVertex, attribute);
+                    if (elementEdges != null) {
+                        elementEdges = new ArrayList<>(elementEdges);
+
+                        for (AtlasEdge elementEdge : elementEdges) {
+                            if (elementEdge == null) {
+                                continue;
+                            }
+
+                            AtlasVertex elementVertex = elementEdge.getInVertex();
+                            if (elementVertex.equals(inVertex)) {
+                                edge = elementEdge;
                             }
                         }
                     }
                 }
-            }
-            break;
-            case STRUCT:
-            case CLASSIFICATION:
                 break;
-            default:
-                throw new IllegalStateException("There can't be an edge from " + GraphHelper.getVertexDetails(outVertex) + " to " + GraphHelper.getVertexDetails(inVertex) + " with attribute name " + attribute.getName() + " which is not class/array/map attribute. found " + attrType.getTypeCategory().name());
-        }
-
-        if (edge != null) {
-            restoreEdge(edge);
-
-            final RequestContext requestContext = RequestContext.get();
-            final String outId = GraphHelper.getGuid(outVertex);
-
-            if (!requestContext.isUpdatedEntity(outId)) {
-                AtlasGraphUtilsV2.setEncodedProperty(outVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
-                AtlasGraphUtilsV2.setEncodedProperty(outVertex, MODIFIED_BY_KEY, requestContext.getUser());
-
-                requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(outVertex));
+                case MAP: {
+                    List<AtlasEdge> mapEdges = getMapValuesUsingRelationship(outVertex, attribute);
+                    if (mapEdges != null) {
+                        mapEdges = new ArrayList<>(mapEdges);
+                        for (AtlasEdge mapEdge : mapEdges) {
+                            if (mapEdge != null) {
+                                AtlasVertex mapVertex = mapEdge.getInVertex();
+                                if (mapVertex.getId().toString().equals(inVertex.getId().toString())) {
+                                    edge = mapEdge;
+                                }
+                            }
+                        }
+                    }
+                }
+                break;
+                case STRUCT:
+                case CLASSIFICATION:
+                    break;
+                default:
+                    throw new IllegalStateException("There can't be an edge from " + getVertexDetails(outVertex) + " to " + getVertexDetails(inVertex) + " with attribute name " + attribute.getName() + " which is not class/array/map attribute. found " + attrType.getTypeCategory().name());
             }
+
+            if (edge != null) {
+                restoreEdge(edge);
+
+                final RequestContext requestContext = RequestContext.get();
+                final String outId = getGuid(outVertex);
+
+                if (!requestContext.isUpdatedEntity(outId)) {
+                    AtlasGraphUtilsV2.setEncodedProperty(outVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
+                    AtlasGraphUtilsV2.setEncodedProperty(outVertex, MODIFIED_BY_KEY, requestContext.getUser());
+
+                    requestContext.recordEntityUpdate(entityRetriever.toAtlasEntityHeader(outVertex));
+                }
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 
 
-    private Collection<GraphHelper.VertexInfo> getOwnedVertices(AtlasVertex entityVertex) throws AtlasBaseException {
-        final Map<String, GraphHelper.VertexInfo> vertexInfoMap = new HashMap<>();
+    private Collection<VertexInfo> getOwnedVertices(AtlasVertex entityVertex) throws AtlasBaseException {
+        final Map<String, VertexInfo> vertexInfoMap = new HashMap<>();
         final Stack<AtlasVertex> vertices = new Stack<>();
 
         vertices.push(entityVertex);
@@ -208,7 +222,7 @@ public class RestoreHandlerV1 {
                 continue;
             }
 
-            String guid = GraphHelper.getGuid(vertex);
+            String guid = getGuid(vertex);
 
             if (vertexInfoMap.containsKey(guid)) {
                 continue;
@@ -219,10 +233,10 @@ public class RestoreHandlerV1 {
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
             if (entityType == null) {
-                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), typeName);
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, ENTITY.name(), typeName);
             }
 
-            vertexInfoMap.put(guid, new GraphHelper.VertexInfo(entity, vertex));
+            vertexInfoMap.put(guid, new VertexInfo(entity, vertex));
 
             for (AtlasStructType.AtlasAttribute attributeInfo : entityType.getOwnedRefAttributes()) {
                 String edgeLabel = attributeInfo.getRelationshipEdgeLabel();
@@ -361,7 +375,7 @@ public class RestoreHandlerV1 {
     }
 
     private AtlasStructType.AtlasAttribute getAttributeForEdge(AtlasEdge edge) throws AtlasBaseException {
-        String labelWithoutPrefix        = edge.getLabel().substring(GraphHelper.EDGE_LABEL_PREFIX.length());
+        String labelWithoutPrefix        = edge.getLabel().substring(EDGE_LABEL_PREFIX.length());
         AtlasType       parentType       = typeRegistry.getType(AtlasGraphUtilsV2.getTypeName(edge.getOutVertex()));
         AtlasStructType parentStructType = (AtlasStructType) parentType;
         AtlasStructType.AtlasAttribute attribute = parentStructType.getAttribute(labelWithoutPrefix);
@@ -376,36 +390,46 @@ public class RestoreHandlerV1 {
     }
 
     protected void restoreVertex(AtlasVertex instanceVertex) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Setting the external references to {} to null(removing edges)", string(instanceVertex));
-        }
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("RestoreHandlerV1.restoreVertex");
+
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Setting the external references to {} to null(removing edges)", string(instanceVertex));
+            }
+            Iterable<AtlasEdge> incomingEdges;
 
         // Restore external references to this vertex - incoming edges from lineage or glossary term edges
-        final Iterable<AtlasEdge> incomingEdges = instanceVertex.getEdges(AtlasEdgeDirection.IN);
+            if (RequestContext.get().isSkipProcessEdgeRestoration())
+                    incomingEdges = instanceVertex.getInEdges(PROCESS_EDGE_LABELS);
+            else
+                    incomingEdges = instanceVertex.getInEdges(null);
 
-        for (AtlasEdge edge : incomingEdges) {
-            AtlasEntity.Status edgeStatus = getStatus(edge);
-            boolean isProceed = edgeStatus == DELETED;
+            for (AtlasEdge edge : incomingEdges) {
+                AtlasEntity.Status edgeStatus = getStatus(edge);
+                boolean isProceed = edgeStatus == DELETED;
 
-            if (isProceed) {
-                if (isRelationshipEdge(edge)) {
-                    restoreRelationship(edge);
-                } else {
-                    AtlasVertex outVertex = edge.getOutVertex();
-                    AtlasVertex inVertex = edge.getInVertex();
-                    AtlasStructType.AtlasAttribute attribute = getAttributeForEdge(edge);
+                if (isProceed) {
+                    if (isRelationshipEdge(edge)) {
+                        restoreRelationship(edge);
+                    } else {
+                        AtlasVertex outVertex = edge.getOutVertex();
+                        AtlasVertex inVertex = edge.getInVertex();
+                        AtlasStructType.AtlasAttribute attribute = getAttributeForEdge(edge);
 
-                    restoreEdgeBetweenVertices(outVertex, inVertex, attribute);
+                        restoreEdgeBetweenVertices(outVertex, inVertex, attribute);
+                    }
                 }
             }
-        }
 
-        _restoreVertex(instanceVertex);
+            _restoreVertex(instanceVertex);
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
     }
 
     private void _restoreVertex(AtlasVertex instanceVertex) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> RestoreHandlerV1._restoreVertex({})", GraphHelper.string(instanceVertex));
+            LOG.debug("==> RestoreHandlerV1._restoreVertex({})", string(instanceVertex));
         }
 
         AtlasEntity.Status state = AtlasGraphUtilsV2.getState(instanceVertex);
@@ -419,68 +443,71 @@ public class RestoreHandlerV1 {
     }
 
     private void restoreTypeVertex(AtlasVertex instanceVertex) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Restoring {}", string(instanceVertex));
-        }
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("RestoreHandlerV1.restoreTypeVertex");
 
-        String typeName = GraphHelper.getTypeName(instanceVertex);
-        AtlasType parentType = typeRegistry.getType(typeName);
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Restoring {}", string(instanceVertex));
+            }
 
-        if (parentType instanceof AtlasStructType) {
-            AtlasStructType structType = (AtlasStructType) parentType;
-            boolean isEntityType = (parentType instanceof AtlasEntityType);
+            String typeName = getTypeName(instanceVertex);
+            AtlasType parentType = typeRegistry.getType(typeName);
 
-            for (AtlasStructType.AtlasAttribute attributeInfo : structType.getAllAttributes().values()) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Deleting attribute {} for {}", attributeInfo.getName(), string(instanceVertex));
-                }
+            if (parentType instanceof AtlasStructType) {
+                AtlasStructType structType = (AtlasStructType) parentType;
+                boolean isEntityType = (parentType instanceof AtlasEntityType);
 
-                boolean isOwned = isEntityType && attributeInfo.isOwnedRef();
-                AtlasType attrType = attributeInfo.getAttributeType();
-                String edgeLabel = attributeInfo.getRelationshipEdgeLabel();
+                for (AtlasStructType.AtlasAttribute attributeInfo : structType.getAllAttributes().values()) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Deleting attribute {} for {}", attributeInfo.getName(), string(instanceVertex));
+                    }
 
-                switch (attrType.getTypeCategory()) {
-                    case OBJECT_ID_TYPE:
-                        //If its class attribute, restore the reference
-                        restoreEdgeReference(instanceVertex, edgeLabel, attrType.getTypeCategory(), isOwned);
-                        break;
+                    boolean isOwned = isEntityType && attributeInfo.isOwnedRef();
+                    AtlasType attrType = attributeInfo.getAttributeType();
+                    String edgeLabel = attributeInfo.getRelationshipEdgeLabel();
 
-                    case STRUCT:
-                        //If its struct attribute, restore the reference
-                        restoreEdgeReference(instanceVertex, edgeLabel, attrType.getTypeCategory(), false);
-                        break;
+                    switch (attrType.getTypeCategory()) {
+                        case OBJECT_ID_TYPE:
+                            //If its class attribute, restore the reference
+                            restoreEdgeReference(instanceVertex, edgeLabel, attrType.getTypeCategory(), isOwned);
+                            break;
 
-                    case ARRAY:
-                        //For array attribute, if the element is struct/class, restore all the references
-                        AtlasArrayType arrType = (AtlasArrayType) attrType;
-                        AtlasType elemType = arrType.getElementType();
+                        case STRUCT:
+                            //If its struct attribute, restore the reference
+                            restoreEdgeReference(instanceVertex, edgeLabel, attrType.getTypeCategory(), false);
+                            break;
 
-                        if (isReference(elemType.getTypeCategory())) {
-                            List<AtlasEdge> edges = getCollectionElementsUsingRelationship(instanceVertex, attributeInfo);
+                        case ARRAY:
+                            //For array attribute, if the element is struct/class, restore all the references
+                            AtlasArrayType arrType = (AtlasArrayType) attrType;
+                            AtlasType elemType = arrType.getElementType();
 
-                            if (CollectionUtils.isNotEmpty(edges)) {
-                                for (AtlasEdge edge : edges) {
-                                    restoreEdgeReference(edge, elemType.getTypeCategory(), isOwned, instanceVertex);
+                            if (isReference(elemType.getTypeCategory())) {
+                                List<AtlasEdge> edges = getCollectionElementsUsingRelationship(instanceVertex, attributeInfo);
+
+                                if (CollectionUtils.isNotEmpty(edges)) {
+                                    for (AtlasEdge edge : edges) {
+                                        restoreEdgeReference(edge, elemType.getTypeCategory(), isOwned, instanceVertex);
+                                    }
                                 }
                             }
-                        }
-                        break;
+                            break;
 
-                    case MAP:
-                        //For map attribute, if the value type is struct/class, restore all the references
-                        AtlasMapType mapType = (AtlasMapType) attrType;
-                        TypeCategory valueTypeCategory = mapType.getValueType().getTypeCategory();
+                        case MAP:
+                            //For map attribute, if the value type is struct/class, restore all the references
+                            AtlasMapType mapType = (AtlasMapType) attrType;
+                            TypeCategory valueTypeCategory = mapType.getValueType().getTypeCategory();
 
-                        if (isReference(valueTypeCategory)) {
-                            List<AtlasEdge> edges = getMapValuesUsingRelationship(instanceVertex, attributeInfo);
+                            if (isReference(valueTypeCategory)) {
+                                List<AtlasEdge> edges = getMapValuesUsingRelationship(instanceVertex, attributeInfo);
 
-                            for (AtlasEdge edge : edges) {
-                                restoreEdgeReference(edge, valueTypeCategory, isOwned, instanceVertex);
+                                for (AtlasEdge edge : edges) {
+                                    restoreEdgeReference(edge, valueTypeCategory, isOwned, instanceVertex);
+                                }
                             }
-                        }
-                        break;
+                            break;
 
-                    case PRIMITIVE:
+                        case PRIMITIVE:
 //                        if (attributeInfo.getVertexUniquePropertyName() != null) {
 //                            Object property = instanceVertex.getProperty(
 //                                    attributeInfo.getVertexPropertyName(),
@@ -488,21 +515,30 @@ public class RestoreHandlerV1 {
 //                            );
 //                            instanceVertex.setProperty(attributeInfo.getVertexUniquePropertyName(), property);
 //                        }
-                        break;
+                            break;
+                    }
                 }
             }
+            restoreVertex(instanceVertex);
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
-        restoreVertex(instanceVertex);
     }
 
     private void restoreClassificationVertex(AtlasVertex classificationVertex) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Restoring classification vertex", string(classificationVertex));
-        }
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("RestoreHandlerV1.restoreClassificationVertex");
 
-        // restore classification vertex only if it has no more entity references (direct or propagated)
-        if (!hasEntityReferences(classificationVertex)) {
-            _restoreVertex(classificationVertex);
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Restoring classification vertex", string(classificationVertex));
+            }
+
+            // restore classification vertex only if it has no more entity references (direct or propagated)
+            if (!hasEntityReferences(classificationVertex)) {
+                _restoreVertex(classificationVertex);
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 
@@ -555,7 +591,7 @@ public class RestoreHandlerV1 {
                 if (referencedVertex != null) {
                     RequestContext requestContext = RequestContext.get();
 
-                    if (!requestContext.isUpdatedEntity(GraphHelper.getGuid(referencedVertex))) {
+                    if (!requestContext.isUpdatedEntity(getGuid(referencedVertex))) {
                         AtlasGraphUtilsV2.setEncodedProperty(referencedVertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, requestContext.getRequestTime());
                         AtlasGraphUtilsV2.setEncodedProperty(referencedVertex, MODIFIED_BY_KEY, requestContext.getUser());
 
@@ -572,9 +608,15 @@ public class RestoreHandlerV1 {
     }
 
     private void restoreAllClassifications(AtlasVertex instanceVertex) throws AtlasBaseException {
-        List<AtlasEdge> classificationEdges = getAllClassificationEdges(instanceVertex);
-        for (AtlasEdge edge : classificationEdges) {
-            restoreEdgeReference(edge, CLASSIFICATION, false, instanceVertex);
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("RestoreHandlerV1.restoreAllClassifications");
+        try
+        {
+            List<AtlasEdge> classificationEdges = getAllClassificationEdges(instanceVertex);
+            for (AtlasEdge edge : classificationEdges) {
+                restoreEdgeReference(edge, CLASSIFICATION, false, instanceVertex);
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 

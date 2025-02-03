@@ -37,10 +37,7 @@
             <artifactId>slf4j-api</artifactId>
         </dependency>
 
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
-        </dependency>
+
 
         <dependency>
             <groupId>org.apache.hive</groupId>
@@ -327,8 +324,8 @@
                             <value>application.log</value>
                         </systemProperty>
                         <systemProperty>
-                            <name>log4j.configuration</name>
-                            <value>file:///${project.build.directory}/test-classes/atlas-log4j.xml</value>
+                            <name>logback.configurationFile</name>
+                            <value>file:///${project.build.directory}/test-classes/atlas-logback.xml</value>
                         </systemProperty>
                         <systemProperty>
                             <name>atlas.graphdb.backend</name>
