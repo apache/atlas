@@ -3355,6 +3355,8 @@
                 [],
                 "policyRoles":
                 [
+                    "$admin",
+                    "$api-token-default-access",
                     "$member",
                     "$guest"
                 ],
