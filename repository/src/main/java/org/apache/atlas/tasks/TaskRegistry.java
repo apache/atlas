@@ -53,6 +53,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -398,6 +399,7 @@ public class TaskRegistry {
         Map<String, Object> dsl = mapOf("query", mapOf("bool", mapOf("should", statusClauseList)));
         dsl.put("sort", Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc"))));
         dsl.put("size", size);
+        long mismatches = 0;
         int totalFetched = 0;
         while (true) {
             int fetched = 0;
@@ -434,9 +436,9 @@ public class TaskRegistry {
                                 LOG.info(String.format("Fetched task from index search: %s", atlasTask.toString()));
                                 ret.add(atlasTask);
                             } else {
-                                RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("elasticSearchTaskMismatch"));
                                 LOG.warn("Status mismatch for task with guid: {}. Expected PENDING/IN_PROGRESS but found: {}",
                                         atlasTask.getGuid(), atlasTask.getStatus());
+                                mismatches++;
                                 try {
                                     String docId = LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay()));
                                     repairMismatchedTask(atlasTask, docId);
@@ -462,6 +464,7 @@ public class TaskRegistry {
                 break;
             }
         }
+        RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("elasticSearchTaskMismatch"), mismatches);
 
         return ret;
     }
@@ -472,9 +475,12 @@ public class TaskRegistry {
         try {
             // Create a map for the fields to be updated
             Map<String, Object> fieldsToUpdate = new HashMap<>();
-
-            fieldsToUpdate.put("__task_endTime", atlasTask.getEndTime().getTime());// add try for this, what if FAILED
-            fieldsToUpdate.put("__task_timeTakenInSeconds", atlasTask.getTimeTakenInSeconds());// add try for this, what if FAILED
+            if(Objects.nonNull(atlasTask.getEndTime())) {
+                fieldsToUpdate.put("__task_endTime", atlasTask.getEndTime().getTime());
+            }
+            if(Objects.nonNull(atlasTask.getTimeTakenInSeconds())) {
+                fieldsToUpdate.put("__task_timeTakenInSeconds", atlasTask.getTimeTakenInSeconds());
+            }
             fieldsToUpdate.put("__task_status", atlasTask.getStatus().toString());
             fieldsToUpdate.put("__task_modificationTimestamp", atlasTask.getUpdatedTime().getTime());
 
