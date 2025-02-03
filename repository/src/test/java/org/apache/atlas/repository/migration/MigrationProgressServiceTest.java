@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,7 +18,7 @@
 package org.apache.atlas.repository.migration;
 
 import org.apache.atlas.model.impexp.MigrationStatus;
-import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.apache.atlas.repository.graphdb.janus.migration.ReaderStatusManager;
 import org.apache.atlas.repository.impexp.MigrationProgressService;
 import org.apache.commons.configuration.Configuration;
@@ -30,25 +30,21 @@ import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 public class MigrationProgressServiceTest {
-
-    private final long  currentIndex    = 100l;
-    private final long  totalIndex      = 1000l;
-    private final long  increment       = 1001l;
-    private final String statusSuccess  = ReaderStatusManager.STATUS_SUCCESS;
-
-    private GraphDBMigrator createMigrator(TinkerGraph tg) {
-        GraphDBMigrator gdm = mock(GraphDBMigrator.class);
-        when(gdm.getMigrationStatus()).thenAnswer(invocation -> ReaderStatusManager.get(tg));
-        return gdm;
-    }
+    private final long   currentIndex  = 100L;
+    private final long   totalIndex    = 1000L;
+    private final long   increment     = 1001L;
+    private final String statusSuccess = ReaderStatusManager.STATUS_SUCCESS;
 
     @Test
     public void absentStatusNodeReturnsDefaultStatus() {
         MigrationProgressService mps = getMigrationStatusForTest(null, null);
-        MigrationStatus ms = mps.getStatus();
+        MigrationStatus          ms  = mps.getStatus();
 
         assertNotNull(ms);
         assertTrue(StringUtils.isEmpty(ms.getOperationStatus()));
@@ -58,13 +54,13 @@ public class MigrationProgressServiceTest {
 
     @Test
     public void existingStatusNodeRetrurnStatus() {
-        final long currentIndex = 100l;
-        final long totalIndex = 1000l;
-        final String status = ReaderStatusManager.STATUS_SUCCESS;
+        final long   currentIndex = 100L;
+        final long   totalIndex   = 1000L;
+        final String status       = ReaderStatusManager.STATUS_SUCCESS;
 
-        TinkerGraph tg = createUpdateStatusNode(null, currentIndex, totalIndex, status);
+        TinkerGraph              tg  = createUpdateStatusNode(null, currentIndex, totalIndex, status);
         MigrationProgressService mps = getMigrationStatusForTest(null, tg);
-        MigrationStatus ms = mps.getStatus();
+        MigrationStatus          ms  = mps.getStatus();
 
         assertMigrationStatus(totalIndex, status, ms);
     }
@@ -74,7 +70,7 @@ public class MigrationProgressServiceTest {
         TinkerGraph tg = createUpdateStatusNode(null, currentIndex, totalIndex, statusSuccess);
 
         MigrationProgressService mps = getMigrationStatusForTest(null, tg);
-        MigrationStatus ms = mps.getStatus();
+        MigrationStatus          ms  = mps.getStatus();
 
         createUpdateStatusNode(tg, currentIndex + increment, totalIndex + increment, ReaderStatusManager.STATUS_FAILED);
         MigrationStatus ms2 = mps.getStatus();
@@ -83,18 +79,14 @@ public class MigrationProgressServiceTest {
         assertMigrationStatus(totalIndex, statusSuccess, ms);
     }
 
-    private MigrationProgressService getMigrationStatusForTest(Configuration cfg, TinkerGraph tg) {
-        return new MigrationProgressService(cfg, createMigrator(tg));
-    }
-
     @Test
     public void cachedUpdatedIfQueriedAfterCacheExpiration() throws InterruptedException {
         final String statusFailed = ReaderStatusManager.STATUS_FAILED;
 
-        TinkerGraph tg = createUpdateStatusNode(null, currentIndex, totalIndex, statusSuccess);
-        long cacheTTl = 100l;
-        MigrationProgressService mps = getMigrationStatusForTest(getStubConfiguration(cacheTTl), tg);
-        MigrationStatus ms = mps.getStatus();
+        TinkerGraph              tg       = createUpdateStatusNode(null, currentIndex, totalIndex, statusSuccess);
+        long                     cacheTTl = 100L;
+        MigrationProgressService mps      = getMigrationStatusForTest(getStubConfiguration(cacheTTl), tg);
+        MigrationStatus          ms       = mps.getStatus();
 
         assertMigrationStatus(totalIndex, statusSuccess, ms);
 
@@ -108,20 +100,36 @@ public class MigrationProgressServiceTest {
         assertMigrationStatus(totalIndex + increment, statusFailed, ms2);
     }
 
+    private GraphDBMigrator createMigrator(TinkerGraph tg) {
+        GraphDBMigrator gdm = mock(GraphDBMigrator.class);
+
+        when(gdm.getMigrationStatus()).thenAnswer(invocation -> ReaderStatusManager.get(tg));
+
+        return gdm;
+    }
+
+    private MigrationProgressService getMigrationStatusForTest(Configuration cfg, TinkerGraph tg) {
+        return new MigrationProgressService(cfg, createMigrator(tg));
+    }
+
     private Configuration getStubConfiguration(long ttl) {
         Configuration cfg = mock(Configuration.class);
+
         when(cfg.getLong(anyString(), anyLong())).thenReturn(ttl);
+
         return cfg;
     }
 
     private TinkerGraph createUpdateStatusNode(TinkerGraph tg, long currentIndex, long totalIndex, String status) {
-        if(tg == null) {
+        if (tg == null) {
             tg = TinkerGraph.open();
         }
 
         ReaderStatusManager rsm = new ReaderStatusManager(tg, tg);
+
         rsm.update(tg, currentIndex, false);
         rsm.end(tg, totalIndex, status);
+
         return tg;
     }
 

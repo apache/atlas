@@ -30,7 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-
 public class TermSearchProcessor extends SearchProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(TermSearchProcessor.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("TermSearchProcessor");
@@ -50,15 +49,13 @@ public class TermSearchProcessor extends SearchProcessor {
 
     @Override
     public List<AtlasVertex> execute() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> TermSearchProcessor.execute({})", context);
-        }
+        LOG.debug("==> TermSearchProcessor.execute({})", context);
 
         List<AtlasVertex> ret  = new ArrayList<>();
         AtlasPerfTracer   perf = null;
 
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TermSearchProcessor.execute(" + context +  ")");
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TermSearchProcessor.execute(" + context + ")");
         }
 
         //marker functionality will not work when there is need to fetch Term vertices and get entities from it
@@ -82,35 +79,35 @@ public class TermSearchProcessor extends SearchProcessor {
             AtlasPerfTracer.log(perf);
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== TermSearchProcessor.execute({}): ret.size()={}", context, ret.size());
-        }
+        LOG.debug("<== TermSearchProcessor.execute({}): ret.size()={}", context, ret.size());
 
         return ret;
+    }
+
+    @Override
+    public long getResultCount() {
+        return assignedEntities != null ? assignedEntities.size() : -1;
     }
 
     //this filter is never used
     @Override
     public LinkedHashMap<Integer, AtlasVertex> filter(LinkedHashMap<Integer, AtlasVertex> offsetEntityVertexMap) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> TermSearchProcessor.filter({})", offsetEntityVertexMap.size());
-        }
+        LOG.debug("==> TermSearchProcessor.filter({})", offsetEntityVertexMap.size());
 
         if (MapUtils.isNotEmpty(offsetEntityVertexMap)) {
             if (CollectionUtils.isEmpty(assignedEntities)) {
                 offsetEntityVertexMap.clear();
             } else {
-                offsetEntityVertexMap.entrySet().stream().
-                        filter(o -> {
-                            if (o instanceof AtlasVertex) {
-                                AtlasVertex entityVertex = (AtlasVertex) o;
+                offsetEntityVertexMap = offsetEntityVertexMap.entrySet().stream().filter(o -> {
+                    if (o instanceof AtlasVertex) {
+                        AtlasVertex entityVertex = (AtlasVertex) o;
 
-                                for (AtlasVertex assignedEntity : assignedEntities) {
-                                    if (assignedEntity.getId().equals(entityVertex.getId())) {
-                                        return true;
-                                    }
-                                }
+                        for (AtlasVertex assignedEntity : assignedEntities) {
+                            if (assignedEntity.getId().equals(entityVertex.getId())) {
+                                return true;
                             }
+                        }
+                    }
 
                     return false;
                 }).collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (x, y) -> y, LinkedHashMap::new));
@@ -119,15 +116,8 @@ public class TermSearchProcessor extends SearchProcessor {
 
         offsetEntityVertexMap = super.filter(offsetEntityVertexMap);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== TermSearchProcessor.filter(): ret.size()={}", offsetEntityVertexMap.size());
-        }
+        LOG.debug("<== TermSearchProcessor.filter(): ret.size()={}", offsetEntityVertexMap.size());
 
         return offsetEntityVertexMap;
-    }
-
-    @Override
-    public long getResultCount() {
-        return assignedEntities != null ? assignedEntities.size() : -1;
     }
 }

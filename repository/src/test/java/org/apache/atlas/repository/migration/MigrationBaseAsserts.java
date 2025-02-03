@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,12 @@ import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.GraphDBMigrator;
 import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -43,10 +48,9 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
 public class MigrationBaseAsserts extends AtlasTestBase {
-    private   static final String TYPE_NAME_PROPERTY   = "__typeName";
-    private   static final String R_GUID_PROPERTY_NAME = "_r__guid";
     protected static final String ASSERT_NAME_PROPERTY = "Asset.name";
-
+    private static final   String TYPE_NAME_PROPERTY   = "__typeName";
+    private static final   String R_GUID_PROPERTY_NAME = "_r__guid";
     private final GraphDBMigrator migrator;
     private final AtlasGraph      graph;
 
@@ -103,14 +107,14 @@ public class MigrationBaseAsserts extends AtlasTestBase {
         }
         assertEquals(i, dbCount);
 
-        i = 0;
+        i       = 0;
         results = getVertices("hive_table", null);
         for (Iterator<AtlasVertex> it = results; it.hasNext(); i++) {
             assertNotNull(it.next());
         }
         assertEquals(i, tableCount);
 
-        i = 0;
+        i       = 0;
         results = getVertices("hive_column", null);
         for (Iterator<AtlasVertex> it = results; it.hasNext(); i++) {
             assertNotNull(it.next());
@@ -123,7 +127,7 @@ public class MigrationBaseAsserts extends AtlasTestBase {
     protected Iterator<AtlasVertex> getVertices(String typeName, String name) {
         AtlasGraphQuery query = graph.query().has(TYPE_NAME_PROPERTY, typeName);
 
-        if(!StringUtils.isEmpty(name)) {
+        if (!StringUtils.isEmpty(name)) {
             query = query.has(ASSERT_NAME_PROPERTY, name);
         }
 
@@ -142,10 +146,10 @@ public class MigrationBaseAsserts extends AtlasTestBase {
     }
 
     protected void assertEdges(Iterator<AtlasEdge> results, int expectedItems, String edgeTypeNameExpected) {
-        int count = 0;
-        AtlasEdge e = null;
-        boolean searchedEdgeFound = false;
-        for (Iterator<AtlasEdge> it = results; it.hasNext();) {
+        int       count             = 0;
+        AtlasEdge e                 = null;
+        boolean   searchedEdgeFound = false;
+        for (Iterator<AtlasEdge> it = results; it.hasNext(); ) {
             e = it.next();
             String typeName = AtlasGraphUtilsV2.getEncodedProperty(e, TYPE_NAME_PROPERTY, String.class);
             searchedEdgeFound = StringUtils.isEmpty(edgeTypeNameExpected) || typeName.equals(edgeTypeNameExpected);
@@ -158,7 +162,7 @@ public class MigrationBaseAsserts extends AtlasTestBase {
         assertNotNull(AtlasGraphUtilsV2.getEncodedProperty(e, R_GUID_PROPERTY_NAME, Object.class));
         assertNotNull(AtlasGraphUtilsV2.getEncodedProperty(e, "tagPropagation", Object.class));
 
-        if(StringUtils.isNotEmpty(edgeTypeNameExpected)) {
+        if (StringUtils.isNotEmpty(edgeTypeNameExpected)) {
             assertTrue(searchedEdgeFound, edgeTypeNameExpected);
         }
 
@@ -166,8 +170,8 @@ public class MigrationBaseAsserts extends AtlasTestBase {
     }
 
     protected void assertEdgesWithLabel(Iterator<AtlasEdge> results, int startIdx, String edgeTypeName) {
-        int count = 0;
-        AtlasEdge e = null;
+        int       count = 0;
+        AtlasEdge e     = null;
         for (Iterator<AtlasEdge> it = results; it.hasNext() && count < startIdx; count++) {
             e = it.next();
         }
@@ -175,7 +179,7 @@ public class MigrationBaseAsserts extends AtlasTestBase {
         assertNotNull(AtlasGraphUtilsV2.getEncodedProperty(e, R_GUID_PROPERTY_NAME, Object.class));
         assertNotNull(AtlasGraphUtilsV2.getEncodedProperty(e, "tagPropagation", Object.class));
 
-        if(StringUtils.isNotEmpty(edgeTypeName)) {
+        if (StringUtils.isNotEmpty(edgeTypeName)) {
             assertEquals(e.getLabel(), edgeTypeName, edgeTypeName);
         }
     }
@@ -189,11 +193,11 @@ public class MigrationBaseAsserts extends AtlasTestBase {
 
             assertEquals(GraphHelper.getTypeName(v), typeName);
 
-            if(StringUtils.isNotEmpty(guid)) {
+            if (StringUtils.isNotEmpty(guid)) {
                 assertEquals(GraphHelper.getGuid(v), guid, name);
             }
 
-            if(StringUtils.isNotEmpty(name)) {
+            if (StringUtils.isNotEmpty(name)) {
                 assertEquals(AtlasGraphUtilsV2.getEncodedProperty(v, ASSERT_NAME_PROPERTY, String.class), name, name);
             }
 

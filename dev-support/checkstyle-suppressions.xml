@@ -32,5 +32,6 @@
     <suppress files="AtlasClientV2.java" checks="TypeName"/>
     <suppress files="AtlasGraph.java" checks="MethodName"/>
     <suppress files="AtlasGraphTraversalSource.java" checks="MethodName"/>
+    <suppress files="DeleteHandlerV1.java" checks="MethodName"/>
     <suppress files="Id.java" checks="MethodName"/>
 </suppressions>

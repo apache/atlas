@@ -23,11 +23,20 @@ import org.apache.commons.lang.StringUtils;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.apache.atlas.entitytransform.TransformationConstants.*;
+import static org.apache.atlas.entitytransform.TransformationConstants.CLUSTER_DELIMITER;
+import static org.apache.atlas.entitytransform.TransformationConstants.DATABASE_DELIMITER;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_DB_CLUSTER_NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_DB_NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_STORAGEDESC_SUFFIX;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_STORAGE_DESCRIPTOR;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_STORAGE_DESC_LOCATION_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_TABLE_NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.LOCATION_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.PATH_DELIMITER;
+import static org.apache.atlas.entitytransform.TransformationConstants.QUALIFIED_NAME_ATTRIBUTE;
 
 public class HiveStorageDescriptorEntityHandler extends BaseEntityHandler {
     static final List<String> CUSTOM_TRANSFORM_ATTRIBUTES = Arrays.asList(HIVE_DB_NAME_ATTRIBUTE, HIVE_TABLE_NAME_ATTRIBUTE, HIVE_DB_CLUSTER_NAME_ATTRIBUTE, HIVE_STORAGE_DESC_LOCATION_ATTRIBUTE);
-
 
     public HiveStorageDescriptorEntityHandler(List<AtlasEntityTransformer> transformers) {
         super(transformers);
@@ -47,8 +56,7 @@ public class HiveStorageDescriptorEntityHandler extends BaseEntityHandler {
         private String  tableName;
         private String  clusterName;
         private String  location;
-        private boolean isCustomAttributeUpdated = false;
-
+        private boolean isCustomAttributeUpdated;
 
         public HiveStorageDescriptorEntity(AtlasEntity entity) {
             super(entity);
@@ -105,27 +113,27 @@ public class HiveStorageDescriptorEntityHandler extends BaseEntityHandler {
                     databaseName = attributeValue;
 
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 case HIVE_TABLE_NAME_ATTRIBUTE:
                     tableName = attributeValue;
 
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 case HIVE_DB_CLUSTER_NAME_ATTRIBUTE:
                     clusterName = attributeValue;
 
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 case HIVE_STORAGE_DESC_LOCATION_ATTRIBUTE:
                     location = attributeValue;
-                break;
+                    break;
 
                 default:
                     super.setAttribute(attribute, attributeValue);
-                break;
+                    break;
             }
         }
 

@@ -32,21 +32,20 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.HashMap;
 import java.util.Map;
 
 import static org.apache.atlas.model.metrics.AtlasMetricsStat.METRICS_ID_PREFIX_PROPERTY;
-
 
 /**
  * AtlasMetricsStatDTO is the bridge class in between AtlasMetricsStat and AtlasEntity.
  */
 @Component
 public class AtlasMetricsStatDTO extends AbstractDataTransferObject<AtlasMetricsStat> {
+    public static final  String METRICS_ENTITY_TYPE_NAME = "__AtlasMetricsStat";
+    public static final  String METRICS_ID_PROPERTY      = "metricsId";
     private static final Logger LOG = LoggerFactory.getLogger(AtlasMetricsStatDTO.class);
-
-    public static final String METRICS_ENTITY_TYPE_NAME  = "__AtlasMetricsStat";
-    public static final String METRICS_ID_PROPERTY       = "metricsId";
     private static final String METRICS_PROPERTY         = "metrics";
     private static final String COLLECTION_TIME_PROPERTY = "collectionTime";
     private static final String TIME_TO_LIVE_PROPERTY    = "timeToLiveMillis";
@@ -59,9 +58,7 @@ public class AtlasMetricsStatDTO extends AbstractDataTransferObject<AtlasMetrics
 
     @Override
     public AtlasMetricsStat from(AtlasEntity entity) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasMetricsStatDTO.from({})", entity);
-        }
+        LOG.debug("==> AtlasMetricsStatDTO.from({})", entity);
 
         AtlasMetricsStat metricsStat = null;
 
@@ -82,32 +79,25 @@ public class AtlasMetricsStatDTO extends AbstractDataTransferObject<AtlasMetrics
             metricsStat.setTimeToLiveMillis((long) entity.getAttribute(TIME_TO_LIVE_PROPERTY));
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasMetricsStatDTO.from() : {}", metricsStat);
-        }
+        LOG.debug("<== AtlasMetricsStatDTO.from() : {}", metricsStat);
 
         return metricsStat;
     }
 
     @Override
     public AtlasMetricsStat from(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasMetricsStatDTO.from({})", entityWithExtInfo);
-        }
+        LOG.debug("==> AtlasMetricsStatDTO.from({})", entityWithExtInfo);
 
         AtlasMetricsStat ret = from(entityWithExtInfo.getEntity());
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasMetricsStatDTO.from() : {}", ret);
-        }
+        LOG.debug("<== AtlasMetricsStatDTO.from() : {}", ret);
+
         return ret;
     }
 
     @Override
     public AtlasEntity toEntity(AtlasMetricsStat obj) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasMetricsStatDTO.toEntity({})", obj);
-        }
+        LOG.debug("==> AtlasMetricsStatDTO.toEntity({})", obj);
 
         AtlasEntity entity = getDefaultAtlasEntity(obj);
 
@@ -121,29 +111,28 @@ public class AtlasMetricsStatDTO extends AbstractDataTransferObject<AtlasMetrics
         entity.setAttribute(TIME_TO_LIVE_PROPERTY, obj.getTimeToLiveMillis());
         entity.setAttribute(UNIQUE_NAME_PROPERTY, getUniqueValue(obj));
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasMetricsStatDTO.toEntity() : {}", entity);
-        }
+        LOG.debug("<== AtlasMetricsStatDTO.toEntity() : {}", entity);
+
         return entity;
     }
 
     @Override
     public AtlasEntityWithExtInfo toEntityWithExtInfo(AtlasMetricsStat obj) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasMetricsStatDTO.toEntityWithExtInfo({})", obj);
-        }
+        LOG.debug("==> AtlasMetricsStatDTO.toEntityWithExtInfo({})", obj);
+
         AtlasEntityWithExtInfo ret = new AtlasEntityWithExtInfo(toEntity(obj));
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasMetricsStatDTO.toEntityWithExtInfo() : {}", ret);
-        }
+        LOG.debug("<== AtlasMetricsStatDTO.toEntityWithExtInfo() : {}", ret);
+
         return ret;
     }
 
     @Override
     public Map<String, Object> getUniqueAttributes(AtlasMetricsStat obj) {
         Map<String, Object> ret = new HashMap<>();
+
         ret.put(METRICS_ID_PROPERTY, getUniqueValue(obj));
+
         return ret;
     }
 

@@ -42,15 +42,13 @@ import java.util.HashSet;
 import java.util.Set;
 
 public class AtlasDSL {
-
     public static class Parser {
         private static final Logger LOG = LoggerFactory.getLogger(Parser.class);
 
-        private static final Set<String> RESERVED_KEYWORDS =
-                new HashSet<>(Arrays.asList("[", "]", "(", ")", "=", "<", ">", "!=", "<=", ">=", ",", "and", "or", "+", "-",
-                                            "*", "/", ".", "select", "from", "where", "groupby", "loop", "isa", "is", "has",
-                                            "as", "times", "withPath", "limit", "offset", "orderby", "count", "max", "min",
-                                            "sum", "by", "order", "like"));
+        private static final Set<String> RESERVED_KEYWORDS = new HashSet<>(Arrays.asList("[", "]", "(", ")", "=", "<", ">", "!=", "<=", ">=", ",", "and", "or", "+", "-",
+                        "*", "/", ".", "select", "from", "where", "groupby", "loop", "isa", "is", "has",
+                        "as", "times", "withPath", "limit", "offset", "orderby", "count", "max", "min",
+                        "sum", "by", "order", "like"));
 
         public static boolean isKeyword(String word) {
             return RESERVED_KEYWORDS.contains(word);
@@ -59,6 +57,7 @@ public class AtlasDSL {
         @VisibleForTesting
         static AtlasDSLParser.QueryContext parse(String queryStr) throws AtlasBaseException {
             AtlasDSLParser.QueryContext ret;
+
             try {
                 InputStream    stream           = new ByteArrayInputStream(queryStr.getBytes());
                 AtlasDSLLexer  lexer            = new AtlasDSLLexer(CharStreams.fromStream(stream));
@@ -71,11 +70,12 @@ public class AtlasDSL {
 
                 // Validate the syntax of the query here
                 ret = parser.query();
+
                 if (!validator.isValid()) {
                     LOG.error("Invalid DSL: {} Reason: {}", queryStr, validator.getErrorMsg());
+
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY, queryStr, validator.getErrorMsg());
                 }
-
             } catch (IOException e) {
                 throw new AtlasBaseException(e);
             }
@@ -90,7 +90,7 @@ public class AtlasDSL {
 
         @Override
         public void syntaxError(final Recognizer<?, ?> recognizer, final Object offendingSymbol, final int line, final int charPositionInLine, final String msg, final RecognitionException e) {
-            isValid = false;
+            isValid  = false;
             errorMsg = msg;
         }
 
@@ -161,10 +161,10 @@ public class AtlasDSL {
                 AtlasDSLParser.LimitClauseContext  limitClause        = limitOffsetContext.limitClause();
                 AtlasDSLParser.OffsetClauseContext offsetClause       = limitOffsetContext.offsetClause();
 
-                resolvedLimit = (limitClause != null) ? Integer.parseInt(limitClause.NUMBER().getText()) : 0;
+                resolvedLimit  = (limitClause != null) ? Integer.parseInt(limitClause.NUMBER().getText()) : 0;
                 resolvedOffset = (offsetClause != null) ? Integer.parseInt(offsetClause.NUMBER().getText()) : 0;
             } else {
-                resolvedLimit = 0;
+                resolvedLimit  = 0;
                 resolvedOffset = 0;
             }
         }

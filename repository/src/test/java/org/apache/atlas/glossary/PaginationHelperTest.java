@@ -32,33 +32,33 @@ public class PaginationHelperTest {
     public Object[][] paginationProvider() {
         return new Object[][] {
                 // maxSize, offset, limit, expected
-                {10, 0 , 5, 5},
-                {10, 0 , -1, 10},
-                {10, -1 , -1, 10},
-                {10, -1 , 5, 5},
-                {10, -1 , 11, 10},
-                {10, 5 , 11, 5},
-                {10, 2 , 11, 8},
-                {10, 8 , 11, 2},
-                {10, 5 , 1, 1},
-                {10, 9 , 1, 1},
-                {10, 10 , 5, 0},
-                {10, 11 , 5, 0},
-                {10, 20 , -1, 0},
-                {5, 6 , -1, 0},
-                {0, -1 , -1, 0},
-                {0, 5 , 10, 0},
-                {0, 0 , 10, 0},
-                {1, -1 , -1, 1},
-                {1, 5 , 10, 0},
-                {1, 0 , 10, 1},
+                {10, 0, 5, 5},
+                {10, 0, -1, 10},
+                {10, -1, -1, 10},
+                {10, -1, 5, 5},
+                {10, -1, 11, 10},
+                {10, 5, 11, 5},
+                {10, 2, 11, 8},
+                {10, 8, 11, 2},
+                {10, 5, 1, 1},
+                {10, 9, 1, 1},
+                {10, 10, 5, 0},
+                {10, 11, 5, 0},
+                {10, 20, -1, 0},
+                {5, 6, -1, 0},
+                {0, -1, -1, 0},
+                {0, 5, 10, 0},
+                {0, 0, 10, 0},
+                {1, -1, -1, 1},
+                {1, 5, 10, 0},
+                {1, 0, 10, 1},
         };
     }
 
     @Test(dataProvider = "paginationProvider")
     public void testPaginationHelper(int maxSize, int offset, int limit, int expectedSize) {
-        List<Integer> intList = IntStream.range(0, maxSize).boxed().collect(Collectors.toCollection(() -> new ArrayList<>(maxSize)));
-        GlossaryService.PaginationHelper helper = new GlossaryService.PaginationHelper<>(intList, offset, limit);
+        List<Integer>                    intList = IntStream.range(0, maxSize).boxed().collect(Collectors.toCollection(() -> new ArrayList<>(maxSize)));
+        GlossaryService.PaginationHelper helper  = new GlossaryService.PaginationHelper<>(intList, offset, limit);
         assertEquals(helper.getPaginatedList().size(), expectedSize);
     }
 }

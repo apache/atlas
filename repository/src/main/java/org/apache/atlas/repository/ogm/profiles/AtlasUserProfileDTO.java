@@ -28,7 +28,13 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @Component
 public class AtlasUserProfileDTO extends AbstractDataTransferObject<AtlasUserProfile> {
@@ -62,7 +68,7 @@ public class AtlasUserProfileDTO extends AbstractDataTransferObject<AtlasUserPro
         Object savedSearches = entityWithExtInfo.getEntity().getAttribute(PROPERTY_SAVED_SEARCHES);
 
         if (savedSearches instanceof Collection) {
-            for (Object o : (Collection) savedSearches) {
+            for (Object o : (Collection<?>) savedSearches) {
                 if (o instanceof AtlasObjectId) {
                     AtlasObjectId ssObjId  = (AtlasObjectId) o;
                     AtlasEntity   ssEntity = entityWithExtInfo.getReferredEntity(ssObjId.getGuid());
@@ -94,7 +100,7 @@ public class AtlasUserProfileDTO extends AbstractDataTransferObject<AtlasUserPro
         AtlasEntityWithExtInfo entityWithExtInfo = new AtlasEntityWithExtInfo(entity);
 
         AtlasObjectId userProfileId = new AtlasObjectId(entity.getGuid(), AtlasUserProfileDTO.ENTITY_TYPE_NAME,
-                                                        Collections.singletonMap(AtlasUserProfileDTO.PROPERTY_USER_NAME, obj.getName()));
+                Collections.singletonMap(AtlasUserProfileDTO.PROPERTY_USER_NAME, obj.getName()));
 
         List<AtlasObjectId> objectIds = new ArrayList<>();
 
@@ -108,7 +114,7 @@ public class AtlasUserProfileDTO extends AbstractDataTransferObject<AtlasUserPro
             objectIds.add(new AtlasObjectId(ssEntity.getGuid(), savedSearchDTO.getEntityType().getTypeName(), savedSearchDTO.getUniqueAttributes(ss)));
         }
 
-        if (objectIds.size() > 0) {
+        if (!objectIds.isEmpty()) {
             entity.setAttribute(PROPERTY_SAVED_SEARCHES, objectIds);
         }
 

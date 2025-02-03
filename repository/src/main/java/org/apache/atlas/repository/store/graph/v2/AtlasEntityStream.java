@@ -29,7 +29,6 @@ public class AtlasEntityStream implements EntityStream {
     protected final EntityStream             entityStream;
     private         Iterator<AtlasEntity>    iterator;
 
-
     public AtlasEntityStream(AtlasEntity entity) {
         this(new AtlasEntitiesWithExtInfo(entity), null);
     }
@@ -77,12 +76,12 @@ public class AtlasEntityStream implements EntityStream {
 
     @Override
     public AtlasEntity getByGuid(String guid) {
-        return entityStream != null ?  entityStream.getByGuid(guid) : entitiesWithExtInfo.getEntity(guid);
+        return entityStream != null ? entityStream.getByGuid(guid) : entitiesWithExtInfo.getEntity(guid);
     }
 
     @Override
     public String toString() {
-        StringBuffer sb = new StringBuffer("AtlasEntityStream{");
+        StringBuilder sb = new StringBuilder("AtlasEntityStream{");
 
         sb.append("entitiesWithExtInfo=").append(entitiesWithExtInfo);
         sb.append(", iterator=").append(iterator);

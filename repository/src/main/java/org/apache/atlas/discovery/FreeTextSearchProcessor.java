@@ -22,7 +22,10 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
+import org.apache.atlas.repository.graphdb.AtlasIndexQueryParameter;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.GraphIndexQueryParameters;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -36,16 +39,16 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 
-
 /**
  * This class is equivalent to legacy FullTextSearchProcessor--except that it uses a better search techniques using SOLR
  * than going through Janus Graph index apis.
  */
 public class FreeTextSearchProcessor extends SearchProcessor {
-    private static final Logger LOG                         = LoggerFactory.getLogger(FreeTextSearchProcessor.class);
-    private static final Logger PERF_LOG                    = AtlasPerfTracer.getPerfLogger("FreeTextSearchProcessor");
-    public  static final String SOLR_QT_PARAMETER           = "qt"; // org.apache.solr.common.params.CommonParams.QT;
-    public  static final String SOLR_REQUEST_HANDLER_NAME   = "/freetext";
+    private static final Logger LOG      = LoggerFactory.getLogger(FreeTextSearchProcessor.class);
+    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("FreeTextSearchProcessor");
+
+    public static final  String SOLR_QT_PARAMETER         = "qt"; // org.apache.solr.common.params.CommonParams.QT;
+    public static final  String SOLR_REQUEST_HANDLER_NAME = "/freetext";
 
     private static final boolean IS_SOLR_INDEX_BACKEND = isSolrIndexBackend();
 
@@ -70,39 +73,26 @@ public class FreeTextSearchProcessor extends SearchProcessor {
         }
 
         // just use the query string as is
-        LOG.debug("Using query string  '{}'.", queryString);
+        LOG.debug("Using query string '{}'.", queryString);
 
         indexQuery = context.getGraph().indexQuery(prepareGraphIndexQueryParameters(context, queryString));
     }
 
-    private GraphIndexQueryParameters prepareGraphIndexQueryParameters(SearchContext context, StringBuilder queryString) {
-        List<AtlasIndexQueryParameter> parameters = new ArrayList<>();
-
-        if (IS_SOLR_INDEX_BACKEND) {
-            parameters.add(context.getGraph().indexQueryParameter(SOLR_QT_PARAMETER, SOLR_REQUEST_HANDLER_NAME));
-        }
-
-        return new GraphIndexQueryParameters(Constants.VERTEX_INDEX, queryString.toString(), 0, parameters);
-    }
-
     @Override
     public List<AtlasVertex> execute() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> FreeTextSearchProcessor.execute({})", context);
-        }
+        LOG.debug("==> FreeTextSearchProcessor.execute({})", context);
 
-        List<AtlasVertex> ret = new ArrayList<>();
-
-        AtlasPerfTracer perf = null;
+        List<AtlasVertex> ret  = new ArrayList<>();
+        AtlasPerfTracer   perf = null;
 
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "FreeTextSearchProcessor.execute(" + context +  ")");
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "FreeTextSearchProcessor.execute(" + context + ")");
         }
 
         try {
-            final int limit       = context.getSearchParameters().getLimit();
-            final Integer marker  = context.getMarker();
-            final int startIdx    = marker != null ? marker : context.getSearchParameters().getOffset();
+            final int     limit    = context.getSearchParameters().getLimit();
+            final Integer marker   = context.getMarker();
+            final int     startIdx = marker != null ? marker : context.getSearchParameters().getOffset();
 
             // query to start at 0, even though startIdx can be higher - because few results in earlier retrieval could
             // have been dropped: like vertices of non-entity or non-active-entity
@@ -127,7 +117,7 @@ public class FreeTextSearchProcessor extends SearchProcessor {
                     Iterator<AtlasIndexQuery.Result> idxQueryResult = executeIndexQuery(context, indexQuery, qryOffset, limit);
 
                     final boolean isLastResultPage;
-                    int resultCount = 0;
+                    int           resultCount = 0;
 
                     while (idxQueryResult.hasNext()) {
                         AtlasVertex vertex = idxQueryResult.next().getVertex();
@@ -141,11 +131,13 @@ public class FreeTextSearchProcessor extends SearchProcessor {
                             if (LOG.isDebugEnabled()) {
                                 LOG.debug("FreeTextSearchProcessor.execute(): ignoring non-entity vertex (id={})", vertex.getId());
                             }
+
                             continue;
                         }
 
                         //skip internalTypes
                         AtlasEntityType entityType = context.getTypeRegistry().getEntityTypeByName(entityTypeName);
+
                         if (entityType != null && entityType.isInternalType()) {
                             continue;
                         }
@@ -166,12 +158,12 @@ public class FreeTextSearchProcessor extends SearchProcessor {
                     }
 
                     isLastResultPage      = resultCount < limit;
-
                     offsetEntityVertexMap = super.filter(offsetEntityVertexMap);
                     resultIdx             = collectResultVertices(ret, startIdx, limit, resultIdx, offsetEntityVertexMap, marker);
 
                     if (isLastResultPage) {
                         resultIdx = SearchContext.MarkerUtil.MARKER_END - 1;
+
                         break;
                     }
                 }
@@ -182,14 +174,11 @@ public class FreeTextSearchProcessor extends SearchProcessor {
             if (marker != null) {
                 nextOffset = resultIdx + 1;
             }
-
         } finally {
             AtlasPerfTracer.log(perf);
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== FreeTextSearchProcessor.execute({}): ret.size()={}", context, ret.size());
-        }
+        LOG.debug("<== FreeTextSearchProcessor.execute({}): ret.size()={}", context, ret.size());
 
         return ret;
     }
@@ -197,6 +186,16 @@ public class FreeTextSearchProcessor extends SearchProcessor {
     @Override
     public long getResultCount() {
         return indexQuery.vertexTotals();
+    }
+
+    private GraphIndexQueryParameters prepareGraphIndexQueryParameters(SearchContext context, StringBuilder queryString) {
+        List<AtlasIndexQueryParameter> parameters = new ArrayList<>();
+
+        if (IS_SOLR_INDEX_BACKEND) {
+            parameters.add(context.getGraph().indexQueryParameter(SOLR_QT_PARAMETER, SOLR_REQUEST_HANDLER_NAME));
+        }
+
+        return new GraphIndexQueryParameters(Constants.VERTEX_INDEX, queryString.toString(), 0, parameters);
     }
 
     private static boolean isSolrIndexBackend() {

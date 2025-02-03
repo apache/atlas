@@ -39,14 +39,6 @@ public abstract class AtlasPatchHandler {
         register();
     }
 
-    private void register() {
-        PatchStatus patchStatus = getStatus();
-
-        if (patchStatus == null || patchStatus == UNKNOWN) {
-            patchRegistry.register(patchId, patchDescription, JAVA_PATCH_TYPE, "apply", UNKNOWN);
-        }
-    }
-
     public PatchStatus getStatusFromRegistry() {
         return patchRegistry.getStatus(patchId);
     }
@@ -66,4 +58,12 @@ public abstract class AtlasPatchHandler {
     }
 
     public abstract void apply() throws AtlasBaseException;
+
+    private void register() {
+        PatchStatus patchStatus = getStatus();
+
+        if (patchStatus == null || patchStatus == UNKNOWN) {
+            patchRegistry.register(patchId, patchDescription, JAVA_PATCH_TYPE, "apply", UNKNOWN);
+        }
+    }
 }

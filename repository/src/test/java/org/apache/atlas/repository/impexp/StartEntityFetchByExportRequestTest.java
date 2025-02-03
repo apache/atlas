@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,6 +33,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
@@ -45,7 +46,6 @@ import static org.testng.Assert.assertEquals;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class StartEntityFetchByExportRequestTest extends AtlasTestBase {
-
     @Inject
     private AtlasGraph atlasGraph;
 
@@ -55,23 +55,45 @@ public class StartEntityFetchByExportRequestTest extends AtlasTestBase {
     @Inject
     private AtlasTypeDefStore typeDefStore;
 
-    private AtlasGremlin3QueryProvider atlasGremlin3QueryProvider;
+    private AtlasGremlin3QueryProvider         atlasGremlin3QueryProvider;
     private StartEntityFetchByExportRequestSpy startEntityFetchByExportRequestSpy;
 
+    @Test
+    public void fetchTypeGuid() {
+        String              exportRequestJson = "{ \"itemsToExport\": [ { \"typeName\": \"hive_db\", \"guid\": \"111-222-333\" } ]}";
+        AtlasExportRequest  exportRequest     = AtlasType.fromJson(exportRequestJson, AtlasExportRequest.class);
+        List<AtlasObjectId> objectGuidMap     = startEntityFetchByExportRequestSpy.get(exportRequest);
+
+        assertEquals(objectGuidMap.get(0).getGuid(), "111-222-333");
+    }
+
+    @Test
+    public void fetchTypeUniqueAttributes() {
+        String             exportRequestJson = "{ \"itemsToExport\": [ { \"typeName\": \"hive_db\", \"uniqueAttributes\": {\"qualifiedName\": \"stocks@cl1\"} } ]}";
+        AtlasExportRequest exportRequest     = AtlasType.fromJson(exportRequestJson, AtlasExportRequest.class);
+
+        startEntityFetchByExportRequestSpy.get(exportRequest);
+
+        assertEquals(startEntityFetchByExportRequestSpy.getGeneratedQuery(), startEntityFetchByExportRequestSpy.getQueryTemplateForMatchType(exportRequest.getMatchTypeOptionValue()));
+        assertEquals(startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMETER_TYPENAME), "hive_db");
+        assertEquals(startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMETER_ATTR_NAME), "Referenceable.qualifiedName");
+        assertEquals(startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMTER_ATTR_VALUE), "stocks@cl1");
+    }
+
+    @BeforeClass
+    void setup() throws IOException, AtlasBaseException {
+        super.basicSetup(typeDefStore, typeRegistry);
+
+        atlasGremlin3QueryProvider         = new AtlasGremlin3QueryProvider();
+        startEntityFetchByExportRequestSpy = new StartEntityFetchByExportRequestSpy(atlasGraph, typeRegistry);
+    }
+
     private class StartEntityFetchByExportRequestSpy extends StartEntityFetchByExportRequest {
-        String generatedQuery;
+        String              generatedQuery;
         Map<String, Object> suppliedBindingsMap;
 
         public StartEntityFetchByExportRequestSpy(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry) {
             super(atlasGraph, typeRegistry, atlasGremlin3QueryProvider);
-        }
-
-        @Override
-        List<String> executeGremlinQuery(String query, Map<String, Object> bindings) {
-            this.generatedQuery = query;
-            this.suppliedBindingsMap = bindings;
-
-            return Collections.EMPTY_LIST;
         }
 
         public String getGeneratedQuery() {
@@ -81,33 +103,13 @@ public class StartEntityFetchByExportRequestTest extends AtlasTestBase {
         public Map<String, Object> getSuppliedBindingsMap() {
             return suppliedBindingsMap;
         }
-    }
 
-    @BeforeClass void setup() throws IOException, AtlasBaseException {
-        super.basicSetup(typeDefStore, typeRegistry);
-        atlasGremlin3QueryProvider = new AtlasGremlin3QueryProvider();
-        startEntityFetchByExportRequestSpy = new StartEntityFetchByExportRequestSpy(atlasGraph, typeRegistry);
-    }
+        @Override
+        List<String> executeGremlinQuery(String query, Map<String, Object> bindings) {
+            this.generatedQuery      = query;
+            this.suppliedBindingsMap = bindings;
 
-    @Test
-    public void fetchTypeGuid() {
-        String exportRequestJson = "{ \"itemsToExport\": [ { \"typeName\": \"hive_db\", \"guid\": \"111-222-333\" } ]}";
-        AtlasExportRequest exportRequest = AtlasType.fromJson(exportRequestJson, AtlasExportRequest.class);
-
-        List<AtlasObjectId> objectGuidMap = startEntityFetchByExportRequestSpy.get(exportRequest);
-
-        assertEquals(objectGuidMap.get(0).getGuid(), "111-222-333");
-    }
-
-    @Test
-    public void fetchTypeUniqueAttributes() {
-        String exportRequestJson = "{ \"itemsToExport\": [ { \"typeName\": \"hive_db\", \"uniqueAttributes\": {\"qualifiedName\": \"stocks@cl1\"} } ]}";
-        AtlasExportRequest exportRequest = AtlasType.fromJson(exportRequestJson, AtlasExportRequest.class);
-
-        startEntityFetchByExportRequestSpy.get(exportRequest);
-        assertEquals(startEntityFetchByExportRequestSpy.getGeneratedQuery(), startEntityFetchByExportRequestSpy.getQueryTemplateForMatchType(exportRequest.getMatchTypeOptionValue()));
-        assertEquals(startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMETER_TYPENAME), "hive_db");
-        assertEquals(startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMETER_ATTR_NAME), "Referenceable.qualifiedName");
-        assertEquals(startEntityFetchByExportRequestSpy.getSuppliedBindingsMap().get(BINDING_PARAMTER_ATTR_VALUE), "stocks@cl1");
+            return Collections.emptyList();
+        }
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,9 +45,11 @@ import java.util.stream.Collectors;
 public class SelectClauseProjections {
     private static final Logger LOG = LoggerFactory.getLogger(SelectClauseProjections.class);
 
-    public static AtlasSearchResult usingList(final GremlinQuery queryInfo,
-                                             final EntityGraphRetriever entityRetriever,
-                                             final Collection<AtlasVertex> resultList) throws AtlasBaseException {
+    private SelectClauseProjections() {
+        // to block instantiation
+    }
+
+    public static AtlasSearchResult usingList(final GremlinQuery queryInfo, final EntityGraphRetriever entityRetriever, final Collection<AtlasVertex> resultList) throws AtlasBaseException {
         AtlasSearchResult     ret                   = new AtlasSearchResult();
         SelectClauseComposer  selectClauseInfo      = queryInfo.getSelectComposer();
         AttributeSearchResult attributeSearchResult = new AttributeSearchResult();
@@ -57,7 +59,7 @@ public class SelectClauseProjections {
         Collection<List<Object>> values = getProjectionRows(resultList, selectClauseInfo, entityRetriever);
 
         if (values instanceof List) {
-            attributeSearchResult.setValues((List) values);
+            attributeSearchResult.setValues((List<List<Object>>) values);
         } else if (values instanceof Set) {
             attributeSearchResult.setValues(new ArrayList<>(values));
         }
@@ -67,9 +69,7 @@ public class SelectClauseProjections {
         return ret;
     }
 
-    public static AtlasSearchResult usingMap(final GremlinQuery gremlinQuery,
-                                             final EntityGraphRetriever entityRetriever,
-                                             final Map<String, Collection<AtlasVertex>> resultMap) throws AtlasBaseException {
+    public static AtlasSearchResult usingMap(final GremlinQuery gremlinQuery, final EntityGraphRetriever entityRetriever, final Map<String, Collection<AtlasVertex>> resultMap) throws AtlasBaseException {
         AtlasSearchResult     ret                   = new AtlasSearchResult();
         SelectClauseComposer  selectClauseInfo      = gremlinQuery.getSelectComposer();
         AttributeSearchResult attributeSearchResult = new AttributeSearchResult();
@@ -111,9 +111,7 @@ public class SelectClauseProjections {
         return values.subList(startIndex, endIndex);
     }
 
-    private static Collection<List<Object>> getProjectionRows(final Collection<AtlasVertex> vertices,
-                                                              final SelectClauseComposer selectClauseComposer,
-                                                              final EntityGraphRetriever entityRetriever) throws AtlasBaseException {
+    private static Collection<List<Object>> getProjectionRows(final Collection<AtlasVertex> vertices, final SelectClauseComposer selectClauseComposer, final EntityGraphRetriever entityRetriever) throws AtlasBaseException {
         Collection<List<Object>> values = new HashSet<>();
 
         for (AtlasVertex vertex : vertices) {
@@ -131,7 +129,8 @@ public class SelectClauseProjections {
                 } else {
                     if (selectClauseComposer.isPrimitiveAttribute(idx)) {
                         String propertyName = selectClauseComposer.getAttribute(idx);
-                        Object value = vertex.getProperty(propertyName, Object.class);
+                        Object value        = vertex.getProperty(propertyName, Object.class);
+
                         row.add(value != null ? value : StringUtils.EMPTY);
                     } else {
                         row.add(entityRetriever.toAtlasEntityHeaderWithClassifications(vertex));
@@ -196,7 +195,7 @@ public class SelectClauseProjections {
     }
 
     static class VertexPropertyComparator implements Comparator<AtlasVertex> {
-        private String propertyName;
+        private final String propertyName;
 
         public VertexPropertyComparator(final String propertyName) {
             this.propertyName = propertyName;
@@ -209,7 +208,7 @@ public class SelectClauseProjections {
 
             if (p1 == null && p2 == null) {
                 return 0;
-            } else  if (p1 == null) {
+            } else if (p1 == null) {
                 return -1;
             } else if (p2 == null) {
                 return 1;

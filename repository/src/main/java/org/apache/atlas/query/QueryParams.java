@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 package org.apache.atlas.query;
-
 
 import org.apache.atlas.AtlasConfiguration;
 
@@ -34,6 +33,24 @@ public class QueryParams {
         this.offset = offset;
     }
 
+    public static QueryParams getNormalizedParams(int suppliedLimit, int suppliedOffset) {
+        int defaultLimit = AtlasConfiguration.SEARCH_DEFAULT_LIMIT.getInt();
+        int maxLimit     = AtlasConfiguration.SEARCH_MAX_LIMIT.getInt();
+        int limit        = defaultLimit;
+
+        if (suppliedLimit > 0 && suppliedLimit <= maxLimit) {
+            limit = suppliedLimit;
+        }
+
+        int offset = 0;
+
+        if (suppliedOffset > 0) {
+            offset = suppliedOffset;
+        }
+
+        return new QueryParams(limit, offset);
+    }
+
     public int limit() {
         return limit;
     }
@@ -48,22 +65,5 @@ public class QueryParams {
 
     public void offset(int offset) {
         this.offset = offset;
-    }
-
-    public static QueryParams getNormalizedParams(int suppliedLimit, int suppliedOffset) {
-        int defaultLimit = AtlasConfiguration.SEARCH_DEFAULT_LIMIT.getInt();
-        int maxLimit     = AtlasConfiguration.SEARCH_MAX_LIMIT.getInt();
-
-        int limit = defaultLimit;
-        if (suppliedLimit > 0 && suppliedLimit <= maxLimit) {
-            limit = suppliedLimit;
-        }
-
-        int offset = 0;
-        if (suppliedOffset > 0) {
-            offset = suppliedOffset;
-        }
-
-        return new QueryParams(limit, offset);
     }
 }

@@ -30,13 +30,14 @@ import org.apache.commons.lang3.StringUtils;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-
 @Component
 public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSavedSearch> {
+    public  static final String PROPERTY_USER_PROFILE      = "userProfile";
     private static final String ENTITY_TYPE_NAME           = "__AtlasUserSavedSearch";
     private static final String PROPERTY_NAME              = "name";
     private static final String PROPERTY_OWNER_NAME        = "ownerName";
@@ -44,7 +45,6 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
     private static final String PROPERTY_UNIQUE_NAME       = "uniqueName";
     private static final String PROPERTY_SEARCH_TYPE       = "searchType";
     private static final String PROPERTY_UI_PARAMETERS     = "uiParameters";
-    public  static final String PROPERTY_USER_PROFILE      = "userProfile";
 
     @Inject
     public AtlasSavedSearchDTO(AtlasTypeRegistry typeRegistry) {
@@ -81,7 +81,7 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
         AtlasEntity entity = getDefaultAtlasEntity(obj);
 
         AtlasObjectId userProfileId = new AtlasObjectId(AtlasUserProfileDTO.ENTITY_TYPE_NAME,
-                                                        Collections.singletonMap(AtlasUserProfileDTO.PROPERTY_USER_NAME, obj.getOwnerName()));
+                Collections.singletonMap(AtlasUserProfileDTO.PROPERTY_USER_NAME, obj.getOwnerName()));
 
         entity.setAttribute(PROPERTY_NAME, obj.getName());
         entity.setAttribute(PROPERTY_OWNER_NAME, obj.getOwnerName());
@@ -113,6 +113,6 @@ public class AtlasSavedSearchDTO extends AbstractDataTransferObject<AtlasUserSav
     }
 
     private String getUniqueValue(AtlasUserSavedSearch obj) {
-        return String.format("%s:%s", obj.getOwnerName(), obj.getName()) ;
+        return String.format("%s:%s", obj.getOwnerName(), obj.getName());
     }
 }

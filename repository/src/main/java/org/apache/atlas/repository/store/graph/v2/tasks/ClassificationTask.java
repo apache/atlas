@@ -22,12 +22,9 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.tasks.AtlasTask;
-import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
-import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.tasks.AbstractTask;
 import org.apache.atlas.type.AtlasType;
@@ -38,11 +35,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 import static org.apache.atlas.model.tasks.AtlasTask.Status.COMPLETE;
 import static org.apache.atlas.model.tasks.AtlasTask.Status.FAILED;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE;
-import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 
 public abstract class ClassificationTask extends AbstractTask {
     private static final Logger LOG = LoggerFactory.getLogger(ClassificationTask.class);
@@ -59,11 +56,7 @@ public abstract class ClassificationTask extends AbstractTask {
     protected final DeleteHandlerDelegate  deleteDelegate;
     protected final AtlasRelationshipStore relationshipStore;
 
-    public ClassificationTask(AtlasTask task,
-                              AtlasGraph graph,
-                              EntityGraphMapper entityGraphMapper,
-                              DeleteHandlerDelegate deleteDelegate,
-                              AtlasRelationshipStore relationshipStore) {
+    public ClassificationTask(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
         super(task);
 
         this.graph             = graph;
@@ -72,9 +65,44 @@ public abstract class ClassificationTask extends AbstractTask {
         this.relationshipStore = relationshipStore;
     }
 
+    public static Map<String, Object> toParameters(String entityGuid, String classificationVertexId, String relationshipGuid, String classificationName) {
+        Map<String, Object> ret = new HashMap<>();
+
+        ret.put(PARAM_ENTITY_GUID, entityGuid);
+        ret.put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
+        ret.put(PARAM_CLASSIFICATION_NAME, classificationName);
+        ret.put(PARAM_RELATIONSHIP_GUID, relationshipGuid);
+
+        return ret;
+    }
+
+    public static Map<String, Object> toParameters(String relationshipEdgeId, AtlasRelationship relationship) {
+        Map<String, Object>  ret = new HashMap<>();
+
+        ret.put(PARAM_RELATIONSHIP_EDGE_ID, relationshipEdgeId);
+        ret.put(PARAM_RELATIONSHIP_OBJECT, AtlasType.toJson(relationship));
+
+        return ret;
+    }
+
+    protected void setStatus(AtlasTask.Status status) {
+        super.setStatus(status);
+
+        try {
+            if (Objects.equals(getTaskType(), CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE)) {
+                entityGraphMapper.removePendingTaskFromEdge((String) getTaskDef().getParameters().get(PARAM_RELATIONSHIP_EDGE_ID), getTaskGuid());
+            } else {
+                entityGraphMapper.removePendingTaskFromEntity((String) getTaskDef().getParameters().get(PARAM_ENTITY_GUID), getTaskGuid());
+            }
+        } catch (EntityNotFoundException | AtlasBaseException e) {
+            LOG.error("Error updating associated element for: {}", getTaskGuid(), e);
+        }
+    }
+
     @Override
     public AtlasTask.Status perform() throws Exception {
         RequestContext.clear();
+
         Map<String, Object> params = getTaskDef().getParameters();
 
         if (MapUtils.isEmpty(params)) {
@@ -109,35 +137,6 @@ public abstract class ClassificationTask extends AbstractTask {
         }
 
         return getStatus();
-    }
-
-    public static Map<String, Object> toParameters(String entityGuid, String classificationVertexId, String relationshipGuid, String classificationName) {
-        return new HashMap<String, Object>() {{
-            put(PARAM_ENTITY_GUID, entityGuid);
-            put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
-            put(PARAM_CLASSIFICATION_NAME, classificationName);
-            put(PARAM_RELATIONSHIP_GUID, relationshipGuid);
-        }};
-    }
-    public static Map<String, Object> toParameters(String relationshipEdgeId, AtlasRelationship relationship) {
-        return new HashMap<String, Object>() {{
-            put(PARAM_RELATIONSHIP_EDGE_ID, relationshipEdgeId);
-            put(PARAM_RELATIONSHIP_OBJECT, AtlasType.toJson(relationship));
-        }};
-    }
-
-    protected void setStatus(AtlasTask.Status status) {
-        super.setStatus(status);
-
-        try {
-            if (getTaskType() == CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE) {
-                entityGraphMapper.removePendingTaskFromEdge((String) getTaskDef().getParameters().get(PARAM_RELATIONSHIP_EDGE_ID), getTaskGuid());
-            } else {
-                entityGraphMapper.removePendingTaskFromEntity((String) getTaskDef().getParameters().get(PARAM_ENTITY_GUID), getTaskGuid());
-            }
-        } catch (EntityNotFoundException | AtlasBaseException e) {
-            LOG.error("Error updating associated element for: {}", getTaskGuid(), e);
-        }
     }
 
     protected abstract void run(Map<String, Object> parameters) throws AtlasBaseException;

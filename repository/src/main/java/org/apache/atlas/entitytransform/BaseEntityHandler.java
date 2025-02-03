@@ -28,45 +28,17 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
-
 public class BaseEntityHandler {
     private static final Logger LOG = LoggerFactory.getLogger(BaseEntityHandler.class);
 
     protected final List<AtlasEntityTransformer> transformers;
 
-
     public BaseEntityHandler(List<AtlasEntityTransformer> transformers) {
         this.transformers = transformers;
     }
 
-    public AtlasEntity transform(AtlasEntity entity) {
-        if (CollectionUtils.isEmpty(transformers)) {
-            return entity;
-        }
-
-        AtlasTransformableEntity transformableEntity = getTransformableEntity(entity);
-
-        if (transformableEntity == null) {
-            return entity;
-        }
-
-        for (AtlasEntityTransformer transformer : transformers) {
-            transformer.transform(transformableEntity);
-        }
-
-        transformableEntity.transformComplete();
-
-        return entity;
-    }
-
-    public AtlasTransformableEntity getTransformableEntity(AtlasEntity entity) {
-        return new AtlasTransformableEntity(entity);
-    }
-
     public static List<BaseEntityHandler> createEntityHandlers(List<AttributeTransform> transforms, TransformerContext context) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> BaseEntityHandler.createEntityHandlers(transforms={})", transforms);
-        }
+        LOG.debug("==> BaseEntityHandler.createEntityHandlers(transforms={})", transforms);
 
         List<BaseEntityHandler> ret = new ArrayList<>();
 
@@ -102,11 +74,71 @@ public class BaseEntityHandler {
             }
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== BaseEntityHandler.createEntityHandlers(transforms={}): ret.size={}", transforms, ret.size());
-        }
+        LOG.debug("<== BaseEntityHandler.createEntityHandlers(transforms={}): ret.size={}", transforms, ret.size());
 
         return ret;
+    }
+
+    public static List<BaseEntityHandler> fromJson(String transformersString, TransformerContext context) {
+        if (StringUtils.isEmpty(transformersString)) {
+            return null;
+        }
+
+        Object  transformersObj = AtlasType.fromJson(transformersString, Object.class);
+        List<?> transformers    = (transformersObj instanceof List) ? (List<?>) transformersObj : null;
+
+        List<AttributeTransform> attributeTransforms = new ArrayList<>();
+
+        if (CollectionUtils.isEmpty(transformers)) {
+            return null;
+        }
+
+        for (Object transformer : transformers) {
+            String             transformerStr     = AtlasType.toJson(transformer);
+            AttributeTransform attributeTransform = AtlasType.fromJson(transformerStr, AttributeTransform.class);
+
+            if (attributeTransform == null) {
+                continue;
+            }
+
+            attributeTransforms.add(attributeTransform);
+        }
+
+        if (CollectionUtils.isEmpty(attributeTransforms)) {
+            return null;
+        }
+
+        List<BaseEntityHandler> entityHandlers = createEntityHandlers(attributeTransforms, context);
+
+        if (CollectionUtils.isEmpty(entityHandlers)) {
+            return null;
+        }
+
+        return entityHandlers;
+    }
+
+    public AtlasEntity transform(AtlasEntity entity) {
+        if (CollectionUtils.isEmpty(transformers)) {
+            return entity;
+        }
+
+        AtlasTransformableEntity transformableEntity = getTransformableEntity(entity);
+
+        if (transformableEntity == null) {
+            return entity;
+        }
+
+        for (AtlasEntityTransformer transformer : transformers) {
+            transformer.transform(transformableEntity);
+        }
+
+        transformableEntity.transformComplete();
+
+        return entity;
+    }
+
+    public AtlasTransformableEntity getTransformableEntity(AtlasEntity entity) {
+        return new AtlasTransformableEntity(entity);
     }
 
     private static boolean hasTransformerForAnyAttribute(List<AtlasEntityTransformer> transformers, List<String> attributes) {
@@ -159,42 +191,5 @@ public class BaseEntityHandler {
         public void transformComplete() {
             // implementations can override to set value of computed-attributes
         }
-    }
-
-    public static List<BaseEntityHandler> fromJson(String transformersString, TransformerContext context) {
-        if (StringUtils.isEmpty(transformersString)) {
-            return null;
-        }
-
-        Object transformersObj = AtlasType.fromJson(transformersString, Object.class);
-        List transformers = (transformersObj != null && transformersObj instanceof List) ? (List) transformersObj : null;
-
-        List<AttributeTransform> attributeTransforms = new ArrayList<>();
-
-        if (CollectionUtils.isEmpty(transformers)) {
-            return null;
-        }
-
-        for (Object transformer : transformers) {
-            String transformerStr = AtlasType.toJson(transformer);
-            AttributeTransform attributeTransform = AtlasType.fromJson(transformerStr, AttributeTransform.class);
-
-            if (attributeTransform == null) {
-                continue;
-            }
-
-            attributeTransforms.add(attributeTransform);
-        }
-
-        if (CollectionUtils.isEmpty(attributeTransforms)) {
-            return null;
-        }
-
-        List<BaseEntityHandler> entityHandlers = createEntityHandlers(attributeTransforms, context);
-        if (CollectionUtils.isEmpty(entityHandlers)) {
-            return null;
-        }
-
-        return entityHandlers;
     }
 }

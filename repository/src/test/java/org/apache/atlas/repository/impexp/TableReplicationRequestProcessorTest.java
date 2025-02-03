@@ -46,23 +46,22 @@ import java.io.InputStream;
 import java.util.List;
 
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getDefaultImportRequest;
-import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZipSource;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getInputStreamFrom;
+import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZipSource;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithParameters;
-import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
-
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class TableReplicationRequestProcessorTest extends AtlasTestBase {
     private static final Logger LOG = LoggerFactory.getLogger(TableReplicationRequestProcessorTest.class);
 
-    private static final String ENTITY_GUID_REPLICATED = "718a6d12-35a8-4731-aff8-3a64637a43a3";
+    private static final String ENTITY_GUID_REPLICATED       = "718a6d12-35a8-4731-aff8-3a64637a43a3";
     private static final String ENTITY_GUID_NOT_REPLICATED_1 = "e19e5683-d9ae-436a-af1e-0873582d0f1e";
     private static final String ENTITY_GUID_NOT_REPLICATED_2 = "2e28ae34-576e-4a8b-be48-cf5f925d7b15";
-    private static final String REPL_FROM = "cl1";
-    private static final String REPL_TRANSFORMER = "[{\"conditions\":{\"__entity\":\"topLevel: \"}," +
+    private static final String REPL_FROM                    = "cl1";
+    private static final String REPL_TRANSFORMER             = "[{\"conditions\":{\"__entity\":\"topLevel: \"}," +
             "\"action\":{\"__entity\":\"ADD_CLASSIFICATION: cl1_replicated\"}}," +
             "{\"action\":{\"__entity.replicatedTo\":\"CLEAR:\",\"__entity.replicatedFrom\":\"CLEAR:\"}}," +
             "{\"conditions\":{\"hive_db.clusterName\":\"EQUALS: cl1\"},\"action\":{\"hive_db.clusterName\":\"SET: cl2\"}}," +
@@ -86,6 +85,15 @@ public class TableReplicationRequestProcessorTest extends AtlasTestBase {
     @Inject
     private AtlasTypeDefStore typeDefStore;
 
+    @DataProvider(name = "source1")
+    public static Object[][] getData1(ITestContext context) throws IOException, AtlasBaseException {
+        return getZipSource("repl_exp_1.zip");
+    }
+
+    public static InputStream getData2() {
+        return getInputStreamFrom("repl_exp_2.zip");
+    }
+
     @BeforeClass
     public void initialize() throws Exception {
         super.initialize();
@@ -103,15 +111,6 @@ public class TableReplicationRequestProcessorTest extends AtlasTestBase {
         AtlasGraphProvider.cleanup();
 
         super.cleanup();
-    }
-
-    @DataProvider(name = "source1")
-    public static Object[][] getData1(ITestContext context) throws IOException, AtlasBaseException {
-        return getZipSource("repl_exp_1.zip");
-    }
-
-    public static InputStream getData2() {
-        return getInputStreamFrom("repl_exp_2.zip");
     }
 
     @Test(dataProvider = "source1")
@@ -132,7 +131,7 @@ public class TableReplicationRequestProcessorTest extends AtlasTestBase {
         pauseForIndexCreation();
         List<ExportImportAuditEntry> result;
         try {
-            result = auditService.get("", "IMPORT_DELETE_REPL", "", "",  "", 10, 0);
+            result = auditService.get("", "IMPORT_DELETE_REPL", "", "", "", 10, 0);
         } catch (Exception e) {
             throw new SkipException("audit entries not retrieved.");
         }

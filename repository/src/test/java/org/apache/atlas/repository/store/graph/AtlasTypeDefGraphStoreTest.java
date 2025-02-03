@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,21 +23,20 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
-import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasClassificationType;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.TestResourceFileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
@@ -45,24 +44,28 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Set;
-import java.util.HashSet;
-
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasTypeDefGraphStoreTest.class);
 
     @Inject
-    private
-    AtlasTypeDefStore typeDefStore;
+    private AtlasTypeDefStore typeDefStore;
 
     @BeforeTest
     public void setupTest() {
@@ -84,6 +87,7 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
     public void testGet() {
         try {
             AtlasTypesDef typesDef = typeDefStore.searchTypesDef(new SearchFilter());
+
             assertNotNull(typesDef.getEnumDefs());
             assertEquals(typesDef.getStructDefs().size(), 0);
             assertNotNull(typesDef.getStructDefs());
@@ -97,58 +101,66 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
     }
 
     @Test(dataProvider = "invalidGetProvider", dependsOnMethods = "testGet")
-    public void testInvalidGet(String name, String guid){
+    public void testInvalidGet(String name, String guid) {
         try {
             assertNull(typeDefStore.getEnumDefByName(name));
             fail("Exception expected for invalid name");
         } catch (AtlasBaseException e) {
+            // ignored
         }
 
         try {
             assertNull(typeDefStore.getEnumDefByGuid(guid));
             fail("Exception expected for invalid guid");
         } catch (AtlasBaseException e) {
+            // ignored
         }
 
         try {
             assertNull(typeDefStore.getStructDefByName(name));
             fail("Exception expected for invalid name");
         } catch (AtlasBaseException e) {
+            // ignored
         }
 
         try {
             assertNull(typeDefStore.getStructDefByGuid(guid));
             fail("Exception expected for invalid guid");
         } catch (AtlasBaseException e) {
+            // ignored
         }
 
         try {
             assertNull(typeDefStore.getClassificationDefByName(name));
             fail("Exception expected for invalid name");
         } catch (AtlasBaseException e) {
+            // ignored
         }
 
         try {
             assertNull(typeDefStore.getClassificationDefByGuid(guid));
             fail("Exception expected for invalid guid");
         } catch (AtlasBaseException e) {
+            // ignored
         }
 
         try {
             assertNull(typeDefStore.getEntityDefByName(name));
             fail("Exception expected for invalid name");
         } catch (AtlasBaseException e) {
+            // ignored
         }
 
         try {
             assertNull(typeDefStore.getEntityDefByGuid(guid));
             fail("Exception expected for invalid guid");
         } catch (AtlasBaseException e) {
+            // ignored
         }
     }
 
     @DataProvider
-    public Object[][] invalidGetProvider(){
+    public Object[][] invalidGetProvider() {
         return new Object[][] {
                 {"name1", "guid1"},
                 {"", ""},
@@ -157,50 +169,47 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
     }
 
     @DataProvider
-    public Object[][] validCreateDeptTypes(){
-        return new Object[][] {
-                {TestUtilsV2.defineDeptEmployeeTypes()}
-        };
+    public Object[][] validCreateDeptTypes() {
+        return new Object[][] {{TestUtilsV2.defineDeptEmployeeTypes()}};
     }
 
     @DataProvider
-    public Object[][] validUpdateDeptTypes(){
+    public Object[][] validUpdateDeptTypes() {
         AtlasTypesDef typesDef = TestUtilsV2.defineValidUpdatedDeptEmployeeTypes();
-        return new Object[][] {
-                {typesDef}
-        };
+
+        return new Object[][] {{typesDef}};
     }
 
     @DataProvider
-    public Object[][] allCreatedTypes(){
+    public Object[][] allCreatedTypes() {
         // Capture all the types that are getting created or updated here.
         AtlasTypesDef updatedTypeDefs = TestUtilsV2.defineValidUpdatedDeptEmployeeTypes();
-        AtlasTypesDef allTypeDefs = new AtlasTypesDef();
+        AtlasTypesDef allTypeDefs     = new AtlasTypesDef();
+
         allTypeDefs.getEnumDefs().addAll(updatedTypeDefs.getEnumDefs());
         allTypeDefs.getStructDefs().addAll(updatedTypeDefs.getStructDefs());
         allTypeDefs.getClassificationDefs().addAll(updatedTypeDefs.getClassificationDefs());
         allTypeDefs.getEntityDefs().addAll(updatedTypeDefs.getEntityDefs());
         allTypeDefs.getEntityDefs().addAll(TestUtilsV2.getEntityWithValidSuperType());
+
         return new Object[][] {{allTypeDefs}};
     }
 
     @DataProvider
-    public Object[][] invalidCreateTypes(){
+    public Object[][] invalidCreateTypes() {
         // TODO: Create invalid type in TestUtilsV2
-        return new Object[][] {
-        };
+        return new Object[][] {};
     }
 
     @DataProvider
-    public Object[][] invalidUpdateTypes(){
-        return new Object[][] {
-                {TestUtilsV2.defineInvalidUpdatedDeptEmployeeTypes()}
-        };
+    public Object[][] invalidUpdateTypes() {
+        return new Object[][] {{TestUtilsV2.defineInvalidUpdatedDeptEmployeeTypes()}};
     }
 
-    @Test(dependsOnMethods = {"testGet"}, dataProvider = "validCreateDeptTypes")
+    @Test(dependsOnMethods = "testGet", dataProvider = "validCreateDeptTypes")
     public void testCreateDept(AtlasTypesDef atlasTypesDef) {
         AtlasTypesDef existingTypesDef = null;
+
         try {
             existingTypesDef = typeDefStore.searchTypesDef(new SearchFilter());
         } catch (AtlasBaseException e) {
@@ -208,24 +217,25 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
         }
 
         assertNotEquals(atlasTypesDef, existingTypesDef, "Types to be created already exist in the system");
-        AtlasTypesDef createdTypesDef = null;
+
         try {
-            createdTypesDef = typeDefStore.createTypesDef(atlasTypesDef);
+            AtlasTypesDef createdTypesDef = typeDefStore.createTypesDef(atlasTypesDef);
+
             assertNotNull(createdTypesDef);
             assertTrue(createdTypesDef.getEnumDefs().containsAll(atlasTypesDef.getEnumDefs()), "EnumDefs create failed");
             assertTrue(createdTypesDef.getClassificationDefs().containsAll(atlasTypesDef.getClassificationDefs()), "ClassificationDef create failed");
             assertTrue(createdTypesDef.getStructDefs().containsAll(atlasTypesDef.getStructDefs()), "StructDef creation failed");
-            Assert.assertEquals(createdTypesDef.getEntityDefs(), atlasTypesDef.getEntityDefs());
-
+            assertEquals(createdTypesDef.getEntityDefs(), atlasTypesDef.getEntityDefs());
         } catch (AtlasBaseException e) {
             fail("Creation of Types should've been a success", e);
         }
     }
 
-    @Test(dependsOnMethods = {"testCreateDept"}, dataProvider = "validUpdateDeptTypes")
-    public void testUpdate(AtlasTypesDef atlasTypesDef){
+    @Test(dependsOnMethods = "testCreateDept", dataProvider = "validUpdateDeptTypes")
+    public void testUpdate(AtlasTypesDef atlasTypesDef) {
         try {
             AtlasTypesDef updatedTypesDef = typeDefStore.updateTypesDef(atlasTypesDef);
+
             assertNotNull(updatedTypesDef);
 
             assertEquals(updatedTypesDef.getEnumDefs().size(), atlasTypesDef.getEnumDefs().size(), "EnumDefs update failed");
@@ -236,95 +246,111 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
             // Try another update round by name and GUID
             for (AtlasEnumDef enumDef : updatedTypesDef.getEnumDefs()) {
                 AtlasEnumDef updated = typeDefStore.updateEnumDefByGuid(enumDef.getGuid(), enumDef);
+
                 assertNotNull(updated);
             }
+
             for (AtlasEnumDef enumDef : atlasTypesDef.getEnumDefs()) {
                 AtlasEnumDef updated = typeDefStore.updateEnumDefByName(enumDef.getName(), enumDef);
+
                 assertNotNull(updated);
             }
 
             // Try another update round by name and GUID
             for (AtlasClassificationDef classificationDef : updatedTypesDef.getClassificationDefs()) {
                 AtlasClassificationDef updated = typeDefStore.updateClassificationDefByGuid(classificationDef.getGuid(), classificationDef);
+
                 assertNotNull(updated);
             }
+
             for (AtlasClassificationDef classificationDef : atlasTypesDef.getClassificationDefs()) {
                 AtlasClassificationDef updated = typeDefStore.updateClassificationDefByName(classificationDef.getName(), classificationDef);
+
                 assertNotNull(updated);
             }
 
             // Try another update round by name and GUID
             for (AtlasStructDef structDef : updatedTypesDef.getStructDefs()) {
                 AtlasStructDef updated = typeDefStore.updateStructDefByGuid(structDef.getGuid(), structDef);
+
                 assertNotNull(updated);
             }
+
             for (AtlasStructDef structDef : atlasTypesDef.getStructDefs()) {
                 AtlasStructDef updated = typeDefStore.updateStructDefByName(structDef.getName(), structDef);
+
                 assertNotNull(updated);
             }
 
             // Try another update round by name and GUID
             for (AtlasEntityDef entityDef : updatedTypesDef.getEntityDefs()) {
                 AtlasEntityDef updated = typeDefStore.updateEntityDefByGuid(entityDef.getGuid(), entityDef);
-                assertNotNull(updated);
-            }
-            for (AtlasEntityDef entityDef : atlasTypesDef.getEntityDefs()) {
-                AtlasEntityDef updated = typeDefStore.updateEntityDefByName(entityDef.getName(), entityDef);
+
                 assertNotNull(updated);
             }
 
+            for (AtlasEntityDef entityDef : atlasTypesDef.getEntityDefs()) {
+                AtlasEntityDef updated = typeDefStore.updateEntityDefByName(entityDef.getName(), entityDef);
+
+                assertNotNull(updated);
+            }
         } catch (AtlasBaseException e) {
             fail("TypeDef updates should've succeeded");
         }
     }
 
-    @Test(enabled = false, dependsOnMethods = {"testCreateDept"})
-    public void testUpdateWithMandatoryFields(){
-        AtlasTypesDef atlasTypesDef = TestUtilsV2.defineInvalidUpdatedDeptEmployeeTypes();
-        List<AtlasEnumDef> enumDefsToUpdate = atlasTypesDef.getEnumDefs();
+    @Test(enabled = false, dependsOnMethods = "testCreateDept")
+    public void testUpdateWithMandatoryFields() {
+        AtlasTypesDef                atlasTypesDef              = TestUtilsV2.defineInvalidUpdatedDeptEmployeeTypes();
+        List<AtlasEnumDef>           enumDefsToUpdate           = atlasTypesDef.getEnumDefs();
         List<AtlasClassificationDef> classificationDefsToUpdate = atlasTypesDef.getClassificationDefs();
-        List<AtlasStructDef> structDefsToUpdate = atlasTypesDef.getStructDefs();
-        List<AtlasEntityDef> entityDefsToUpdate = atlasTypesDef.getEntityDefs();
+        List<AtlasStructDef>         structDefsToUpdate         = atlasTypesDef.getStructDefs();
+        List<AtlasEntityDef>         entityDefsToUpdate         = atlasTypesDef.getEntityDefs();
 
-        AtlasTypesDef onlyEnums = new AtlasTypesDef(enumDefsToUpdate,
-                Collections.EMPTY_LIST, Collections.EMPTY_LIST, Collections.EMPTY_LIST);
-
-        AtlasTypesDef onlyStructs = new AtlasTypesDef(Collections.EMPTY_LIST,
-                structDefsToUpdate, Collections.EMPTY_LIST, Collections.EMPTY_LIST);
-
-        AtlasTypesDef onlyClassification = new AtlasTypesDef(Collections.EMPTY_LIST,
-                Collections.EMPTY_LIST, classificationDefsToUpdate, Collections.EMPTY_LIST);
-
-        AtlasTypesDef onlyEntities = new AtlasTypesDef(Collections.EMPTY_LIST,
-                Collections.EMPTY_LIST, Collections.EMPTY_LIST, entityDefsToUpdate);
+        AtlasTypesDef onlyEnums          = new AtlasTypesDef(enumDefsToUpdate, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+        AtlasTypesDef onlyStructs        = new AtlasTypesDef(Collections.emptyList(), structDefsToUpdate, Collections.emptyList(), Collections.emptyList());
+        AtlasTypesDef onlyClassification = new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), classificationDefsToUpdate, Collections.emptyList());
+        AtlasTypesDef onlyEntities       = new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), entityDefsToUpdate);
 
         try {
             AtlasTypesDef updated = typeDefStore.updateTypesDef(onlyEnums);
+
             assertNotNull(updated);
-        } catch (AtlasBaseException ignored) {}
+        } catch (AtlasBaseException ignored) {
+            // ignored
+        }
 
         try {
             AtlasTypesDef updated = typeDefStore.updateTypesDef(onlyClassification);
+
             assertNotNull(updated);
             assertEquals(updated.getClassificationDefs().size(), 0, "Updates should've failed");
-        } catch (AtlasBaseException ignored) {}
+        } catch (AtlasBaseException ignored) {
+            // ignored
+        }
 
         try {
             AtlasTypesDef updated = typeDefStore.updateTypesDef(onlyStructs);
+
             assertNotNull(updated);
             assertEquals(updated.getStructDefs().size(), 0, "Updates should've failed");
-        } catch (AtlasBaseException ignored) {}
+        } catch (AtlasBaseException ignored) {
+            // ignored
+        }
 
         try {
             AtlasTypesDef updated = typeDefStore.updateTypesDef(onlyEntities);
+
             assertNotNull(updated);
             assertEquals(updated.getEntityDefs().size(), 0, "Updates should've failed");
-        } catch (AtlasBaseException ignored) {}
+        } catch (AtlasBaseException ignored) {
+            // ignored
+        }
     }
 
     // This should run after all the update calls
-    @Test(dependsOnMethods = {"testUpdate"}, dataProvider = "allCreatedTypes")
-    public void testDelete(AtlasTypesDef atlasTypesDef){
+    @Test(dependsOnMethods = "testUpdate", dataProvider = "allCreatedTypes")
+    public void testDelete(AtlasTypesDef atlasTypesDef) {
         try {
             typeDefStore.deleteTypesDef(atlasTypesDef);
         } catch (AtlasBaseException e) {
@@ -335,12 +361,13 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
     @Test
     public void deleteTypeByName() throws IOException {
         try {
-            final String HIVEDB_v2_JSON = "hiveDBv2";
-            final String hiveDB2 = "hive_db_v2";
-            final String relationshipDefName = "cluster_hosts_relationship";
-            final String hostEntityDef = "host";
-            final String clusterEntityDef = "cluster";
-            AtlasTypesDef typesDef = TestResourceFileUtils.readObjectFromJson(".", HIVEDB_v2_JSON, AtlasTypesDef.class);
+            final String  hivedbV2Json        = "hiveDBv2";
+            final String  hiveDB2             = "hive_db_v2";
+            final String  relationshipDefName = "cluster_hosts_relationship";
+            final String  hostEntityDef       = "host";
+            final String  clusterEntityDef    = "cluster";
+            AtlasTypesDef typesDef            = TestResourceFileUtils.readObjectFromJson(".", hivedbV2Json, AtlasTypesDef.class);
+
             typeDefStore.createTypesDef(typesDef);
             typeDefStore.deleteTypeByName(hiveDB2);
             typeDefStore.deleteTypeByName(relationshipDefName);
@@ -352,10 +379,12 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
     }
 
     @Test(dependsOnMethods = "testGet")
-    public void testCreateWithValidAttributes(){
+    public void testCreateWithValidAttributes() {
         AtlasTypesDef hiveTypes = TestUtilsV2.defineHiveTypes();
+
         try {
             AtlasTypesDef createdTypes = typeDefStore.createTypesDef(hiveTypes);
+
             assertEquals(hiveTypes.getEnumDefs(), createdTypes.getEnumDefs(), "Data integrity issue while persisting");
             assertEquals(hiveTypes.getStructDefs(), createdTypes.getStructDefs(), "Data integrity issue while persisting");
             assertEquals(hiveTypes.getClassificationDefs(), createdTypes.getClassificationDefs(), "Data integrity issue while persisting");
@@ -371,6 +400,7 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
 
         try {
             AtlasTypesDef createdTypes = typeDefStore.createTypesDef(typesDef);
+
             assertEquals(typesDef.getEnumDefs(), createdTypes.getEnumDefs(), "Data integrity issue while persisting");
             assertEquals(typesDef.getStructDefs(), createdTypes.getStructDefs(), "Data integrity issue while persisting");
             assertEquals(typesDef.getClassificationDefs(), createdTypes.getClassificationDefs(), "Data integrity issue while persisting");
@@ -381,49 +411,45 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
     }
 
     @Test(enabled = false)
-    public void testCreateWithInvalidAttributes(){
+    public void testCreateWithInvalidAttributes() {
     }
 
     @Test(dependsOnMethods = "testGet")
-    public void testCreateWithValidSuperTypes(){
+    public void testCreateWithValidSuperTypes() {
         // Test Classification with supertype
         List<AtlasClassificationDef> classificationDefs = TestUtilsV2.getClassificationWithValidSuperType();
+        AtlasTypesDef                toCreate           = new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), classificationDefs, Collections.emptyList());
 
-        AtlasTypesDef toCreate = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(),
-                Collections.<AtlasStructDef>emptyList(),
-                classificationDefs,
-                Collections.<AtlasEntityDef>emptyList());
         try {
             AtlasTypesDef created = typeDefStore.createTypesDef(toCreate);
-            assertEquals(created.getClassificationDefs(), toCreate.getClassificationDefs(),
-                    "Classification creation with valid supertype should've succeeded");
+
+            assertEquals(created.getClassificationDefs(), toCreate.getClassificationDefs(), "Classification creation with valid supertype should've succeeded");
         } catch (AtlasBaseException e) {
             fail("Classification creation with valid supertype should've succeeded");
         }
 
         // Test Entity with supertype
         List<AtlasEntityDef> entityDefs = TestUtilsV2.getEntityWithValidSuperType();
-        toCreate = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(),
-                Collections.<AtlasStructDef>emptyList(),
-                Collections.<AtlasClassificationDef>emptyList(),
-                entityDefs);
+
+        toCreate = new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), entityDefs);
+
         try {
             AtlasTypesDef created = typeDefStore.createTypesDef(toCreate);
-            assertEquals(created.getEntityDefs(), toCreate.getEntityDefs(),
-                    "Entity creation with valid supertype should've succeeded");
+
+            assertEquals(created.getEntityDefs(), toCreate.getEntityDefs(), "Entity creation with valid supertype should've succeeded");
         } catch (AtlasBaseException e) {
             fail("Entity creation with valid supertype should've succeeded");
         }
     }
 
     @Test(dependsOnMethods = "testGet")
-    public void testCreateWithInvalidSuperTypes(){
-        AtlasTypesDef typesDef;
-
+    public void testCreateWithInvalidSuperTypes() {
         // Test Classification with supertype
         AtlasClassificationDef classificationDef = TestUtilsV2.getClassificationWithInvalidSuperType();
-        typesDef = new AtlasTypesDef();
+        AtlasTypesDef          typesDef          = new AtlasTypesDef();
+
         typesDef.getClassificationDefs().add(classificationDef);
+
         try {
             AtlasTypesDef created = typeDefStore.createTypesDef(typesDef);
             fail("Classification creation with invalid supertype should've failed");
@@ -433,59 +459,64 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
 
         // Test Entity with supertype
         AtlasEntityDef entityDef = TestUtilsV2.getEntityWithInvalidSuperType();
+
         typesDef = new AtlasTypesDef();
+
         typesDef.getEntityDefs().add(entityDef);
+
         try {
             AtlasTypesDef created = typeDefStore.createTypesDef(typesDef);
-            fail("Entity creation with invalid supertype should've failed");
-        } catch (AtlasBaseException e) {}
 
+            fail("Entity creation with invalid supertype should've failed");
+        } catch (AtlasBaseException e) {
+            // ignored
+        }
     }
 
     @Test(dependsOnMethods = "testGet")
-    public void testCreateClassificationDefWithValidEntityType(){
-        final String entityTypeName ="testCreateClassificationDefWithValidEntityTypeEntity1";
-        final String classificationTypeName ="testCreateClassificationDefWithValidEntityTypeClassification1";
+    public void testCreateClassificationDefWithValidEntityType() {
+        final String entityTypeName         = "testCreateClassificationDefWithValidEntityTypeEntity1";
+        final String classificationTypeName = "testCreateClassificationDefWithValidEntityTypeClassification1";
 
         List<AtlasEntityDef> entityDefs = TestUtilsV2.getEntityWithName(entityTypeName);
 
         // Test Classification with entitytype
         List<AtlasClassificationDef> classificationDefs = TestUtilsV2.getClassificationWithName(classificationTypeName);
 
-        Set<String> entityTypeNames =  new HashSet<String>();
+        Set<String> entityTypeNames = new HashSet<>();
+
         entityTypeNames.add(entityTypeName);
         classificationDefs.get(0).setEntityTypes(entityTypeNames);
-        AtlasTypesDef toCreate = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(),
-                Collections.<AtlasStructDef>emptyList(),
-                classificationDefs,
-                entityDefs);
+
+        AtlasTypesDef toCreate = new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), classificationDefs, entityDefs);
+
         try {
             AtlasTypesDef created = typeDefStore.createTypesDef(toCreate);
-            assertEquals(created.getClassificationDefs(), toCreate.getClassificationDefs(),
-                    "Classification creation with valid entitytype should've succeeded");
+
+            assertEquals(created.getClassificationDefs(), toCreate.getClassificationDefs(), "Classification creation with valid entitytype should've succeeded");
         } catch (AtlasBaseException e) {
             fail("Classification creation with valid entitytype should've succeeded. Failed with " + e.getMessage());
         }
     }
 
     @Test(dependsOnMethods = "testGet")
-    public void testCreateWithInvalidEntityType(){
-        final String classificationTypeName ="testCreateClassificationDefWithInvalidEntityTypeClassification1";
+    public void testCreateWithInvalidEntityType() {
+        final String classificationTypeName = "testCreateClassificationDefWithInvalidEntityTypeClassification1";
+
         // Test Classification with entitytype
         List<AtlasClassificationDef> classificationDefs = TestUtilsV2.getClassificationWithName(classificationTypeName);
+        Set<String>                  entityTypeNames    = new HashSet<>();
 
-        Set<String> entityTypeNames =  new HashSet<String>();
         entityTypeNames.add("cccc");
         classificationDefs.get(0).setEntityTypes(entityTypeNames);
-        AtlasTypesDef toCreate = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(),
-                Collections.<AtlasStructDef>emptyList(),
-                classificationDefs,
-                Collections.<AtlasEntityDef>emptyList());
+
+        AtlasTypesDef toCreate = new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), classificationDefs, Collections.emptyList());
+
         try {
             AtlasTypesDef created = typeDefStore.createTypesDef(toCreate);
             fail("Classification creation with invalid entitytype should've failed");
         } catch (AtlasBaseException e) {
-
+            // ignored
         }
     }
 
@@ -493,21 +524,22 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
      * test that specifying an entitytype in a child classificationDef when then parent has unrestricted entityTypes fails.
      */
     @Test(dependsOnMethods = "testGet")
-    public void testCreateWithInvalidEntityType2(){
-        final String classificationTypeName1 ="testCreateClassificationDefWithInvalidEntityType2Classification1";
-        final String classificationTypeName2 ="testCreateClassificationDefWithInvalidEntityType2Classification2";
-        final String entityTypeName1 ="testCreateClassificationDefWithInvalidEntityType2Entity1";
+    public void testCreateWithInvalidEntityType2() {
+        final String classificationTypeName1 = "testCreateClassificationDefWithInvalidEntityType2Classification1";
+        final String classificationTypeName2 = "testCreateClassificationDefWithInvalidEntityType2Classification2";
+        final String entityTypeName1         = "testCreateClassificationDefWithInvalidEntityType2Entity1";
 
         // Test Classification with entitytype
         AtlasClassificationDef classificationDef1 = TestUtilsV2.getSingleClassificationWithName(classificationTypeName1);
         AtlasClassificationDef classificationDef2 = TestUtilsV2.getSingleClassificationWithName(classificationTypeName2);
-        List<AtlasEntityDef> entityDefs = TestUtilsV2.getEntityWithName(entityTypeName1);
+        List<AtlasEntityDef>   entityDefs         = TestUtilsV2.getEntityWithName(entityTypeName1);
 
+        Set<String> entityTypeNames = new HashSet<>();
 
-        Set<String> entityTypeNames =  new HashSet<String>();
         entityTypeNames.add(entityTypeName1);
 
-        Set<String> superTypes =  new HashSet<String>();
+        Set<String> superTypes = new HashSet<>();
+
         superTypes.add(classificationTypeName1);
 
         classificationDef2.setSuperTypes(superTypes);
@@ -516,17 +548,15 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
         TestUtilsV2.populateSystemAttributes(classificationDef1);
         TestUtilsV2.populateSystemAttributes(classificationDef2);
 
-        List<AtlasClassificationDef>  classificationDefs = Arrays.asList(classificationDef1,classificationDef2);
+        List<AtlasClassificationDef> classificationDefs = Arrays.asList(classificationDef1, classificationDef2);
+        AtlasTypesDef                toCreate           = new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), classificationDefs, Collections.emptyList());
 
-        AtlasTypesDef toCreate = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(),
-                Collections.<AtlasStructDef>emptyList(),
-                classificationDefs,
-                Collections.<AtlasEntityDef>emptyList());
         try {
             AtlasTypesDef created = typeDefStore.createTypesDef(toCreate);
+
             fail("Classification creation with invalid entitytype should've failed");
         } catch (AtlasBaseException e) {
-
+            // ignored
         }
     }
 
@@ -534,30 +564,31 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
      * test that specifying an entitytype in a child classificationDef which is not in the parent fails
      */
     @Test(dependsOnMethods = "testGet")
-    public void testCreateWithInvalidEntityType3(){
-        final String classificationTypeName1 ="testCreateClassificationDefWithInvalidEntityType3Classification1";
-        final String classificationTypeName2 ="testCreateClassificationDefWithInvalidEntityType3Classification2";
-        final String entityTypeName1 ="testCreateClassificationDefWithInvalidEntityType3Entity1";
-        final String entityTypeName2 ="testCreateClassificationDefWithInvalidEntityType3Entity2";
-
+    public void testCreateWithInvalidEntityType3() {
+        final String classificationTypeName1 = "testCreateClassificationDefWithInvalidEntityType3Classification1";
+        final String classificationTypeName2 = "testCreateClassificationDefWithInvalidEntityType3Classification2";
+        final String entityTypeName1         = "testCreateClassificationDefWithInvalidEntityType3Entity1";
+        final String entityTypeName2         = "testCreateClassificationDefWithInvalidEntityType3Entity2";
 
         // Test Classification with entitytype
         AtlasClassificationDef classificationDef1 = TestUtilsV2.getSingleClassificationWithName(classificationTypeName1);
         AtlasClassificationDef classificationDef2 = TestUtilsV2.getSingleClassificationWithName(classificationTypeName2);
-        AtlasEntityDef entityDef1 = TestUtilsV2.getSingleEntityWithName(entityTypeName1);
-        AtlasEntityDef entityDef2 = TestUtilsV2.getSingleEntityWithName(entityTypeName2);
+        AtlasEntityDef         entityDef1         = TestUtilsV2.getSingleEntityWithName(entityTypeName1);
+        AtlasEntityDef         entityDef2         = TestUtilsV2.getSingleEntityWithName(entityTypeName2);
 
-        Set<String> entityTypeNames1 =  new HashSet<String>();
+        Set<String> entityTypeNames1 = new HashSet<>();
+
         entityTypeNames1.add(entityTypeName1);
 
-        Set<String> entityTypeNames2 =  new HashSet<String>();
+        Set<String> entityTypeNames2 = new HashSet<>();
+
         entityTypeNames2.add(entityTypeName2);
 
-        Set<String> superTypes =  new HashSet<String>();
+        Set<String> superTypes = new HashSet<>();
+
         superTypes.add(classificationTypeName1);
 
         classificationDef1.setEntityTypes(entityTypeNames1);
-
 
         classificationDef2.setSuperTypes(superTypes);
         classificationDef2.setEntityTypes(entityTypeNames2);
@@ -567,18 +598,16 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
         TestUtilsV2.populateSystemAttributes(entityDef1);
         TestUtilsV2.populateSystemAttributes(entityDef2);
 
-        List<AtlasClassificationDef>  classificationDefs = Arrays.asList(classificationDef1,classificationDef2);
-        List<AtlasEntityDef>  entityDefs = Arrays.asList(entityDef1,entityDef2);
+        List<AtlasClassificationDef> classificationDefs = Arrays.asList(classificationDef1, classificationDef2);
+        List<AtlasEntityDef>         entityDefs         = Arrays.asList(entityDef1, entityDef2);
+        AtlasTypesDef                toCreate           = new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), classificationDefs, entityDefs);
 
-        AtlasTypesDef toCreate = new AtlasTypesDef(Collections.<AtlasEnumDef>emptyList(),
-                Collections.<AtlasStructDef>emptyList(),
-                classificationDefs,
-                entityDefs);
         try {
             AtlasTypesDef created = typeDefStore.createTypesDef(toCreate);
+
             fail("Classification creation with invalid entitytype should've failed");
         } catch (AtlasBaseException e) {
-
+            // ignore
         }
     }
 
@@ -599,15 +628,14 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
 
     @Test(dependsOnMethods = "testGet")
     public void testTypeDeletionAndRecreate() {
-        AtlasClassificationDef aTag = new AtlasClassificationDef("testTag");
-        AtlasAttributeDef attributeDef = new AtlasAttributeDef("testAttribute", "string", true,
-                AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                false, true, false,
-                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+        AtlasClassificationDef aTag         = new AtlasClassificationDef("testTag");
+        AtlasAttributeDef      attributeDef = new AtlasAttributeDef("testAttribute", "string", true, AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, true, false, Collections.emptyList());
+
         aTag.addAttribute(attributeDef);
 
         AtlasTypesDef typesDef = new AtlasTypesDef();
-        typesDef.setClassificationDefs(Arrays.asList(aTag));
+
+        typesDef.setClassificationDefs(Collections.singletonList(aTag));
 
         try {
             typeDefStore.createTypesDef(typesDef);
@@ -621,13 +649,11 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
             fail("Tag deletion should've succeeded");
         }
 
-        aTag = new AtlasClassificationDef("testTag");
-        attributeDef = new AtlasAttributeDef("testAttribute", "int", true,
-                AtlasAttributeDef.Cardinality.SINGLE, 0, 1,
-                false, true, false,
-                Collections.<AtlasStructDef.AtlasConstraintDef>emptyList());
+        aTag         = new AtlasClassificationDef("testTag");
+        attributeDef = new AtlasAttributeDef("testAttribute", "int", true, AtlasAttributeDef.Cardinality.SINGLE, 0, 1, false, true, false, Collections.emptyList());
+
         aTag.addAttribute(attributeDef);
-        typesDef.setClassificationDefs(Arrays.asList(aTag));
+        typesDef.setClassificationDefs(Collections.singletonList(aTag));
 
         try {
             typeDefStore.createTypesDef(typesDef);
@@ -638,65 +664,65 @@ public class AtlasTypeDefGraphStoreTest extends AtlasTestBase {
 
     @Test(dependsOnMethods = "testGet")
     public void testTypeRegistryIsUpdatedAfterGraphStorage() throws AtlasBaseException {
-      String classificationDef = "{"
-          + "\"name\":\"test_classification_11\","
-          + "\"description\":\"\","
-          + "\"createdBy\":\"admin\","
-          + "\"superTypes\":[],"
-          + "\"attributeDefs\":[{"
-          + "\"name\":\"test_class_11\","
-          + "\"typeName\":\"string\","
-          + "\"isOptional\":true,"
-          + "\"isUnique\":true,"
-          + "\"isIndexable\":true,"
-          + "\"cardinality\":\"SINGLE\","
-          + "\"valuesMinCount\":0,"
-          + "\"valuesMaxCount\":1}]}";
+        String classificationDef = "{"
+                + "\"name\":\"test_classification_11\","
+                + "\"description\":\"\","
+                + "\"createdBy\":\"admin\","
+                + "\"superTypes\":[],"
+                + "\"attributeDefs\":[{"
+                + "\"name\":\"test_class_11\","
+                + "\"typeName\":\"string\","
+                + "\"isOptional\":true,"
+                + "\"isUnique\":true,"
+                + "\"isIndexable\":true,"
+                + "\"cardinality\":\"SINGLE\","
+                + "\"valuesMinCount\":0,"
+                + "\"valuesMaxCount\":1}]}";
 
-      String jsonStr = "{"
-          + "\"classificationDefs\":[" + classificationDef + "],"
-          + "\"entityDefs\":[],"
-          + "\"enumDefs\":[],"
-          + "\"structDefs\":[]}";
+        String jsonStr = "{"
+                + "\"classificationDefs\":[" + classificationDef + "],"
+                + "\"entityDefs\":[],"
+                + "\"enumDefs\":[],"
+                + "\"structDefs\":[]}";
 
-      // create type from json string
-      AtlasTypesDef testTypesDefFromJson = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
-      AtlasTypesDef createdTypesDef = typeDefStore.createTypesDef(testTypesDefFromJson);
-      // check returned type
-      assertEquals("test_classification_11", createdTypesDef.getClassificationDefs().get(0).getName());
-      assertTrue(createdTypesDef.getClassificationDefs().get(0).getAttributeDefs().get(0).getIsIndexable());
-      // save guid
-      String guid = createdTypesDef.getClassificationDefs().get(0).getGuid();
-      Date createdTime = createdTypesDef.getClassificationDefs().get(0).getCreateTime();
+        // create type from json string
+        AtlasTypesDef testTypesDefFromJson = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
+        AtlasTypesDef createdTypesDef      = typeDefStore.createTypesDef(testTypesDefFromJson);
+        // check returned type
+        assertEquals(createdTypesDef.getClassificationDefs().get(0).getName(), "test_classification_11");
+        assertTrue(createdTypesDef.getClassificationDefs().get(0).getAttributeDefs().get(0).getIsIndexable());
+        // save guid
+        String guid        = createdTypesDef.getClassificationDefs().get(0).getGuid();
+        Date   createdTime = createdTypesDef.getClassificationDefs().get(0).getCreateTime();
 
-      // get created type and check again
-      AtlasClassificationDef getBackFromCache = typeDefStore.getClassificationDefByName("test_classification_11");
-      assertEquals("test_classification_11", getBackFromCache.getName());
-      assertTrue(getBackFromCache.getAttributeDefs().get(0).getIsIndexable());
-      assertEquals(guid, getBackFromCache.getGuid());
-      assertNotNull(getBackFromCache.getCreatedBy());
-      assertEquals(createdTime, getBackFromCache.getCreateTime());
+        // get created type and check again
+        AtlasClassificationDef getBackFromCache = typeDefStore.getClassificationDefByName("test_classification_11");
+        assertEquals(getBackFromCache.getName(), "test_classification_11");
+        assertTrue(getBackFromCache.getAttributeDefs().get(0).getIsIndexable());
+        assertEquals(guid, getBackFromCache.getGuid());
+        assertNotNull(getBackFromCache.getCreatedBy());
+        assertEquals(createdTime, getBackFromCache.getCreateTime());
 
-      // update type, change isIndexable, check the update result
-      testTypesDefFromJson = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
-      testTypesDefFromJson.getClassificationDefs().get(0).getAttributeDefs().get(0).setIsIndexable(false);
-      AtlasTypesDef updatedTypesDef = typeDefStore.updateTypesDef(testTypesDefFromJson);
-      assertEquals("test_classification_11", updatedTypesDef.getClassificationDefs().get(0).getName());
-      assertFalse(updatedTypesDef.getClassificationDefs().get(0).getAttributeDefs().get(0).getIsIndexable());
-      assertEquals(guid, updatedTypesDef.getClassificationDefs().get(0).getGuid());
-      assertEquals(createdTime, updatedTypesDef.getClassificationDefs().get(0).getCreateTime());
+        // update type, change isIndexable, check the update result
+        testTypesDefFromJson = AtlasType.fromJson(jsonStr, AtlasTypesDef.class);
+        testTypesDefFromJson.getClassificationDefs().get(0).getAttributeDefs().get(0).setIsIndexable(false);
+        AtlasTypesDef updatedTypesDef = typeDefStore.updateTypesDef(testTypesDefFromJson);
+        assertEquals(updatedTypesDef.getClassificationDefs().get(0).getName(), "test_classification_11");
+        assertFalse(updatedTypesDef.getClassificationDefs().get(0).getAttributeDefs().get(0).getIsIndexable());
+        assertEquals(guid, updatedTypesDef.getClassificationDefs().get(0).getGuid());
+        assertEquals(createdTime, updatedTypesDef.getClassificationDefs().get(0).getCreateTime());
 
-      // get updated type (both by name and guid) and check again
-      getBackFromCache = typeDefStore.getClassificationDefByName("test_classification_11");
-      assertEquals("test_classification_11", getBackFromCache.getName());
-      assertFalse(getBackFromCache.getAttributeDefs().get(0).getIsIndexable());
-      assertEquals(guid, getBackFromCache.getGuid());
-      assertEquals(createdTime, getBackFromCache.getCreateTime());
-      getBackFromCache = typeDefStore.getClassificationDefByGuid(guid);
-      assertEquals("test_classification_11", getBackFromCache.getName());
-      assertFalse(getBackFromCache.getAttributeDefs().get(0).getIsIndexable());
-      assertEquals(guid, getBackFromCache.getGuid());
-      assertEquals(createdTime, getBackFromCache.getCreateTime());
+        // get updated type (both by name and guid) and check again
+        getBackFromCache = typeDefStore.getClassificationDefByName("test_classification_11");
+        assertEquals(getBackFromCache.getName(), "test_classification_11");
+        assertFalse(getBackFromCache.getAttributeDefs().get(0).getIsIndexable());
+        assertEquals(guid, getBackFromCache.getGuid());
+        assertEquals(createdTime, getBackFromCache.getCreateTime());
+        getBackFromCache = typeDefStore.getClassificationDefByGuid(guid);
+        assertEquals(getBackFromCache.getName(), "test_classification_11");
+        assertFalse(getBackFromCache.getAttributeDefs().get(0).getIsIndexable());
+        assertEquals(guid, getBackFromCache.getGuid());
+        assertEquals(createdTime, getBackFromCache.getCreateTime());
     }
 
     @Test

@@ -23,7 +23,6 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang3.StringUtils;
 
-
 public abstract class AbstractDataTransferObject<T extends AtlasBaseModelObject> implements DataTransferObject<T> {
     private final AtlasTypeRegistry typeRegistry;
     private final Class<T>          objectType;
@@ -40,17 +39,18 @@ public abstract class AbstractDataTransferObject<T extends AtlasBaseModelObject>
     }
 
     @Override
-    public Class getObjectType() {
+    public Class<T> getObjectType() {
         return objectType;
     }
 
     @Override
     public AtlasEntityType getEntityType() {
-        AtlasEntityType ret = typeRegistry.getEntityTypeByName(entityTypeName);
-
-        return ret;
+        return typeRegistry.getEntityTypeByName(entityTypeName);
     }
 
+    public void setGuid(T o, AtlasEntity entity) {
+        o.setGuid(entity.getGuid());
+    }
 
     protected AtlasEntity getDefaultAtlasEntity(T obj) {
         AtlasEntity ret = getEntityType().createDefaultValue();
@@ -62,9 +62,5 @@ public abstract class AbstractDataTransferObject<T extends AtlasBaseModelObject>
         }
 
         return ret;
-    }
-
-    public void setGuid(T o, AtlasEntity entity) {
-        o.setGuid(entity.getGuid());
     }
 }

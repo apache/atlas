@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 package org.apache.atlas.repository.converters;
-
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -35,9 +34,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-public class AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
+public class AtlasObjectIdConverter extends AtlasAbstractFormatConverter {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasObjectIdConverter.class);
-
 
     public AtlasObjectIdConverter(AtlasFormatConverters registry, AtlasTypeRegistry typeRegistry) {
         this(registry, typeRegistry, TypeCategory.OBJECT_ID_TYPE);
@@ -92,9 +90,9 @@ public class AtlasObjectIdConverter extends  AtlasAbstractFormatConverter {
 
         if (v2Obj != null) {
             if (v2Obj instanceof Map) {
-                Map    v2Map    = (Map) v2Obj;
-                String idStr    = (String)v2Map.get(AtlasObjectId.KEY_GUID);
-                String typeName = (String)v2Map.get(AtlasObjectId.KEY_TYPENAME);
+                Map<?, ?> v2Map    = (Map<?, ?>) v2Obj;
+                String    idStr    = (String) v2Map.get(AtlasObjectId.KEY_GUID);
+                String    typeName = (String) v2Map.get(AtlasObjectId.KEY_TYPENAME);
 
                 if (StringUtils.isEmpty(idStr)) {
                     throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND);

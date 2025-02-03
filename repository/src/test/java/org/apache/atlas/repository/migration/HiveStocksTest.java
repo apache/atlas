@@ -30,7 +30,6 @@ import java.io.IOException;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class HiveStocksTest extends MigrationBaseAsserts {
-
     @Inject
     public HiveStocksTest(AtlasGraph graph, GraphDBMigrator migrator) {
         super(graph, migrator);
@@ -38,14 +37,14 @@ public class HiveStocksTest extends MigrationBaseAsserts {
 
     @Test
     public void migrateStocks() throws AtlasBaseException, IOException {
-        final int EXPECTED_TOTAL_COUNT  = 191;
-        final int EXPECTED_DB_COUNT     = 1;
-        final int EXPECTED_TABLE_COUNT  = 1;
-        final int EXPECTED_COLUMN_COUNT = 7;
+        final int expectedTotalCount  = 191;
+        final int expectedDbCount     = 1;
+        final int expectedTableCount  = 1;
+        final int expectedColumnCount = 7;
 
         runFileImporter("stocks_db");
 
-        assertHiveVertices(EXPECTED_DB_COUNT, EXPECTED_TABLE_COUNT, EXPECTED_COLUMN_COUNT);
+        assertHiveVertices(expectedDbCount, expectedTableCount, expectedColumnCount);
         assertTypeCountNameGuid("hive_db", 1, "stocks", "4e13b36b-9c54-4616-9001-1058221165d0");
         assertTypeCountNameGuid("hive_table", 1, "stocks_daily", "5cfc2540-9947-40e0-8905-367e07481774");
         assertTypeCountNameGuid("hive_column", 1, "high", "d72ce4fb-6f17-4e68-aa85-967366c9e891");
@@ -60,9 +59,9 @@ public class HiveStocksTest extends MigrationBaseAsserts {
         assertTypeCountNameGuid("Tag1", 1, "", "");
 
         assertEdges(getVertex("hive_db", "stocks").getEdges(AtlasEdgeDirection.IN).iterator(), 1, "");
-        assertEdges(getVertex("hive_table", "stocks_daily").getEdges(AtlasEdgeDirection.OUT).iterator(),  1, "hive_table_db");
+        assertEdges(getVertex("hive_table", "stocks_daily").getEdges(AtlasEdgeDirection.OUT).iterator(), 1, "hive_table_db");
         assertEdges(getVertex("hive_column", "high").getEdges(AtlasEdgeDirection.OUT).iterator(), 1, "hive_table_columns");
 
-        assertMigrationStatus(EXPECTED_TOTAL_COUNT);
+        assertMigrationStatus(expectedTotalCount);
     }
 }

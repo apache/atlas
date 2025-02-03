@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,13 +28,13 @@ public class PatchContext {
     private final AtlasTypeRegistry        typeRegistry;
     private final GraphBackedSearchIndexer indexer;
     private final AtlasPatchRegistry       patchRegistry;
-    private final EntityGraphMapper entityGraphMapper;
+    private final EntityGraphMapper        entityGraphMapper;
 
     public PatchContext(AtlasGraph graph, AtlasTypeRegistry typeRegistry, GraphBackedSearchIndexer indexer, EntityGraphMapper entityGraphMapper) {
-        this.graph         = graph;
-        this.typeRegistry  = typeRegistry;
-        this.indexer       = indexer;
-        this.patchRegistry = new AtlasPatchRegistry(this.graph);
+        this.graph             = graph;
+        this.typeRegistry      = typeRegistry;
+        this.indexer           = indexer;
+        this.patchRegistry     = new AtlasPatchRegistry(this.graph);
         this.entityGraphMapper = entityGraphMapper;
     }
 
@@ -53,5 +53,8 @@ public class PatchContext {
     public AtlasPatchRegistry getPatchRegistry() {
         return patchRegistry;
     }
-    public EntityGraphMapper getEntityGraphMapper() { return entityGraphMapper;}
+
+    public EntityGraphMapper getEntityGraphMapper() {
+        return entityGraphMapper;
+    }
 }

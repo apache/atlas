@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,26 +31,27 @@ import org.apache.atlas.repository.store.graph.v2.AtlasEntityStoreV2;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.testng.ITestContext;
-import org.testng.annotations.Test;
-import org.testng.annotations.Guice;
-import org.testng.annotations.BeforeTest;
-import org.testng.annotations.BeforeClass;
 import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
+import org.testng.annotations.Guice;
+import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
-import java.util.Map;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZipSource;
-import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
@@ -58,7 +59,6 @@ import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class RelationshipAttributesExtractorTest extends AtlasTestBase {
-
     private static final String EXPORT_FULL      = "full";
     private static final String EXPORT_CONNECTED = "connected";
     private static final String ENTITIES_SUB_DIR = "entities";
@@ -88,10 +88,10 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
     private static final String GUID_COLUMN_LINEAGE = "d4cf482b-423c-4c88-9bd1-701477ed6fd8";
 
     @Inject
-    private ImportService importService;
+    AtlasTypeRegistry typeRegistry;
 
     @Inject
-    AtlasTypeRegistry typeRegistry;
+    private ImportService importService;
 
     @Inject
     private AtlasTypeDefStore typeDefStore;
@@ -101,6 +101,11 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
 
     @Inject
     private AtlasEntityStoreV2 entityStore;
+
+    @DataProvider(name = "hiveDb")
+    public static Object[][] getData(ITestContext context) {
+        return getZipSource("hive_db_lineage.zip");
+    }
 
     @BeforeClass
     public void setup() throws Exception {
@@ -123,11 +128,6 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
         super.cleanup();
     }
 
-    @DataProvider(name = "hiveDb")
-    public static Object[][] getData(ITestContext context) throws IOException, AtlasBaseException {
-        return getZipSource("hive_db_lineage.zip");
-    }
-
     @Test(dataProvider = "hiveDb")
     public void importHiveDb(InputStream inputStream) throws AtlasBaseException, IOException {
         runImportWithNoParameters(importService, inputStream);
@@ -136,72 +136,84 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
     @Test(dependsOnMethods = "importHiveDb")
     public void exportDBFull() throws Exception {
         ZipSource source = runExport(getExportRequestForHiveDb(QUALIFIED_NAME_DB, EXPORT_FULL, false));
+
         verifyDBFull(source);
     }
 
     @Test(dependsOnMethods = "importHiveDb")
     public void exportDBFullSkipLineageFull() throws Exception {
         ZipSource source = runExport(getExportRequestForHiveDb(QUALIFIED_NAME_DB, EXPORT_FULL, true));
+
         verifyDBFullSkipLineageFull(source);
     }
 
     @Test(dependsOnMethods = "importHiveDb")
     public void exportTableWithLineageFull() throws Exception {
         ZipSource source = runExport(getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_LINEAGE, EXPORT_FULL, false));
+
         verifyTableWithLineageFull(source);
     }
 
     @Test(dependsOnMethods = "importHiveDb")
     public void exportTableWithLineageSkipLineageFull() throws Exception {
         ZipSource source = runExport(getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_LINEAGE, EXPORT_FULL, true));
+
         verifyTableWithLineageSkipLineageFull(source);
     }
 
     @Test(dependsOnMethods = "importHiveDb")
     public void exportTableWithoutLineageFull() throws Exception {
         ZipSource source = runExport(getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_NON_LINEAGE, EXPORT_FULL, false));
+
         verifyTableWithoutLineageFull(source);
     }
 
     @Test(dependsOnMethods = "importHiveDb")
     public void exportTableWithoutLineageSkipLineageFull() throws Exception {
         ZipSource source = runExport(getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_NON_LINEAGE, EXPORT_FULL, true));
+
         verifyTableWithoutLineageSkipLineageFull(source);
     }
 
     @Test(dependsOnMethods = "importHiveDb")
     public void exportDBConn() throws Exception {
         ZipSource source = runExport(getExportRequestForHiveDb(QUALIFIED_NAME_DB, EXPORT_CONNECTED, false));
+
         verifyDBConn(source);
     }
 
     @Test(dependsOnMethods = "importHiveDb")
     public void exportDBSkipLineageConn() throws Exception {
         ZipSource source = runExport(getExportRequestForHiveDb(QUALIFIED_NAME_DB, EXPORT_CONNECTED, true));
+
         verifyDBSkipLineageConn(source);
     }
 
     @Test(dependsOnMethods = "importHiveDb")
     public void exportTableWithLineageConn() throws Exception {
         ZipSource source = runExport(getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_LINEAGE, EXPORT_CONNECTED, false));
+
         verifyTableWithLineageConn(source);
     }
 
     @Test(dependsOnMethods = "importHiveDb")
     public void exportTableWithLineageSkipLineageConn() throws Exception {
         ZipSource source = runExport(getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_LINEAGE, EXPORT_CONNECTED, true));
+
         verifyTableWithLineageSkipLineageConn(source);
     }
 
     @Test(dependsOnMethods = "importHiveDb")
     public void exportTableWithoutLineageConn() throws Exception {
         ZipSource source = runExport(getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_NON_LINEAGE, EXPORT_CONNECTED, false));
+
         verifyTableWithoutLineageConn(source);
     }
 
     @Test(dependsOnMethods = "importHiveDb")
     public void exportTableWithoutLineageSkipLineageConn() throws Exception {
         ZipSource source = runExport(getExportRequestForHiveTable(QUALIFIED_NAME_TABLE_NON_LINEAGE, EXPORT_CONNECTED, true));
+
         verifyTableWithoutLineageSkipLineageConn(source);
     }
 
@@ -210,14 +222,19 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
         setupInterDbLineageData();
 
         ZipSource source = runExport(getExportRequestForHiveTable("db_1.table_1@cl1", EXPORT_CONNECTED, false));
+
         assertInterDbLineageConnectedExport(source);
     }
 
     private void setupInterDbLineageData() {
         RequestContext.get().setImportInProgress(true);
-        createEntities(entityStore, ENTITIES_SUB_DIR, new String[]{DB1, DB2, TBL1, TBL2, HIVE_PROCESS, HIVE_COLUMN_LINEAGE});
+
+        createEntities(entityStore, ENTITIES_SUB_DIR, new String[] {DB1, DB2, TBL1, TBL2, HIVE_PROCESS, HIVE_COLUMN_LINEAGE});
+
         final String[] entityGuids = {GUID_DB1, GUID_DB2, GUID_TBL1, GUID_TBL2, GUID_PROCESS, GUID_COLUMN_LINEAGE};
+
         verifyCreatedEntities(entityStore, entityGuids, 6);
+
         RequestContext.get().setImportInProgress(false);
     }
 
@@ -230,9 +247,9 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
     }
 
     private AtlasExportRequest getExportRequestForHiveDb(String hiveDbName, String fetchType, boolean skipLineage) {
-        AtlasExportRequest request = new AtlasExportRequest();
-
+        AtlasExportRequest  request       = new AtlasExportRequest();
         List<AtlasObjectId> itemsToExport = new ArrayList<>();
+
         itemsToExport.add(new AtlasObjectId("hive_db", "qualifiedName", hiveDbName));
         request.setItemsToExport(itemsToExport);
         request.setOptions(getOptionsMap(fetchType, skipLineage));
@@ -241,9 +258,9 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
     }
 
     private AtlasExportRequest getExportRequestForHiveTable(String hiveTableName, String fetchType, boolean skipLineage) {
-        AtlasExportRequest request = new AtlasExportRequest();
-
+        AtlasExportRequest  request       = new AtlasExportRequest();
         List<AtlasObjectId> itemsToExport = new ArrayList<>();
+
         itemsToExport.add(new AtlasObjectId("hive_table", "qualifiedName", hiveTableName));
         request.setItemsToExport(itemsToExport);
         request.setOptions(getOptionsMap(fetchType, skipLineage));
@@ -251,9 +268,10 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
         return request;
     }
 
-    private Map<String, Object> getOptionsMap(String fetchType, boolean skipLineage){
+    private Map<String, Object> getOptionsMap(String fetchType, boolean skipLineage) {
         Map<String, Object> optionsMap = new HashMap<>();
-        optionsMap.put("fetchType", fetchType.isEmpty() ? "full" : fetchType );
+
+        optionsMap.put("fetchType", fetchType.isEmpty() ? "full" : fetchType);
         optionsMap.put("skipLineage", skipLineage);
 
         return optionsMap;
@@ -261,18 +279,18 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
 
     private ZipSource runExport(AtlasExportRequest request) throws AtlasBaseException, IOException {
         final String requestingIP = "1.0.0.0";
-        final String hostName = "localhost";
-        final String userName = "admin";
+        final String hostName     = "localhost";
+        final String userName     = "admin";
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ZipSink zipSink = new ZipSink(baos);
-        AtlasExportResult result = exportService.run(zipSink, request, userName, hostName, requestingIP);
+        ByteArrayOutputStream baos    = new ByteArrayOutputStream();
+        ZipSink               zipSink = new ZipSink(baos);
+        AtlasExportResult     result  = exportService.run(zipSink, request, userName, hostName, requestingIP);
 
         zipSink.close();
 
         ByteArrayInputStream bis = new ByteArrayInputStream(baos.toByteArray());
-        ZipSource zipSource = new ZipSource(bis);
-        return zipSource;
+
+        return new ZipSource(bis);
     }
 
     private void verifyDBFull(ZipSource zipSource) {
@@ -312,7 +330,7 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
         assertEquals(zipSource.getCreationOrder().size(), 5);
 
         assertTrue(zipSource.getCreationOrder().contains(GUID_HIVE_PROCESS));
-        verifyExpectedEntities(getFileNames(zipSource), GUID_DB, GUID_TABLE_1, GUID_TABLE_2, GUID_TABLE_CTAS_2,GUID_HIVE_PROCESS);
+        verifyExpectedEntities(getFileNames(zipSource), GUID_DB, GUID_TABLE_1, GUID_TABLE_2, GUID_TABLE_CTAS_2, GUID_HIVE_PROCESS);
     }
 
     private void verifyTableWithoutLineageSkipLineageFull(ZipSource zipSource) {
@@ -322,7 +340,6 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
         assertFalse(zipSource.getCreationOrder().contains(GUID_HIVE_PROCESS));
         verifyExpectedEntities(getFileNames(zipSource), GUID_DB, GUID_TABLE_1, GUID_TABLE_2, GUID_TABLE_CTAS_2);
     }
-
 
     private void verifyDBConn(ZipSource zipSource) {
         assertNotNull(zipSource.getCreationOrder());
@@ -350,10 +367,10 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
 
     private void verifyTableWithLineageSkipLineageConn(ZipSource zipSource) {
         assertNotNull(zipSource.getCreationOrder());
-        assertEquals(zipSource.getCreationOrder().size(),2);
+        assertEquals(zipSource.getCreationOrder().size(), 2);
 
         assertFalse(zipSource.getCreationOrder().contains(GUID_HIVE_PROCESS));
-        verifyExpectedEntities(getFileNames(zipSource), GUID_DB, GUID_TABLE_CTAS_2);;
+        verifyExpectedEntities(getFileNames(zipSource), GUID_DB, GUID_TABLE_CTAS_2);
     }
 
     private void verifyTableWithoutLineageConn(ZipSource zipSource) {
@@ -366,7 +383,7 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
 
     private void verifyTableWithoutLineageSkipLineageConn(ZipSource zipSource) {
         assertNotNull(zipSource.getCreationOrder());
-        assertEquals(zipSource.getCreationOrder().size(), 2);;
+        assertEquals(zipSource.getCreationOrder().size(), 2);
 
         assertFalse(zipSource.getCreationOrder().contains(GUID_HIVE_PROCESS));
         verifyExpectedEntities(getFileNames(zipSource), GUID_DB, GUID_TABLE_1);
@@ -380,22 +397,27 @@ public class RelationshipAttributesExtractorTest extends AtlasTestBase {
         verifyExpectedEntities(getFileNames(zipSource), GUID_DB1, GUID_DB2, GUID_TBL1, GUID_TBL2, GUID_PROCESS);
     }
 
-    private void verifyExpectedEntities(List<String> fileNames, String... guids){
+    private void verifyExpectedEntities(List<String> fileNames, String... guids) {
         assertEquals(fileNames.size(), guids.length);
+
         for (String guid : guids) {
             assertTrue(fileNames.contains(guid.toLowerCase()));
         }
     }
 
-    private List<String> getFileNames(ZipSource zipSource){
+    private List<String> getFileNames(ZipSource zipSource) {
         List<String> ret = new ArrayList<>();
+
         assertTrue(zipSource.hasNext());
 
-        while (zipSource.hasNext()){
+        while (zipSource.hasNext()) {
             AtlasEntity atlasEntity = zipSource.next();
+
             assertNotNull(atlasEntity);
+
             ret.add(atlasEntity.getGuid());
         }
+
         return ret;
     }
 }

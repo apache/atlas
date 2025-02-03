@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,13 +29,8 @@ import org.apache.atlas.repository.store.graph.EntityResolver;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 
 public class IDBasedEntityResolver implements EntityResolver {
-    private static final Logger LOG = LoggerFactory.getLogger(IDBasedEntityResolver.class);
-
     private final AtlasGraph        graph;
     private final AtlasTypeRegistry typeRegistry;
     private final EntityGraphMapper entityGraphMapper;
@@ -58,13 +53,13 @@ public class IDBasedEntityResolver implements EntityResolver {
         EntityStream entityStream = context.getEntityStream();
 
         for (String guid : context.getReferencedGuids()) {
-            boolean isAssignedGuid = AtlasTypeUtil.isAssignedGuid(guid);
-            AtlasVertex vertex = isAssignedGuid ? AtlasGraphUtilsV2.findByGuid(this.graph, guid) : null;
+            boolean     isAssignedGuid = AtlasTypeUtil.isAssignedGuid(guid);
+            AtlasVertex vertex         = isAssignedGuid ? AtlasGraphUtilsV2.findByGuid(this.graph, guid) : null;
 
             if (vertex == null) { // if not found in the store, look if the entity is present in the stream
                 AtlasEntity entity = entityStream.getByGuid(guid);
-                if (!RequestContext.get().isImportInProgress()) {
 
+                if (!RequestContext.get().isImportInProgress()) {
                     if (entity != null) { // look for the entity in the store using unique-attributes
                         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
 

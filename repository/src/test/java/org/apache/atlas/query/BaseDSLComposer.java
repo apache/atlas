@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -63,7 +63,7 @@ public class BaseDSLComposer {
         public AtlasType getType(String typeName) throws AtlasBaseException {
             final AtlasType type;
 
-            if(typeName.equals("PII") || typeName.equals("Dimension")) {
+            if (typeName.equals("PII") || typeName.equals("Dimension")) {
                 type = mock(AtlasType.class);
 
                 when(type.getTypeCategory()).thenReturn(TypeCategory.CLASSIFICATION);
@@ -78,16 +78,16 @@ public class BaseDSLComposer {
                 when(def.getIndexType()).thenReturn(AtlasStructDef.AtlasAttributeDef.IndexType.DEFAULT);
                 when(attr.getAttributeDef()).thenReturn(def);
 
-                AtlasStructType.AtlasAttribute attr_s = mock(AtlasStructType.AtlasAttribute.class);
-                AtlasStructDef.AtlasAttributeDef def_s = mock(AtlasStructDef.AtlasAttributeDef.class);
+                AtlasStructType.AtlasAttribute   attrS = mock(AtlasStructType.AtlasAttribute.class);
+                AtlasStructDef.AtlasAttributeDef defS  = mock(AtlasStructDef.AtlasAttributeDef.class);
 
-                when(def_s.getIndexType()).thenReturn(AtlasStructDef.AtlasAttributeDef.IndexType.STRING);
-                when(attr_s.getAttributeDef()).thenReturn(def_s);
+                when(defS.getIndexType()).thenReturn(AtlasStructDef.AtlasAttributeDef.IndexType.STRING);
+                when(attrS.getAttributeDef()).thenReturn(defS);
                 when(((AtlasEntityType) type).getAttribute(anyString())).thenReturn(attr);
-                when(((AtlasEntityType) type).getAttribute(eq("name"))).thenReturn(attr_s);
+                when(((AtlasEntityType) type).getAttribute(eq("name"))).thenReturn(attrS);
             }
 
-            if(typeName.equals("PIII")) {
+            if (typeName.equals("PIII")) {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND);
             }
 
@@ -98,19 +98,19 @@ public class BaseDSLComposer {
 
         @Override
         public String getQualifiedName(GremlinQueryComposer.Context context, String name) throws AtlasBaseException {
-            if(name.startsWith("__")) {
+            if (name.startsWith("__")) {
                 return name.equals("__state") || name.equals("__guid") ? name : "";
             }
 
-            if(!hasAttribute(context, name)) {
+            if (!hasAttribute(context, name)) {
                 throw new AtlasBaseException("Invalid attribute");
             }
 
-            if(name.contains(".")) {
+            if (name.contains(".")) {
                 return name;
             }
 
-            if(!context.getActiveTypeName().equals(name)) {
+            if (!context.getActiveTypeName().equals(name)) {
                 return String.format("%s.%s", context.getActiveTypeName(), name);
             } else {
                 return name;
@@ -185,7 +185,7 @@ public class BaseDSLComposer {
 
         @Override
         public String getTypeAndSubTypes(GremlinQueryComposer.Context context) {
-            String[] str = new String[]{"'Asset'", "'Table'"};
+            String[] str = new String[] {"'Asset'", "'Table'"};
 
             return StringUtils.join(str, ",");
         }

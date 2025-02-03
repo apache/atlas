@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,16 +33,19 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.io.IOException;
 import java.util.List;
 
 import static org.apache.atlas.utils.TestLoadModelUtils.loadFsModel;
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertTrue;
+import static org.testng.Assert.assertFalse;
 import static org.testng.AssertJUnit.assertNotNull;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class ImportTransformsShaperTest extends AtlasTestBase {
+    private static final String TAG_NAME = "REPLICATED";
+
     @Inject
     AtlasTypeRegistry typeRegistry;
 
@@ -55,8 +58,6 @@ public class ImportTransformsShaperTest extends AtlasTestBase {
     @Inject
     private AtlasEntityStore entityStore;
 
-    private final String TAG_NAME = "REPLICATED";
-
     @BeforeClass
     public void setup() throws IOException, AtlasBaseException {
         basicSetup(typeDefStore, typeRegistry);
@@ -65,11 +66,9 @@ public class ImportTransformsShaperTest extends AtlasTestBase {
 
     @Test
     public void newTagIsCreatedAndEntitiesAreTagged() throws AtlasBaseException, IOException {
-        AtlasImportResult result = ZipFileResourceTestUtils.runImportWithParameters(importService,
-                getImporRequest(),
-                ZipFileResourceTestUtils.getInputStreamFrom("stocks.zip"));
-
+        AtlasImportResult       result         = ZipFileResourceTestUtils.runImportWithParameters(importService, getImporRequest(), ZipFileResourceTestUtils.getInputStreamFrom("stocks.zip"));
         AtlasClassificationType classification = typeRegistry.getClassificationTypeByName(TAG_NAME);
+
         assertNotNull(classification);
         assertEntities(result.getProcessedEntities(), TAG_NAME);
     }
@@ -84,7 +83,7 @@ public class ImportTransformsShaperTest extends AtlasTestBase {
     }
 
     private void assertTag(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, String tagName) {
-        if(entityWithExtInfo.getReferredEntities() == null || entityWithExtInfo.getReferredEntities().size() == 0) {
+        if (entityWithExtInfo.getReferredEntities() == null || entityWithExtInfo.getReferredEntities().isEmpty()) {
             return;
         }
 
@@ -94,17 +93,15 @@ public class ImportTransformsShaperTest extends AtlasTestBase {
     }
 
     private void assertTag(AtlasEntity entity, String tagName) {
-
-        assertTrue(entity.getClassifications().size() > 0,
-                String.format("%s not tagged", entity.getTypeName()));
+        assertFalse(entity.getClassifications().isEmpty(), String.format("%s not tagged", entity.getTypeName()));
         assertEquals(entity.getClassifications().get(0).getTypeName(), tagName);
     }
 
-
     private AtlasImportRequest getImporRequest() {
         AtlasImportRequest request = new AtlasImportRequest();
+
         request.getOptions().put("transforms", "{ \"Referenceable\": { \"*\":[ \"addClassification:REPLICATED\" ] } }");
+
         return request;
     }
-
 }

@@ -36,7 +36,6 @@ import java.util.List;
 
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
 
-
 public class FullTextSearchProcessor extends SearchProcessor {
     private static final Logger LOG      = LoggerFactory.getLogger(FullTextSearchProcessor.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("FullTextSearchProcessor");
@@ -49,7 +48,7 @@ public class FullTextSearchProcessor extends SearchProcessor {
         SearchParameters searchParameters = context.getSearchParameters();
         StringBuilder    queryString      = new StringBuilder();
 
-        queryString.append(INDEX_SEARCH_PREFIX + "\"").append(Constants.ENTITY_TEXT_PROPERTY_KEY).append("\":(").append(searchParameters.getQuery());
+        queryString.append(INDEX_SEARCH_PREFIX).append("\"").append(Constants.ENTITY_TEXT_PROPERTY_KEY).append("\":(").append(searchParameters.getQuery());
 
         // if search includes entity-type criteria, adding a filter here can help avoid unnecessary
         // processing (and rejection) by subsequent EntitySearchProcessor
@@ -59,22 +58,19 @@ public class FullTextSearchProcessor extends SearchProcessor {
             if (typeAndSubTypeNamesQryStr.length() <= MAX_QUERY_STR_LENGTH_TYPES) {
                 queryString.append(AND_STR).append(typeAndSubTypeNamesQryStr);
             } else {
-                LOG.warn("'{}' has too many subtypes (query-string-length={}) to include in index-query; might cause poor performance",
-                         searchParameters.getTypeName(), typeAndSubTypeNamesQryStr.length());
+                LOG.warn("'{}' has too many subtypes (query-string-length={}) to include in index-query; might cause poor performance", searchParameters.getTypeName(), typeAndSubTypeNamesQryStr.length());
             }
         }
 
         // if search includes classification criteria, adding a filter here can help avoid unnecessary
         // processing (and rejection) by subsequent ClassificationSearchProcessor or EntitySearchProcessor
-        if (CollectionUtils.isNotEmpty(context.getClassificationTypes()) &&
-                                                       context.getClassificationTypes().iterator().next() != MATCH_ALL_NOT_CLASSIFIED) {
+        if (CollectionUtils.isNotEmpty(context.getClassificationTypes()) && context.getClassificationTypes().iterator().next() != MATCH_ALL_NOT_CLASSIFIED) {
             String typeAndSubTypeNamesStr = context.getClassificationTypesQryStr();
 
             if (typeAndSubTypeNamesStr.length() <= MAX_QUERY_STR_LENGTH_TAGS) {
                 queryString.append(AND_STR).append(typeAndSubTypeNamesStr);
             } else {
-                LOG.warn("'{}' has too many subtypes (query-string-length={}) to include in index-query; might cause poor performance",
-                        searchParameters.getClassification(), typeAndSubTypeNamesStr.length());
+                LOG.warn("'{}' has too many subtypes (query-string-length={}) to include in index-query; might cause poor performance", searchParameters.getClassification(), typeAndSubTypeNamesStr.length());
             }
         }
 
@@ -85,16 +81,13 @@ public class FullTextSearchProcessor extends SearchProcessor {
 
     @Override
     public List<AtlasVertex> execute() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> FullTextSearchProcessor.execute({})", context);
-        }
+        LOG.debug("==> FullTextSearchProcessor.execute({})", context);
 
-        List<AtlasVertex> ret = new ArrayList<>();
-
-        AtlasPerfTracer perf = null;
+        List<AtlasVertex> ret  = new ArrayList<>();
+        AtlasPerfTracer   perf = null;
 
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "FullTextSearchProcessor.execute(" + context +  ")");
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "FullTextSearchProcessor.execute(" + context + ")");
         }
 
         try {
@@ -141,12 +134,12 @@ public class FullTextSearchProcessor extends SearchProcessor {
                         continue;
                     }
                     //skip internalTypes
-                    String entityTypeName = AtlasGraphUtilsV2.getTypeName(vertex);
-                    AtlasEntityType entityType = context.getTypeRegistry().getEntityTypeByName(entityTypeName);
-                    if (entityType  != null && entityType.isInternalType()) {
+                    String          entityTypeName = AtlasGraphUtilsV2.getTypeName(vertex);
+                    AtlasEntityType entityType     = context.getTypeRegistry().getEntityTypeByName(entityTypeName);
+
+                    if (entityType != null && entityType.isInternalType()) {
                         continue;
                     }
-
 
                     if (activeOnly && AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
                         continue;
@@ -156,13 +149,12 @@ public class FullTextSearchProcessor extends SearchProcessor {
                 }
 
                 isLastResultPage      = resultCount < limit;
-
                 offsetEntityVertexMap = super.filter(offsetEntityVertexMap);
-
-                resultIdx             = collectResultVertices(ret,startIdx, limit, resultIdx, offsetEntityVertexMap, marker);
+                resultIdx             = collectResultVertices(ret, startIdx, limit, resultIdx, offsetEntityVertexMap, marker);
 
                 if (isLastResultPage) {
-                    resultIdx         = SearchContext.MarkerUtil.MARKER_END - 1 ;
+                    resultIdx = SearchContext.MarkerUtil.MARKER_END - 1;
+
                     break;
                 }
             }
@@ -170,14 +162,11 @@ public class FullTextSearchProcessor extends SearchProcessor {
             if (marker != null) {
                 nextOffset = resultIdx + 1;
             }
-
         } finally {
             AtlasPerfTracer.log(perf);
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== FullTextSearchProcessor.execute({}): ret.size()={}", context, ret.size());
-        }
+        LOG.debug("<== FullTextSearchProcessor.execute({}): ret.size()={}", context, ret.size());
 
         return ret;
     }

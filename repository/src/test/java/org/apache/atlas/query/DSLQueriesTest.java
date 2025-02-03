@@ -35,6 +35,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -54,8 +55,8 @@ import static org.testng.Assert.fail;
 public class DSLQueriesTest extends BasicTestSetup {
     private static final Logger LOG = LoggerFactory.getLogger(DSLQueriesTest.class);
 
-    private final int DEFAULT_LIMIT = 25;
-    private final int DEFAULT_OFFSET = 0;
+    private static final int DEFAULT_LIMIT  = 25;
+    private static final int DEFAULT_OFFSET = 0;
 
     @Inject
     private EntityDiscoveryService discoveryService;
@@ -67,6 +68,107 @@ public class DSLQueriesTest extends BasicTestSetup {
         setupTestData();
 
         pollForData();
+    }
+
+    @AfterClass
+    public void teardown() throws Exception {
+        AtlasGraphProvider.cleanup();
+
+        super.cleanup();
+    }
+
+    @Test(dataProvider = "comparisonQueriesProvider")
+    public void comparison(String query, int expected) throws AtlasBaseException {
+        AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
+
+        assertSearchResult(searchResult, expected, query);
+
+        AtlasSearchResult searchResult2 = discoveryService.searchUsingDslQuery(query.replace("where", " "), DEFAULT_LIMIT, 0);
+
+        assertSearchResult(searchResult2, expected, query);
+    }
+
+    @Test(dataProvider = "classificationQueries")
+    public void classificationQueries(String query, int expected, ListValidator lvExpected) throws AtlasBaseException {
+        AtlasSearchResult result = queryAssert(query, expected, DEFAULT_LIMIT, 0);
+
+        if (lvExpected == null) {
+            return;
+        }
+
+        ListValidator.assertLv(ListValidator.from(result), lvExpected);
+    }
+
+    @Test(dataProvider = "glossaryTermQueries")
+    public void glossaryTerm(String query, int expected, ListValidator lvExpected) throws AtlasBaseException {
+        AtlasSearchResult result = queryAssert(query, expected, DEFAULT_LIMIT, 0);
+
+        if (lvExpected == null) {
+            return;
+        }
+
+        ListValidator.assertLv(ListValidator.from(result), lvExpected);
+    }
+
+    @Test(dataProvider = "basicProvider")
+    public void basic(String query, int expected) throws AtlasBaseException {
+        queryAssert(query, expected, DEFAULT_LIMIT, 0);
+        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
+    }
+
+    @Test(dataProvider = "systemAttributesProvider")
+    public void systemAttributes(String query, int expected) throws AtlasBaseException {
+        queryAssert(query, expected, DEFAULT_LIMIT, 0);
+    }
+
+    @Test(dataProvider = "limitProvider")
+    public void limit(String query, int expected, int limit, int offset) throws AtlasBaseException {
+        queryAssert(query, expected, limit, offset);
+        queryAssert(query.replace("where", " "), expected, limit, offset);
+    }
+
+    @Test(dataProvider = "syntaxProvider")
+    public void syntax(String query, int expected) throws AtlasBaseException {
+        queryAssert(query, expected, DEFAULT_LIMIT, 0);
+        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
+    }
+
+    @Test(dataProvider = "orderByProvider")
+    public void orderBy(String query, int expected, String attributeName, boolean ascending) throws AtlasBaseException {
+        AtlasSearchResult searchResult = queryAssert(query, expected, DEFAULT_LIMIT, 0);
+
+        assertSortOrder(query, attributeName, ascending, searchResult.getEntities());
+
+        searchResult = queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
+
+        assertSortOrder(query, attributeName, ascending, searchResult.getEntities());
+    }
+
+    @Test(dataProvider = "likeQueriesProvider")
+    public void likeQueries(String query, int expected, ListValidator lv) throws AtlasBaseException {
+        queryAssert(query, expected, DEFAULT_LIMIT, 0, lv);
+        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0, lv);
+    }
+
+    @Test(dataProvider = "minMaxCountProvider")
+    public void minMaxCount(String query, TableValidator fv) throws AtlasBaseException {
+        queryAssert(query, fv);
+    }
+
+    @Test
+    public void testQuery() {
+        try {
+            discoveryService.searchUsingDslQuery("hive_table select db", DEFAULT_LIMIT, 0);
+        } catch (AtlasBaseException e) {
+            fail("Should've been a success");
+        }
+    }
+
+    @Test(dataProvider = "errorQueriesProvider", expectedExceptions = AtlasBaseException.class)
+    public void errorQueries(String query) throws AtlasBaseException {
+        LOG.debug(query);
+
+        discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
     }
 
     private void pollForData() throws InterruptedException {
@@ -137,13 +239,6 @@ public class DSLQueriesTest extends BasicTestSetup {
         }
     }
 
-    @AfterClass
-    public void teardown() throws Exception {
-        AtlasGraphProvider.cleanup();
-
-        super.cleanup();
-    }
-
     @DataProvider(name = "comparisonQueriesProvider")
     private Object[][] comparisonQueriesProvider() {
         return new Object[][] {
@@ -204,27 +299,16 @@ public class DSLQueriesTest extends BasicTestSetup {
         };
     }
 
-    @Test(dataProvider = "comparisonQueriesProvider")
-    public void comparison(String query, int expected) throws AtlasBaseException {
-        AtlasSearchResult searchResult = discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
-
-        assertSearchResult(searchResult, expected, query);
-
-        AtlasSearchResult searchResult2 = discoveryService.searchUsingDslQuery(query.replace("where", " "), DEFAULT_LIMIT, 0);
-
-        assertSearchResult(searchResult2, expected, query);
-    }
-
     @DataProvider(name = "glossaryTermQueries")
     private Object[][] glossaryTermQueries() {
-        return new Object[][]{
+        return new Object[][] {
                 {"hive_table hasTerm modernTrade", 2, new ListValidator("logging_fact_monthly_mv", "time_dim")},
                 {"hive_table hasTerm \"modernTrade@salesGlossary\"", 2, new ListValidator("logging_fact_monthly_mv", "time_dim")},
                 {"hive_table hasTerm \"modernTrade@salesGlossary\" where hive_table.name = \"time_dim\"", 1, new ListValidator("time_dim")},
                 {"hive_table hasTerm \"modernTrade@salesGlossary\" select name", 2, null},
                 {"hive_table hasTerm \"modernTrade@salesGlossary\" limit 1", 1, null},
                 {"hive_table hasTerm \"modernTrade@salesGlossary\" or hive_table hasTerm \"ecommerce@salesGlossary\"", 3, new ListValidator("logging_fact_monthly_mv", "time_dim", "product_dim")},
-                {"hive_table hasTerm \"modernTrade@salesGlossary\" and hive_table isA Dimension",1, new ListValidator( "time_dim")},
+                {"hive_table hasTerm \"modernTrade@salesGlossary\" and hive_table isA Dimension", 1, new ListValidator("time_dim")},
                 {"hive_table hasTerm \"modernTrade@salesGlossary\" and db.name = \"Sales\" or (hive_table.name = \"sales_fact_monthly_mv\")", 2, new ListValidator("sales_fact_monthly_mv", "time_dim")},
                 {"hive_table where hive_table hasTerm \"modernTrade@salesGlossary\"", 2, new ListValidator("logging_fact_monthly_mv", "time_dim")},
                 {"hive_table where (name = \"product_dim\" and hive_table hasTerm \"ecommerce@salesGlossary\")", 1, new ListValidator("product_dim")},
@@ -236,9 +320,9 @@ public class DSLQueriesTest extends BasicTestSetup {
     private Object[][] classificationQueries() {
         return new Object[][] {
                 {"hive_table isA Dimension", 5, new ListValidator("product_dim", "time_dim", "customer_dim", "sales_fact_monthly_mv", "sales_fact_daily_mv")},
-                {"hive_table where hive_table isA Dimension", 5,  new ListValidator("product_dim", "time_dim", "customer_dim", "sales_fact_monthly_mv", "sales_fact_daily_mv")},
-                {"hive_table where name = 'time_dim' and hive_table isA Dimension", 1,  new ListValidator("time_dim")},
-                {"Dimension where Dimension.timeAttr = 'timeValue'", 5,  new ListValidator("loadSalesMonthly", "loadSalesDaily", "time_dim", "sales_fact_monthly_mv", "sales_fact_daily_mv")},
+                {"hive_table where hive_table isA Dimension", 5, new ListValidator("product_dim", "time_dim", "customer_dim", "sales_fact_monthly_mv", "sales_fact_daily_mv")},
+                {"hive_table where name = 'time_dim' and hive_table isA Dimension", 1, new ListValidator("time_dim")},
+                {"Dimension where Dimension.timeAttr = 'timeValue'", 5, new ListValidator("loadSalesMonthly", "loadSalesDaily", "time_dim", "sales_fact_monthly_mv", "sales_fact_daily_mv")},
                 {"Dimension as d where d.productAttr = 'productValue'", 2, new ListValidator("product_dim", "product_dim_view")},
                 {"hive_table where hive_table isA Dimension and Dimension.timeAttr = 'timeValue'", 3, new ListValidator("time_dim", "sales_fact_monthly_mv", "sales_fact_daily_mv")},
                 {"hive_table where Dimension.timeAttr = 'timeValue'", 3, new ListValidator("time_dim", "sales_fact_monthly_mv", "sales_fact_daily_mv")},
@@ -248,31 +332,9 @@ public class DSLQueriesTest extends BasicTestSetup {
         };
     }
 
-    @Test(dataProvider = "classificationQueries")
-    public void classificationQueries(String query, int expected, ListValidator lvExpected) throws AtlasBaseException {
-        AtlasSearchResult result = queryAssert(query, expected, DEFAULT_LIMIT, 0);
-
-        if (lvExpected == null) {
-            return;
-        }
-
-        ListValidator.assertLv(ListValidator.from(result), lvExpected);
-    }
-
-    @Test(dataProvider = "glossaryTermQueries")
-    public void glossaryTerm(String query, int expected, ListValidator lvExpected) throws AtlasBaseException {
-        AtlasSearchResult result = queryAssert(query, expected, DEFAULT_LIMIT, 0);
-
-        if (lvExpected == null) {
-            return;
-        }
-
-        ListValidator.assertLv(ListValidator.from(result), lvExpected);
-    }
-
     @DataProvider(name = "basicProvider")
     private Object[][] basicQueries() {
-        return new Object[][]{
+        return new Object[][] {
                 {"hive_column where table.name = \"sales_fact_daily_mv\"", 6},
                 {"hive_table where columns.name = \"app_id\"", 2},
                 {"from hive_db", 3},
@@ -318,15 +380,9 @@ public class DSLQueriesTest extends BasicTestSetup {
         };
     }
 
-    @Test(dataProvider = "basicProvider")
-    public void basic(String query, int expected) throws AtlasBaseException {
-        queryAssert(query, expected, DEFAULT_LIMIT, 0);
-        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
-    }
-
     @DataProvider(name = "systemAttributesProvider")
     private Object[][] systemAttributesQueries() {
-        return new Object[][]{
+        return new Object[][] {
                 {"hive_db has __state", 3},
                 {"hive_db where hive_db has __state", 3},
                 {"hive_db as d where d.__state = 'ACTIVE'", 3},
@@ -335,11 +391,6 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_db where __isIncomplete=true", 0},
                 {"hive_db where __isIncomplete=false", 3},
         };
-    }
-
-    @Test(dataProvider = "systemAttributesProvider")
-    public void systemAttributes(String query, int expected) throws AtlasBaseException {
-        queryAssert(query, expected, DEFAULT_LIMIT, 0);
     }
 
     private AtlasSearchResult queryAssert(String query, final int expected, final int limit, final int offset) throws AtlasBaseException {
@@ -352,7 +403,7 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @DataProvider(name = "limitProvider")
     private Object[][] limitQueries() {
-        return new Object[][]{
+        return new Object[][] {
                 {"hive_column", 21, 40, 0},
                 {"hive_column limit 10", 10, 50, 0},
                 {"hive_column select hive_column.qualifiedName limit 10", 10, 5, 0},
@@ -366,15 +417,9 @@ public class DSLQueriesTest extends BasicTestSetup {
         };
     }
 
-    @Test(dataProvider = "limitProvider")
-    public void limit(String query, int expected, int limit, int offset) throws AtlasBaseException {
-        queryAssert(query, expected, limit, offset);
-        queryAssert(query.replace("where", " "), expected, limit, offset);
-    }
-
     @DataProvider(name = "syntaxProvider")
     private Object[][] syntaxQueries() {
-        return new Object[][]{
+        return new Object[][] {
                 {"hive_column  limit 10 ", 10},
                 {"hive_column select hive_column.qualifiedName limit 10 ", 10},
                 {"from hive_db", 3},
@@ -409,7 +454,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table isa Dimension limit 2 offset 1", 2},
                 {"hive_table isa Dimension limit 3 offset 1", 3},
                 {"hive_table where db.name='Sales' and db.clusterName='cl1'", 4},
-                {"hive_table where name = 'sales_fact_monthly_mv' and db.name = 'Reporting' and columns.name = 'sales'",1},
+                {"hive_table where name = 'sales_fact_monthly_mv' and db.name = 'Reporting' and columns.name = 'sales'", 1},
 
                 {"hive_column where hive_column isa PII", 4},
                 {"hive_column where hive_column isa PII limit 5", 4},
@@ -465,15 +510,9 @@ public class DSLQueriesTest extends BasicTestSetup {
         };
     }
 
-    @Test(dataProvider = "syntaxProvider")
-    public void syntax(String query, int expected) throws AtlasBaseException {
-        queryAssert(query, expected, DEFAULT_LIMIT, 0);
-        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
-    }
-
     @DataProvider(name = "orderByProvider")
     private Object[][] orderByQueries() {
-        return new Object[][]{
+        return new Object[][] {
                 {"from hive_db as h orderby h.owner limit 3", 3, "owner", true},
                 {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName ", 21, "qualifiedName", true},
                 {"hive_column as c select c.qualifiedName orderby hive_column.qualifiedName limit 5", 5, "qualifiedName", true},
@@ -518,7 +557,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_column where hive_column.name=\"customer_id\" orderby hive_column.name limit 2", 2, "name", true},
                 {"hive_column where hive_column.name=\"customer_id\" orderby hive_column.name limit 2 offset 1", 1, "name", true},
 
-                {"from hive_table select owner orderby hive_table.owner",10, "owner", true},
+                {"from hive_table select owner orderby hive_table.owner", 10, "owner", true},
                 {"from hive_table select owner orderby hive_table.owner limit 5", 5, "owner", true},
                 {"from hive_table select owner orderby hive_table.owner desc limit 5", 5, "owner", false},
                 {"from hive_table select owner orderby hive_table.owner limit 5 offset 5", 5, "owner", true},
@@ -541,17 +580,6 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 10", 1, "name", true},
                 {"hive_table where (name = \"sales_fact\" and createTime >= \"2014-12-11T02:35:58.440Z\" ) select name as _col_0, createTime as _col_1 orderby name limit 0 offset 1", 0, "name", true},
         };
-    }
-
-    @Test(dataProvider = "orderByProvider")
-    public void orderBy(String query, int expected, String attributeName, boolean ascending) throws AtlasBaseException {
-        AtlasSearchResult  searchResult = queryAssert(query, expected, DEFAULT_LIMIT, 0);
-
-        assertSortOrder(query, attributeName, ascending, searchResult.getEntities());
-
-        searchResult = queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0);
-
-        assertSortOrder(query, attributeName, ascending, searchResult.getEntities());
     }
 
     private void assertSortOrder(String query, String attributeName, boolean ascending, List<AtlasEntityHeader> entities) {
@@ -580,7 +608,7 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @DataProvider(name = "likeQueriesProvider")
     private Object[][] likeQueries() {
-        return new Object[][]{
+        return new Object[][] {
                 {"hive_table qualifiedName like \"*time_dim*\"", 1, new ListValidator("time_dim")},
                 {"hive_db where qualifiedName like \"qualified:R*\"", 1, new ListValidator("Reporting")},
                 {"hive_table db.name=\"Sales\"", 4, new ListValidator("customer_dim", "sales_fact", "time_dim", "product_dim")},
@@ -588,25 +616,19 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table qualifiedName like \"*time_dim*\" AND db.name=\"Sales\"", 1, new ListValidator("time_dim")},
                 {"hive_table where name like \"sa?es*\"", 3, new ListValidator("sales_fact", "sales_fact_daily_mv", "sales_fact_monthly_mv")},
                 {"hive_db where name like \"R*\"", 1, new ListValidator("Reporting")},
-                {"hive_db where hive_db.name like \"R???rt?*\" or hive_db.name like \"S?l?s\" or hive_db.name like\"Log*\"", 3, new ListValidator("Reporting", "Sales", "Logging") },
+                {"hive_db where hive_db.name like \"R???rt?*\" or hive_db.name like \"S?l?s\" or hive_db.name like\"Log*\"", 3, new ListValidator("Reporting", "Sales", "Logging")},
                 {"hive_db where hive_db.name like \"R???rt?*\" and hive_db.name like \"S?l?s\" and hive_db.name like\"Log*\"", 0, new ListValidator()},
                 {"hive_table where name like 'sales*' and db.name like 'Sa?es'", 1, new ListValidator("sales_fact")},
                 {"hive_table where db.name like \"Sa*\"", 4, new ListValidator("customer_dim", "sales_fact", "time_dim", "product_dim")},
                 {"hive_table where db.name like \"Sa*\" and name like \"*dim\"", 3, new ListValidator("customer_dim", "product_dim", "time_dim")},
                 //STRING Mapping
-                {"hive_db where userDescription like \"*/warehouse/*\"", 3, new ListValidator("Sales","Reporting","Logging")},
-                {"hive_db where userDescription like \"/apps/warehouse/*\"", 3, new ListValidator("Sales","Reporting","Logging")},
+                {"hive_db where userDescription like \"*/warehouse/*\"", 3, new ListValidator("Sales", "Reporting", "Logging")},
+                {"hive_db where userDescription like \"/apps/warehouse/*\"", 3, new ListValidator("Sales", "Reporting", "Logging")},
                 //TEXT Mapping
-                {"hive_db where description like \"*/warehouse/*\"", 3, new ListValidator("Sales","Reporting","Logging")},
-                {"hive_db where description like \"/apps/warehouse/*\"", 3, new ListValidator("Sales","Reporting","Logging")},
+                {"hive_db where description like \"*/warehouse/*\"", 3, new ListValidator("Sales", "Reporting", "Logging")},
+                {"hive_db where description like \"/apps/warehouse/*\"", 3, new ListValidator("Sales", "Reporting", "Logging")},
                 {"hive_table where name like \"table[0-2]\"", 2, new ListValidator("table1", "table2")},
         };
-    }
-
-    @Test(dataProvider = "likeQueriesProvider")
-    public void likeQueries(String query, int expected, ListValidator lv) throws AtlasBaseException {
-        queryAssert(query, expected, DEFAULT_LIMIT, 0, lv);
-        queryAssert(query.replace("where", " "), expected, DEFAULT_LIMIT, 0, lv);
     }
 
     private void queryAssert(String query, int expectedCount, int limit, int offset, ListValidator expected) throws AtlasBaseException {
@@ -617,7 +639,7 @@ public class DSLQueriesTest extends BasicTestSetup {
 
     @DataProvider(name = "minMaxCountProvider")
     private Object[][] minMaxCountQueries() {
-        return new Object[][]{
+        return new Object[][] {
                 {"from hive_db select max(name), min(name)",
                         new TableValidator("max(name)", "min(name)")
                                 .row("Sales", "Logging")},
@@ -637,10 +659,7 @@ public class DSLQueriesTest extends BasicTestSetup {
                                 .row("Tim ETL", "Logging", 1)
                                 .row("John ETL", "Sales", 1)},
                 {"from hive_db groupby (owner) select count() ",
-                        new TableValidator("count()").
-                                row(1).
-                                row(1).
-                                row(1)},
+                        new TableValidator("count()").row(1).row(1).row(1)},
                 {"from hive_db groupby (owner) select Asset.owner, count() ",
                         new TableValidator("Asset.owner", "count()")
                                 .row("Jane BI", 1)
@@ -711,14 +730,9 @@ public class DSLQueriesTest extends BasicTestSetup {
         };
     }
 
-    @Test(dataProvider = "minMaxCountProvider")
-    public void minMaxCount(String query, TableValidator fv) throws AtlasBaseException {
-        queryAssert(query, fv);
-    }
-
     @DataProvider(name = "errorQueriesProvider")
     private Object[][] errorQueries() {
-        return new Object[][]{
+        return new Object[][] {
                 {"`isa`"}, // Tag doesn't exist in the test data
                 {"PIII"},  // same as above
                 {"DBBB as d select d"}, // same as above
@@ -735,27 +749,10 @@ public class DSLQueriesTest extends BasicTestSetup {
                 {"hive_table select owner, columns"}, // Can't select a mix of immediate attribute and referred entity
                 {"hive_table select owner, db.name"}, // Same as above
                 {"hive_order"}, // From src should be an Entity or Classification
-                {"hive_table hasTerm modernTrade@salesGlossary"},//should be encoded with double quotes
+                {"hive_table hasTerm modernTrade@salesGlossary"}, //should be encoded with double quotes
                 {"Dimension where tagAttr1 = 'tagValue'"}, // prefix for classification attributes is must
                 {"Dimension where Dimension.tagAttr1 = 'tagValue' and name = 'time_dim'"},
-
         };
-    }
-
-    @Test
-    public void testQuery() {
-        try {
-            discoveryService.searchUsingDslQuery("hive_table select db", DEFAULT_LIMIT, 0);
-        } catch (AtlasBaseException e) {
-            fail("Should've been a success");
-        }
-    }
-
-    @Test(dataProvider = "errorQueriesProvider", expectedExceptions = { AtlasBaseException.class })
-    public void errorQueries(String query) throws AtlasBaseException {
-        LOG.debug(query);
-
-        discoveryService.searchUsingDslQuery(query, DEFAULT_LIMIT, 0);
     }
 
     private void queryAssert(String query, TableValidator fv) throws AtlasBaseException {
@@ -770,10 +767,10 @@ public class DSLQueriesTest extends BasicTestSetup {
     private void assertSearchResult(AtlasSearchResult searchResult, int expected, String query) {
         assertNotNull(searchResult);
 
-        if(expected == 0) {
+        if (expected == 0) {
             assertTrue(searchResult.getAttributes() == null || CollectionUtils.isEmpty(searchResult.getAttributes().getValues()));
             assertNull(searchResult.getEntities(), query);
-        } else if(searchResult.getEntities() != null) {
+        } else if (searchResult.getEntities() != null) {
             assertEquals(searchResult.getEntities().size(), expected, query);
         } else {
             assertNotNull(searchResult.getAttributes());
@@ -783,14 +780,6 @@ public class DSLQueriesTest extends BasicTestSetup {
     }
 
     private static class TableValidator {
-        static class NameValueEntry {
-            Map<String, Object> items = new LinkedHashMap<>();
-
-            public void setFieldValue(String string, Object object) {
-                items.put(string, object);
-            }
-        }
-
         public String[]             fieldNames;
         public List<NameValueEntry> values = new ArrayList<>();
 
@@ -799,24 +788,6 @@ public class DSLQueriesTest extends BasicTestSetup {
 
         public TableValidator(String... fieldNames) {
             header(fieldNames);
-        }
-
-        public TableValidator header(String... fieldNames) {
-            this.fieldNames = fieldNames;
-
-            return this;
-        }
-
-        public TableValidator row(Object... values) {
-            NameValueEntry obj = new NameValueEntry();
-
-            for (int i = 0; i < fieldNames.length; i++) {
-                obj.setFieldValue(fieldNames[i], values[i]);
-            }
-
-            this.values.add(obj);
-
-            return this;
         }
 
         public static void assertFv(TableValidator actual, TableValidator expected) {
@@ -841,6 +812,38 @@ public class DSLQueriesTest extends BasicTestSetup {
             }
         }
 
+        public static TableValidator from(AtlasSearchResult.AttributeSearchResult searchResult) {
+            TableValidator fv = new TableValidator();
+
+            fv.header(searchResult.getName().toArray(new String[] {}));
+
+            for (int i = 0; i < searchResult.getValues().size(); i++) {
+                List list = searchResult.getValues().get(i);
+
+                fv.row(list.toArray());
+            }
+
+            return fv;
+        }
+
+        public TableValidator header(String... fieldNames) {
+            this.fieldNames = fieldNames;
+
+            return this;
+        }
+
+        public TableValidator row(Object... values) {
+            NameValueEntry obj = new NameValueEntry();
+
+            for (int i = 0; i < fieldNames.length; i++) {
+                obj.setFieldValue(fieldNames[i], values[i]);
+            }
+
+            this.values.add(obj);
+
+            return this;
+        }
+
         private static Map<String, Object> getMapFrom(Map<String, Object> valuesMap, Map<String, Object> linkedHashMap) {
             for (Map.Entry<String, Object> entry : linkedHashMap.entrySet()) {
                 String key = entry.getValue().toString();
@@ -852,23 +855,18 @@ public class DSLQueriesTest extends BasicTestSetup {
             return valuesMap;
         }
 
-        public static TableValidator from(AtlasSearchResult.AttributeSearchResult searchResult) {
-            TableValidator fv = new TableValidator();
+        static class NameValueEntry {
+            Map<String, Object> items = new LinkedHashMap<>();
 
-            fv.header(searchResult.getName().toArray(new String[]{}));
-
-            for (int i = 0; i < searchResult.getValues().size(); i++) {
-                List list = searchResult.getValues().get(i);
-
-                fv.row(list.toArray());
+            public void setFieldValue(String string, Object object) {
+                items.put(string, object);
             }
-
-            return fv;
         }
     }
 
     private static class ListValidator {
-        private Set<String> values;
+        private final Set<String> values;
+
         public ListValidator(String... vals) {
             values = Arrays.stream(vals).collect(Collectors.toSet());
         }
@@ -878,7 +876,7 @@ public class DSLQueriesTest extends BasicTestSetup {
 
             assertEquals(actual.values.size(), expected.values.size(), errorMessage);
 
-            if (expected.values.size() > 0) {
+            if (!expected.values.isEmpty()) {
                 for (String expectedVal : expected.values) {
                     assertTrue(actual.values.contains(expectedVal), errorMessage);
                 }
@@ -889,7 +887,7 @@ public class DSLQueriesTest extends BasicTestSetup {
             ListValidator lv = new ListValidator();
 
             if (result.getEntities() != null) {
-                lv.values.addAll(result.getEntities().stream().map(x -> x.getDisplayText()).collect(Collectors.toSet()));
+                lv.values.addAll(result.getEntities().stream().map(AtlasEntityHeader::getDisplayText).collect(Collectors.toSet()));
             }
 
             return lv;

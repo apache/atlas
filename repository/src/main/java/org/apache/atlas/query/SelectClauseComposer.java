@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,9 +30,9 @@ import java.util.StringJoiner;
 
 public class SelectClauseComposer {
     private static final String COUNT_STR = "count";
-    private static final String MIN_STR = "min";
-    private static final String MAX_STR = "max";
-    private static final String SUM_STR = "sum";
+    private static final String MIN_STR   = "min";
+    private static final String MAX_STR   = "max";
+    private static final String SUM_STR   = "sum";
 
     private final String[]                     labels;
     private final String[]                     attributes;
@@ -42,16 +42,12 @@ public class SelectClauseComposer {
     private final int                          minIdx;
     private final int                          maxIdx;
     private final int                          aggCount;
-    private final Map<Integer, AggregatorFlag> aggregatorFlags      = new HashMap();
+    private final Map<Integer, AggregatorFlag> aggregatorFlags      = new HashMap<>();
     private final Set<Integer>                 isNumericAggregator  = new HashSet<>();
     private final Set<Integer>                 isPrimitiveAttr      = new HashSet<>();
     private final Map<String, String>          itemAssignmentExprs  = new LinkedHashMap<>();
-    private       boolean                      isSelectNoop         = false;
-    private       int                          introducedTypesCount = 0;
-
-    public enum AggregatorFlag {
-        NONE, COUNT, MIN, MAX, SUM
-    }
+    private       boolean                      isSelectNoop;
+    private       int                          introducedTypesCount;
 
     public SelectClauseComposer(String[] labels, String[] attributes, String[] items, int countIdx, int sumIdx, int minIdx, int maxIdx) {
         this.labels     = labels;
@@ -89,14 +85,13 @@ public class SelectClauseComposer {
 
     public static boolean isKeyword(String s) {
         return COUNT_STR.equals(s) ||
-               MIN_STR.equals(s) ||
-               MAX_STR.equals(s) ||
-               SUM_STR.equals(s);
+                MIN_STR.equals(s) ||
+                MAX_STR.equals(s) ||
+                SUM_STR.equals(s);
     }
 
     public String[] getItems() {
         return items;
-
     }
 
     public boolean updateAsApplicable(int currentIndex, String propertyForClause, String qualifiedName) {
@@ -107,7 +102,7 @@ public class SelectClauseComposer {
 
             this.isNumericAggregator.add(currentIndex);
         } else if (currentIndex == getMinIdx()) {
-            ret = assign(currentIndex, MIN_STR, propertyForClause,  GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_MIN);
+            ret = assign(currentIndex, MIN_STR, propertyForClause, GremlinClause.INLINE_ASSIGNMENT, GremlinClause.INLINE_MIN);
 
             this.isNumericAggregator.add(currentIndex);
         } else if (currentIndex == getMaxIdx()) {
@@ -155,7 +150,7 @@ public class SelectClauseComposer {
         return String.join(",", getItems());
     }
 
-    public String getAssignmentExprString(){
+    public String getAssignmentExprString() {
         return (!itemAssignmentExprs.isEmpty()) ? String.join(" ", itemAssignmentExprs.values()) : StringUtils.EMPTY;
     }
 
@@ -221,10 +216,6 @@ public class SelectClauseComposer {
         return getIntroducedTypesCount() > 0 && getPrimitiveTypeCount() > 0;
     }
 
-    private int getPrimitiveTypeCount() {
-        return isPrimitiveAttr.size();
-    }
-
     public boolean getIsSelectNoop() {
         return this.isSelectNoop;
     }
@@ -261,6 +252,9 @@ public class SelectClauseComposer {
         this.isPrimitiveAttr.add(i);
     }
 
+    private int getPrimitiveTypeCount() {
+        return isPrimitiveAttr.size();
+    }
 
     private boolean assign(String item, String assignExpr) {
         itemAssignmentExprs.put(item, assignExpr);
@@ -288,5 +282,9 @@ public class SelectClauseComposer {
                 .forEach(joiner::add);
 
         return joiner.toString();
+    }
+
+    public enum AggregatorFlag {
+        NONE, COUNT, MIN, MAX, SUM
     }
 }

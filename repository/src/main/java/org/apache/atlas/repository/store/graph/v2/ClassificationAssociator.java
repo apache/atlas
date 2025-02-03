@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,6 +40,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -49,7 +50,7 @@ public class ClassificationAssociator {
 
     public static class Retriever {
         private final EntityAuditRepository auditRepository;
-        private final EntityGraphRetriever entityRetriever;
+        private final EntityGraphRetriever  entityRetriever;
 
         public Retriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry, EntityAuditRepository auditRepository) {
             this.entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
@@ -100,27 +101,25 @@ public class ClassificationAssociator {
 
     public static class Updater {
         static final String ATTR_NAME_QUALIFIED_NAME = "qualifiedName";
-        static final String STATUS_DONE = "(Done)";
-        static final String STATUS_SKIPPED = "(Skipped)";
-        static final String STATUS_PARTIAL = "(Partial)";
-
-        private static final String PROCESS_FORMAT = "%s:%s:%s:%s -> %s:%s";
-        static final String PROCESS_ADD = "Add";
-        static final String PROCESS_UPDATE = "Update";
-        static final String PROCESS_DELETE = "Delete";
-        static final String JSONIFY_STRING_FORMAT = "\"%s\",";
-
-        private final AtlasGraph graph;
-        private final AtlasTypeRegistry typeRegistry;
-        private final AtlasEntityStore entitiesStore;
+        static final String STATUS_DONE              = "(Done)";
+        static final String STATUS_SKIPPED           = "(Skipped)";
+        static final String STATUS_PARTIAL           = "(Partial)";
+        static final         String PROCESS_ADD           = "Add";
+        static final         String PROCESS_UPDATE        = "Update";
+        static final         String PROCESS_DELETE        = "Delete";
+        static final         String JSONIFY_STRING_FORMAT = "\"%s\",";
+        private static final String PROCESS_FORMAT        = "%s:%s:%s:%s -> %s:%s";
+        private final AtlasGraph           graph;
+        private final AtlasTypeRegistry    typeRegistry;
+        private final AtlasEntityStore     entitiesStore;
         private final EntityGraphRetriever entityRetriever;
-        private final StringBuilder actionSummary = new StringBuilder();
+        private final StringBuilder        actionSummary = new StringBuilder();
 
         public Updater(AtlasGraph graph, AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore) {
-            this.graph = graph;
-            this.typeRegistry = typeRegistry;
+            this.graph         = graph;
+            this.typeRegistry  = typeRegistry;
             this.entitiesStore = entitiesStore;
-            entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
+            entityRetriever    = new EntityGraphRetriever(graph, typeRegistry);
         }
 
         public Updater(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore) {
@@ -149,8 +148,7 @@ public class ClassificationAssociator {
                     continue;
                 }
 
-
-                String guid = entityToBeChanged.getGuid();
+                String                                 guid             = entityToBeChanged.getGuid();
                 Map<String, List<AtlasClassification>> operationListMap = computeChanges(incomingEntityHeader, entityToBeChanged);
                 commitChanges(guid, typeName, qualifiedName, operationListMap);
             }
@@ -158,8 +156,25 @@ public class ClassificationAssociator {
             return getJsonArray(actionSummary);
         }
 
+        AtlasEntityHeader getByUniqueAttributes(AtlasEntityType entityType, String qualifiedName, Map<String, Object> attrValues) {
+            try {
+                AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, attrValues);
+                if (vertex == null) {
+                    return null;
+                }
+
+                return entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
+            } catch (AtlasBaseException e) {
+                LOG.warn("{}:{} could not be processed!", entityType, qualifiedName);
+                return null;
+            } catch (Exception ex) {
+                LOG.error("{}:{} could not be processed!", entityType, qualifiedName, ex);
+                return null;
+            }
+        }
+
         private void commitChanges(String entityGuid, String typeName, String qualifiedName,
-                                                                     Map<String, List<AtlasClassification>> operationListMap) {
+                Map<String, List<AtlasClassification>> operationListMap) {
             if (MapUtils.isEmpty(operationListMap)) {
                 return;
             }
@@ -176,9 +191,9 @@ public class ClassificationAssociator {
                 return null;
             }
 
-            ListOps<AtlasClassification> listOps = new ListOps<>();
-            List<AtlasClassification> incomingClassifications = listOps.filter(incomingEntityHeader.getGuid(), incomingEntityHeader.getClassifications());
-            List<AtlasClassification> entityClassifications = listOps.filter(entityToBeUpdated.getGuid(), entityToBeUpdated.getClassifications());
+            ListOps<AtlasClassification> listOps                 = new ListOps<>();
+            List<AtlasClassification>    incomingClassifications = listOps.filter(incomingEntityHeader.getGuid(), incomingEntityHeader.getClassifications());
+            List<AtlasClassification>    entityClassifications   = listOps.filter(entityToBeUpdated.getGuid(), entityToBeUpdated.getClassifications());
 
             if (CollectionUtils.isEmpty(incomingClassifications) && CollectionUtils.isEmpty(entityClassifications)) {
                 return null;
@@ -206,7 +221,7 @@ public class ClassificationAssociator {
                 return;
             }
 
-            String status = STATUS_DONE;
+            String status              = STATUS_DONE;
             String classificationNames = getClassificationNames(list);
             try {
                 entitiesStore.addClassifications(entityGuid, list);
@@ -223,7 +238,7 @@ public class ClassificationAssociator {
                 return;
             }
 
-            String status = STATUS_DONE;
+            String status              = STATUS_DONE;
             String classificationNames = getClassificationNames(list);
 
             try {
@@ -241,7 +256,7 @@ public class ClassificationAssociator {
                 return;
             }
 
-            String status = STATUS_DONE;
+            String status                 = STATUS_DONE;
             String classificationTypeName = getClassificationNames(list);
             for (AtlasClassification c : list) {
                 try {
@@ -253,23 +268,6 @@ public class ClassificationAssociator {
             }
 
             summarize(PROCESS_DELETE, entityGuid, typeName, qualifiedName, classificationTypeName, status);
-        }
-
-        AtlasEntityHeader getByUniqueAttributes(AtlasEntityType entityType, String qualifiedName, Map<String, Object> attrValues) {
-            try {
-                AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(this.graph, entityType, attrValues);
-                if (vertex == null) {
-                    return null;
-                }
-
-                return entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
-            } catch (AtlasBaseException e) {
-                LOG.warn("{}:{} could not be processed!", entityType, qualifiedName);
-                return null;
-            } catch (Exception ex) {
-                LOG.error("{}:{} could not be processed!", entityType, qualifiedName, ex);
-                return null;
-            }
         }
 
         private String getClassificationNames(List<AtlasClassification> list) {
@@ -343,19 +341,19 @@ public class ClassificationAssociator {
             return result;
         }
 
-        private V findFrom(List<V> reference, V check) {
-            return (V) CollectionUtils.find(reference, ox ->
-                    ((V) ox).getTypeName().equals(check.getTypeName()));
-        }
-
         public List<V> filter(String guid, List<V> list) {
             if (CollectionUtils.isEmpty(list)) {
                 return list;
             }
 
-            return list.stream().filter(x -> x != null &&
-                                    (StringUtils.isEmpty(guid) || StringUtils.isEmpty(x.getEntityGuid()))
-                                    || x.getEntityGuid().equals(guid)).collect(Collectors.toList());
+            final boolean isEmptyGuid = StringUtils.isEmpty(guid);
+
+            return list.stream().filter(Objects::nonNull).filter(x -> isEmptyGuid || StringUtils.isEmpty(x.getEntityGuid()) || x.getEntityGuid().equals(guid)).collect(Collectors.toList());
+        }
+
+        private V findFrom(List<V> reference, V check) {
+            return (V) CollectionUtils.find(reference, ox ->
+                    ((V) ox).getTypeName().equals(check.getTypeName()));
         }
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,13 +17,11 @@
  */
 package org.apache.atlas.repository.converters;
 
-
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.type.AtlasType;
-
 
 public interface AtlasFormatConverter {
     boolean isValidValueV1(Object v1Ob, AtlasType typej);
@@ -35,13 +33,13 @@ public interface AtlasFormatConverter {
     TypeCategory getTypeCategory();
 
     class ConverterContext {
-
-        private AtlasEntitiesWithExtInfo entities = null;
+        private AtlasEntitiesWithExtInfo entities;
 
         public void addEntity(AtlasEntity entity) {
             if (entities == null) {
                 entities = new AtlasEntitiesWithExtInfo();
             }
+
             entities.addEntity(entity);
         }
 
@@ -49,18 +47,21 @@ public interface AtlasFormatConverter {
             if (entities == null) {
                 entities = new AtlasEntitiesWithExtInfo();
             }
+
             entities.addReferredEntity(entity);
         }
 
         public AtlasEntity getById(String guid) {
-            if( entities != null) {
+            if (entities != null) {
                 return entities.getEntity(guid);
             }
 
             return null;
         }
 
-        public boolean entityExists(String guid) { return entities != null && entities.hasEntity(guid); }
+        public boolean entityExists(String guid) {
+            return entities != null && entities.hasEntity(guid);
+        }
 
         public AtlasEntitiesWithExtInfo getEntities() {
             if (entities != null) {

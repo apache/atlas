@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,13 +23,14 @@ import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.tasks.TaskFactory;
-import org.apache.atlas.tasks.TaskManagement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Component
@@ -40,11 +41,7 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
     public static final String CLASSIFICATION_PROPAGATION_DELETE              = "CLASSIFICATION_PROPAGATION_DELETE";
     public static final String CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE = "CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE";
 
-    private static final List<String> supportedTypes = new ArrayList<String>() {{
-        add(CLASSIFICATION_PROPAGATION_ADD);
-        add(CLASSIFICATION_PROPAGATION_DELETE);
-        add(CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE);
-    }};
+    private static final List<String> SUPPORTED_TYPES = new ArrayList<>(Arrays.asList(CLASSIFICATION_PROPAGATION_ADD, CLASSIFICATION_PROPAGATION_DELETE, CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE));
 
     private final AtlasGraph             graph;
     private final EntityGraphMapper      entityGraphMapper;
@@ -81,6 +78,6 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
 
     @Override
     public List<String> getSupportedTypes() {
-        return this.supportedTypes;
+        return SUPPORTED_TYPES;
     }
 }

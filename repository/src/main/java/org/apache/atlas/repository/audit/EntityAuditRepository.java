@@ -20,8 +20,8 @@ package org.apache.atlas.repository.audit;
 
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
-import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 
 import java.util.List;
@@ -33,6 +33,7 @@ import java.util.Set;
 public interface EntityAuditRepository {
     /**
      * Add events to the event repository
+     *
      * @param events events to be added
      * @throws AtlasException
      */
@@ -40,6 +41,7 @@ public interface EntityAuditRepository {
 
     /**
      * Add events to the event repository
+     *
      * @param events events to be added
      * @throws AtlasException
      */
@@ -47,6 +49,7 @@ public interface EntityAuditRepository {
 
     /**
      * List events for the given entity id in decreasing order of timestamp, from the given timestamp. Returns n results
+     *
      * @param entityId entity id
      * @param startKey key for the first event to be returned, used for pagination
      * @param n number of events to be returned
@@ -57,6 +60,7 @@ public interface EntityAuditRepository {
 
     /**
      * Add v2 events to the event repository
+     *
      * @param events events to be added
      * @throws AtlasBaseException
      */
@@ -64,6 +68,7 @@ public interface EntityAuditRepository {
 
     /**
      * Add v2 events to the event repository
+     *
      * @param events events to be added
      * @throws AtlasBaseException
      */
@@ -71,10 +76,11 @@ public interface EntityAuditRepository {
 
     /**
      * List events for the given entity id in decreasing order of timestamp, from the given timestamp. Returns n results
+     *
      * @param entityId entity id
      * @param auditAction operation to be used for search at HBase column
      * @param startKey key for the first event to be returned, used for pagination
-     * @param maxResultCount  Max numbers of events to be returned
+     * @param maxResultCount Max numbers of events to be returned
      * @return list of events
      * @throws AtlasBaseException
      */
@@ -82,12 +88,13 @@ public interface EntityAuditRepository {
 
     /**
      * List events for the given entity id in sorted order of given column. Returns n results
+     *
      * @param entityId entity id
      * @param auditAction operation to be used for search at HBase column
      * @param sortByColumn name of column on which sorting is required
      * @param sortOrderDesc flag to set sort order descending
      * @param offset event list is truncated by removing offset number of items, used for pagination
-     * @param limit  Max numbers of events to be returned
+     * @param limit Max numbers of events to be returned
      * @return list of events
      * @throws AtlasBaseException
      */
@@ -95,10 +102,11 @@ public interface EntityAuditRepository {
 
     /**
      * Delete all events for the given entity id by keeping only auditCount number of events with entityAuditActions
+     *
      * @param entityId entity id
      * @param entityAuditActions operation(s) to be used to filter at HBase column
-     * @param auditCount  Max numbers of events to keep without deleting
-     * @param ttlInDays  time-to-live of events
+     * @param auditCount Max numbers of events to keep without deleting
+     * @param ttlInDays time-to-live of events
      * @return list of events
      * @throws AtlasBaseException
      */
@@ -115,9 +123,10 @@ public interface EntityAuditRepository {
 
     /**
      * List events for the given entity id in decreasing order of timestamp, from the given timestamp. Returns n results
+     *
      * @param entityId entity id
      * @param startKey key for the first event to be returned, used for pagination
-     * @param n        number of events to be returned
+     * @param n number of events to be returned
      * @return list of events
      * @throws AtlasBaseException
      */
@@ -125,12 +134,14 @@ public interface EntityAuditRepository {
 
     /**
      * Returns maximum allowed repository size per EntityAuditEvent
+     *
      * @throws AtlasException
      */
     long repositoryMaxSize();
 
     /**
      * list of attributes to be excluded when storing in audit repo.
+     *
      * @param entityType type of entity
      * @return list of attribute names to be excluded
      * @throws AtlasException

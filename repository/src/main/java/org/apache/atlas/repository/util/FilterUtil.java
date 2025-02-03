@@ -34,6 +34,10 @@ import java.util.List;
 import java.util.Objects;
 
 public class FilterUtil {
+    private FilterUtil() {
+        // to block instantiation
+    }
+
     public static Predicate getPredicateFromSearchFilter(SearchFilter searchFilter) {
         List<Predicate> predicates = new ArrayList<>();
 
@@ -56,7 +60,7 @@ public class FilterUtil {
         }
 
         // Add filter for the serviceType
-        if(StringUtils.isNotBlank(serviceType)) {
+        if (StringUtils.isNotBlank(serviceType)) {
             predicates.add(getServiceTypePredicate(serviceType));
         }
 
@@ -79,7 +83,6 @@ public class FilterUtil {
             predicates.add(new NotPredicate(getServiceTypePredicate(notServiceType)));
         }
 
-
         // Add filter for the type negation
         if (CollectionUtils.isNotEmpty(notNames)) {
             for (String notName : notNames) {
@@ -90,34 +93,45 @@ public class FilterUtil {
         return PredicateUtils.allPredicate(predicates);
     }
 
+    public static void addParamsToHideInternalType(SearchFilter searchFilter) {
+        searchFilter.setParam(SearchFilter.PARAM_NOT_NAME, Constants.TYPE_NAME_INTERNAL);
+        searchFilter.setParam(SearchFilter.PARAM_NOT_SUPERTYPE, Constants.TYPE_NAME_INTERNAL);
+    }
+
     private static Predicate getNamePredicate(final String name) {
         return new Predicate() {
-            private boolean isAtlasType(Object o) {
-                return o instanceof AtlasType;
-            }
-
             @Override
             public boolean evaluate(Object o) {
-                return o != null && isAtlasType(o) && Objects.equals(((AtlasType) o).getTypeName(), name);
+                return isAtlasType(o) && Objects.equals(((AtlasType) o).getTypeName(), name);
+            }
+
+            private boolean isAtlasType(Object o) {
+                return o instanceof AtlasType;
             }
         };
     }
 
     private static Predicate getServiceTypePredicate(final String serviceType) {
         return new Predicate() {
-            private boolean isAtlasType(Object o) {
-                return o instanceof AtlasType;
-            }
-
             @Override
             public boolean evaluate(Object o) {
                 return isAtlasType(o) && Objects.equals(((AtlasType) o).getServiceType(), serviceType);
+            }
+
+            private boolean isAtlasType(Object o) {
+                return o instanceof AtlasType;
             }
         };
     }
 
     private static Predicate getSuperTypePredicate(final String supertype) {
         return new Predicate() {
+            @Override
+            public boolean evaluate(Object o) {
+                return (isClassificationType(o) && ((AtlasClassificationType) o).getAllSuperTypes().contains(supertype)) ||
+                        (isEntityType(o) && ((AtlasEntityType) o).getAllSuperTypes().contains(supertype));
+            }
+
             private boolean isClassificationType(Object o) {
                 return o instanceof AtlasClassificationType;
             }
@@ -125,49 +139,36 @@ public class FilterUtil {
             private boolean isEntityType(Object o) {
                 return o instanceof AtlasEntityType;
             }
-
-            @Override
-            public boolean evaluate(Object o) {
-                return (isClassificationType(o) && ((AtlasClassificationType) o).getAllSuperTypes().contains(supertype)) ||
-                       (isEntityType(o) && ((AtlasEntityType) o).getAllSuperTypes().contains(supertype));
-            }
         };
     }
 
     private static Predicate getTypePredicate(final String type) {
-        return new Predicate() {
-            @Override
-            public boolean evaluate(Object o) {
-                if (o instanceof AtlasType) {
-                    AtlasType atlasType = (AtlasType) o;
+        return o -> {
+            if (o instanceof AtlasType) {
+                AtlasType atlasType = (AtlasType) o;
 
-                    switch (type.toUpperCase()) {
-                        case "CLASS":
-                        case "ENTITY":
-                            return atlasType.getTypeCategory() == TypeCategory.ENTITY;
-                        case "TRAIT":
-                        case "CLASSIFICATION":
-                            return atlasType.getTypeCategory() == TypeCategory.CLASSIFICATION;
-                        case "STRUCT":
-                            return atlasType.getTypeCategory() == TypeCategory.STRUCT;
-                        case "ENUM":
-                            return atlasType.getTypeCategory() == TypeCategory.ENUM;
-                        case "RELATIONSHIP":
-                            return atlasType.getTypeCategory() == TypeCategory.RELATIONSHIP;
-                        case "BUSINESS_METADATA":
-                            return atlasType.getTypeCategory() == TypeCategory.BUSINESS_METADATA;
-                        default:
-                            // This shouldn't have happened
-                            return false;
-                    }
+                switch (type.toUpperCase()) {
+                    case "CLASS":
+                    case "ENTITY":
+                        return atlasType.getTypeCategory() == TypeCategory.ENTITY;
+                    case "TRAIT":
+                    case "CLASSIFICATION":
+                        return atlasType.getTypeCategory() == TypeCategory.CLASSIFICATION;
+                    case "STRUCT":
+                        return atlasType.getTypeCategory() == TypeCategory.STRUCT;
+                    case "ENUM":
+                        return atlasType.getTypeCategory() == TypeCategory.ENUM;
+                    case "RELATIONSHIP":
+                        return atlasType.getTypeCategory() == TypeCategory.RELATIONSHIP;
+                    case "BUSINESS_METADATA":
+                        return atlasType.getTypeCategory() == TypeCategory.BUSINESS_METADATA;
+                    default:
+                        // This shouldn't have happened
+                        return false;
                 }
-                return false;
             }
-        };
-    }
 
-    public static void addParamsToHideInternalType(SearchFilter searchFilter) {
-        searchFilter.setParam(SearchFilter.PARAM_NOT_NAME, Constants.TYPE_NAME_INTERNAL);
-        searchFilter.setParam(SearchFilter.PARAM_NOT_SUPERTYPE, Constants.TYPE_NAME_INTERNAL);
+            return false;
+        };
     }
 }

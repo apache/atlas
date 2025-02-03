@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,45 +18,44 @@
 package org.apache.atlas.util;
 
 import org.apache.atlas.v1.model.instance.Referenceable;
-import org.apache.atlas.repository.graph.GraphHelper;
 
 /**
- * Data structure that stores an IReferenceableInstance and its location within
- * a list.
+ * Data structure that stores an IReferenceableInstance and its location within a list.
  *
- * @see GraphHelper#getVerticesForInstancesByUniqueAttributes
  */
 public class IndexedInstance {
-
-    private final Referenceable instance_;
-    private final int index_;
+    private final Referenceable instance;
+    private final int           index;
 
     public IndexedInstance(Referenceable instance, int index) {
         super();
-        this.instance_ = instance;
-        this.index_ = index;
+        this.instance = instance;
+        this.index    = index;
     }
 
     public Referenceable getInstance() {
-        return instance_;
+        return instance;
     }
 
     public int getIndex() {
-        return index_;
+        return index;
     }
 
     @Override
     public int hashCode() {
-        return instance_.hashCode();
+        return instance.hashCode();
     }
 
     @Override
     public boolean equals(Object other) {
-        if(!(other instanceof IndexedInstance)) {
+        if (this == other) {
+            return true;
+        } else if (!(other instanceof IndexedInstance)) {
             return false;
         }
-        IndexedInstance otherInstance = (IndexedInstance)other;
-        return instance_.equals(otherInstance.getInstance());
-    }
 
+        IndexedInstance otherInstance = (IndexedInstance) other;
+
+        return instance.equals(otherInstance.getInstance());
+    }
 }

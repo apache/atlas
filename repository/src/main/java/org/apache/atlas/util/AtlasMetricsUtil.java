@@ -24,41 +24,89 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.util.AtlasMetricsCounter.StatsReport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.time.Clock;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import static org.apache.atlas.model.metrics.AtlasMetrics.*;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_AVG_TIME_CURR_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_AVG_TIME_CURR_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_AVG_TIME_PREV_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_AVG_TIME_PREV_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_AVG_TIME_TOTAL;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_COUNT_CURR_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_COUNT_CURR_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_COUNT_PREV_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_COUNT_PREV_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_COUNT_TOTAL;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_CREATES_COUNT_CURR_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_CREATES_COUNT_CURR_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_CREATES_COUNT_PREV_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_CREATES_COUNT_PREV_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_CREATES_COUNT_TOTAL;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_DELETES_COUNT_CURR_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_DELETES_COUNT_CURR_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_DELETES_COUNT_PREV_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_DELETES_COUNT_PREV_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_DELETES_COUNT_TOTAL;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_FAILED_COUNT_CURR_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_FAILED_COUNT_CURR_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_FAILED_COUNT_PREV_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_FAILED_COUNT_PREV_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_FAILED_COUNT_TOTAL;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_LAST_MESSAGE_PROCESSED_TIME;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_START_TIME_CURR_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_START_TIME_CURR_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_TOPIC_DETAILS;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_UPDATES_COUNT_CURR_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_UPDATES_COUNT_CURR_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_UPDATES_COUNT_PREV_DAY;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_UPDATES_COUNT_PREV_HOUR;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_NOTIFY_UPDATES_COUNT_TOTAL;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_SERVER_ACTIVE_TIMESTAMP;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_SERVER_START_TIMESTAMP;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_SERVER_STATUS_BACKEND_STORE;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_SERVER_STATUS_INDEX_STORE;
+import static org.apache.atlas.model.metrics.AtlasMetrics.STAT_SERVER_UP_TIME;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_INTERNAL;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
-import static org.apache.atlas.util.AtlasMetricsCounter.Period.*;
+import static org.apache.atlas.util.AtlasMetricsCounter.Period.ALL;
+import static org.apache.atlas.util.AtlasMetricsCounter.Period.CURR_DAY;
+import static org.apache.atlas.util.AtlasMetricsCounter.Period.CURR_HOUR;
+import static org.apache.atlas.util.AtlasMetricsCounter.Period.PREV_DAY;
+import static org.apache.atlas.util.AtlasMetricsCounter.Period.PREV_HOUR;
 
 @Component
 public class AtlasMetricsUtil {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasMetricsUtil.class);
 
     private static final long   SEC_MS               = 1000;
-    private static final long   MIN_MS               =   60 * SEC_MS;
-    private static final long   HOUR_MS              =   60 * MIN_MS;
-    private static final long   DAY_MS               =   24 * HOUR_MS;
+    private static final long   MIN_MS               = 60 * SEC_MS;
+    private static final long   HOUR_MS              = 60 * MIN_MS;
+    private static final long   DAY_MS               = 24 * HOUR_MS;
     private static final String STATUS_CONNECTED     = "connected";
     private static final String STATUS_NOT_CONNECTED = "not-connected";
 
     private final AtlasGraph              graph;
-    private       long                    serverStartTime   = 0;
-    private       long                    serverActiveTime  = 0;
     private final Map<String, TopicStats> topicStats        = new HashMap<>();
     private final AtlasMetricsCounter     messagesProcessed = new AtlasMetricsCounter("messagesProcessed");
     private final AtlasMetricsCounter     messagesFailed    = new AtlasMetricsCounter("messagesFailed");
     private final AtlasMetricsCounter     entityCreates     = new AtlasMetricsCounter("entityCreates");
     private final AtlasMetricsCounter     entityUpdates     = new AtlasMetricsCounter("entityUpdates");
     private final AtlasMetricsCounter     entityDeletes     = new AtlasMetricsCounter("entityDeletes");
+    private       long                    serverStartTime;
+    private       long                    serverActiveTime;
 
     @Inject
     public AtlasMetricsUtil(AtlasGraph graph) {
@@ -109,9 +157,11 @@ public class AtlasMetricsUtil {
         }
 
         partitionStat.setCurrentOffset(msgOffset + 1);
-        if(stats.isFailedMsg) {
+
+        if (stats.isFailedMsg) {
             partitionStat.incrFailedMessageCount();
         }
+
         partitionStat.incrProcessedMessageCount();
         partitionStat.setLastMessageProcessedTime(messagesProcessed.getLastIncrTime().toEpochMilli());
     }
@@ -142,9 +192,9 @@ public class AtlasMetricsUtil {
                 tpDetails.put("failedMessageCount", tpStat.failedMessageCount);
                 tpDetails.put("lastMessageProcessedTime", tpStat.lastMessageProcessedTime);
                 tpDetails.put("processedMessageCount", tpStat.processedMessageCount);
-                if(LOG.isDebugEnabled()) {
-                    LOG.debug("Setting failedMessageCount : {} and lastMessageProcessedTime : {} for topic {}-{}", tpStat.failedMessageCount, tpStat.lastMessageProcessedTime, tpStat.topicName, tpStat.partition);
-                }
+
+                LOG.debug("Setting failedMessageCount : {} and lastMessageProcessedTime : {} for topic {}-{}", tpStat.failedMessageCount, tpStat.lastMessageProcessedTime, tpStat.topicName, tpStat.partition);
+
                 topicDetails.put(tpStat.topicName + "-" + tpStat.partition, tpDetails);
             }
         }
@@ -152,39 +202,39 @@ public class AtlasMetricsUtil {
         ret.put(STAT_NOTIFY_TOPIC_DETAILS, topicDetails);
         ret.put(STAT_NOTIFY_LAST_MESSAGE_PROCESSED_TIME, this.messagesProcessed.getLastIncrTime().toEpochMilli());
 
-        ret.put(STAT_NOTIFY_COUNT_TOTAL,         messagesProcessed.getCount(ALL));
-        ret.put(STAT_NOTIFY_AVG_TIME_TOTAL,      messagesProcessed.getMeasureAvg(ALL));
-        ret.put(STAT_NOTIFY_FAILED_COUNT_TOTAL,  messagesFailed.getCount(ALL));
+        ret.put(STAT_NOTIFY_COUNT_TOTAL, messagesProcessed.getCount(ALL));
+        ret.put(STAT_NOTIFY_AVG_TIME_TOTAL, messagesProcessed.getMeasureAvg(ALL));
+        ret.put(STAT_NOTIFY_FAILED_COUNT_TOTAL, messagesFailed.getCount(ALL));
         ret.put(STAT_NOTIFY_CREATES_COUNT_TOTAL, entityCreates.getCount(ALL));
         ret.put(STAT_NOTIFY_UPDATES_COUNT_TOTAL, entityUpdates.getCount(ALL));
         ret.put(STAT_NOTIFY_DELETES_COUNT_TOTAL, entityDeletes.getCount(ALL));
 
-        ret.put(STAT_NOTIFY_START_TIME_CURR_DAY,    messagesProcessed.getDayStartTimeMs());
-        ret.put(STAT_NOTIFY_COUNT_CURR_DAY,         messagesProcessed.getCount(CURR_DAY));
-        ret.put(STAT_NOTIFY_AVG_TIME_CURR_DAY,      messagesProcessed.getMeasureAvg(CURR_DAY));
-        ret.put(STAT_NOTIFY_FAILED_COUNT_CURR_DAY,  messagesFailed.getCount(CURR_DAY));
+        ret.put(STAT_NOTIFY_START_TIME_CURR_DAY, messagesProcessed.getDayStartTimeMs());
+        ret.put(STAT_NOTIFY_COUNT_CURR_DAY, messagesProcessed.getCount(CURR_DAY));
+        ret.put(STAT_NOTIFY_AVG_TIME_CURR_DAY, messagesProcessed.getMeasureAvg(CURR_DAY));
+        ret.put(STAT_NOTIFY_FAILED_COUNT_CURR_DAY, messagesFailed.getCount(CURR_DAY));
         ret.put(STAT_NOTIFY_CREATES_COUNT_CURR_DAY, entityCreates.getCount(CURR_DAY));
         ret.put(STAT_NOTIFY_UPDATES_COUNT_CURR_DAY, entityUpdates.getCount(CURR_DAY));
         ret.put(STAT_NOTIFY_DELETES_COUNT_CURR_DAY, entityDeletes.getCount(CURR_DAY));
 
-        ret.put(STAT_NOTIFY_START_TIME_CURR_HOUR,    messagesProcessed.getHourStartTimeMs());
-        ret.put(STAT_NOTIFY_COUNT_CURR_HOUR,         messagesProcessed.getCount(CURR_HOUR));
-        ret.put(STAT_NOTIFY_AVG_TIME_CURR_HOUR,      messagesProcessed.getMeasureAvg(CURR_HOUR));
-        ret.put(STAT_NOTIFY_FAILED_COUNT_CURR_HOUR,  messagesFailed.getCount(CURR_HOUR));
+        ret.put(STAT_NOTIFY_START_TIME_CURR_HOUR, messagesProcessed.getHourStartTimeMs());
+        ret.put(STAT_NOTIFY_COUNT_CURR_HOUR, messagesProcessed.getCount(CURR_HOUR));
+        ret.put(STAT_NOTIFY_AVG_TIME_CURR_HOUR, messagesProcessed.getMeasureAvg(CURR_HOUR));
+        ret.put(STAT_NOTIFY_FAILED_COUNT_CURR_HOUR, messagesFailed.getCount(CURR_HOUR));
         ret.put(STAT_NOTIFY_CREATES_COUNT_CURR_HOUR, entityCreates.getCount(CURR_HOUR));
         ret.put(STAT_NOTIFY_UPDATES_COUNT_CURR_HOUR, entityUpdates.getCount(CURR_HOUR));
         ret.put(STAT_NOTIFY_DELETES_COUNT_CURR_HOUR, entityDeletes.getCount(CURR_HOUR));
 
-        ret.put(STAT_NOTIFY_COUNT_PREV_HOUR,         messagesProcessed.getCount(PREV_HOUR));
-        ret.put(STAT_NOTIFY_AVG_TIME_PREV_HOUR,      messagesProcessed.getMeasureAvg(PREV_HOUR));
-        ret.put(STAT_NOTIFY_FAILED_COUNT_PREV_HOUR,  messagesFailed.getCount(PREV_HOUR));
+        ret.put(STAT_NOTIFY_COUNT_PREV_HOUR, messagesProcessed.getCount(PREV_HOUR));
+        ret.put(STAT_NOTIFY_AVG_TIME_PREV_HOUR, messagesProcessed.getMeasureAvg(PREV_HOUR));
+        ret.put(STAT_NOTIFY_FAILED_COUNT_PREV_HOUR, messagesFailed.getCount(PREV_HOUR));
         ret.put(STAT_NOTIFY_CREATES_COUNT_PREV_HOUR, entityCreates.getCount(PREV_HOUR));
         ret.put(STAT_NOTIFY_UPDATES_COUNT_PREV_HOUR, entityUpdates.getCount(PREV_HOUR));
         ret.put(STAT_NOTIFY_DELETES_COUNT_PREV_HOUR, entityDeletes.getCount(PREV_HOUR));
 
-        ret.put(STAT_NOTIFY_COUNT_PREV_DAY,         messagesProcessed.getCount(PREV_DAY));
-        ret.put(STAT_NOTIFY_AVG_TIME_PREV_DAY,      messagesProcessed.getMeasureAvg(PREV_DAY));
-        ret.put(STAT_NOTIFY_FAILED_COUNT_PREV_DAY,  messagesFailed.getCount(PREV_DAY));
+        ret.put(STAT_NOTIFY_COUNT_PREV_DAY, messagesProcessed.getCount(PREV_DAY));
+        ret.put(STAT_NOTIFY_AVG_TIME_PREV_DAY, messagesProcessed.getMeasureAvg(PREV_DAY));
+        ret.put(STAT_NOTIFY_FAILED_COUNT_PREV_DAY, messagesFailed.getCount(PREV_DAY));
         ret.put(STAT_NOTIFY_CREATES_COUNT_PREV_DAY, entityCreates.getCount(PREV_DAY));
         ret.put(STAT_NOTIFY_UPDATES_COUNT_PREV_DAY, entityUpdates.getCount(PREV_DAY));
         ret.put(STAT_NOTIFY_DELETES_COUNT_PREV_DAY, entityDeletes.getCount(PREV_DAY));
@@ -192,65 +242,57 @@ public class AtlasMetricsUtil {
         return ret;
     }
 
-    private boolean getBackendStoreStatus(){
-        try {
-            runWithTimeout(new Runnable() {
-                @Override
-                public void run() {
-                    graph.query().has(TYPE_NAME_PROPERTY_KEY, TYPE_NAME_INTERNAL).vertices(1);
-
-                    graphCommit();
-                }
-            }, 10, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            LOG.error(e.getMessage());
-
-            graphRollback();
-
-            return false;
-        }
-
-        return true;
-    }
-
-    private boolean getIndexStoreStatus(){
-        final String query = AtlasGraphUtilsV2.getIndexSearchPrefix() + "\"" + Constants.TYPE_NAME_PROPERTY_KEY + "\":(" + TYPE_NAME_INTERNAL + ")";
-
-        try {
-            runWithTimeout(new Runnable() {
-                @Override
-                public void run() {
-                    graph.indexQuery(Constants.VERTEX_INDEX, query).vertices(0, 1);
-
-                    graphCommit();
-                }
-            }, 10, TimeUnit.SECONDS);
-        } catch (Exception e) {
-            LOG.error(e.getMessage());
-
-            graphRollback();
-
-            return false;
-        }
-
-        return true;
-    }
-
-    public boolean isBackendStoreActive(){
+    public boolean isBackendStoreActive() {
         return getBackendStoreStatus();
     }
 
-    public boolean isIndexStoreActive(){
+    public boolean isIndexStoreActive() {
         return getIndexStoreStatus();
     }
 
+    private boolean getBackendStoreStatus() {
+        try {
+            runWithTimeout(() -> {
+                graph.query().has(TYPE_NAME_PROPERTY_KEY, TYPE_NAME_INTERNAL).vertices(1);
+
+                graphCommit();
+            }, 10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            LOG.error(e.getMessage());
+
+            graphRollback();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private boolean getIndexStoreStatus() {
+        final String query = AtlasGraphUtilsV2.getIndexSearchPrefix() + "\"" + Constants.TYPE_NAME_PROPERTY_KEY + "\":(" + TYPE_NAME_INTERNAL + ")";
+
+        try {
+            runWithTimeout(() -> {
+                graph.indexQuery(Constants.VERTEX_INDEX, query).vertices(0, 1);
+
+                graphCommit();
+            }, 10, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            LOG.error(e.getMessage());
+
+            graphRollback();
+
+            return false;
+        }
+
+        return true;
+    }
+
     private void runWithTimeout(final Runnable runnable, long timeout, TimeUnit timeUnit) throws Exception {
-        runWithTimeout(new Callable<Object>() {
-            @Override
-            public Object call() {
-                runnable.run();
-                return null;
-            }
+        runWithTimeout(() -> {
+            runnable.run();
+
+            return null;
         }, timeout, timeUnit);
     }
 
@@ -283,7 +325,7 @@ public class AtlasMetricsUtil {
         try {
             graph.commit();
         } catch (Exception ex) {
-            LOG.warn("Graph transaction commit failed: {}; attempting to rollback graph transaction.", ex);
+            LOG.warn("Graph transaction commit failed; attempting to rollback graph transaction.", ex);
 
             graphRollback();
         }
@@ -293,7 +335,7 @@ public class AtlasMetricsUtil {
         try {
             graph.rollback();
         } catch (Exception ex) {
-            LOG.warn("Graph transaction rollback failed: {}", ex);
+            LOG.warn("Graph transaction rollback failed", ex);
         }
     }
 
@@ -305,22 +347,33 @@ public class AtlasMetricsUtil {
         long diffHours   = msDiff / HOUR_MS % 24;
         long diffDays    = msDiff / DAY_MS;
 
-        if (diffDays > 0) sb.append(diffDays).append(" day ");
-        if (diffHours > 0) sb.append(diffHours).append(" hour ");
-        if (diffMinutes > 0) sb.append(diffMinutes).append(" min ");
-        if (diffSeconds > 0) sb.append(diffSeconds).append(" sec");
+        if (diffDays > 0) {
+            sb.append(diffDays).append(" day ");
+        }
+
+        if (diffHours > 0) {
+            sb.append(diffHours).append(" hour ");
+        }
+
+        if (diffMinutes > 0) {
+            sb.append(diffMinutes).append(" min ");
+        }
+
+        if (diffSeconds > 0) {
+            sb.append(diffSeconds).append(" sec");
+        }
 
         return sb.toString();
     }
 
     public static class NotificationStat {
-        public boolean isFailedMsg   = false;
-        public long    timeTakenMs   = 0;
-        public int     entityCreates = 0;
-        public int     entityUpdates = 0;
-        public int     entityDeletes = 0;
+        public boolean isFailedMsg;
+        public long    timeTakenMs;
+        public int     entityCreates;
+        public int     entityUpdates;
+        public int     entityDeletes;
 
-        public NotificationStat() { }
+        public NotificationStat() {}
 
         public NotificationStat(boolean isFailedMsg, long timeTakenMs) {
             this.isFailedMsg = isFailedMsg;
@@ -334,12 +387,12 @@ public class AtlasMetricsUtil {
             entityDeletes += getSize(response.getDeletedEntities());
         }
 
-        private int getSize(Collection collection) {
+        private int getSize(Collection<?> collection) {
             return collection != null ? collection.size() : 0;
         }
     }
 
-    class TopicStats {
+    static class TopicStats {
         private final String                           topicName;
         private final Map<Integer, TopicPartitionStat> partitionStats = new HashMap<>();
 
@@ -347,18 +400,24 @@ public class AtlasMetricsUtil {
             this.topicName = topicName;
         }
 
-        public String getTopicName() { return topicName; }
+        public String getTopicName() {
+            return topicName;
+        }
 
-        public Map<Integer, TopicPartitionStat> getPartitionStats() { return partitionStats; }
+        public Map<Integer, TopicPartitionStat> getPartitionStats() {
+            return partitionStats;
+        }
 
-        public TopicPartitionStat get(Integer partition) { return partitionStats.get(partition); }
+        public TopicPartitionStat get(Integer partition) {
+            return partitionStats.get(partition);
+        }
 
         public void set(Integer partition, TopicPartitionStat partitionStat) {
             partitionStats.put(partition, partitionStat);
         }
     }
 
-    class TopicPartitionStat {
+    static class TopicPartitionStat {
         private final String topicName;
         private final int    partition;
         private final long   startOffset;
@@ -367,7 +426,7 @@ public class AtlasMetricsUtil {
         private       long   failedMessageCount;
         private       long   processedMessageCount;
 
-        public TopicPartitionStat(String  topicName, int partition, long startOffset, long currentOffset) {
+        public TopicPartitionStat(String topicName, int partition, long startOffset, long currentOffset) {
             this.topicName     = topicName;
             this.partition     = partition;
             this.startOffset   = startOffset;
@@ -394,16 +453,28 @@ public class AtlasMetricsUtil {
             this.currentOffset = currentOffset;
         }
 
-        public long getLastMessageProcessedTime() { return lastMessageProcessedTime; }
+        public long getLastMessageProcessedTime() {
+            return lastMessageProcessedTime;
+        }
 
-        public void setLastMessageProcessedTime(long lastMessageProcessedTime) { this.lastMessageProcessedTime = lastMessageProcessedTime; }
+        public void setLastMessageProcessedTime(long lastMessageProcessedTime) {
+            this.lastMessageProcessedTime = lastMessageProcessedTime;
+        }
 
-        public long getFailedMessageCount() { return failedMessageCount; }
+        public long getFailedMessageCount() {
+            return failedMessageCount;
+        }
 
-        public void incrFailedMessageCount() { this.failedMessageCount++; }
+        public void incrFailedMessageCount() {
+            this.failedMessageCount++;
+        }
 
-        public long getProcessedMessageCount() { return processedMessageCount; }
+        public long getProcessedMessageCount() {
+            return processedMessageCount;
+        }
 
-        public void incrProcessedMessageCount() { this.processedMessageCount++; }
-    };
+        public void incrProcessedMessageCount() {
+            this.processedMessageCount++;
+        }
+    }
 }

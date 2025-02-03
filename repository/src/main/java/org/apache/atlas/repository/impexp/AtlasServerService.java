@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -45,19 +46,16 @@ import java.util.List;
 public class AtlasServerService {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasServerService.class);
 
-    private final DataAccess dataAccess;
-    private final AtlasEntityStore entityStore;
-    private final AtlasTypeRegistry typeRegistry;
+    private final DataAccess           dataAccess;
+    private final AtlasEntityStore     entityStore;
+    private final AtlasTypeRegistry    typeRegistry;
     private final EntityGraphRetriever entityGraphRetriever;
 
     @Inject
-    public AtlasServerService(DataAccess dataAccess, AtlasEntityStore entityStore,
-                              AtlasTypeRegistry typeRegistry,
-                              EntityGraphRetriever entityGraphRetriever) {
-
-        this.dataAccess = dataAccess;
-        this.entityStore = entityStore;
-        this.typeRegistry = typeRegistry;
+    public AtlasServerService(DataAccess dataAccess, AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityGraphRetriever) {
+        this.dataAccess           = dataAccess;
+        this.entityStore          = entityStore;
+        this.typeRegistry         = typeRegistry;
         this.entityGraphRetriever = entityGraphRetriever;
     }
 
@@ -69,9 +67,10 @@ public class AtlasServerService {
         }
     }
 
-    public AtlasServer getCreateAtlasServer(String clusterName, String serverFullName) throws AtlasBaseException {
+    public AtlasServer getCreateAtlasServer(String clusterName, String serverFullName) {
         AtlasServer defaultServer = new AtlasServer(clusterName, serverFullName);
-        AtlasServer server = getAtlasServer(defaultServer);
+        AtlasServer server        = getAtlasServer(defaultServer);
+
         if (server == null) {
             return save(defaultServer);
         }
@@ -79,20 +78,11 @@ public class AtlasServerService {
         return server;
     }
 
-    private AtlasServer getAtlasServer(AtlasServer server) {
-        try {
-            return get(server);
-        } catch (AtlasBaseException ex) {
-            return null;
-        }
-    }
-
     @GraphTransaction
     public AtlasServer save(AtlasServer server) {
         try {
             return dataAccess.save(server);
-        }
-        catch (AtlasBaseException ex) {
+        } catch (AtlasBaseException ex) {
             return server;
         }
     }
@@ -104,9 +94,19 @@ public class AtlasServerService {
         }
 
         AtlasObjectId objectId = getObjectId(server);
+
         for (String guid : entityGuids) {
             AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityStore.getById(guid, false, false);
+
             updateAttribute(entityWithExtInfo, attributeName, objectId);
+        }
+    }
+
+    private AtlasServer getAtlasServer(AtlasServer server) {
+        try {
+            return get(server);
+        } catch (AtlasBaseException ex) {
+            return null;
         }
     }
 
@@ -114,51 +114,55 @@ public class AtlasServerService {
         return new AtlasObjectId(server.getGuid(), AtlasServer.class.getSimpleName());
     }
 
-
     /**
      * Attribute passed by name is updated with the value passed.
      * @param entityWithExtInfo Entity to be updated
      * @param propertyName attribute name
      * @param objectId Value to be set for attribute
      */
-    private void updateAttribute(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo,
-                                 String propertyName,
-                                 AtlasObjectId objectId) {
+    private void updateAttribute(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, String propertyName, AtlasObjectId objectId) {
         String value = EntityGraphMapper.getSoftRefFormattedValue(objectId);
+
         updateAttribute(entityWithExtInfo.getEntity(), propertyName, value);
+
         for (AtlasEntity e : entityWithExtInfo.getReferredEntities().values()) {
             updateAttribute(e, propertyName, value);
         }
     }
 
-    private void updateAttribute(AtlasEntity entity, String attributeName, Object value) {
-        if(entity.hasAttribute(attributeName) == false) return;
+    private void updateAttribute(AtlasEntity entity, String attributeName, String value) {
+        if (!entity.hasAttribute(attributeName)) {
+            return;
+        }
 
         try {
             AtlasVertex vertex = entityGraphRetriever.getEntityVertex(entity.getGuid());
-            if(vertex == null) {
+
+            if (vertex == null) {
                 return;
             }
 
-            String qualifiedFieldName = getVertexPropertyName(entity, attributeName);
-            List list = vertex.getListProperty(qualifiedFieldName);
+            String       qualifiedFieldName = getVertexPropertyName(entity, attributeName);
+            List<String> list               = vertex.getListProperty(qualifiedFieldName);
+
             if (CollectionUtils.isEmpty(list)) {
-                list = new ArrayList();
+                list = new ArrayList<>();
             }
 
             if (!list.contains(value)) {
                 list.add(value);
+
                 vertex.setListProperty(qualifiedFieldName, list);
             }
-        }
-        catch (AtlasBaseException ex) {
+        } catch (AtlasBaseException ex) {
             LOG.error("error retrieving vertex from guid: {}", entity.getGuid(), ex);
         }
     }
 
     private String getVertexPropertyName(AtlasEntity entity, String attributeName) throws AtlasBaseException {
-        AtlasEntityType type = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
+        AtlasEntityType                type      = (AtlasEntityType) typeRegistry.getType(entity.getTypeName());
         AtlasStructType.AtlasAttribute attribute = type.getAttribute(attributeName);
+
         return attribute.getVertexPropertyName();
     }
 }

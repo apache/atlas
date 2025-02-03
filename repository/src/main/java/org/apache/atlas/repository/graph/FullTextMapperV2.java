@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -51,7 +52,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 
 @Component
 public class FullTextMapperV2 implements IFullTextMapper {
@@ -67,7 +67,6 @@ public class FullTextMapperV2 implements IFullTextMapper {
     private final boolean                  followReferences;
     private final Map<String, Set<String>> excludeAttributesCache = new HashMap<>();
 
-
     @Inject
     public FullTextMapperV2(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, Configuration configuration) {
         this.typeRegistry  = typeRegistry;
@@ -80,6 +79,7 @@ public class FullTextMapperV2 implements IFullTextMapper {
 
     /**
      * Map newly associated/defined classifications for the entity with given GUID
+     *
      * @param guid Entity guid
      * @param classifications new classifications added to the entity
      * @return Full text string ONLY for the added classifications
@@ -88,7 +88,7 @@ public class FullTextMapperV2 implements IFullTextMapper {
 
     @Override
     public String getIndexTextForClassifications(String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
-        String                       ret     = null;
+        String                       ret = null;
         final AtlasEntityWithExtInfo entityWithExtInfo;
 
         if (followReferences) {
@@ -109,23 +109,21 @@ public class FullTextMapperV2 implements IFullTextMapper {
 
                     sb.append(classification.getTypeName()).append(FULL_TEXT_DELIMITER);
 
-                    mapAttributes(classificationType, classification.getAttributes(), entityWithExtInfo, sb, new HashSet<String>(), excludeAttributes, false); //false because of full text context.
+                    mapAttributes(classificationType, classification.getAttributes(), entityWithExtInfo, sb, new HashSet<>(), excludeAttributes, false); //false because of full text context.
                 }
             }
 
             ret = sb.toString();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("FullTextMapperV2.map({}): {}", guid, ret);
-        }
+        LOG.debug("FullTextMapperV2.map({}): {}", guid, ret);
 
         return ret;
     }
 
     @Override
     public String getIndexTextForEntity(String guid) throws AtlasBaseException {
-        String                   ret    = null;
+        String                   ret = null;
         final AtlasEntity        entity;
         final AtlasEntityExtInfo entityExtInfo;
 
@@ -142,32 +140,72 @@ public class FullTextMapperV2 implements IFullTextMapper {
         if (entity != null) {
             StringBuilder sb = new StringBuilder();
 
-            map(entity, entityExtInfo, sb, new HashSet<String>(), false);
+            map(entity, entityExtInfo, sb, new HashSet<>(), false);
 
             ret = sb.toString();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("FullTextMapperV2.map({}): {}", guid, ret);
-        }
+        LOG.debug("FullTextMapperV2.map({}): {}", guid, ret);
 
         return ret;
     }
 
     @Override
     public String getClassificationTextForEntity(AtlasEntity entity) throws AtlasBaseException {
-        String                   ret    = null;
+        String ret = null;
 
         if (entity != null) {
             StringBuilder sb = new StringBuilder();
-            map(entity, null, sb, new HashSet<String>(), true);
+
+            map(entity, null, sb, new HashSet<>(), true);
+
             ret = sb.toString();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.info("FullTextMapperV2.getClassificationTextForEntity({}): {}", entity.getGuid(), ret);
-        }
+        LOG.info("FullTextMapperV2.getClassificationTextForEntity({}): {}", entity != null ? entity.getGuid() : "null", ret);
+
         return ret;
+    }
+
+    @Override
+    public AtlasEntity getAndCacheEntity(String guid) throws AtlasBaseException {
+        return getAndCacheEntity(guid, true);
+    }
+
+    @Override
+    public AtlasEntity getAndCacheEntity(String guid, boolean includeReferences) throws AtlasBaseException {
+        RequestContext context = RequestContext.get();
+        AtlasEntity    entity  = context.getEntity(guid);
+
+        if (entity == null) {
+            entity = entityGraphRetriever.toAtlasEntity(guid, includeReferences);
+
+            if (entity != null) {
+                context.cache(entity);
+
+                LOG.debug("Cache miss -> GUID = {}", guid);
+            }
+        }
+
+        return entity;
+    }
+
+    @Override
+    public AtlasEntityWithExtInfo getAndCacheEntityWithExtInfo(String guid) throws AtlasBaseException {
+        RequestContext         context           = RequestContext.get();
+        AtlasEntityWithExtInfo entityWithExtInfo = context.getEntityWithExtInfo(guid);
+
+        if (entityWithExtInfo == null) {
+            // Only map ownedRef and relationship attr when follow references is set to true
+            entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid, !followReferences);
+
+            if (entityWithExtInfo != null) {
+                context.cache(entityWithExtInfo);
+
+                LOG.debug("Cache miss -> GUID = {}", guid);
+            }
+        }
+        return entityWithExtInfo;
     }
 
     private void map(AtlasEntity entity, AtlasEntityExtInfo entityExtInfo, StringBuilder sb, Set<String> processedGuids, boolean isClassificationOnly) throws AtlasBaseException {
@@ -179,7 +217,7 @@ public class FullTextMapperV2 implements IFullTextMapper {
         final Set<String>     excludeAttributes = getExcludeAttributesForIndexText(entity.getTypeName());
 
         processedGuids.add(entity.getGuid());
-        if(!isClassificationOnly) {
+        if (!isClassificationOnly) {
             sb.append(entity.getTypeName()).append(FULL_TEXT_DELIMITER);
 
             mapAttributes(entityType, entity.getAttributes(), entityExtInfo, sb, processedGuids, excludeAttributes, isClassificationOnly);
@@ -191,7 +229,6 @@ public class FullTextMapperV2 implements IFullTextMapper {
                 final AtlasClassificationType classificationType              = typeRegistry.getClassificationTypeByName(classification.getTypeName());
                 final Set<String>             excludeClassificationAttributes = getExcludeAttributesForIndexText(classification.getTypeName());
 
-
                 sb.append(classification.getTypeName()).append(FULL_TEXT_DELIMITER);
 
                 mapAttributes(classificationType, classification.getAttributes(), entityExtInfo, sb, processedGuids, excludeClassificationAttributes, isClassificationOnly);
@@ -200,7 +237,7 @@ public class FullTextMapperV2 implements IFullTextMapper {
     }
 
     private void mapAttributes(AtlasStructType structType, Map<String, Object> attributes, AtlasEntityExtInfo entityExtInfo, StringBuilder sb,
-                               Set<String> processedGuids, Set<String> excludeAttributes, boolean isClassificationOnly) throws AtlasBaseException {
+            Set<String> processedGuids, Set<String> excludeAttributes, boolean isClassificationOnly) throws AtlasBaseException {
         if (MapUtils.isEmpty(attributes)) {
             return;
         }
@@ -230,7 +267,6 @@ public class FullTextMapperV2 implements IFullTextMapper {
                 }
             }
 
-
             sb.append(attribKey).append(FULL_TEXT_DELIMITER);
 
             mapAttribute(attrValue, entityExtInfo, sb, processedGuids, isClassificationOnly);
@@ -248,20 +284,20 @@ public class FullTextMapperV2 implements IFullTextMapper {
                 }
             }
         } else if (value instanceof List) {
-            List valueList = (List) value;
+            List<?> valueList = (List<?>) value;
 
             for (Object listElement : valueList) {
                 mapAttribute(listElement, entityExtInfo, sb, processedGuids, isClassificationOnly);
             }
         } else if (value instanceof Map) {
-            Map valueMap = (Map) value;
+            Map<?, ?> valueMap = (Map<?, ?>) value;
 
             for (Object key : valueMap.keySet()) {
                 mapAttribute(key, entityExtInfo, sb, processedGuids, isClassificationOnly);
                 mapAttribute(valueMap.get(key), entityExtInfo, sb, processedGuids, isClassificationOnly);
             }
         } else if (value instanceof Enum) {
-            Enum enumValue = (Enum) value;
+            Enum<?> enumValue = (Enum<?>) value;
 
             sb.append(enumValue.name()).append(FULL_TEXT_DELIMITER);
         } else if (value instanceof AtlasStruct) {
@@ -272,53 +308,8 @@ public class FullTextMapperV2 implements IFullTextMapper {
                 mapAttribute(entry.getValue(), entityExtInfo, sb, processedGuids, isClassificationOnly);
             }
         } else {
-            sb.append(String.valueOf(value)).append(FULL_TEXT_DELIMITER);
+            sb.append(value).append(FULL_TEXT_DELIMITER);
         }
-    }
-
-    @Override
-    public AtlasEntity getAndCacheEntity(String guid) throws AtlasBaseException {
-        return getAndCacheEntity(guid, true);
-    }
-
-    @Override
-    public AtlasEntity  getAndCacheEntity(String guid, boolean includeReferences) throws AtlasBaseException {
-        RequestContext context = RequestContext.get();
-        AtlasEntity    entity  = context.getEntity(guid);
-
-        if (entity == null) {
-            entity = entityGraphRetriever.toAtlasEntity(guid, includeReferences);
-
-            if (entity != null) {
-                context.cache(entity);
-
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Cache miss -> GUID = {}", guid);
-                }
-            }
-        }
-
-        return entity;
-    }
-
-    @Override
-    public AtlasEntityWithExtInfo getAndCacheEntityWithExtInfo(String guid) throws AtlasBaseException {
-        RequestContext         context           = RequestContext.get();
-        AtlasEntityWithExtInfo entityWithExtInfo = context.getEntityWithExtInfo(guid);
-
-        if (entityWithExtInfo == null) {
-            // Only map ownedRef and relationship attr when follow references is set to true
-            entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid, !followReferences);
-
-            if (entityWithExtInfo != null) {
-                context.cache(entityWithExtInfo);
-
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Cache miss -> GUID = {}", guid);
-                }
-            }
-        }
-        return entityWithExtInfo;
     }
 
     private Set<String> getExcludeAttributesForIndexText(String typeName) {
@@ -326,10 +317,9 @@ public class FullTextMapperV2 implements IFullTextMapper {
 
         if (excludeAttributesCache.containsKey(typeName)) {
             ret = excludeAttributesCache.get(typeName);
-
         } else if (configuration != null) {
             String[] excludeAttributes = configuration.getStringArray(FULL_TEXT_EXCLUDE_ATTRIBUTE_PROPERTY + "." +
-                                                                              typeName + "." + "attributes.exclude");
+                    typeName + "." + "attributes.exclude");
 
             if (ArrayUtils.isNotEmpty(excludeAttributes)) {
                 ret = new HashSet<>(Arrays.asList(excludeAttributes));

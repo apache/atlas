@@ -44,12 +44,12 @@ public abstract class AbstractTask {
         }
     }
 
-    protected void setStatus(Status status) {
-        task.setStatus(status);
-    }
-
     public Status getStatus() {
         return this.task.getStatus();
+    }
+
+    protected void setStatus(Status status) {
+        task.setStatus(status);
     }
 
     public String getTaskGuid() {
@@ -60,9 +60,9 @@ public abstract class AbstractTask {
         return task.getType();
     }
 
+    public abstract Status perform() throws Exception;
+
     protected AtlasTask getTaskDef() {
         return this.task;
     }
-
-    public abstract Status perform() throws Exception;
 }

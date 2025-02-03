@@ -25,9 +25,8 @@ import org.apache.atlas.type.AtlasEntityType;
 
 import java.util.Map;
 
-
 public interface DataTransferObject<T extends AtlasBaseModelObject> {
-    Class getObjectType();
+    Class<T> getObjectType();
 
     AtlasEntityType getEntityType();
 

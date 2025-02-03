@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,35 +38,12 @@ import static org.apache.atlas.repository.impexp.ExportService.TraversalDirectio
 import static org.apache.atlas.repository.impexp.ExportService.TraversalDirection.UNKNOWN;
 
 public class RelationshipAttributesExtractor implements ExtractStrategy {
-
     private static final Logger LOG = LoggerFactory.getLogger(RelationshipAttributesExtractor.class);
 
     private final AtlasTypeRegistry typeRegistry;
 
     public RelationshipAttributesExtractor(AtlasTypeRegistry typeRegistry) {
         this.typeRegistry = typeRegistry;
-    }
-
-    @Override
-    public void fullFetch(AtlasEntity entity, ExportContext context) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> fullFetch({}): guidsToProcess {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size());
-        }
-
-        List<AtlasRelatedObjectId> atlasRelatedObjectIdList = getRelatedObjectIds(entity);
-
-        for (AtlasRelatedObjectId ar : atlasRelatedObjectIdList) {
-            boolean isLineage = isLineageType(ar.getTypeName());
-
-            if (context.skipLineage && isLineage) {
-                continue;
-            }
-            context.addToBeProcessed(isLineage, ar.getGuid(), BOTH);
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== fullFetch({}): guidsToProcess {}", entity.getGuid(), context.guidsToProcess.size());
-        }
     }
 
     @Override
@@ -92,6 +69,26 @@ public class RelationshipAttributesExtractor implements ExtractStrategy {
     }
 
     @Override
+    public void fullFetch(AtlasEntity entity, ExportContext context) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> fullFetch({}): guidsToProcess {}", AtlasTypeUtil.getAtlasObjectId(entity), context.guidsToProcess.size());
+        }
+
+        List<AtlasRelatedObjectId> atlasRelatedObjectIdList = getRelatedObjectIds(entity);
+
+        for (AtlasRelatedObjectId ar : atlasRelatedObjectIdList) {
+            boolean isLineage = isLineageType(ar.getTypeName());
+
+            if (context.skipLineage && isLineage) {
+                continue;
+            }
+            context.addToBeProcessed(isLineage, ar.getGuid(), BOTH);
+        }
+
+        LOG.debug("<== fullFetch({}): guidsToProcess {}", entity.getGuid(), context.guidsToProcess.size());
+    }
+
+    @Override
     public void close() {
     }
 
@@ -100,25 +97,26 @@ public class RelationshipAttributesExtractor implements ExtractStrategy {
             return;
         }
 
-        boolean isLineageEntity = isLineageType(entity.getTypeName());
+        boolean                    isLineageEntity  = isLineageType(entity.getTypeName());
         List<AtlasRelatedObjectId> relatedObjectIds = getRelatedObjectIds(entity);
 
         for (TraversalDirection direction : directions) {
             for (AtlasRelatedObjectId id : relatedObjectIds) {
-                String guid = id.getGuid();
+                String             guid             = id.getGuid();
                 TraversalDirection currentDirection = context.guidDirection.get(guid);
-                boolean isLineageId = isLineageType(id.getTypeName());
-                TraversalDirection edgeDirection = getRelationshipEdgeDirection(id, entity.getTypeName());
+                boolean            isLineageId      = isLineageType(id.getTypeName());
+                TraversalDirection edgeDirection    = getRelationshipEdgeDirection(id, entity.getTypeName());
 
-                if (context.skipLineage && isLineageId) continue;
-
-                if (!isLineageEntity && direction != edgeDirection ||
-                        isLineageEntity && direction == edgeDirection)
+                if (context.skipLineage && isLineageId) {
                     continue;
+                }
+
+                if (!isLineageEntity && direction != edgeDirection || isLineageEntity && direction == edgeDirection) {
+                    continue;
+                }
 
                 if (currentDirection == null) {
                     context.addToBeProcessed(isLineageId, guid, direction);
-
                 } else if (currentDirection == OUTWARD && direction == INWARD) {
                     context.guidsProcessed.remove(guid);
                     context.addToBeProcessed(isLineageId, guid, direction);
@@ -129,11 +127,13 @@ public class RelationshipAttributesExtractor implements ExtractStrategy {
 
     private TraversalDirection getRelationshipEdgeDirection(AtlasRelatedObjectId relatedObjectId, String entityTypeName) {
         boolean isOutEdge = typeRegistry.getRelationshipDefByName(relatedObjectId.getRelationshipType()).getEndDef1().getType().equals(entityTypeName);
+
         return isOutEdge ? OUTWARD : INWARD;
     }
 
     private boolean isLineageType(String typeName) {
         AtlasEntityDef entityDef = typeRegistry.getEntityDefByName(typeName);
+
         return entityDef.getSuperTypes().contains(AtlasBaseTypeDef.ATLAS_TYPE_PROCESS);
     }
 
@@ -144,9 +144,10 @@ public class RelationshipAttributesExtractor implements ExtractStrategy {
             if (o instanceof AtlasRelatedObjectId) {
                 relatedObjectIds.add((AtlasRelatedObjectId) o);
             } else if (o instanceof Collection) {
-                relatedObjectIds.addAll((List) o);
+                relatedObjectIds.addAll((List<AtlasRelatedObjectId>) o);
             }
         }
+
         return relatedObjectIds;
     }
 }

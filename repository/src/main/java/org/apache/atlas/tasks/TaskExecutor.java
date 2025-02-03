@@ -31,7 +31,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class TaskExecutor {
-    private static final Logger     LOG              = LoggerFactory.getLogger(TaskExecutor.class);
+    private static final Logger LOG = LoggerFactory.getLogger(TaskExecutor.class);
+
     private static final TaskLogger TASK_LOG         = TaskLogger.getLogger();
     private static final String     TASK_NAME_FORMAT = "atlas-task-%d-";
 
@@ -45,9 +46,9 @@ public class TaskExecutor {
         this.taskTypeFactoryMap = taskTypeFactoryMap;
         this.statistics         = statistics;
         this.executorService    = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
-                                                                    .setDaemon(true)
-                                                                    .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
-                                                                    .build());
+                .setDaemon(true)
+                .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
+                .build());
     }
 
     public void addAll(List<AtlasTask> tasks) {
@@ -90,7 +91,7 @@ public class TaskExecutor {
             try {
                 taskVertex = registry.getVertex(task.getGuid());
 
-                if (task == null || taskVertex == null || task.getStatus() == AtlasTask.Status.COMPLETE) {
+                if (taskVertex == null || task.getStatus() == AtlasTask.Status.COMPLETE) {
                     TASK_LOG.warn("Task not scheduled as it was not found or status was COMPLETE!", task);
 
                     return;
@@ -108,13 +109,9 @@ public class TaskExecutor {
 
                 performTask(taskVertex, task);
             } catch (InterruptedException exception) {
-                if (task != null) {
-                    registry.updateStatus(taskVertex, task);
+                registry.updateStatus(taskVertex, task);
 
-                    TASK_LOG.error("{}: {}: Interrupted!", task, exception);
-                } else {
-                    LOG.error("Interrupted!", exception);
-                }
+                TASK_LOG.error("{}: {}: Interrupted!", task, exception);
 
                 statistics.error();
             } catch (Exception exception) {
@@ -139,7 +136,8 @@ public class TaskExecutor {
         }
 
         private void performTask(AtlasVertex taskVertex, AtlasTask task) throws Exception {
-            TaskFactory  factory      = taskTypeFactoryMap.get(task.getType());
+            TaskFactory factory = taskTypeFactoryMap.get(task.getType());
+
             if (factory == null) {
                 LOG.error("taskTypeFactoryMap does not contain task of type: {}", task.getType());
                 return;

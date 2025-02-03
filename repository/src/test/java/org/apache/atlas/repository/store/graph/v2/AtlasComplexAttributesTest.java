@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -69,9 +69,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         super.setUp();
 
         // create typeDefs
-        AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] { TestUtilsV2.defineTypeWithComplexCollectionAttributes(),
-                                                              TestUtilsV2.defineTypeWithMapAttributes(),
-                                                              TestUtilsV2.defineSimpleAttrType()};
+        AtlasTypesDef[] testTypesDefs = new AtlasTypesDef[] {TestUtilsV2.defineTypeWithComplexCollectionAttributes(), TestUtilsV2.defineTypeWithMapAttributes(), TestUtilsV2.defineSimpleAttrType()};
         createTypesDef(testTypesDefs);
 
         // create entity
@@ -97,37 +95,51 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         EntityMutationResponse response        = entityStore.createOrUpdate(new AtlasEntityStream(mapAttributesEntity), false);
         AtlasEntityHeader      entityCreated   = response.getFirstCreatedEntityByTypeName(ENTITY_TYPE_MAP);
         AtlasEntity            entityFromStore = getEntityFromStore(entityCreated);
+
         validateEntity(mapAttributesEntity, entityFromStore);
 
         // Modify map of primitives
         AtlasEntity attrEntity = getEntityFromStore(mapAttributesEntity.getEntity().getGuid());
 
-        Map<String, String> map1 = new HashMap<String, String>() {{ put("map1Key11", "value11");
-                                                                    put("map1Key22", "value22");
-                                                                    put("map1Key33", "value33"); }};
+        Map<String, String> map1 = new HashMap<>();
 
-        Map<String, Integer> map2 = new HashMap<String, Integer>() {{ put("map2Key11", 1100);
-                                                                      put("map2Key22", 2200);
-                                                                      put("map2Key33", 3300); }};
+        map1.put("map1Key11", "value11");
+        map1.put("map1Key22", "value22");
+        map1.put("map1Key33", "value33");
 
-        Map<String, Boolean> map3 = new HashMap<String, Boolean>() {{ put("map3Key11", true);
-                                                                      put("map3Key22", false);
-                                                                      put("map3Key33", true); }};
+        Map<String, Integer> map2 = new HashMap<>();
 
-        Map<String, Float> map4 = new HashMap<String, Float>() {{ put("map4Key11", 11.0f);
-                                                                  put("map4Key22", 22.0f);
-                                                                  put("map4Key33", 33.0f); }};
+        map2.put("map2Key11", 1100);
+        map2.put("map2Key22", 2200);
+        map2.put("map2Key33", 3300);
 
-        Map<String, Date> map5 = new HashMap<String, Date>() {{ put("map5Key11", DateUtils.addHours(new Date(), 1));
-                                                                put("map5Key22", DateUtils.addHours(new Date(), 2));
-                                                                put("map5Key33", DateUtils.addHours(new Date(), 3)); }};
+        Map<String, Boolean> map3 = new HashMap<>();
+
+        map3.put("map3Key11", true);
+        map3.put("map3Key22", false);
+        map3.put("map3Key33", true);
+
+        Map<String, Float> map4 = new HashMap<>();
+
+        map4.put("map4Key11", 11.0f);
+        map4.put("map4Key22", 22.0f);
+        map4.put("map4Key33", 33.0f);
+
+        Map<String, Date> map5 = new HashMap<>();
+
+        map5.put("map5Key11", DateUtils.addHours(new Date(), 1));
+        map5.put("map5Key22", DateUtils.addHours(new Date(), 2));
+        map5.put("map5Key33", DateUtils.addHours(new Date(), 3));
 
         updateEntityMapAttributes(attrEntity, map1, map2, map3, map4, map5);
 
         AtlasEntitiesWithExtInfo attrEntitiesInfo = new AtlasEntitiesWithExtInfo(attrEntity);
+
         response = entityStore.createOrUpdate(new AtlasEntityStream(attrEntitiesInfo), false);
+
         AtlasEntityHeader updatedAttrEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_MAP);
         AtlasEntity       updatedFromStore  = getEntityFromStore(updatedAttrEntity);
+
         validateEntity(attrEntitiesInfo, updatedFromStore);
 
         // Add new entry to map of primitives
@@ -143,6 +155,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         response          = entityStore.createOrUpdate(new AtlasEntityStream(attrEntitiesInfo), false);
         updatedAttrEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_MAP);
         updatedFromStore  = getEntityFromStore(updatedAttrEntity);
+
         validateEntity(attrEntitiesInfo, updatedFromStore);
 
         // Remove an entry from map of primitives
@@ -158,6 +171,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         response          = entityStore.createOrUpdate(new AtlasEntityStream(attrEntitiesInfo), false);
         updatedAttrEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_MAP);
         updatedFromStore  = getEntityFromStore(updatedAttrEntity);
+
         validateEntity(attrEntitiesInfo, updatedFromStore);
 
         // Edit existing entry to map of primitives
@@ -173,6 +187,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         response          = entityStore.createOrUpdate(new AtlasEntityStream(attrEntitiesInfo), false);
         updatedAttrEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_MAP);
         updatedFromStore  = getEntityFromStore(updatedAttrEntity);
+
         validateEntity(attrEntitiesInfo, updatedFromStore);
 
         // clear primitive map entries
@@ -188,26 +203,18 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         response          = entityStore.createOrUpdate(new AtlasEntityStream(attrEntitiesInfo), false);
         updatedAttrEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_MAP);
         updatedFromStore  = getEntityFromStore(updatedAttrEntity);
-        validateEntity(attrEntitiesInfo, updatedFromStore);
-    }
 
-    private void updateEntityMapAttributes(AtlasEntity attrEntity, Map<String, String> map1, Map<String, Integer> map2,
-                                           Map<String, Boolean> map3, Map<String, Float> map4, Map<String, Date> map5) {
-        attrEntity.setAttribute("mapAttr1", map1);
-        attrEntity.setAttribute("mapAttr2", map2);
-        attrEntity.setAttribute("mapAttr3", map3);
-        attrEntity.setAttribute("mapAttr4", map4);
-        attrEntity.setAttribute("mapAttr5", map5);
+        validateEntity(attrEntitiesInfo, updatedFromStore);
     }
 
     @Test
     public void testArrayAttribute() throws Exception {
         init();
 
-        AtlasEntityWithExtInfo simpleEntity  = TestUtilsV2.createSimpleAttrTypeEntity();
-        EntityMutationResponse response      = entityStore.createOrUpdate(new AtlasEntityStream(simpleEntity), false);
-        AtlasEntityHeader simpleEntityHeader = response.getFirstCreatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
-        AtlasEntity createdSimpleEntity      = getEntityFromStore(simpleEntityHeader);
+        AtlasEntityWithExtInfo simpleEntity        = TestUtilsV2.createSimpleAttrTypeEntity();
+        EntityMutationResponse response            = entityStore.createOrUpdate(new AtlasEntityStream(simpleEntity), false);
+        AtlasEntityHeader      simpleEntityHeader  = response.getFirstCreatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        AtlasEntity            createdSimpleEntity = getEntityFromStore(simpleEntityHeader);
 
         validateEntity(simpleEntity, createdSimpleEntity);
 
@@ -216,9 +223,10 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         createdSimpleEntity.setAttribute("arrayOfStrings", Collections.emptyList());
         createdSimpleEntity.setAttribute("puArray", Collections.emptyList());
         createdSimpleEntity.setAttribute("puMap", Collections.emptyMap());
-        EntityMutationResponse responseUpdated      = entityStore.createOrUpdate(new AtlasEntityStream(createdSimpleEntity), false);
-        AtlasEntityHeader simpleEntityUpdatedHeader = responseUpdated.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
-        AtlasEntity updatedSimpleEntity             = getEntityFromStore(simpleEntityUpdatedHeader);
+
+        EntityMutationResponse responseUpdated           = entityStore.createOrUpdate(new AtlasEntityStream(createdSimpleEntity), false);
+        AtlasEntityHeader      simpleEntityUpdatedHeader = responseUpdated.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        AtlasEntity            updatedSimpleEntity       = getEntityFromStore(simpleEntityUpdatedHeader);
 
         assertNull(updatedSimpleEntity.getAttribute("stringAtrr"));
         assertEquals(updatedSimpleEntity.getAttribute("mapOfStrings"), Collections.emptyMap());
@@ -231,9 +239,10 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         updatedSimpleEntity.setAttribute("arrayOfStrings", null);
         updatedSimpleEntity.setAttribute("puArray", null);
         updatedSimpleEntity.setAttribute("puMap", null);
-        EntityMutationResponse responseUpdatedAgain      = entityStore.createOrUpdate(new AtlasEntityStream(updatedSimpleEntity), false);
-        AtlasEntityHeader simpleEntityUpdatedAgainHeader = responseUpdatedAgain.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
-        AtlasEntity updatedAgainSimpleEntity             = getEntityFromStore(simpleEntityUpdatedAgainHeader);
+
+        EntityMutationResponse responseUpdatedAgain           = entityStore.createOrUpdate(new AtlasEntityStream(updatedSimpleEntity), false);
+        AtlasEntityHeader      simpleEntityUpdatedAgainHeader = responseUpdatedAgain.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        AtlasEntity            updatedAgainSimpleEntity       = getEntityFromStore(simpleEntityUpdatedAgainHeader);
 
         assertEquals(updatedAgainSimpleEntity.getAttribute("stringAtrr"), "");
         assertNull(updatedAgainSimpleEntity.getAttribute("arrayOfStrings"));
@@ -244,24 +253,26 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         updatedAgainSimpleEntity.setAttribute("stringAtrr", "Dummy String Test 3");
         updatedAgainSimpleEntity.setAttribute("mapOfStrings", Collections.singletonMap("key1", "val1"));
         updatedAgainSimpleEntity.setAttribute("arrayOfStrings", Arrays.asList("DummyTest3", "DummyTest4"));
-        updatedAgainSimpleEntity.setAttribute("puArray", Arrays.asList("1"));
+        updatedAgainSimpleEntity.setAttribute("puArray", Collections.singletonList("1"));
         updatedAgainSimpleEntity.setAttribute("puMap", Collections.singletonMap("1", "1"));
-        EntityMutationResponse updateRes   = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), false);
-        AtlasEntityHeader updateHeader = updateRes.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
-        AtlasEntity updateEntity = getEntityFromStore(updateHeader);
+
+        EntityMutationResponse updateRes    = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), false);
+        AtlasEntityHeader      updateHeader = updateRes.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
+        AtlasEntity            updateEntity = getEntityFromStore(updateHeader);
 
         assertEquals(updateEntity.getAttribute("stringAtrr"), "Dummy String Test 3");
         assertEquals(updateEntity.getAttribute("arrayOfStrings"), Arrays.asList("DummyTest3", "DummyTest4"));
         assertEquals(updateEntity.getAttribute("mapOfStrings"), Collections.singletonMap("key1", "val1"));
-        assertEquals(updateEntity.getAttribute("puArray"), Arrays.asList("1"));
+        assertEquals(updateEntity.getAttribute("puArray"), Collections.singletonList("1"));
         assertEquals(updateEntity.getAttribute("puMap"), Collections.singletonMap("1", "1"));
 
         // full-update puArray and puMap; existing values should be replaced
         updatedAgainSimpleEntity.setAttribute("stringAtrr", "Dummy String Test 3");
         updatedAgainSimpleEntity.setAttribute("mapOfStrings", Collections.singletonMap("key1", "val1"));
         updatedAgainSimpleEntity.setAttribute("arrayOfStrings", Arrays.asList("DummyTest3", "DummyTest4"));
-        updatedAgainSimpleEntity.setAttribute("puArray", Arrays.asList("10"));
+        updatedAgainSimpleEntity.setAttribute("puArray", Collections.singletonList("10"));
         updatedAgainSimpleEntity.setAttribute("puMap", Collections.singletonMap("10", "10"));
+
         updateRes    = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), false);
         updateHeader = updateRes.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
         updateEntity = getEntityFromStore(updateHeader);
@@ -269,7 +280,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         assertEquals(updateEntity.getAttribute("stringAtrr"), "Dummy String Test 3");
         assertEquals(updateEntity.getAttribute("arrayOfStrings"), Arrays.asList("DummyTest3", "DummyTest4"));
         assertEquals(updateEntity.getAttribute("mapOfStrings"), Collections.singletonMap("key1", "val1"));
-        assertEquals(updateEntity.getAttribute("puArray"), Arrays.asList("10"));
+        assertEquals(updateEntity.getAttribute("puArray"), Collections.singletonList("10"));
         assertEquals(updateEntity.getAttribute("puMap"), Collections.singletonMap("10", "10"));
 
         // partial-update tests
@@ -279,6 +290,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         updatedAgainSimpleEntity.setAttribute("arrayOfStrings", Arrays.asList("DummyTest3", "DummyTest4"));
         updatedAgainSimpleEntity.setAttribute("puArray", null);
         updatedAgainSimpleEntity.setAttribute("puMap", null);
+
         updateRes    = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), false);
         updateHeader = updateRes.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
         updateEntity = getEntityFromStore(updateHeader);
@@ -289,19 +301,17 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         assertNull(updateEntity.getAttribute("puArray"));
         assertNull(updateEntity.getAttribute("puMap"));
 
-        List<String>        puArray = new ArrayList<>();
-        Map<String, String> puMap   = new HashMap<>();
-
         // partial-update: current value as null
         updatedAgainSimpleEntity.getAttributes().clear();
         updatedAgainSimpleEntity.setAttribute("puArray", Collections.singletonList("1"));
         updatedAgainSimpleEntity.setAttribute("puMap", Collections.singletonMap("1", "1"));
+
         updateRes    = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), true);
         updateHeader = updateRes.getFirstPartialUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
         updateEntity = getEntityFromStore(updateHeader);
 
-        puArray.addAll(Collections.singletonList("1"));
-        puMap.putAll(Collections.singletonMap("1", "1"));
+        List<String>        puArray = new ArrayList<>(Collections.singletonList("1"));
+        Map<String, String> puMap   = new HashMap<>(Collections.singletonMap("1", "1"));
 
         Assert.equals(updateEntity.getAttribute("puArray"), puArray);
         Assert.equals(updateEntity.getAttribute("puMap"), puMap);
@@ -310,12 +320,13 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         updatedAgainSimpleEntity.getAttributes().clear();
         updatedAgainSimpleEntity.setAttribute("puArray", Collections.singletonList("2"));
         updatedAgainSimpleEntity.setAttribute("puMap", Collections.singletonMap("2", "2"));
+
         updateRes    = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), true);
         updateHeader = updateRes.getFirstPartialUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
         updateEntity = getEntityFromStore(updateHeader);
 
-        puArray.addAll(Collections.singletonList("2"));
-        puMap.putAll(Collections.singletonMap("2", "2"));
+        puArray.add("2");
+        puMap.put("2", "2");
 
         Assert.equals(updateEntity.getAttribute("puArray"), puArray);
         Assert.equals(updateEntity.getAttribute("puMap"), puMap);
@@ -335,6 +346,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         updatedAgainSimpleEntity.getAttributes().clear();
         updatedAgainSimpleEntity.setAttribute("puArray", Collections.emptyList());
         updatedAgainSimpleEntity.setAttribute("puMap", Collections.emptyMap());
+
         updateRes    = entityStore.createOrUpdate(new AtlasEntityStream(updatedAgainSimpleEntity), true);
         updateHeader = updateRes.getFirstPartialUpdatedEntityByTypeName(ENTITY_TYPE_WITH_SIMPLE_ATTR);
         updateEntity = getEntityFromStore(updateHeader);
@@ -351,66 +363,79 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
 
         // Modify array of structs
         List<AtlasStruct> structList = new ArrayList<>(Arrays.asList(new AtlasStruct("struct_type", "name", "structArray00"),
-                                                                     new AtlasStruct("struct_type", "name", "structArray11"),
-                                                                     new AtlasStruct("struct_type", "name", "structArray22")));
+                new AtlasStruct("struct_type", "name", "structArray11"),
+                new AtlasStruct("struct_type", "name", "structArray22")));
+
         complexEntity.setAttribute("listOfStructs", structList);
 
         EntityMutationResponse response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         AtlasEntityHeader      updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
+
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
         // add a new element to array of struct
         init();
         structList.add(new AtlasStruct("struct_type", "name", "structArray33"));
         complexEntity.setAttribute("listOfStructs", structList);
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
+
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
         // remove one of the struct values - structArray00
         init();
         structList.remove(0);
         complexEntity.setAttribute("listOfStructs", structList);
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
+
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
         // Update struct value within array of struct
         init();
         structList.get(0).setAttribute(NAME, "structArray11-edit");
         complexEntity.setAttribute("listOfStructs", structList);
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
+
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
         // add a repeated element to array of struct
         init();
         structList.add(new AtlasStruct("struct_type", "name", "structArray33"));
         complexEntity.setAttribute("listOfStructs", structList);
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
+
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
         // Remove all elements. Should set array attribute to null
         init();
         structList.clear();
         complexEntity.setAttribute("listOfStructs", structList);
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
+
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
     }
 
     @Test(dependsOnMethods = "testStructArray")
     public void testEntityArray() throws Exception {
         init();
+
         AtlasEntity              complexEntity       = getEntityFromStore(complexCollectionAttrEntity.getEntity().getGuid());
         AtlasEntitiesWithExtInfo complexEntitiesInfo = new AtlasEntitiesWithExtInfo(complexEntity);
         AtlasEntityType          entityType          = typeRegistry.getEntityTypeByName(ENTITY_TYPE);
 
         // Replace list of entities with new values
-        AtlasEntity e0Array = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityArray00"); put("isReplicated", true); }});
-        AtlasEntity e1Array = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityArray11"); put("isReplicated", false); }});
-        AtlasEntity e2Array = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityArray22"); put("isReplicated", true); }});
+        AtlasEntity e0Array = new AtlasEntity(ENTITY_TYPE, getMap(NAME, "entityArray00", "isReplicated", true));
+        AtlasEntity e1Array = new AtlasEntity(ENTITY_TYPE, getMap(NAME, "entityArray11", "isReplicated", false));
+        AtlasEntity e2Array = new AtlasEntity(ENTITY_TYPE, getMap(NAME, "entityArray22", "isReplicated", true));
 
         List<AtlasObjectId> entityList = new ArrayList<>(Arrays.asList(getAtlasObjectId(e0Array), getAtlasObjectId(e1Array), getAtlasObjectId(e2Array)));
 
@@ -427,10 +452,11 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         // add a new element to list of entities
         init();
 
-        e0Array = entityStore.getByUniqueAttributes(entityType, new HashMap<String, Object>() {{ put(NAME, "entityArray00"); put("isReplicated", true); }}).getEntity();
-        e1Array = entityStore.getByUniqueAttributes(entityType, new HashMap<String, Object>() {{ put(NAME, "entityArray11"); put("isReplicated", false); }}).getEntity();
-        e2Array = entityStore.getByUniqueAttributes(entityType, new HashMap<String, Object>() {{ put(NAME, "entityArray22"); put("isReplicated", true); }}).getEntity();
-        AtlasEntity e3Array = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityArray33"); put("isReplicated", true); }});
+        e0Array = entityStore.getByUniqueAttributes(entityType, getMap(NAME, "entityArray00", "isReplicated", true)).getEntity();
+        e1Array = entityStore.getByUniqueAttributes(entityType, getMap(NAME, "entityArray11", "isReplicated", false)).getEntity();
+        e2Array = entityStore.getByUniqueAttributes(entityType, getMap(NAME, "entityArray22", "isReplicated", true)).getEntity();
+
+        AtlasEntity e3Array = new AtlasEntity(ENTITY_TYPE, getMap(NAME, "entityArray33", "isReplicated", true));
 
         entityList = new ArrayList<>(Arrays.asList(getAtlasObjectId(e0Array), getAtlasObjectId(e1Array), getAtlasObjectId(e2Array), getAtlasObjectId(e3Array)));
 
@@ -438,18 +464,19 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         complexEntitiesInfo.getReferredEntities().clear();
         complexEntitiesInfo.addReferredEntity(e3Array);
 
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
         // remove one of the entity values - entityArray00
         init();
-        e3Array = entityStore.getByUniqueAttributes(entityType, new HashMap<String, Object>() {{ put(NAME, "entityArray33"); put("isReplicated", true); }}).getEntity();
+        e3Array    = entityStore.getByUniqueAttributes(entityType, getMap(NAME, "entityArray33", "isReplicated", true)).getEntity();
         entityList = new ArrayList<>(Arrays.asList(getAtlasObjectId(e1Array), getAtlasObjectId(e2Array), getAtlasObjectId(e3Array)));
+
         complexEntity.setAttribute("listOfEntities", entityList);
         complexEntitiesInfo.getReferredEntities().clear();
 
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
@@ -458,19 +485,20 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         e1Array.setAttribute(NAME, "entityArray11-edit");
         complexEntity.setAttribute("listOfEntities", entityList);
 
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
         // add a repeated element to array of struct
         init();
-        AtlasEntity e3Array_duplicate = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityArray33"); put("isReplicated", true); }});
-        entityList.add(getAtlasObjectId(e3Array_duplicate));
+        AtlasEntity e3ArrayDuplicate = new AtlasEntity(ENTITY_TYPE, getMap(NAME, "entityArray33", "isReplicated", true));
+
+        entityList.add(getAtlasObjectId(e3ArrayDuplicate));
         complexEntity.setAttribute("listOfEntities", entityList);
         complexEntitiesInfo.getReferredEntities().clear();
-        complexEntitiesInfo.addReferredEntity(e3Array_duplicate);
+        complexEntitiesInfo.addReferredEntity(e3ArrayDuplicate);
 
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
@@ -480,7 +508,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         complexEntity.setAttribute("listOfEntities", entityList);
         complexEntitiesInfo.getReferredEntities().clear();
 
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
     }
@@ -492,10 +520,9 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         AtlasEntitiesWithExtInfo complexEntitiesInfo = new AtlasEntitiesWithExtInfo(complexEntity);
 
         // Modify map of structs
-        HashMap<String, AtlasStruct> structMap = new HashMap<String, AtlasStruct>() {{
-                                                        put("key00", new AtlasStruct("struct_type", "name", "structMap00"));
-                                                        put("key11", new AtlasStruct("struct_type", "name", "structMap11"));
-                                                        put("key22", new AtlasStruct("struct_type", "name", "structMap22")); }};
+        Map<String, AtlasStruct> structMap = getMap("key00", new AtlasStruct("struct_type", "name", "structMap00"),
+                "key11", new AtlasStruct("struct_type", "name", "structMap11"),
+                "key22", new AtlasStruct("struct_type", "name", "structMap22"));
 
         complexEntity.setAttribute("mapOfStructs", structMap);
 
@@ -526,7 +553,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         structMap.get("key11").setAttribute("name", "structMap11-edit");
         complexEntity.setAttribute("mapOfStructs", structMap);
 
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
@@ -534,7 +561,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         init();
         structMap.put("key33", new AtlasStruct("struct_type", "name", "structMap33"));
         complexEntity.setAttribute("mapOfStructs", structMap);
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
         // no update since duplicate entry
         assertNull(updatedComplexEntity);
@@ -543,7 +570,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         init();
         structMap.clear();
         complexEntity.setAttribute("mapOfStructs", structMap);
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
     }
@@ -555,32 +582,35 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         AtlasEntitiesWithExtInfo complexEntitiesInfo = new AtlasEntitiesWithExtInfo(complexEntity);
 
         // Modify map of entities
-        AtlasEntity e0MapValue = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityMapValue00"); put("isReplicated", false); }});
-        AtlasEntity e1MapValue = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityMapValue11"); put("isReplicated", true); }});
-        AtlasEntity e2MapValue = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityMapValue22"); put("isReplicated", false); }});
+        AtlasEntity e0MapValue = new AtlasEntity(ENTITY_TYPE, getMap(NAME, "entityMapValue00", "isReplicated", false));
+        AtlasEntity e1MapValue = new AtlasEntity(ENTITY_TYPE, getMap(NAME, "entityMapValue11", "isReplicated", true));
+        AtlasEntity e2MapValue = new AtlasEntity(ENTITY_TYPE, getMap(NAME, "entityMapValue22", "isReplicated", false));
+        Map<String, Object> entityMap = getMap("key00", getAtlasObjectId(e0MapValue), "key11", getAtlasObjectId(e1MapValue), "key22", getAtlasObjectId(e2MapValue));
 
-        HashMap<String, Object> entityMap = new HashMap<String, Object>() {{ put("key00", getAtlasObjectId(e0MapValue));
-                                                                             put("key11", getAtlasObjectId(e1MapValue));
-                                                                             put("key22", getAtlasObjectId(e2MapValue)); }};
         complexEntity.setAttribute("mapOfEntities", entityMap);
         complexEntitiesInfo.addReferredEntity(e0MapValue);
         complexEntitiesInfo.addReferredEntity(e1MapValue);
         complexEntitiesInfo.addReferredEntity(e2MapValue);
 
         init();
+
         EntityMutationResponse response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         AtlasEntityHeader      updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
+
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
         // add a new element to map of entities
         init();
-        AtlasEntity e3MapValue = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityMapValue33"); put("isReplicated", false); }});
+
+        AtlasEntity e3MapValue = new AtlasEntity(ENTITY_TYPE, getMap(NAME, "entityMapValue33", "isReplicated", false));
+
         entityMap.put("key33", getAtlasObjectId(e3MapValue));
         complexEntity.setAttribute("mapOfEntities", entityMap);
         complexEntitiesInfo.addReferredEntity(e3MapValue);
 
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
+
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
         // remove one of the entity values - [key00 : entityMapValue00]
@@ -589,14 +619,15 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         complexEntity.setAttribute("mapOfEntities", entityMap);
         complexEntitiesInfo.addReferredEntity(e3MapValue);
 
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
         // Update entity value within map of entities
         init();
 
-        AtlasEntity e1MapValueEdit = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityMapValue11-edit"); put("isReplicated", false); }});
+        AtlasEntity e1MapValueEdit = new AtlasEntity(ENTITY_TYPE, getMap(NAME, "entityMapValue11-edit", "isReplicated", false));
+
         entityMap.clear();
         entityMap.put("key11", getAtlasObjectId(e1MapValueEdit));
         entityMap.put("key22", getAtlasObjectId(e2MapValue));
@@ -604,18 +635,21 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         complexEntity.setAttribute("mapOfEntities", entityMap);
         complexEntitiesInfo.addReferredEntity(e1MapValueEdit);
 
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
+
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
         // add a repeated element to map of entities
         init();
-        e3MapValue = new AtlasEntity(ENTITY_TYPE, new HashMap<String, Object>() {{ put(NAME, "entityMapValue33"); put("isReplicated", false); }});
+
+        e3MapValue = new AtlasEntity(ENTITY_TYPE, getMap(NAME, "entityMapValue33", "isReplicated", false));
+
         entityMap.put("key33", getAtlasObjectId(e3MapValue));
         complexEntity.setAttribute("mapOfEntities", entityMap);
         complexEntitiesInfo.addReferredEntity(e3MapValue);
 
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
 
@@ -625,7 +659,7 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         complexEntity.setAttribute("mapOfEntities", entityMap);
         complexEntitiesInfo.addReferredEntity(e3MapValue);
 
-        response = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
+        response             = entityStore.createOrUpdate(new AtlasEntityStream(complexEntitiesInfo), false);
         updatedComplexEntity = response.getFirstUpdatedEntityByTypeName(ENTITY_TYPE_WITH_COMPLEX_COLLECTION_ATTR);
         validateEntity(complexEntitiesInfo, getEntityFromStore(updatedComplexEntity));
     }
@@ -661,14 +695,41 @@ public class AtlasComplexAttributesTest extends AtlasEntityTestBase {
         Map<String, AtlasObjectId> mapOfEntities  = (Map<String, AtlasObjectId>) deletedEntity.getAttribute("mapOfEntities");
 
         // validate entity attributes are deleted
-        for (AtlasObjectId o  : listOfEntities) {
+        for (AtlasObjectId o : listOfEntities) {
             AtlasEntity entity = deletedEntityWithExtInfo.getEntity(o.getGuid());
             assertEquals(entity.getStatus(), AtlasEntity.Status.DELETED);
         }
 
-        for (AtlasObjectId o  : mapOfEntities.values()) {
+        for (AtlasObjectId o : mapOfEntities.values()) {
             AtlasEntity entity = deletedEntityWithExtInfo.getEntity(o.getGuid());
             assertEquals(entity.getStatus(), AtlasEntity.Status.DELETED);
         }
+    }
+
+    private void updateEntityMapAttributes(AtlasEntity attrEntity, Map<String, String> map1, Map<String, Integer> map2, Map<String, Boolean> map3, Map<String, Float> map4, Map<String, Date> map5) {
+        attrEntity.setAttribute("mapAttr1", map1);
+        attrEntity.setAttribute("mapAttr2", map2);
+        attrEntity.setAttribute("mapAttr3", map3);
+        attrEntity.setAttribute("mapAttr4", map4);
+        attrEntity.setAttribute("mapAttr5", map5);
+    }
+
+    private static <K, V> Map<K, V> getMap(K key1, V val1, K key2, V val2) {
+        Map<K, V> ret = new HashMap<>();
+
+        ret.put(key1, val1);
+        ret.put(key2, val2);
+
+        return ret;
+    }
+
+    private static <K, V> Map<K, V> getMap(K key1, V val1, K key2, V val2, K key3, V val3) {
+        Map<K, V> ret = new HashMap<>();
+
+        ret.put(key1, val1);
+        ret.put(key2, val2);
+        ret.put(key3, val3);
+
+        return ret;
     }
 }

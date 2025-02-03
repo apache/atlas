@@ -29,10 +29,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Collection;
+
+import static java.util.Objects.requireNonNull;
 
 @Component
 public class AtlasGlossaryCategoryDTO extends AbstractGlossaryDTO<AtlasGlossaryCategory> {
@@ -45,10 +47,9 @@ public class AtlasGlossaryCategoryDTO extends AbstractGlossaryDTO<AtlasGlossaryC
 
     @Override
     public AtlasGlossaryCategory from(final AtlasEntity entity) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasGlossaryCategoryDTO.from()", entity);
-        }
-        Objects.requireNonNull(entity, "entity");
+        LOG.debug("==> AtlasGlossaryCategoryDTO.from({})", entity);
+
+        requireNonNull(entity, "entity");
 
         AtlasGlossaryCategory ret = new AtlasGlossaryCategory();
 
@@ -60,21 +61,27 @@ public class AtlasGlossaryCategoryDTO extends AbstractGlossaryDTO<AtlasGlossaryC
         ret.setAdditionalAttributes((Map) entity.getAttribute("additionalAttributes"));
 
         Object anchor = entity.getRelationshipAttribute("anchor");
+
         if (anchor instanceof AtlasRelatedObjectId) {
             LOG.debug("Processing anchor");
+
             ret.setAnchor(constructGlossaryId((AtlasRelatedObjectId) anchor));
         }
 
         Object parentCategory = entity.getRelationshipAttribute("parentCategory");
+
         if (parentCategory instanceof AtlasRelatedObjectId) {
             LOG.debug("Processing parentCategory");
+
             ret.setParentCategory(constructRelatedCategoryId((AtlasRelatedObjectId) parentCategory));
         }
 
         Object childrenCategories = entity.getRelationshipAttribute("childrenCategories");
+
         if (childrenCategories instanceof Collection) {
             LOG.debug("Processing childrenCategories");
-            for (Object child : (Collection) childrenCategories) {
+
+            for (Object child : (Collection<?>) childrenCategories) {
                 if (child instanceof AtlasRelatedObjectId) {
                     if (((AtlasRelatedObjectId) child).getRelationshipStatus() == AtlasRelationship.Status.ACTIVE) {
                         ret.addChild(constructRelatedCategoryId((AtlasRelatedObjectId) child));
@@ -84,9 +91,11 @@ public class AtlasGlossaryCategoryDTO extends AbstractGlossaryDTO<AtlasGlossaryC
         }
 
         Object terms = entity.getRelationshipAttribute("terms");
+
         if (terms instanceof Collection) {
             LOG.debug("Processing terms");
-            for (Object term : (Collection) terms) {
+
+            for (Object term : (Collection<?>) terms) {
                 if (term instanceof AtlasRelatedObjectId) {
                     ret.addTerm(constructRelatedTermId((AtlasRelatedObjectId) term));
                 }
@@ -98,26 +107,24 @@ public class AtlasGlossaryCategoryDTO extends AbstractGlossaryDTO<AtlasGlossaryC
 
     @Override
     public AtlasGlossaryCategory from(final AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasGlossaryCategoryDTO.from()", entityWithExtInfo);
-        }
-        Objects.requireNonNull(entityWithExtInfo, "entity");
+        LOG.debug("==> AtlasGlossaryCategoryDTO.from({})", entityWithExtInfo);
+
+        requireNonNull(entityWithExtInfo, "entity");
+
         AtlasGlossaryCategory ret = from(entityWithExtInfo.getEntity());
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasGlossaryCategoryDTO.from() : {}", ret);
-        }
+        LOG.debug("<== AtlasGlossaryCategoryDTO.from() : {}", ret);
+
         return ret;
     }
 
     @Override
     public AtlasEntity toEntity(final AtlasGlossaryCategory obj) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasGlossaryCategoryDTO.toEntity()", obj);
-        }
-        Objects.requireNonNull(obj, "atlasGlossaryCategory");
-        Objects.requireNonNull(obj.getQualifiedName(), "atlasGlossaryCategory qualifiedName must be specified");
-        Objects.requireNonNull(obj.getAnchor(), "atlasGlossaryCategory anchor must be specified");
+        LOG.debug("==> AtlasGlossaryCategoryDTO.toEntity({})", obj);
+
+        requireNonNull(obj, "atlasGlossaryCategory");
+        requireNonNull(obj.getQualifiedName(), "atlasGlossaryCategory qualifiedName must be specified");
+        requireNonNull(obj.getAnchor(), "atlasGlossaryCategory anchor must be specified");
 
         AtlasEntity ret = getDefaultAtlasEntity(obj);
 
@@ -128,30 +135,30 @@ public class AtlasGlossaryCategoryDTO extends AbstractGlossaryDTO<AtlasGlossaryC
         ret.setAttribute("anchor", new AtlasObjectId(obj.getAnchor().getGlossaryGuid()));
         ret.setAttribute("additionalAttributes", obj.getAdditionalAttributes());
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasGlossaryCategoryDTO.toEntity() : {}", ret);
-        }
+        LOG.debug("<== AtlasGlossaryCategoryDTO.toEntity() : {}", ret);
+
         return ret;
     }
 
     @Override
     public AtlasEntity.AtlasEntityWithExtInfo toEntityWithExtInfo(final AtlasGlossaryCategory obj) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasGlossaryCategoryDTO.toEntityWithExtInfo()", obj);
-        }
-        Objects.requireNonNull(obj, "atlasGlossaryCategory");
+        LOG.debug("==> AtlasGlossaryCategoryDTO.toEntityWithExtInfo({})", obj);
+
+        requireNonNull(obj, "atlasGlossaryCategory");
+
         AtlasEntity.AtlasEntityWithExtInfo ret = new AtlasEntity.AtlasEntityWithExtInfo(toEntity(obj));
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasGlossaryCategoryDTO.toEntityWithExtInfo() : {}", ret);
-        }
+        LOG.debug("<== AtlasGlossaryCategoryDTO.toEntityWithExtInfo() : {}", ret);
+
         return ret;
     }
 
     @Override
     public Map<String, Object> getUniqueAttributes(final AtlasGlossaryCategory obj) {
         Map<String, Object> ret = new HashMap<>();
+
         ret.put("qualifiedName", obj.getQualifiedName());
+
         return ret;
     }
 }

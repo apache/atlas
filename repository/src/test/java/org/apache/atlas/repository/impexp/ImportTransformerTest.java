@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,37 +21,37 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.testng.annotations.Test;
 
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class ImportTransformerTest {
-
     @Test
-    public void createWithCorrectParameters() throws AtlasBaseException, IllegalAccessException {
+    public void createWithCorrectParameters() throws AtlasBaseException {
         String param1 = "@cl1";
         String param2 = "@cl2";
 
         ImportTransformer e = ImportTransformer.getTransformer(String.format("%s:%s:%s", "replace", param1, param2));
 
         assertTrue(e instanceof ImportTransformer.Replace);
-        assertEquals(((ImportTransformer.Replace)e).getToFindStr(), param1);
-        assertEquals(((ImportTransformer.Replace)e).getReplaceStr(), param2);
+        assertEquals(((ImportTransformer.Replace) e).getToFindStr(), param1);
+        assertEquals(((ImportTransformer.Replace) e).getReplaceStr(), param2);
     }
 
     @Test
-    public void createSeveralWithCorrectParameters() throws AtlasBaseException, IllegalAccessException {
+    public void createSeveralWithCorrectParameters() throws AtlasBaseException {
         String param1 = "@cl1";
         String param2 = "@cl2";
 
         ImportTransformer e1 = ImportTransformer.getTransformer(String.format("%s:%s:%s", "replace", param1, param2));
-        ImportTransformer e2 = ImportTransformer.getTransformer(String.format("replace:tt1:tt2"));
+        ImportTransformer e2 = ImportTransformer.getTransformer("replace:tt1:tt2");
 
         assertTrue(e1 instanceof ImportTransformer.Replace);
-        assertEquals(((ImportTransformer.Replace)e1).getToFindStr(), param1);
-        assertEquals(((ImportTransformer.Replace)e1).getReplaceStr(), param2);
+        assertEquals(((ImportTransformer.Replace) e1).getToFindStr(), param1);
+        assertEquals(((ImportTransformer.Replace) e1).getReplaceStr(), param2);
 
         assertTrue(e2 instanceof ImportTransformer.Replace);
-        assertEquals(((ImportTransformer.Replace)e2).getToFindStr(), "tt1");
-        assertEquals(((ImportTransformer.Replace)e2).getReplaceStr(), "tt2");
+        assertEquals(((ImportTransformer.Replace) e2).getToFindStr(), "tt1");
+        assertEquals(((ImportTransformer.Replace) e2).getReplaceStr(), "tt2");
     }
 
     @Test
@@ -60,12 +60,12 @@ public class ImportTransformerTest {
         ImportTransformer e2 = ImportTransformer.getTransformer("replace");
 
         assertTrue(e1 instanceof ImportTransformer.Replace);
-        assertEquals(((ImportTransformer.Replace)e1).getToFindStr(), "@cl1");
-        assertEquals(((ImportTransformer.Replace)e1).getReplaceStr(), "");
+        assertEquals(((ImportTransformer.Replace) e1).getToFindStr(), "@cl1");
+        assertEquals(((ImportTransformer.Replace) e1).getReplaceStr(), "");
 
         assertTrue(e2 instanceof ImportTransformer.Replace);
-        assertEquals(((ImportTransformer.Replace)e2).getToFindStr(), "");
-        assertEquals(((ImportTransformer.Replace)e2).getReplaceStr(), "");
+        assertEquals(((ImportTransformer.Replace) e2).getToFindStr(), "");
+        assertEquals(((ImportTransformer.Replace) e2).getReplaceStr(), "");
     }
 
     @Test
@@ -75,8 +75,8 @@ public class ImportTransformerTest {
         assertEquals(e.apply("@CL1"), "@cl1");
         assertEquals(e.apply("@cl1"), "@cl1");
         assertEquals(e.apply(""), ""); // empty string
-        assertEquals(e.apply(null), null); // null value: no change
-        assertEquals(e.apply(Integer.valueOf(5)), Integer.valueOf(5)); // non-string value: no change
+        assertNull(e.apply(null)); // null value: no change
+        assertEquals(e.apply(5), 5); // non-string value: no change
     }
 
     @Test
@@ -86,8 +86,8 @@ public class ImportTransformerTest {
         assertEquals(e.apply("@CL1"), "@CL1");
         assertEquals(e.apply("@cl1"), "@CL1");
         assertEquals(e.apply(""), ""); // empty string
-        assertEquals(e.apply(null), null); // null value: no change
-        assertEquals(e.apply(Integer.valueOf(5)), Integer.valueOf(5)); // non-string value: no change
+        assertNull(e.apply(null)); // null value: no change
+        assertEquals(e.apply(5), 5); // non-string value: no change
     }
 
     @Test
@@ -99,8 +99,8 @@ public class ImportTransformerTest {
         assertEquals(e.apply("@cl11"), "@cl21");
         assertEquals(e.apply("@cl2"), "@cl2");
         assertEquals(e.apply(""), ""); // empty string
-        assertEquals(e.apply(null), null); // null value
-        assertEquals(e.apply(Integer.valueOf(5)), Integer.valueOf(5)); // non-string value: no change
+        assertNull(e.apply(null)); // null value
+        assertEquals(e.apply(5), 5); // non-string value: no change
     }
 
     @Test
@@ -112,8 +112,8 @@ public class ImportTransformerTest {
         assertEquals(e.apply("@cl11"), "1");
         assertEquals(e.apply("@cl2"), "@cl2");
         assertEquals(e.apply(""), ""); // empty string
-        assertEquals(e.apply(null), null); // null value
-        assertEquals(e.apply(Integer.valueOf(5)), Integer.valueOf(5)); // non-string value: no change
+        assertNull(e.apply(null)); // null value
+        assertEquals(e.apply(5), 5); // non-string value: no change
     }
 
     @Test
@@ -125,7 +125,7 @@ public class ImportTransformerTest {
         assertEquals(e.apply("@cl11"), "@cl11");
         assertEquals(e.apply("@cl2"), "@cl2");
         assertEquals(e.apply(""), ""); // empty string
-        assertEquals(e.apply(null), null); // null value
-        assertEquals(e.apply(Integer.valueOf(5)), Integer.valueOf(5)); // non-string value: no change
+        assertNull(e.apply(null)); // null value
+        assertEquals(e.apply(5), 5); // non-string value: no change
     }
 }
