@@ -23,11 +23,17 @@ import org.apache.commons.lang.StringUtils;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.apache.atlas.entitytransform.TransformationConstants.*;
+import static org.apache.atlas.entitytransform.TransformationConstants.CLUSTER_DELIMITER;
+import static org.apache.atlas.entitytransform.TransformationConstants.DATABASE_DELIMITER;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_DB_CLUSTER_NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_DB_NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_TABLE;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_TABLE_NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.QUALIFIED_NAME_ATTRIBUTE;
 
 public class HiveTableEntityHandler extends BaseEntityHandler {
     static final List<String> CUSTOM_TRANSFORM_ATTRIBUTES = Arrays.asList(HIVE_DB_NAME_ATTRIBUTE, HIVE_TABLE_NAME_ATTRIBUTE, HIVE_DB_CLUSTER_NAME_ATTRIBUTE);
-
 
     public HiveTableEntityHandler(List<AtlasEntityTransformer> transformers) {
         super(transformers);
@@ -43,14 +49,13 @@ public class HiveTableEntityHandler extends BaseEntityHandler {
     }
 
     private static class HiveTableEntity extends AtlasTransformableEntity {
-        private final String qualifiedName;
-        private String       databaseName;
-        private String       tableName;
-        private String       clusterName;
-        private boolean      isCustomAttributeUpdated = false;
-
+        private final String  qualifiedName;
         private final boolean tableNameFromQualifiedNameDifferent;
         private final String  tableNameFromQualifiedName;
+        private       String  databaseName;
+        private       String  tableName;
+        private       String  clusterName;
+        private       boolean isCustomAttributeUpdated;
 
         public HiveTableEntity(AtlasEntity entity) {
             super(entity);
@@ -63,14 +68,14 @@ public class HiveTableEntityHandler extends BaseEntityHandler {
                 int databaseSeparatorIdx = qualifiedName.indexOf(DATABASE_DELIMITER);
                 int clusterSeparatorIdx  = qualifiedName.lastIndexOf(CLUSTER_DELIMITER);
 
-                this.databaseName = databaseSeparatorIdx != -1 ? qualifiedName.substring(0, databaseSeparatorIdx) : "";
-                this.clusterName  = clusterSeparatorIdx != -1  ? qualifiedName.substring(clusterSeparatorIdx + 1) : "";
-                this.tableNameFromQualifiedName = clusterSeparatorIdx != -1 ? this.qualifiedName.substring(databaseSeparatorIdx + 1, clusterSeparatorIdx) : "";
+                this.databaseName                        = databaseSeparatorIdx != -1 ? qualifiedName.substring(0, databaseSeparatorIdx) : "";
+                this.clusterName                         = clusterSeparatorIdx != -1 ? qualifiedName.substring(clusterSeparatorIdx + 1) : "";
+                this.tableNameFromQualifiedName          = clusterSeparatorIdx != -1 ? this.qualifiedName.substring(databaseSeparatorIdx + 1, clusterSeparatorIdx) : "";
                 this.tableNameFromQualifiedNameDifferent = !this.tableNameFromQualifiedName.equals(this.tableName);
             } else {
-                this.databaseName = "";
-                this.clusterName  = "";
-                this.tableNameFromQualifiedName = "";
+                this.databaseName                        = "";
+                this.clusterName                         = "";
+                this.tableNameFromQualifiedName          = "";
                 this.tableNameFromQualifiedNameDifferent = false;
             }
         }
@@ -98,23 +103,23 @@ public class HiveTableEntityHandler extends BaseEntityHandler {
                     tableName = attributeValue;
 
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 case HIVE_DB_NAME_ATTRIBUTE:
                     databaseName = attributeValue;
 
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 case HIVE_DB_CLUSTER_NAME_ATTRIBUTE:
                     clusterName = attributeValue;
 
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 default:
                     super.setAttribute(attribute, attributeValue);
-                break;
+                    break;
             }
         }
 
@@ -125,7 +130,6 @@ public class HiveTableEntityHandler extends BaseEntityHandler {
                 entity.setAttribute(QUALIFIED_NAME_ATTRIBUTE, toQualifiedName());
             }
         }
-
 
         private String toQualifiedName() {
             String tableName = tableNameFromQualifiedNameDifferent ? this.tableNameFromQualifiedName : this.tableName;

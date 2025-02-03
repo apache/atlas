@@ -33,6 +33,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.util.CollectionUtils;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -44,12 +45,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class TaskManagement implements Service, ActiveStateChangeHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TaskManagement.class);
 
-    private       TaskExecutor              taskExecutor;
-    private final Configuration             configuration;
-    private final TaskRegistry              registry;
-    private final Statistics                statistics;
-    private final Map<String, TaskFactory>  taskTypeFactoryMap;
-    private       boolean                   hasStarted;
+    private final Configuration            configuration;
+    private final TaskRegistry             registry;
+    private final Statistics               statistics;
+    private final Map<String, TaskFactory> taskTypeFactoryMap;
+    private       TaskExecutor             taskExecutor;
+    private       boolean                  hasStarted;
 
     @Inject
     public TaskManagement(Configuration configuration, TaskRegistry taskRegistry) {
@@ -69,6 +70,23 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         createTaskTypeFactoryMap(taskTypeFactoryMap, taskFactory);
     }
 
+    @VisibleForTesting
+    static Map<String, TaskFactory> createTaskTypeFactoryMap(Map<String, TaskFactory> taskTypeFactoryMap, TaskFactory factory) {
+        List<String> supportedTypes = factory.getSupportedTypes();
+
+        if (CollectionUtils.isEmpty(supportedTypes)) {
+            LOG.warn("{}: Supported types returned empty!", factory.getClass());
+
+            return taskTypeFactoryMap;
+        }
+
+        for (String type : supportedTypes) {
+            taskTypeFactoryMap.put(type, factory);
+        }
+
+        return taskTypeFactoryMap;
+    }
+
     @Override
     public void start() throws AtlasException {
         if (configuration == null || !HAConfiguration.isHAEnabled(configuration)) {
@@ -80,13 +98,13 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         this.hasStarted = true;
     }
 
-    public boolean hasStarted() {
-        return this.hasStarted;
-    }
-
     @Override
     public void stop() throws AtlasException {
         LOG.info("TaskManagement: Stopped!");
+    }
+
+    public boolean hasStarted() {
+        return this.hasStarted;
     }
 
     @Override
@@ -193,13 +211,15 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     }
 
     private void startInternal() {
-        if (AtlasConfiguration.TASKS_USE_ENABLED.getBoolean() == false) {
+        if (!AtlasConfiguration.TASKS_USE_ENABLED.getBoolean()) {
             return;
         }
 
         LOG.info("TaskManagement: Started!");
-        if (this.taskTypeFactoryMap.size() == 0) {
+
+        if (this.taskTypeFactoryMap.isEmpty()) {
             LOG.warn("Not factories registered! Pending tasks will be queued once factories are registered!");
+
             return;
         }
 
@@ -207,7 +227,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     }
 
     private void queuePendingTasks() {
-        if (AtlasConfiguration.TASKS_USE_ENABLED.getBoolean() == false) {
+        if (!AtlasConfiguration.TASKS_USE_ENABLED.getBoolean()) {
             return;
         }
 
@@ -218,26 +238,9 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         addAll(pendingTasks);
     }
 
-    @VisibleForTesting
-    static Map<String, TaskFactory> createTaskTypeFactoryMap(Map<String, TaskFactory> taskTypeFactoryMap, TaskFactory factory) {
-        List<String> supportedTypes = factory.getSupportedTypes();
-
-        if (CollectionUtils.isEmpty(supportedTypes)) {
-            LOG.warn("{}: Supported types returned empty!", factory.getClass());
-
-            return taskTypeFactoryMap;
-        }
-
-        for (String type : supportedTypes) {
-            taskTypeFactoryMap.put(type, factory);
-        }
-
-        return taskTypeFactoryMap;
-    }
-
     static class Statistics {
-        private static final TaskExecutor.TaskLogger logger = TaskExecutor.TaskLogger.getLogger();
-        private static final long REPORT_FREQUENCY = 30000L;
+        private static final TaskExecutor.TaskLogger logger           = TaskExecutor.TaskLogger.getLogger();
+        private static final long                    REPORT_FREQUENCY = 30000L;
 
         private final AtomicInteger total               = new AtomicInteger(0);
         private final AtomicInteger countSinceLastCheck = new AtomicInteger(0);
@@ -265,7 +268,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         }
 
         public void print() {
-            long now = System.currentTimeMillis();
+            long now  = System.currentTimeMillis();
             long diff = now - this.lastCheckTime;
 
             if (diff < REPORT_FREQUENCY) {
@@ -273,8 +276,8 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
             }
 
             logger.info(String.format("TaskManagement: Processing stats: total=%d, sinceLastStatsReport=%d completedWithErrors=%d, succeded=%d",
-                                       this.total.get(), this.countSinceLastCheck.getAndSet(0),
-                                       this.totalWithErrors.get(), this.totalSucceed.get()));
+                    this.total.get(), this.countSinceLastCheck.getAndSet(0),
+                    this.totalWithErrors.get(), this.totalSucceed.get()));
             this.lastCheckTime = now;
         }
 

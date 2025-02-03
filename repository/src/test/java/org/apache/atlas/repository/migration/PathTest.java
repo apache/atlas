@@ -20,7 +20,6 @@ package org.apache.atlas.repository.migration;
 import com.google.inject.Inject;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.GraphDBMigrator;
@@ -46,18 +45,35 @@ public class PathTest extends MigrationBaseAsserts {
 
     @Test
     public void migrationImport() throws IOException, AtlasBaseException {
-        final int EXPECTED_TOTAL_COUNT = 92;
+        final int expectedTotalCount = 92;
 
         runFileImporter("path_db");
 
         AtlasVertex v = assertHdfsPathVertices(1);
+
         assertVertexProperties(v);
-        assertMigrationStatus(EXPECTED_TOTAL_COUNT);
+        assertMigrationStatus(expectedTotalCount);
+    }
+
+    protected AtlasVertex assertHdfsPathVertices(int expectedCount) {
+        int                   i       = 0;
+        AtlasVertex           vertex  = null;
+        Iterator<AtlasVertex> results = getVertices("hdfs_path", null);
+
+        for (Iterator<AtlasVertex> it = results; it.hasNext(); i++) {
+            vertex = it.next();
+
+            assertNotNull(vertex);
+        }
+
+        assertEquals(i, expectedCount);
+
+        return vertex;
     }
 
     private void assertVertexProperties(AtlasVertex v) {
-        final String HASH_CODE_PROPERTY = "hdfs_path.hashCode";
-        final String RETENTION_PROPERTY = "hdfs_path.retention";
+        final String hashCodeProperty  = "hdfs_path.hashCode";
+        final String retentionProperty = "hdfs_path.retention";
 
         AtlasBuiltInTypes.AtlasBigIntegerType bitRef = new AtlasBuiltInTypes.AtlasBigIntegerType();
         AtlasBuiltInTypes.AtlasBigDecimalType bdtRef = new AtlasBuiltInTypes.AtlasBigDecimalType();
@@ -65,24 +81,10 @@ public class PathTest extends MigrationBaseAsserts {
         BigInteger bitExpected = bitRef.getNormalizedValue(612361213421234L);
         BigDecimal bdtExpected = bdtRef.getNormalizedValue(125353);
 
-        BigInteger bit = AtlasGraphUtilsV2.getEncodedProperty(v, HASH_CODE_PROPERTY, BigInteger.class);
-        BigDecimal bdt = AtlasGraphUtilsV2.getEncodedProperty(v, RETENTION_PROPERTY, BigDecimal.class);
+        BigInteger bit = AtlasGraphUtilsV2.getEncodedProperty(v, hashCodeProperty, BigInteger.class);
+        BigDecimal bdt = AtlasGraphUtilsV2.getEncodedProperty(v, retentionProperty, BigDecimal.class);
 
         assertEquals(bit, bitExpected);
         assertEquals(bdt.compareTo(bdtExpected), 0);
-    }
-
-    protected AtlasVertex assertHdfsPathVertices(int expectedCount) {
-        int i = 0;
-
-        AtlasVertex vertex = null;
-        Iterator<AtlasVertex> results = getVertices("hdfs_path", null);
-        for (Iterator<AtlasVertex> it = results; it.hasNext(); i++) {
-            vertex = it.next();
-            assertNotNull(vertex);
-        }
-
-        assertEquals(i, expectedCount);
-        return vertex;
     }
 }

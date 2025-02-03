@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,6 +30,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -42,11 +43,11 @@ import static org.testng.Assert.assertNotNull;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class AtlasServerServiceTest {
-    private final String TOP_LEVEL_ENTITY_NAME  = "db1@cl1";
-    private final String SERVER_NAME            = "testCl1";
-    private final String TARGET_SERVER_NAME     = "testCl2";
-    private final String QUALIFIED_NAME_STOCKS  = "stocks@cl1";
-    private final String TYPE_HIVE_DB           = "hive_db";
+    private static final String TOP_LEVEL_ENTITY_NAME = "db1@cl1";
+    private static final String SERVER_NAME           = "testCl1";
+    private static final String TARGET_SERVER_NAME    = "testCl2";
+    private static final String QUALIFIED_NAME_STOCKS = "stocks@cl1";
+    private static final String TYPE_HIVE_DB          = "hive_db";
 
     @Inject
     private AtlasTypeDefStore typeDefStore;
@@ -56,6 +57,7 @@ public class AtlasServerServiceTest {
 
     @Inject
     private AtlasServerService atlasServerService;
+
     private String topLevelEntityGuid = "AAA-BBB-CCC";
 
     @BeforeClass
@@ -65,13 +67,13 @@ public class AtlasServerServiceTest {
 
     @Test
     public void saveAndRetrieveServerInfo() throws AtlasBaseException {
-        AtlasServer expected = getServer(SERVER_NAME + "_1", TOP_LEVEL_ENTITY_NAME, "EXPORT", 0l, TARGET_SERVER_NAME);
+        AtlasServer expected  = getServer(SERVER_NAME + "_1", TOP_LEVEL_ENTITY_NAME, "EXPORT", 0L, TARGET_SERVER_NAME);
         AtlasServer expected2 = getServer(TARGET_SERVER_NAME + "_1", TOP_LEVEL_ENTITY_NAME, "IMPORT", 0L, TARGET_SERVER_NAME);
         AtlasServer expected3 = getServer(TARGET_SERVER_NAME + "_3", TOP_LEVEL_ENTITY_NAME, "IMPORT", 0, TARGET_SERVER_NAME);
 
-        AtlasServer actual = atlasServerService.save(expected);
-        AtlasServer actual2 = atlasServerService.save(expected2);
-        AtlasServer actual3 = atlasServerService.save(expected3);
+        AtlasServer actual   = atlasServerService.save(expected);
+        AtlasServer actual2  = atlasServerService.save(expected2);
+        AtlasServer actual3  = atlasServerService.save(expected3);
         AtlasServer actual2x = atlasServerService.get(expected2);
 
         assertNotNull(actual.getGuid());
@@ -81,14 +83,31 @@ public class AtlasServerServiceTest {
 
         assertEquals(actual2.getGuid(), actual2x.getGuid());
 
-
         assertEquals(actual.getName(), expected.getName());
         assertEquals(actual.getFullName(), expected.getFullName());
     }
 
-    private AtlasServer getServer(String serverName, String topLevelEntity, String operation, long nextModifiedTimestamp, String targetServerName) {
-        AtlasServer cluster = new AtlasServer(serverName, serverName);
+    @Test
+    public void verifyAdditionalInfo() throws AtlasBaseException {
+        final long expectedLastModifiedTimestamp = 200L;
 
+        AtlasServer   expectedCluster   = atlasServerService.getCreateAtlasServer(SERVER_NAME, SERVER_NAME);
+        String        qualifiedNameAttr = Constants.QUALIFIED_NAME.replace(ATTR_NAME_REFERENCEABLE, "");
+        AtlasObjectId objectId          = new AtlasObjectId(TYPE_HIVE_DB, qualifiedNameAttr, QUALIFIED_NAME_STOCKS);
+
+        expectedCluster.setAdditionalInfoRepl(topLevelEntityGuid, expectedLastModifiedTimestamp);
+
+        AtlasServer actualCluster = atlasServerService.save(expectedCluster);
+
+        assertEquals(actualCluster.getName(), expectedCluster.getName());
+
+        int actualModifiedTimestamp = (int) actualCluster.getAdditionalInfoRepl(topLevelEntityGuid);
+
+        assertEquals(actualModifiedTimestamp, expectedLastModifiedTimestamp);
+    }
+
+    private AtlasServer getServer(String serverName, String topLevelEntity, String operation, long nextModifiedTimestamp, String targetServerName) {
+        AtlasServer         cluster = new AtlasServer(serverName, serverName);
         Map<String, String> syncMap = new HashMap<>();
 
         syncMap.put("topLevelEntity", topLevelEntity);
@@ -99,23 +118,5 @@ public class AtlasServerServiceTest {
         cluster.setAdditionalInfo(syncMap);
 
         return cluster;
-    }
-
-    @Test
-    public void verifyAdditionalInfo() throws AtlasBaseException {
-        final long expectedLastModifiedTimestamp = 200L;
-
-        AtlasServer expectedCluster = atlasServerService.getCreateAtlasServer(SERVER_NAME, SERVER_NAME);
-
-        String qualifiedNameAttr = Constants.QUALIFIED_NAME.replace(ATTR_NAME_REFERENCEABLE, "");
-        AtlasObjectId objectId = new AtlasObjectId(TYPE_HIVE_DB, qualifiedNameAttr, QUALIFIED_NAME_STOCKS);
-        expectedCluster.setAdditionalInfoRepl(topLevelEntityGuid, expectedLastModifiedTimestamp);
-
-        AtlasServer actualCluster = atlasServerService.save(expectedCluster);
-        assertEquals(actualCluster.getName(), expectedCluster.getName());
-
-        int actualModifiedTimestamp = (int) actualCluster.getAdditionalInfoRepl(topLevelEntityGuid);
-
-        assertEquals(actualModifiedTimestamp, expectedLastModifiedTimestamp);
     }
 }

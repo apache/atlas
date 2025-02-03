@@ -58,11 +58,40 @@ public class TypeAttributeDifference {
         updateBusinessMetadataDefs(typeDefinitionMap.getBusinessMetadataDefs(), result);
     }
 
+    @VisibleForTesting
+    boolean addElements(AtlasEnumDef existing, AtlasEnumDef incoming) {
+        return addElements(existing, getElementsAbsentInExisting(existing, incoming));
+    }
+
+    @VisibleForTesting
+    List<AtlasStructDef.AtlasAttributeDef> getElementsAbsentInExisting(AtlasStructDef existing, AtlasStructDef incoming) throws AtlasBaseException {
+        List<AtlasStructDef.AtlasAttributeDef> difference = new ArrayList<>();
+
+        for (AtlasStructDef.AtlasAttributeDef attr : incoming.getAttributeDefs()) {
+            updateCollectionWithDifferingAttributes(difference, existing, attr);
+        }
+
+        return difference;
+    }
+
+    @VisibleForTesting
+    List<AtlasEnumDef.AtlasEnumElementDef> getElementsAbsentInExisting(AtlasEnumDef existing, AtlasEnumDef incoming) {
+        List<AtlasEnumDef.AtlasEnumElementDef> difference = new ArrayList<>();
+
+        for (AtlasEnumDef.AtlasEnumElementDef ed : incoming.getElementDefs()) {
+            updateCollectionWithDifferingAttributes(existing, difference, ed);
+        }
+
+        return difference;
+    }
+
     private void updateEntityDef(List<AtlasEntityDef> entityDefs, AtlasImportResult result) throws AtlasBaseException {
         for (AtlasEntityDef def : entityDefs) {
             AtlasEntityDef existing = typeRegistry.getEntityDefByName(def.getName());
+
             if (existing != null && addAttributes(existing, def)) {
                 typeDefStore.updateEntityDefByName(existing.getName(), existing);
+
                 result.incrementMeticsCounter("typedef:entitydef:update");
             }
         }
@@ -71,8 +100,10 @@ public class TypeAttributeDifference {
     private void updateClassificationDef(List<AtlasClassificationDef> classificationDefs, AtlasImportResult result) throws AtlasBaseException {
         for (AtlasClassificationDef def : classificationDefs) {
             AtlasClassificationDef existing = typeRegistry.getClassificationDefByName(def.getName());
+
             if (existing != null && addAttributes(existing, def)) {
                 typeDefStore.updateClassificationDefByName(existing.getName(), existing);
+
                 result.incrementMeticsCounter("typedef:classification:update");
             }
         }
@@ -81,11 +112,11 @@ public class TypeAttributeDifference {
     private void updateEnumDef(List<AtlasEnumDef> enumDefs, AtlasImportResult result) throws AtlasBaseException {
         for (AtlasEnumDef def : enumDefs) {
             AtlasEnumDef existing = typeRegistry.getEnumDefByName(def.getName());
+
             if (existing != null && addElements(existing, def)) {
                 typeDefStore.updateEnumDefByName(existing.getName(), existing);
-                result.incrementMeticsCounter("typedef:enum:update");
-            } else {
 
+                result.incrementMeticsCounter("typedef:enum:update");
             }
         }
     }
@@ -93,8 +124,10 @@ public class TypeAttributeDifference {
     private void updateStructDef(List<AtlasStructDef> structDefs, AtlasImportResult result) throws AtlasBaseException {
         for (AtlasStructDef def : structDefs) {
             AtlasStructDef existing = typeRegistry.getStructDefByName(def.getName());
+
             if (existing != null && addAttributes(existing, def)) {
                 typeDefStore.updateStructDefByName(existing.getName(), existing);
+
                 result.incrementMeticsCounter("typedef:struct:update");
             }
         }
@@ -103,8 +136,10 @@ public class TypeAttributeDifference {
     private void updateRelationshipDefs(List<AtlasRelationshipDef> relationshipDefs, AtlasImportResult result) throws AtlasBaseException {
         for (AtlasRelationshipDef def : relationshipDefs) {
             AtlasRelationshipDef existing = typeRegistry.getRelationshipDefByName(def.getName());
+
             if (existing != null && addAttributes(existing, def)) {
                 typeDefStore.updateRelationshipDefByName(existing.getName(), existing);
+
                 result.incrementMeticsCounter("typedef:relationshipdef:update");
             }
         }
@@ -113,36 +148,22 @@ public class TypeAttributeDifference {
     private void updateBusinessMetadataDefs(List<AtlasBusinessMetadataDef> businessMetadataDefs, AtlasImportResult result) throws AtlasBaseException {
         for (AtlasBusinessMetadataDef def : businessMetadataDefs) {
             AtlasBusinessMetadataDef existing = typeRegistry.getBusinessMetadataDefByName(def.getName());
+
             if (existing != null && addAttributes(existing, def)) {
                 typeDefStore.updateStructDefByName(existing.getName(), existing);
+
                 result.incrementMeticsCounter("typedef:businessmetadatadef:update");
             }
         }
-    }
-
-    @VisibleForTesting
-    boolean addElements(AtlasEnumDef existing, AtlasEnumDef incoming) throws AtlasBaseException {
-        return addElements(existing, getElementsAbsentInExisting(existing, incoming));
     }
 
     private boolean addAttributes(AtlasStructDef existing, AtlasStructDef incoming) throws AtlasBaseException {
         return addAttributes(existing, getElementsAbsentInExisting(existing, incoming));
     }
 
-    @VisibleForTesting
-    List<AtlasStructDef.AtlasAttributeDef> getElementsAbsentInExisting(AtlasStructDef existing, AtlasStructDef incoming) throws AtlasBaseException {
-        List<AtlasStructDef.AtlasAttributeDef> difference = new ArrayList<>();
-        for (AtlasStructDef.AtlasAttributeDef attr : incoming.getAttributeDefs()) {
-            updateCollectionWithDifferingAttributes(difference, existing, attr);
-        }
-
-        return difference;
-    }
-
-    private void updateCollectionWithDifferingAttributes(List<AtlasStructDef.AtlasAttributeDef> difference,
-                                                         AtlasStructDef existing,
-                                                         AtlasStructDef.AtlasAttributeDef incoming) throws AtlasBaseException {
+    private void updateCollectionWithDifferingAttributes(List<AtlasStructDef.AtlasAttributeDef> difference, AtlasStructDef existing, AtlasStructDef.AtlasAttributeDef incoming) throws AtlasBaseException {
         AtlasStructDef.AtlasAttributeDef existingAttribute = existing.getAttribute(incoming.getName());
+
         if (existingAttribute == null) {
             AtlasRelationshipType relationshipType = AtlasTypeUtil.findRelationshipWithLegacyRelationshipEnd(existing.getName(), incoming.getName(), typeRegistry);
 
@@ -152,23 +173,15 @@ public class TypeAttributeDifference {
         } else {
             if (!existingAttribute.getTypeName().equals(incoming.getTypeName())) {
                 LOG.error("Attribute definition difference found: {}, {}", existingAttribute, incoming);
+
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_IMPORT_ATTRIBUTE_TYPE_CHANGED, existing.getName(), existingAttribute.getName(), existingAttribute.getTypeName(), incoming.getTypeName());
             }
         }
     }
 
-    @VisibleForTesting
-    List<AtlasEnumDef.AtlasEnumElementDef> getElementsAbsentInExisting(AtlasEnumDef existing, AtlasEnumDef incoming) throws AtlasBaseException {
-        List<AtlasEnumDef.AtlasEnumElementDef> difference = new ArrayList<>();
-        for (AtlasEnumDef.AtlasEnumElementDef ed : incoming.getElementDefs()) {
-            updateCollectionWithDifferingAttributes(existing, difference, ed);
-        }
-
-        return difference;
-    }
-
-    private void updateCollectionWithDifferingAttributes(AtlasEnumDef existing, List<AtlasEnumDef.AtlasEnumElementDef> difference, AtlasEnumDef.AtlasEnumElementDef ed) throws AtlasBaseException {
+    private void updateCollectionWithDifferingAttributes(AtlasEnumDef existing, List<AtlasEnumDef.AtlasEnumElementDef> difference, AtlasEnumDef.AtlasEnumElementDef ed) {
         AtlasEnumDef.AtlasEnumElementDef existingElement = existing.getElement(ed.getValue());
+
         if (existingElement == null) {
             difference.add(ed);
         }
@@ -179,7 +192,7 @@ public class TypeAttributeDifference {
             def.addAttribute(ad);
         }
 
-        return list.size() > 0;
+        return !list.isEmpty();
     }
 
     private boolean addElements(AtlasEnumDef def, List<AtlasEnumDef.AtlasEnumElementDef> list) {
@@ -187,6 +200,6 @@ public class TypeAttributeDifference {
             def.addElement(ad);
         }
 
-        return list.size() > 0;
+        return !list.isEmpty();
     }
 }

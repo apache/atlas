@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -49,20 +49,19 @@ import static org.apache.atlas.AtlasErrorCode.IMPORT_INVALID_ZIP_ENTRY;
 
 public class ZipSourceWithBackingDirectory implements EntityImportStream {
     private static final Logger LOG = LoggerFactory.getLogger(ZipSourceWithBackingDirectory.class);
-    private static final String TEMPORARY_DIRECTORY_PREFIX = "atlas-import-temp-";
-    private static final String EXT_JSON = ".json";
+
+    private static final String TEMPORARY_DIRECTORY_PREFIX           = "atlas-import-temp-";
+    private static final String EXT_JSON                             = ".json";
     private static final String RELATIVE_PARENT_PATH                 = "..";
     private static final String RELATIVE_PARENT_PATH_WITH_SEP_PREFIX = File.separator + RELATIVE_PARENT_PATH;
     private static final String RELATIVE_PARENT_PATH_WITH_SEP_SUFFIX = RELATIVE_PARENT_PATH + File.separator;
 
-    private Path tempDirectory;
-
-    private ImportTransforms importTransform;
+    private Path                    tempDirectory;
+    private ImportTransforms        importTransform;
     private List<BaseEntityHandler> entityHandlers;
-
-    private ArrayList<String> creationOrder = new ArrayList<>();
-    private int currentPosition;
-    private int numberOfEntries;
+    private ArrayList<String>       creationOrder = new ArrayList<>();
+    private int                     currentPosition;
+    private int                     numberOfEntries;
 
     public ZipSourceWithBackingDirectory(InputStream inputStream) throws IOException, AtlasBaseException {
         this(inputStream, null);
@@ -70,13 +69,126 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
 
     public ZipSourceWithBackingDirectory(InputStream inputStream, String backingDirectory) throws IOException, AtlasBaseException {
         setupBackingStore(inputStream, backingDirectory);
+
         if (isZipFileEmpty()) {
             throw new AtlasBaseException(IMPORT_ATTEMPTING_EMPTY_ZIP, "Attempting to import empty ZIP.");
         }
     }
 
     @Override
-    public ImportTransforms getImportTransform() { return this.importTransform; }
+    public boolean hasNext() {
+        return (currentPosition < numberOfEntries);
+    }
+
+    @Override
+    public AtlasEntity next() {
+        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = getNextEntityWithExtInfo();
+
+        return entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
+    }
+
+    @Override
+    public void reset() {
+        currentPosition = 0;
+    }
+
+    @Override
+    public AtlasEntity getByGuid(String guid) {
+        try {
+            return getEntity(guid);
+        } catch (AtlasBaseException e) {
+            LOG.error("getByGuid: {} failed!", guid, e);
+
+            return null;
+        }
+    }
+
+    public int size() {
+        return numberOfEntries;
+    }
+
+    @Override
+    public int getPosition() {
+        return currentPosition;
+    }
+
+    @Override
+    public void setPosition(int index) {
+        reset();
+
+        for (int i = 0; i < numberOfEntries && i <= index; i++) {
+            onImportComplete(moveNext());
+        }
+    }
+
+    @Override
+    public void setPositionUsingEntityGuid(String guid) {
+        if (StringUtils.isEmpty(guid)) {
+            return;
+        }
+
+        while (currentPosition < numberOfEntries) {
+            String current = creationOrder.get(currentPosition);
+
+            if (current.equals(guid)) {
+                return;
+            }
+
+            moveNext();
+        }
+    }
+
+    @Override
+    public AtlasEntity.AtlasEntityWithExtInfo getNextEntityWithExtInfo() {
+        try {
+            return getEntityWithExtInfo(moveNext());
+        } catch (AtlasBaseException e) {
+            LOG.error("getNextEntityWithExtInfo", e);
+
+            return null;
+        }
+    }
+
+    @Override
+    public AtlasEntity.AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) throws AtlasBaseException {
+        final File file = getFileFromTemporaryDirectory(guid + EXT_JSON);
+
+        if (!file.exists()) {
+            return null;
+        }
+
+        String json = getJsonStringForFile(file);
+
+        if (StringUtils.isEmpty(json)) {
+            return null;
+        }
+
+        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = convertFromJson(AtlasEntity.AtlasEntityWithExtInfo.class, json);
+
+        if (importTransform != null) {
+            entityWithExtInfo = importTransform.apply(entityWithExtInfo);
+        }
+
+        if (entityHandlers != null) {
+            applyTransformers(entityWithExtInfo);
+        }
+
+        return entityWithExtInfo;
+    }
+
+    @Override
+    public void onImportComplete(String guid) {
+        try {
+            getFileFromTemporaryDirectory(guid + EXT_JSON).delete();
+        } catch (AtlasBaseException excp) {
+            LOG.error("onImportComplete(guid={}): failed", guid, excp);
+        }
+    }
+
+    @Override
+    public ImportTransforms getImportTransform() {
+        return this.importTransform;
+    }
 
     @Override
     public void setImportTransform(ImportTransforms importTransform) {
@@ -109,108 +221,6 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
     }
 
     @Override
-    public int getPosition() {
-        return currentPosition;
-    }
-
-    @Override
-    public AtlasEntity.AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) throws AtlasBaseException {
-        final File file = getFileFromTemporaryDirectory(guid + EXT_JSON);
-        if (!file.exists()) {
-            return null;
-        }
-
-        String json = getJsonStringForFile(file);
-        if (StringUtils.isEmpty(json)) {
-            return null;
-        }
-
-        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = convertFromJson(AtlasEntity.AtlasEntityWithExtInfo.class, json);
-
-        if (importTransform != null) {
-            entityWithExtInfo = importTransform.apply(entityWithExtInfo);
-        }
-
-        if (entityHandlers != null) {
-            applyTransformers(entityWithExtInfo);
-        }
-
-        return entityWithExtInfo;
-    }
-
-    @Override
-    public boolean hasNext() {
-        return (currentPosition < numberOfEntries);
-    }
-
-    @Override
-    public AtlasEntity next() {
-        AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = getNextEntityWithExtInfo();
-
-        return entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
-    }
-
-    @Override
-    public AtlasEntity.AtlasEntityWithExtInfo getNextEntityWithExtInfo() {
-        try {
-            return getEntityWithExtInfo(moveNext());
-        } catch (AtlasBaseException e) {
-            LOG.error("getNextEntityWithExtInfo", e);
-            return null;
-        }
-    }
-
-    @Override
-    public void reset() {
-        currentPosition = 0;
-    }
-
-    @Override
-    public AtlasEntity getByGuid(String guid) {
-        try {
-            return getEntity(guid);
-        } catch (AtlasBaseException e) {
-            LOG.error("getByGuid: {} failed!", guid, e);
-            return null;
-        }
-    }
-
-
-    @Override
-    public void onImportComplete(String guid) {
-        try {
-            getFileFromTemporaryDirectory(guid + EXT_JSON).delete();
-        } catch (AtlasBaseException excp) {
-            LOG.error("onImportComplete(guid={}): failed", guid, excp);
-        }
-    }
-
-    @Override
-    public void setPosition(int index) {
-        reset();
-        for (int i = 0; i < numberOfEntries && i <= index; i++) {
-            onImportComplete(moveNext());
-        }
-    }
-
-    @Override
-    public void setPositionUsingEntityGuid(String guid) {
-        if (StringUtils.isEmpty(guid)) {
-            return;
-        }
-
-        String current;
-        while (currentPosition < numberOfEntries) {
-            current = creationOrder.get(currentPosition);
-            if (current.equals(guid)) {
-                return;
-            }
-
-            moveNext();
-        }
-    }
-
-    @Override
     public void close() {
         creationOrder.clear();
 
@@ -219,7 +229,7 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
 
             FileUtils.deleteDirectory(tempDirectory.toFile());
         } catch (IOException e) {
-            LOG.error("Import: Error deleting: {}", tempDirectory.toString(), e);
+            LOG.error("Import: Error deleting: {}", tempDirectory, e);
         }
     }
 
@@ -229,6 +239,7 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
 
     private <T> T getJsonFromEntry(String entryName, Class<T> clazz) throws AtlasBaseException {
         final File file = getFileFromTemporaryDirectory(entryName + EXT_JSON);
+
         if (!file.exists()) {
             throw new AtlasBaseException(entryName + " not found!");
         }
@@ -257,12 +268,11 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
     private void initTempDirectory(String backingDirectory) throws AtlasBaseException {
         try {
             tempDirectory = Files.createDirectory(Paths.get(backingDirectory, getChildDirectoryForSession()));
+
             if (!permissionChecks(tempDirectory.toFile())) {
-                throw new AtlasBaseException(
-                        String.format("Import: Temporary directory: %s does not have permissions for operation!", tempDirectory.toString()));
+                throw new AtlasBaseException(String.format("Import: Temporary directory: %s does not have permissions for operation!", tempDirectory.toString()));
             }
-        }
-        catch(Exception ex) {
+        } catch (Exception ex) {
             throw new AtlasBaseException(String.format("Error fetching temporary directory: %s", tempDirectory.toString()), ex);
         }
     }
@@ -276,23 +286,25 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
     }
 
     private void unzipToTempDirectory(InputStream inputStream) throws IOException {
-        LOG.info("Import: Temporary directory: {}", tempDirectory.toString());
+        LOG.info("Import: Temporary directory: {}", tempDirectory);
 
         ZipInputStream zis = new ZipInputStream(inputStream);
+
         try {
             ZipEntry zipEntry = zis.getNextEntry();
+
             while (zipEntry != null) {
                 String entryName = zipEntry.getName();
 
-                writeJsonToFile(entryName,  getJsonPayloadFromZipEntryStream(zis));
+                writeJsonToFile(entryName, getJsonPayloadFromZipEntryStream(zis));
+
                 numberOfEntries++;
 
                 zipEntry = zis.getNextEntry();
             }
 
             numberOfEntries -= ZipExportFileNames.values().length;
-        }
-        finally {
+        } finally {
             zis.close();
             inputStream.close();
         }
@@ -326,9 +338,7 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
         if (path == null || !path.contains(RELATIVE_PARENT_PATH)) {
             ret = false;
         } else {
-            ret = path.equals(RELATIVE_PARENT_PATH) ||
-                  path.contains(RELATIVE_PARENT_PATH_WITH_SEP_PREFIX) ||
-                  path.contains(RELATIVE_PARENT_PATH_WITH_SEP_SUFFIX);
+            ret = path.equals(RELATIVE_PARENT_PATH) || path.contains(RELATIVE_PARENT_PATH_WITH_SEP_PREFIX) || path.contains(RELATIVE_PARENT_PATH_WITH_SEP_SUFFIX);
         }
 
         return ret;
@@ -338,7 +348,7 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
         try {
             creationOrder = getJsonFromEntry(ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME.toString(), ArrayList.class);
         } catch (AtlasBaseException e) {
-            LOG.error("Error fetching: {}. Error generating order.", ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME.toString(), e);
+            LOG.error("Error fetching: {}. Error generating order.", ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME, e);
         }
 
         reset();
@@ -346,10 +356,10 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
 
     private byte[] getJsonPayloadFromZipEntryStream(ZipInputStream zipInputStream) {
         try {
-            byte[] buf = new byte[1024];
-
-            int n = 0;
+            byte[]                buf = new byte[1024];
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            int                   n;
+
             while ((n = zipInputStream.read(buf, 0, 1024)) > -1) {
                 bos.write(buf, 0, n);
             }
@@ -365,9 +375,11 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
     private String getJsonStringForFile(File file) {
         try {
             byte[] bytes = Files.readAllBytes(file.toPath());
+
             return new String(bytes);
         } catch (IOException e) {
-            LOG.warn("Error fetching: {}", file.toString(), e);
+            LOG.warn("Error fetching: {}", file, e);
+
             return null;
         }
     }
@@ -395,7 +407,6 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
     private <T> T convertFromJson(Class<T> clazz, String jsonData) throws AtlasBaseException {
         try {
             return AtlasType.fromJson(jsonData, clazz);
-
         } catch (Exception e) {
             throw new AtlasBaseException("Error converting file to JSON.", e);
         }
@@ -403,11 +414,8 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
 
     private AtlasEntity getEntity(String guid) throws AtlasBaseException {
         AtlasEntity.AtlasEntityWithExtInfo extInfo = getEntityWithExtInfo(guid);
-        return (extInfo != null) ? extInfo.getEntity() : null;
-    }
 
-    public int size() {
-        return numberOfEntries;
+        return (extInfo != null) ? extInfo.getEntity() : null;
     }
 
     private String moveNext() {

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,8 +29,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Inject;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -41,18 +41,18 @@ import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.SKIPPED;
 public class AtlasPatchManager {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasPatchManager.class);
 
-    private final List<AtlasPatchHandler> handlers = new ArrayList<>();
-    private final AtlasGraph atlasGraph;
-    private final AtlasTypeRegistry typeRegistry;
+    private final List<AtlasPatchHandler>  handlers = new ArrayList<>();
+    private final AtlasGraph               atlasGraph;
+    private final AtlasTypeRegistry        typeRegistry;
     private final GraphBackedSearchIndexer indexer;
-    private final EntityGraphMapper entityGraphMapper;
-    private PatchContext            context;
+    private final EntityGraphMapper        entityGraphMapper;
+    private       PatchContext             context;
 
     @Inject
     public AtlasPatchManager(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, GraphBackedSearchIndexer indexer, EntityGraphMapper entityGraphMapper) {
-        this.atlasGraph = atlasGraph;
-        this.typeRegistry = typeRegistry;
-        this.indexer = indexer;
+        this.atlasGraph        = atlasGraph;
+        this.typeRegistry      = typeRegistry;
+        this.indexer           = indexer;
         this.entityGraphMapper = entityGraphMapper;
     }
 
@@ -62,6 +62,7 @@ public class AtlasPatchManager {
 
     public void applyAll() {
         LOG.info("==> AtlasPatchManager.applyAll()");
+
         init();
 
         try {
@@ -83,8 +84,15 @@ public class AtlasPatchManager {
             RequestContext.clear();
         }
 
-
         LOG.info("<== AtlasPatchManager.applyAll()");
+    }
+
+    public void addPatchHandler(AtlasPatchHandler patchHandler) {
+        handlers.add(patchHandler);
+    }
+
+    public PatchContext getContext() {
+        return this.context;
     }
 
     private void init() {
@@ -105,13 +113,5 @@ public class AtlasPatchManager {
         handlers.add(new ProcessImpalaNamePatch(context));
 
         LOG.info("<== AtlasPatchManager.init()");
-    }
-
-    public void addPatchHandler(AtlasPatchHandler patchHandler) {
-        handlers.add(patchHandler);
-    }
-
-    public PatchContext getContext() {
-        return this.context;
     }
 }

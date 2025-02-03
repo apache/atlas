@@ -38,6 +38,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -52,16 +53,14 @@ import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class UserProfileServiceTest extends AtlasTestBase {
-    private UserProfileService userProfileService;
-    private AtlasTypeDefStore  typeDefStore;
-
     private static final int NUM_USERS    = 2;
     private static final int NUM_SEARCHES = 4;
 
+    private final UserProfileService userProfileService;
+    private final AtlasTypeDefStore  typeDefStore;
+
     @Inject
-    public void UserProfileServiceTest(AtlasTypeRegistry  typeRegistry,
-                                       AtlasTypeDefStore  typeDefStore,
-                                       UserProfileService userProfileService) throws IOException, AtlasBaseException {
+    public UserProfileServiceTest(AtlasTypeRegistry typeRegistry, AtlasTypeDefStore typeDefStore, UserProfileService userProfileService) throws IOException, AtlasBaseException {
         this.typeDefStore       = typeDefStore;
         this.userProfileService = userProfileService;
 
@@ -188,7 +187,7 @@ public class UserProfileServiceTest extends AtlasTestBase {
         }
     }
 
-    @Test(dependsOnMethods = { "addAdditionalSearchesForUser"})
+    @Test(dependsOnMethods = "addAdditionalSearchesForUser")
     public void updateSearch() throws AtlasBaseException {
         String               userName  = getIndexBasedUserName(0);
         String               queryName = getIndexBasedQueryName(0);
@@ -207,7 +206,7 @@ public class UserProfileServiceTest extends AtlasTestBase {
         assertEquals(actual.getSearchParameters().getClassification(), expected.getSearchParameters().getClassification());
     }
 
-    @Test(dependsOnMethods = { "updateSearch" })
+    @Test(dependsOnMethods = "updateSearch")
     public void deleteUsingGuid() throws AtlasBaseException {
         String               userName  = getIndexBasedUserName(0);
         String               queryName = getIndexBasedQueryName(1);
@@ -224,7 +223,7 @@ public class UserProfileServiceTest extends AtlasTestBase {
         }
     }
 
-    @Test(dependsOnMethods = { "deleteUsingGuid" })
+    @Test(dependsOnMethods = "deleteUsingGuid")
     public void deleteSavedQuery() throws AtlasBaseException {
         String           userName = getIndexBasedUserName(0);
         AtlasUserProfile expected = userProfileService.getUserProfile(userName);
@@ -241,12 +240,12 @@ public class UserProfileServiceTest extends AtlasTestBase {
         assertEquals(savedSearchList.size(), searchCount - 1);
     }
 
-    @Test(dependsOnMethods = { "deleteSavedQuery" })
+    @Test(dependsOnMethods = "deleteSavedQuery")
     void deleteUser() throws AtlasBaseException {
         String           userName    = getIndexBasedUserName(0);
         AtlasUserProfile userProfile = userProfileService.getUserProfile(userName);
 
-        if (userProfile.getSavedSearches() != null)  {
+        if (userProfile.getSavedSearches() != null) {
             for (AtlasUserSavedSearch savedSearch : userProfile.getSavedSearches()) {
                 userProfileService.deleteSavedSearch(savedSearch.getGuid());
             }
@@ -260,7 +259,6 @@ public class UserProfileServiceTest extends AtlasTestBase {
             assertEquals(ex.getAtlasErrorCode().name(), AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND.name());
         }
     }
-
 
     private static AtlasUserProfile getAtlasUserProfile(Integer s) {
         return new AtlasUserProfile(getIndexBasedUserName(s), String.format("first-%s last-%s", s, s));

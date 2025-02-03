@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,36 +39,46 @@ import org.springframework.scheduling.config.ScheduledTaskRegistrar;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.Constants.AUDIT_AGING_ACTION_TYPES_KEY;
+import static org.apache.atlas.repository.Constants.AUDIT_AGING_COUNT_KEY;
+import static org.apache.atlas.repository.Constants.AUDIT_AGING_ENTITY_TYPES_KEY;
+import static org.apache.atlas.repository.Constants.AUDIT_AGING_SUBTYPES_INCLUDED_KEY;
+import static org.apache.atlas.repository.Constants.AUDIT_AGING_TTL_KEY;
+import static org.apache.atlas.repository.Constants.AUDIT_AGING_TYPE_KEY;
+import static org.apache.atlas.repository.Constants.CREATE_EVENTS_AGEOUT_ALLOWED_KEY;
 import static org.apache.atlas.repository.store.graph.v2.tasks.AuditReductionTaskFactory.ATLAS_AUDIT_REDUCTION_ENTITY_RETRIEVAL;
 
 @Component
 public class AtlasAuditReductionService implements SchedulingConfigurer {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuditReductionService.class);
 
+    private static final String VALUE_DELIMITER                           = ",";
+    private static final String ATLAS_AUDIT_SWEEP_OUT_ENTITY_TYPES        = "atlas.audit.sweep.out.entity.types";
+    private static final String ATLAS_AUDIT_SWEEP_OUT_ACTION_TYPES        = "atlas.audit.sweep.out.action.types";
+    private static final String ATLAS_AUDIT_CUSTOM_AGEOUT_ENTITY_TYPES    = "atlas.audit.custom.ageout.entity.types";
+    private static final String ATLAS_AUDIT_CUSTOM_AGEOUT_ACTION_TYPES    = "atlas.audit.custom.ageout.action.types";
+    private static final String ATLAS_AUDIT_AGING_SCHEDULER_INITIAL_DELAY = "atlas.audit.aging.scheduler.initial.delay.in.min";
+    private static final int    MIN_TTL_TO_MAINTAIN                       = AtlasConfiguration.MIN_TTL_TO_MAINTAIN.getInt();
+    private static final int    MIN_AUDIT_COUNT_TO_MAINTAIN               = AtlasConfiguration.MIN_AUDIT_COUNT_TO_MAINTAIN.getInt();
+
     private final AtlasGraph            graph;
     private final AtlasDiscoveryService discoveryService;
     private final AtlasTypeRegistry     typeRegistry;
+    private final Configuration         atlasConfiguration;
 
-    private static final String VALUE_DELIMITER                    = ",";
-
-    private static final String ATLAS_AUDIT_SWEEP_OUT_ENTITY_TYPES = "atlas.audit.sweep.out.entity.types";
-    private static final String ATLAS_AUDIT_SWEEP_OUT_ACTION_TYPES = "atlas.audit.sweep.out.action.types";
-
-    private static final String ATLAS_AUDIT_CUSTOM_AGEOUT_ENTITY_TYPES = "atlas.audit.custom.ageout.entity.types";
-    private static final String ATLAS_AUDIT_CUSTOM_AGEOUT_ACTION_TYPES = "atlas.audit.custom.ageout.action.types";
-
-    private static final String ATLAS_AUDIT_AGING_SCHEDULER_INITIAL_DELAY = "atlas.audit.aging.scheduler.initial.delay.in.min";
-
-    private static final int MIN_TTL_TO_MAINTAIN = AtlasConfiguration.MIN_TTL_TO_MAINTAIN.getInt();
-    private static final int MIN_AUDIT_COUNT_TO_MAINTAIN = AtlasConfiguration.MIN_AUDIT_COUNT_TO_MAINTAIN.getInt();
-
-    private Configuration atlasConfiguration;
-    private AuditReductionCriteria ageoutCriteriaByConfig;
+    private AuditReductionCriteria    ageoutCriteriaByConfig;
     private List<Map<String, Object>> ageoutTypeCriteriaMap;
 
     @Inject
@@ -81,11 +91,14 @@ public class AtlasAuditReductionService implements SchedulingConfigurer {
 
     public List<AtlasTask> startAuditAgingByConfig() {
         List<AtlasTask> tasks = null;
+
         try {
             if (ageoutCriteriaByConfig == null) {
                 ageoutCriteriaByConfig = convertConfigToAuditReductionCriteria();
+
                 LOG.info("Audit aging is enabled by configuration");
             }
+
             LOG.info("Audit aging is triggered with configuration: {}", ageoutCriteriaByConfig.toString());
 
             if (ageoutTypeCriteriaMap == null) {
@@ -93,10 +106,10 @@ public class AtlasAuditReductionService implements SchedulingConfigurer {
             }
 
             tasks = startAuditAgingByCriteria(ageoutTypeCriteriaMap);
-
         } catch (Exception e) {
             LOG.error("Error while aging out audits by configuration: ", e);
         }
+
         return tasks;
     }
 
@@ -104,10 +117,13 @@ public class AtlasAuditReductionService implements SchedulingConfigurer {
         if (CollectionUtils.isEmpty(ageoutTypeCriteriaMap)) {
             return null;
         }
+
         List<AtlasTask> tasks = new ArrayList<>();
+
         try {
             for (Map<String, Object> eachCriteria : ageoutTypeCriteriaMap) {
                 AtlasTask auditAgingTask = discoveryService.createAndQueueAuditReductionTask(eachCriteria, ATLAS_AUDIT_REDUCTION_ENTITY_RETRIEVAL);
+
                 if (auditAgingTask != null) {
                     tasks.add(auditAgingTask);
                 }
@@ -115,97 +131,45 @@ public class AtlasAuditReductionService implements SchedulingConfigurer {
         } catch (Exception e) {
             LOG.error("Error while aging out audits by criteria: ", e);
         }
-        return  tasks;
-    }
 
-    private AuditReductionCriteria convertConfigToAuditReductionCriteria() {
-        boolean auditAgingEnabled           = AtlasConfiguration.ATLAS_AUDIT_AGING_ENABLED.getBoolean();
-        boolean createAuditsAgeoutAllowed   = AtlasConfiguration.ATLAS_AUDIT_CREATE_EVENTS_AGEOUT_ALLOWED.getBoolean();
-        boolean subTypesIncluded            = AtlasConfiguration.ATLAS_AUDIT_AGING_SUBTYPES_INCLUDED.getBoolean();
-        boolean ignoreDefaultAgeoutTTL      = AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_IGNORE_TTL.getBoolean();
-
-        int defaultAgeoutTTLConfigured        = AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_TTL.getInt();
-        int defaultAgeoutAuditCountConfigured = AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_COUNT.getInt();
-
-        int customAgeoutTTLConfigured         = AtlasConfiguration.ATLAS_AUDIT_CUSTOM_AGEOUT_TTL.getInt();
-        int customAgeoutAuditCountConfigured  = AtlasConfiguration.ATLAS_AUDIT_CUSTOM_AGEOUT_COUNT.getInt();
-
-        boolean defaultAgeoutEnabled        = AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_ENABLED.getBoolean();
-        int     defaultAgeoutTTL            = getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_TTL, defaultAgeoutTTLConfigured, MIN_TTL_TO_MAINTAIN);
-        int     defaultAgeoutAuditCount     = defaultAgeoutAuditCountConfigured <= 0 ? defaultAgeoutAuditCountConfigured
-                                                : getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_COUNT, defaultAgeoutAuditCountConfigured, MIN_AUDIT_COUNT_TO_MAINTAIN);
-
-        int    customAgeoutTTL          = customAgeoutTTLConfigured <= 0 ? customAgeoutTTLConfigured
-                                            : getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_CUSTOM_AGEOUT_TTL, customAgeoutTTLConfigured, MIN_TTL_TO_MAINTAIN);
-        int    customAgeoutAuditCount   = customAgeoutAuditCountConfigured <= 0 ? customAgeoutAuditCountConfigured
-                                            : getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_CUSTOM_AGEOUT_COUNT, customAgeoutAuditCountConfigured, MIN_AUDIT_COUNT_TO_MAINTAIN);
-        String customAgeoutEntityTypes  = getStringOf(ATLAS_AUDIT_CUSTOM_AGEOUT_ENTITY_TYPES);
-        String customAgeoutActionTypes  = getStringOf(ATLAS_AUDIT_CUSTOM_AGEOUT_ACTION_TYPES);
-
-        AuditReductionCriteria auditReductionCriteria = new AuditReductionCriteria();
-
-        auditReductionCriteria.setAuditAgingEnabled(auditAgingEnabled);
-        auditReductionCriteria.setCreateEventsAgeoutAllowed(createAuditsAgeoutAllowed);
-        auditReductionCriteria.setSubTypesIncluded(subTypesIncluded);
-        auditReductionCriteria.setIgnoreDefaultAgeoutTTL(ignoreDefaultAgeoutTTL);
-
-        auditReductionCriteria.setDefaultAgeoutEnabled(defaultAgeoutEnabled);
-        auditReductionCriteria.setDefaultAgeoutTTLInDays(defaultAgeoutTTL);
-        auditReductionCriteria.setDefaultAgeoutAuditCount(defaultAgeoutAuditCount);
-
-        auditReductionCriteria.setCustomAgeoutTTLInDays(customAgeoutTTL);
-        auditReductionCriteria.setCustomAgeoutAuditCount(customAgeoutAuditCount);
-        auditReductionCriteria.setCustomAgeoutEntityTypes(customAgeoutEntityTypes);
-        auditReductionCriteria.setCustomAgeoutActionTypes(customAgeoutActionTypes);
-
-        boolean isSweepOutEnabled = AtlasConfiguration.ATLAS_AUDIT_SWEEP_OUT.getBoolean();
-        auditReductionCriteria.setAuditSweepoutEnabled(isSweepOutEnabled);
-        if (isSweepOutEnabled) {
-            String sweepoutEntityTypes  = getStringOf(ATLAS_AUDIT_SWEEP_OUT_ENTITY_TYPES);
-            String sweepoutActionTypes  = getStringOf(ATLAS_AUDIT_SWEEP_OUT_ACTION_TYPES);
-            auditReductionCriteria.setSweepoutEntityTypes(sweepoutEntityTypes);
-            auditReductionCriteria.setSweepoutActionTypes(sweepoutActionTypes);
-        }
-
-        return auditReductionCriteria;
+        return tasks;
     }
 
     public List<Map<String, Object>> buildAgeoutCriteriaForAllAgingTypes(AuditReductionCriteria auditReductionCriteria) {
         if (auditReductionCriteria == null || !auditReductionCriteria.isAuditAgingEnabled()) {
             return null;
         }
-        List<Map<String, Object>> auditAgeoutCriteriaByType         = new ArrayList<>();
-        Set<String>               defaultAgeoutEntityTypesToExclude = new HashSet<>();
-        Set<String>               defaultAgeoutActionTypes          = Arrays.stream(EntityAuditEventV2.EntityAuditActionV2.values()).map(x -> x.toString()).collect(Collectors.toSet());
+
+        List<Map<String, Object>> auditAgeoutCriteriaByType = new ArrayList<>();
+        Set<String>               defaultAgeoutActionTypes = Arrays.stream(EntityAuditEventV2.EntityAuditActionV2.values()).map(Enum::toString).collect(Collectors.toSet());
 
         boolean createEventsAgeoutAllowed = auditReductionCriteria.isCreateEventsAgeoutAllowed();
         boolean subTypesIncluded          = auditReductionCriteria.isSubTypesIncluded();
         boolean ignoreDefaultAgeoutTTL    = auditReductionCriteria.ignoreDefaultAgeoutTTL();
 
-        boolean defaultAgeoutEnabled    = auditReductionCriteria.isDefaultAgeoutEnabled();
-        int     defaultAgeoutTTL        = ignoreDefaultAgeoutTTL ? 0 : getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_TTL, auditReductionCriteria.getDefaultAgeoutTTLInDays(), MIN_TTL_TO_MAINTAIN);
-        int     defaultAgeoutAuditCount = auditReductionCriteria.getDefaultAgeoutAuditCount() <= 0 ? auditReductionCriteria.getDefaultAgeoutAuditCount()
-                                            : getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_COUNT, auditReductionCriteria.getDefaultAgeoutAuditCount(), MIN_AUDIT_COUNT_TO_MAINTAIN);
-
-        int         customAgeoutTTL         = auditReductionCriteria.getCustomAgeoutTTLInDays() <= 0 ? auditReductionCriteria.getCustomAgeoutTTLInDays()
-                                                : getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_CUSTOM_AGEOUT_TTL, auditReductionCriteria.getCustomAgeoutTTLInDays(), MIN_TTL_TO_MAINTAIN);
-        int         customAgeoutAuditCount  = auditReductionCriteria.getCustomAgeoutAuditCount() <= 0 ? auditReductionCriteria.getCustomAgeoutAuditCount()
-                                                : getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_CUSTOM_AGEOUT_COUNT, auditReductionCriteria.getCustomAgeoutAuditCount(), MIN_AUDIT_COUNT_TO_MAINTAIN);
+        boolean     defaultAgeoutEnabled    = auditReductionCriteria.isDefaultAgeoutEnabled();
+        int         defaultAgeoutTTL        = ignoreDefaultAgeoutTTL ? 0 : getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_TTL, auditReductionCriteria.getDefaultAgeoutTTLInDays(), MIN_TTL_TO_MAINTAIN);
+        int         defaultAgeoutAuditCount = auditReductionCriteria.getDefaultAgeoutAuditCount() <= 0 ? auditReductionCriteria.getDefaultAgeoutAuditCount() : getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_COUNT, auditReductionCriteria.getDefaultAgeoutAuditCount(), MIN_AUDIT_COUNT_TO_MAINTAIN);
+        int         customAgeoutTTL         = auditReductionCriteria.getCustomAgeoutTTLInDays() <= 0 ? auditReductionCriteria.getCustomAgeoutTTLInDays() : getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_CUSTOM_AGEOUT_TTL, auditReductionCriteria.getCustomAgeoutTTLInDays(), MIN_TTL_TO_MAINTAIN);
+        int         customAgeoutAuditCount  = auditReductionCriteria.getCustomAgeoutAuditCount() <= 0 ? auditReductionCriteria.getCustomAgeoutAuditCount() : getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_CUSTOM_AGEOUT_COUNT, auditReductionCriteria.getCustomAgeoutAuditCount(), MIN_AUDIT_COUNT_TO_MAINTAIN);
         Set<String> customAgeoutEntityTypes = getUniqueListOf(auditReductionCriteria.getCustomAgeoutEntityTypes());
         Set<String> customAgeoutActionTypes = getValidActionTypes(AtlasAuditAgingType.CUSTOM, getUniqueListOf(auditReductionCriteria.getCustomAgeoutActionTypes()));
 
-        defaultAgeoutEntityTypesToExclude.addAll(customAgeoutEntityTypes);
+        Set<String> defaultAgeoutEntityTypesToExclude = new HashSet<>(customAgeoutEntityTypes);
+
         if (CollectionUtils.isEmpty(customAgeoutEntityTypes)) {
             defaultAgeoutActionTypes.removeAll(customAgeoutActionTypes);
         }
 
         boolean isSweepOutEnabled = auditReductionCriteria.isAuditSweepoutEnabled();
+
         if (isSweepOutEnabled) {
-            Set<String> sweepOutEntityTypes  = getUniqueListOf(auditReductionCriteria.getSweepoutEntityTypes());
-            Set<String> sweepOutActionTypes  = getValidActionTypes(AtlasAuditAgingType.SWEEP, getUniqueListOf(auditReductionCriteria.getSweepoutActionTypes()));
+            Set<String> sweepOutEntityTypes = getUniqueListOf(auditReductionCriteria.getSweepoutEntityTypes());
+            Set<String> sweepOutActionTypes = getValidActionTypes(AtlasAuditAgingType.SWEEP, getUniqueListOf(auditReductionCriteria.getSweepoutActionTypes()));
 
             if (CollectionUtils.isNotEmpty(sweepOutEntityTypes) || CollectionUtils.isNotEmpty(sweepOutActionTypes)) {
                 Map<String, Object> sweepAgeoutCriteria = getAgeoutCriteriaMap(AtlasAuditAgingType.SWEEP, 0, 0, sweepOutEntityTypes, sweepOutActionTypes, createEventsAgeoutAllowed, subTypesIncluded);
+
                 auditAgeoutCriteriaByType.add(sweepAgeoutCriteria);
             } else {
                 LOG.error("Sweepout of audits is skipped.At least one of two properties: entity types/action types should be configured.");
@@ -222,6 +186,7 @@ public class AtlasAuditReductionService implements SchedulingConfigurer {
 
         if ((customAgeoutTTL > 0 || customAgeoutAuditCount > 0) && (CollectionUtils.isNotEmpty(customAgeoutEntityTypes) || CollectionUtils.isNotEmpty(customAgeoutActionTypes))) {
             Map<String, Object> customAgeoutCriteria = getAgeoutCriteriaMap(AtlasAuditAgingType.CUSTOM, customAgeoutTTL, customAgeoutAuditCount, customAgeoutEntityTypes, customAgeoutActionTypes, createEventsAgeoutAllowed, subTypesIncluded);
+
             auditAgeoutCriteriaByType.add(customAgeoutCriteria);
         } else if (customAgeoutTTL <= 0 && customAgeoutAuditCount <= 0 && CollectionUtils.isEmpty(customAgeoutEntityTypes) && CollectionUtils.isEmpty(customAgeoutActionTypes)) {
             //Do Nothing
@@ -243,18 +208,87 @@ public class AtlasAuditReductionService implements SchedulingConfigurer {
             if (defaultAgeoutActionTypes.size() == EntityAuditEventV2.EntityAuditActionV2.values().length) {
                 defaultAgeoutActionTypes.clear();
             }
+
             if (!ignoreDefaultAgeoutTTL || defaultAgeoutAuditCount > 0) {
                 Map<String, Object> defaultAgeoutCriteria = getAgeoutCriteriaMap(AtlasAuditAgingType.DEFAULT, defaultAgeoutTTL, defaultAgeoutAuditCount, defaultAgeoutEntityTypesToExclude, defaultAgeoutActionTypes, createEventsAgeoutAllowed, subTypesIncluded);
+
                 auditAgeoutCriteriaByType.add(defaultAgeoutCriteria);
             } else {
                 LOG.error("Default Audit aging is skipped. Valid audit count should be configured when TTL criteria is ignored.");
             }
         }
+
         return auditAgeoutCriteriaByType;
+    }
+
+    @Override
+    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
+        if (!AtlasConfiguration.ATLAS_AUDIT_AGING_ENABLED.getBoolean()) {
+            LOG.warn("Audit aging is not enabled");
+
+            return;
+        }
+
+        IntervalTask task = new IntervalTask(this::startAuditAgingByConfig, getAuditAgingFrequencyInMillis(), getAuditAgingInitialDelayInMillis());
+
+        taskRegistrar.addFixedRateTask(task);
+    }
+
+    private AuditReductionCriteria convertConfigToAuditReductionCriteria() {
+        boolean auditAgingEnabled         = AtlasConfiguration.ATLAS_AUDIT_AGING_ENABLED.getBoolean();
+        boolean createAuditsAgeoutAllowed = AtlasConfiguration.ATLAS_AUDIT_CREATE_EVENTS_AGEOUT_ALLOWED.getBoolean();
+        boolean subTypesIncluded          = AtlasConfiguration.ATLAS_AUDIT_AGING_SUBTYPES_INCLUDED.getBoolean();
+        boolean ignoreDefaultAgeoutTTL    = AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_IGNORE_TTL.getBoolean();
+
+        int defaultAgeoutTTLConfigured        = AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_TTL.getInt();
+        int defaultAgeoutAuditCountConfigured = AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_COUNT.getInt();
+
+        int customAgeoutTTLConfigured        = AtlasConfiguration.ATLAS_AUDIT_CUSTOM_AGEOUT_TTL.getInt();
+        int customAgeoutAuditCountConfigured = AtlasConfiguration.ATLAS_AUDIT_CUSTOM_AGEOUT_COUNT.getInt();
+
+        boolean defaultAgeoutEnabled    = AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_ENABLED.getBoolean();
+        int     defaultAgeoutTTL        = getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_TTL, defaultAgeoutTTLConfigured, MIN_TTL_TO_MAINTAIN);
+        int     defaultAgeoutAuditCount = defaultAgeoutAuditCountConfigured <= 0 ? defaultAgeoutAuditCountConfigured : getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_COUNT, defaultAgeoutAuditCountConfigured, MIN_AUDIT_COUNT_TO_MAINTAIN);
+        int     customAgeoutTTL         = customAgeoutTTLConfigured <= 0 ? customAgeoutTTLConfigured : getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_CUSTOM_AGEOUT_TTL, customAgeoutTTLConfigured, MIN_TTL_TO_MAINTAIN);
+        int     customAgeoutAuditCount  = customAgeoutAuditCountConfigured <= 0 ? customAgeoutAuditCountConfigured : getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_CUSTOM_AGEOUT_COUNT, customAgeoutAuditCountConfigured, MIN_AUDIT_COUNT_TO_MAINTAIN);
+
+        String customAgeoutEntityTypes = getStringOf(ATLAS_AUDIT_CUSTOM_AGEOUT_ENTITY_TYPES);
+        String customAgeoutActionTypes = getStringOf(ATLAS_AUDIT_CUSTOM_AGEOUT_ACTION_TYPES);
+
+        AuditReductionCriteria auditReductionCriteria = new AuditReductionCriteria();
+
+        auditReductionCriteria.setAuditAgingEnabled(auditAgingEnabled);
+        auditReductionCriteria.setCreateEventsAgeoutAllowed(createAuditsAgeoutAllowed);
+        auditReductionCriteria.setSubTypesIncluded(subTypesIncluded);
+        auditReductionCriteria.setIgnoreDefaultAgeoutTTL(ignoreDefaultAgeoutTTL);
+
+        auditReductionCriteria.setDefaultAgeoutEnabled(defaultAgeoutEnabled);
+        auditReductionCriteria.setDefaultAgeoutTTLInDays(defaultAgeoutTTL);
+        auditReductionCriteria.setDefaultAgeoutAuditCount(defaultAgeoutAuditCount);
+
+        auditReductionCriteria.setCustomAgeoutTTLInDays(customAgeoutTTL);
+        auditReductionCriteria.setCustomAgeoutAuditCount(customAgeoutAuditCount);
+        auditReductionCriteria.setCustomAgeoutEntityTypes(customAgeoutEntityTypes);
+        auditReductionCriteria.setCustomAgeoutActionTypes(customAgeoutActionTypes);
+
+        boolean isSweepOutEnabled = AtlasConfiguration.ATLAS_AUDIT_SWEEP_OUT.getBoolean();
+
+        auditReductionCriteria.setAuditSweepoutEnabled(isSweepOutEnabled);
+
+        if (isSweepOutEnabled) {
+            String sweepoutEntityTypes = getStringOf(ATLAS_AUDIT_SWEEP_OUT_ENTITY_TYPES);
+            String sweepoutActionTypes = getStringOf(ATLAS_AUDIT_SWEEP_OUT_ACTION_TYPES);
+
+            auditReductionCriteria.setSweepoutEntityTypes(sweepoutEntityTypes);
+            auditReductionCriteria.setSweepoutActionTypes(sweepoutActionTypes);
+        }
+
+        return auditReductionCriteria;
     }
 
     private Map<String, Object> getAgeoutCriteriaMap(AtlasAuditAgingType agingOption, int ttl, int minCount, Set<String> entityTypes, Set<String> actionTypes, boolean createEventsAgeoutAllowed, boolean subTypesIncluded) {
         Map<String, Object> auditAgingOptions = new HashMap<>();
+
         auditAgingOptions.put(AUDIT_AGING_TYPE_KEY, agingOption);
         auditAgingOptions.put(AUDIT_AGING_TTL_KEY, ttl);
         auditAgingOptions.put(AUDIT_AGING_COUNT_KEY, minCount);
@@ -270,21 +304,22 @@ public class AtlasAuditReductionService implements SchedulingConfigurer {
         if (configuredValue < minValueToMaintain) {
             LOG.info("Minimum value for '{}' should be {}", configuration.getPropertyName(), minValueToMaintain);
         }
+
         return configuredValue < minValueToMaintain ? minValueToMaintain : configuredValue;
     }
 
     private String getStringOf(String configProperty) {
-        String  configuredValue       = null;
+        String configuredValue = null;
 
         if (StringUtils.isNotEmpty(configProperty)) {
-            configuredValue = String.join(VALUE_DELIMITER , (List) atlasConfiguration.getList(configProperty));
+            configuredValue = String.join(VALUE_DELIMITER, (List) atlasConfiguration.getList(configProperty));
         }
 
         return configuredValue;
     }
 
     private Set<String> getUniqueListOf(String value) {
-        Set<String>  configuredValues       = null;
+        Set<String> configuredValues = null;
 
         if (StringUtils.isNotEmpty(value)) {
             configuredValues = Stream.of(value.split(VALUE_DELIMITER)).map(String::trim).collect(Collectors.toSet());
@@ -297,13 +332,15 @@ public class AtlasAuditReductionService implements SchedulingConfigurer {
         if (CollectionUtils.isEmpty(actionTypes)) {
             return Collections.emptySet();
         }
-        Set<String> allActionTypes     = Arrays.stream(EntityAuditEventV2.EntityAuditActionV2.values()).map(x -> x.toString()).collect(Collectors.toSet());
+
+        Set<String> allActionTypes     = Arrays.stream(EntityAuditEventV2.EntityAuditActionV2.values()).map(Enum::toString).collect(Collectors.toSet());
         Set<String> entityAuditActions = new HashSet<>();
         Set<String> invalidActionTypes = new HashSet<>();
 
         for (String actionType : actionTypes) {
-            Set<String> matchedActionTypes;
+            Set<String>  matchedActionTypes;
             final String actionTypeToMatch = actionType.contains("*") ? actionType.replace("*", "") : actionType;
+
             if (actionTypeToMatch.startsWith("*")) {
                 matchedActionTypes = allActionTypes.stream().filter(x -> x.contains(actionTypeToMatch)).collect(Collectors.toSet());
             } else {
@@ -323,41 +360,28 @@ public class AtlasAuditReductionService implements SchedulingConfigurer {
             LOG.info("Action type name(s) {} provided for aging type-{}", String.join(VALUE_DELIMITER, entityAuditActions), auditAgingType);
         }
 
-        if (CollectionUtils.isNotEmpty(invalidActionTypes)){
+        if (CollectionUtils.isNotEmpty(invalidActionTypes)) {
             LOG.warn("Invalid action type name(s) {} provided for aging type-{}", String.join(VALUE_DELIMITER, invalidActionTypes), auditAgingType);
         }
 
         return entityAuditActions;
     }
 
-    @Override
-    public void configureTasks(ScheduledTaskRegistrar taskRegistrar) {
-        if (!AtlasConfiguration.ATLAS_AUDIT_AGING_ENABLED.getBoolean()) {
-            LOG.warn("Audit aging is not enabled");
-            return;
-        }
-        IntervalTask task = new IntervalTask(new Runnable() {
-            @Override
-            public void run() {
-                startAuditAgingByConfig();
-            }
-        }, getAuditAgingFrequencyInMillis(), getAuditAgingInitialDelayInMillis());
-
-        taskRegistrar.addFixedRateTask(task);
-    }
-
     private long getAuditAgingFrequencyInMillis() {
         int frequencyInDays = getGuaranteedMinValueOf(AtlasConfiguration.ATLAS_AUDIT_AGING_SCHEDULER_FREQUENCY, AtlasConfiguration.ATLAS_AUDIT_AGING_SCHEDULER_FREQUENCY.getInt(), 1);
+
         return frequencyInDays * DateUtils.MILLIS_PER_DAY;
     }
 
     private long getAuditAgingInitialDelayInMillis() {
         int initialDelayInMins = 1;
+
         try {
             initialDelayInMins = ApplicationProperties.get().getInt(ATLAS_AUDIT_AGING_SCHEDULER_INITIAL_DELAY, 1);
         } catch (AtlasException ex) {
             LOG.error("Error while fetching application properties", ex);
         }
+
         return (initialDelayInMins < 1 ? 1 : initialDelayInMins) * DateUtils.MILLIS_PER_MINUTE;
     }
 }

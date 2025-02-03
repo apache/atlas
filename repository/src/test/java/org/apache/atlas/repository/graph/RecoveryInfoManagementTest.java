@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,19 +23,18 @@ import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
 import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
+import static org.testng.Assert.assertEquals;
+
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class RecoveryInfoManagementTest extends AtlasTestBase {
-
     @Inject
     private AtlasGraph atlasGraph;
-
 
     @BeforeTest
     public void setupTest() {
@@ -55,11 +54,13 @@ public class RecoveryInfoManagementTest extends AtlasTestBase {
 
     @Test
     public void verifyCreateUpdate() {
-        IndexRecoveryService.RecoveryInfoManagement rm = new IndexRecoveryService.RecoveryInfoManagement(atlasGraph);
-        long now = System.currentTimeMillis();
+        IndexRecoveryService.RecoveryInfoManagement rm  = new IndexRecoveryService.RecoveryInfoManagement(atlasGraph);
+        long                                        now = System.currentTimeMillis();
+
         rm.updateStartTime(now);
 
         long storedTime = rm.getStartTime();
-        Assert.assertEquals(now, storedTime);
+
+        assertEquals(now, storedTime);
     }
 }

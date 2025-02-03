@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,13 +17,11 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
-
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
-import org.apache.atlas.discovery.SearchProcessor;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -37,7 +35,6 @@ import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
-import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
@@ -91,22 +88,12 @@ public class AtlasGraphUtilsV2 {
     public static final String RELATIONSHIPTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".relationshipType";
     public static final String VERTEX_TYPE                 = "typeSystem";
 
-    private static boolean USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = false;
-    private static boolean USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY            = true;
-    private static String  INDEX_SEARCH_PREFIX;
+    private static final boolean USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES;
+    private static final boolean USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY;
+    private static final String  INDEX_SEARCH_PREFIX;
 
-    static {
-        try {
-            Configuration conf = ApplicationProperties.get();
-
-            USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = conf.getBoolean("atlas.use.index.query.to.find.entity.by.unique.attributes", USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES);
-            USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY            = conf.getBoolean("atlas.unique.index.property.to.find.entity", USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY);
-            INDEX_SEARCH_PREFIX                                 = conf.getString(INDEX_SEARCH_VERTEX_PREFIX_PROPERTY, INDEX_SEARCH_VERTEX_PREFIX_DEFAULT);
-        } catch (Exception excp) {
-            LOG.error("Error reading configuration", excp);
-        } finally {
-            LOG.info("atlas.use.index.query.to.find.entity.by.unique.attributes=" + USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES);
-        }
+    private AtlasGraphUtilsV2() {
+        // to block instantiation
     }
 
     public static String getTypeDefPropertyKey(AtlasBaseTypeDef typeDef) {
@@ -151,12 +138,12 @@ public class AtlasGraphUtilsV2 {
 
     public static String getQualifiedAttributePropertyKey(AtlasStructType fromType, String attributeName) throws AtlasBaseException {
         switch (fromType.getTypeCategory()) {
-         case ENTITY:
-         case STRUCT:
-         case CLASSIFICATION:
-             return fromType.getQualifiedAttributePropertyKey(attributeName);
-        default:
-            throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPE, fromType.getTypeCategory().name());
+            case ENTITY:
+            case STRUCT:
+            case CLASSIFICATION:
+                return fromType.getQualifiedAttributePropertyKey(attributeName);
+            default:
+                throw new AtlasBaseException(AtlasErrorCode.UNKNOWN_TYPE, fromType.getTypeCategory().name());
         }
     }
 
@@ -173,9 +160,7 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static boolean isReference(TypeCategory typeCategory) {
-        return typeCategory == TypeCategory.STRUCT ||
-               typeCategory == TypeCategory.ENTITY ||
-               typeCategory == TypeCategory.OBJECT_ID_TYPE;
+        return typeCategory == TypeCategory.STRUCT || typeCategory == TypeCategory.ENTITY || typeCategory == TypeCategory.OBJECT_ID_TYPE;
     }
 
     public static String encodePropertyKey(String key) {
@@ -254,6 +239,7 @@ public class AtlasGraphUtilsV2 {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Removing property {} from {}", propertyName, toString(element));
                 }
+
                 element.removeProperty(propertyName);
             }
         } else {
@@ -262,8 +248,9 @@ public class AtlasGraphUtilsV2 {
                     LOG.debug("Setting property {} in {}", propertyName, toString(element));
                 }
 
-                if ( value instanceof Date) {
+                if (value instanceof Date) {
                     Long encodedValue = ((Date) value).getTime();
+
                     element.setProperty(propertyName, encodedValue);
                 } else {
                     element.setProperty(propertyName, value);
@@ -293,6 +280,7 @@ public class AtlasGraphUtilsV2 {
 
         return returnType.cast(property);
     }
+
     public static AtlasVertex getVertexByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> attrValues) throws AtlasBaseException {
         return getVertexByUniqueAttributes(getGraphInstance(), entityType, attrValues);
     }
@@ -302,7 +290,7 @@ public class AtlasGraphUtilsV2 {
 
         if (vertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entityType.getTypeName(),
-                                         attrValues.toString());
+                    attrValues.toString());
         }
 
         return vertex;
@@ -363,11 +351,11 @@ public class AtlasGraphUtilsV2 {
         MetricRecorder metric = RequestContext.get().startMetricRecord("findDeletedDuringSpooledByQualifiedName");
 
         AtlasGraphQuery query = graph.query().has(STATE_PROPERTY_KEY, Status.DELETED.name())
-                                             .has(Constants.ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.GREATER_THAN, timestamp)
-                                             .has(Constants.QUALIFIED_NAME, qualifiedName)
-                                             .orderBy(Constants.ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY, ASC);
+                .has(Constants.ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.GREATER_THAN, timestamp)
+                .has(Constants.QUALIFIED_NAME, qualifiedName)
+                .orderBy(Constants.ENTITY_DELETED_TIMESTAMP_PROPERTY_KEY, ASC);
 
-        Iterator iterator = query.vertices().iterator();
+        Iterator<?> iterator = query.vertices().iterator();
 
         String ret = iterator.hasNext() ? GraphHelper.getGuid((AtlasVertex) iterator.next()) : null;
 
@@ -398,6 +386,7 @@ public class AtlasGraphUtilsV2 {
         }
 
         RequestContext.get().endMetricRecord(metric);
+
         return ret;
     }
 
@@ -405,9 +394,7 @@ public class AtlasGraphUtilsV2 {
         AtlasVertex ret = GraphTransactionInterceptor.getVertexFromCache(guid);
 
         if (ret == null) {
-            AtlasGraphQuery query = graph.query()
-                    .has(Constants.GUID_PROPERTY_KEY, guid)
-                    .has(STATE_PROPERTY_KEY, Status.DELETED.name());
+            AtlasGraphQuery query = graph.query().has(Constants.GUID_PROPERTY_KEY, guid).has(STATE_PROPERTY_KEY, Status.DELETED.name());
 
             Iterator<AtlasVertex> results = query.vertices().iterator();
 
@@ -432,22 +419,19 @@ public class AtlasGraphUtilsV2 {
 
         return ret;
     }
-    public static boolean typeHasInstanceVertex(String typeName) throws AtlasBaseException {
+
+    public static boolean typeHasInstanceVertex(String typeName) {
         return typeHasInstanceVertex(getGraphInstance(), typeName);
     }
 
-    public static boolean typeHasInstanceVertex(AtlasGraph graph, String typeName) throws AtlasBaseException {
-        AtlasGraphQuery query = graph
-                .query()
-                .has(TYPE_NAME_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.EQUAL, typeName);
+    public static boolean typeHasInstanceVertex(AtlasGraph graph, String typeName) {
+        AtlasGraphQuery query = graph.query().has(TYPE_NAME_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.EQUAL, typeName);
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
 
         boolean hasInstanceVertex = results != null && results.hasNext();
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("typeName {} has instance vertex {}", typeName, hasInstanceVertex);
-        }
+        LOG.debug("typeName {} has instance vertex {}", typeName, hasInstanceVertex);
 
         return hasInstanceVertex;
     }
@@ -459,9 +443,7 @@ public class AtlasGraphUtilsV2 {
     public static AtlasVertex findByTypeAndUniquePropertyName(AtlasGraph graph, String typeName, String propertyName, Object attrVal) {
         MetricRecorder metric = RequestContext.get().startMetricRecord("findByTypeAndUniquePropertyName");
 
-        AtlasGraphQuery query = graph.query()
-                                                    .has(ENTITY_TYPE_PROPERTY_KEY, typeName)
-                                                    .has(propertyName, attrVal);
+        AtlasGraphQuery query = graph.query().has(ENTITY_TYPE_PROPERTY_KEY, typeName).has(propertyName, attrVal);
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
 
@@ -470,29 +452,6 @@ public class AtlasGraphUtilsV2 {
         RequestContext.get().endMetricRecord(metric);
 
         return vertex;
-    }
-
-    private static Map<String, Object> populateUniqueAttributesMap(Map<String, AtlasAttribute> uniqueAttributes, Map<String, Object> attrValues) {
-        return populateAttributesMap(uniqueAttributes, attrValues, true);
-    }
-
-    private static Map<String, Object> populateAttributesMap(Map<String, AtlasAttribute> uniqueAttributes, Map<String, Object> attrValues) {
-        return populateAttributesMap(uniqueAttributes, attrValues, false);
-    }
-
-    private static Map<String, Object> populateAttributesMap(Map<String, AtlasAttribute> uniqueAttributes, Map<String, Object> attrValues, boolean isUnique) {
-        Map<String, Object> ret = new HashMap<>();
-
-        for (AtlasAttribute attribute : uniqueAttributes.values()) {
-            String attrName  = isUnique ? attribute.getVertexUniquePropertyName() : attribute.getVertexPropertyName();
-            Object attrValue = attrValues.get(attribute.getName());
-
-            if (attrName != null && attrValue != null) {
-                ret.put(attrName, attrValue);
-            }
-        }
-
-        return ret;
     }
 
     public static AtlasVertex findByTypeAndUniquePropertyName(AtlasGraph graph, String typeName, Map<String, Object> attributeValues) {
@@ -535,12 +494,10 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static AtlasVertex findByTypeAndPropertyName(AtlasGraph graph, String typeName, Map<String, Object> attributeValues, boolean isSuperType) {
-        String          metricName      = isSuperType ? "findBySuperTypeAndPropertyName" : "findByTypeAndPropertyName";
-        MetricRecorder  metric          = RequestContext.get().startMetricRecord(metricName);
-        String          typePropertyKey = isSuperType ? SUPER_TYPES_PROPERTY_KEY : ENTITY_TYPE_PROPERTY_KEY;
-        AtlasGraphQuery query           = graph.query()
-                                               .has(typePropertyKey, typeName)
-                                               .has(STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
+        String         metricName      = isSuperType ? "findBySuperTypeAndPropertyName" : "findByTypeAndPropertyName";
+        MetricRecorder metric          = RequestContext.get().startMetricRecord(metricName);
+        String         typePropertyKey = isSuperType ? SUPER_TYPES_PROPERTY_KEY : ENTITY_TYPE_PROPERTY_KEY;
+        AtlasGraphQuery query          = graph.query().has(typePropertyKey, typeName).has(STATE_PROPERTY_KEY, AtlasEntity.Status.ACTIVE.name());
 
         for (Map.Entry<String, Object> entry : attributeValues.entrySet()) {
             String attrName  = entry.getKey();
@@ -564,15 +521,16 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static List<String> findEntityGUIDsByType(AtlasGraph graph, String typename, SortOrder sortOrder) {
-        AtlasGraphQuery query = graph.query()
-                                                  .has(ENTITY_TYPE_PROPERTY_KEY, typename);
+        AtlasGraphQuery query = graph.query().has(ENTITY_TYPE_PROPERTY_KEY, typename);
+
         if (sortOrder != null) {
             AtlasGraphQuery.SortOrder qrySortOrder = sortOrder == SortOrder.ASCENDING ? ASC : DESC;
+
             query.orderBy(Constants.QUALIFIED_NAME, qrySortOrder);
         }
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
-        ArrayList<String> ret = new ArrayList<>();
+        ArrayList<String>     ret     = new ArrayList<>();
 
         if (!results.hasNext()) {
             return Collections.emptyList();
@@ -590,9 +548,7 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static Iterator<AtlasVertex> findActiveEntityVerticesByType(AtlasGraph graph, String typename) {
-        AtlasGraphQuery query = graph.query()
-                                          .has(ENTITY_TYPE_PROPERTY_KEY, typename)
-                                          .has(STATE_PROPERTY_KEY, Status.ACTIVE.name());
+        AtlasGraphQuery query = graph.query().has(ENTITY_TYPE_PROPERTY_KEY, typename).has(STATE_PROPERTY_KEY, Status.ACTIVE.name());
 
         return query.vertices().iterator();
     }
@@ -602,33 +558,19 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static boolean relationshipTypeHasInstanceEdges(AtlasGraph graph, String typeName) throws AtlasBaseException {
-        AtlasGraphQuery query = graph
-                .query()
-                .has(TYPE_NAME_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.EQUAL, typeName);
+        AtlasGraphQuery query = graph.query().has(TYPE_NAME_PROPERTY_KEY, AtlasGraphQuery.ComparisionOperator.EQUAL, typeName);
 
         Iterator<AtlasEdge> results = query.edges().iterator();
 
         boolean hasInstanceEdges = results != null && results.hasNext();
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("relationshipType {} has instance edges {}", typeName, hasInstanceEdges);
-        }
+        LOG.debug("relationshipType {} has instance edges {}", typeName, hasInstanceEdges);
 
         return hasInstanceEdges;
     }
 
-    private static String toString(AtlasElement element) {
-        if (element instanceof AtlasVertex) {
-            return toString((AtlasVertex) element);
-        } else if (element instanceof AtlasEdge) {
-            return toString((AtlasEdge)element);
-        }
-
-        return element.toString();
-    }
-
     public static String toString(AtlasVertex vertex) {
-        if(vertex == null) {
+        if (vertex == null) {
             return "vertex[null]";
         } else {
             if (LOG.isDebugEnabled()) {
@@ -639,9 +581,8 @@ public class AtlasGraphUtilsV2 {
         }
     }
 
-
     public static String toString(AtlasEdge edge) {
-        if(edge == null) {
+        if (edge == null) {
             return "edge[null]";
         } else {
             if (LOG.isDebugEnabled()) {
@@ -653,34 +594,21 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static String getVertexDetails(AtlasVertex vertex) {
-        return String.format("vertex[id=%s type=%s guid=%s]",
-                vertex.getId().toString(), getTypeName(vertex), getIdFromVertex(vertex));
+        return String.format("vertex[id=%s type=%s guid=%s]", vertex.getId().toString(), getTypeName(vertex), getIdFromVertex(vertex));
     }
 
     public static String getEdgeDetails(AtlasEdge edge) {
-        return String.format("edge[id=%s label=%s from %s -> to %s]", edge.getId(), edge.getLabel(),
-                toString(edge.getOutVertex()), toString(edge.getInVertex()));
+        return String.format("edge[id=%s label=%s from %s -> to %s]", edge.getId(), edge.getLabel(), toString(edge.getOutVertex()), toString(edge.getInVertex()));
     }
 
     public static AtlasEntity.Status getState(AtlasElement element) {
         String state = getStateAsString(element);
+
         return state == null ? null : AtlasEntity.Status.valueOf(state);
     }
 
     public static String getStateAsString(AtlasElement element) {
         return element.getProperty(STATE_PROPERTY_KEY, String.class);
-    }
-
-    private static AtlasIndexQuery getIndexQuery(AtlasGraph graph, AtlasEntityType entityType, String propertyName, String value) {
-        StringBuilder sb = new StringBuilder();
-
-        sb.append(INDEX_SEARCH_PREFIX + "\"").append(TYPE_NAME_PROPERTY_KEY).append("\":").append(entityType.getTypeAndAllSubTypesQryStr())
-                .append(" AND ")
-                .append(INDEX_SEARCH_PREFIX + "\"").append(propertyName).append("\":").append(AtlasAttribute.escapeIndexQueryValue(value))
-                .append(" AND ")
-                .append(INDEX_SEARCH_PREFIX + "\"").append(STATE_PROPERTY_KEY).append("\":ACTIVE");
-
-        return graph.indexQuery(Constants.VERTEX_INDEX, sb.toString());
     }
 
     public static String getIndexSearchPrefix() {
@@ -695,140 +623,143 @@ public class AtlasGraphUtilsV2 {
         return getClassificationNamesHelper(entityVertex, PROPAGATED_CLASSIFICATION_NAMES_KEY);
     }
 
-    private static List<String> getClassificationNamesHelper(AtlasVertex entityVertex, String propertyKey) {
-        List<String> classificationNames = null;
-        String classificationNamesString =  entityVertex.getProperty(propertyKey, String.class);
-        if (StringUtils.isNotEmpty(classificationNamesString)) {
-            classificationNames = Arrays.asList(StringUtils.split(classificationNamesString, "\\|"));
-        }
-        return classificationNames;
-    }
+    public static List<Date> dateParser(String[] arr, List<String> failedTermMsgList, int lineIndex) {
+        List<Date> ret = new ArrayList<>();
 
-    public static List<Date> dateParser(String[] arr, List failedTermMsgList, int lineIndex) {
-
-        List<Date> ret = new ArrayList();
         for (String s : arr) {
-            try{
+            try {
                 SimpleDateFormat formatter = new SimpleDateFormat("MM/dd/yyyy");
-                Date date = formatter.parse(s);
+                Date             date      = formatter.parse(s);
+
                 ret.add(date);
-            }
-            catch(Exception e){
-                LOG.error("Provided value "+s+" is not of Date type at line #"+lineIndex);
-                failedTermMsgList.add("Provided value "+s+" is not of Date type at line #"+lineIndex);
+            } catch (Exception e) {
+                LOG.error("Provided value {} is not of Date type at line #{}", s, lineIndex);
+
+                failedTermMsgList.add("Provided value " + s + " is not of Date type at line #" + lineIndex);
             }
         }
+
         return ret;
     }
 
-    public static List<Boolean> booleanParser(String[] arr, List failedTermMsgList, int lineIndex) {
+    public static List<Boolean> booleanParser(String[] arr, List<String> failedTermMsgList, int lineIndex) {
+        List<Boolean> ret = new ArrayList<>();
 
-        List<Boolean> ret = new ArrayList();
         for (String s : arr) {
-            try{
+            try {
                 ret.add(Boolean.parseBoolean(s));
-            }
-            catch(Exception e){
-                LOG.error("Provided value "+s+" is not of Boolean type at line #"+lineIndex);
-                failedTermMsgList.add("Provided value "+s+" is not of Boolean type at line #"+lineIndex);
+            } catch (Exception e) {
+                LOG.error("Provided value {} is not of Boolean type at line #{}", s, lineIndex);
+
+                failedTermMsgList.add("Provided value " + s + " is not of Boolean type at line #" + lineIndex);
             }
         }
+
         return ret;
     }
 
-    public static List<Double> doubleParser(String[] arr, List failedTermMsgList, int lineIndex) {
+    public static List<Double> doubleParser(String[] arr, List<String> failedTermMsgList, int lineIndex) {
+        List<Double> ret = new ArrayList<>();
 
-        List<Double> ret = new ArrayList();
         for (String s : arr) {
-            try{
+            try {
                 ret.add(Double.parseDouble(s));
-            }
-            catch(Exception e){
-                LOG.error("Provided value "+s+" is not of Double type at line #"+lineIndex);
-                failedTermMsgList.add("Provided value "+s+" is not of Double type at line #"+lineIndex);
+            } catch (Exception e) {
+                LOG.error("Provided value {} is not of Double type at line #{}", s, lineIndex);
+
+                failedTermMsgList.add("Provided value " + s + " is not of Double type at line #" + lineIndex);
             }
         }
+
         return ret;
     }
 
-    public static List<Short> shortParser(String[] arr, List failedTermMsgList, int lineIndex) {
+    public static List<Short> shortParser(String[] arr, List<String> failedTermMsgList, int lineIndex) {
+        List<Short> ret = new ArrayList<>();
 
-        List<Short> ret = new ArrayList();
         for (String s : arr) {
-            try{
+            try {
                 ret.add(Short.parseShort(s));
-            }
-            catch(Exception e){
-                LOG.error("Provided value "+s+" is not of Short type at line #"+lineIndex);
-                failedTermMsgList.add("Provided value "+s+" is not of Short type at line #"+lineIndex);
+            } catch (Exception e) {
+                LOG.error("Provided value {} is not of Short type at line #{}", s, lineIndex);
+
+                failedTermMsgList.add("Provided value " + s + " is not of Short type at line #" + lineIndex);
             }
         }
+
         return ret;
     }
 
-    public static List<Long> longParser(String[] arr, List failedTermMsgList, int lineIndex) {
+    public static List<Long> longParser(String[] arr, List<String> failedTermMsgList, int lineIndex) {
+        List<Long> ret = new ArrayList<>();
 
-        List<Long> ret = new ArrayList();
         for (String s : arr) {
-            try{
+            try {
                 ret.add(Long.parseLong(s));
-            }
-            catch(Exception e){
-                LOG.error("Provided value "+s+" is not of Long type at line #"+lineIndex);
-                failedTermMsgList.add("Provided value "+s+" is not of Long type at line #"+lineIndex);
+            } catch (Exception e) {
+                LOG.error("Provided value {} is not of Long type at line #{}", s, lineIndex);
+
+                failedTermMsgList.add("Provided value " + s + " is not of Long type at line #" + lineIndex);
             }
         }
+
         return ret;
     }
 
-    public static List<Integer> intParser(String[] arr, List failedTermMsgList, int lineIndex) {
+    public static List<Integer> intParser(String[] arr, List<String> failedTermMsgList, int lineIndex) {
+        List<Integer> ret = new ArrayList<>();
 
-        List<Integer> ret = new ArrayList();
         for (String s : arr) {
-            try{
+            try {
                 ret.add(Integer.parseInt(s));
-            }
-            catch(Exception e){
-                LOG.error("Provided value "+s+" is not of Integer type at line #"+lineIndex);
-                failedTermMsgList.add("Provided value "+s+" is Integer of Long type at line #"+lineIndex);
+            } catch (Exception e) {
+                LOG.error("Provided value {} is not of Integer type at line #{}", s, lineIndex);
+
+                failedTermMsgList.add("Provided value " + s + " is Integer of Long type at line #" + lineIndex);
             }
         }
+
         return ret;
     }
 
-    public static List<Float> floatParser(String[] arr, List failedTermMsgList, int lineIndex) {
+    public static List<Float> floatParser(String[] arr, List<String> failedTermMsgList, int lineIndex) {
+        List<Float> ret = new ArrayList<>();
 
-        List<Float> ret = new ArrayList();
         for (String s : arr) {
-            try{
+            try {
                 ret.add(Float.parseFloat(s));
-            }
-            catch(Exception e){
-                LOG.error("Provided value "+s+" is Float of Long type at line #"+lineIndex);
-                failedTermMsgList.add("Provided value "+s+" is Float of Long type at line #"+lineIndex);
+            } catch (Exception e) {
+                LOG.error("Provided value {} is Float of Long type at line #{}", s, lineIndex);
+
+                failedTermMsgList.add("Provided value " + s + " is Float of Long type at line #" + lineIndex);
             }
         }
+
         return ret;
     }
 
-    public static List assignEnumValues(String bmAttributeValues, AtlasEnumType enumType, List<String> failedTermMsgList, int lineIndex) {
-        List<String> ret = new ArrayList<>();
-        String[] arr = bmAttributeValues.split(FileUtils.ESCAPE_CHARACTER + FileUtils.PIPE_CHARACTER);
+    public static List<String> assignEnumValues(String bmAttributeValues, AtlasEnumType enumType, List<String> failedTermMsgList, int lineIndex) {
+        List<String>                     ret = new ArrayList<>();
+        String[]                         arr = bmAttributeValues.split(FileUtils.ESCAPE_CHARACTER + FileUtils.PIPE_CHARACTER);
         AtlasEnumDef.AtlasEnumElementDef atlasEnumDef;
-        for(String s : arr){
+
+        for (String s : arr) {
             atlasEnumDef = enumType.getEnumElementDef(s);
-            if(atlasEnumDef==null){
-                LOG.error("Provided value "+s+" is Enumeration of Long type at line #"+lineIndex);
-                failedTermMsgList.add("Provided value "+s+" is Enumeration of Long type at line #"+lineIndex);
-            }else{
+
+            if (atlasEnumDef == null) {
+                LOG.error("Provided value {} is Enumeration of Long type at line #{}", s, lineIndex);
+
+                failedTermMsgList.add("Provided value " + s + " is Enumeration of Long type at line #" + lineIndex);
+            } else {
                 ret.add(s);
             }
         }
+
         return ret;
     }
 
     public static void addItemToListProperty(AtlasEdge edge, String property, String value) {
-        List list = getListFromProperty(edge, property);
+        List<String> list = (List<String>) getListFromProperty(edge, property);
 
         list.add(value);
 
@@ -836,7 +767,7 @@ public class AtlasGraphUtilsV2 {
     }
 
     public static void removeItemFromListProperty(AtlasEdge edge, String property, String value) {
-        List list = getListFromProperty(edge, property);
+        List<String> list = (List<String>) getListFromProperty(edge, property);
 
         list.remove(value);
 
@@ -847,9 +778,85 @@ public class AtlasGraphUtilsV2 {
         }
     }
 
-    private static List getListFromProperty(AtlasEdge edge, String property) {
-        List list = edge.getListProperty(property);
+    private static Map<String, Object> populateUniqueAttributesMap(Map<String, AtlasAttribute> uniqueAttributes, Map<String, Object> attrValues) {
+        return populateAttributesMap(uniqueAttributes, attrValues, true);
+    }
 
-        return CollectionUtils.isEmpty(list) ? new ArrayList() : list;
+    private static Map<String, Object> populateAttributesMap(Map<String, AtlasAttribute> uniqueAttributes, Map<String, Object> attrValues) {
+        return populateAttributesMap(uniqueAttributes, attrValues, false);
+    }
+
+    private static Map<String, Object> populateAttributesMap(Map<String, AtlasAttribute> uniqueAttributes, Map<String, Object> attrValues, boolean isUnique) {
+        Map<String, Object> ret = new HashMap<>();
+
+        for (AtlasAttribute attribute : uniqueAttributes.values()) {
+            String attrName  = isUnique ? attribute.getVertexUniquePropertyName() : attribute.getVertexPropertyName();
+            Object attrValue = attrValues.get(attribute.getName());
+
+            if (attrName != null && attrValue != null) {
+                ret.put(attrName, attrValue);
+            }
+        }
+
+        return ret;
+    }
+
+    private static String toString(AtlasElement element) {
+        if (element instanceof AtlasVertex) {
+            return toString((AtlasVertex) element);
+        } else if (element instanceof AtlasEdge) {
+            return toString((AtlasEdge) element);
+        }
+
+        return element.toString();
+    }
+
+    private static AtlasIndexQuery getIndexQuery(AtlasGraph graph, AtlasEntityType entityType, String propertyName, String value) {
+        StringBuilder sb = new StringBuilder();
+
+        sb.append(INDEX_SEARCH_PREFIX).append("\"").append(TYPE_NAME_PROPERTY_KEY).append("\":").append(entityType.getTypeAndAllSubTypesQryStr())
+                .append(" AND ").append(INDEX_SEARCH_PREFIX).append("\"").append(propertyName).append("\":").append(AtlasAttribute.escapeIndexQueryValue(value))
+                .append(" AND ").append(INDEX_SEARCH_PREFIX).append("\"").append(STATE_PROPERTY_KEY).append("\":ACTIVE");
+
+        return graph.indexQuery(Constants.VERTEX_INDEX, sb.toString());
+    }
+
+    private static List<String> getClassificationNamesHelper(AtlasVertex entityVertex, String propertyKey) {
+        List<String> classificationNames       = null;
+        String       classificationNamesString = entityVertex.getProperty(propertyKey, String.class);
+        if (StringUtils.isNotEmpty(classificationNamesString)) {
+            classificationNames = Arrays.asList(StringUtils.split(classificationNamesString, "\\|"));
+        }
+        return classificationNames;
+    }
+
+    private static List<?> getListFromProperty(AtlasEdge edge, String property) {
+        List<?> list = edge.getListProperty(property);
+
+        return CollectionUtils.isEmpty(list) ? new ArrayList<>() : list;
+    }
+
+    static {
+        boolean useIndexQueryToFindEntityByUniqueAttributes = false;
+        boolean useUniqueIndexPropertyToFindEntity          = true;
+        String  indexSearchPrefix                           = INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
+
+        try {
+            Configuration conf = ApplicationProperties.get();
+
+            useIndexQueryToFindEntityByUniqueAttributes = conf.getBoolean("atlas.use.index.query.to.find.entity.by.unique.attributes", useIndexQueryToFindEntityByUniqueAttributes);
+            useUniqueIndexPropertyToFindEntity          = conf.getBoolean("atlas.unique.index.property.to.find.entity", useUniqueIndexPropertyToFindEntity);
+            indexSearchPrefix                           = conf.getString(INDEX_SEARCH_VERTEX_PREFIX_PROPERTY, indexSearchPrefix);
+        } catch (Exception excp) {
+            LOG.error("Error reading configuration", excp);
+        } finally {
+            USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = useIndexQueryToFindEntityByUniqueAttributes;
+            USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY            = useUniqueIndexPropertyToFindEntity;
+            INDEX_SEARCH_PREFIX                                 = indexSearchPrefix;
+
+            LOG.info("atlas.use.index.query.to.find.entity.by.unique.attributes={}", USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES);
+            LOG.info("atlas.unique.index.property.to.find.entity={}", USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY);
+            LOG.info("{}={}", INDEX_SEARCH_VERTEX_PREFIX_PROPERTY, indexSearchPrefix);
+        }
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,14 +18,19 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Preconditions;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.TypeDefChangeListener;
-import org.apache.atlas.model.typedef.*;
+import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.model.typedef.AtlasBusinessMetadataDef;
+import org.apache.atlas.model.typedef.AtlasClassificationDef;
+import org.apache.atlas.model.typedef.AtlasEntityDef;
+import org.apache.atlas.model.typedef.AtlasEnumDef;
+import org.apache.atlas.model.typedef.AtlasRelationshipDef;
+import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
@@ -44,18 +49,19 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
 import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
-import java.util.List;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static org.apache.atlas.repository.Constants.TYPE_CATEGORY_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.VERTEX_TYPE;
-
 
 /**
  * Graph persistence store for TypeDef - v1
@@ -67,18 +73,81 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
 
     protected final AtlasGraph atlasGraph;
 
-    private EntityDiscoveryService entityDiscoveryService;
+    private final EntityDiscoveryService entityDiscoveryService;
 
     @Inject
-    public AtlasTypeDefGraphStoreV2(AtlasTypeRegistry typeRegistry,
-                                    List<TypeDefChangeListener> typeDefChangeListeners,
-                                    AtlasGraph atlasGraph,
-                                    EntityDiscoveryService entityDiscoveryService) {
+    public AtlasTypeDefGraphStoreV2(AtlasTypeRegistry typeRegistry, List<TypeDefChangeListener> typeDefChangeListeners, AtlasGraph atlasGraph, EntityDiscoveryService entityDiscoveryService) {
         super(typeRegistry, typeDefChangeListeners);
-        this.atlasGraph = atlasGraph;
+
+        this.atlasGraph             = atlasGraph;
         this.entityDiscoveryService = entityDiscoveryService;
 
         LOG.debug("<== AtlasTypeDefGraphStoreV1()");
+    }
+
+    public static String getCurrentUser() {
+        return RequestContext.getCurrentUser();
+    }
+
+    @VisibleForTesting
+    public AtlasVertex findTypeVertexByName(String typeName) {
+        Iterator<?> results = atlasGraph.query().has(VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE)
+                .has(Constants.TYPENAME_PROPERTY_KEY, typeName)
+                .vertices().iterator();
+
+        return (results != null && results.hasNext()) ? (AtlasVertex) results.next() : null;
+    }
+
+    @VisibleForTesting
+    public boolean isTypeVertex(AtlasVertex vertex, TypeCategory category) {
+        boolean ret = false;
+
+        if (isTypeVertex(vertex)) {
+            Object objTypeCategory = vertex.getProperty(Constants.TYPE_CATEGORY_PROPERTY_KEY, Object.class);
+
+            TypeCategory vertexCategory = null;
+
+            if (objTypeCategory instanceof TypeCategory) {
+                vertexCategory = (TypeCategory) objTypeCategory;
+            } else if (objTypeCategory != null) {
+                vertexCategory = TypeCategory.valueOf(objTypeCategory.toString());
+            }
+
+            ret = category.equals(vertexCategory);
+        }
+
+        return ret;
+    }
+
+    public void createEntityTypeEdges(AtlasVertex classificationVertex, Set<String> entityTypes) throws AtlasBaseException {
+        Set<String> currentEntityTypes     = getEntityTypeNames(classificationVertex);
+        String      classificationTypeName = classificationVertex.getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class);
+
+        if (CollectionUtils.isNotEmpty(entityTypes)) {
+            if (!entityTypes.containsAll(currentEntityTypes)) {
+                throw new AtlasBaseException(AtlasErrorCode.ENTITYTYPE_REMOVAL_NOT_SUPPORTED, classificationTypeName);
+            }
+
+            for (String entityType : entityTypes) {
+                AtlasVertex entityTypeVertex = findTypeVertexByNameAndCategory(entityType, TypeCategory.CLASS);
+
+                if (entityTypeVertex == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATIONDEF_INVALID_ENTITYTYPES, classificationTypeName, entityType);
+                }
+
+                getOrCreateEdge(classificationVertex, entityTypeVertex, AtlasGraphUtilsV2.ENTITYTYPE_EDGE_LABEL);
+            }
+        } else if (CollectionUtils.isNotEmpty(currentEntityTypes)) { // remove the restrictions, if present
+            for (String entityType : currentEntityTypes) {
+                AtlasVertex entityTypeVertex = findTypeVertexByNameAndCategory(entityType, TypeCategory.CLASS);
+
+                if (entityTypeVertex == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATIONDEF_INVALID_ENTITYTYPES, classificationTypeName, entityType);
+                }
+
+                removeEdge(classificationVertex, entityTypeVertex, AtlasGraphUtilsV2.ENTITYTYPE_EDGE_LABEL);
+            }
+        }
     }
 
     @Override
@@ -121,19 +190,12 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         LOG.info("<== AtlasTypeDefGraphStoreV1.init()");
     }
 
-    AtlasGraph getAtlasGraph() { return atlasGraph; }
-
-    @VisibleForTesting
-    public AtlasVertex findTypeVertexByName(String typeName) {
-        Iterator results = atlasGraph.query().has(VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE)
-                .has(Constants.TYPENAME_PROPERTY_KEY, typeName)
-                .vertices().iterator();
-
-        return (results != null && results.hasNext()) ? (AtlasVertex) results.next() : null;
+    AtlasGraph getAtlasGraph() {
+        return atlasGraph;
     }
 
     AtlasVertex findTypeVertexByNameAndCategory(String typeName, TypeCategory category) {
-        Iterator results = atlasGraph.query().has(VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE)
+        Iterator<?> results = atlasGraph.query().has(VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE)
                 .has(Constants.TYPENAME_PROPERTY_KEY, typeName)
                 .has(TYPE_CATEGORY_PROPERTY_KEY, category)
                 .vertices().iterator();
@@ -159,7 +221,6 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
     }
 
     Iterator<AtlasVertex> findTypeVerticesByCategory(TypeCategory category) {
-
         return (Iterator<AtlasVertex>) atlasGraph.query().has(VERTEX_TYPE_PROPERTY_KEY, VERTEX_TYPE)
                 .has(TYPE_CATEGORY_PROPERTY_KEY, category)
                 .vertices().iterator();
@@ -167,7 +228,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
 
     AtlasVertex createTypeVertex(AtlasBaseTypeDef typeDef) {
         // Validate all the required checks
-        Preconditions.checkArgument(StringUtils.isNotBlank(typeDef.getName()), "Type name can't be null/empty");
+        checkArgument(StringUtils.isNotBlank(typeDef.getName()), "Type name can't be null/empty");
 
         AtlasVertex ret = atlasGraph.addVertex();
 
@@ -195,8 +256,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         ret.setProperty(TYPE_CATEGORY_PROPERTY_KEY, getTypeCategory(typeDef));
 
         ret.setProperty(Constants.TYPENAME_PROPERTY_KEY, typeDef.getName());
-        ret.setProperty(Constants.TYPEDESCRIPTION_PROPERTY_KEY,
-                StringUtils.isNotBlank(typeDef.getDescription()) ? typeDef.getDescription() : typeDef.getName());
+        ret.setProperty(Constants.TYPEDESCRIPTION_PROPERTY_KEY, StringUtils.isNotBlank(typeDef.getDescription()) ? typeDef.getDescription() : typeDef.getName());
 
         if (StringUtils.isNotEmpty(typeDef.getServiceType())) {
             ret.setProperty(Constants.TYPESERVICETYPE_PROPERTY_KEY, typeDef.getServiceType());
@@ -256,23 +316,23 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
      */
     boolean hasIncomingEdgesWithLabel(AtlasVertex vertex, String label) throws AtlasBaseException {
         boolean foundEdges = false;
-        Iterator<AtlasEdge> inEdges = vertex.getEdges(AtlasEdgeDirection.IN).iterator();
 
-        while (inEdges.hasNext()) {
-            AtlasEdge edge = inEdges.next();
-
+        for (AtlasEdge edge : (Iterable<AtlasEdge>) vertex.getEdges(AtlasEdgeDirection.IN)) {
             if (label.equals(edge.getLabel())) {
                 foundEdges = true;
                 break;
             }
         }
+
         return foundEdges;
     }
 
     void deleteTypeVertex(AtlasVertex vertex) throws AtlasBaseException {
         Iterator<AtlasEdge> inEdges = vertex.getEdges(AtlasEdgeDirection.IN).iterator();
+
         if (inEdges.hasNext()) {
-            String name        = vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class);
+            String name = vertex.getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class);
+
             throw new AtlasBaseException(AtlasErrorCode.TYPE_HAS_REFERENCES, name);
         }
 
@@ -281,6 +341,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         for (AtlasEdge edge : edges) {
             atlasGraph.removeEdge(edge);
         }
+
         atlasGraph.removeVertex(vertex);
     }
 
@@ -297,16 +358,15 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         Object versionObj  = vertex.getProperty(Constants.VERSION_PROPERTY_KEY, Object.class);
         String options     = vertex.getProperty(Constants.TYPEOPTIONS_PROPERTY_KEY, String.class);
 
-        Long version = null;
+        long version;
 
-        if(versionObj instanceof Number) {
-            version = ((Number)versionObj).longValue();
+        if (versionObj instanceof Number) {
+            version = ((Number) versionObj).longValue();
         } else if (versionObj != null) {
-            version = Long.valueOf(versionObj.toString());
+            version = Long.parseLong(versionObj.toString());
         } else {
-            version = Long.valueOf(0);
+            version = 0L;
         }
-
 
         typeDef.setName(name);
         typeDef.setDescription(description);
@@ -324,9 +384,7 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
             typeDef.setUpdateTime(new Date(updateTime));
         }
 
-        if (version != null) {
-            typeDef.setVersion(version);
-        }
+        typeDef.setVersion(version);
 
         if (options != null) {
             typeDef.setOptions(AtlasType.fromJson(options, Map.class));
@@ -337,27 +395,6 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         String vertexType = vertex.getProperty(Constants.VERTEX_TYPE_PROPERTY_KEY, String.class);
 
         return VERTEX_TYPE.equals(vertexType);
-    }
-
-    @VisibleForTesting
-    public boolean isTypeVertex(AtlasVertex vertex, TypeCategory category) {
-        boolean ret = false;
-
-        if (isTypeVertex(vertex)) {
-            Object objTypeCategory = vertex.getProperty(Constants.TYPE_CATEGORY_PROPERTY_KEY, Object.class);
-
-            TypeCategory vertexCategory = null;
-
-            if(objTypeCategory instanceof TypeCategory) {
-                vertexCategory = (TypeCategory) objTypeCategory;
-            } else if (objTypeCategory != null) {
-                vertexCategory = TypeCategory.valueOf(objTypeCategory.toString());
-            }
-
-            ret = category.equals(vertexCategory);
-        }
-
-        return ret;
     }
 
     boolean isTypeVertex(AtlasVertex vertex, TypeCategory[] categories) {
@@ -397,7 +434,6 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
     }
 
     AtlasEdge addEdge(AtlasVertex outVertex, AtlasVertex inVertex, String edgeLabel) {
-
         return atlasGraph.addEdge(outVertex, inVertex, edgeLabel);
     }
 
@@ -411,12 +447,11 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         }
     }
 
-    void createSuperTypeEdges(AtlasVertex vertex, Set<String> superTypes, TypeCategory typeCategory)
-            throws AtlasBaseException {
+    void createSuperTypeEdges(AtlasVertex vertex, Set<String> superTypes, TypeCategory typeCategory) throws AtlasBaseException {
         Set<String> currentSuperTypes = getSuperTypeNames(vertex);
 
         if (CollectionUtils.isNotEmpty(superTypes)) {
-            if (! superTypes.containsAll(currentSuperTypes)) {
+            if (!superTypes.containsAll(currentSuperTypes)) {
                 throw new AtlasBaseException(AtlasErrorCode.SUPERTYPE_REMOVAL_NOT_SUPPORTED);
             }
 
@@ -430,61 +465,12 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         }
     }
 
-    public void createEntityTypeEdges(AtlasVertex classificationVertex, Set<String> entityTypes) throws AtlasBaseException {
-        Set<String> currentEntityTypes     = getEntityTypeNames(classificationVertex);
-        String      classificationTypeName = classificationVertex.getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class);
-
-        if (CollectionUtils.isNotEmpty(entityTypes)) {
-            if (!entityTypes.containsAll(currentEntityTypes)) {
-                throw new AtlasBaseException(AtlasErrorCode.ENTITYTYPE_REMOVAL_NOT_SUPPORTED, classificationTypeName);
-            }
-
-            for (String entityType : entityTypes) {
-                AtlasVertex entityTypeVertex = findTypeVertexByNameAndCategory(entityType, TypeCategory.CLASS);
-                if (entityTypeVertex == null) {
-                    throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATIONDEF_INVALID_ENTITYTYPES, classificationTypeName,entityType);
-
-                }
-                getOrCreateEdge(classificationVertex, entityTypeVertex, AtlasGraphUtilsV2.ENTITYTYPE_EDGE_LABEL);
-            }
-        } else if (CollectionUtils.isNotEmpty(currentEntityTypes)) { // remove the restrictions, if present
-            for (String entityType : currentEntityTypes) {
-                AtlasVertex entityTypeVertex = findTypeVertexByNameAndCategory(entityType, TypeCategory.CLASS);
-
-                if (entityTypeVertex == null) {
-                    throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATIONDEF_INVALID_ENTITYTYPES, classificationTypeName,entityType);
-
-                }
-
-                removeEdge(classificationVertex, entityTypeVertex, AtlasGraphUtilsV2.ENTITYTYPE_EDGE_LABEL);
-            }
-
-        }
-    }
-
-    Set<String>  getSuperTypeNames(AtlasVertex vertex) {
+    Set<String> getSuperTypeNames(AtlasVertex vertex) {
         return getTypeNamesFromEdges(vertex, AtlasGraphUtilsV2.SUPERTYPE_EDGE_LABEL);
     }
 
-    Set<String>  getEntityTypeNames(AtlasVertex vertex) {
+    Set<String> getEntityTypeNames(AtlasVertex vertex) {
         return getTypeNamesFromEdges(vertex, AtlasGraphUtilsV2.ENTITYTYPE_EDGE_LABEL);
-    }
-
-    /**
-     * Get the typename properties from the edges, that are associated with the vertex and have the supplied edge label.
-     * @param vertex
-     * @param edgeLabel
-     * @return set of type names
-     */
-    private Set<String> getTypeNamesFromEdges(AtlasVertex vertex,String edgeLabel) {
-        Set<String>    ret   = new HashSet<>();
-        Iterable<AtlasEdge> edges = vertex.getEdges(AtlasEdgeDirection.OUT, edgeLabel);
-
-        for (AtlasEdge edge : edges) {
-            ret.add(edge.getInVertex().getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class));
-        }
-
-        return ret;
     }
 
     TypeCategory getTypeCategory(AtlasBaseTypeDef typeDef) {
@@ -509,6 +495,23 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         }
 
         return null;
+    }
+
+    /**
+     * Get the typename properties from the edges, that are associated with the vertex and have the supplied edge label.
+     * @param vertex
+     * @param edgeLabel
+     * @return set of type names
+     */
+    private Set<String> getTypeNamesFromEdges(AtlasVertex vertex, String edgeLabel) {
+        Set<String>         ret   = new HashSet<>();
+        Iterable<AtlasEdge> edges = vertex.getEdges(AtlasEdgeDirection.OUT, edgeLabel);
+
+        for (AtlasEdge edge : edges) {
+            ret.add(edge.getInVertex().getProperty(Constants.TYPENAME_PROPERTY_KEY, String.class));
+        }
+
+        return ret;
     }
 
     /*
@@ -547,9 +550,5 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         vertex.setProperty(Constants.MODIFIED_BY_KEY, getCurrentUser());
         vertex.setProperty(Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, System.currentTimeMillis());
         vertex.setProperty(Constants.VERSION_PROPERTY_KEY, newVersion);
-    }
-
-    public static String getCurrentUser() {
-        return RequestContext.getCurrentUser();
     }
 }

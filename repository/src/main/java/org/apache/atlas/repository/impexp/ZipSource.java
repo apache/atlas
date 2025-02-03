@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -42,17 +43,16 @@ import java.util.zip.ZipInputStream;
 
 import static org.apache.atlas.AtlasErrorCode.IMPORT_ATTEMPTING_EMPTY_ZIP;
 
-
 public class ZipSource implements EntityImportStream {
     private static final Logger LOG = LoggerFactory.getLogger(ZipSource.class);
 
-    private final InputStream       inputStream;
-    private List<String>            creationOrder;
-    private Iterator<String>        iterator;
-    private Map<String, String>     guidEntityJsonMap;
-    private ImportTransforms        importTransform;
-    private List<BaseEntityHandler> entityHandlers;
-    private int                     currentPosition;
+    private final InputStream             inputStream;
+    private       List<String>            creationOrder;
+    private       Iterator<String>        iterator;
+    private final Map<String, String>     guidEntityJsonMap;
+    private       ImportTransforms        importTransform;
+    private       List<BaseEntityHandler> entityHandlers;
+    private       int                     currentPosition;
 
     public ZipSource(InputStream inputStream) throws IOException, AtlasBaseException {
         this(inputStream, null);
@@ -64,6 +64,7 @@ public class ZipSource implements EntityImportStream {
         this.importTransform   = importTransform;
 
         updateGuidZipEntryMap();
+
         if (isZipFileEmpty()) {
             throw new AtlasBaseException(IMPORT_ATTEMPTING_EMPTY_ZIP, "Attempting to import empty ZIP.");
         }
@@ -71,19 +72,107 @@ public class ZipSource implements EntityImportStream {
         setCreationOrder();
     }
 
-    private boolean isZipFileEmpty() {
-        if (MapUtils.isEmpty(guidEntityJsonMap))  {
-            return true;
-        }
-
-        String key = ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME.toString();
-        return (guidEntityJsonMap.containsKey(key) &&
-                         StringUtils.isNotEmpty(guidEntityJsonMap.get(key)) &&
-                                 guidEntityJsonMap.get(key).equals("[]"));
+    @Override
+    public boolean hasNext() {
+        return this.iterator.hasNext();
     }
 
     @Override
-    public ImportTransforms getImportTransform() { return this.importTransform; }
+    public AtlasEntity next() {
+        AtlasEntityWithExtInfo entityWithExtInfo = getNextEntityWithExtInfo();
+
+        return entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
+    }
+
+    @Override
+    public void reset() {
+        getCreationOrder();
+
+        this.iterator = this.creationOrder != null ? this.creationOrder.iterator() : Collections.emptyIterator();
+    }
+
+    @Override
+    public AtlasEntity getByGuid(String guid) {
+        try {
+            return getEntity(guid);
+        } catch (AtlasBaseException e) {
+            LOG.error("getByGuid: {} failed!", guid, e);
+
+            return null;
+        }
+    }
+
+    public int size() {
+        return this.creationOrder.size();
+    }
+
+    @Override
+    public int getPosition() {
+        return currentPosition;
+    }
+
+    @Override
+    public void setPosition(int index) {
+        currentPosition = index;
+
+        reset();
+
+        for (int i = 0; i < creationOrder.size() && i <= index; i++) {
+            onImportComplete(iterator.next());
+        }
+    }
+
+    @Override
+    public void setPositionUsingEntityGuid(String guid) {
+        if (StringUtils.isBlank(guid)) {
+            return;
+        }
+
+        int index = creationOrder.indexOf(guid);
+
+        if (index == -1) {
+            return;
+        }
+
+        setPosition(index);
+    }
+
+    @Override
+    public AtlasEntityWithExtInfo getNextEntityWithExtInfo() {
+        try {
+            currentPosition++;
+
+            return getEntityWithExtInfo(this.iterator.next());
+        } catch (AtlasBaseException e) {
+            LOG.warn("getNextEntityWithExtInfo", e);
+            return null;
+        }
+    }
+
+    public AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) throws AtlasBaseException {
+        String                 s                 = getFromCache(guid);
+        AtlasEntityWithExtInfo entityWithExtInfo = convertFromJson(AtlasEntityWithExtInfo.class, s);
+
+        if (importTransform != null) {
+            entityWithExtInfo = importTransform.apply(entityWithExtInfo);
+        }
+
+        if (entityHandlers != null) {
+            applyTransformers(entityWithExtInfo);
+        }
+
+        return entityWithExtInfo;
+    }
+
+    @Override
+    public void onImportComplete(String guid) {
+        guidEntityJsonMap.remove(guid);
+    }
+
+    @Override
+    public ImportTransforms getImportTransform() {
+        return this.importTransform;
+    }
 
     @Override
     public void setImportTransform(ImportTransforms importTransform) {
@@ -103,54 +192,17 @@ public class ZipSource implements EntityImportStream {
     @Override
     public AtlasTypesDef getTypesDef() throws AtlasBaseException {
         final String fileName = ZipExportFileNames.ATLAS_TYPESDEF_NAME.toString();
+        String       s        = getFromCache(fileName);
 
-        String s = getFromCache(fileName);
         return convertFromJson(AtlasTypesDef.class, s);
     }
 
     @Override
     public AtlasExportResult getExportResult() throws AtlasBaseException {
         final String fileName = ZipExportFileNames.ATLAS_EXPORT_INFO_NAME.toString();
+        String       s        = getFromCache(fileName);
 
-        String s = getFromCache(fileName);
         return convertFromJson(AtlasExportResult.class, s);
-    }
-
-    private void setCreationOrder() {
-        String fileName = ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME.toString();
-
-        try {
-            String s = getFromCache(fileName);
-            this.creationOrder = convertFromJson(List.class, s);
-            this.iterator = this.creationOrder.iterator();
-        } catch (AtlasBaseException e) {
-            LOG.error(String.format("Error retrieving '%s' from zip.", fileName), e);
-        }
-    }
-
-    private void updateGuidZipEntryMap() throws IOException {
-
-        ZipInputStream zipInputStream = new ZipInputStream(inputStream);
-        ZipEntry zipEntry = zipInputStream.getNextEntry();
-        while (zipEntry != null) {
-            String entryName = zipEntry.getName().replace(".json", "");
-
-            if (guidEntityJsonMap.containsKey(entryName)) continue;
-
-            byte[] buf = new byte[1024];
-
-            int n = 0;
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            while ((n = zipInputStream.read(buf, 0, 1024)) > -1) {
-                bos.write(buf, 0, n);
-            }
-
-            guidEntityJsonMap.put(entryName, bos.toString());
-            zipEntry = zipInputStream.getNextEntry();
-
-        }
-
-        zipInputStream.close();
     }
 
     @Override
@@ -158,19 +210,65 @@ public class ZipSource implements EntityImportStream {
         return this.creationOrder;
     }
 
-    public AtlasEntityWithExtInfo getEntityWithExtInfo(String guid) throws AtlasBaseException {
-        String s = getFromCache(guid);
-        AtlasEntityWithExtInfo entityWithExtInfo = convertFromJson(AtlasEntityWithExtInfo.class, s);
+    @Override
+    public void close() {
+        try {
+            inputStream.close();
+            guidEntityJsonMap.clear();
+        } catch (IOException ex) {
+            LOG.warn("Error closing streams.", ex);
+        }
+    }
 
-        if (importTransform != null) {
-            entityWithExtInfo = importTransform.apply(entityWithExtInfo);
+    private boolean isZipFileEmpty() {
+        if (MapUtils.isEmpty(guidEntityJsonMap)) {
+            return true;
         }
 
-        if (entityHandlers != null) {
-            applyTransformers(entityWithExtInfo);
+        String key = ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME.toString();
+
+        return (guidEntityJsonMap.containsKey(key) && StringUtils.isNotEmpty(guidEntityJsonMap.get(key)) && guidEntityJsonMap.get(key).equals("[]"));
+    }
+
+    private void setCreationOrder() {
+        String fileName = ZipExportFileNames.ATLAS_EXPORT_ORDER_NAME.toString();
+
+        try {
+            String s = getFromCache(fileName);
+
+            this.creationOrder = convertFromJson(List.class, s);
+
+            this.iterator = this.creationOrder != null ? this.creationOrder.iterator() : Collections.emptyIterator();
+        } catch (AtlasBaseException e) {
+            LOG.error("Error retrieving '{}' from zip.", fileName, e);
+        }
+    }
+
+    private void updateGuidZipEntryMap() throws IOException {
+        ZipInputStream zipInputStream = new ZipInputStream(inputStream);
+        ZipEntry       zipEntry       = zipInputStream.getNextEntry();
+
+        while (zipEntry != null) {
+            String entryName = zipEntry.getName().replace(".json", "");
+
+            if (guidEntityJsonMap.containsKey(entryName)) {
+                continue;
+            }
+
+            byte[]                buf = new byte[1024];
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            int                   n;
+
+            while ((n = zipInputStream.read(buf, 0, 1024)) > -1) {
+                bos.write(buf, 0, n);
+            }
+
+            guidEntityJsonMap.put(entryName, bos.toString());
+
+            zipEntry = zipInputStream.getNextEntry();
         }
 
-        return entityWithExtInfo;
+        zipInputStream.close();
     }
 
     private void applyTransformers(AtlasEntityWithExtInfo entityWithExtInfo) {
@@ -195,10 +293,13 @@ public class ZipSource implements EntityImportStream {
 
     private <T> T convertFromJson(Class<T> clazz, String jsonData) throws AtlasBaseException {
         T t;
+
         try {
             t = AtlasType.fromJson(jsonData, clazz);
+
             if (t == null) {
                 LOG.error("Error converting file to JSON.");
+
                 return null;
             }
         } catch (Exception e) {
@@ -209,7 +310,8 @@ public class ZipSource implements EntityImportStream {
     }
 
     private String getFromCache(String entryName) {
-        String s  = guidEntityJsonMap.get(entryName);
+        String s = guidEntityJsonMap.get(entryName);
+
         if (StringUtils.isEmpty(s)) {
             LOG.warn("Could not fetch requested contents of file: {}", entryName);
         }
@@ -217,101 +319,13 @@ public class ZipSource implements EntityImportStream {
         return s;
     }
 
-    @Override
-    public void close() {
-        try {
-            inputStream.close();
-            guidEntityJsonMap.clear();
-        }
-        catch(IOException ex) {
-            LOG.warn("{}: Error closing streams.");
-        }
-    }
-
-    @Override
-    public boolean hasNext() {
-        return this.iterator.hasNext();
-    }
-
-    @Override
-    public AtlasEntity next() {
-        AtlasEntityWithExtInfo entityWithExtInfo = getNextEntityWithExtInfo();
-
-        return entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
-    }
-
-    @Override
-    public AtlasEntityWithExtInfo getNextEntityWithExtInfo() {
-        try {
-            currentPosition++;
-            return getEntityWithExtInfo(this.iterator.next());
-        } catch (AtlasBaseException e) {
-            LOG.warn("getNextEntityWithExtInfo", e);
-            return null;
-        }
-    }
-
-    @Override
-    public void reset() {
-        getCreationOrder();
-        this.iterator = this.creationOrder.iterator();
-    }
-
-    @Override
-    public AtlasEntity getByGuid(String guid)  {
-        try {
-            AtlasEntity entity = getEntity(guid);
-            return entity;
-        } catch (AtlasBaseException e) {
-            LOG.error("getByGuid: {} failed!", guid, e);
-            return null;
-        }
-    }
-
     private AtlasEntity getEntity(String guid) throws AtlasBaseException {
-        if(guidEntityJsonMap.containsKey(guid)) {
+        if (guidEntityJsonMap.containsKey(guid)) {
             AtlasEntityWithExtInfo extInfo = getEntityWithExtInfo(guid);
+
             return (extInfo != null) ? extInfo.getEntity() : null;
         }
 
         return null;
-    }
-
-    public int size() {
-        return this.creationOrder.size();
-    }
-
-    @Override
-    public void onImportComplete(String guid) {
-        guidEntityJsonMap.remove(guid);
-    }
-
-
-    @Override
-    public void setPosition(int index) {
-        currentPosition = index;
-        reset();
-        for (int i = 0; i < creationOrder.size() && i <= index; i++) {
-            onImportComplete(iterator.next());
-        }
-    }
-
-    @Override
-    public void setPositionUsingEntityGuid(String guid) {
-        if(StringUtils.isBlank(guid)) {
-            return;
-        }
-
-        int index = creationOrder.indexOf(guid);
-        if (index == -1) {
-            return;
-        }
-
-        setPosition(index);
-    }
-
-    @Override
-    public int getPosition() {
-        return currentPosition;
     }
 }

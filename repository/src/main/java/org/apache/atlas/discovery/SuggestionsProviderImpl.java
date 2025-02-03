@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +26,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-
 
 public class SuggestionsProviderImpl implements SuggestionsProvider {
     private static final Logger LOG = LoggerFactory.getLogger(SuggestionsProviderImpl.class);
@@ -51,7 +50,7 @@ public class SuggestionsProviderImpl implements SuggestionsProvider {
         } catch (AtlasException e) {
             LOG.error("Error encountered in performing quick suggestions. Will return no suggestions.", e);
 
-            result.setSuggestions(Collections.EMPTY_LIST);
+            result.setSuggestions(Collections.emptyList());
         }
 
         return result;

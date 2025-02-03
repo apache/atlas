@@ -47,6 +47,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -55,7 +57,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -63,7 +64,11 @@ import java.util.stream.StreamSupport;
 import static org.apache.atlas.discovery.SearchProcessor.AND_STR;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.INCOMPLETE_ENTITY_VALUE;
+import static org.apache.atlas.repository.Constants.IS_INCOMPLETE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
 import static org.apache.atlas.repository.ogm.metrics.AtlasMetricsStatDTO.METRICS_ENTITY_TYPE_NAME;
 import static org.apache.atlas.repository.ogm.metrics.AtlasMetricsStatDTO.METRICS_ID_PROPERTY;
 
@@ -71,74 +76,68 @@ import static org.apache.atlas.repository.ogm.metrics.AtlasMetricsStatDTO.METRIC
 public class MetricsService {
     private static final Logger LOG = LoggerFactory.getLogger(MetricsService.class);
 
-    private final DataAccess dataAccess;
-
     // Query Category constants
-    public static final String TYPE             = "type";
-    public static final String TYPE_SUBTYPES    = "typeAndSubTypes";
-    public static final String ENTITY           = "entity";
-    public static final String TAG              = "tag";
-    public static final String GENERAL          = "general";
-    public static final String SYSTEM           = "system";
+    public static final String TYPE          = "type";
+    public static final String TYPE_SUBTYPES = "typeAndSubTypes";
+    public static final String ENTITY        = "entity";
+    public static final String TAG           = "tag";
+    public static final String GENERAL       = "general";
+    public static final String SYSTEM        = "system";
 
     // Query names
-    protected static final String METRIC_COLLECTION_TIME            = "collectionTime";
-    protected static final String METRIC_STATS                      = "stats";
-    protected static final String METRIC_TYPE_COUNT                 = TYPE + "Count";
-    protected static final String METRIC_TYPE_UNUSED_COUNT          = TYPE + "UnusedCount";
-    protected static final String METRIC_ENTITY_COUNT               = ENTITY + "Count";
-    protected static final String METRIC_ENTITY_DELETED             = ENTITY + "Deleted";
-    protected static final String METRIC_ENTITY_ACTIVE              = ENTITY + "Active";
-    protected static final String METRIC_ENTITY_SHELL               = ENTITY + "Shell";
-    protected static final String METRIC_TAG_COUNT                  = TAG + "Count";
-    protected static final String METRIC_ENTITIES_PER_TAG           = TAG + "Entities";
-    protected static final String METRIC_RUNTIME                    = "runtime";
-    protected static final String METRIC_MEMORY                     = "memory";
-    protected static final String METRIC_OS                         = "os";
-    protected static final String METRIC_ENTITY_ACTIVE_INCL_SUBTYPES = ENTITY + "Active"+"-"+TYPE_SUBTYPES;
-    protected static final String METRIC_ENTITY_DELETED_INCL_SUBTYPES = ENTITY + "Deleted"+"-"+TYPE_SUBTYPES;
-    protected static final String METRIC_ENTITY_SHELL_INCL_SUBTYPES = ENTITY + "Shell"+"-"+TYPE_SUBTYPES;
-    protected static final String[] STATUS_CATEGORY                 = {"Active", "Deleted", "Shell"};
+    protected static final String   METRIC_COLLECTION_TIME              = "collectionTime";
+    protected static final String   METRIC_STATS                        = "stats";
+    protected static final String   METRIC_TYPE_COUNT                   = TYPE + "Count";
+    protected static final String   METRIC_TYPE_UNUSED_COUNT            = TYPE + "UnusedCount";
+    protected static final String   METRIC_ENTITY_COUNT                 = ENTITY + "Count";
+    protected static final String   METRIC_ENTITY_DELETED               = ENTITY + "Deleted";
+    protected static final String   METRIC_ENTITY_ACTIVE                = ENTITY + "Active";
+    protected static final String   METRIC_ENTITY_SHELL                 = ENTITY + "Shell";
+    protected static final String   METRIC_TAG_COUNT                    = TAG + "Count";
+    protected static final String   METRIC_ENTITIES_PER_TAG             = TAG + "Entities";
+    protected static final String   METRIC_RUNTIME                      = "runtime";
+    protected static final String   METRIC_MEMORY                       = "memory";
+    protected static final String   METRIC_OS                           = "os";
+    protected static final String   METRIC_ENTITY_ACTIVE_INCL_SUBTYPES  = ENTITY + "Active" + "-" + TYPE_SUBTYPES;
+    protected static final String   METRIC_ENTITY_DELETED_INCL_SUBTYPES = ENTITY + "Deleted" + "-" + TYPE_SUBTYPES;
+    protected static final String   METRIC_ENTITY_SHELL_INCL_SUBTYPES   = ENTITY + "Shell" + "-" + TYPE_SUBTYPES;
+    protected static final String[] STATUS_CATEGORY                     = {"Active", "Deleted", "Shell"};
 
+    private final DataAccess        dataAccess;
     private final AtlasGraph        atlasGraph;
     private final AtlasTypeRegistry typeRegistry;
     private final AtlasMetricsUtil  metricsUtil;
     private final String            indexSearchPrefix = AtlasGraphUtilsV2.getIndexSearchPrefix();
 
     @Inject
-    public MetricsService(final AtlasGraph graph, final AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil,
-                          DataAccess dataAccess) {
+    public MetricsService(final AtlasGraph graph, final AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil, DataAccess dataAccess) {
         this.atlasGraph   = graph;
         this.typeRegistry = typeRegistry;
         this.metricsUtil  = metricsUtil;
         this.dataAccess   = dataAccess;
     }
 
-    @SuppressWarnings("unchecked")
     @GraphTransaction
     public AtlasMetrics getMetrics() {
-
-        final AtlasTypesDef typesDef = getTypesDef();
-
-        Collection<AtlasEntityDef> entityDefs = typesDef.getEntityDefs();
-        Collection<AtlasClassificationDef> classificationDefs = typesDef.getClassificationDefs();
-        Map<String, Long>  activeEntityCount            = new HashMap<>();
-        Map<String, Long>  deletedEntityCount           = new HashMap<>();
-        Map<String, Long>  shellEntityCount             = new HashMap<>();
-        Map<String, Long>  taggedEntityCount            = new HashMap<>();
-        Map<String, Long> activeEntityCountTypeAndSubTypes = new HashMap<>();
-        Map<String, Long> deletedEntityCountTypeAndSubTypes = new HashMap<>();
-        Map<String, Long> shellEntityCountTypeAndSubTypes = new HashMap<>();
-
+        final AtlasTypesDef                typesDef                          = getTypesDef();
+        Collection<AtlasEntityDef>         entityDefs                        = typesDef.getEntityDefs();
+        Collection<AtlasClassificationDef> classificationDefs                = typesDef.getClassificationDefs();
+        Map<String, Long>                  activeEntityCount                 = new HashMap<>();
+        Map<String, Long>                  deletedEntityCount                = new HashMap<>();
+        Map<String, Long>                  shellEntityCount                  = new HashMap<>();
+        Map<String, Long>                  taggedEntityCount                 = new HashMap<>();
+        Map<String, Long>                  activeEntityCountTypeAndSubTypes  = new HashMap<>();
+        Map<String, Long>                  deletedEntityCountTypeAndSubTypes = new HashMap<>();
+        Map<String, Long>                  shellEntityCountTypeAndSubTypes   = new HashMap<>();
 
         long unusedTypeCount = 0;
-        long totalEntities = 0;
+        long totalEntities   = 0;
 
         if (entityDefs != null) {
             for (AtlasEntityDef entityDef : entityDefs) {
                 long activeCount  = getTypeCount(entityDef.getName(), ACTIVE);
                 long deletedCount = getTypeCount(entityDef.getName(), DELETED);
-                long shellCount = getTypeShellCount(entityDef.getName());
+                long shellCount   = getTypeShellCount(entityDef.getName());
 
                 if (activeCount > 0) {
                     activeEntityCount.put(entityDef.getName(), activeCount);
@@ -162,28 +161,29 @@ public class MetricsService {
             for (AtlasEntityDef entityDef : entityDefs) {
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityDef.getName());
 
-                long entityActiveCount = 0;
+                long entityActiveCount  = 0;
                 long entityDeletedCount = 0;
-                long entityShellCount = 0;
+                long entityShellCount   = 0;
 
                 for (String type : entityType.getTypeAndAllSubTypes()) {
-                    entityActiveCount += activeEntityCount.get(type) == null ? 0 : activeEntityCount.get(type);
+                    entityActiveCount  += activeEntityCount.get(type) == null ? 0 : activeEntityCount.get(type);
                     entityDeletedCount += deletedEntityCount.get(type) == null ? 0 : deletedEntityCount.get(type);
-                    entityShellCount += shellEntityCount.get(type) == null ? 0 : shellEntityCount.get(type);
+                    entityShellCount   += shellEntityCount.get(type) == null ? 0 : shellEntityCount.get(type);
                 }
 
                 if (entityActiveCount > 0) {
                     activeEntityCountTypeAndSubTypes.put(entityType.getTypeName(), entityActiveCount);
                 }
+
                 if (entityDeletedCount > 0) {
                     deletedEntityCountTypeAndSubTypes.put(entityType.getTypeName(), entityDeletedCount);
                 }
+
                 if (entityShellCount > 0) {
                     shellEntityCountTypeAndSubTypes.put(entityType.getTypeName(), entityShellCount);
                 }
             }
         }
-
 
         if (classificationDefs != null) {
             for (AtlasClassificationDef classificationDef : classificationDefs) {
@@ -219,17 +219,183 @@ public class MetricsService {
         return metrics;
     }
 
+    public AtlasMetricsStat saveMetricsStat(AtlasMetricsStat metricsStat) throws AtlasBaseException {
+        LOG.debug("==> MetricsService.saveMetricsStat({})", metricsStat);
+
+        if (Objects.isNull(metricsStat) || StringUtils.isEmpty(metricsStat.getMetricsId())) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "MetricsStat definition missing.");
+        }
+
+        if (metricsStatExists(metricsStat)) {
+            throw new AtlasBaseException(AtlasErrorCode.METRICSSTAT_ALREADY_EXISTS, String.valueOf(metricsStat.getCollectionTime()));
+        }
+
+        AtlasMetricsStat storeObject = dataAccess.save(metricsStat);
+
+        LOG.debug("<== MetricsService.saveMetricsStat() : {}", storeObject);
+
+        return storeObject;
+    }
+
+    public void purgeMetricsStats() throws AtlasBaseException {
+        LOG.debug("==> MetricsService.purgeMetricsStats()");
+
+        long currentTimeMillis = System.currentTimeMillis();
+
+        List<AtlasMetricsStat> metricsStats = getAllMetricsStats(true)
+                .stream()
+                .filter(c -> c.getCollectionTime() + c.getTimeToLiveMillis() < currentTimeMillis)
+                .collect(Collectors.toList());
+
+        for (AtlasMetricsStat a : metricsStats) {
+            long collectedTime = a.getCollectionTime();
+
+            deleteMetricsStatByCollectionTime(String.valueOf(collectedTime));
+        }
+
+        LOG.debug("<== MetricsService.purgeMetricsStats() : {}", metricsStats);
+    }
+
+    @GraphTransaction
+    public AtlasMetricsStat getMetricsStatByCollectionTime(final String collectionTime) throws AtlasBaseException {
+        LOG.debug("==> MetricsService.getMetricsStatByCollectionTime({})", collectionTime);
+
+        if (StringUtils.isBlank(collectionTime)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "collectionTime is null/empty");
+        }
+
+        AtlasMetricsStat metricsStat = new AtlasMetricsStat();
+
+        metricsStat.setCollectionTime(Long.parseLong(collectionTime));
+
+        AtlasMetricsStat ret = dataAccess.load(metricsStat);
+
+        LOG.debug("<== MetricsService.getMetricsStatByCollectionTime() : {}", ret);
+
+        return ret;
+    }
+
+    @GraphTransaction
+    public void deleteMetricsStatByCollectionTime(final String collectionTime) throws AtlasBaseException {
+        LOG.debug("==> MetricsService.deleteMetricsStatByCollectionTime({})", collectionTime);
+
+        if (StringUtils.isEmpty(collectionTime)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, collectionTime);
+        }
+
+        AtlasMetricsStat deleteStat = getMetricsStatByCollectionTime(collectionTime);
+
+        dataAccess.delete(deleteStat.getGuid());
+
+        // delete log
+        if (LOG.isDebugEnabled()) {
+            long currTime      = System.currentTimeMillis();
+            long collectedTime = deleteStat.getCollectionTime();
+
+            LOG.debug("MetricsService.deleteMetricsStatByCollectionTime(): At {}, metricsStat with collectionTime: {}, persisted hours: {}, is deleted. ",
+                    Instant.ofEpochMilli(currTime), Instant.ofEpochMilli(collectedTime), TimeUnit.MILLISECONDS.toHours(currTime - collectedTime));
+        }
+
+        LOG.debug("<== MetricsService.deleteMetricsStatByCollectionTime({})", collectionTime);
+    }
+
+    @GraphTransaction
+    public List<AtlasMetricsStat> getAllMetricsStats(Boolean minInfo) throws AtlasBaseException {
+        LOG.debug("==> MetricsService.getAllMetricsStats()");
+
+        List<AtlasMetricsStat> ret;
+        // SortOrder.ASCENDING is a necessary input parameter. It only sorts GUIDs, but not collectionTime.
+        List<String> guids = AtlasGraphUtilsV2.findEntityGUIDsByType(METRICS_ENTITY_TYPE_NAME, SortOrder.ASCENDING);
+
+        if (CollectionUtils.isNotEmpty(guids)) {
+            List<AtlasMetricsStat> metricsToLoad = guids.stream()
+                    .map(AtlasMetricsStat::new)
+                    .collect(Collectors.toList());
+
+            Iterable<AtlasMetricsStat> metricsStats = dataAccess.load(metricsToLoad);
+
+            ret = StreamSupport.stream(metricsStats.spliterator(), false)
+                    .sorted((a, b) -> (int) (b.getCollectionTime() - a.getCollectionTime()))
+                    .map(m -> {
+                        if (minInfo) {
+                            m.setMetrics(null);
+                        }
+                        return m;
+                    }).collect(Collectors.toList());
+        } else {
+            ret = Collections.emptyList();
+        }
+
+        LOG.debug("<== MetricsService.getAllMetricsStats() : {}", ret);
+
+        return ret;
+    }
+
+    public List<AtlasMetricsStat> getMetricsInRangeByTypeNames(long startTime, long endTime, List<String> typeNames) throws AtlasBaseException {
+        LOG.debug("==> MetricsService.getMetricsInRangeByTypeNames({}, {}, {})", startTime, endTime, String.join(", ", typeNames));
+
+        if (startTime >= endTime) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "startTime: '" + startTime + "', should be less than, endTime: '" + endTime + "'");
+        }
+
+        List<AtlasMetricsStat> metricsInRange;
+        List<AtlasMetricsStat> allMetrics = getAllMetricsStats(false);
+
+        metricsInRange = allMetrics.stream()
+                .filter(m -> m.getCollectionTime() >= startTime && m.getCollectionTime() <= endTime)
+                .map(m -> {
+                    m = new AtlasMetricsStat(m.getMetrics(), typeNames);
+                    m.setMetrics(null);
+                    return m;
+                })
+                .collect(Collectors.toList());
+
+        LOG.debug("<== MetricsService.getMetricsInRangeByTypeNames() : {}", metricsInRange);
+
+        return metricsInRange;
+    }
+
+    public Map<String, List<AtlasMetricsMapToChart>> getMetricsForChartByTypeNames(long startTime, long endTime, List<String> typeNames) throws AtlasBaseException {
+        LOG.debug("==> MetricsService.getMetricsForChartByTypeNames({}, {}, {})", startTime, endTime, typeNames);
+
+        // Calling getMetricsInRangeByTypeNames() and constructing AtlasMetricsStat with list of typeNames, to retrieve JanusGraph only once.
+        Map<String, List<AtlasMetricsMapToChart>> ret = new HashMap<>();
+
+        // Returned metrics were sorted by collectionTime descendingly. Reverse it to ascending order to match stacked area chart's required input format.
+        List<AtlasMetricsStat> metrics = getMetricsInRangeByTypeNames(startTime, endTime, typeNames);
+
+        Collections.reverse(metrics);
+
+        for (String typeName : typeNames) {
+            Map<String, List<long[]>> statusCategory = mapToStatusCategoryByOneType(metrics, typeName);
+
+            if (MapUtils.isNotEmpty(statusCategory)) {
+                ret.put(typeName, statusCategory.entrySet()
+                        .stream()
+                        .map(c -> new AtlasMetricsMapToChart(c.getKey(), c.getValue()))
+                        .collect(Collectors.toList()));
+            } else {
+                LOG.info("MetricsService.getMetricsForChartByTypeNames() : data of typeName:{} cannot be found.", typeName);
+
+                ret.put(typeName, Collections.emptyList());
+            }
+        }
+
+        LOG.debug("<== MetricsService.getMetricsForChartByTypeNames() : {}", ret);
+
+        return ret;
+    }
+
     private long getTypeCount(String typeName, Status status) {
         Long   ret        = null;
-        String indexQuery = indexSearchPrefix + "\"" + ENTITY_TYPE_PROPERTY_KEY + "\" : (%s)" + AND_STR +
-                indexSearchPrefix + "\"" + STATE_PROPERTY_KEY       + "\" : (%s)";
+        String indexQuery = indexSearchPrefix + "\"" + ENTITY_TYPE_PROPERTY_KEY + "\" : (%s)" + AND_STR + indexSearchPrefix + "\"" + STATE_PROPERTY_KEY + "\" : (%s)";
 
         indexQuery = String.format(indexQuery, typeName, status.name());
 
         try {
             ret = atlasGraph.indexQuery(VERTEX_INDEX, indexQuery).vertexTotals();
-        }catch (Exception e){
-            LOG.error("Failed fetching using indexQuery: " + e.getMessage());
+        } catch (Exception e) {
+            LOG.error("Failed fetching using indexQuery: {}", e.getMessage());
         }
 
         return ret == null ? 0L : ret;
@@ -237,15 +403,14 @@ public class MetricsService {
 
     private long getTypeShellCount(String typeName) {
         Long   ret        = null;
-        String indexQuery = indexSearchPrefix + "\"" + ENTITY_TYPE_PROPERTY_KEY + "\" : (%s)" + AND_STR +
-                indexSearchPrefix + "\"" + IS_INCOMPLETE_PROPERTY_KEY + "\" : " + INCOMPLETE_ENTITY_VALUE.intValue();
+        String indexQuery = indexSearchPrefix + "\"" + ENTITY_TYPE_PROPERTY_KEY + "\" : (%s)" + AND_STR + indexSearchPrefix + "\"" + IS_INCOMPLETE_PROPERTY_KEY + "\" : " + INCOMPLETE_ENTITY_VALUE;
 
         indexQuery = String.format(indexQuery, typeName);
 
         try {
             ret = atlasGraph.indexQuery(VERTEX_INDEX, indexQuery).vertexTotals();
-        }catch (Exception e){
-            LOG.error("Failed fetching using indexQuery: " + e.getMessage());
+        } catch (Exception e) {
+            LOG.error("Failed fetching using indexQuery: {}", e.getMessage());
         }
 
         return ret == null ? 0L : ret;
@@ -264,19 +429,19 @@ public class MetricsService {
     }
 
     private AtlasTypesDef getTypesDef() {
-        AtlasTypesDef ret = new AtlasTypesDef();
-
+        AtlasTypesDef              ret        = new AtlasTypesDef();
         Collection<AtlasEntityDef> entityDefs = typeRegistry.getAllEntityDefs();
+
         if (CollectionUtils.isNotEmpty(entityDefs)) {
-            for(AtlasEntityDef entityDef : entityDefs) {
-                if(!(CollectionUtils.isNotEmpty(entityDef.getSuperTypes()) &&
-                        entityDef.getSuperTypes().contains(Constants.TYPE_NAME_INTERNAL))) {
+            for (AtlasEntityDef entityDef : entityDefs) {
+                if (!(CollectionUtils.isNotEmpty(entityDef.getSuperTypes()) && entityDef.getSuperTypes().contains(Constants.TYPE_NAME_INTERNAL))) {
                     ret.getEntityDefs().add(entityDef);
                 }
             }
         }
 
         Collection<AtlasClassificationDef> classificationTypes = typeRegistry.getAllClassificationDefs();
+
         if (CollectionUtils.isNotEmpty(classificationTypes)) {
             ret.getClassificationDefs().addAll(classificationTypes);
         }
@@ -286,215 +451,10 @@ public class MetricsService {
         return ret;
     }
 
-    public AtlasMetricsStat saveMetricsStat(AtlasMetricsStat metricsStat) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> MetricsService.saveMetricsStat({})", metricsStat);
-        }
-
-        if (Objects.isNull(metricsStat) || StringUtils.isEmpty(metricsStat.getMetricsId())) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "MetricsStat definition missing.");
-        }
-
-        if (metricsStatExists(metricsStat)) {
-            throw new AtlasBaseException(AtlasErrorCode.METRICSSTAT_ALREADY_EXISTS, String.valueOf(metricsStat.getCollectionTime()));
-        }
-
-        AtlasMetricsStat storeObject = dataAccess.save(metricsStat);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== MetricsService.saveMetricsStat() : {}", storeObject);
-        }
-
-        return storeObject;
-    }
-
-    public void purgeMetricsStats() throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> MetricsService.purgeMetricsStats()");
-        }
-
-        long currentTimeMillis = System.currentTimeMillis();
-
-        List<AtlasMetricsStat> metricsStats = getAllMetricsStats(true)
-                .stream()
-                .filter(c -> c.getCollectionTime() + c.getTimeToLiveMillis() < currentTimeMillis)
-                .collect(Collectors.toList());
-
-        for (AtlasMetricsStat a : metricsStats) {
-            long collectedTime = a.getCollectionTime();
-            deleteMetricsStatByCollectionTime(String.valueOf(collectedTime));
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== MetricsService.purgeMetricsStats() : {}", metricsStats);
-        }
-    }
-
-    @GraphTransaction
-    public AtlasMetricsStat getMetricsStatByCollectionTime(final String collectionTime) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> MetricsService.getMetricsStatByCollectionTime({})", collectionTime);
-        }
-
-        if (StringUtils.isBlank(collectionTime)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "collectionTime is null/empty");
-        }
-
-        AtlasMetricsStat ret;
-
-        AtlasMetricsStat metricsStat = new AtlasMetricsStat();
-        metricsStat.setCollectionTime(Long.parseLong(collectionTime));
-
-        ret = dataAccess.load(metricsStat);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== MetricsService.getMetricsStatByCollectionTime() : {}", ret);
-        }
-
-        return ret;
-    }
-
-    @GraphTransaction
-    public void deleteMetricsStatByCollectionTime(final String collectionTime) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> MetricsService.deleteMetricsStatByCollectionTime({})", collectionTime);
-        }
-
-        if (StringUtils.isEmpty(collectionTime)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, collectionTime);
-        }
-
-        AtlasMetricsStat deleteStat = getMetricsStatByCollectionTime(collectionTime);
-
-        dataAccess.delete(deleteStat.getGuid());
-
-        // delete log
-        if (LOG.isDebugEnabled()) {
-            long currTime      = System.currentTimeMillis();
-            long collectedTime = deleteStat.getCollectionTime();
-
-            LOG.info("MetricsService.deleteMetricsStatByCollectionTime(): At {}, metricsStat with collectionTime: {}, persisted hours: {}, is deleted. ",
-                    Instant.ofEpochMilli(currTime),
-                    Instant.ofEpochMilli(collectedTime),
-                    TimeUnit.MILLISECONDS.toHours(currTime - collectedTime)
-            );
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== MetricsService.deleteMetricsStatByCollectionTime({})", collectionTime);
-        }
-
-    }
-
-    @GraphTransaction
-    public List<AtlasMetricsStat> getAllMetricsStats(Boolean minInfo) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> MetricsService.getAllMetricsStats()");
-        }
-
-        List<AtlasMetricsStat> ret = new ArrayList<>();
-        // SortOrder.ASCENDING is a necessary input parameter. It only sorts GUIDs, but not collectionTime.
-        List<String> guids = AtlasGraphUtilsV2.findEntityGUIDsByType(METRICS_ENTITY_TYPE_NAME, SortOrder.ASCENDING);
-
-        if (CollectionUtils.isNotEmpty(guids)) {
-            List<AtlasMetricsStat> metricsToLoad = guids.stream()
-                    .map(AtlasMetricsStat::new)
-                    .collect(Collectors.toList());
-
-            Iterable<AtlasMetricsStat> metricsStats = dataAccess.load(metricsToLoad);
-
-
-            ret = StreamSupport.stream(metricsStats.spliterator(), false)
-                    .sorted((a, b) -> (int) (b.getCollectionTime() - a.getCollectionTime()))
-                    .map(m -> {
-                        if(minInfo) {
-                            m.setMetrics(null);
-                        }
-                        return m;
-                    }).collect(Collectors.toList());
-
-        } else {
-            ret = Collections.emptyList();
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== MetricsService.getAllMetricsStats() : {}", ret);
-        }
-
-        return ret;
-    }
-
-
-    public List<AtlasMetricsStat> getMetricsInRangeByTypeNames(long startTime,
-                                                               long endTime,
-                                                               List<String> typeNames) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> MetricsService.getMetricsInRangeByTypeNames({}, {}, {})", startTime, endTime, String.join(", ", typeNames));
-        }
-
-        if (startTime >= endTime) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
-                    "startTime: '" + startTime + "', should be less than, endTime: '" + endTime + "'");
-        }
-
-        List<AtlasMetricsStat> metricsInRange;
-        List<AtlasMetricsStat> allMetrics = getAllMetricsStats(false);
-
-        metricsInRange = allMetrics.stream()
-                .filter(m -> m.getCollectionTime() >= startTime && m.getCollectionTime() <= endTime)
-                .map(m ->  {
-                    m = new AtlasMetricsStat(m.getMetrics(), typeNames);
-                    m.setMetrics(null);
-                    return m;
-                })
-                .collect(Collectors.toList());
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== MetricsService.getMetricsInRangeByTypeNames() : {}", metricsInRange);
-        }
-
-        return metricsInRange;
-    }
-
-    public Map<String, List<AtlasMetricsMapToChart>> getMetricsForChartByTypeNames(long         startTime,
-                                                                                   long         endTime,
-                                                                                   List<String> typeNames) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> MetricsService.getMetricsForChartByTypeNames({}, {}, {})", startTime, endTime, typeNames);
-        }
-
-        // Calling getMetricsInRangeByTypeNames() and constructing AtlasMetricsStat with list of typeNames, to retrieve JanusGraph only once.
-        Map<String, List<AtlasMetricsMapToChart>> ret = new HashMap<>();
-
-        // Returned metrics were sorted by collectionTime descendingly. Reverse it to ascending order to match stacked area chart's required input format.
-        List<AtlasMetricsStat> metrics = getMetricsInRangeByTypeNames(startTime, endTime, typeNames);
-        Collections.reverse(metrics);
-
-        for (String typeName : typeNames) {
-            Map<String, List<long[]>> statusCategory = mapToStatusCategoryByOneType(metrics, typeName);
-
-            if (MapUtils.isNotEmpty(statusCategory)) {
-                ret.put(typeName, statusCategory.entrySet()
-                        .stream()
-                        .map(c -> new AtlasMetricsMapToChart(c.getKey(), c.getValue()))
-                        .collect(Collectors.toList())
-                );
-            } else {
-                LOG.info("MetricsService.getMetricsForChartByTypeNames() : data of typeName:{} cannot be found.", typeName);
-                ret.put(typeName, Collections.emptyList());
-            }
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== MetricsService.getMetricsForChartByTypeNames() : {}", ret);
-        }
-
-        return ret;
-    }
-
-    /** Mapping each typeName's counting info in AtlasMetricsStat to the required format to render the stacked area chart.
-     *  Keys:   3 categories: Active, Deleted & Shell.
-     *  Values: a list of pair with the first element as collectionTime, and the second element as count.
+    /**
+     * Mapping each typeName's counting info in AtlasMetricsStat to the required format to render the stacked area chart.
+     * Keys:   3 categories: Active, Deleted & Shell.
+     * Values: a list of pair with the first element as collectionTime, and the second element as count.
      */
     private Map<String, List<long[]>> mapToStatusCategoryByOneType(List<AtlasMetricsStat> metrics, String typeName) {
         // Use LinkedHashMap to make sure the status are in order as Active, Deleted and Shell for rendering chart
@@ -502,13 +462,15 @@ public class MetricsService {
 
         for (AtlasMetricsStat metric : metrics) {
             Map<String, Integer> metricsMap = null;
+
             if (metric.getTypeData() != null) {
                 metricsMap = (Map<String, Integer>) metric.getTypeData().get(typeName);
             }
 
             for (String status : STATUS_CATEGORY) {
-                long statusCnt = metricsMap == null? (long) 0: metricsMap.get(status);
-                statusCategory.computeIfAbsent(status, a -> new ArrayList<>()).add(new long[]{metric.getCollectionTime(), statusCnt});
+                long statusCnt = metricsMap == null ? (long) 0 : metricsMap.get(status);
+
+                statusCategory.computeIfAbsent(status, a -> new ArrayList<>()).add(new long[] {metric.getCollectionTime(), statusCnt});
             }
         }
 
@@ -516,10 +478,8 @@ public class MetricsService {
     }
 
     private boolean metricsStatExists(AtlasMetricsStat metricsStat) {
-        AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(typeRegistry.getEntityTypeByName(METRICS_ENTITY_TYPE_NAME), new HashMap<String, Object>() {{
-            put(METRICS_ID_PROPERTY, metricsStat.getMetricsId());
-        }});
+        AtlasVertex vertex = AtlasGraphUtilsV2.findByUniqueAttributes(typeRegistry.getEntityTypeByName(METRICS_ENTITY_TYPE_NAME), Collections.singletonMap(METRICS_ID_PROPERTY, metricsStat.getMetricsId()));
+
         return Objects.nonNull(vertex);
     }
-
 }

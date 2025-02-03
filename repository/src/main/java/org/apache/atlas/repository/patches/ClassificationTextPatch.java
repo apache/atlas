@@ -33,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Set;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
@@ -64,7 +63,6 @@ public class ClassificationTextPatch extends AtlasPatchHandler {
     }
 
     public static class ClassificationTextPatchProcessor extends ConcurrentPatchProcessor {
-
         public ClassificationTextPatchProcessor(PatchContext context) {
             super(context);
         }
@@ -86,9 +84,8 @@ public class ClassificationTextPatch extends AtlasPatchHandler {
                 Iterable<AtlasVertex> iterable = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, classificationType.getTypeName()).vertices();
                 int                   count    = 0;
 
-                for (Iterator<AtlasVertex> iter = iterable.iterator(); iter.hasNext(); ) {
-                    AtlasVertex         classificationVertex = iter.next();
-                    Iterable<AtlasEdge> edges                = classificationVertex.getEdges(AtlasEdgeDirection.IN);
+                for (AtlasVertex classificationVertex : iterable) {
+                    Iterable<AtlasEdge> edges = classificationVertex.getEdges(AtlasEdgeDirection.IN);
 
                     for (AtlasEdge edge : edges) {
                         AtlasVertex entityVertex = edge.getOutVertex();
@@ -118,9 +115,7 @@ public class ClassificationTextPatch extends AtlasPatchHandler {
         }
 
         private void processItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) throws AtlasBaseException {
-            if(LOG.isDebugEnabled()) {
-                LOG.debug("processItem(typeName={}, vertexId={})", typeName, vertexId);
-            }
+            LOG.debug("processItem(typeName={}, vertexId={})", typeName, vertexId);
 
             if (AtlasGraphUtilsV2.getState(vertex) != AtlasEntity.Status.ACTIVE) {
                 return;
@@ -128,9 +123,7 @@ public class ClassificationTextPatch extends AtlasPatchHandler {
 
             getEntityGraphMapper().updateClassificationTextAndNames(vertex);
 
-            if(LOG.isDebugEnabled()) {
-                LOG.debug("processItem(typeName={}, vertexId={}): Done!", typeName, vertexId);
-            }
+            LOG.debug("processItem(typeName={}, vertexId={}): Done!", typeName, vertexId);
         }
     }
 }

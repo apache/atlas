@@ -32,6 +32,50 @@ import static org.testng.Assert.assertEquals;
 public class WorkItemManagerTest {
     private static final Logger LOG = LoggerFactory.getLogger(WorkItemManagerTest.class);
 
+    @Test
+    public void oneWorkerSequences() {
+        IntegerConsumerBuilder cb            = new IntegerConsumerBuilder();
+        int                    numberOfItems = 10;
+        try {
+            WorkItemManager<Integer, WorkItemConsumer<Integer>> wi = getWorkItemManger(cb, 1);
+            for (int i = 0; i < numberOfItems; i++) {
+                wi.produce(i);
+            }
+
+            wi.shutdown();
+        } catch (InterruptedException e) {
+            throw new SkipException("Test skipped!");
+        }
+
+        assertEquals(cb.integers.size(), numberOfItems);
+        Integer[] ints = cb.integers.toArray(new Integer[] {});
+        for (int i = 0; i < numberOfItems; i++) {
+            assertEquals(ints[i], i, i);
+        }
+    }
+
+    @Test
+    public void multipleWorkersUnpredictableSequence() {
+        IntegerConsumerBuilder cb            = new IntegerConsumerBuilder();
+        int                    numberOfItems = 100;
+        try {
+            WorkItemManager<Integer, WorkItemConsumer<Integer>> wi = getWorkItemManger(cb, 5);
+            for (int i = 0; i < numberOfItems; i++) {
+                wi.produce(i);
+            }
+
+            wi.shutdown();
+        } catch (InterruptedException e) {
+            throw new SkipException("Test skipped!");
+        }
+
+        assertEquals(cb.integers.size(), numberOfItems);
+    }
+
+    private WorkItemManager<Integer, WorkItemConsumer<Integer>> getWorkItemManger(IntegerConsumerBuilder cb, int numWorkers) {
+        return new WorkItemManager<>(cb, 5, numWorkers);
+    }
+
     private static class IntegerConsumer extends WorkItemConsumer<Integer> {
         private final ConcurrentLinkedQueue<Integer> target;
 
@@ -64,50 +108,5 @@ public class WorkItemManagerTest {
         public IntegerConsumer build(BlockingQueue<Integer> queue) {
             return new IntegerConsumer(queue, integers);
         }
-    }
-
-    @Test
-    public void oneWorkerSequences() {
-        IntegerConsumerBuilder cb = new IntegerConsumerBuilder();
-        int numberOfItems = 10;
-        try {
-            WorkItemManager<Integer, WorkItemConsumer<Integer>> wi = getWorkItemManger(cb, 1);
-            for (int i = 0; i < numberOfItems; i++) {
-                wi.produce(i);
-            }
-
-            wi.shutdown();
-        } catch (InterruptedException e) {
-            throw new SkipException("Test skipped!");
-        }
-
-        assertEquals(cb.integers.size(), numberOfItems);
-        Integer[] ints = cb.integers.toArray(new Integer[]{});
-        for (int i = 0; i < numberOfItems; i++) {
-            assertEquals(ints[i], i, i);
-        }
-    }
-
-
-    @Test
-    public void multipleWorkersUnpredictableSequence() {
-        IntegerConsumerBuilder cb = new IntegerConsumerBuilder();
-        int numberOfItems = 100;
-        try {
-            WorkItemManager<Integer, WorkItemConsumer<Integer>> wi = getWorkItemManger(cb, 5);
-            for (int i = 0; i < numberOfItems; i++) {
-                wi.produce(i);
-            }
-
-            wi.shutdown();
-        } catch (InterruptedException e) {
-            throw new SkipException("Test skipped!");
-        }
-
-        assertEquals(cb.integers.size(), numberOfItems);
-    }
-
-    private WorkItemManager<Integer, WorkItemConsumer<Integer>> getWorkItemManger(IntegerConsumerBuilder cb, int numWorkers) {
-        return new WorkItemManager<>(cb, 5, numWorkers);
     }
 }

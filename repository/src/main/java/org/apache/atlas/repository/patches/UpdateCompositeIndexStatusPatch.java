@@ -35,6 +35,7 @@ public class UpdateCompositeIndexStatusPatch extends AtlasPatchHandler {
 
     public UpdateCompositeIndexStatusPatch(PatchContext context) {
         super(context.getPatchRegistry(), PATCH_ID, PATCH_DESCRIPTION);
+
         this.context = context;
     }
 
@@ -42,6 +43,7 @@ public class UpdateCompositeIndexStatusPatch extends AtlasPatchHandler {
     public void apply() throws AtlasBaseException {
         if (!AtlasConfiguration.UPDATE_COMPOSITE_INDEX_STATUS.getBoolean()) {
             LOG.info("UpdateCompositeIndexStatusPatch: Skipped, since not enabled!");
+
             return;
         }
 

@@ -24,11 +24,27 @@ import org.apache.atlas.repository.graphdb.GremlinVersion;
  * Generic Gremlin query provider which is agnostic of the Gremlin/TinkerPop version being used in Atlas
  */
 public abstract class AtlasGremlinQueryProvider {
-    public static final AtlasGremlinQueryProvider INSTANCE =
-            AtlasGraphProvider.getGraphInstance().getSupportedGremlinVersion() == GremlinVersion.THREE ?
-                    new AtlasGremlin3QueryProvider() : new AtlasGremlin2QueryProvider();
+    private static volatile AtlasGremlinQueryProvider instance;
 
-    abstract public String getQuery(final AtlasGremlinQuery gremlinQuery);
+    public static AtlasGremlinQueryProvider getInstance() {
+        AtlasGremlinQueryProvider ret = instance;
+
+        if (ret == null) {
+            synchronized (AtlasGremlinQueryProvider.class) {
+                ret = instance;
+
+                if (ret == null) {
+                    ret = AtlasGraphProvider.getGraphInstance().getSupportedGremlinVersion() == GremlinVersion.THREE ? new AtlasGremlin3QueryProvider() : new AtlasGremlin2QueryProvider();
+
+                    instance = ret;
+                }
+            }
+        }
+
+        return ret;
+    }
+
+    public abstract String getQuery(AtlasGremlinQuery gremlinQuery);
 
     public enum AtlasGremlinQuery {
         // Metrics related Queries

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,7 +20,6 @@ package org.apache.atlas.repository.impexp;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
-import org.testng.Assert;
 import org.testng.ITestContext;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -35,6 +34,7 @@ import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getZip
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
 import static org.testng.AssertJUnit.assertTrue;
 
 public class ZipSourceTest {
@@ -42,28 +42,29 @@ public class ZipSourceTest {
     public static Object[][] getDataFromZipFile() throws IOException, AtlasBaseException {
         FileInputStream fs = ZipFileResourceTestUtils.getFileInputStream("stocks.zip");
 
-        return new Object[][] {{ new ZipSource(fs) }};
+        return new Object[][] {{new ZipSource(fs)}};
     }
 
     @DataProvider(name = "zipFileStocksFloat")
     public static Object[][] getDataFromZipFileWithLongFloats() throws IOException, AtlasBaseException {
         FileInputStream fs = ZipFileResourceTestUtils.getFileInputStream("stocks-float.zip");
 
-        return new Object[][] {{ new ZipSource(fs) }};
+        return new Object[][] {{new ZipSource(fs)}};
     }
 
     @DataProvider(name = "sales")
-    public static Object[][] getDataFromQuickStart_v1_Sales(ITestContext context) throws IOException, AtlasBaseException {
+    public static Object[][] getDataFromQuickStart_v1_Sales(ITestContext context) {
         return getZipSource("sales-v1-full.zip");
     }
 
     @Test(expectedExceptions = AtlasBaseException.class)
     public void improperInit_ReturnsNullCreationOrder() throws IOException, AtlasBaseException {
-        byte bytes[] = new byte[10];
-        ByteArrayInputStream bais = new ByteArrayInputStream(bytes);
-        ZipSource zs = new ZipSource(bais);
-        List<String> s = zs.getCreationOrder();
-        Assert.assertNull(s);
+        byte[]               bytes = new byte[10];
+        ByteArrayInputStream bais  = new ByteArrayInputStream(bytes);
+        ZipSource            zs    = new ZipSource(bais);
+        List<String>         s     = zs.getCreationOrder();
+
+        assertNull(s);
     }
 
     @Test(dataProvider = "zipFileStocks")
@@ -74,6 +75,7 @@ public class ZipSourceTest {
         assertEquals(creationOrder.size(), 4);
 
         AtlasTypesDef typesDef = zipSource.getTypesDef();
+
         assertNotNull(typesDef);
         assertEquals(typesDef.getEntityDefs().size(), 6);
 
@@ -83,45 +85,17 @@ public class ZipSourceTest {
         verifyGuidRemovalOnImportComplete(zipSource, creationOrder.get(0));
     }
 
-    private void useCreationOrderToFetchEntities(ZipSource zipSource, List<String> creationOrder) {
-        for (String guid : creationOrder) {
-            AtlasEntity e = zipSource.getByGuid(guid);
-            assertNotNull(e);
-        }
-    }
-
-    private void verifyGuidRemovalOnImportComplete(ZipSource zipSource, String guid) {
-        AtlasEntity e = zipSource.getByGuid(guid);
-        assertNotNull(e);
-
-        zipSource.onImportComplete(guid);
-
-        e = zipSource.getByGuid(guid);
-        Assert.assertNull(e);
-    }
-
-    private void attemptToFetchNonExistentGuid_ReturnsNull(ZipSource zipSource, String guid) {
-        AtlasEntity e = zipSource.getByGuid(guid);
-        Assert.assertNull(e);
-    }
-
-    private void useCreationOrderToFetchEntitiesWithExtInfo(ZipSource zipSource, List<String> creationOrder) throws AtlasBaseException {
-        for (String guid : creationOrder) {
-            AtlasEntity.AtlasEntityExtInfo e = zipSource.getEntityWithExtInfo(guid);
-            assertNotNull(e);
-        }
-    }
-
     @Test(dataProvider = "zipFileStocks")
-    public void iteratorBehavor_WorksAsExpected(ZipSource zipSource) throws IOException, AtlasBaseException {
-        Assert.assertTrue(zipSource.hasNext());
+    public void iteratorBehavor_WorksAsExpected(ZipSource zipSource) {
+        assertTrue(zipSource.hasNext());
 
         List<String> creationOrder = zipSource.getCreationOrder();
-        for (int i = 0; i < creationOrder.size(); i++) {
+
+        for (String s : creationOrder) {
             AtlasEntity e = zipSource.next();
 
             assertNotNull(e);
-            assertEquals(e.getGuid(), creationOrder.get(i));
+            assertEquals(e.getGuid(), s);
         }
 
         assertFalse(zipSource.hasNext());
@@ -130,33 +104,38 @@ public class ZipSourceTest {
     @Test(dataProvider = "sales")
     public void iteratorSetPositionBehavor(InputStream inputStream) throws IOException, AtlasBaseException {
         ZipSource zipSource = new ZipSource(inputStream);
-        Assert.assertTrue(zipSource.hasNext());
 
-        List<String> creationOrder = zipSource.getCreationOrder();
-        int moveToPosition_2 = 2;
-        zipSource.setPosition(moveToPosition_2);
+        assertTrue(zipSource.hasNext());
 
-        assertEquals(zipSource.getPosition(), moveToPosition_2);
+        List<String> creationOrder   = zipSource.getCreationOrder();
+        int          moveToPosition2 = 2;
+
+        zipSource.setPosition(moveToPosition2);
+
+        assertEquals(zipSource.getPosition(), moveToPosition2);
         assertTrue(zipSource.getPosition() < creationOrder.size());
 
         assertTrue(zipSource.hasNext());
+
         for (int i = 1; i < 4; i++) {
             zipSource.next();
-            assertEquals(zipSource.getPosition(), moveToPosition_2 + i);
+
+            assertEquals(zipSource.getPosition(), moveToPosition2 + i);
         }
 
         assertTrue(zipSource.hasNext());
     }
 
     @Test(dataProvider = "zipFileStocksFloat")
-    public void attemptToSerializeLongFloats(ZipSource zipSource) throws IOException, AtlasBaseException {
-        Assert.assertTrue(zipSource.hasNext());
+    public void attemptToSerializeLongFloats(ZipSource zipSource) {
+        assertTrue(zipSource.hasNext());
         assertTrue(zipSource.hasNext());
         assertTrue(zipSource.hasNext());
 
         AtlasEntity.AtlasEntityWithExtInfo e = zipSource.getNextEntityWithExtInfo();
+
         assertNotNull(e);
-        assertTrue(e.getEntity().getClassifications().size() > 0);
+        assertFalse(e.getEntity().getClassifications().isEmpty());
         assertNotNull(e.getEntity().getClassifications().get(0).getAttribute("fv"));
         assertEquals(e.getEntity().getClassifications().get(0).getAttribute("fv").toString(), "3.4028235E+38");
 
@@ -164,28 +143,65 @@ public class ZipSourceTest {
     }
 
     @Test(dataProvider = "zipFileStocks")
-    public void applyTransformation(ZipSource zipSource) throws IOException, AtlasBaseException {
+    public void applyTransformation(ZipSource zipSource) {
         ImportTransforms transforms = getTransformForHiveDB();
+
         zipSource.setImportTransform(transforms);
 
-        Assert.assertTrue(zipSource.hasNext());
+        assertTrue(zipSource.hasNext());
+
         List<String> creationOrder = zipSource.getCreationOrder();
+
         for (int i = 0; i < creationOrder.size(); i++) {
             AtlasEntity e = zipSource.next();
-            if(e.getTypeName().equals("hive_db")) {
+
+            if (e.getTypeName().equals("hive_db")) {
                 Object o = e.getAttribute("qualifiedName");
                 String s = (String) o;
 
                 assertNotNull(e);
                 assertTrue(s.contains("@cl2"));
+
                 break;
             }
         }
     }
 
-    private ImportTransforms getTransformForHiveDB() {
-        ImportTransforms tr = ImportTransforms.fromJson("{ \"hive_db\": { \"qualifiedName\": [ \"replace:@cl1:@cl2\" ] } }");
+    private void useCreationOrderToFetchEntities(ZipSource zipSource, List<String> creationOrder) {
+        for (String guid : creationOrder) {
+            AtlasEntity e = zipSource.getByGuid(guid);
 
-        return tr;
+            assertNotNull(e);
+        }
+    }
+
+    private void verifyGuidRemovalOnImportComplete(ZipSource zipSource, String guid) {
+        AtlasEntity e = zipSource.getByGuid(guid);
+
+        assertNotNull(e);
+
+        zipSource.onImportComplete(guid);
+
+        e = zipSource.getByGuid(guid);
+
+        assertNull(e);
+    }
+
+    private void attemptToFetchNonExistentGuid_ReturnsNull(ZipSource zipSource, String guid) {
+        AtlasEntity e = zipSource.getByGuid(guid);
+
+        assertNull(e);
+    }
+
+    private void useCreationOrderToFetchEntitiesWithExtInfo(ZipSource zipSource, List<String> creationOrder) throws AtlasBaseException {
+        for (String guid : creationOrder) {
+            AtlasEntity.AtlasEntityExtInfo e = zipSource.getEntityWithExtInfo(guid);
+
+            assertNotNull(e);
+        }
+    }
+
+    private ImportTransforms getTransformForHiveDB() {
+        return ImportTransforms.fromJson("{ \"hive_db\": { \"qualifiedName\": [ \"replace:@cl1:@cl2\" ] } }");
     }
 }

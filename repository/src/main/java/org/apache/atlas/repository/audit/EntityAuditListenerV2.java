@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,10 +20,10 @@ package org.apache.atlas.repository.audit;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.model.audit.EntityAuditEventV2;
-import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.EntityChangeListenerV2;
+import org.apache.atlas.model.audit.EntityAuditEventV2;
+import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -46,6 +46,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.HashMap;
@@ -58,14 +59,14 @@ import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CLASSIFICATION_UPDATE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CUSTOM_ATTRIBUTE_UPDATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_CREATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_DELETE;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_PURGE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_CREATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_IMPORT_UPDATE;
+import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_PURGE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.ENTITY_UPDATE;
-import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.CUSTOM_ATTRIBUTE_UPDATE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.LABEL_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.LABEL_DELETE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
@@ -77,9 +78,8 @@ import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV
 @Component
 public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     private static final Logger LOG = LoggerFactory.getLogger(EntityAuditListenerV2.class);
-    private static final ThreadLocal<FixedBufferList<EntityAuditEventV2>> AUDIT_EVENTS_BUFFER =
-            ThreadLocal.withInitial(() -> new FixedBufferList<>(EntityAuditEventV2.class,
-                    AtlasConfiguration.NOTIFICATION_FIXED_BUFFER_ITEMS_INCREMENT_COUNT.getInt()));
+
+    private static final ThreadLocal<FixedBufferList<EntityAuditEventV2>> AUDIT_EVENTS_BUFFER = ThreadLocal.withInitial(() -> new FixedBufferList<>(EntityAuditEventV2.class, AtlasConfiguration.NOTIFICATION_FIXED_BUFFER_ITEMS_INCREMENT_COUNT.getInt()));
 
     private final EntityAuditRepository  auditRepository;
     private final AtlasTypeRegistry      typeRegistry;
@@ -97,6 +97,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
         FixedBufferList<EntityAuditEventV2> entitiesAdded = getAuditEventsList();
+
         for (AtlasEntity entity : entities) {
             createEvent(entitiesAdded.next(), entity, isImport ? ENTITY_IMPORT_CREATE : ENTITY_CREATE);
         }
@@ -147,6 +148,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
         FixedBufferList<EntityAuditEventV2> deletedEntities = getAuditEventsList();
+
         for (AtlasEntity entity : entities) {
             createEvent(deletedEntities.next(), entity, isImport ? ENTITY_IMPORT_DELETE : ENTITY_DELETE, "Deleted entity");
         }
@@ -161,6 +163,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
         FixedBufferList<EntityAuditEventV2> eventsPurged = getAuditEventsList();
+
         for (AtlasEntity entity : entities) {
             createEvent(eventsPurged.next(), entity, ENTITY_PURGE);
         }
@@ -176,6 +179,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
             FixedBufferList<EntityAuditEventV2> classificationsAdded = getAuditEventsList();
+
             for (AtlasClassification classification : classifications) {
                 if (entity.getGuid().equals(classification.getEntityGuid())) {
                     createEvent(classificationsAdded.next(), entity, CLASSIFICATION_ADD, "Added classification: " + AtlasType.toJson(classification));
@@ -193,7 +197,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     @Override
     public void onClassificationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
-            MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
+            MetricRecorder                      metric = RequestContext.get().startMetricRecord("entityAudit");
             FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
 
             for (AtlasClassification classification : classifications) {
@@ -218,7 +222,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
 
             FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
-            String guid = entity.getGuid();
+            String                              guid   = entity.getGuid();
 
             for (AtlasClassification classification : classifications) {
                 if (guid.equals(classification.getEntityGuid())) {
@@ -264,7 +268,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     @Override
     public void onClassificationsDeleted(List<AtlasEntity> entities, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications) && CollectionUtils.isNotEmpty(entities)) {
-            MetricRecorder metric = RequestContext.get().startMetricRecord("onClassificationsDeleted");
+            MetricRecorder                      metric = RequestContext.get().startMetricRecord("onClassificationsDeleted");
             FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
 
             for (AtlasClassification classification : classifications) {
@@ -326,6 +330,26 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
+    public void onRelationshipsAdded(List<AtlasRelationship> relationships, boolean isImport) {
+        LOG.debug("New relationship(s) added to repository({})", relationships.size());
+    }
+
+    @Override
+    public void onRelationshipsUpdated(List<AtlasRelationship> relationships, boolean isImport) {
+        LOG.debug("Relationship(s) updated({})", relationships.size());
+    }
+
+    @Override
+    public void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) {
+        LOG.debug("Relationship(s) deleted from repository({})", relationships.size());
+    }
+
+    @Override
+    public void onRelationshipsPurged(List<AtlasRelationship> relationships) {
+        LOG.debug("Relationship(s) purged from repository({})", relationships.size());
+    }
+
+    @Override
     public void onLabelsAdded(AtlasEntity entity, Set<String> labels) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(labels)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("onLabelsAdded");
@@ -360,34 +384,6 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
-    public void onRelationshipsAdded(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("New relationship(s) added to repository(" + relationships.size() + ")");
-        }
-    }
-
-    @Override
-    public void onRelationshipsUpdated(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Relationship(s) updated(" + relationships.size() + ")");
-        }
-    }
-
-    @Override
-    public void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Relationship(s) deleted from repository(" + relationships.size() + ")");
-        }
-    }
-
-    @Override
-    public void onRelationshipsPurged(List<AtlasRelationship> relationships) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Relationship(s) purged from repository(" + relationships.size() + ")");
-        }
-    }
-
-    @Override
     public void onBusinessAttributesUpdated(AtlasEntity entity, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException {
         if (MapUtils.isNotEmpty(updatedBusinessAttributes)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("entityAudit");
@@ -407,7 +403,6 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             RequestContext.get().endMetricRecord(metric);
         }
     }
-
 
     private EntityAuditEventV2 createEvent(EntityAuditEventV2 entityAuditEventV2, AtlasEntity entity, EntityAuditActionV2 action, String details) {
         entityAuditEventV2.setEntityId(entity.getGuid());
@@ -649,15 +644,17 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
     private FixedBufferList<EntityAuditEventV2> getAuditEventsList() {
         FixedBufferList<EntityAuditEventV2> ret = AUDIT_EVENTS_BUFFER.get();
-        ret.reset();
-        return ret;
 
+        ret.reset();
+
+        return ret;
     }
 
     private boolean isShellEntity(AtlasEntity entity) {
         if (entity.getIsIncomplete() != null && entity.getCreateTime() != null && entity.getUpdateTime() != null) {
             return entity.getIsIncomplete() && entity.getCreateTime().getTime() == entity.getUpdateTime().getTime();
         }
+
         return false;
     }
 }

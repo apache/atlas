@@ -49,10 +49,12 @@ public class ProcessImpalaNamePatch extends AtlasPatchHandler {
 
     @Override
     public void apply() throws AtlasBaseException {
-        if (AtlasConfiguration.PROCESS_IMPALA_NAME_UPDATE_PATCH.getBoolean() == false) {
+        if (!AtlasConfiguration.PROCESS_IMPALA_NAME_UPDATE_PATCH.getBoolean()) {
             LOG.info("ProcessImpalaNamePatch: Skipped, since not enabled!");
+
             return;
         }
+
         ConcurrentPatchProcessor patchProcessor = new ProcessImpalaNamePatchProcessor(context);
 
         patchProcessor.apply();
@@ -63,11 +65,11 @@ public class ProcessImpalaNamePatch extends AtlasPatchHandler {
     }
 
     public static class ProcessImpalaNamePatchProcessor extends ConcurrentPatchProcessor {
-        private static final String TYPE_NAME_IMPALA_PROCESS            = "impala_process";
-        private static final String TYPE_NAME_IMPALA_PROCESS_EXECUTION  = "impala_process_execution";
-        private static final String ATTR_NAME_QUALIFIED_NAME            = "qualifiedName";
-        private static final String ATTR_NAME_NAME                      = "name";
-        private static final String[] processTypes                      = {TYPE_NAME_IMPALA_PROCESS, TYPE_NAME_IMPALA_PROCESS_EXECUTION};
+        private static final String   TYPE_NAME_IMPALA_PROCESS           = "impala_process";
+        private static final String   TYPE_NAME_IMPALA_PROCESS_EXECUTION = "impala_process_execution";
+        private static final String   ATTR_NAME_QUALIFIED_NAME           = "qualifiedName";
+        private static final String   ATTR_NAME_NAME                     = "name";
+        private static final String[] processTypes                       = {TYPE_NAME_IMPALA_PROCESS, TYPE_NAME_IMPALA_PROCESS_EXECUTION};
 
         public ProcessImpalaNamePatchProcessor(PatchContext context) {
             super(context);
@@ -79,13 +81,13 @@ public class ProcessImpalaNamePatch extends AtlasPatchHandler {
 
         @Override
         public void submitVerticesToUpdate(WorkItemManager manager) {
-            AtlasGraph        graph        = getGraph();
+            AtlasGraph graph = getGraph();
 
             for (String typeName : processTypes) {
                 LOG.info("finding entities of type {}", typeName);
 
                 Iterable<Object> iterable = graph.query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName).vertexIds();
-                    int              count    = 0;
+                int              count    = 0;
 
                 for (Iterator<Object> iter = iterable.iterator(); iter.hasNext(); ) {
                     Object vertexId = iter.next();
@@ -93,7 +95,6 @@ public class ProcessImpalaNamePatch extends AtlasPatchHandler {
                     manager.checkProduce(vertexId);
 
                     count++;
-
                 }
 
                 LOG.info("found {} entities of type {}", count, typeName);
@@ -102,20 +103,17 @@ public class ProcessImpalaNamePatch extends AtlasPatchHandler {
 
         @Override
         protected void processVertexItem(Long vertexId, AtlasVertex vertex, String typeName, AtlasEntityType entityType) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("processItem(typeName={}, vertexId={})", typeName, vertexId);
-            }
+            LOG.debug("processItem(typeName={}, vertexId={})", typeName, vertexId);
 
             try {
                 String qualifiedName = AtlasGraphUtilsV2.getProperty(vertex, entityType.getVertexPropertyName(ATTR_NAME_QUALIFIED_NAME), String.class);
+
                 AtlasGraphUtilsV2.setEncodedProperty(vertex, entityType.getVertexPropertyName(ATTR_NAME_NAME), qualifiedName);
             } catch (AtlasBaseException e) {
                 LOG.error("Error updating: {}", vertexId);
             }
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("processItem(typeName={}, vertexId={}): Done!", typeName, vertexId);
-            }
+            LOG.debug("processItem(typeName={}, vertexId={}): Done!", typeName, vertexId);
         }
     }
 }

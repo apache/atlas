@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,42 +37,46 @@ import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
 
 import javax.inject.Inject;
+
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 @AtlasService
 public class ExportImportAuditService {
     private static final Logger LOG = LoggerFactory.getLogger(ExportImportAuditService.class);
+
     private static final String ENTITY_TYPE_NAME = "__ExportImportAuditEntry";
 
-    private final DataAccess dataAccess;
-    private final EntityAuditRepository  auditRepository;
-    private AtlasDiscoveryService discoveryService;
+    private final DataAccess            dataAccess;
+    private final EntityAuditRepository auditRepository;
+    private final AtlasDiscoveryService discoveryService;
 
     @Inject
     public ExportImportAuditService(DataAccess dataAccess, AtlasDiscoveryService discoveryService, EntityAuditRepository auditRepository) {
-        this.dataAccess = dataAccess;
+        this.dataAccess       = dataAccess;
         this.discoveryService = discoveryService;
-        this.auditRepository = auditRepository;
+        this.auditRepository  = auditRepository;
     }
 
     @GraphTransaction
     public void save(ExportImportAuditEntry entry) throws AtlasBaseException {
         dataAccess.saveNoLoad(entry);
     }
+
     public ExportImportAuditEntry get(ExportImportAuditEntry entry) throws AtlasBaseException {
-        if(entry.getGuid() == null) {
+        if (entry.getGuid() == null) {
             throw new AtlasBaseException("entity does not have GUID set. load cannot proceed.");
         }
+
         return dataAccess.load(entry);
     }
 
-    public List<ExportImportAuditEntry> get(String userName, String operation, String cluster,
-                                            String startTime, String endTime,
-                                            int limit, int offset) throws AtlasBaseException {
+    public List<ExportImportAuditEntry> get(String userName, String operation, String cluster, String startTime, String endTime, int limit, int offset) throws AtlasBaseException {
         SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
+
         criteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
         criteria.setCriterion(new ArrayList<>());
 
@@ -82,7 +86,47 @@ public class ExportImportAuditService {
         searchParameters.setAttributes(getAuditEntityAttributes());
 
         AtlasSearchResult result = discoveryService.searchWithParameters(searchParameters);
+
         return toExportImportAuditEntry(result);
+    }
+
+    public void add(String userName, String sourceCluster, String targetCluster, String operation, String result, long startTime, long endTime, boolean hasData) throws AtlasBaseException {
+        if (!hasData) {
+            return;
+        }
+
+        ExportImportAuditEntry entry = new ExportImportAuditEntry();
+
+        entry.setUserName(userName);
+        entry.setSourceServerName(sourceCluster);
+        entry.setTargetServerName(targetCluster);
+        entry.setOperation(operation);
+        entry.setResultSummary(result);
+        entry.setStartTime(startTime);
+        entry.setEndTime(endTime);
+
+        if (Objects.equals(operation, ExportImportAuditEntry.OPERATION_IMPORT)) {
+            String auditString  = AtlasType.toJson(entry);
+            byte[] auditBytes   = auditString.getBytes(StandardCharsets.UTF_8);
+            long   auditSize    = auditBytes != null ? auditBytes.length : 0;
+            long   auditMaxSize = auditRepository.repositoryMaxSize();
+
+            if (auditMaxSize >= 0 && auditSize > auditMaxSize) {
+                AtlasImportResult importResult = AtlasType.fromJson(result, AtlasImportResult.class);
+
+                if (importResult != null && !CollectionUtils.isEmpty(importResult.getProcessedEntities())) {
+                    LOG.warn("audit record too long: user={}, operation={}, size={}, maxSize={}, processedEntityCount={}, processed entities guids in resultSummary not stored in audit",
+                            entry.getUserName(), entry.getOperation(), auditSize, auditMaxSize, importResult.getProcessedEntities().size());
+
+                    importResult.getProcessedEntities().clear();
+                    entry.setResultSummary(AtlasType.toJson(importResult));
+                }
+            }
+        }
+
+        save(entry);
+
+        LOG.info("addAuditEntry: user: {}, source: {}, target: {}, operation: {}", entry.getUserName(), entry.getSourceServerName(), entry.getTargetServerName(), entry.getOperation());
     }
 
     private Set<String> getAuditEntityAttributes() {
@@ -91,14 +135,15 @@ public class ExportImportAuditService {
 
     private List<ExportImportAuditEntry> toExportImportAuditEntry(AtlasSearchResult result) {
         List<ExportImportAuditEntry> ret = new ArrayList<>();
-        if(CollectionUtils.isEmpty(result.getEntities())) {
+
+        if (CollectionUtils.isEmpty(result.getEntities())) {
             return ret;
         }
 
         for (AtlasEntityHeader entityHeader : result.getEntities()) {
-            ExportImportAuditEntry entry = ExportImportAuditEntryDTO.from(entityHeader.getGuid(),
-                                                                            entityHeader.getAttributes());
-            if(entry == null) {
+            ExportImportAuditEntry entry = ExportImportAuditEntryDTO.from(entityHeader.getGuid(), entityHeader.getAttributes());
+
+            if (entry == null) {
                 continue;
             }
 
@@ -110,6 +155,7 @@ public class ExportImportAuditService {
 
     private SearchParameters getSearchParameters(int limit, int offset, SearchParameters.FilterCriteria criteria) {
         SearchParameters searchParameters = new SearchParameters();
+
         searchParameters.setTypeName(ENTITY_TYPE_NAME);
         searchParameters.setEntityFilters(criteria);
         searchParameters.setLimit(limit);
@@ -118,8 +164,7 @@ public class ExportImportAuditService {
         return searchParameters;
     }
 
-    private void addSearchParameters(SearchParameters.FilterCriteria criteria, String userName, String operation,
-                                     String cluster, String startTime, String endTime) {
+    private void addSearchParameters(SearchParameters.FilterCriteria criteria, String userName, String operation, String cluster, String startTime, String endTime) {
         addParameterIfValueNotEmpty(criteria, ExportImportAuditEntryDTO.PROPERTY_USER_NAME, userName);
         addParameterIfValueNotEmpty(criteria, ExportImportAuditEntryDTO.PROPERTY_OPERATION, operation);
         addParameterIfValueNotEmpty(criteria, ExportImportAuditEntryDTO.PROPERTY_START_TIME, startTime);
@@ -134,6 +179,7 @@ public class ExportImportAuditService {
         }
 
         SearchParameters.FilterCriteria criteria = new SearchParameters.FilterCriteria();
+
         criteria.setCondition(SearchParameters.FilterCriteria.Condition.OR);
         criteria.setCriterion(new ArrayList<>());
 
@@ -144,54 +190,16 @@ public class ExportImportAuditService {
     }
 
     private void addParameterIfValueNotEmpty(SearchParameters.FilterCriteria criteria, String attributeName, String value) {
-        if(StringUtils.isEmpty(value)) {
+        if (StringUtils.isEmpty(value)) {
             return;
         }
 
         SearchParameters.FilterCriteria filterCriteria = new SearchParameters.FilterCriteria();
+
         filterCriteria.setAttributeName(attributeName);
         filterCriteria.setAttributeValue(value);
         filterCriteria.setOperator(SearchParameters.Operator.EQ);
 
         criteria.getCriterion().add(filterCriteria);
-    }
-
-    public void add(String userName, String sourceCluster, String targetCluster, String operation,
-                               String result, long startTime, long endTime, boolean hasData) throws AtlasBaseException {
-        if(!hasData) return;
-
-        ExportImportAuditEntry entry = new ExportImportAuditEntry();
-
-        entry.setUserName(userName);
-        entry.setSourceServerName(sourceCluster);
-        entry.setTargetServerName(targetCluster);
-        entry.setOperation(operation);
-        entry.setResultSummary(result);
-        entry.setStartTime(startTime);
-        entry.setEndTime(endTime);
-
-        if (operation == ExportImportAuditEntry.OPERATION_IMPORT) {
-
-            String auditString = AtlasType.toJson(entry);
-            byte[] auditBytes  = auditString.getBytes(StandardCharsets.UTF_8);
-            long auditSize     = auditBytes != null ? auditBytes.length : 0;
-            long auditMaxSize  = auditRepository.repositoryMaxSize();
-
-            if (auditMaxSize >= 0 && auditSize > auditMaxSize) {
-
-                AtlasImportResult importResult = AtlasType.fromJson(result, AtlasImportResult.class);
-                if (importResult != null && !CollectionUtils.isEmpty(importResult.getProcessedEntities())) {
-                    LOG.warn("audit record too long: user={}, operation={}, size={}, maxSize={}, processedEntityCount={}, processed entities guids in resultSummary not stored in audit",
-                            entry.getUserName(), entry.getOperation(), auditSize, auditMaxSize, importResult.getProcessedEntities().size());
-
-                    importResult.getProcessedEntities().clear();
-                    entry.setResultSummary(AtlasType.toJson(importResult));
-                }
-            }
-        }
-
-        save(entry);
-        LOG.info("addAuditEntry: user: {}, source: {}, target: {}, operation: {}", entry.getUserName(),
-                entry.getSourceServerName(), entry.getTargetServerName(), entry.getOperation());
     }
 }

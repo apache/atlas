@@ -23,8 +23,15 @@ import org.apache.commons.lang.StringUtils;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.apache.atlas.entitytransform.TransformationConstants.*;
-
+import static org.apache.atlas.entitytransform.TransformationConstants.CLUSTER_DELIMITER;
+import static org.apache.atlas.entitytransform.TransformationConstants.DATABASE_DELIMITER;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_COLUMN;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_COLUMN_NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_DB_CLUSTER_NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_DB_NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.HIVE_TABLE_NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.NAME_ATTRIBUTE;
+import static org.apache.atlas.entitytransform.TransformationConstants.QUALIFIED_NAME_ATTRIBUTE;
 
 public class HiveColumnEntityHandler extends BaseEntityHandler {
     static final List<String> CUSTOM_TRANSFORM_ATTRIBUTES = Arrays.asList(HIVE_DB_NAME_ATTRIBUTE, HIVE_TABLE_NAME_ATTRIBUTE, HIVE_COLUMN_NAME_ATTRIBUTE, HIVE_DB_CLUSTER_NAME_ATTRIBUTE);
@@ -42,13 +49,12 @@ public class HiveColumnEntityHandler extends BaseEntityHandler {
         return StringUtils.equals(entity.getTypeName(), HIVE_COLUMN);
     }
 
-
     public static class HiveColumnEntity extends AtlasTransformableEntity {
         private String  databaseName;
         private String  tableName;
         private String  columnName;
         private String  clusterName;
-        private boolean isCustomAttributeUpdated = false;
+        private boolean isCustomAttributeUpdated;
 
         public HiveColumnEntity(AtlasEntity entity) {
             super(entity);
@@ -59,12 +65,12 @@ public class HiveColumnEntityHandler extends BaseEntityHandler {
 
             if (qualifiedName != null) {
                 int databaseSeparatorIdx = qualifiedName.indexOf(DATABASE_DELIMITER);
-                int tableSeparatorIdx    = databaseSeparatorIdx != -1 ? qualifiedName.indexOf(DATABASE_DELIMITER, databaseSeparatorIdx + 1) : - 1;
+                int tableSeparatorIdx    = databaseSeparatorIdx != -1 ? qualifiedName.indexOf(DATABASE_DELIMITER, databaseSeparatorIdx + 1) : -1;
                 int clusterSeparatorIdx  = qualifiedName.lastIndexOf(CLUSTER_DELIMITER);
 
                 this.databaseName = (databaseSeparatorIdx != -1) ? qualifiedName.substring(0, databaseSeparatorIdx).trim() : "";
-                this.tableName    = (tableSeparatorIdx != -1)    ? qualifiedName.substring(databaseSeparatorIdx + 1, tableSeparatorIdx).trim() : "";
-                this.clusterName  = (clusterSeparatorIdx != -1)  ? qualifiedName.substring(clusterSeparatorIdx + 1).trim() : "";
+                this.tableName    = (tableSeparatorIdx != -1) ? qualifiedName.substring(databaseSeparatorIdx + 1, tableSeparatorIdx).trim() : "";
+                this.clusterName  = (clusterSeparatorIdx != -1) ? qualifiedName.substring(clusterSeparatorIdx + 1).trim() : "";
             } else {
                 this.databaseName = "";
                 this.tableName    = "";
@@ -98,29 +104,29 @@ public class HiveColumnEntityHandler extends BaseEntityHandler {
                     databaseName = attributeValue;
 
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 case HIVE_TABLE_NAME_ATTRIBUTE:
                     tableName = attributeValue;
 
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 case HIVE_COLUMN_NAME_ATTRIBUTE:
                     columnName = attributeValue;
 
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 case HIVE_DB_CLUSTER_NAME_ATTRIBUTE:
                     clusterName = attributeValue;
 
                     isCustomAttributeUpdated = true;
-                break;
+                    break;
 
                 default:
                     super.setAttribute(attribute, attributeValue);
-                break;
+                    break;
             }
         }
 

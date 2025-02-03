@@ -24,17 +24,18 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 @Component
 public class AtlasServerDTO extends AbstractDataTransferObject<AtlasServer> {
-    private final String PROPERTY_NAME = "name";
-    private final String PROPERTY_DISPLAY_NAME = "displayName";
-    private final String PROPERTY_FULL_NAME = "fullName";
-    private final String PROPERTY_ADDITIONAL_INFO = "additionalInfo";
-    private final String PROPERTY_URLS = "urls";
+    private static final String PROPERTY_NAME            = "name";
+    private static final String PROPERTY_DISPLAY_NAME    = "displayName";
+    private static final String PROPERTY_FULL_NAME       = "fullName";
+    private static final String PROPERTY_ADDITIONAL_INFO = "additionalInfo";
+    private static final String PROPERTY_URLS            = "urls";
 
     @Inject
     public AtlasServerDTO(AtlasTypeRegistry typeRegistry) {
@@ -48,7 +49,7 @@ public class AtlasServerDTO extends AbstractDataTransferObject<AtlasServer> {
         cluster.setName((String) entity.getAttribute(PROPERTY_NAME));
         cluster.setFullName((String) entity.getAttribute(PROPERTY_FULL_NAME));
         cluster.setDisplayName((String) entity.getAttribute(PROPERTY_DISPLAY_NAME));
-        cluster.setAdditionalInfo((Map<String,String>) entity.getAttribute(PROPERTY_ADDITIONAL_INFO));
+        cluster.setAdditionalInfo((Map<String, String>) entity.getAttribute(PROPERTY_ADDITIONAL_INFO));
         cluster.setUrls((List<String>) entity.getAttribute(PROPERTY_URLS));
 
         return cluster;
@@ -78,8 +79,10 @@ public class AtlasServerDTO extends AbstractDataTransferObject<AtlasServer> {
 
     @Override
     public Map<String, Object> getUniqueAttributes(final AtlasServer obj) {
-        return new HashMap<String, Object>() {{
-            put(PROPERTY_FULL_NAME, obj.getFullName());
-        }};
+        Map<String, Object> ret = new HashMap<>();
+
+        ret.put(PROPERTY_FULL_NAME, obj.getFullName());
+
+        return ret;
     }
 }

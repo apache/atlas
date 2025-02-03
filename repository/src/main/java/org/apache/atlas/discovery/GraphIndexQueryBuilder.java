@@ -17,16 +17,16 @@
  */
 package org.apache.atlas.discovery;
 
+import org.apache.atlas.repository.Constants;
+import org.apache.atlas.type.AtlasStructType;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+
 import static org.apache.atlas.discovery.SearchContext.MATCH_ALL_NOT_CLASSIFIED;
 import static org.apache.atlas.discovery.SearchProcessor.INDEX_SEARCH_PREFIX;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-
-import org.apache.atlas.repository.Constants;
-import org.apache.atlas.type.AtlasStructType;
-import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 
 public class GraphIndexQueryBuilder {
     SearchContext context;
@@ -38,13 +38,14 @@ public class GraphIndexQueryBuilder {
     void addClassificationTypeFilter(StringBuilder indexQuery) {
         if (indexQuery != null && CollectionUtils.isNotEmpty(context.getClassificationNames())) {
             String classificationNames = AtlasStructType.AtlasAttribute.escapeIndexQueryValue(context.getClassificationNames(), true);
+
             if (indexQuery.length() != 0) {
                 indexQuery.append(" AND ");
             }
 
             indexQuery.append("(").append(INDEX_SEARCH_PREFIX).append('\"').append(CLASSIFICATION_NAMES_KEY).append('\"').append(':').append(classificationNames)
-                .append(" OR ").append(INDEX_SEARCH_PREFIX).append('\"').append(PROPAGATED_CLASSIFICATION_NAMES_KEY)
-                .append('\"').append(':').append(classificationNames).append(")");
+                    .append(" OR ").append(INDEX_SEARCH_PREFIX).append('\"').append(PROPAGATED_CLASSIFICATION_NAMES_KEY)
+                    .append('\"').append(':').append(classificationNames).append(")");
         }
     }
 
@@ -57,8 +58,8 @@ public class GraphIndexQueryBuilder {
             }
 
             indexQuery.append("(").append(INDEX_SEARCH_PREFIX).append("\"").append(CLASSIFICATION_NAMES_KEY)
-                .append("\"").append(":" + classificationTypesQryStr).append(" OR ").append(INDEX_SEARCH_PREFIX)
-                .append("\"").append(PROPAGATED_CLASSIFICATION_NAMES_KEY).append("\"").append(":" + classificationTypesQryStr).append(")");
+                    .append("\"").append(":").append(classificationTypesQryStr).append(" OR ").append(INDEX_SEARCH_PREFIX)
+                    .append("\"").append(PROPAGATED_CLASSIFICATION_NAMES_KEY).append("\"").append(":").append(classificationTypesQryStr).append(")");
         }
     }
 
@@ -68,21 +69,20 @@ public class GraphIndexQueryBuilder {
                 if (indexQuery.length() != 0) {
                     indexQuery.append(" AND ");
                 }
-                indexQuery.append("( *:* ").append("-").append(INDEX_SEARCH_PREFIX).append("\"").append(CLASSIFICATION_NAMES_KEY)
-                    .append("\"").append(":" + "[* TO *]").append(" AND ").append("-")
-                    .append(INDEX_SEARCH_PREFIX).append("\"").append(PROPAGATED_CLASSIFICATION_NAMES_KEY)
-                    .append("\"").append(":" + "[* TO *]").append(")");
+
+                indexQuery.append("( *:* -").append(INDEX_SEARCH_PREFIX).append("\"").append(CLASSIFICATION_NAMES_KEY).append("\":[* TO *] AND -")
+                        .append(INDEX_SEARCH_PREFIX).append("\"").append(PROPAGATED_CLASSIFICATION_NAMES_KEY).append("\":[* TO *])");
             }
         }
     }
 
-    void addActiveStateQueryFilter(StringBuilder indexQuery){
+    void addActiveStateQueryFilter(StringBuilder indexQuery) {
         if (context.getSearchParameters().getExcludeDeletedEntities() && indexQuery != null) {
             if (indexQuery.length() != 0) {
                 indexQuery.append(" AND ");
             }
-            indexQuery.append("(").append(INDEX_SEARCH_PREFIX).append("\"").append(STATE_PROPERTY_KEY)
-                      .append("\"").append(":" + "ACTIVE").append(")");
+
+            indexQuery.append("(").append(INDEX_SEARCH_PREFIX).append("\"").append(STATE_PROPERTY_KEY).append("\"").append(":" + "ACTIVE").append(")");
         }
     }
 
@@ -92,8 +92,8 @@ public class GraphIndexQueryBuilder {
                 indexQuery.append(" AND ");
             }
 
-            indexQuery.append("(").append(INDEX_SEARCH_PREFIX + "\"").append(Constants.TYPE_NAME_PROPERTY_KEY)
-                .append("\":").append(typeAndAllSubTypesQryStr).append(")");
+            indexQuery.append("(").append(INDEX_SEARCH_PREFIX).append("\"").append(Constants.TYPE_NAME_PROPERTY_KEY)
+                    .append("\":").append(typeAndAllSubTypesQryStr).append(")");
         }
     }
 
@@ -103,8 +103,7 @@ public class GraphIndexQueryBuilder {
                 indexQuery.append(" AND ");
             }
 
-            indexQuery.append("(").append(INDEX_SEARCH_PREFIX + "\"").append(Constants.RELATIONSHIP_TYPE_PROPERTY_KEY)
-                    .append("\":").append(typeAndAllSubTypesQryStr).append(")");
+            indexQuery.append("(").append(INDEX_SEARCH_PREFIX).append("\"").append(Constants.RELATIONSHIP_TYPE_PROPERTY_KEY).append("\":").append(typeAndAllSubTypesQryStr).append(")");
         }
     }
 }

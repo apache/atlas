@@ -37,7 +37,6 @@ import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 
 public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
-
     @Inject
     public SoftDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement) {
         super(graph, typeRegistry, false, true, taskManagement);
@@ -65,7 +64,7 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
     @Override
     protected void deleteEdge(AtlasEdge edge, boolean force) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> SoftDeleteHandlerV1.deleteEdge({}, {})",GraphHelper.string(edge), force);
+            LOG.debug("==> SoftDeleteHandlerV1.deleteEdge({}, {})", GraphHelper.string(edge), force);
         }
 
         if (force) {

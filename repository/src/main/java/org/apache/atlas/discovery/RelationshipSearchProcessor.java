@@ -57,18 +57,20 @@ public class RelationshipSearchProcessor extends SearchProcessor {
 
     RelationshipSearchProcessor(SearchContext context, Set<String> indexedKeys) {
         super(context);
+
         context.setEdgeIndexKeys(indexedKeys);
 
-        final Set<AtlasRelationshipType> types               = context.getRelationshipTypes();
-        final SearchParameters.FilterCriteria filterCriteria = context.getSearchParameters().getRelationshipFilters();
-        final Set<String> indexAttributes                    = new HashSet<>();
-        final Set<String> graphAttributes                    = new HashSet<>();
-        final Set<String> allAttributes                      = new HashSet<>();
-        final Set<String> typeNames                          = CollectionUtils.isNotEmpty(types) ? types.stream().map(AtlasRelationshipType::getTypeName).collect(Collectors.toSet()) : null;
-        final String      typeAndSubTypesQryStr              = AtlasStructType.AtlasAttribute.escapeIndexQueryValue(typeNames, true);
-        final Predicate   typeNamePredicate                  = SearchPredicateUtil.generateIsRelationshipEdgePredicate(context.getTypeRegistry());
-        final String      sortBy                             = context.getSearchParameters().getSortBy();
-        final SortOrder   sortOrder                          = context.getSearchParameters().getSortOrder();
+        final Set<AtlasRelationshipType>      types                 = context.getRelationshipTypes();
+        final SearchParameters.FilterCriteria filterCriteria        = context.getSearchParameters().getRelationshipFilters();
+        final Set<String>                     indexAttributes       = new HashSet<>();
+        final Set<String>                     graphAttributes       = new HashSet<>();
+        final Set<String>                     allAttributes         = new HashSet<>();
+        final Set<String>                     typeNames             = CollectionUtils.isNotEmpty(types) ? types.stream().map(AtlasRelationshipType::getTypeName).collect(Collectors.toSet()) : null;
+        final String                          typeAndSubTypesQryStr = AtlasStructType.AtlasAttribute.escapeIndexQueryValue(typeNames, true);
+        final Predicate                       typeNamePredicate     = SearchPredicateUtil.generateIsRelationshipEdgePredicate(context.getTypeRegistry());
+        final String                          sortBy                = context.getSearchParameters().getSortBy();
+        final SortOrder                       sortOrder             = context.getSearchParameters().getSortOrder();
+
         inMemoryPredicate = typeNamePredicate;
 
         processSearchAttributes(types, filterCriteria, indexAttributes, graphAttributes, allAttributes);
@@ -87,6 +89,7 @@ public class RelationshipSearchProcessor extends SearchProcessor {
             constructFilterQuery(indexQuery, types, filterCriteria, indexAttributes);
 
             Predicate attributePredicate = constructInMemoryPredicate(types, filterCriteria, indexAttributes);
+
             if (attributePredicate != null) {
                 inMemoryPredicate = PredicateUtils.andPredicate(inMemoryPredicate, attributePredicate);
             }
@@ -95,10 +98,10 @@ public class RelationshipSearchProcessor extends SearchProcessor {
         }
 
         if (indexQuery.length() > 0) {
-
             String indexQueryString = STRAY_AND_PATTERN.matcher(indexQuery).replaceAll(")");
-                   indexQueryString = STRAY_OR_PATTERN.matcher(indexQueryString).replaceAll(")");
-                   indexQueryString = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
+
+            indexQueryString = STRAY_OR_PATTERN.matcher(indexQueryString).replaceAll(")");
+            indexQueryString = STRAY_ELIPSIS_PATTERN.matcher(indexQueryString).replaceAll("");
 
             this.indexQuery = context.getGraph().indexQuery(Constants.EDGE_INDEX, indexQueryString);
         } else {
@@ -112,16 +115,18 @@ public class RelationshipSearchProcessor extends SearchProcessor {
             if (!typeSearchByIndex) {
                 query.in(RELATIONSHIP_TYPE_PROPERTY_KEY, types);
             }
+
             graphQuery = toGraphFilterQuery(types, filterCriteria, graphAttributes, query);
 
             Predicate attributePredicate = constructInMemoryPredicate(types, filterCriteria, graphAttributes);
+
             if (attributePredicate != null) {
                 inMemoryPredicate = PredicateUtils.andPredicate(inMemoryPredicate, attributePredicate);
             }
 
             if (StringUtils.isNotEmpty(sortBy)) {
-                final AtlasRelationshipType relationshipType   = types.iterator().next();
-                AtlasStructType.AtlasAttribute sortByAttribute = relationshipType.getAttribute(sortBy);
+                final AtlasRelationshipType    relationshipType = types.iterator().next();
+                AtlasStructType.AtlasAttribute sortByAttribute  = relationshipType.getAttribute(sortBy);
 
                 if (sortByAttribute != null && StringUtils.isNotEmpty(sortByAttribute.getVertexPropertyName())) {
                     AtlasGraphQuery.SortOrder qrySortOrder = sortOrder == SortOrder.ASCENDING ? ASC : DESC;
@@ -132,7 +137,6 @@ public class RelationshipSearchProcessor extends SearchProcessor {
         } else {
             graphQuery = null;
         }
-
     }
 
     @Override
@@ -140,30 +144,40 @@ public class RelationshipSearchProcessor extends SearchProcessor {
         return null;
     }
 
-    public List<AtlasEdge> executeEdges() {
-        List<AtlasEdge> ret = new ArrayList<>();
+    @Override
+    public long getResultCount() {
+        if (indexQuery != null) {
+            return indexQuery.edgeTotals();
+        } else {
+            return -1L;
+        }
+    }
 
+    public List<AtlasEdge> executeEdges() {
+        List<AtlasEdge> ret  = new ArrayList<>();
         AtlasPerfTracer perf = null;
+
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipSearchProcessor.execute(" + context + ")");
         }
 
         try {
-            final int limit      = context.getSearchParameters().getLimit();
-            final Integer marker = context.getMarker();
-            final int startIdx   = marker != null ? marker : context.getSearchParameters().getOffset();
+            final int     limit    = context.getSearchParameters().getLimit();
+            final Integer marker   = context.getMarker();
+            final int     startIdx = marker != null ? marker : context.getSearchParameters().getOffset();
 
             // when subsequent filtering stages are involved, query should start at 0 even though startIdx can be higher
             // first 'startIdx' number of entries will be ignored
             // if marker is provided, start query with marker offset
             int qryOffset;
+
             if (marker != null) {
                 qryOffset = marker;
             } else {
                 qryOffset = (graphQuery != null && indexQuery != null) ? 0 : startIdx;
             }
-            int resultIdx = qryOffset;
 
+            int                               resultIdx     = qryOffset;
             LinkedHashMap<Integer, AtlasEdge> offsetEdgeMap = new LinkedHashMap<>();
 
             for (; ret.size() < limit; qryOffset += limit) {
@@ -175,18 +189,17 @@ public class RelationshipSearchProcessor extends SearchProcessor {
                     break;
                 }
 
-                final boolean isLastResultPage;
-
                 if (indexQuery != null) {
                     Iterator<AtlasIndexQuery.Result> idxQueryResult = executeIndexQueryForEdge(context, indexQuery, qryOffset, limit);
-                    offsetEdgeMap = getEdgesFromIndexQueryResult(idxQueryResult, offsetEdgeMap, qryOffset);
 
+                    offsetEdgeMap = getEdgesFromIndexQueryResult(idxQueryResult, offsetEdgeMap, qryOffset);
                 } else {
                     Iterator<AtlasEdge> queryResult = graphQuery.edges(qryOffset, limit).iterator();
+
                     offsetEdgeMap = getEdges(queryResult, offsetEdgeMap, qryOffset);
                 }
 
-                isLastResultPage = offsetEdgeMap.size() < limit;
+                final boolean isLastResultPage = offsetEdgeMap.size() < limit;
 
                 // Do in-memory filtering
                 offsetEdgeMap = offsetEdgeMap.entrySet()
@@ -205,23 +218,12 @@ public class RelationshipSearchProcessor extends SearchProcessor {
             if (marker != null) {
                 nextOffset = resultIdx + 1;
             }
-
         } finally {
             AtlasPerfTracer.log(perf);
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== RelationshipSearchProcessor.execute({}): ret.size()={}", context, ret.size());
-        }
-        return ret;
-    }
+        LOG.debug("<== RelationshipSearchProcessor.execute({}): ret.size()={}", context, ret.size());
 
-    @Override
-    public long getResultCount() {
-        if (indexQuery != null) {
-            return indexQuery.edgeTotals();
-        } else {
-            return -1L;
-        }
+        return ret;
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,27 +37,39 @@ import java.util.List;
  *
  */
 public class AtlasRepositoryConfiguration {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasRepositoryConfiguration.class);
 
-    private static Logger LOG = LoggerFactory.getLogger(AtlasRepositoryConfiguration.class);
+    public static final int    DEFAULT_COMPILED_QUERY_CACHE_EVICTION_WARNING_THROTTLE = 0;
+    public static final int    DEFAULT_COMPILED_QUERY_CACHE_CAPACITY                  = 1000;
+    public static final String TYPE_CACHE_IMPLEMENTATION_PROPERTY                     = "atlas.TypeCache.impl";
+    public static final String AUDIT_EXCLUDED_OPERATIONS                              = "atlas.audit.excludes";
+    public static final String SEPARATOR                                              = ":";
+    public static final String COMPILED_QUERY_CACHE_CAPACITY                          = "atlas.CompiledQueryCache.capacity";
+    public static final String COMPILED_QUERY_CACHE_EVICTION_WARNING_THROTTLE         = "atlas.CompiledQueryCache.evictionWarningThrottle";
 
-    public  static final int     DEFAULT_COMPILED_QUERY_CACHE_EVICTION_WARNING_THROTTLE = 0;
-    public  static final int     DEFAULT_COMPILED_QUERY_CACHE_CAPACITY                  = 1000;
-    public  static final String  TYPE_CACHE_IMPLEMENTATION_PROPERTY                     = "atlas.TypeCache.impl";
-    public  static final String  AUDIT_EXCLUDED_OPERATIONS                              = "atlas.audit.excludes";
-    public  static final String  SEPARATOR                                              = ":";
-
-    private static final Integer DEFAULT_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS = Integer.valueOf(15);
+    /**
+     * This optimization is configurable as a fail-safe in case issues are found
+     * with the optimizer in production systems.
+     */
+    public static final  String  GREMLIN_OPTIMIZER_ENABLED_PROPERTY                = "atlas.query.gremlinOptimizerEnabled";
+    private static final Integer DEFAULT_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS = 15;
     private static final String  CONFIG_TYPE_UPDATE_LOCK_MAX_WAIT_TIME_IN_SECONDS  = "atlas.server.type.update.lock.max.wait.time.seconds";
     private static final String  JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS         = "org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase";
     private static final String  DEFAULT_GRAPH_DATABASE_IMPLEMENTATION_CLASS       = JANUS_GRAPH_DATABASE_IMPLEMENTATION_CLASS;
+    private static final String  ENTITY_NOTIFICATION_VERSION_PROPERTY              = "atlas.notification.entity.version";
+    private static final String  AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY          = "atlas.EntityAuditRepository.impl";
+    private static final String  DELETE_HANDLER_V1_IMPLEMENTATION_PROPERTY         = "atlas.DeleteHandlerV1.impl";
+    private static final boolean DEFAULT_GREMLIN_OPTIMZER_ENABLED                  = true;
 
-    private static Integer       typeUpdateLockMaxWaitTimeInSeconds = null;
-    private static List<String>  skippedOperations                  = null;
-    private static final String ENTITY_NOTIFICATION_VERSION_PROPERTY = "atlas.notification.entity.version";
+    private static Integer      typeUpdateLockMaxWaitTimeInSeconds;
+    private static List<String> skippedOperations;
+    private static boolean      isInitialized;
+    private static boolean      isFullTextSearchEnabled = true;
+    private static boolean      isFreeTextSearchEnabled = true;
 
-    private static boolean isInitialized           = false;
-    private static boolean isFullTextSearchEnabled = true;
-    private static boolean isFreeTextSearchEnabled = true;
+    private AtlasRepositoryConfiguration() {
+        // to block instantiation
+    }
 
     /**
      * Configures whether the full text vertex property is populated.  Turning this off
@@ -77,44 +89,35 @@ public class AtlasRepositoryConfiguration {
     }
 
     public static boolean isV2EntityNotificationEnabled() {
-        boolean ret;
         try {
             String notificationVersion = ApplicationProperties.get().getString(ENTITY_NOTIFICATION_VERSION_PROPERTY, "v2");
 
             return StringUtils.equalsIgnoreCase(notificationVersion, "v2");
         } catch (AtlasException e) {
-            ret = true;
+            return true;
         }
-
-        return ret;
     }
-
-    private static final String AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY = "atlas.EntityAuditRepository.impl";
 
     @SuppressWarnings("unchecked")
     public static Class<? extends EntityAuditRepository> getAuditRepositoryImpl() {
         try {
             Configuration config = ApplicationProperties.get();
-            return ApplicationProperties.getClass(config,
-                    AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY, HBaseBasedAuditRepository.class.getName(), EntityAuditRepository.class);
+
+            return ApplicationProperties.getClass(config, AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY, HBaseBasedAuditRepository.class.getName(), EntityAuditRepository.class);
         } catch (AtlasException e) {
             throw new RuntimeException(e);
         }
     }
-
-    private static final String DELETE_HANDLER_V1_IMPLEMENTATION_PROPERTY = "atlas.DeleteHandlerV1.impl";
 
     public static Class<? extends DeleteHandlerV1> getDeleteHandlerV1Impl() {
         try {
             Configuration config = ApplicationProperties.get();
-            return ApplicationProperties.getClass(config,
-                                                  DELETE_HANDLER_V1_IMPLEMENTATION_PROPERTY, SoftDeleteHandlerV1.class.getName(), DeleteHandlerV1.class);
+
+            return ApplicationProperties.getClass(config, DELETE_HANDLER_V1_IMPLEMENTATION_PROPERTY, SoftDeleteHandlerV1.class.getName(), DeleteHandlerV1.class);
         } catch (AtlasException e) {
             throw new RuntimeException(e);
         }
     }
-
-    public static final String COMPILED_QUERY_CACHE_CAPACITY = "atlas.CompiledQueryCache.capacity";
 
     /**
      * Get the configuration property that specifies the size of the compiled query
@@ -130,8 +133,6 @@ public class AtlasRepositoryConfiguration {
             throw new RuntimeException(e);
         }
     }
-
-    public static final String COMPILED_QUERY_CACHE_EVICTION_WARNING_THROTTLE = "atlas.CompiledQueryCache.evictionWarningThrottle";
 
     /**
      * Get the configuration property that specifies the number evictions that pass
@@ -167,18 +168,12 @@ public class AtlasRepositoryConfiguration {
         }
     }
 
-    /**
-     * This optimization is configurable as a fail-safe in case issues are found
-     * with the optimizer in production systems.
-     */
-    public static final String GREMLIN_OPTIMIZER_ENABLED_PROPERTY = "atlas.query.gremlinOptimizerEnabled";
-    private static final boolean DEFAULT_GREMLIN_OPTIMZER_ENABLED = true;
-
     public static boolean isGremlinOptimizerEnabled() {
         try {
             return ApplicationProperties.get().getBoolean(GREMLIN_OPTIMIZER_ENABLED_PROPERTY, DEFAULT_GREMLIN_OPTIMZER_ENABLED);
         } catch (AtlasException e) {
             LOG.error("Could not determine value of " + GREMLIN_OPTIMIZER_ENABLED_PROPERTY + ".  Defaulting to " + DEFAULT_GREMLIN_OPTIMZER_ENABLED, e);
+
             return DEFAULT_GREMLIN_OPTIMZER_ENABLED;
         }
     }
@@ -207,7 +202,8 @@ public class AtlasRepositoryConfiguration {
             if (skipAuditForOperations != null && skipAuditForOperations.length > 0) {
                 for (String skippedOperation : skipAuditForOperations) {
                     String[] excludedOperations = skippedOperation.trim().toLowerCase().split(SEPARATOR);
-                    if (excludedOperations!= null && excludedOperations.length == 2) {
+
+                    if (excludedOperations.length == 2) {
                         skippedOperations.add(skippedOperation.toLowerCase());
                     } else {
                         LOG.error("Invalid format for skipped operation {}. Valid format is HttpMethod:URL eg: GET:Version", skippedOperation);
@@ -220,13 +216,14 @@ public class AtlasRepositoryConfiguration {
     }
 
     public static boolean isExcludedFromAudit(Configuration config, String httpMethod, String httpUrl) throws AtlasException {
-        if (getAuditExcludedOperations(config).size() > 0) {
+        if (!getAuditExcludedOperations(config).isEmpty()) {
             return getAuditExcludedOperations(config).contains(httpMethod.toLowerCase() + SEPARATOR + httpUrl.toLowerCase());
         } else {
             return false;
         }
     }
-   public static void resetExcludedOperations() { //for test purpose only
+
+    public static void resetExcludedOperations() { //for test purpose only
         skippedOperations = null;
     }
 

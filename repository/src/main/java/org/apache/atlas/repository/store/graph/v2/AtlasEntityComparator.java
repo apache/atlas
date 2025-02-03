@@ -41,8 +41,7 @@ public class AtlasEntityComparator {
     private final boolean              skipClassificationCompare;
     private final boolean              skipBusinessAttributeCompare;
 
-    public AtlasEntityComparator(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, Map<String, String> guidRefMap,
-                                 boolean skipClassificationCompare, boolean skipBusinessAttributeCompare) {
+    public AtlasEntityComparator(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, Map<String, String> guidRefMap, boolean skipClassificationCompare, boolean skipBusinessAttributeCompare) {
         this.typeRegistry                 = typeRegistry;
         this.entityRetriever              = entityRetriever;
         this.guidRefMap                   = guidRefMap;
@@ -164,12 +163,13 @@ public class AtlasEntityComparator {
 
         if (!skipBusinessAttributeCompare) {
             Map<String, Map<String, Object>> newBusinessMetadata  = updatedEntity.getBusinessAttributes();
-            Map<String, Map<String, Object>> currBusinessMetadata = (storedEntity != null) ? storedEntity.getBusinessAttributes() : entityRetriever.getBusinessMetadata(storedVertex);;
+            Map<String, Map<String, Object>> currBusinessMetadata = (storedEntity != null) ? storedEntity.getBusinessAttributes() : entityRetriever.getBusinessMetadata(storedVertex);
 
             if (!Objects.equals(currBusinessMetadata, newBusinessMetadata)) {
                 diffEntity.setBusinessAttributes(newBusinessMetadata);
 
                 hasDiffInBusinessAttributes = true;
+
                 sectionsWithDiff++;
 
                 if (findOnlyFirstDiff && sectionsWithDiff > 1) {

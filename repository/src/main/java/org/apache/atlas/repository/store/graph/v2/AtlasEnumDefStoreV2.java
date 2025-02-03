@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,6 +18,9 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
@@ -29,9 +32,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.authorize.AtlasTypeAccessRequest;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -48,9 +49,7 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
     @Override
     public AtlasVertex preCreate(AtlasEnumDef enumDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("==> AtlasEnumDefStoreV2.preCreate({})", enumDef);
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.preCreate({})", enumDef);
 
         validateType(enumDef);
 
@@ -66,56 +65,44 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         toVertex(enumDef, vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.preCreate({}): {}", enumDef, vertex);
-        }
+        LOG.debug("<== AtlasEnumDefStoreV2.preCreate({}): {}", enumDef, vertex);
 
         return vertex;
     }
 
     @Override
     public AtlasEnumDef create(AtlasEnumDef enumDef, AtlasVertex preCreateResult) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-          LOG.debug("==> AtlasEnumDefStoreV2.create({}, {})", enumDef, preCreateResult);
-        }
-
+        LOG.debug("==> AtlasEnumDefStoreV2.create({}, {})", enumDef, preCreateResult);
 
         AtlasVertex vertex = (preCreateResult == null) ? preCreate(enumDef) : preCreateResult;
 
         AtlasEnumDef ret = toEnumDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEntityDefStoreV2.create({}, {}): {}", enumDef, preCreateResult, ret);
-        }
+        LOG.debug("<== AtlasEntityDefStoreV2.create({}, {}): {}", enumDef, preCreateResult, ret);
 
         return ret;
     }
 
     @Override
     public List<AtlasEnumDef> getAll() throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV2.getAll()");
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.getAll()");
 
         List<AtlasEnumDef> ret = new ArrayList<>();
 
         Iterator<AtlasVertex> vertices = typeDefStore.findTypeVerticesByCategory(TypeCategory.ENUM);
+
         while (vertices.hasNext()) {
             ret.add(toEnumDef(vertices.next()));
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.getAll(): count={}", ret.size());
-        }
+        LOG.debug("<== AtlasEnumDefStoreV2.getAll(): count={}", ret.size());
 
         return ret;
     }
 
     @Override
     public AtlasEnumDef getByName(String name) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV2.getByName({})", name);
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.getByName({})", name);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByNameAndCategory(name, TypeCategory.ENUM);
 
@@ -127,18 +114,14 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         AtlasEnumDef ret = toEnumDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.getByName({}): {}", name, ret);
-        }
+        LOG.debug("<== AtlasEnumDefStoreV2.getByName({}): {}", name, ret);
 
         return ret;
     }
 
     @Override
     public AtlasEnumDef getByGuid(String guid) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV2.getByGuid({})", guid);
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.getByGuid({})", guid);
 
         AtlasVertex vertex = typeDefStore.findTypeVertexByGuidAndCategory(guid, TypeCategory.ENUM);
 
@@ -148,36 +131,28 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         AtlasEnumDef ret = toEnumDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.getByGuid({}): {}", guid, ret);
-        }
+        LOG.debug("<== AtlasEnumDefStoreV2.getByGuid({}): {}", guid, ret);
 
         return ret;
     }
 
     @Override
     public AtlasEnumDef update(AtlasEnumDef enumDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV2.update({})", enumDef);
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.update({})", enumDef);
 
         validateType(enumDef);
 
         AtlasEnumDef ret = StringUtils.isNotBlank(enumDef.getGuid()) ? updateByGuid(enumDef.getGuid(), enumDef)
-                                                                     : updateByName(enumDef.getName(), enumDef);
+                : updateByName(enumDef.getName(), enumDef);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.update({}): {}", enumDef, ret);
-        }
+        LOG.debug("<== AtlasEnumDefStoreV2.update({}): {}", enumDef, ret);
 
         return ret;
     }
 
     @Override
     public AtlasEnumDef updateByName(String name, AtlasEnumDef enumDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV2.updateByName({}, {})", name, enumDef);
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.updateByName({}, {})", name, enumDef);
 
         AtlasEnumDef existingDef = typeRegistry.getEnumDefByName(name);
 
@@ -197,18 +172,14 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         AtlasEnumDef ret = toEnumDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.updateByName({}, {}): {}", name, enumDef, ret);
-        }
+        LOG.debug("<== AtlasEnumDefStoreV2.updateByName({}, {}): {}", name, enumDef, ret);
 
         return ret;
     }
 
     @Override
     public AtlasEnumDef updateByGuid(String guid, AtlasEnumDef enumDef) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasEnumDefStoreV2.updateByGuid({})", guid);
-        }
+        LOG.debug("==> AtlasEnumDefStoreV2.updateByGuid({})", guid);
 
         AtlasEnumDef existingDef = typeRegistry.getEnumDefByGuid(guid);
 
@@ -228,9 +199,7 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         AtlasEnumDef ret = toEnumDef(vertex);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasEnumDefStoreV2.updateByGuid({}): {}", guid, ret);
-        }
+        LOG.debug("<== AtlasEnumDefStoreV2.updateByGuid({}): {}", guid, ret);
 
         return ret;
     }
@@ -294,7 +263,6 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         String defaultValueKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef, "defaultValue");
         AtlasGraphUtilsV2.setProperty(vertex, defaultValueKey, enumDef.getDefaultValue());
-
     }
 
     private AtlasEnumDef toEnumDef(AtlasVertex vertex) {
@@ -312,8 +280,8 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
         typeDefStore.vertexToTypeDef(vertex, ret);
 
-        List<AtlasEnumElementDef> elements = new ArrayList<>();
-        List<String> elemValues = vertex.getProperty(AtlasGraphUtilsV2.getTypeDefPropertyKey(ret), List.class);
+        List<AtlasEnumElementDef> elements   = new ArrayList<>();
+        List<String>              elemValues = vertex.getProperty(AtlasGraphUtilsV2.getTypeDefPropertyKey(ret), List.class);
         for (String elemValue : elemValues) {
             String elemKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(ret, elemValue);
             String descKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(elemKey, "description");
@@ -326,7 +294,7 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
         ret.setElementDefs(elements);
 
         String defaultValueKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(ret, "defaultValue");
-        String defaultValue = AtlasGraphUtilsV2.getProperty(vertex, defaultValueKey, String.class);
+        String defaultValue    = AtlasGraphUtilsV2.getProperty(vertex, defaultValueKey, String.class);
         ret.setDefaultValue(defaultValue);
 
         return ret;

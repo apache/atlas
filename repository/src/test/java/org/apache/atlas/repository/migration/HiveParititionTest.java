@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,10 +29,8 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 
-
 @Guice(modules = TestModules.TestOnlyModule.class)
-public class HiveParititionTest extends  MigrationBaseAsserts {
-
+public class HiveParititionTest extends MigrationBaseAsserts {
     @Inject
     public HiveParititionTest(AtlasGraph graph, GraphDBMigrator migrator) {
         super(graph, migrator);
@@ -40,14 +38,14 @@ public class HiveParititionTest extends  MigrationBaseAsserts {
 
     @Test
     public void fileImporterTest() throws IOException, AtlasBaseException {
-        final int EXPECTED_TOTAL_COUNT = 144;
-        final int EXPECTED_DB_COUNT = 1;
-        final int EXPECTED_TABLE_COUNT = 2;
-        final int EXPECTED_COLUMN_COUNT = 7;
+        final int expectedTotalCount  = 144;
+        final int expectedDbCount     = 1;
+        final int expectedTableCount  = 2;
+        final int expectedColumnCount = 7;
 
         runFileImporter("parts_db");
 
-        assertHiveVertices(EXPECTED_DB_COUNT, EXPECTED_TABLE_COUNT, EXPECTED_COLUMN_COUNT);
+        assertHiveVertices(expectedDbCount, expectedTableCount, expectedColumnCount);
 
         assertTypeCountNameGuid("hive_db", 1, "parts_db", "ae30d78b-51b4-42ab-9436-8d60c8f68b95");
         assertTypeCountNameGuid("hive_process", 1, "", "");
@@ -55,6 +53,6 @@ public class HiveParititionTest extends  MigrationBaseAsserts {
         assertEdges("hive_table", "t1", AtlasEdgeDirection.OUT, 1, "hive_table_db");
         assertEdges("hive_table", "tv1", AtlasEdgeDirection.OUT, 1, "hive_table_db");
 
-        assertMigrationStatus(EXPECTED_TOTAL_COUNT);
+        assertMigrationStatus(expectedTotalCount);
     }
 }

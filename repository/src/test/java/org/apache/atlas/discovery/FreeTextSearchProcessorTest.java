@@ -24,7 +24,6 @@ import org.apache.atlas.SortOrder;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParameters;
-import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
@@ -37,28 +36,26 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
+
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertFalse;
+import static org.testng.Assert.assertNotEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class FreeTextSearchProcessorTest extends BasicTestSetup {
-
     @Inject
     private AtlasGraph graph;
 
@@ -81,13 +78,13 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
     @Test
     public void searchTablesByName() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
+
         params.setTypeName("hive_table");
         params.setQuery("sales");
         params.setExcludeDeletedEntities(true);
         params.setLimit(3);
 
-        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
-
+        SearchContext           context   = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
         FreeTextSearchProcessor processor = new FreeTextSearchProcessor(context);
 
         assertEquals(processor.getResultCount(), 3);
@@ -97,6 +94,7 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
     @Test
     public void searchByNameSortBy() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
+
         params.setTypeName("hive_table");
         params.setQuery("sales");
         params.setExcludeDeletedEntities(true);
@@ -104,21 +102,17 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
         params.setSortBy("owner");
         params.setSortOrder(SortOrder.ASCENDING);
 
-        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
-
+        SearchContext           context   = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
         FreeTextSearchProcessor processor = new FreeTextSearchProcessor(context);
-
-        List<AtlasVertex> vertices = processor.execute();
+        List<AtlasVertex>       vertices  = processor.execute();
 
         assertEquals(processor.getResultCount(), 3);
         assertEquals(vertices.size(), 3);
 
-        AtlasVertex firstVertex = vertices.get(0);
-
-        String firstOwner = (String) entityRetriever.toAtlasEntityHeader(firstVertex, Sets.newHashSet(params.getSortBy())).getAttribute(params.getSortBy());
-
+        AtlasVertex firstVertex  = vertices.get(0);
+        String      firstOwner   = (String) entityRetriever.toAtlasEntityHeader(firstVertex, Sets.newHashSet(params.getSortBy())).getAttribute(params.getSortBy());
         AtlasVertex secondVertex = vertices.get(1);
-        String secondOwner = (String) entityRetriever.toAtlasEntityHeader(secondVertex, Sets.newHashSet(params.getSortBy())).getAttribute(params.getSortBy());
+        String      secondOwner  = (String) entityRetriever.toAtlasEntityHeader(secondVertex, Sets.newHashSet(params.getSortBy())).getAttribute(params.getSortBy());
 
         assertEquals(firstOwner, "Jane BI");
         assertEquals(secondOwner, "Joe");
@@ -127,13 +121,13 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
     @Test
     public void emptySearch() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
+
         params.setTypeName("hive_table");
         params.setQuery("not_exists");
         params.setExcludeDeletedEntities(true);
         params.setLimit(3);
 
-        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
-
+        SearchContext           context   = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
         FreeTextSearchProcessor processor = new FreeTextSearchProcessor(context);
 
         assertEquals(processor.getResultCount(), 0);
@@ -143,53 +137,55 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
     @Test(expectedExceptions = AtlasBaseException.class, expectedExceptionsMessageRegExp = "not_exists_type: Unknown/invalid typename")
     public void searchByNonExistingClassification() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
+
         params.setTypeName("not_exists_type");
         params.setQuery("aaa");
         params.setExcludeDeletedEntities(true);
         params.setLimit(3);
 
-        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
+
         new FreeTextSearchProcessor(context);
     }
 
     @Test(description = "filtering internal types")
     public void searchByTextFilteringInternalTypes() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
+
         params.setQuery("*");
         params.setExcludeDeletedEntities(true);
         params.setLimit(500);
         params.setOffset(0);
 
-        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
-
+        SearchContext           context   = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
         FreeTextSearchProcessor processor = new FreeTextSearchProcessor(context);
-
-        List<AtlasVertex> vertices = processor.execute();
+        List<AtlasVertex>       vertices  = processor.execute();
 
         assertNotNull(vertices);
 
         for (AtlasVertex vertex : vertices) {
-            String entityTypeName = AtlasGraphUtilsV2.getTypeName(vertex);
-            AtlasEntityType entityType = context.getTypeRegistry().getEntityTypeByName(entityTypeName);
+            String          entityTypeName = AtlasGraphUtilsV2.getTypeName(vertex);
+            AtlasEntityType entityType     = context.getTypeRegistry().getEntityTypeByName(entityTypeName);
 
             assertFalse(entityType.isInternalType());
-            assertNotEquals("AtlasGlossaryTerm", entityTypeName);
+            assertNotEquals(entityTypeName, "AtlasGlossaryTerm");
         }
     }
 
     @Test
     public void searchQualifiedName() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
+
         params.setQuery("h1qualified*");
         params.setExcludeDeletedEntities(true);
         params.setLimit(500);
         params.setOffset(0);
 
-        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+        SearchContext           context   = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
         FreeTextSearchProcessor processor = new FreeTextSearchProcessor(context);
-        List<AtlasVertex> vertices = processor.execute();
+        List<AtlasVertex>       vertices  = processor.execute();
 
-        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertTrue(CollectionUtils.isNotEmpty(vertices));
         assertEquals(vertices.size(), 1);
 
         List<String> guids = vertices.stream().map(g -> {
@@ -201,23 +197,23 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
             return "";
         }).collect(Collectors.toList());
 
-        Assert.assertTrue(guids.contains(entityGUID));
-
+        assertTrue(guids.contains(entityGUID));
     }
 
     @Test
     public void searchName() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
+
         params.setQuery("h1Name*");
         params.setExcludeDeletedEntities(true);
         params.setLimit(500);
         params.setOffset(0);
 
-        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+        SearchContext           context   = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
         FreeTextSearchProcessor processor = new FreeTextSearchProcessor(context);
-        List<AtlasVertex> vertices = processor.execute();
+        List<AtlasVertex>       vertices  = processor.execute();
 
-        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertTrue(CollectionUtils.isNotEmpty(vertices));
         assertEquals(vertices.size(), 1);
 
         List<String> guids = vertices.stream().map(g -> {
@@ -229,23 +225,23 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
             return "";
         }).collect(Collectors.toList());
 
-        Assert.assertTrue(guids.contains(entityGUID));
-
+        assertTrue(guids.contains(entityGUID));
     }
 
     @Test
     public void searchNameWithStar() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
+
         params.setQuery("*h1*");
         params.setExcludeDeletedEntities(true);
         params.setLimit(500);
         params.setOffset(0);
 
-        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+        SearchContext           context   = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
         FreeTextSearchProcessor processor = new FreeTextSearchProcessor(context);
-        List<AtlasVertex> vertices = processor.execute();
+        List<AtlasVertex>       vertices  = processor.execute();
 
-        Assert.assertTrue(CollectionUtils.isNotEmpty(vertices));
+        assertTrue(CollectionUtils.isNotEmpty(vertices));
         assertEquals(vertices.size(), 1);
 
         List<String> guids = vertices.stream().map(g -> {
@@ -257,21 +253,7 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
             return "";
         }).collect(Collectors.toList());
 
-        Assert.assertTrue(guids.contains(entityGUID));
-
-    }
-
-    private void createEntityWithQualifiedName() throws AtlasBaseException {
-        AtlasEntity entityToDelete = new AtlasEntity(HDFS_PATH);
-        entityToDelete.setAttribute("name", "h1NameHDFS");
-        entityToDelete.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "h1qualifiedNameHDFS");
-        entityToDelete.setAttribute("path", "h1PathHDFS");
-
-        //create entity
-        final EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(entityToDelete)), false);
-        AtlasEntityHeader entityHeader = response.getCreatedEntities().get(0);
-        entityGUID = entityHeader.getGuid();
-
+        assertTrue(guids.contains(entityGUID));
     }
 
     @AfterClass
@@ -279,5 +261,19 @@ public class FreeTextSearchProcessorTest extends BasicTestSetup {
         AtlasGraphProvider.cleanup();
 
         super.cleanup();
+    }
+
+    private void createEntityWithQualifiedName() throws AtlasBaseException {
+        AtlasEntity entityToDelete = new AtlasEntity(HDFS_PATH);
+
+        entityToDelete.setAttribute("name", "h1NameHDFS");
+        entityToDelete.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "h1qualifiedNameHDFS");
+        entityToDelete.setAttribute("path", "h1PathHDFS");
+
+        //create entity
+        final EntityMutationResponse response     = entityStore.createOrUpdate(new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(entityToDelete)), false);
+        AtlasEntityHeader            entityHeader = response.getCreatedEntities().get(0);
+
+        entityGUID = entityHeader.getGuid();
     }
 }

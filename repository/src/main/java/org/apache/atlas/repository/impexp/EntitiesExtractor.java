@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,13 +27,13 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class EntitiesExtractor {
-    static final String PROPERTY_GUID = "__guid";
-    private static final String VERTEX_BASED_EXTRACT = "default";
-    private static final String INCREMENTAL_EXTRACT = "incremental";
+    static final         String PROPERTY_GUID          = "__guid";
+    private static final String VERTEX_BASED_EXTRACT   = "default";
+    private static final String INCREMENTAL_EXTRACT    = "incremental";
     private static final String RELATION_BASED_EXTRACT = "relationship";
 
-    private Map<String, ExtractStrategy> extractors = new HashMap<>();
-    private ExtractStrategy extractor;
+    private final Map<String, ExtractStrategy> extractors = new HashMap<>();
+    private       ExtractStrategy              extractor;
 
     public EntitiesExtractor(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry) {
         extractors.put(VERTEX_BASED_EXTRACT, new VertexExtractor(atlasGraph, typeRegistry));
@@ -42,7 +42,7 @@ public class EntitiesExtractor {
     }
 
     public void get(AtlasEntity entity, ExportService.ExportContext context) {
-        if(extractor == null) {
+        if (extractor == null) {
             extractor = extractors.get(VERTEX_BASED_EXTRACT);
         }
 
@@ -81,8 +81,6 @@ public class EntitiesExtractor {
     }
 
     private ExtractStrategy extractUsing(AtlasEntityDef atlasEntityDef) {
-        return (atlasEntityDef == null || atlasEntityDef.getRelationshipAttributeDefs().size() == 0)
-                ? extractors.get(VERTEX_BASED_EXTRACT)
-                : extractors.get(RELATION_BASED_EXTRACT);
+        return (atlasEntityDef == null || atlasEntityDef.getRelationshipAttributeDefs().isEmpty()) ? extractors.get(VERTEX_BASED_EXTRACT) : extractors.get(RELATION_BASED_EXTRACT);
     }
 }

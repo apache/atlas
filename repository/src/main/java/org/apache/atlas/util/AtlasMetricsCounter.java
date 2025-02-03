@@ -18,7 +18,6 @@
 
 package org.apache.atlas.util;
 
-
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -26,11 +25,13 @@ import java.time.LocalTime;
 import java.time.ZoneOffset;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static org.apache.atlas.util.AtlasMetricsCounter.Period.*;
+import static org.apache.atlas.util.AtlasMetricsCounter.Period.ALL;
+import static org.apache.atlas.util.AtlasMetricsCounter.Period.CURR_DAY;
+import static org.apache.atlas.util.AtlasMetricsCounter.Period.CURR_HOUR;
+import static org.apache.atlas.util.AtlasMetricsCounter.Period.PREV_DAY;
+import static org.apache.atlas.util.AtlasMetricsCounter.Period.PREV_HOUR;
 
 public class AtlasMetricsCounter {
-    public enum Period { ALL, CURR_DAY, CURR_HOUR, PREV_HOUR, PREV_DAY };
-
     private final String  name;
     private final Stats   stats;
     private       Clock   clock;
@@ -51,9 +52,41 @@ public class AtlasMetricsCounter {
         init(clock);
     }
 
-    public String getName() { return name; }
+    public static LocalDateTime getLocalDateTime(Instant instant) {
+        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+    }
 
-    public Instant getLastIncrTime() { return lastIncrTime; }
+    public static Instant getHourStartTime(Instant instant) {
+        LocalDateTime time = getLocalDateTime(instant);
+
+        return LocalDateTime.of(time.toLocalDate(), LocalTime.MIN).plusHours(time.getHour()).toInstant(ZoneOffset.UTC);
+    }
+
+    public static Instant getNextHourStartTime(Instant instant) {
+        LocalDateTime time = getLocalDateTime(instant);
+
+        return LocalDateTime.of(time.toLocalDate(), LocalTime.MIN).plusHours(time.getHour() + 1).toInstant(ZoneOffset.UTC);
+    }
+
+    public static Instant getDayStartTime(Instant instant) {
+        LocalDateTime time = getLocalDateTime(instant);
+
+        return LocalDateTime.of(time.toLocalDate(), LocalTime.MIN).toInstant(ZoneOffset.UTC);
+    }
+
+    public static Instant getNextDayStartTime(Instant instant) {
+        LocalDateTime time = getLocalDateTime(instant);
+
+        return LocalDateTime.of(time.toLocalDate().plusDays(1), LocalTime.MIN).toInstant(ZoneOffset.UTC);
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Instant getLastIncrTime() {
+        return lastIncrTime;
+    }
 
     public void incr() {
         incrByWithMeasure(1, 0);
@@ -68,7 +101,7 @@ public class AtlasMetricsCounter {
     }
 
     public void incrByWithMeasure(long count, long measure) {
-        Instant instant  = clock.instant();
+        Instant instant = clock.instant();
 
         stats.addCount(ALL, count);
         stats.addMeasure(ALL, measure);
@@ -92,18 +125,6 @@ public class AtlasMetricsCounter {
         updateForTime(clock.instant());
 
         return new StatsReport(stats, dayStartTime.toEpochMilli(), hourStartTime.toEpochMilli());
-    }
-
-    // visible only for testing
-    void init(Clock clock) {
-        this.clock         = clock;
-        this.lastIncrTime  = Instant.ofEpochSecond(0);
-        this.dayStartTime  = Instant.ofEpochSecond(0);
-        this.dayEndTime    = Instant.ofEpochSecond(0);
-        this.hourStartTime = Instant.ofEpochSecond(0);
-        this.hourEndTime   = Instant.ofEpochSecond(0);
-
-        updateForTime(clock.instant());
     }
 
     protected void updateForTime(Instant now) {
@@ -152,44 +173,29 @@ public class AtlasMetricsCounter {
         }
     }
 
-    public static LocalDateTime getLocalDateTime(Instant instant) {
-        return LocalDateTime.ofInstant(instant, ZoneOffset.UTC);
+    // visible only for testing
+    void init(Clock clock) {
+        this.clock         = clock;
+        this.lastIncrTime  = Instant.ofEpochSecond(0);
+        this.dayStartTime  = Instant.ofEpochSecond(0);
+        this.dayEndTime    = Instant.ofEpochSecond(0);
+        this.hourStartTime = Instant.ofEpochSecond(0);
+        this.hourEndTime   = Instant.ofEpochSecond(0);
+
+        updateForTime(clock.instant());
     }
 
-    public static Instant getHourStartTime(Instant instant) {
-        LocalDateTime time = getLocalDateTime(instant);
-
-        return LocalDateTime.of(time.toLocalDate(), LocalTime.MIN).plusHours(time.getHour()).toInstant(ZoneOffset.UTC);
-    }
-
-    public static Instant getNextHourStartTime(Instant instant) {
-        LocalDateTime time = getLocalDateTime(instant);
-
-        return LocalDateTime.of(time.toLocalDate(), LocalTime.MIN).plusHours(time.getHour() + 1).toInstant(ZoneOffset.UTC);
-    }
-
-    public static Instant getDayStartTime(Instant instant) {
-        LocalDateTime time = getLocalDateTime(instant);
-
-        return LocalDateTime.of(time.toLocalDate(), LocalTime.MIN).toInstant(ZoneOffset.UTC);
-    }
-
-    public static Instant getNextDayStartTime(Instant instant) {
-        LocalDateTime time = getLocalDateTime(instant);
-
-        return LocalDateTime.of(time.toLocalDate().plusDays(1), LocalTime.MIN).toInstant(ZoneOffset.UTC);
-    }
+    public enum Period { ALL, CURR_DAY, CURR_HOUR, PREV_HOUR, PREV_DAY }
 
     public static class Stats {
         private static final int NUM_PERIOD = Period.values().length;
 
         private final long         dayStartTimeMs;
         private final long         hourStartTimeMs;
-        private final AtomicLong[] count           = new AtomicLong[NUM_PERIOD];
-        private final AtomicLong[] measureSum      = new AtomicLong[NUM_PERIOD];
-        private final AtomicLong[] measureMin      = new AtomicLong[NUM_PERIOD];
-        private final AtomicLong[] measureMax      = new AtomicLong[NUM_PERIOD];
-
+        private final AtomicLong[] count      = new AtomicLong[NUM_PERIOD];
+        private final AtomicLong[] measureSum = new AtomicLong[NUM_PERIOD];
+        private final AtomicLong[] measureMin = new AtomicLong[NUM_PERIOD];
+        private final AtomicLong[] measureMax = new AtomicLong[NUM_PERIOD];
 
         public Stats() {
             dayStartTimeMs  = 0;
@@ -225,7 +231,7 @@ public class AtlasMetricsCounter {
             count[destIdx].set(count[srcIdx].get());
             measureSum[destIdx].set(measureSum[srcIdx].get());
             measureMin[destIdx].set(measureMin[srcIdx].get());
-            measureMax[destIdx].set( measureMax[srcIdx].get());
+            measureMax[destIdx].set(measureMax[srcIdx].get());
         }
 
         private void reset(Period period) {
@@ -236,7 +242,6 @@ public class AtlasMetricsCounter {
             measureMin[idx] = new AtomicLong(Long.MAX_VALUE);
             measureMax[idx] = new AtomicLong(Long.MIN_VALUE);
         }
-
     }
 
     public static class StatsReport {
@@ -244,11 +249,10 @@ public class AtlasMetricsCounter {
 
         private final long   dayStartTimeMs;
         private final long   hourStartTimeMs;
-        private final long[] count           = new long[NUM_PERIOD];
-        private final long[] measureSum      = new long[NUM_PERIOD];
-        private final long[] measureMin      = new long[NUM_PERIOD];
-        private final long[] measureMax      = new long[NUM_PERIOD];
-
+        private final long[] count      = new long[NUM_PERIOD];
+        private final long[] measureSum = new long[NUM_PERIOD];
+        private final long[] measureMin = new long[NUM_PERIOD];
+        private final long[] measureMax = new long[NUM_PERIOD];
 
         public StatsReport(Stats other, long dayStartTimeMs, long hourStartTimeMs) {
             this.dayStartTimeMs  = dayStartTimeMs;
@@ -260,17 +264,29 @@ public class AtlasMetricsCounter {
             copy(other.measureMax, this.measureMax);
         }
 
-        public long getDayStartTimeMs() { return dayStartTimeMs; }
+        public long getDayStartTimeMs() {
+            return dayStartTimeMs;
+        }
 
-        public long getHourStartTimeMs() { return hourStartTimeMs; }
+        public long getHourStartTimeMs() {
+            return hourStartTimeMs;
+        }
 
-        public long getCount(Period period) { return count[period.ordinal()]; }
+        public long getCount(Period period) {
+            return count[period.ordinal()];
+        }
 
-        public long getMeasureSum(Period period) { return measureSum[period.ordinal()]; }
+        public long getMeasureSum(Period period) {
+            return measureSum[period.ordinal()];
+        }
 
-        public long getMeasureMin(Period period) { return measureMin[period.ordinal()]; }
+        public long getMeasureMin(Period period) {
+            return measureMin[period.ordinal()];
+        }
 
-        public long getMeasureMax(Period period) { return measureMax[period.ordinal()]; }
+        public long getMeasureMax(Period period) {
+            return measureMax[period.ordinal()];
+        }
 
         public long getMeasureAvg(Period period) {
             int  idx = period.ordinal();

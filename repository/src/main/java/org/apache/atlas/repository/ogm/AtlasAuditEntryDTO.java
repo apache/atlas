@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,15 +26,15 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
+import java.util.Arrays;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.Date;
-import java.util.Arrays;
 
 @Component
 public class AtlasAuditEntryDTO extends AbstractDataTransferObject<AtlasAuditEntry> {
-
     public static final String ATTRIBUTE_USER_NAME    = "userName";
     public static final String ATTRIBUTE_OPERATION    = "operation";
     public static final String ATTRIBUTE_PARAMS       = "params";
@@ -51,20 +51,19 @@ public class AtlasAuditEntryDTO extends AbstractDataTransferObject<AtlasAuditEnt
 
     @Inject
     public AtlasAuditEntryDTO(AtlasTypeRegistry typeRegistry) {
-        super(typeRegistry, AtlasAuditEntry.class,
-                Constants.INTERNAL_PROPERTY_KEY_PREFIX + AtlasAuditEntry.class.getSimpleName());
+        super(typeRegistry, AtlasAuditEntry.class, Constants.INTERNAL_PROPERTY_KEY_PREFIX + AtlasAuditEntry.class.getSimpleName());
     }
 
     public static Set<String> getAttributes() {
         return ATTRIBUTE_NAMES;
     }
 
-    public static AtlasAuditEntry from(String guid, Map<String,Object> attributes) {
+    public static AtlasAuditEntry from(String guid, Map<String, Object> attributes) {
         AtlasAuditEntry entry = new AtlasAuditEntry();
 
         entry.setGuid(guid);
         entry.setUserName((String) attributes.get(ATTRIBUTE_USER_NAME));
-        entry.setOperation(AtlasAuditEntry.AuditOperation.valueOf((String)attributes.get(ATTRIBUTE_OPERATION)));
+        entry.setOperation(AtlasAuditEntry.AuditOperation.valueOf((String) attributes.get(ATTRIBUTE_OPERATION)));
         entry.setParams((String) attributes.get(ATTRIBUTE_PARAMS));
         entry.setStartTime((Date) attributes.get(ATTRIBUTE_START_TIME));
         entry.setEndTime((Date) attributes.get(ATTRIBUTE_END_TIME));

@@ -33,13 +33,14 @@ import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
-import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
+
 public class GremlinQueryComposerTest {
     @Test
     public void withinClause() {
@@ -55,7 +56,7 @@ public class GremlinQueryComposerTest {
         verify("PII", expected);
     }
 
-    @Test()
+    @Test
     public void dimension() {
         String expected = "g.V().has('__typeName', 'Table').outE('classifiedAs').has('__name', within('Dimension')).outV().dedup().limit(25).toList()";
         verify("Table isa Dimension", expected);
@@ -63,7 +64,7 @@ public class GremlinQueryComposerTest {
         verify("Table where Table is Dimension", expected);
     }
 
-    @Test()
+    @Test
     public void classificationAttributes() {
         String expected1 = "g.V().outE('classifiedAs').has('__name', within('Dimension')).outV().and(__.out('classifiedAs').has('Dimension.timeAttr', eq('value')).dedup().in('classifiedAs')).dedup().limit(25).toList()";
         String expected2 = "g.V().outE('classifiedAs').has('__name', within('Dimension')).outV().as('d').and(__.out('classifiedAs').has('Dimension.timeAttr', eq('value')).dedup().in('classifiedAs')).dedup().limit(25).toList()";
@@ -71,8 +72,8 @@ public class GremlinQueryComposerTest {
         String expected4 = "g.V().has('__typeName', 'Table').and(__.out('classifiedAs').has('Dimension.timeAttr', eq('value')).dedup().in('classifiedAs')).dedup().limit(25).toList()";
 
         verify("Dimension where Dimension.timeAttr = 'value'", expected1);
-        verify("Dimension as d where d.timeAttr = 'value'",expected2);
-        verify("Table where (name = 'time_dim' and Dimension.timeAttr = 'value')",expected3);
+        verify("Dimension as d where d.timeAttr = 'value'", expected2);
+        verify("Table where (name = 'time_dim' and Dimension.timeAttr = 'value')", expected3);
         verify("Table where Dimension.timeAttr = 'value'", expected4);
     }
 
@@ -85,32 +86,32 @@ public class GremlinQueryComposerTest {
     }
 
     @Test
-    public void DBHasName() {
+    public void dbHasName() {
         String expected = "g.V().has('__typeName', 'DB').has('DB.name').dedup().limit(25).toList()";
         verify("DB has name", expected);
         verify("DB where DB has name", expected);
     }
 
     @Test
-    public void DBasD() {
+    public void dbAsD() {
         verify("DB as d", "g.V().has('__typeName', 'DB').as('d').dedup().limit(25).toList()");
     }
 
     @Test
-    public void DBasDSelect() {
+    public void dbAsDSelect() {
         String expected = "def f(r){ t=[['d.name','d.owner']];  r.each({t.add([" +
                 "it.property('DB.name').isPresent() ? it.value('DB.name') : \"\"," +
                 "it.property('DB.owner').isPresent() ? it.value('DB.owner') : \"\"])}); t.unique(); }; " +
                 "f(g.V().has('__typeName', 'DB').as('d')";
         verify("DB as d select d.name, d.owner", expected + ".dedup().limit(25).toList())");
         verify("DB as d select d.name, d.owner limit 10", expected + ".dedup().limit(10).toList())");
-        verify("DB as d select d","def f(r){ r }; f(g.V().has('__typeName', 'DB').as('d').dedup().limit(25).toList())");
+        verify("DB as d select d", "def f(r){ r }; f(g.V().has('__typeName', 'DB').as('d').dedup().limit(25).toList())");
     }
 
     @Test
     public void tableSelectColumns() {
         String exMain = "g.V().has('__typeName', 'Table').out('__Table.columns').dedup().limit(10).toList()";
-        String exSel = "def f(r){ r }";
+        String exSel  = "def f(r){ r }";
         String exSel1 = "def f(r){ t=[['db.name']];  r.each({t.add([" +
                 "it.property('DB.name').isPresent() ? it.value('DB.name') : \"\"])}); t.unique(); }";
         verify("Table select columns limit 10", getExpected(exSel, exMain));
@@ -120,7 +121,6 @@ public class GremlinQueryComposerTest {
 
         String exMain3 = "g.V().has('__typeName', 'Table').out('__Table.db').dedup().limit(25).toList()";
         verify("Table select db.name", getExpected(exSel1, exMain3));
-
     }
 
     @Test
@@ -129,6 +129,7 @@ public class GremlinQueryComposerTest {
         verify("DB owner = ['hdfs', 'anon']", "g.V().has('__typeName', 'DB').has('DB.owner', within('hdfs','anon')).dedup().limit(25).toList()");
         verify("hive_db as d owner = ['hdfs', 'anon']", "g.V().has('__typeName', 'hive_db').as('d').has('hive_db.owner', within('hdfs','anon')).dedup().limit(25).toList()");
     }
+
     @Test
     public void groupByMin() {
         verify("from DB groupby (owner) select min(name) orderby name limit 2",
@@ -149,13 +150,13 @@ public class GremlinQueryComposerTest {
     }
 
     @Test
-    public void DBAsDSelectLimit() {
+    public void dbAsDSelectLimit() {
         verify("from DB limit 5", "g.V().has('__typeName', 'DB').dedup().limit(5).toList()");
         verify("from DB limit 5 offset 2", "g.V().has('__typeName', 'DB').dedup().range(2, 2 + 5).toList()");
     }
 
     @Test
-    public void DBOrderBy() {
+    public void dbOrderBy() {
         String expected = "g.V().has('__typeName', 'DB').order().by('DB.name').dedup().limit(25).toList()";
         verify("DB orderby name", expected);
         verify("from DB orderby name", expected);
@@ -206,15 +207,15 @@ public class GremlinQueryComposerTest {
         verify("Table where Asset.name like \"Tab*\"",
                 "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"Tab.*\")).dedup().limit(25).toList()");
         verify("Table where owner like \"Tab*\"",
-          "g.V().has('__typeName', 'Table').has('Table.owner', org.janusgraph.core.attribute.Text.textContainsRegex(\"Tab.*\")).dedup().limit(25).toList()");
+                "g.V().has('__typeName', 'Table').has('Table.owner', org.janusgraph.core.attribute.Text.textContainsRegex(\"Tab.*\")).dedup().limit(25).toList()");
         verify("Table where owner like \"*Tab_*\"",
                 "g.V().has('__typeName', 'Table').has('Table.owner', org.janusgraph.core.attribute.Text.textRegex(\".*Tab_.*\")).dedup().limit(25).toList()");
         verify("from Table where (db.name = \"Reporting\")",
                 "g.V().has('__typeName', 'Table').out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup().in('__Table.db').dedup().limit(25).toList()");
-        verify( "Table where owner like \"Jane/*\"", "g.V().has('__typeName', 'Table').has('Table.owner', org.janusgraph.core.attribute.Text.textRegex(\"Jane\\/.*\")).dedup().limit(25).toList()");
-        verify( "Table where Asset.name like \"/sales_*\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"\\/sales_.*\")).dedup().limit(25).toList()");
-        verify( "Table where Asset.name like \"sales:*\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"sales:.*\")).dedup().limit(25).toList()");
-        verify( "Table where Asset.name like \"table[0-9]\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"table[0-9]\")).dedup().limit(25).toList()");
+        verify("Table where owner like \"Jane/*\"", "g.V().has('__typeName', 'Table').has('Table.owner', org.janusgraph.core.attribute.Text.textRegex(\"Jane\\/.*\")).dedup().limit(25).toList()");
+        verify("Table where Asset.name like \"/sales_*\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"\\/sales_.*\")).dedup().limit(25).toList()");
+        verify("Table where Asset.name like \"sales:*\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"sales:.*\")).dedup().limit(25).toList()");
+        verify("Table where Asset.name like \"table[0-9]\"", "g.V().has('__typeName', 'Table').has('Asset.__s_name', org.janusgraph.core.attribute.Text.textRegex(\"table[0-9]\")).dedup().limit(25).toList()");
     }
 
     @Test
@@ -265,7 +266,7 @@ public class GremlinQueryComposerTest {
 
     @Test
     public void whereClauseWithBooleanCondition() {
-        String queryFormat = "Table as t where name ='Reporting' or t.isFile = %s";
+        String queryFormat    = "Table as t where name ='Reporting' or t.isFile = %s";
         String expectedFormat = "g.V().has('__typeName', 'Table').as('t').or(__.has('Table.name', eq('Reporting')),__.has('Table.isFile', eq(%s))).dedup().limit(25).toList()";
         verify(String.format(queryFormat, "true"), String.format(expectedFormat, "true"));
         verify(String.format(queryFormat, "false"), String.format(expectedFormat, "false"));
@@ -273,9 +274,94 @@ public class GremlinQueryComposerTest {
         verify(String.format(queryFormat, "FALSE"), String.format(expectedFormat, "FALSE"));
     }
 
+    @Test(dataProvider = "nestedQueriesProvider")
+    public void nestedQueries(String query, String expectedGremlin) {
+        verify(query, expectedGremlin);
+        verify(query.replace("where", " "), expectedGremlin);
+    }
+
+    @Test
+    public void glossaryTermQueries() {
+        verify("Table hasTerm sales", "g.V().has('__typeName', 'Table')" +
+                ".where(in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.name', 'sales'))" +
+                ".dedup().limit(25).toList()");
+        verify("Table hasTerm \"sales@glossary\"", "g.V().has('__typeName', 'Table')." +
+                "where(in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.qualifiedName', 'sales@glossary'))" +
+                ".dedup().limit(25).toList()");
+        verify("Table hasTerm \"sales@glossary\" and owner = \"fetl\"",
+                "g.V().has('__typeName', 'Table')" +
+                        ".and(" +
+                        "__.where(in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.qualifiedName', 'sales@glossary'))" +
+                        ",__.has('Table.owner', eq(\"fetl\"))" +
+                        ").dedup().limit(25).toList()");
+    }
+
+    @Test
+    public void keywordsInWhereClause() {
+        verify("Table as t where t has name and t isa Dimension",
+                "g.V().has('__typeName', 'Table').as('t').and(__.has('Table.name'),__.outE('classifiedAs').has('__name', within('Dimension')).outV()).dedup().limit(25).toList()");
+        verify("Table as t where t has name and t.name = 'sales_fact'",
+                "g.V().has('__typeName', 'Table').as('t').and(__.has('Table.name'),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
+        verify("Table as t where t is Dimension and t.name = 'sales_fact'",
+                "g.V().has('__typeName', 'Table').as('t').and(__.outE('classifiedAs').has('__name', within('Dimension')).outV(),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
+        verify("Table isa 'Dimension' and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.outE('classifiedAs').has('__name', within('Dimension')).outV(),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
+        verify("Table has name and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.has('Table.name'),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
+        verify("Table is 'Dimension' and Table has owner and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.outE('classifiedAs').has('__name', within('Dimension')).outV(),__.has('Table.owner'),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
+        verify("Table has name and Table has owner and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.has('Table.name'),__.has('Table.owner'),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
+    }
+
+    @Test
+    public void numericAttributes() {
+        verify("Table where partitionSize = 2048", "g.V().has('__typeName', 'Table').has('Table.partitionSize', eq(2048f)).dedup().limit(25).toList()");
+        verify("Table where partitionSize = 2048 or partitionSize = 10", "g.V().has('__typeName', 'Table').or(__.has('Table.partitionSize', eq(2048f)),__.has('Table.partitionSize', eq(10f))).dedup().limit(25).toList()");
+    }
+
+    @Test
+    public void systemAttributes() {
+        verify("Table has __state", "g.V().has('__typeName', 'Table').has('__state').dedup().limit(25).toList()");
+        verify("Table select __guid", "def f(r){ t=[['__guid']];  r.each({t.add([" +
+                "it.property('__guid').isPresent() ? it.value('__guid') : \"\"])}); t.unique(); }; " +
+                "f(g.V().has('__typeName', 'Table').dedup().limit(25).toList())");
+        verify("Table as t where t.__state = 'ACTIVE'", "g.V().has('__typeName', 'Table').as('t').has('__state', eq('ACTIVE')).dedup().limit(25).toList()");
+    }
+
+    @Test
+    public void whereComplexAndSelect() {
+        String exSel = "def f(r){ t=[['name']];  r.each({t.add([" +
+                "it.property('Table.name').isPresent() ? it.value('Table.name') : \"\"])}); t.unique(); }";
+        String exMain = "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup().in('__Table.db'),__.has('Table.name', eq(\"sales_fact\"))).dedup().limit(25).toList()";
+        verify("Table where db.name = \"Reporting\" and name =\"sales_fact\" select name", getExpected(exSel, exMain));
+        verify("Table where db.name = \"Reporting\" and name =\"sales_fact\"", exMain);
+    }
+
+    @Test
+    public void whereClauseWithNEQCondition() {
+        verify("Table where owner != 'random'",
+                "g.V().has('__typeName', 'Table').or(__.has('Table.owner', neq(random)), __.hasNot('Table.owner')).dedup().limit(25).toList()");
+    }
+
+    @Test
+    public void invalidQueries() {
+        verify("hdfs_path like h1", "");
+    }
+
+    @Test
+    public void invalidQueries2() {
+        verify("PIII", 3);
+        verify("TableTTT where name = 'abcd'", 1);
+        verify("Table isa Table", 1);
+        verify("Table has xxx", 1);
+        verify("Table where createType = '2010-03-30'", 1);
+        verify("Table has db", 1);
+        verify("Table groupby(db) select name", 1);
+        verify("Table groupby(name) select name, max(db)", 1);
+        verify("Table select db, columns", 1);
+        verify("Table select db, owner, columns", 2);
+    }
+
     @DataProvider(name = "nestedQueriesProvider")
     private Object[][] nestedQueriesSource() {
-        return new Object[][]{
+        return new Object[][] {
                 {"Table where name=\"sales_fact\" or name=\"testtable_1\"",
                         "g.V().has('__typeName', 'Table').or(__.has('Table.name', eq(\"sales_fact\")),__.has('Table.name', eq(\"testtable_1\"))).dedup().limit(25).toList()"},
                 {"Table where name=\"sales_fact\" and name=\"testtable_1\"",
@@ -344,97 +430,10 @@ public class GremlinQueryComposerTest {
         };
     }
 
-    @Test(dataProvider = "nestedQueriesProvider")
-    public void nestedQueries(String query, String expectedGremlin) {
-        verify(query, expectedGremlin);
-        verify(query.replace("where", " "), expectedGremlin);
-    }
-
-    @Test
-    public void glossaryTermQueries() {
-        verify("Table hasTerm sales", "g.V().has('__typeName', 'Table')" +
-                ".where(in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.name', 'sales'))" +
-                ".dedup().limit(25).toList()");
-        verify("Table hasTerm \"sales@glossary\"", "g.V().has('__typeName', 'Table')." +
-                "where(in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.qualifiedName', 'sales@glossary'))" +
-                ".dedup().limit(25).toList()");
-        verify("Table hasTerm \"sales@glossary\" and owner = \"fetl\"",
-                "g.V().has('__typeName', 'Table')" +
-                        ".and(" +
-                            "__.where(in('r:AtlasGlossarySemanticAssignment').has('AtlasGlossaryTerm.qualifiedName', 'sales@glossary'))" +
-                            ",__.has('Table.owner', eq(\"fetl\"))" +
-                        ").dedup().limit(25).toList()");
-    }
-
-
-    @Test
-    public void keywordsInWhereClause() {
-        verify("Table as t where t has name and t isa Dimension",
-                "g.V().has('__typeName', 'Table').as('t').and(__.has('Table.name'),__.outE('classifiedAs').has('__name', within('Dimension')).outV()).dedup().limit(25).toList()");
-        verify("Table as t where t has name and t.name = 'sales_fact'",
-                "g.V().has('__typeName', 'Table').as('t').and(__.has('Table.name'),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
-        verify("Table as t where t is Dimension and t.name = 'sales_fact'",
-                "g.V().has('__typeName', 'Table').as('t').and(__.outE('classifiedAs').has('__name', within('Dimension')).outV(),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
-        verify("Table isa 'Dimension' and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.outE('classifiedAs').has('__name', within('Dimension')).outV(),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
-        verify("Table has name and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.has('Table.name'),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
-        verify("Table is 'Dimension' and Table has owner and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.outE('classifiedAs').has('__name', within('Dimension')).outV(),__.has('Table.owner'),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
-        verify("Table has name and Table has owner and name = 'sales_fact'", "g.V().has('__typeName', 'Table').and(__.has('Table.name'),__.has('Table.owner'),__.has('Table.name', eq('sales_fact'))).dedup().limit(25).toList()");
-    }
-
-
-    @Test
-    public void numericAttributes() {
-        verify("Table where partitionSize = 2048", "g.V().has('__typeName', 'Table').has('Table.partitionSize', eq(2048f)).dedup().limit(25).toList()");
-        verify("Table where partitionSize = 2048 or partitionSize = 10", "g.V().has('__typeName', 'Table').or(__.has('Table.partitionSize', eq(2048f)),__.has('Table.partitionSize', eq(10f))).dedup().limit(25).toList()");
-    }
-
-    @Test
-    public void systemAttributes() {
-        verify("Table has __state", "g.V().has('__typeName', 'Table').has('__state').dedup().limit(25).toList()");
-        verify("Table select __guid", "def f(r){ t=[['__guid']];  r.each({t.add([" +
-                "it.property('__guid').isPresent() ? it.value('__guid') : \"\"])}); t.unique(); }; " +
-                "f(g.V().has('__typeName', 'Table').dedup().limit(25).toList())");
-        verify("Table as t where t.__state = 'ACTIVE'", "g.V().has('__typeName', 'Table').as('t').has('__state', eq('ACTIVE')).dedup().limit(25).toList()");
-    }
-
-    @Test
-    public void whereComplexAndSelect() {
-        String exSel = "def f(r){ t=[['name']];  r.each({t.add([" +
-                "it.property('Table.name').isPresent() ? it.value('Table.name') : \"\"])}); t.unique(); }";
-        String exMain = "g.V().has('__typeName', 'Table').and(__.out('__Table.db').has('DB.name', eq(\"Reporting\")).dedup().in('__Table.db'),__.has('Table.name', eq(\"sales_fact\"))).dedup().limit(25).toList()";
-        verify("Table where db.name = \"Reporting\" and name =\"sales_fact\" select name", getExpected(exSel, exMain));
-        verify("Table where db.name = \"Reporting\" and name =\"sales_fact\"", exMain);
-    }
-
-    @Test
-    public void whereClauseWithNEQCondition() {
-        verify("Table where owner != 'random'",
-                "g.V().has('__typeName', 'Table').or(__.has('Table.owner', neq(random)), __.hasNot('Table.owner')).dedup().limit(25).toList()");
-    }
-
-    @Test
-    public void invalidQueries() {
-        verify("hdfs_path like h1", "");
-    }
-
-    @Test
-    public void invalidQueries2() {
-        verify("PIII", 3);
-        verify("TableTTT where name = 'abcd'", 1);
-        verify("Table isa Table", 1);
-        verify("Table has xxx", 1);
-        verify("Table where createType = '2010-03-30'", 1);
-        verify("Table has db", 1);
-        verify("Table groupby(db) select name", 1);
-        verify("Table groupby(name) select name, max(db)", 1);
-        verify("Table select db, columns", 1);
-        verify("Table select db, owner, columns", 2);
-    }
-
     private void verify(String dsl, String expectedGremlin, int expectedNumberOfErrors) {
-        AtlasDSLParser.QueryContext queryContext = getParsedQuery(dsl);
-        String actualGremlin = getGremlinQuery(dsl, queryContext, expectedNumberOfErrors);
-        if(expectedNumberOfErrors == 0) {
+        AtlasDSLParser.QueryContext queryContext  = getParsedQuery(dsl);
+        String                      actualGremlin = getGremlinQuery(dsl, queryContext, expectedNumberOfErrors);
+        if (expectedNumberOfErrors == 0) {
             assertEquals(actualGremlin, expectedGremlin, dsl);
         }
     }
@@ -462,17 +461,17 @@ public class GremlinQueryComposerTest {
     }
 
     private String getGremlinQuery(String dsl, AtlasDSLParser.QueryContext queryContext, int expectedNumberOfErrors) {
-        AtlasTypeRegistry registry = mock(AtlasTypeRegistry.class);
-        org.apache.atlas.query.Lookup lookup   = new TestLookup(registry);
-        GremlinQueryComposer.Context  context  = new GremlinQueryComposer.Context(lookup);
-        AtlasDSL.QueryMetadata queryMetadata   = new AtlasDSL.QueryMetadata(queryContext);
+        AtlasTypeRegistry             registry      = mock(AtlasTypeRegistry.class);
+        org.apache.atlas.query.Lookup lookup        = new TestLookup(registry);
+        GremlinQueryComposer.Context  context       = new GremlinQueryComposer.Context(lookup);
+        AtlasDSL.QueryMetadata        queryMetadata = new AtlasDSL.QueryMetadata(queryContext);
 
         GremlinQueryComposer gremlinQueryComposer = new GremlinQueryComposer(lookup, context, queryMetadata);
         DSLVisitor           qv                   = new DSLVisitor(gremlinQueryComposer);
         qv.visit(queryContext);
 
-        String s = gremlinQueryComposer.get();
-        int actualNumberOfErrors = gremlinQueryComposer.getErrorList().size();
+        String s                    = gremlinQueryComposer.get();
+        int    actualNumberOfErrors = gremlinQueryComposer.getErrorList().size();
         assertEquals(actualNumberOfErrors, expectedNumberOfErrors, dsl);
         return s;
     }
@@ -487,30 +486,30 @@ public class GremlinQueryComposerTest {
         @Override
         public AtlasType getType(String typeName) throws AtlasBaseException {
             AtlasType type;
-            if(typeName.equals("PII") || typeName.equals("Dimension")) {
+            if (typeName.equals("PII") || typeName.equals("Dimension")) {
                 type = mock(AtlasClassificationType.class);
                 when(type.getTypeCategory()).thenReturn(TypeCategory.CLASSIFICATION);
             } else {
                 type = mock(AtlasEntityType.class);
                 when(type.getTypeCategory()).thenReturn(TypeCategory.ENTITY);
 
-                AtlasStructType.AtlasAttribute attr = mock(AtlasStructType.AtlasAttribute.class);
-                AtlasStructDef.AtlasAttributeDef def = mock(AtlasStructDef.AtlasAttributeDef.class);
+                AtlasStructType.AtlasAttribute   attr = mock(AtlasStructType.AtlasAttribute.class);
+                AtlasStructDef.AtlasAttributeDef def  = mock(AtlasStructDef.AtlasAttributeDef.class);
+
                 when(def.getIndexType()).thenReturn(AtlasStructDef.AtlasAttributeDef.IndexType.DEFAULT);
                 when(attr.getAttributeDef()).thenReturn(def);
 
-                AtlasStructType.AtlasAttribute attr_s = mock(AtlasStructType.AtlasAttribute.class);
-                AtlasStructDef.AtlasAttributeDef def_s = mock(AtlasStructDef.AtlasAttributeDef.class);
-                when(def_s.getIndexType()).thenReturn(AtlasStructDef.AtlasAttributeDef.IndexType.STRING);
+                AtlasStructType.AtlasAttribute   attrS = mock(AtlasStructType.AtlasAttribute.class);
+                AtlasStructDef.AtlasAttributeDef defS  = mock(AtlasStructDef.AtlasAttributeDef.class);
 
-                when(attr_s.getAttributeDef()).thenReturn(def_s);
+                when(defS.getIndexType()).thenReturn(AtlasStructDef.AtlasAttributeDef.IndexType.STRING);
+                when(attrS.getAttributeDef()).thenReturn(defS);
 
                 when(((AtlasEntityType) type).getAttribute(anyString())).thenReturn(attr);
-                when(((AtlasEntityType) type).getAttribute(eq("name"))).thenReturn(attr_s);
-
+                when(((AtlasEntityType) type).getAttribute(eq("name"))).thenReturn(attrS);
             }
 
-            if(typeName.equals("PIII")) {
+            if (typeName.equals("PIII")) {
                 throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND);
             }
             when(type.getTypeName()).thenReturn(typeName);
@@ -519,21 +518,23 @@ public class GremlinQueryComposerTest {
 
         @Override
         public String getQualifiedName(GremlinQueryComposer.Context context, String name) throws AtlasBaseException {
-            if(name.startsWith("__")) {
+            if (name.startsWith("__")) {
                 return name.equals("__state") || name.equals("__guid") ? name : "";
             }
 
-            if(!hasAttribute(context, name)) {
+            if (!hasAttribute(context, name)) {
                 throw new AtlasBaseException("Invalid attribute");
             }
 
-            if(name.contains("."))
+            if (name.contains(".")) {
                 return name;
+            }
 
-            if(!context.getActiveTypeName().equals(name))
+            if (!context.getActiveTypeName().equals(name)) {
                 return String.format("%s.%s", context.getActiveTypeName(), name);
-            else
+            } else {
                 return name;
+            }
         }
 
         @Override
@@ -549,19 +550,22 @@ public class GremlinQueryComposerTest {
 
         @Override
         public String getRelationshipEdgeLabel(GremlinQueryComposer.Context context, String attributeName) {
-            if (attributeName.equalsIgnoreCase("columns"))
+            if (attributeName.equalsIgnoreCase("columns")) {
                 return "__Table.columns";
-            if (attributeName.equalsIgnoreCase("db"))
+            }
+            if (attributeName.equalsIgnoreCase("db")) {
                 return "__Table.db";
-            if (attributeName.equalsIgnoreCase("meanings"))
+            }
+            if (attributeName.equalsIgnoreCase("meanings")) {
                 return "r:AtlasGlossarySemanticAssignment";
-            else
+            } else {
                 return "__DB.Table";
+            }
         }
 
         @Override
         public AtlasRelationshipEdgeDirection getRelationshipEdgeDirection(GremlinQueryComposer.Context context, String attributeName) {
-            if (attributeName.equalsIgnoreCase("meanings")){
+            if (attributeName.equalsIgnoreCase("meanings")) {
                 return IN;
             }
             return OUT;
@@ -607,7 +611,7 @@ public class GremlinQueryComposerTest {
 
         @Override
         public String getTypeAndSubTypes(GremlinQueryComposer.Context context) {
-            String[] str = new String[]{"'Asset'", "'Table'"};
+            String[] str = new String[] {"'Asset'", "'Table'"};
             return StringUtils.join(str, ",");
         }
 
@@ -618,27 +622,27 @@ public class GremlinQueryComposerTest {
 
         @Override
         public String getTypeFromEdge(GremlinQueryComposer.Context context, String item) {
-            if(context.getActiveTypeName().equals("DB") && item.equals("Table")) {
+            if (context.getActiveTypeName().equals("DB") && item.equals("Table")) {
                 return "Table";
             }
 
-            if(context.getActiveTypeName().equals("Table") && item.equals("Column")) {
+            if (context.getActiveTypeName().equals("Table") && item.equals("Column")) {
                 return "Column";
             }
 
-            if(context.getActiveTypeName().equals("Table") && item.equals("db")) {
+            if (context.getActiveTypeName().equals("Table") && item.equals("db")) {
                 return "DB";
             }
 
-            if(context.getActiveTypeName().equals("Table") && item.equals("columns")) {
+            if (context.getActiveTypeName().equals("Table") && item.equals("columns")) {
                 return "Column";
             }
 
-            if(context.getActiveTypeName().equals("Table") && item.equals("meanings")) {
+            if (context.getActiveTypeName().equals("Table") && item.equals("meanings")) {
                 return "AtlasGlossaryTerm";
             }
 
-            if(context.getActiveTypeName().equals(item)) {
+            if (context.getActiveTypeName().equals(item)) {
                 return null;
             }
             return context.getActiveTypeName();

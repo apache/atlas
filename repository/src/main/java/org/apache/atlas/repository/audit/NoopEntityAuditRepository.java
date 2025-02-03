@@ -18,15 +18,14 @@
 
 package org.apache.atlas.repository.audit;
 
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.repository.Constants.AtlasAuditAgingType;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Singleton;
+
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -38,7 +37,6 @@ import java.util.Set;
 @Component
 @ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl")
 public class NoopEntityAuditRepository implements EntityAuditRepository {
-
     @Override
     public void putEventsV1(EntityAuditEvent... events) {
         //do nothing
@@ -65,22 +63,22 @@ public class NoopEntityAuditRepository implements EntityAuditRepository {
     }
 
     @Override
-    public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException {
-        return Collections.emptyList();
-    }
-
-    @Override
-    public List<EntityAuditEventV2> deleteEventsV2(String entityId, Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions, short auditCount, int ttlInDays, boolean createEventsAgeoutAllowed, AtlasAuditAgingType auditAgingType) throws AtlasBaseException, AtlasException {
-        return null;
-    }
-
-    @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResultCount) {
         return Collections.emptyList();
     }
 
     @Override
-    public Set<String> getEntitiesWithTagChanges(long fromTimestamp, long toTimestamp) throws AtlasBaseException {
+    public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) {
+        return Collections.emptyList();
+    }
+
+    @Override
+    public List<EntityAuditEventV2> deleteEventsV2(String entityId, Set<EntityAuditEventV2.EntityAuditActionV2> entityAuditActions, short auditCount, int ttlInDays, boolean createEventsAgeoutAllowed, AtlasAuditAgingType auditAgingType) {
+        return null;
+    }
+
+    @Override
+    public Set<String> getEntitiesWithTagChanges(long fromTimestamp, long toTimestamp) {
         return Collections.emptySet();
     }
 

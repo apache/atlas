@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -66,11 +67,8 @@ public final class EntityStateChecker {
         this.entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
     }
 
-
     public AtlasCheckStateResult checkState(AtlasCheckStateRequest request) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> checkState({})", request);
-        }
+        LOG.debug("==> checkState({})", request);
 
         AtlasCheckStateResult ret = new AtlasCheckStateResult();
 
@@ -104,6 +102,7 @@ public final class EntityStateChecker {
                     AtlasGraphQuery query = AtlasGraphProvider.getGraphInstance().query().has(Constants.ENTITY_TYPE_PROPERTY_KEY, typeName);
 
                     int count = 0;
+
                     for (Iterator<AtlasVertex> iter = query.vertices().iterator(); iter.hasNext(); count++) {
                         checkEntityState(iter.next(), request.getFixIssues(), ret);
                     }
@@ -127,13 +126,10 @@ public final class EntityStateChecker {
             }
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== checkState({}, {})", request, ret);
-        }
+        LOG.debug("<== checkState({}, {})", request, ret);
 
         return ret;
     }
-
 
     /**
      * Check an entity state given its GUID
@@ -158,9 +154,7 @@ public final class EntityStateChecker {
      * @throws AtlasBaseException
      */
     public AtlasEntityState checkEntityState(AtlasVertex entityVertex, boolean fixIssues, AtlasCheckStateResult result) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> checkEntityState(guid={})", AtlasGraphUtilsV2.getIdFromVertex(entityVertex));
-        }
+        LOG.debug("==> checkEntityState(guid={})", AtlasGraphUtilsV2.getIdFromVertex(entityVertex));
 
         AtlasEntityState ret = new AtlasEntityState();
 
@@ -174,7 +168,7 @@ public final class EntityStateChecker {
 
         if (ret.getState() != AtlasCheckStateResult.State.OK) { // don't include clean entities in the response
             if (result.getEntities() == null) {
-                result.setEntities(new HashMap<String, AtlasEntityState>());
+                result.setEntities(new HashMap<>());
             }
 
             result.getEntities().put(ret.getGuid(), ret);
@@ -202,17 +196,13 @@ public final class EntityStateChecker {
 
         LOG.info("checkEntityState(guid={}; type={}; name={}): {}", ret.getGuid(), ret.getTypeName(), ret.getName(), ret.getState());
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== checkEntityState({}): {}", ret.getGuid(), ret);
-        }
+        LOG.debug("<== checkEntityState({}): {}", ret.getGuid(), ret);
 
         return ret;
     }
 
     private void checkEntityState_Classifications(AtlasVertex entityVertex, AtlasEntityState result, boolean fixIssues) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> checkEntityState_Classifications({}, {})", result, fixIssues);
-        }
+        LOG.debug("==> checkEntityState_Classifications({}, {})", result, fixIssues);
 
         Collection<String>  traitNames                 = entityVertex.getPropertyValues(Constants.TRAIT_NAMES_PROPERTY_KEY, String.class);
         Collection<String>  propagatedTraitNames       = entityVertex.getPropertyValues(Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, String.class);
@@ -221,8 +211,7 @@ public final class EntityStateChecker {
         Iterable<AtlasEdge> edges                      = entityVertex.getEdges(AtlasEdgeDirection.OUT, Constants.CLASSIFICATION_LABEL);
 
         if (edges != null) {
-            for (Iterator<AtlasEdge> iter = edges.iterator(); iter.hasNext(); ) {
-                AtlasEdge               edge               = iter.next();
+            for (AtlasEdge edge : edges) {
                 Boolean                 isPropagated       = AtlasGraphUtilsV2.getEncodedProperty(edge, CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, Boolean.class);
                 String                  classificationName = GraphHelper.getTypeName(edge.getInVertex());
                 AtlasClassificationType classification     = typeRegistry.getClassificationTypeByName(classificationName);
@@ -262,18 +251,20 @@ public final class EntityStateChecker {
             if (fixIssues) {
                 if (traitNamesToAdd != null || traitNamesToRemove != null) {
                     if (traitNamesToAdd != null) {
-                        issues.add("incorrect property: __traitNames has missing classifications: " + traitNamesToAdd.toString());
+                        issues.add("incorrect property: __traitNames has missing classifications: " + traitNamesToAdd);
                     }
 
                     if (traitNamesToRemove != null) {
-                        issues.add("incorrect property: __traitNames has unassigned classifications: " + traitNamesToRemove.toString());
+                        issues.add("incorrect property: __traitNames has unassigned classifications: " + traitNamesToRemove);
                     }
 
                     entityVertex.removeProperty(Constants.TRAIT_NAMES_PROPERTY_KEY);
                     entityVertex.removeProperty(Constants.CLASSIFICATION_NAMES_KEY);
 
-                    for (String classificationName : traitVertexNames) {
-                        AtlasGraphUtilsV2.addEncodedProperty(entityVertex, Constants.TRAIT_NAMES_PROPERTY_KEY, classificationName);
+                    if (traitVertexNames != null) {
+                        for (String classificationName : traitVertexNames) {
+                            AtlasGraphUtilsV2.addEncodedProperty(entityVertex, Constants.TRAIT_NAMES_PROPERTY_KEY, classificationName);
+                        }
                     }
 
                     entityVertex.setProperty(Constants.CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(traitVertexNames));
@@ -281,21 +272,23 @@ public final class EntityStateChecker {
 
                 if (propagatedTraitNamesToAdd != null || propagatedTraitNamesToRemove != null) {
                     if (propagatedTraitNamesToAdd != null) {
-                        issues.add("incorrect property: __propagatedTraitNames has missing classifications: " + propagatedTraitNamesToAdd.toString());
+                        issues.add("incorrect property: __propagatedTraitNames has missing classifications: " + propagatedTraitNamesToAdd);
                     }
 
                     if (propagatedTraitNamesToRemove != null) {
-                        issues.add("incorrect property: __propagatedTraitNames has unassigned classifications: " + propagatedTraitNamesToRemove.toString());
+                        issues.add("incorrect property: __propagatedTraitNames has unassigned classifications: " + propagatedTraitNamesToRemove);
                     }
 
                     entityVertex.removeProperty(Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
                     entityVertex.removeProperty(Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY);
 
-                    for (String classificationName : propagatedTraitVertexNames) {
-                        AtlasGraphUtilsV2.addEncodedProperty(entityVertex, Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
+                    if (propagatedTraitVertexNames != null) {
+                        for (String classificationName : propagatedTraitVertexNames) {
+                            AtlasGraphUtilsV2.addEncodedProperty(entityVertex, Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, classificationName);
+                        }
                     }
 
-                    entityVertex.setProperty(Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY,getDelimitedClassificationNames(propagatedTraitVertexNames));
+                    entityVertex.setProperty(Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(propagatedTraitVertexNames));
                 }
 
                 AtlasGraphUtilsV2.setEncodedProperty(entityVertex, Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
@@ -306,9 +299,7 @@ public final class EntityStateChecker {
             }
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== checkEntityState_Classifications({}, {})", result, fixIssues);
-        }
+        LOG.debug("<== checkEntityState_Classifications({}, {})", result, fixIssues);
     }
 
     private String getEntityName(AtlasVertex entityVertex) throws AtlasBaseException {
@@ -365,4 +356,3 @@ public final class EntityStateChecker {
         return ret;
     }
 }
-

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,7 +27,6 @@ import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.type.AtlasTypeUtil;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
@@ -36,27 +35,24 @@ import org.testng.annotations.Test;
 
 import java.util.Collections;
 
+import static org.testng.Assert.assertEquals;
 
 /**
  * Tests for AtlasEntityStoreV1
  */
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class AtlasEntityDefStoreV2Test extends AtlasTestBase {
-
     @Inject
-    private
-    AtlasEntityDefStoreV2 entityDefStore;
+    private AtlasEntityDefStoreV2 entityDefStore;
 
     @DataProvider
-    public Object[][] invalidAttributeNameWithReservedKeywords(){
+    public Object[][] invalidAttributeNameWithReservedKeywords() {
         AtlasEntityDef invalidAttrNameType =
-            AtlasTypeUtil.createClassTypeDef("Invalid_Attribute_Type", "description", Collections.emptySet(),
-                AtlasTypeUtil.createRequiredAttrDef("order", "string"),
-                AtlasTypeUtil.createRequiredAttrDef("limit", "string"));
+                AtlasTypeUtil.createClassTypeDef("Invalid_Attribute_Type", "description", Collections.emptySet(),
+                        AtlasTypeUtil.createRequiredAttrDef("order", "string"),
+                        AtlasTypeUtil.createRequiredAttrDef("limit", "string"));
 
-        return new Object[][] {{
-            invalidAttrNameType
-        }};
+        return new Object[][] {{invalidAttrNameType}};
     }
 
     @Test(dataProvider = "invalidAttributeNameWithReservedKeywords")
@@ -65,7 +61,7 @@ public class AtlasEntityDefStoreV2Test extends AtlasTestBase {
             ApplicationProperties.get().setProperty(AtlasAbstractDefStoreV2.ALLOW_RESERVED_KEYWORDS, false);
             entityDefStore.create(atlasEntityDef, null);
         } catch (AtlasBaseException e) {
-            Assert.assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_INVALID);
+            assertEquals(e.getAtlasErrorCode(), AtlasErrorCode.ATTRIBUTE_NAME_INVALID);
         }
     }
 

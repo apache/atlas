@@ -17,8 +17,6 @@
  */
 package org.apache.atlas.repository.audit;
 
-import org.apache.atlas.RequestContext;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.ChangedTypeDefs;
 import org.apache.atlas.listener.TypeDefChangeListener;
@@ -31,9 +29,9 @@ import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -43,7 +41,6 @@ import java.util.stream.Collectors;
 @Component
 @Order(2)
 public class TypeDefAuditListener implements TypeDefChangeListener {
-
     AtlasAuditService auditService;
 
     @Inject
@@ -57,7 +54,7 @@ public class TypeDefAuditListener implements TypeDefChangeListener {
     }
 
     @Override
-    public void onLoadCompletion() throws AtlasBaseException {
+    public void onLoadCompletion() {
     }
 
     private void createAuditEntry(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException {
@@ -74,16 +71,17 @@ public class TypeDefAuditListener implements TypeDefChangeListener {
 
     private List<AtlasBaseTypeDef> removeDuplicateEntries(List<AtlasBaseTypeDef> createdTypes, List<AtlasBaseTypeDef> updatedTypes) {
         if (CollectionUtils.isNotEmpty(createdTypes)) {
-            List<String> createdTypeNames = createdTypes.stream()
-                    .map(obj -> obj.getName()).collect(Collectors.toList());
+            List<String> createdTypeNames = createdTypes.stream().map(AtlasBaseTypeDef::getName).collect(Collectors.toList());
+
             updatedTypes.removeIf(obj -> createdTypeNames.contains(obj.getName()));
         }
+
         if (CollectionUtils.isNotEmpty(updatedTypes)) {
-            Set<AtlasBaseTypeDef> baseTypeDefs = updatedTypes.stream()
-                    .collect(Collectors.toCollection(() ->
-                            new TreeSet<>(Comparator.comparing(AtlasBaseTypeDef::getName))));
+            Set<AtlasBaseTypeDef> baseTypeDefs = updatedTypes.stream().collect(Collectors.toCollection(() -> new TreeSet<>(Comparator.comparing(AtlasBaseTypeDef::getName))));
+
             updatedTypes = new ArrayList<>(baseTypeDefs);
         }
+
         return updatedTypes;
     }
 
@@ -92,10 +90,10 @@ public class TypeDefAuditListener implements TypeDefChangeListener {
             return;
         }
 
-        Map<TypeCategory, List<AtlasBaseTypeDef>> groupByCategoryMap =
-                baseTypeDefList.stream().collect(Collectors.groupingBy(AtlasBaseTypeDef::getCategory));
+        Map<TypeCategory, List<AtlasBaseTypeDef>> groupByCategoryMap = baseTypeDefList.stream().collect(Collectors.groupingBy(AtlasBaseTypeDef::getCategory));
 
         List<String> categories = new ArrayList<>();
+
         for (TypeCategory category : groupByCategoryMap.keySet()) {
             categories.add(category.name());
         }

@@ -32,49 +32,30 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import java.util.*;
 
-import static org.apache.atlas.repository.Constants.PROPERTY_KEY_GUIDS_TO_AGEOUT_BY_DEFAULT;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 import static org.apache.atlas.repository.Constants.PROPERTY_KEY_GUIDS_TO_AGEOUT_BY_CUSTOM;
+import static org.apache.atlas.repository.Constants.PROPERTY_KEY_GUIDS_TO_AGEOUT_BY_DEFAULT;
 import static org.apache.atlas.repository.Constants.PROPERTY_KEY_GUIDS_TO_SWEEPOUT;
-
 
 @Component
 public class AuditReductionTaskFactory implements TaskFactory {
     private static final Logger LOG = LoggerFactory.getLogger(AuditReductionTaskFactory.class);
 
-    private static Configuration configuration;
-    public  static final int     MAX_PENDING_TASKS_ALLOWED;
-    private static final int     MAX_PENDING_TASKS_ALLOWED_DEFAULT      = 50;
-    private static final String  MAX_PENDING_TASKS_ALLOWED_KEY          = "atlas.audit.reduction.max.pending.tasks";
-    public  static final String  ATLAS_AUDIT_REDUCTION                  = "ATLAS_AUDIT_REDUCTION";
-    public  static final String  ATLAS_AUDIT_REDUCTION_ENTITY_RETRIEVAL = "AUDIT_REDUCTION_ENTITY_RETRIEVAL";
+    public static final  int    MAX_PENDING_TASKS_ALLOWED;
+    public static final  String ATLAS_AUDIT_REDUCTION                  = "ATLAS_AUDIT_REDUCTION";
+    public static final  String ATLAS_AUDIT_REDUCTION_ENTITY_RETRIEVAL = "AUDIT_REDUCTION_ENTITY_RETRIEVAL";
 
-    static {
-        try {
-            configuration = ApplicationProperties.get();
-        } catch (Exception e) {
-            LOG.info("Failed to load application properties", e);
-        }
-        if (configuration != null) {
-            MAX_PENDING_TASKS_ALLOWED   = configuration.getInt(MAX_PENDING_TASKS_ALLOWED_KEY, MAX_PENDING_TASKS_ALLOWED_DEFAULT);
-        } else {
-            MAX_PENDING_TASKS_ALLOWED   = MAX_PENDING_TASKS_ALLOWED_DEFAULT;
-        }
-    }
+    public static final Map<AtlasAuditAgingType, String> AGING_TYPE_PROPERTY_KEY_MAP = new HashMap<>();
 
-    private static final List<String> supportedTypes = new ArrayList<String>() {{
-        add(ATLAS_AUDIT_REDUCTION);
-        add(ATLAS_AUDIT_REDUCTION_ENTITY_RETRIEVAL);
-    }};
-
-    public static final Map<AtlasAuditAgingType, String> AGING_TYPE_PROPERTY_KEY_MAP = new HashMap<AtlasAuditAgingType, String>() {
-        {
-            put(AtlasAuditAgingType.DEFAULT, PROPERTY_KEY_GUIDS_TO_AGEOUT_BY_DEFAULT);
-            put(AtlasAuditAgingType.SWEEP, PROPERTY_KEY_GUIDS_TO_SWEEPOUT);
-            put(AtlasAuditAgingType.CUSTOM, PROPERTY_KEY_GUIDS_TO_AGEOUT_BY_CUSTOM);
-        }
-    };
+    private static final int           MAX_PENDING_TASKS_ALLOWED_DEFAULT = 50;
+    private static final String        MAX_PENDING_TASKS_ALLOWED_KEY     = "atlas.audit.reduction.max.pending.tasks";
+    private static final List<String>  SUPPORTED_TYPES                   = new ArrayList<>(Arrays.asList(ATLAS_AUDIT_REDUCTION, ATLAS_AUDIT_REDUCTION_ENTITY_RETRIEVAL));
 
     private final EntityAuditRepository auditRepository;
     private final AtlasGraph            graph;
@@ -93,6 +74,7 @@ public class AuditReductionTaskFactory implements TaskFactory {
     public AbstractTask create(AtlasTask task) {
         String taskType = task.getType();
         String taskGuid = task.getGuid();
+
         switch (taskType) {
             case ATLAS_AUDIT_REDUCTION:
                 return new AuditReductionTask(task, auditRepository, graph);
@@ -108,6 +90,26 @@ public class AuditReductionTaskFactory implements TaskFactory {
 
     @Override
     public List<String> getSupportedTypes() {
-        return this.supportedTypes;
+        return SUPPORTED_TYPES;
+    }
+
+    static {
+        Configuration configuration = null;
+
+        try {
+            configuration = ApplicationProperties.get();
+        } catch (Exception e) {
+            LOG.info("Failed to load application properties", e);
+        }
+
+        if (configuration != null) {
+            MAX_PENDING_TASKS_ALLOWED = configuration.getInt(MAX_PENDING_TASKS_ALLOWED_KEY, MAX_PENDING_TASKS_ALLOWED_DEFAULT);
+        } else {
+            MAX_PENDING_TASKS_ALLOWED = MAX_PENDING_TASKS_ALLOWED_DEFAULT;
+        }
+
+        AGING_TYPE_PROPERTY_KEY_MAP.put(AtlasAuditAgingType.DEFAULT, PROPERTY_KEY_GUIDS_TO_AGEOUT_BY_DEFAULT);
+        AGING_TYPE_PROPERTY_KEY_MAP.put(AtlasAuditAgingType.SWEEP, PROPERTY_KEY_GUIDS_TO_SWEEPOUT);
+        AGING_TYPE_PROPERTY_KEY_MAP.put(AtlasAuditAgingType.CUSTOM, PROPERTY_KEY_GUIDS_TO_AGEOUT_BY_CUSTOM);
     }
 }

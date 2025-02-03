@@ -24,14 +24,19 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.commons.lang3.StringUtils;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
-import org.testng.Assert;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class TaskExecutorTest extends BaseTaskFixture {
@@ -46,71 +51,76 @@ public class TaskExecutorTest extends BaseTaskFixture {
 
     @Test
     public void noTasksExecuted() {
-        TaskManagementTest.SpyingFactory spyingFactory = new TaskManagementTest.SpyingFactory();
-        Map<String, TaskFactory> taskFactoryMap = new HashMap<>();
+        TaskManagementTest.SpyingFactory spyingFactory  = new TaskManagementTest.SpyingFactory();
+        Map<String, TaskFactory>         taskFactoryMap = new HashMap<>();
+
         TaskManagement.createTaskTypeFactoryMap(new HashMap<>(), spyingFactory);
 
         TaskManagement.Statistics statistics = new TaskManagement.Statistics();
+
         new TaskExecutor(taskRegistry, taskFactoryMap, statistics);
 
-        Assert.assertEquals(statistics.getTotal(), 0);
+        assertEquals(statistics.getTotal(), 0);
     }
 
     @Test
     public void tasksNotPersistedIsNotExecuted() throws InterruptedException {
-        TaskManagementTest.SpyingFactory spyingFactory = new TaskManagementTest.SpyingFactory();
-        Map<String, TaskFactory> taskFactoryMap = new HashMap<>();
+        TaskManagementTest.SpyingFactory spyingFactory  = new TaskManagementTest.SpyingFactory();
+        Map<String, TaskFactory>         taskFactoryMap = new HashMap<>();
+
         TaskManagement.createTaskTypeFactoryMap(taskFactoryMap, spyingFactory);
 
-        TaskManagement.Statistics statistics = new TaskManagement.Statistics();
-        TaskExecutor taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics);
+        TaskManagement.Statistics statistics   = new TaskManagement.Statistics();
+        TaskExecutor              taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics);
 
         taskExecutor.addAll(Collections.singletonList(new AtlasTask(SPYING_TASK_ADD, "test", Collections.emptyMap())));
 
         taskExecutor.waitUntilDone();
-        Assert.assertEquals(statistics.getTotal(), 0);
-    }
 
+        assertEquals(statistics.getTotal(), 0);
+    }
 
     @Test
     public void persistedIsExecuted() throws AtlasBaseException, InterruptedException {
-        TaskManagementTest.SpyingFactory spyingFactory = new TaskManagementTest.SpyingFactory();
-        Map<String, TaskFactory> taskFactoryMap = new HashMap<>();
+        TaskManagementTest.SpyingFactory spyingFactory  = new TaskManagementTest.SpyingFactory();
+        Map<String, TaskFactory>         taskFactoryMap = new HashMap<>();
+
         TaskManagement.createTaskTypeFactoryMap(taskFactoryMap, spyingFactory);
 
-        AtlasTask addTask = taskManagement.createTask("add", "test", Collections.emptyMap());
+        AtlasTask addTask           = taskManagement.createTask("add", "test", Collections.emptyMap());
         AtlasTask errorThrowingTask = taskManagement.createTask("errorThrowingTask", "test", Collections.emptyMap());
 
         TaskManagement.Statistics statistics = new TaskManagement.Statistics();
-        List<AtlasTask> tasks = new ArrayList<AtlasTask>() {{
-            add(addTask);
-            add(errorThrowingTask);
-            }};
+        List<AtlasTask>           tasks      = new ArrayList<>(Arrays.asList(addTask, errorThrowingTask));
+
         graph.commit();
 
         TaskExecutor taskExecutor = new TaskExecutor(taskRegistry, taskFactoryMap, statistics);
+
         taskExecutor.addAll(tasks);
 
         taskExecutor.waitUntilDone();
-        Assert.assertEquals(statistics.getTotal(), 2);
-        Assert.assertEquals(statistics.getTotalSuccess(), 1);
-        Assert.assertEquals(statistics.getTotalError(), 1);
 
-        Assert.assertNotNull(spyingFactory.getAddTask());
-        Assert.assertNotNull(spyingFactory.getErrorTask());
+        assertEquals(statistics.getTotal(), 2);
+        assertEquals(statistics.getTotalSuccess(), 1);
+        assertEquals(statistics.getTotalError(), 1);
 
-        Assert.assertTrue(spyingFactory.getAddTask().taskPerformed());
-        Assert.assertTrue(spyingFactory.getErrorTask().taskPerformed());
+        assertNotNull(spyingFactory.getAddTask());
+        assertNotNull(spyingFactory.getErrorTask());
+
+        assertTrue(spyingFactory.getAddTask().taskPerformed());
+        assertTrue(spyingFactory.getErrorTask().taskPerformed());
 
         assertTaskUntilFail(errorThrowingTask, taskExecutor);
     }
 
     private void assertTaskUntilFail(AtlasTask errorThrowingTask, TaskExecutor taskExecutor) throws AtlasBaseException, InterruptedException {
         AtlasTask errorTaskFromDB = taskManagement.getByGuid(errorThrowingTask.getGuid());
-        Assert.assertNotNull(errorTaskFromDB);
-        Assert.assertTrue(StringUtils.isNotEmpty(errorTaskFromDB.getErrorMessage()));
-        Assert.assertEquals(errorTaskFromDB.getAttemptCount(), 1);
-        Assert.assertEquals(errorTaskFromDB.getStatus(), AtlasTask.Status.PENDING);
+
+        assertNotNull(errorTaskFromDB);
+        assertTrue(StringUtils.isNotEmpty(errorTaskFromDB.getErrorMessage()));
+        assertEquals(errorTaskFromDB.getAttemptCount(), 1);
+        assertEquals(errorTaskFromDB.getStatus(), AtlasTask.Status.PENDING);
 
         for (int i = errorTaskFromDB.getAttemptCount(); i <= AtlasTask.MAX_ATTEMPT_COUNT; i++) {
             taskExecutor.addAll(Collections.singletonList(errorThrowingTask));
@@ -118,6 +128,6 @@ public class TaskExecutorTest extends BaseTaskFixture {
 
         taskExecutor.waitUntilDone();
         graph.commit();
-        Assert.assertEquals(errorThrowingTask.getStatus(), AtlasTask.Status.FAILED);
+        assertEquals(errorThrowingTask.getStatus(), AtlasTask.Status.FAILED);
     }
 }

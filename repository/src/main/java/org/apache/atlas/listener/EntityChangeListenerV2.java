@@ -57,7 +57,6 @@ public interface EntityChangeListenerV2 {
      */
     void onEntitiesDeleted(List<AtlasEntity> entities, boolean isImport) throws AtlasBaseException;
 
-
     /**
      * This is upon purging entities from the repository.
      *
@@ -68,7 +67,7 @@ public interface EntityChangeListenerV2 {
     /**
      * This is upon adding new classifications to an entity.
      *
-     * @param entity          the entity
+     * @param entity the entity
      * @param classifications classifications that needs to be added to an entity
      * @throws AtlasBaseException if the listener notification fails
      */
@@ -77,7 +76,7 @@ public interface EntityChangeListenerV2 {
     /**
      * This is upon adding new classifications to entities.
      *
-     * @param entities              list of entities
+     * @param entities list of entities
      * @param classifications classifications that are to be added to entities
      * @throws AtlasBaseException if the listener notification fails
      */
@@ -86,7 +85,7 @@ public interface EntityChangeListenerV2 {
     /**
      * This is upon updating classifications to an entity.
      *
-     * @param entity          the entity
+     * @param entity the entity
      * @param classifications classifications that needs to be updated for an entity
      * @throws AtlasBaseException if the listener notification fails
      */
@@ -95,7 +94,7 @@ public interface EntityChangeListenerV2 {
     /**
      * This is upon deleting classifications from an entity.
      *
-     * @param entity              the entity
+     * @param entity the entity
      * @param classifications classifications that needs to be updated for an entity
      * @throws AtlasBaseException if the listener notification fails
      */
@@ -104,7 +103,7 @@ public interface EntityChangeListenerV2 {
     /**
      * This is upon deleting classifications from entities.
      *
-     * @param entities              list of entities
+     * @param entities list of entities
      * @param classifications classifications that needs to be deleted from entities
      * @throws AtlasBaseException if the listener notification fails
      */
@@ -113,7 +112,7 @@ public interface EntityChangeListenerV2 {
     /**
      * This is upon adding a new term to an entity.
      *
-     * @param term     the term
+     * @param term the term
      * @param entities list of entities to which the term is assigned
      */
     void onTermAdded(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entities) throws AtlasBaseException;
@@ -121,7 +120,7 @@ public interface EntityChangeListenerV2 {
     /**
      * This is upon removing a term from an entity.
      *
-     * @param term     the term
+     * @param term the term
      * @param entities list of entities to which the term is assigned
      */
     void onTermDeleted(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entities) throws AtlasBaseException;
@@ -176,7 +175,6 @@ public interface EntityChangeListenerV2 {
     void onLabelsDeleted(AtlasEntity entity, Set<String> labels) throws AtlasBaseException;
 
     /**
-     *
      * @param entity the entity
      * @param updatedBusinessAttributes business metadata attribute
      * @throws AtlasBaseException if the listener notification fails

@@ -49,12 +49,15 @@ public abstract class AbstractGlossaryDTO<T extends AtlasBaseModelObject> extend
         ret.setDisplayText(relatedObjectId.getDisplayText());
 
         AtlasStruct relationshipAttributes = relatedObjectId.getRelationshipAttributes();
+
         if (relationshipAttributes != null) {
             ret.setDescription((String) relationshipAttributes.getAttribute("description"));
             ret.setExpression((String) relationshipAttributes.getAttribute("expression"));
             ret.setSource((String) relationshipAttributes.getAttribute("source"));
             ret.setSteward((String) relationshipAttributes.getAttribute("steward"));
+
             Object status = relationshipAttributes.getAttribute("status");
+
             if (status instanceof String) {
                 ret.setStatus(AtlasTermRelationshipStatus.valueOf((String) status));
             } else if (status instanceof AtlasTermRelationshipStatus) {
@@ -72,6 +75,7 @@ public abstract class AbstractGlossaryDTO<T extends AtlasBaseModelObject> extend
         ret.setRelationshipGuid(relatedTermId.getRelationGuid());
 
         AtlasStruct relationshipAttributes = new AtlasStruct();
+
         relationshipAttributes.setAttribute("description", relatedTermId.getDescription());
         relationshipAttributes.setAttribute("expression", relatedTermId.getExpression());
         relationshipAttributes.setAttribute("source", relatedTermId.getSource());
@@ -91,6 +95,7 @@ public abstract class AbstractGlossaryDTO<T extends AtlasBaseModelObject> extend
         ret.setDisplayText(relatedObjectId.getDisplayText());
 
         AtlasStruct relationshipAttributes = relatedObjectId.getRelationshipAttributes();
+
         if (relationshipAttributes != null) {
             ret.setDescription((String) relationshipAttributes.getAttribute("description"));
             ret.setParentCategoryGuid(relationshipAttributes.getAttribute("parentCategoryGuid") == null ? null :
@@ -107,6 +112,7 @@ public abstract class AbstractGlossaryDTO<T extends AtlasBaseModelObject> extend
         ret.setRelationshipGuid(relatedCategoryId.getRelationGuid());
 
         AtlasStruct relationshipAttributes = new AtlasStruct();
+
         relationshipAttributes.setAttribute("description", relatedCategoryId.getDescription());
         ret.setRelationshipAttributes(relationshipAttributes);
 
@@ -138,9 +144,12 @@ public abstract class AbstractGlossaryDTO<T extends AtlasBaseModelObject> extend
         ret.setRelationGuid(category.getRelationshipGuid());
 
         AtlasStruct relationshipAttributes = category.getRelationshipAttributes();
+
         if (relationshipAttributes != null) {
             ret.setDescription((String) relationshipAttributes.getAttribute("description"));
+
             Object status = relationshipAttributes.getAttribute("status");
+
             if (status instanceof AtlasTermRelationshipStatus) {
                 ret.setStatus((AtlasTermRelationshipStatus) status);
             } else if (status instanceof String) {
@@ -156,7 +165,8 @@ public abstract class AbstractGlossaryDTO<T extends AtlasBaseModelObject> extend
 
         if (relatedObjectIds instanceof Collection) {
             ret = new HashSet<>();
-            for (Object t : (Collection) relatedObjectIds) {
+
+            for (Object t : (Collection<?>) relatedObjectIds) {
                 if (t instanceof AtlasRelatedObjectId) {
                     ret.add(constructRelatedTermId((AtlasRelatedObjectId) t));
                 }

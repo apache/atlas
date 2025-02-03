@@ -30,13 +30,13 @@ public final class TransformationConstants {
     public static final String LOCATION_ATTRIBUTE       = "location";
     public static final String PATH_ATTRIBUTE           = "path";
 
-    public static final String HIVE_DB_NAME_ATTRIBUTE         = "hive_db.name";
-    public static final String HIVE_DB_CLUSTER_NAME_ATTRIBUTE = "hive_db.clusterName";
-    public static final String HIVE_TABLE_NAME_ATTRIBUTE      = "hive_table.name";
-    public static final String HIVE_COLUMN_NAME_ATTRIBUTE     = "hive_column.name";
-    public static final String HDFS_PATH_NAME_ATTRIBUTE       = "hdfs_path.name";
-    public static final String HDFS_PATH_PATH_ATTRIBUTE       = "hdfs_path.path";
-    public static final String HDFS_CLUSTER_NAME_ATTRIBUTE    = "hdfs_path.clusterName";
+    public static final String HIVE_DB_NAME_ATTRIBUTE               = "hive_db.name";
+    public static final String HIVE_DB_CLUSTER_NAME_ATTRIBUTE       = "hive_db.clusterName";
+    public static final String HIVE_TABLE_NAME_ATTRIBUTE            = "hive_table.name";
+    public static final String HIVE_COLUMN_NAME_ATTRIBUTE           = "hive_column.name";
+    public static final String HDFS_PATH_NAME_ATTRIBUTE             = "hdfs_path.name";
+    public static final String HDFS_PATH_PATH_ATTRIBUTE             = "hdfs_path.path";
+    public static final String HDFS_CLUSTER_NAME_ATTRIBUTE          = "hdfs_path.clusterName";
     public static final String HIVE_STORAGE_DESC_LOCATION_ATTRIBUTE = "hive_storagedesc.location";
 
     public static final char   TYPE_NAME_ATTRIBUTE_NAME_SEP = '.';
@@ -45,5 +45,7 @@ public final class TransformationConstants {
     public static final char   PATH_DELIMITER               = '/';
     public static final String HIVE_STORAGEDESC_SUFFIX      = "_storage";
 
-
+    private TransformationConstants() {
+        // to block instantiation
+    }
 }

@@ -27,22 +27,25 @@ import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.commons.collections.CollectionUtils;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class RelationshipSearchProcessorTest extends BasicTestSetup {
+    @Inject
+    public GraphBackedSearchIndexer indexer;
     @Inject
     private AtlasGraph graph;
 
@@ -53,16 +56,13 @@ public class RelationshipSearchProcessorTest extends BasicTestSetup {
         setupRelationshipTestData();
     }
 
-    @Inject
-    public GraphBackedSearchIndexer indexer;
-
     @Test
     public void totalRelationships() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setRelationshipName("user_post");
         params.setLimit(20);
 
-       executeAndAssert(params,17);
+        executeAndAssert(params, 17);
     }
 
     @Test
@@ -84,7 +84,7 @@ public class RelationshipSearchProcessorTest extends BasicTestSetup {
         filterCriteria.setCondition(SearchParameters.FilterCriteria.Condition.AND);
 
         List<SearchParameters.FilterCriteria> criteria = new ArrayList<>();
-        SearchParameters.FilterCriteria f1 = new SearchParameters.FilterCriteria();
+        SearchParameters.FilterCriteria       f1       = new SearchParameters.FilterCriteria();
         f1.setAttributeName("post_name");
         f1.setOperator(SearchParameters.Operator.EQ);
         f1.setAttributeValue("christmas-post@Mary");
@@ -128,7 +128,7 @@ public class RelationshipSearchProcessorTest extends BasicTestSetup {
         //assertEquals("christmas-post@Mary",edges.get(0).getProperty("user_post.post_name", String.class));
         //assertEquals("trip-post@Ajay",edges.get(6).getProperty("user_post.post_name", String.class));
 
-        assertEquals("ganeshchaturthi-post@Divya",edges.get(0).getProperty("user_post.post_name", String.class));
+        assertEquals(edges.get(0).getProperty("user_post.post_name", String.class), "ganeshchaturthi-post@Divya");
     }
 
     @Test
@@ -142,17 +142,17 @@ public class RelationshipSearchProcessorTest extends BasicTestSetup {
 
         List<AtlasEdge> edges = executeAndAssert(params, 7);
 
-        assertEquals("wow", edges.get(0).getProperty("user_post.reaction", String.class));
-        assertEquals("create", edges.get(6).getProperty("user_post.reaction", String.class));
-
+        assertEquals(edges.get(0).getProperty("user_post.reaction", String.class), "wow");
+        assertEquals(edges.get(6).getProperty("user_post.reaction", String.class), "create");
     }
+
     @Test
     public void searchBymultipleTypes() throws AtlasBaseException {
         SearchParameters params = new SearchParameters();
         params.setRelationshipName("user_post,highlight_post");
         params.setLimit(30);
 
-        executeAndAssert(params,25);
+        executeAndAssert(params, 25);
     }
 
     @Test(expectedExceptions = AtlasBaseException.class, expectedExceptionsMessageRegExp = "Attribute post_name not found for type highlight_post")
@@ -162,7 +162,7 @@ public class RelationshipSearchProcessorTest extends BasicTestSetup {
         params.setRelationshipFilters(getSingleFilterCondition("post_name", SearchParameters.Operator.CONTAINS, "Ajay"));
         params.setLimit(30);
 
-        executeAndAssert(params,0);
+        executeAndAssert(params, 0);
     }
 
     @Test
@@ -173,37 +173,25 @@ public class RelationshipSearchProcessorTest extends BasicTestSetup {
 
         //1st page
         params.setMarker("*");
-        SearchContext context1 = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+        SearchContext               context1   = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
         RelationshipSearchProcessor processor1 = new RelationshipSearchProcessor(context1, indexer.getEdgeIndexKeys());
 
         List<AtlasEdge> result1 = processor1.executeEdges();
 
-        Assert.assertTrue(CollectionUtils.isNotEmpty(result1));
+        assertTrue(CollectionUtils.isNotEmpty(result1));
         assertEquals(result1.size(), 10);
         assertNotNull(processor1.getNextMarker());
 
         //2nd page
         params.setMarker(processor1.getNextMarker());
-        SearchContext context2 = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
+        SearchContext               context2   = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
         RelationshipSearchProcessor processor2 = new RelationshipSearchProcessor(context2, indexer.getEdgeIndexKeys());
 
         List<AtlasEdge> result2 = processor2.executeEdges();
 
-        Assert.assertTrue(CollectionUtils.isNotEmpty(result2));
+        assertTrue(CollectionUtils.isNotEmpty(result2));
         assertEquals(result2.size(), 10);
         assertNotNull(processor2.getNextMarker());
-    }
-
-    private List<AtlasEdge> executeAndAssert(SearchParameters params, int expected) throws AtlasBaseException {
-        SearchContext context = new SearchContext(params, typeRegistry, graph, Collections.<String>emptySet());
-        RelationshipSearchProcessor processor = new RelationshipSearchProcessor(context, indexer.getEdgeIndexKeys());
-
-        List<AtlasEdge> result = processor.executeEdges();
-
-        Assert.assertTrue(CollectionUtils.isNotEmpty(result));
-        assertEquals(result.size(), expected);
-
-        return result;
     }
 
     @AfterClass
@@ -211,5 +199,17 @@ public class RelationshipSearchProcessorTest extends BasicTestSetup {
         AtlasGraphProvider.cleanup();
 
         super.cleanup();
+    }
+
+    private List<AtlasEdge> executeAndAssert(SearchParameters params, int expected) throws AtlasBaseException {
+        SearchContext               context   = new SearchContext(params, typeRegistry, graph, Collections.emptySet());
+        RelationshipSearchProcessor processor = new RelationshipSearchProcessor(context, indexer.getEdgeIndexKeys());
+
+        List<AtlasEdge> result = processor.executeEdges();
+
+        assertTrue(CollectionUtils.isNotEmpty(result));
+        assertEquals(result.size(), expected);
+
+        return result;
     }
 }

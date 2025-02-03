@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,23 +25,23 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
+
 import java.util.Arrays;
 import java.util.HashSet;
-import javax.inject.Inject;
 import java.util.Map;
 import java.util.Set;
 
 @Component
 public class ExportImportAuditEntryDTO extends AbstractDataTransferObject<ExportImportAuditEntry> {
-
-    public static final String PROPERTY_USER_NAME              = "userName";
-    public static final String PROPERTY_OPERATION              = "operation";
-    public static final String PROPERTY_OPERATION_PARAMS       = "operationParams";
-    public static final String PROPERTY_START_TIME             = "operationStartTime";
-    public static final String PROPERTY_END_TIME               = "operationEndTime";
-    public static final String PROPERTY_RESULT_SUMMARY         = "resultSummary";
-    public static final String PROPERTY_SOURCE_SERVER_NAME     = "sourceServerName";
-    public static final String PROPERTY_TARGET_SERVER_NAME     = "targetServerName";
+    public static final String PROPERTY_USER_NAME          = "userName";
+    public static final String PROPERTY_OPERATION          = "operation";
+    public static final String PROPERTY_OPERATION_PARAMS   = "operationParams";
+    public static final String PROPERTY_START_TIME         = "operationStartTime";
+    public static final String PROPERTY_END_TIME           = "operationEndTime";
+    public static final String PROPERTY_RESULT_SUMMARY     = "resultSummary";
+    public static final String PROPERTY_SOURCE_SERVER_NAME = "sourceServerName";
+    public static final String PROPERTY_TARGET_SERVER_NAME = "targetServerName";
 
     private static final Set<String> ATTRIBUTE_NAMES = new HashSet<>(Arrays.asList(PROPERTY_USER_NAME,
             PROPERTY_OPERATION, PROPERTY_OPERATION_PARAMS,
@@ -51,15 +51,14 @@ public class ExportImportAuditEntryDTO extends AbstractDataTransferObject<Export
 
     @Inject
     public ExportImportAuditEntryDTO(AtlasTypeRegistry typeRegistry) {
-        super(typeRegistry, ExportImportAuditEntry.class,
-                Constants.INTERNAL_PROPERTY_KEY_PREFIX + ExportImportAuditEntry.class.getSimpleName());
+        super(typeRegistry, ExportImportAuditEntry.class, Constants.INTERNAL_PROPERTY_KEY_PREFIX + ExportImportAuditEntry.class.getSimpleName());
     }
 
     public static Set<String> getAttributes() {
         return ATTRIBUTE_NAMES;
     }
 
-    public static ExportImportAuditEntry from(String guid, Map<String,Object> attributes) {
+    public static ExportImportAuditEntry from(String guid, Map<String, Object> attributes) {
         ExportImportAuditEntry entry = new ExportImportAuditEntry();
 
         entry.setGuid(guid);

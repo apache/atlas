@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,15 +17,12 @@
  */
 package org.apache.atlas.repository.store.graph;
 
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -35,8 +32,6 @@ import java.util.Map;
 import java.util.Set;
 
 public final class EntityGraphDiscoveryContext {
-    private static final Logger LOG = LoggerFactory.getLogger(EntityGraphDiscoveryContext.class);
-
     private final AtlasTypeRegistry               typeRegistry;
     private final EntityStream                    entityStream;
     private final List<String>                    referencedGuids          = new ArrayList<>();
@@ -54,9 +49,13 @@ public final class EntityGraphDiscoveryContext {
         return entityStream;
     }
 
-    public List<String> getReferencedGuids() { return referencedGuids; }
+    public List<String> getReferencedGuids() {
+        return referencedGuids;
+    }
 
-    public Set<AtlasObjectId> getReferencedByUniqAttribs() { return referencedByUniqAttribs; }
+    public Set<AtlasObjectId> getReferencedByUniqAttribs() {
+        return referencedByUniqAttribs;
+    }
 
     public Map<String, AtlasVertex> getResolvedGuids() {
         return resolvedGuids;
@@ -66,33 +65,42 @@ public final class EntityGraphDiscoveryContext {
         return resolvedIdsByUniqAttribs;
     }
 
-    public Set<String> getLocalGuids() { return localGuids; }
-
+    public Set<String> getLocalGuids() {
+        return localGuids;
+    }
 
     public void addReferencedGuid(String guid) {
-        if (! referencedGuids.contains(guid)) {
+        if (!referencedGuids.contains(guid)) {
             referencedGuids.add(guid);
         }
     }
 
-    public void addReferencedByUniqAttribs(AtlasObjectId objId) { referencedByUniqAttribs.add(objId); }
+    public void addReferencedByUniqAttribs(AtlasObjectId objId) {
+        referencedByUniqAttribs.add(objId);
+    }
 
+    public void addResolvedGuid(String guid, AtlasVertex vertex) {
+        resolvedGuids.put(guid, vertex);
+    }
 
-    public void addResolvedGuid(String guid, AtlasVertex vertex) { resolvedGuids.put(guid, vertex); }
+    public void addResolvedIdByUniqAttribs(AtlasObjectId objId, AtlasVertex vertex) {
+        resolvedIdsByUniqAttribs.put(objId, vertex);
+    }
 
-    public void addResolvedIdByUniqAttribs(AtlasObjectId objId, AtlasVertex vertex) { resolvedIdsByUniqAttribs.put(objId, vertex); }
+    public void addLocalGuidReference(String guid) {
+        localGuids.add(guid);
+    }
 
-    public void addLocalGuidReference(String guid) { localGuids.add(guid); }
+    public boolean isResolvedGuid(String guid) {
+        return resolvedGuids.containsKey(guid);
+    }
 
-    public boolean isResolvedGuid(String guid) { return resolvedGuids.containsKey(guid); }
+    public boolean isResolvedIdByUniqAttrib(AtlasObjectId objId) {
+        return resolvedIdsByUniqAttribs.containsKey(objId);
+    }
 
-    public boolean isResolvedIdByUniqAttrib(AtlasObjectId objId) { return resolvedIdsByUniqAttribs.containsKey(objId); }
-
-
-    public AtlasVertex getResolvedEntityVertex(String guid) throws AtlasBaseException {
-        AtlasVertex ret = resolvedGuids.get(guid);
-
-        return ret;
+    public AtlasVertex getResolvedEntityVertex(String guid) {
+        return resolvedGuids.get(guid);
     }
 
     public AtlasVertex getResolvedEntityVertex(AtlasObjectId objId) {
@@ -103,28 +111,6 @@ public final class EntityGraphDiscoveryContext {
         }
 
         return getAtlasVertexFromResolvedIdsByAttribs(objId);
-    }
-
-    private AtlasVertex getAtlasVertexFromResolvedIdsByAttribs(AtlasObjectId objId) {
-        AtlasVertex vertex = resolvedIdsByUniqAttribs.get(objId);
-        // check also for sub-types; ref={typeName=Asset; guid=abcd} should match {typeName=hive_table; guid=abcd}
-        if (vertex == null) {
-            final AtlasEntityType entityType  = typeRegistry.getEntityTypeByName(objId.getTypeName());
-            final Set<String>     allSubTypes = entityType.getAllSubTypes();
-
-            for (String subType : allSubTypes) {
-                AtlasObjectId subTypeObjId = new AtlasObjectId(objId.getGuid(), subType, objId.getUniqueAttributes());
-
-                vertex = resolvedIdsByUniqAttribs.get(subTypeObjId);
-
-                if (vertex != null) {
-                    resolvedIdsByUniqAttribs.put(objId, vertex);
-                    break;
-                }
-            }
-        }
-
-        return vertex;
     }
 
     public StringBuilder toString(StringBuilder sb) {
@@ -154,5 +140,28 @@ public final class EntityGraphDiscoveryContext {
         resolvedGuids.clear();
         resolvedIdsByUniqAttribs.clear();
         localGuids.clear();
+    }
+
+    private AtlasVertex getAtlasVertexFromResolvedIdsByAttribs(AtlasObjectId objId) {
+        AtlasVertex vertex = resolvedIdsByUniqAttribs.get(objId);
+
+        // check also for sub-types; ref={typeName=Asset; guid=abcd} should match {typeName=hive_table; guid=abcd}
+        if (vertex == null) {
+            final AtlasEntityType entityType  = typeRegistry.getEntityTypeByName(objId.getTypeName());
+            final Set<String>     allSubTypes = entityType.getAllSubTypes();
+
+            for (String subType : allSubTypes) {
+                AtlasObjectId subTypeObjId = new AtlasObjectId(objId.getGuid(), subType, objId.getUniqueAttributes());
+
+                vertex = resolvedIdsByUniqAttribs.get(subTypeObjId);
+
+                if (vertex != null) {
+                    resolvedIdsByUniqAttribs.put(objId, vertex);
+                    break;
+                }
+            }
+        }
+
+        return vertex;
     }
 }

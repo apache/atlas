@@ -24,16 +24,13 @@ import org.apache.atlas.model.profile.AtlasUserProfile;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
+
 import java.util.List;
 
 @AtlasService
 public class UserProfileService {
-    private static final Logger LOG = LoggerFactory.getLogger(UserProfileService.class);
-
     private final DataAccess dataAccess;
 
     @Inject
@@ -52,7 +49,7 @@ public class UserProfileService {
     }
 
     public AtlasUserSavedSearch addSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
-        String userName = savedSearch.getOwnerName();
+        String           userName    = savedSearch.getOwnerName();
         AtlasUserProfile userProfile = null;
 
         try {
@@ -67,23 +64,16 @@ public class UserProfileService {
 
         checkIfQueryAlreadyExists(savedSearch, userProfile);
         userProfile.getSavedSearches().add(savedSearch);
+
         userProfile = dataAccess.save(userProfile);
+
         for (AtlasUserSavedSearch s : userProfile.getSavedSearches()) {
-            if(s.getName().equals(savedSearch.getName())) {
+            if (s.getName().equals(savedSearch.getName())) {
                 return s;
             }
         }
 
         return savedSearch;
-    }
-
-    private void checkIfQueryAlreadyExists(AtlasUserSavedSearch savedSearch, AtlasUserProfile userProfile) throws AtlasBaseException {
-        for (AtlasUserSavedSearch exisingSearch : userProfile.getSavedSearches()) {
-            if (StringUtils.equals(exisingSearch.getOwnerName(), savedSearch.getOwnerName()) &&
-                StringUtils.equals(exisingSearch.getName(), savedSearch.getName())) {
-                throw new AtlasBaseException(AtlasErrorCode.SAVED_SEARCH_ALREADY_EXISTS, savedSearch.getName(), savedSearch.getOwnerName());
-            }
-        }
     }
 
     public AtlasUserSavedSearch updateSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
@@ -153,5 +143,13 @@ public class UserProfileService {
 
     public void deleteSearchBySearchName(String userName, String searchName) throws AtlasBaseException {
         dataAccess.delete(new AtlasUserSavedSearch(userName, searchName));
+    }
+
+    private void checkIfQueryAlreadyExists(AtlasUserSavedSearch savedSearch, AtlasUserProfile userProfile) throws AtlasBaseException {
+        for (AtlasUserSavedSearch exisingSearch : userProfile.getSavedSearches()) {
+            if (StringUtils.equals(exisingSearch.getOwnerName(), savedSearch.getOwnerName()) && StringUtils.equals(exisingSearch.getName(), savedSearch.getName())) {
+                throw new AtlasBaseException(AtlasErrorCode.SAVED_SEARCH_ALREADY_EXISTS, savedSearch.getName(), savedSearch.getOwnerName());
+            }
+        }
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph;
 
+import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasCheckStateRequest;
 import org.apache.atlas.model.instance.AtlasCheckStateResult;
@@ -29,7 +30,6 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.bulkimport.BulkImportResponse;
 
 import java.io.InputStream;
 import java.util.List;
@@ -40,7 +40,6 @@ import java.util.Set;
  * Persistence/Retrieval API for AtlasEntity
  */
 public interface AtlasEntityStore {
-
     /**
      * List all the entity guids for a given typename
      * @param typename
@@ -74,8 +73,7 @@ public interface AtlasEntityStore {
      */
     AtlasEntityHeader getHeaderById(String guid) throws AtlasBaseException;
 
-
-    public AtlasEntityHeader getEntityHeaderByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException;
+    AtlasEntityHeader getEntityHeaderByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes) throws AtlasBaseException;
 
     /**
      * Batch GET to retrieve entities by their ID
@@ -178,7 +176,7 @@ public interface AtlasEntityStore {
      *
      */
     EntityMutationResponse updateByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes,
-                                                    AtlasEntityWithExtInfo entity) throws AtlasBaseException;
+            AtlasEntityWithExtInfo entity) throws AtlasBaseException;
 
     /**
      * Partial update entities attribute using its guid.
@@ -206,6 +204,7 @@ public interface AtlasEntityStore {
      */
     EntityMutationResponse deleteByUniqueAttributes(AtlasEntityType entityType, Map<String, Object> uniqAttributes)
             throws AtlasBaseException;
+
     /**
      *
      * Get an entity guid by its unique attributes

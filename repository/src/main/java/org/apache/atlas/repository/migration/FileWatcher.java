@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.migration;
 
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,15 +32,15 @@ import java.nio.file.WatchService;
 public class FileWatcher {
     private static final Logger LOG = LoggerFactory.getLogger(FileWatcher.class);
 
-    private final static int MAX_TIMES_PAUSE = 10;
-    private final static int PAUSE_INTERVAL = 5000; // 5 secs
+    private static final int MAX_TIMES_PAUSE = 10;
+    private static final int PAUSE_INTERVAL  = 5000; // 5 secs
 
-    private int checkIncrement;
     private final File fileToWatch;
+    private       int  checkIncrement;
 
     public FileWatcher(String filePath) {
         this.checkIncrement = 1;
-        this.fileToWatch = new File(filePath);
+        this.fileToWatch    = new File(filePath);
     }
 
     public void start() throws IOException {
@@ -49,12 +48,14 @@ public class FileWatcher {
             return;
         }
 
-        WatchService watcher = FileSystems.getDefault().newWatchService();
-        Path pathToWatch = FileSystems.getDefault().getPath(fileToWatch.getParent());
+        WatchService watcher     = FileSystems.getDefault().newWatchService();
+        Path         pathToWatch = FileSystems.getDefault().getPath(fileToWatch.getParent());
+
         register(watcher, pathToWatch);
 
         try {
-            LOG.info(String.format("Migration File Watcher: Watching: %s", fileToWatch.toString()));
+            LOG.info("Migration File Watcher: Watching: {}", fileToWatch);
+
             startWatching(watcher);
         } catch (InterruptedException ex) {
             LOG.error("Migration File Watcher: Interrupted!");
@@ -66,6 +67,7 @@ public class FileWatcher {
     private void startWatching(WatchService watcher) throws InterruptedException {
         while (true) {
             WatchKey watchKey = watcher.take();
+
             if (watchKey == null) {
                 continue;
             }
@@ -85,13 +87,14 @@ public class FileWatcher {
             path.register(watcher, StandardWatchEventKinds.ENTRY_CREATE, StandardWatchEventKinds.ENTRY_MODIFY);
         } catch (IOException e) {
             LOG.error("Migration File Watcher: Error while registering event {}!", path);
+
             throw e;
         }
     }
 
     private boolean checkIfFileAvailableAndReady(WatchEvent event) {
         WatchEvent<Path> watchEvent = event;
-        Path path = watchEvent.context();
+        Path             path       = watchEvent.context();
 
         if (!path.toString().equals(fileToWatch.getName())) {
             return false;
@@ -102,15 +105,17 @@ public class FileWatcher {
 
     private boolean existsAndReadyCheck() {
         boolean ret = fileToWatch.exists() && fileToWatch.canRead();
+
         if (ret) {
             try {
                 return isReadyForUse(fileToWatch);
             } catch (InterruptedException e) {
                 LOG.error("Migration File Watcher: Interrupted {}!", fileToWatch);
+
                 return false;
             }
         } else {
-            LOG.info(String.format("Migration File Watcher: File does not exist!: %s", fileToWatch.getAbsolutePath()));
+            LOG.info("Migration File Watcher: File does not exist!: {}", fileToWatch.getAbsolutePath());
         }
 
         return ret;
@@ -118,18 +123,18 @@ public class FileWatcher {
 
     private boolean isReadyForUse(File file) throws InterruptedException {
         Long fileSizeBefore = file.length();
+
         Thread.sleep(getCheckInterval());
-        Long fileSizeAfter = file.length();
-        boolean ret = fileSizeBefore.equals(fileSizeAfter);
+
+        Long    fileSizeAfter = file.length();
+        boolean ret           = fileSizeBefore.equals(fileSizeAfter);
 
         if (ret) {
-            LOG.info(String.format("Migration File Watcher: %s: File is ready for use!", file.getAbsolutePath()));
+            LOG.info("Migration File Watcher: {}: File is ready for use!", file.getAbsolutePath());
         } else {
             incrementCheckCounter();
-            LOG.info(
-                    String.format("Migration File Watcher: File is being written: Pause: %,d secs: New size: %,d."
-                            , getCheckInterval() / 1000
-                            , fileSizeAfter));
+
+            LOG.info(String.format("Migration File Watcher: File is being written: Pause: %,d secs: New size: %,d.", getCheckInterval() / 1000, fileSizeAfter));
         }
 
         return ret;

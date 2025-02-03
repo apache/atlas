@@ -30,8 +30,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
-
-
 public abstract class Condition {
     private static final Logger LOG = LoggerFactory.getLogger(Condition.class);
 
@@ -47,20 +45,12 @@ public abstract class Condition {
 
     protected final EntityAttribute attribute;
 
-
     protected Condition(EntityAttribute attribute) {
         this.attribute = attribute;
     }
 
-    public EntityAttribute getAttribute() { return attribute; }
-
-    public abstract boolean matches(AtlasTransformableEntity entity);
-
-
     public static Condition createCondition(String key, String value, TransformerContext context) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> Condition.createCondition(key={}, value={})", key, value);
-        }
+        LOG.debug("==> Condition.createCondition(key={}, value={})", key, value);
 
         final Condition ret;
 
@@ -89,19 +79,19 @@ public abstract class Condition {
 
             case CONDITION_NAME_EQUALS:
                 ret = new EqualsCondition(attribute, conditionValue);
-            break;
+                break;
 
             case CONDITION_NAME_EQUALS_IGNORE_CASE:
                 ret = new EqualsIgnoreCaseCondition(attribute, conditionValue);
-            break;
+                break;
 
             case CONDITION_NAME_STARTS_WITH:
                 ret = new StartsWithCondition(attribute, conditionValue);
-            break;
+                break;
 
             case CONDITION_NAME_STARTS_WITH_IGNORE_CASE:
                 ret = new StartsWithIgnoreCaseCondition(attribute, conditionValue);
-            break;
+                break;
 
             case CONDITION_NAME_HAS_VALUE:
                 ret = new HasValueCondition(attribute);
@@ -109,16 +99,19 @@ public abstract class Condition {
 
             default:
                 ret = new EqualsCondition(attribute, value); // treat unspecified/unknown condition as 'EQUALS'
-            break;
+                break;
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== Condition.createCondition(key={}, value={}): actionName={}, actionValue={}, ret={}", key, value, conditionName, conditionValue, ret);
-        }
+        LOG.debug("<== Condition.createCondition(key={}, value={}): actionName={}, actionValue={}, ret={}", key, value, conditionName, conditionValue, ret);
 
         return ret;
     }
 
+    public EntityAttribute getAttribute() {
+        return attribute;
+    }
+
+    public abstract boolean matches(AtlasTransformableEntity entity);
 
     public static class EqualsCondition extends Condition {
         protected final String attributeValue;
@@ -137,7 +130,6 @@ public abstract class Condition {
         }
     }
 
-
     public static class EqualsIgnoreCaseCondition extends Condition {
         protected final String attributeValue;
 
@@ -155,7 +147,6 @@ public abstract class Condition {
         }
     }
 
-
     public static class StartsWithCondition extends Condition {
         protected final String prefix;
 
@@ -172,7 +163,6 @@ public abstract class Condition {
             return attributeValue != null && StringUtils.startsWith(attributeValue.toString(), this.prefix);
         }
     }
-
 
     public static class StartsWithIgnoreCaseCondition extends Condition {
         protected final String prefix;
@@ -204,7 +194,7 @@ public abstract class Condition {
             if (!isMatchAll && context != null && context.getExportRequest() != null) {
                 AtlasExportRequest request = context.getExportRequest();
 
-                for(AtlasObjectId objectId : request.getItemsToExport()) {
+                for (AtlasObjectId objectId : request.getItemsToExport()) {
                     addObjectId(objectId);
                 }
             }
@@ -250,7 +240,6 @@ public abstract class Condition {
         }
     }
 
-
     public static class HasValueCondition extends Condition {
         public HasValueCondition(EntityAttribute attribute) {
             super(attribute);
@@ -260,7 +249,7 @@ public abstract class Condition {
         public boolean matches(AtlasTransformableEntity entity) {
             Object attributeValue = entity != null ? entity.getAttribute(attribute) : null;
 
-            return attributeValue != null ? StringUtils.isNotEmpty(attributeValue.toString()) : false;
+            return attributeValue != null && StringUtils.isNotEmpty(attributeValue.toString());
         }
     }
 }

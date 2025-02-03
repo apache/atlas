@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -32,6 +32,7 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
@@ -46,7 +47,7 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEn
 public class TaskRegistry {
     private static final Logger LOG = LoggerFactory.getLogger(TaskRegistry.class);
 
-    private AtlasGraph graph;
+    private final AtlasGraph graph;
 
     @Inject
     public TaskRegistry(AtlasGraph graph) {
@@ -66,15 +67,11 @@ public class TaskRegistry {
 
         try {
             AtlasGraphQuery query = graph.query()
-                                         .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
-                                         .has(Constants.TASK_STATUS, AtlasTask.Status.PENDING)
-                                         .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
+                    .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                    .has(Constants.TASK_STATUS, AtlasTask.Status.PENDING)
+                    .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
 
-            Iterator<AtlasVertex> results = query.vertices().iterator();
-
-            while (results.hasNext()) {
-                AtlasVertex vertex = results.next();
-
+            for (AtlasVertex vertex : (Iterable<AtlasVertex>) query.vertices()) {
                 ret.add(toAtlasTask(vertex));
             }
         } catch (Exception exception) {
@@ -97,11 +94,7 @@ public class TaskRegistry {
                     .has(Constants.TASK_TYPE, type)
                     .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
 
-            Iterator<AtlasVertex> results = query.vertices().iterator();
-
-            while (results.hasNext()) {
-                AtlasVertex vertex = results.next();
-
+            for (AtlasVertex vertex : (Iterable<AtlasVertex>) query.vertices()) {
                 ret.add(toAtlasTask(vertex));
             }
         } catch (Exception exception) {
@@ -127,8 +120,8 @@ public class TaskRegistry {
     public void deleteByGuid(String guid) throws AtlasBaseException {
         try {
             AtlasGraphQuery query = graph.query()
-                                         .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
-                                         .has(TASK_GUID, guid);
+                    .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                    .has(TASK_GUID, guid);
 
             Iterator<AtlasVertex> results = query.vertices().iterator();
 
@@ -152,8 +145,8 @@ public class TaskRegistry {
     @GraphTransaction
     public AtlasTask getById(String guid) {
         AtlasGraphQuery query = graph.query()
-                                     .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
-                                     .has(TASK_GUID, guid);
+                .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                .has(TASK_GUID, guid);
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
 
@@ -172,14 +165,13 @@ public class TaskRegistry {
     @GraphTransaction
     public List<AtlasTask> getAll() {
         List<AtlasTask> ret = new ArrayList<>();
+
         AtlasGraphQuery query = graph.query()
-                                     .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
-                                     .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
+                .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
+                .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
 
-        Iterator<AtlasVertex> results = query.vertices().iterator();
-
-        while (results.hasNext()) {
-            ret.add(toAtlasTask(results.next()));
+        for (AtlasVertex atlasVertex : (Iterable<AtlasVertex>) query.vertices()) {
+            ret.add(toAtlasTask(atlasVertex));
         }
 
         return ret;

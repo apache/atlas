@@ -48,6 +48,7 @@ import org.testng.annotations.Guice;
 import org.testng.annotations.Test;
 
 import javax.inject.Inject;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Arrays;
@@ -64,9 +65,10 @@ import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.NONE;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.ONE_TO_TWO;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.TWO_TO_ONE;
-import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.runImportWithNoParameters;
+import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
@@ -110,6 +112,10 @@ public class ClassificationPropagationTest extends AtlasTestBase {
 
     private AtlasLineageInfo lineageInfo;
 
+    public static InputStream getZipSource(String fileName) throws IOException {
+        return ZipFileResourceTestUtils.getFileInputStream(fileName);
+    }
+
     @BeforeClass
     public void setup() throws Exception {
         RequestContext.clear();
@@ -126,131 +132,144 @@ public class ClassificationPropagationTest extends AtlasTestBase {
         super.cleanup();
     }
 
-    /** This test uses the lineage graph:
-     *
-
-     Lineage - 1
-     -----------
-     [Process1] ----> [Employees1]
-     /                              \
-     /                                \
-     [hdfs_employees]                                  [Process3] ----> [ EmployeesUnion ]
-     \                                /
-     \                             /
-     [Process2] ----> [Employees2]
-
-
-     Lineage - 2
-     -----------
-
-     [Employees] ----> [Process] ----> [ US_Employees ]
-
-
-     Lineage - 3
-     -----------
-
-     [Orders] ----> [Process] ----> [ US_Orders ]
-
+    /**
+     * This test uses the lineage graph:
+     * <p>
+     * <p>
+     * Lineage - 1
+     * -----------
+     * [Process1] ----> [Employees1]
+     * /                              \
+     * /                                \
+     * [hdfs_employees]                                  [Process3] ----> [ EmployeesUnion ]
+     * \                                /
+     * \                             /
+     * [Process2] ----> [Employees2]
+     * <p>
+     * <p>
+     * Lineage - 2
+     * -----------
+     * <p>
+     * [Employees] ----> [Process] ----> [ US_Employees ]
+     * <p>
+     * <p>
+     * Lineage - 3
+     * -----------
+     * <p>
+     * [Orders] ----> [Process] ----> [ US_Orders ]
      */
 
     @Test
     public void addClassification_PropagateFalse() throws AtlasBaseException {
-        AtlasEntity         hdfs_employees = getEntity(HDFS_PATH_EMPLOYEES);
-        AtlasClassification tag2           = new AtlasClassification("tag2"); tag2.setPropagate(false); tag2.setEntityGuid(hdfs_employees.getGuid());
+        AtlasEntity         hdfsEmployees = getEntity(HDFS_PATH_EMPLOYEES);
+        AtlasClassification tag2          = new AtlasClassification("tag2");
+
+        tag2.setPropagate(false);
+        tag2.setEntityGuid(hdfsEmployees.getGuid());
 
         // add classification with propagate to 'false'
-        addClassification(hdfs_employees, tag2);
+        addClassification(hdfsEmployees, tag2);
 
-        List<String> propagatedToEntities = Arrays.asList(EMPLOYEES1_PROCESS, EMPLOYEES2_PROCESS, EMPLOYEES1_TABLE,
-                                                          EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
+        List<String> propagatedToEntities = Arrays.asList(EMPLOYEES1_PROCESS, EMPLOYEES2_PROCESS, EMPLOYEES1_TABLE, EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
 
         assertClassificationNotExistInEntities(propagatedToEntities, tag2);
     }
 
-    @Test(dependsOnMethods = {"addClassification_PropagateFalse"})
+    @Test(dependsOnMethods = "addClassification_PropagateFalse")
     public void updateClassification_PropagateFalseToTrue() throws AtlasBaseException {
-        AtlasEntity         hdfs_employees = getEntity(HDFS_PATH_EMPLOYEES);
-        AtlasClassification tag2           = new AtlasClassification("tag2"); tag2.setEntityGuid(hdfs_employees.getGuid());
+        AtlasEntity         hdfsEmployees = getEntity(HDFS_PATH_EMPLOYEES);
+        AtlasClassification tag2          = new AtlasClassification("tag2");
+
+        tag2.setEntityGuid(hdfsEmployees.getGuid());
 
         //update tag2 propagate to 'true'
-        tag2 = getClassification(hdfs_employees, tag2); tag2.setPropagate(true);
+        tag2 = getClassification(hdfsEmployees, tag2);
 
-        updateClassifications(hdfs_employees, tag2);
+        tag2.setPropagate(true);
 
-        List<String> propagatedToEntities = Arrays.asList(EMPLOYEES1_PROCESS, EMPLOYEES2_PROCESS, EMPLOYEES1_TABLE,
-                                                          EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
+        updateClassifications(hdfsEmployees, tag2);
+
+        List<String> propagatedToEntities = Arrays.asList(EMPLOYEES1_PROCESS, EMPLOYEES2_PROCESS, EMPLOYEES1_TABLE, EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
 
         assertClassificationExistInEntities(propagatedToEntities, tag2);
 
-        deleteClassification(hdfs_employees, tag2);
+        deleteClassification(hdfsEmployees, tag2);
     }
 
-    @Test(dependsOnMethods = {"updateClassification_PropagateFalseToTrue"})
+    @Test(dependsOnMethods = "updateClassification_PropagateFalseToTrue")
     public void addClassification_PropagateTrue() throws AtlasBaseException {
-        AtlasEntity         hdfs_employees = getEntity(HDFS_PATH_EMPLOYEES);
-        AtlasClassification tag1           = new AtlasClassification("tag1"); tag1.setPropagate(true); tag1.setEntityGuid(hdfs_employees.getGuid());
+        AtlasEntity         hdfsEmployees = getEntity(HDFS_PATH_EMPLOYEES);
+        AtlasClassification tag1          = new AtlasClassification("tag1");
+
+        tag1.setPropagate(true);
+        tag1.setEntityGuid(hdfsEmployees.getGuid());
 
         // add classification with propagate flag to 'true'
-        addClassification(hdfs_employees, tag1);
+        addClassification(hdfsEmployees, tag1);
 
-        List<String> propagatedToEntities = Arrays.asList(EMPLOYEES1_PROCESS, EMPLOYEES2_PROCESS, EMPLOYEES1_TABLE,
-                                                          EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
+        List<String> propagatedToEntities = Arrays.asList(EMPLOYEES1_PROCESS, EMPLOYEES2_PROCESS, EMPLOYEES1_TABLE, EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
 
         assertClassificationExistInEntities(propagatedToEntities, tag1);
     }
 
-    @Test(dependsOnMethods = {"addClassification_PropagateTrue"})
+    @Test(dependsOnMethods = "addClassification_PropagateTrue")
     public void updateClassification_PropagateTrueToFalse() throws AtlasBaseException {
-        AtlasEntity         hdfs_employees = getEntity(HDFS_PATH_EMPLOYEES);
-        AtlasClassification tag1           = new AtlasClassification("tag1"); tag1.setEntityGuid(hdfs_employees.getGuid());
+        AtlasEntity         hdfsEmployees = getEntity(HDFS_PATH_EMPLOYEES);
+        AtlasClassification tag1          = new AtlasClassification("tag1");
 
-        List<String> propagatedToEntities = Arrays.asList(EMPLOYEES1_PROCESS, EMPLOYEES2_PROCESS, EMPLOYEES1_TABLE,
-                                                          EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
+        tag1.setEntityGuid(hdfsEmployees.getGuid());
+
+        List<String> propagatedToEntities = Arrays.asList(EMPLOYEES1_PROCESS, EMPLOYEES2_PROCESS, EMPLOYEES1_TABLE, EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
 
         // update propagate flag to 'false'
-        tag1 = getClassification(hdfs_employees, tag1); tag1.setPropagate(false);
+        tag1 = getClassification(hdfsEmployees, tag1);
 
-        updateClassifications(hdfs_employees, tag1);
+        tag1.setPropagate(false);
+
+        updateClassifications(hdfsEmployees, tag1);
 
         assertClassificationNotExistInEntities(propagatedToEntities, tag1);
     }
 
-    @Test(dependsOnMethods = {"updateClassification_PropagateTrueToFalse"})
+    @Test(dependsOnMethods = "updateClassification_PropagateTrueToFalse")
     public void deleteClassification_PropagateTrue() throws AtlasBaseException {
-        AtlasEntity         hdfs_employees = getEntity(HDFS_PATH_EMPLOYEES);
-        AtlasClassification tag1           = new AtlasClassification("tag1"); tag1.setPropagate(true); tag1.setEntityGuid(hdfs_employees.getGuid());
+        AtlasEntity         hdfsEmployees = getEntity(HDFS_PATH_EMPLOYEES);
+        AtlasClassification tag1          = new AtlasClassification("tag1");
 
-        deleteClassification(hdfs_employees, tag1);
+        tag1.setPropagate(true);
+        tag1.setEntityGuid(hdfsEmployees.getGuid());
 
-        List<String> propagatedToEntities = Arrays.asList(EMPLOYEES1_PROCESS, EMPLOYEES2_PROCESS, EMPLOYEES1_TABLE,
-                                                          EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
+        deleteClassification(hdfsEmployees, tag1);
+
+        List<String> propagatedToEntities = Arrays.asList(EMPLOYEES1_PROCESS, EMPLOYEES2_PROCESS, EMPLOYEES1_TABLE, EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
 
         assertClassificationNotExistInEntities(propagatedToEntities, tag1);
     }
 
-    @Test(dependsOnMethods = {"deleteClassification_PropagateTrue"})
+    @Test(dependsOnMethods = "deleteClassification_PropagateTrue")
     public void propagateSameTagFromDifferentEntities() throws AtlasBaseException {
         // add tag1 to hdfs_employees
-        AtlasEntity hdfs_employees = getEntity(HDFS_PATH_EMPLOYEES);
+        AtlasEntity         hdfsEmployees = getEntity(HDFS_PATH_EMPLOYEES);
+        AtlasClassification tag1          = new AtlasClassification("tag1");
 
-        AtlasClassification tag1 = new AtlasClassification("tag1");
         tag1.setPropagate(true);
-        tag1.setEntityGuid(hdfs_employees.getGuid());
+        tag1.setEntityGuid(hdfsEmployees.getGuid());
 
-        addClassification(hdfs_employees, tag1);
+        addClassification(hdfsEmployees, tag1);
 
         // add tag1 to employees2
-        AtlasEntity employees2_table = getEntity(EMPLOYEES2_TABLE);
+        AtlasEntity employees2Table = getEntity(EMPLOYEES2_TABLE);
 
         tag1 = new AtlasClassification("tag1");
-        tag1.setPropagate(true);
-        tag1.setEntityGuid(employees2_table.getGuid());
 
-        addClassification(employees2_table, tag1);
+        tag1.setPropagate(true);
+        tag1.setEntityGuid(employees2Table.getGuid());
+
+        addClassification(employees2Table, tag1);
 
         // employees_union table should have two tags 'tag1' propagated from hdfs_employees and employees2 table
-        AtlasEntity               employees_union_table = getEntity(EMPLOYEES_UNION_TABLE);
-        List<AtlasClassification> classifications       = employees_union_table.getClassifications();
+        AtlasEntity               employeesUnionTable = getEntity(EMPLOYEES_UNION_TABLE);
+        List<AtlasClassification> classifications     = employeesUnionTable.getClassifications();
 
         assertNotNull(classifications);
         assertEquals(classifications.size(), 2);
@@ -259,36 +278,51 @@ public class ClassificationPropagationTest extends AtlasTestBase {
         assertEquals(classifications.get(0).getTypeName(), tag1.getTypeName());
         assertEquals(classifications.get(1).getTypeName(), tag1.getTypeName());
 
-        if (classifications.get(0).getEntityGuid().equals(hdfs_employees.getGuid())) {
-            assertEquals(classifications.get(1).getEntityGuid(), employees2_table.getGuid());
+        if (classifications.get(0).getEntityGuid().equals(hdfsEmployees.getGuid())) {
+            assertEquals(classifications.get(1).getEntityGuid(), employees2Table.getGuid());
         }
 
-        if (classifications.get(0).getEntityGuid().equals(employees2_table.getGuid())) {
-            assertEquals(classifications.get(1).getEntityGuid(), hdfs_employees.getGuid());
+        if (classifications.get(0).getEntityGuid().equals(employees2Table.getGuid())) {
+            assertEquals(classifications.get(1).getEntityGuid(), hdfsEmployees.getGuid());
         }
 
         // cleanup
-        deleteClassification(hdfs_employees, tag1);
-        deleteClassification(employees2_table, tag1);
+        deleteClassification(hdfsEmployees, tag1);
+        deleteClassification(employees2Table, tag1);
     }
 
-    @Test(dependsOnMethods = {"propagateSameTagFromDifferentEntities"})
+    @Test(dependsOnMethods = "propagateSameTagFromDifferentEntities")
     public void updatePropagateTagsValue() throws AtlasBaseException {
-        AtlasEntity hdfs_employees          = getEntity(HDFS_PATH_EMPLOYEES);
-        AtlasEntity employees2_table        = getEntity(EMPLOYEES2_TABLE);
-        AtlasEntity employees_union_process = getEntity(EMPLOYEES_UNION_PROCESS);
-        AtlasEntity employees_union_table   = getEntity(EMPLOYEES_UNION_TABLE);
+        AtlasEntity hdfsEmployees         = getEntity(HDFS_PATH_EMPLOYEES);
+        AtlasEntity employees2Table       = getEntity(EMPLOYEES2_TABLE);
+        AtlasEntity employeesUnionProcess = getEntity(EMPLOYEES_UNION_PROCESS);
+        AtlasEntity employeesUnionTable   = getEntity(EMPLOYEES_UNION_TABLE);
 
-        AtlasClassification tag1 = new AtlasClassification("tag1"); tag1.setPropagate(true); tag1.setEntityGuid(hdfs_employees.getGuid());
-        AtlasClassification tag2 = new AtlasClassification("tag2"); tag2.setPropagate(true); tag2.setEntityGuid(employees2_table.getGuid());
-        AtlasClassification tag3 = new AtlasClassification("tag3"); tag3.setPropagate(true); tag3.setEntityGuid(employees_union_process.getGuid());
-        AtlasClassification tag4 = new AtlasClassification("tag4"); tag4.setPropagate(true); tag4.setEntityGuid(employees_union_table.getGuid());
+        AtlasClassification tag1 = new AtlasClassification("tag1");
+
+        tag1.setPropagate(true);
+        tag1.setEntityGuid(hdfsEmployees.getGuid());
+
+        AtlasClassification tag2 = new AtlasClassification("tag2");
+
+        tag2.setPropagate(true);
+        tag2.setEntityGuid(employees2Table.getGuid());
+
+        AtlasClassification tag3 = new AtlasClassification("tag3");
+
+        tag3.setPropagate(true);
+        tag3.setEntityGuid(employeesUnionProcess.getGuid());
+
+        AtlasClassification tag4 = new AtlasClassification("tag4");
+
+        tag4.setPropagate(true);
+        tag4.setEntityGuid(employeesUnionTable.getGuid());
 
         // add tag1 to hdfs_employees, tag2 to employees2, tag3 to process3, tag4 to employees_union
-        addClassification(hdfs_employees, tag1);
-        addClassification(employees2_table, tag2);
-        addClassification(employees_union_process, tag3);
-        addClassification(employees_union_table, tag4);
+        addClassification(hdfsEmployees, tag1);
+        addClassification(employees2Table, tag2);
+        addClassification(employeesUnionProcess, tag3);
+        addClassification(employeesUnionTable, tag4);
 
         //validate if tag1, tag2, tag3 propagated to employees_union table
         assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, tag1);
@@ -297,10 +331,13 @@ public class ClassificationPropagationTest extends AtlasTestBase {
         assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, tag4);
 
         // change propagation between employees2 -> process3 from TWO_TO_ONE to NONE
-        AtlasRelationship employees2_process_relationship = getRelationship(EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS);
-        assertEquals(employees2_process_relationship.getPropagateTags(), TWO_TO_ONE);
-        employees2_process_relationship.setPropagateTags(NONE);
-        relationshipStore.update(employees2_process_relationship);
+        AtlasRelationship employees2ProcessRelationship = getRelationship(EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS);
+
+        assertEquals(employees2ProcessRelationship.getPropagateTags(), TWO_TO_ONE);
+
+        employees2ProcessRelationship.setPropagateTags(NONE);
+
+        relationshipStore.update(employees2ProcessRelationship);
 
         // validate tag1 propagated to employees_union through other path
         assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, tag1);
@@ -309,162 +346,171 @@ public class ClassificationPropagationTest extends AtlasTestBase {
         assertClassificationNotExistInEntity(EMPLOYEES_UNION_TABLE, tag2);
 
         // change propagation between employees2 -> process3 from NONE to TWO_TO_ONE
-        employees2_process_relationship = getRelationship(EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS);
-        assertEquals(employees2_process_relationship.getPropagateTags(), NONE);
-        employees2_process_relationship.setPropagateTags(TWO_TO_ONE);
-        relationshipStore.update(employees2_process_relationship);
+        employees2ProcessRelationship = getRelationship(EMPLOYEES2_TABLE, EMPLOYEES_UNION_PROCESS);
+        assertEquals(employees2ProcessRelationship.getPropagateTags(), NONE);
+        employees2ProcessRelationship.setPropagateTags(TWO_TO_ONE);
+        relationshipStore.update(employees2ProcessRelationship);
 
         // validate tag2 is propagated to employees_union
         assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, tag2);
 
         //update propagation to BOTH for edge process3 --> employee_union. This should fail
-        AtlasRelationship process3_employee_union_relationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
-        assertEquals(process3_employee_union_relationship.getPropagateTags(), ONE_TO_TWO);
-        process3_employee_union_relationship.setPropagateTags(BOTH);
+        AtlasRelationship process3EmployeeUnionRelationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
+
+        assertEquals(process3EmployeeUnionRelationship.getPropagateTags(), ONE_TO_TWO);
+
+        process3EmployeeUnionRelationship.setPropagateTags(BOTH);
 
         try {
-            relationshipStore.update(process3_employee_union_relationship);
+            relationshipStore.update(process3EmployeeUnionRelationship);
         } catch (AtlasBaseException ex) {
             assertEquals(ex.getAtlasErrorCode(), AtlasErrorCode.INVALID_PROPAGATION_TYPE);
         }
 
         //cleanup
-        deleteClassification(hdfs_employees, tag1);
-        deleteClassification(employees2_table, tag2);
-        deleteClassification(employees_union_process, tag3);
-        deleteClassification(employees_union_table, tag4);
+        deleteClassification(hdfsEmployees, tag1);
+        deleteClassification(employees2Table, tag2);
+        deleteClassification(employeesUnionProcess, tag3);
+        deleteClassification(employeesUnionTable, tag4);
     }
 
-    @Test(dependsOnMethods = {"updatePropagateTagsValue"})
+    @Test(dependsOnMethods = "updatePropagateTagsValue")
     public void addBlockedPropagatedClassifications() throws AtlasBaseException {
-        AtlasEntity hdfs_path       = getEntity(HDFS_PATH_EMPLOYEES);
-        AtlasEntity employees1      = getEntity(EMPLOYEES1_TABLE);
-        AtlasEntity employees2      = getEntity(EMPLOYEES2_TABLE);
-        AtlasEntity employees_union = getEntity(EMPLOYEES_UNION_TABLE);
+        AtlasEntity hdfsPath       = getEntity(HDFS_PATH_EMPLOYEES);
+        AtlasEntity employees1     = getEntity(EMPLOYEES1_TABLE);
+        AtlasEntity employees2     = getEntity(EMPLOYEES2_TABLE);
+        AtlasEntity employeesUnion = getEntity(EMPLOYEES_UNION_TABLE);
 
-        AtlasClassification PII_tag1 = new AtlasClassification("PII"); PII_tag1.setPropagate(true);
-            PII_tag1.setAttribute("type", "from hdfs_path entity");
-            PII_tag1.setAttribute("valid", true);
+        AtlasClassification piiTag1 = new AtlasClassification("PII");
 
-        AtlasClassification PII_tag2 = new AtlasClassification("PII"); PII_tag2.setPropagate(true);
-            PII_tag2.setAttribute("type", "from employees1 entity");
-            PII_tag2.setAttribute("valid", true);
+        piiTag1.setPropagate(true);
+        piiTag1.setAttribute("type", "from hdfs_path entity");
+        piiTag1.setAttribute("valid", true);
 
-        AtlasClassification PII_tag3 = new AtlasClassification("PII"); PII_tag3.setPropagate(true);
-            PII_tag3.setAttribute("type", "from employees2 entity");
-            PII_tag3.setAttribute("valid", true);
+        AtlasClassification piiTag2 = new AtlasClassification("PII");
 
-        AtlasClassification PII_tag4 = new AtlasClassification("PII"); PII_tag4.setPropagate(true);
-            PII_tag4.setAttribute("type", "from employees_union entity");
-            PII_tag4.setAttribute("valid", true);
+        piiTag2.setPropagate(true);
+        piiTag2.setAttribute("type", "from employees1 entity");
+        piiTag2.setAttribute("valid", true);
+
+        AtlasClassification piiTag3 = new AtlasClassification("PII");
+
+        piiTag3.setPropagate(true);
+        piiTag3.setAttribute("type", "from employees2 entity");
+        piiTag3.setAttribute("valid", true);
+
+        AtlasClassification piiTag4 = new AtlasClassification("PII");
+
+        piiTag4.setPropagate(true);
+        piiTag4.setAttribute("type", "from employees_union entity");
+        piiTag4.setAttribute("valid", true);
 
         // add PII to hdfs_path, employees1, employees2 and employee_union
-        addClassification(hdfs_path, PII_tag1);
-        addClassification(employees1, PII_tag2);
-        addClassification(employees2, PII_tag3);
+        addClassification(hdfsPath, piiTag1);
+        addClassification(employees1, piiTag2);
+        addClassification(employees2, piiTag3);
 
         // check 4 PII tags exists in employee_union table
-        assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, PII_tag1.getTypeName(), hdfs_path.getGuid());
-        assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, PII_tag2.getTypeName(), employees1.getGuid());
-        assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, PII_tag3.getTypeName(), employees2.getGuid());
+        assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, piiTag1.getTypeName(), hdfsPath.getGuid());
+        assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, piiTag2.getTypeName(), employees1.getGuid());
+        assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, piiTag3.getTypeName(), employees2.getGuid());
 
-        AtlasRelationship process3_employee_union_relationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
-        Set<AtlasClassification> propagatedClassifications     = process3_employee_union_relationship.getPropagatedClassifications();
-        Set<AtlasClassification> blockedClassifications        = process3_employee_union_relationship.getBlockedPropagatedClassifications();
+        AtlasRelationship        process3EmployeeUnionRelationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
+        Set<AtlasClassification> propagatedClassifications         = process3EmployeeUnionRelationship.getPropagatedClassifications();
+        Set<AtlasClassification> blockedClassifications            = process3EmployeeUnionRelationship.getBlockedPropagatedClassifications();
 
         assertNotNull(propagatedClassifications);
-        assertClassificationEquals(propagatedClassifications, PII_tag1);
-        assertClassificationEquals(propagatedClassifications, PII_tag2);
-        assertClassificationEquals(propagatedClassifications, PII_tag3);
+        assertClassificationEquals(propagatedClassifications, piiTag1);
+        assertClassificationEquals(propagatedClassifications, piiTag2);
+        assertClassificationEquals(propagatedClassifications, piiTag3);
         assertTrue(blockedClassifications.isEmpty());
 
         // block PII tag propagating from employees1 and employees2
-        PII_tag2.setEntityGuid(employees1.getGuid());
-        PII_tag3.setEntityGuid(employees2.getGuid());
+        piiTag2.setEntityGuid(employees1.getGuid());
+        piiTag3.setEntityGuid(employees2.getGuid());
 
-        process3_employee_union_relationship.setBlockedPropagatedClassifications(new HashSet<>(Arrays.asList(PII_tag2, PII_tag3)));
-        relationshipStore.update(process3_employee_union_relationship);
+        process3EmployeeUnionRelationship.setBlockedPropagatedClassifications(new HashSet<>(Arrays.asList(piiTag2, piiTag3)));
+        relationshipStore.update(process3EmployeeUnionRelationship);
 
-        process3_employee_union_relationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
-        propagatedClassifications            = process3_employee_union_relationship.getPropagatedClassifications();
-        blockedClassifications               = process3_employee_union_relationship.getBlockedPropagatedClassifications();
+        process3EmployeeUnionRelationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
+        propagatedClassifications            = process3EmployeeUnionRelationship.getPropagatedClassifications();
+        blockedClassifications               = process3EmployeeUnionRelationship.getBlockedPropagatedClassifications();
 
-        assertClassificationEquals(propagatedClassifications, PII_tag1);
-        assertTrue(!blockedClassifications.isEmpty());
-        assertClassificationEquals(blockedClassifications, PII_tag2);
-        assertClassificationEquals(blockedClassifications, PII_tag3);
+        assertClassificationEquals(propagatedClassifications, piiTag1);
+        assertFalse(blockedClassifications.isEmpty());
+        assertClassificationEquals(blockedClassifications, piiTag2);
+        assertClassificationEquals(blockedClassifications, piiTag3);
 
-        assertClassificationNotExistInEntity(EMPLOYEES_UNION_TABLE, PII_tag2);
-        assertClassificationNotExistInEntity(EMPLOYEES_UNION_TABLE, PII_tag3);
+        assertClassificationNotExistInEntity(EMPLOYEES_UNION_TABLE, piiTag2);
+        assertClassificationNotExistInEntity(EMPLOYEES_UNION_TABLE, piiTag3);
 
         // assert only PII from hdfs_path is propagated to employees_union, PII from employees1 and employees2 is blocked.
         assertEquals(getEntity(EMPLOYEES_UNION_TABLE).getClassifications().size(), 1);
-        assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, PII_tag1.getTypeName(), hdfs_path.getGuid());
+        assertClassificationExistInEntity(EMPLOYEES_UNION_TABLE, piiTag1.getTypeName(), hdfsPath.getGuid());
     }
 
-    private void assertClassificationEquals(Set<AtlasClassification> propagatedClassifications, AtlasClassification expected) {
-        String expectedTypeName = expected.getTypeName();
-        for (AtlasClassification c : propagatedClassifications) {
-            if(c.getTypeName().equals(expectedTypeName)) {
-                assertTrue(c.isPropagate() == expected.isPropagate(), "isPropgate does not match");
-                assertTrue(c.getValidityPeriods() == expected.getValidityPeriods(), "validityPeriods do not match");
-                return;
-            }
-        }
-
-        fail(expectedTypeName + " could not be found");
-    }
-
-    @Test(dependsOnMethods = {"addBlockedPropagatedClassifications"})
-    public void removeBlockedPropagatedClassifications  () throws AtlasBaseException {
-        AtlasEntity hdfs_path  = getEntity(HDFS_PATH_EMPLOYEES);
+    @Test(dependsOnMethods = "addBlockedPropagatedClassifications")
+    public void removeBlockedPropagatedClassifications() throws AtlasBaseException {
+        AtlasEntity hdfsPath   = getEntity(HDFS_PATH_EMPLOYEES);
         AtlasEntity employees1 = getEntity(EMPLOYEES1_TABLE);
         AtlasEntity employees2 = getEntity(EMPLOYEES2_TABLE);
 
-        AtlasClassification PII_tag1 = new AtlasClassification("PII"); PII_tag1.setPropagate(true); PII_tag1.setEntityGuid(hdfs_path.getGuid());
-            PII_tag1.setAttribute("type", "from hdfs_path entity");
-            PII_tag1.setAttribute("valid", true);
+        AtlasClassification piiTag1 = new AtlasClassification("PII");
 
-        AtlasClassification PII_tag2 = new AtlasClassification("PII"); PII_tag2.setPropagate(true); PII_tag2.setEntityGuid(employees1.getGuid());
-            PII_tag2.setAttribute("type", "from employees1 entity");
-            PII_tag2.setAttribute("valid", true);
+        piiTag1.setPropagate(true);
+        piiTag1.setEntityGuid(hdfsPath.getGuid());
+        piiTag1.setAttribute("type", "from hdfs_path entity");
+        piiTag1.setAttribute("valid", true);
 
-        AtlasClassification PII_tag3 = new AtlasClassification("PII"); PII_tag3.setPropagate(true); PII_tag3.setEntityGuid(employees2.getGuid());
-            PII_tag3.setAttribute("type", "from employees2 entity");
-            PII_tag3.setAttribute("valid", true);
+        AtlasClassification piiTag2 = new AtlasClassification("PII");
 
-        AtlasRelationship process3_employee_union_relationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
+        piiTag2.setPropagate(true);
+        piiTag2.setEntityGuid(employees1.getGuid());
+        piiTag2.setAttribute("type", "from employees1 entity");
+        piiTag2.setAttribute("valid", true);
+
+        AtlasClassification piiTag3 = new AtlasClassification("PII");
+
+        piiTag3.setPropagate(true);
+        piiTag3.setEntityGuid(employees2.getGuid());
+        piiTag3.setAttribute("type", "from employees2 entity");
+        piiTag3.setAttribute("valid", true);
+
+        AtlasRelationship process3EmployeeUnionRelationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
 
         // remove blocked propagated classification entry for PII (from employees2) - allow PII from employees2 to propagate to employee_union
-        process3_employee_union_relationship.setBlockedPropagatedClassifications(new HashSet<>(Arrays.asList(PII_tag3)));
-        relationshipStore.update(process3_employee_union_relationship);
+        process3EmployeeUnionRelationship.setBlockedPropagatedClassifications(new HashSet<>(Arrays.asList(piiTag3)));
 
-        process3_employee_union_relationship               = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
-        Set<AtlasClassification> propagatedClassifications = process3_employee_union_relationship.getPropagatedClassifications();
-        Set<AtlasClassification> blockedClassifications    = process3_employee_union_relationship.getBlockedPropagatedClassifications();
+        relationshipStore.update(process3EmployeeUnionRelationship);
 
-        assertClassificationExistInList(propagatedClassifications, PII_tag1);
-        assertClassificationExistInList(propagatedClassifications, PII_tag2);
-        assertClassificationExistInList(blockedClassifications, PII_tag3);
+        process3EmployeeUnionRelationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
+
+        Set<AtlasClassification> propagatedClassifications = process3EmployeeUnionRelationship.getPropagatedClassifications();
+        Set<AtlasClassification> blockedClassifications    = process3EmployeeUnionRelationship.getBlockedPropagatedClassifications();
+
+        assertClassificationExistInList(propagatedClassifications, piiTag1);
+        assertClassificationExistInList(propagatedClassifications, piiTag2);
+        assertClassificationExistInList(blockedClassifications, piiTag3);
 
         // remove all blocked propagated classification entry
-        process3_employee_union_relationship.setBlockedPropagatedClassifications(Collections.emptySet());
-        relationshipStore.update(process3_employee_union_relationship);
+        process3EmployeeUnionRelationship.setBlockedPropagatedClassifications(Collections.emptySet());
 
-        process3_employee_union_relationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
-        propagatedClassifications            = process3_employee_union_relationship.getPropagatedClassifications();
-        blockedClassifications               = process3_employee_union_relationship.getBlockedPropagatedClassifications();
+        relationshipStore.update(process3EmployeeUnionRelationship);
 
-        assertClassificationExistInList(propagatedClassifications, PII_tag1);
-        assertClassificationExistInList(propagatedClassifications, PII_tag2);
-        assertClassificationExistInList(propagatedClassifications, PII_tag3);
+        process3EmployeeUnionRelationship = getRelationship(EMPLOYEES_UNION_PROCESS, EMPLOYEES_UNION_TABLE);
+        propagatedClassifications            = process3EmployeeUnionRelationship.getPropagatedClassifications();
+        blockedClassifications               = process3EmployeeUnionRelationship.getBlockedPropagatedClassifications();
+
+        assertClassificationExistInList(propagatedClassifications, piiTag1);
+        assertClassificationExistInList(propagatedClassifications, piiTag2);
+        assertClassificationExistInList(propagatedClassifications, piiTag3);
         assertTrue(blockedClassifications.isEmpty());
     }
 
-    @Test(dependsOnMethods = {"removeBlockedPropagatedClassifications"})
+    @Test(dependsOnMethods = "removeBlockedPropagatedClassifications")
     public void addClassification_removePropagationsTrue_DeleteCase() throws AtlasBaseException {
         AtlasEntity         orders = getEntity(ORDERS_TABLE);
-        AtlasClassification tag2      = new AtlasClassification("tag2");
+        AtlasClassification tag2   = new AtlasClassification("tag2");
 
         tag2.setEntityGuid(orders.getGuid());
         tag2.setPropagate(true);
@@ -476,18 +522,18 @@ public class ClassificationPropagationTest extends AtlasTestBase {
 
         assertClassificationExistInEntities(propagatedEntities, tag2);
 
-        AtlasEntity orders_process = getEntity(ORDERS_PROCESS);
-        AtlasEntity us_orders      = getEntity(US_ORDERS_TABLE);
+        AtlasEntity ordersProcess = getEntity(ORDERS_PROCESS);
+        AtlasEntity usOrders      = getEntity(US_ORDERS_TABLE);
 
-        deletePropagatedClassificationExpectFail(orders_process, tag2);
-        deletePropagatedClassificationExpectFail(us_orders, tag2);
+        deletePropagatedClassificationExpectFail(ordersProcess, tag2);
+        deletePropagatedClassificationExpectFail(usOrders, tag2);
 
         deleteEntity(ORDERS_TABLE);
         assertClassificationNotExistInEntity(ORDERS_PROCESS, tag2);
         assertClassificationNotExistInEntity(US_ORDERS_TABLE, tag2);
     }
 
-    @Test(dependsOnMethods = {"addClassification_removePropagationsTrue_DeleteCase"})
+    @Test(dependsOnMethods = "addClassification_removePropagationsTrue_DeleteCase")
     public void addClassification_removePropagationsFalse_DeleteCase() throws AtlasBaseException {
         AtlasEntity         employees = getEntity(EMPLOYEES_TABLE);
         AtlasClassification tag1      = new AtlasClassification("tag1");
@@ -502,15 +548,28 @@ public class ClassificationPropagationTest extends AtlasTestBase {
 
         assertClassificationExistInEntities(propagatedEntities, tag1);
 
-        AtlasEntity employees_process = getEntity(EMPLOYEES_PROCESS);
-        AtlasEntity us_employees      = getEntity(US_EMPLOYEES_TABLE);
+        AtlasEntity employeesProcess = getEntity(EMPLOYEES_PROCESS);
+        AtlasEntity usEmployees      = getEntity(US_EMPLOYEES_TABLE);
 
-        deletePropagatedClassificationExpectFail(employees_process, tag1);
-        deletePropagatedClassificationExpectFail(us_employees, tag1);
+        deletePropagatedClassificationExpectFail(employeesProcess, tag1);
+        deletePropagatedClassificationExpectFail(usEmployees, tag1);
 
         deleteEntity(EMPLOYEES_PROCESS);
         assertClassificationExistInEntity(EMPLOYEES_PROCESS, tag1);
         assertClassificationExistInEntity(US_EMPLOYEES_TABLE, tag1);
+    }
+
+    private void assertClassificationEquals(Set<AtlasClassification> propagatedClassifications, AtlasClassification expected) {
+        String expectedTypeName = expected.getTypeName();
+        for (AtlasClassification c : propagatedClassifications) {
+            if (c.getTypeName().equals(expectedTypeName)) {
+                assertTrue(c.isPropagate() == expected.isPropagate(), "isPropgate does not match");
+                assertTrue(c.getValidityPeriods() == expected.getValidityPeriods(), "validityPeriods do not match");
+                return;
+            }
+        }
+
+        fail(expectedTypeName + " could not be found");
     }
 
     private void assertClassificationExistInList(Set<AtlasClassification> classifications, AtlasClassification classification) {
@@ -595,27 +654,25 @@ public class ClassificationPropagationTest extends AtlasTestBase {
         }
     }
 
-    public static InputStream getZipSource(String fileName) throws IOException {
-        return ZipFileResourceTestUtils.getFileInputStream(fileName);
-    }
-
     private void loadSampleClassificationDefs() throws AtlasBaseException {
         AtlasClassificationDef tag1 = new AtlasClassificationDef("tag1");
         AtlasClassificationDef tag2 = new AtlasClassificationDef("tag2");
         AtlasClassificationDef tag3 = new AtlasClassificationDef("tag3");
         AtlasClassificationDef tag4 = new AtlasClassificationDef("tag4");
 
-        AtlasClassificationDef PII  = new AtlasClassificationDef("PII");
-        PII.addAttribute(new AtlasAttributeDef("type", "string"));
-        PII.addAttribute(new AtlasAttributeDef("valid", "boolean"));
+        AtlasClassificationDef pii = new AtlasClassificationDef("PII");
+
+        pii.addAttribute(new AtlasAttributeDef("type", "string"));
+        pii.addAttribute(new AtlasAttributeDef("valid", "boolean"));
 
         typeDefStore.createTypesDef(new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(),
-                                                      Arrays.asList(tag1, tag2, tag3, tag4, PII),
-                                                      Collections.emptyList(), Collections.emptyList()));
+                Arrays.asList(tag1, tag2, tag3, tag4, pii),
+                Collections.emptyList(), Collections.emptyList()));
     }
 
     private void initializeEntitiesMap() throws AtlasBaseException {
         entitiesMap = new HashMap<>();
+
         entitiesMap.put(HDFS_PATH_EMPLOYEES, "a3955120-ac17-426f-a4af-972ec8690e5f");
         entitiesMap.put(EMPLOYEES1_TABLE, "cdf0040e-739e-4590-a137-964d10e73573");
         entitiesMap.put(EMPLOYEES2_TABLE, "0a3e66b6-472c-48b3-8453-abdd24f9494f");
@@ -650,8 +707,8 @@ public class ClassificationPropagationTest extends AtlasTestBase {
         return CollectionUtils.isNotEmpty(response.getDeletedEntities());
     }
 
-    private AtlasClassification getClassification(AtlasEntity hdfs_employees, AtlasClassification tag2) throws AtlasBaseException {
-        return entityStore.getClassification(hdfs_employees.getGuid(), tag2.getTypeName());
+    private AtlasClassification getClassification(AtlasEntity hdfsEmployees, AtlasClassification tag2) throws AtlasBaseException {
+        return entityStore.getClassification(hdfsEmployees.getGuid(), tag2.getTypeName());
     }
 
     private void addClassification(AtlasEntity entity, AtlasClassification classification) throws AtlasBaseException {

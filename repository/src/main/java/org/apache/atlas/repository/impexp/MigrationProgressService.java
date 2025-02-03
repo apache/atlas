@@ -40,27 +40,39 @@ import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 @Singleton
 public class MigrationProgressService {
     private static final Logger LOG = LoggerFactory.getLogger(MigrationProgressService.class);
-    private static final String FILE_EXTENSION_ZIP = ".zip";
 
-    public static final String MIGRATION_QUERY_CACHE_TTL = "atlas.migration.query.cache.ttlInSecs";
+    public  static final String MIGRATION_QUERY_CACHE_TTL = "atlas.migration.query.cache.ttlInSecs";
+    private static final String FILE_EXTENSION_ZIP        = ".zip";
 
     @VisibleForTesting
-    static long DEFAULT_CACHE_TTL_IN_SECS = 120 * 1000; // 30 secs
+    static final long DEFAULT_CACHE_TTL_IN_SECS = 120 * 1000; // 30 secs
 
-    private final long            cacheValidity;
-    private final GraphDBMigrator migrator;
-    private       MigrationStatus cachedStatus;
-    private       long            cacheExpirationTime = 0;
-    private DataMigrationStatusService dataMigrationStatusService;
-    private boolean zipFileBasedMigrationImport;
+    private final long                       cacheValidity;
+    private final GraphDBMigrator            migrator;
+    private       MigrationStatus            cachedStatus;
+    private       long                       cacheExpirationTime;
+    private       DataMigrationStatusService dataMigrationStatusService;
+    private final boolean                    zipFileBasedMigrationImport;
 
     @Inject
     public MigrationProgressService(Configuration configuration, GraphDBMigrator migrator) {
-        this.migrator      = migrator;
-        this.cacheValidity = (configuration != null) ? configuration.getLong(MIGRATION_QUERY_CACHE_TTL, DEFAULT_CACHE_TTL_IN_SECS) : DEFAULT_CACHE_TTL_IN_SECS;
-
+        this.migrator                    = migrator;
+        this.cacheValidity               = (configuration != null) ? configuration.getLong(MIGRATION_QUERY_CACHE_TTL, DEFAULT_CACHE_TTL_IN_SECS) : DEFAULT_CACHE_TTL_IN_SECS;
         this.zipFileBasedMigrationImport = isZipFileBasedMigrationEnabled();
+
         initConditionallyZipFileBasedMigrator();
+    }
+
+    public MigrationStatus getStatus() {
+        return fetchStatus();
+    }
+
+    public String getFileNameFromMigrationProperty() {
+        try {
+            return ApplicationProperties.get().getString(ATLAS_MIGRATION_MODE_FILENAME, StringUtils.EMPTY);
+        } catch (AtlasException e) {
+            return StringUtils.EMPTY;
+        }
     }
 
     private void initConditionallyZipFileBasedMigrator() {
@@ -76,14 +88,10 @@ public class MigrationProgressService {
         return StringUtils.endsWithIgnoreCase(getFileNameFromMigrationProperty(), FILE_EXTENSION_ZIP);
     }
 
-    public MigrationStatus getStatus() {
-        return fetchStatus();
-    }
-
     private MigrationStatus fetchStatus() {
         long currentTime = System.currentTimeMillis();
 
-        if(resetCache(currentTime)) {
+        if (resetCache(currentTime)) {
             if (this.zipFileBasedMigrationImport) {
                 cachedStatus = dataMigrationStatusService.getStatus();
             } else {
@@ -97,18 +105,10 @@ public class MigrationProgressService {
     private boolean resetCache(long currentTime) {
         boolean ret = cachedStatus == null || currentTime > cacheExpirationTime;
 
-        if(ret) {
+        if (ret) {
             cacheExpirationTime = currentTime + cacheValidity;
         }
 
         return ret;
-    }
-
-    public String getFileNameFromMigrationProperty() {
-        try {
-            return ApplicationProperties.get().getString(ATLAS_MIGRATION_MODE_FILENAME, StringUtils.EMPTY);
-        } catch (AtlasException e) {
-            return StringUtils.EMPTY;
-        }
     }
 }

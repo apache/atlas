@@ -31,7 +31,6 @@ import java.util.Collection;
 
 import static org.apache.atlas.model.patches.AtlasPatch.PatchStatus.APPLIED;
 
-
 /**
  * This patch handler installs suggestions request handlers for already running Atlas instances.
  * Basically, for instances that were deployed with older versions.
