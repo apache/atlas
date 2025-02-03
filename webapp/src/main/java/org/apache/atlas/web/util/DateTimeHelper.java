@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,20 +28,17 @@ import java.util.regex.Pattern;
  * Support function to parse and format date.
  */
 public final class DateTimeHelper {
+    public static final  String  ISO8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
+    private static final String  DATE_PATTERN   = "(2\\d\\d\\d|19\\d\\d)-(0[1-9]|1[012])-(0[1-9]|1[0-9]|2[0-9]|3[01])T" + "([0-1][0-9]|2[0-3]):([0-5][0-9])Z";
+    private static final Pattern PATTERN        = Pattern.compile(DATE_PATTERN);
 
-    public static final String ISO8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'";
-    private static final String DATE_PATTERN =
-            "(2\\d\\d\\d|19\\d\\d)-(0[1-9]|1[012])-(0[1-9]|1[0-9]|2[0-9]|3[01])T" + "([0-1][0-9]|2[0-3]):([0-5][0-9])Z";
-    private static final Pattern PATTERN = Pattern.compile(DATE_PATTERN);
+    private static final ThreadLocal<DateFormat> DATE_FORMAT = ThreadLocal.withInitial(() -> {
+        DateFormat dateFormat = new SimpleDateFormat(ISO8601_FORMAT);
 
-    private static ThreadLocal<DateFormat> DATE_FORMAT = new ThreadLocal<DateFormat>() {
-        @Override
-        public DateFormat initialValue() {
-            DateFormat dateFormat = new SimpleDateFormat(ISO8601_FORMAT);
-            dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-            return dateFormat;
-        }
-    };
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+
+        return dateFormat;
+    });
 
     private DateTimeHelper() {
     }

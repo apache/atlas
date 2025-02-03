@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -27,13 +27,20 @@ import org.apache.atlas.model.lineage.AtlasLineageInfo;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
-import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
-import java.util.*;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
 
 /**
  * Entity Lineage v2 Integration Tests.
@@ -61,90 +68,103 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
 
     @Test
     public void testInputLineageInfo() throws Exception {
-        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE,
-                AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
+        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
 
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+
         queryParams.add(DIRECTION_PARAM, INPUT_DIRECTION);
         queryParams.add(DEPTH_PARAM, "5");
+
         ObjectNode response = atlasClientV1.callAPI(LINEAGE_V2_API, ObjectNode.class, queryParams, tableId);
-        Assert.assertNotNull(response);
-        System.out.println("input lineage info = " + response
-        );
+
+        assertNotNull(response);
+
+        System.out.println("input lineage info = " + response);
 
         AtlasLineageInfo inputLineageInfo = AtlasType.fromJson(response.toString(), AtlasLineageInfo.class);
 
         Map<String, AtlasEntityHeader> entities = inputLineageInfo.getGuidEntityMap();
-        Assert.assertNotNull(entities);
+
+        assertNotNull(entities);
 
         Set<AtlasLineageInfo.LineageRelation> relations = inputLineageInfo.getRelations();
-        Assert.assertNotNull(relations);
 
-        Assert.assertEquals(entities.size(), 6);
-        Assert.assertEquals(relations.size(), 5);
-        Assert.assertEquals(inputLineageInfo.getLineageDirection(), AtlasLineageInfo.LineageDirection.INPUT);
-        Assert.assertEquals(inputLineageInfo.getLineageDepth(), 5);
-        Assert.assertEquals(inputLineageInfo.getBaseEntityGuid(), tableId);
+        assertNotNull(relations);
+
+        assertEquals(entities.size(), 6);
+        assertEquals(relations.size(), 5);
+        assertEquals(inputLineageInfo.getLineageDirection(), AtlasLineageInfo.LineageDirection.INPUT);
+        assertEquals(inputLineageInfo.getLineageDepth(), 5);
+        assertEquals(inputLineageInfo.getBaseEntityGuid(), tableId);
     }
 
     @Test
     public void testOutputLineageInfo() throws Exception {
-        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE,
-                AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
+        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesFactTable).getId()._getId();
 
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+
         queryParams.add(DIRECTION_PARAM, OUTPUT_DIRECTION);
         queryParams.add(DEPTH_PARAM, "5");
+
         ObjectNode response = atlasClientV1.callAPI(LINEAGE_V2_API, ObjectNode.class, queryParams, tableId);
 
-        Assert.assertNotNull(response);
+        assertNotNull(response);
+
         System.out.println("output lineage info = " + response);
 
         AtlasLineageInfo outputLineageInfo = AtlasType.fromJson(response.toString(), AtlasLineageInfo.class);
 
         Map<String, AtlasEntityHeader> entities = outputLineageInfo.getGuidEntityMap();
-        Assert.assertNotNull(entities);
+
+        assertNotNull(entities);
 
         Set<AtlasLineageInfo.LineageRelation> relations = outputLineageInfo.getRelations();
-        Assert.assertNotNull(relations);
 
-        Assert.assertEquals(entities.size(), 5);
-        Assert.assertEquals(relations.size(), 4);
-        Assert.assertEquals(outputLineageInfo.getLineageDirection(), AtlasLineageInfo.LineageDirection.OUTPUT);
-        Assert.assertEquals(outputLineageInfo.getLineageDepth(), 5);
-        Assert.assertEquals(outputLineageInfo.getBaseEntityGuid(), tableId);
+        assertNotNull(relations);
+
+        assertEquals(entities.size(), 5);
+        assertEquals(relations.size(), 4);
+        assertEquals(outputLineageInfo.getLineageDirection(), AtlasLineageInfo.LineageDirection.OUTPUT);
+        assertEquals(outputLineageInfo.getLineageDepth(), 5);
+        assertEquals(outputLineageInfo.getBaseEntityGuid(), tableId);
     }
 
     @Test
     public void testLineageInfo() throws Exception {
-        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE,
-                AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
+        String tableId = atlasClientV1.getEntity(HIVE_TABLE_TYPE, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, salesMonthlyTable).getId()._getId();
 
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+
         queryParams.add(DIRECTION_PARAM, BOTH_DIRECTION);
         queryParams.add(DEPTH_PARAM, "5");
+
         ObjectNode response = atlasClientV1.callAPI(LINEAGE_V2_API, ObjectNode.class, queryParams, tableId);
 
-        Assert.assertNotNull(response);
+        assertNotNull(response);
+
         System.out.println("both lineage info = " + response);
 
         AtlasLineageInfo bothLineageInfo = AtlasType.fromJson(response.toString(), AtlasLineageInfo.class);
 
         Map<String, AtlasEntityHeader> entities = bothLineageInfo.getGuidEntityMap();
-        Assert.assertNotNull(entities);
+
+        assertNotNull(entities);
 
         Set<AtlasLineageInfo.LineageRelation> relations = bothLineageInfo.getRelations();
-        Assert.assertNotNull(relations);
 
-        Assert.assertEquals(entities.size(), 6);
-        Assert.assertEquals(relations.size(), 5);
-        Assert.assertEquals(bothLineageInfo.getLineageDirection(), AtlasLineageInfo.LineageDirection.BOTH);
-        Assert.assertEquals(bothLineageInfo.getLineageDepth(), 5);
-        Assert.assertEquals(bothLineageInfo.getBaseEntityGuid(), tableId);
+        assertNotNull(relations);
+
+        assertEquals(entities.size(), 6);
+        assertEquals(relations.size(), 5);
+        assertEquals(bothLineageInfo.getLineageDirection(), AtlasLineageInfo.LineageDirection.BOTH);
+        assertEquals(bothLineageInfo.getLineageDepth(), 5);
+        assertEquals(bothLineageInfo.getBaseEntityGuid(), tableId);
     }
 
     private void setupInstances() throws Exception {
         salesDBName = "Sales" + randomString();
+
         Id salesDB = database(salesDBName, "Sales Database", "John ETL", "hdfs://host:8000/apps/warehouse/sales");
 
         List<Referenceable> salesFactColumns = Arrays.asList(column("time_id", "int", "time id"), column("product_id", "int", "product id"),
@@ -152,29 +172,27 @@ public class EntityLineageJerseyResourceIT extends DataSetLineageJerseyResourceI
                 column("sales", "double", "product id"));
 
         salesFactTable = "sales_fact" + randomString();
+
         Id salesFact = table(salesFactTable, "sales fact table", salesDB, "Joe", "MANAGED", salesFactColumns);
 
         List<Referenceable> timeDimColumns = Arrays.asList(column("time_id", "int", "time id"), column("dayOfYear", "int", "day Of Year"),
-                        column("weekDay", "int", "week Day"));
+                column("weekDay", "int", "week Day"));
 
-        Id timeDim =
-                table("time_dim" + randomString(), "time dimension table", salesDB, "John Doe", "EXTERNAL",
+        Id timeDim = table("time_dim" + randomString(), "time dimension table", salesDB, "John Doe", "EXTERNAL",
                         timeDimColumns);
 
-        Id reportingDB =
-                database("Reporting" + randomString(), "reporting database", "Jane BI",
+        Id reportingDB = database("Reporting" + randomString(), "reporting database", "Jane BI",
                         "hdfs://host:8000/apps/warehouse/reporting");
 
-        Id salesFactDaily =
-                table("sales_fact_daily_mv" + randomString(), "sales fact daily materialized view", reportingDB,
+        Id salesFactDaily = table("sales_fact_daily_mv" + randomString(), "sales fact daily materialized view", reportingDB,
                         "Joe BI", "MANAGED", salesFactColumns);
 
         loadProcess("loadSalesDaily" + randomString(), "John ETL", Arrays.asList(salesFact, timeDim),
                 Collections.singletonList(salesFactDaily), "create table as select ", "plan", "id", "graph");
 
         salesMonthlyTable = "sales_fact_monthly_mv" + randomString();
-        Id salesFactMonthly =
-                table(salesMonthlyTable, "sales fact monthly materialized view", reportingDB, "Jane BI",
+
+        Id salesFactMonthly = table(salesMonthlyTable, "sales fact monthly materialized view", reportingDB, "Jane BI",
                         "MANAGED", salesFactColumns);
 
         loadProcess("loadSalesMonthly" + randomString(), "John ETL", Collections.singletonList(salesFactDaily),

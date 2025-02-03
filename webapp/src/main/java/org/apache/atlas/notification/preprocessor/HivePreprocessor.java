@@ -95,21 +95,9 @@ public class HivePreprocessor {
         }
     }
 
-
     static class HiveColumnPreprocessor extends EntityPreprocessor {
         public HiveColumnPreprocessor() {
             super(TYPE_HIVE_COLUMN);
-        }
-
-        @Override
-        public void preprocess(AtlasEntity entity, PreprocessorContext context) {
-            if (!context.isIgnoredEntity(entity.getGuid())) {
-                PreprocessAction action = context.getPreprocessActionForHiveTable(getHiveTableQualifiedName(getQualifiedName(entity)));
-
-                if (action == PreprocessAction.IGNORE || action == PreprocessAction.PRUNE) {
-                    context.addToIgnoredEntities(entity.getGuid());
-                }
-            }
         }
 
         public static String getHiveTableQualifiedName(String columnQualifiedName) {
@@ -130,12 +118,28 @@ public class HivePreprocessor {
 
             return clusterName != null ? (dbTableName + QNAME_SEP_CLUSTER_NAME + clusterName) : dbTableName;
         }
-    }
 
+        @Override
+        public void preprocess(AtlasEntity entity, PreprocessorContext context) {
+            if (!context.isIgnoredEntity(entity.getGuid())) {
+                PreprocessAction action = context.getPreprocessActionForHiveTable(getHiveTableQualifiedName(getQualifiedName(entity)));
+
+                if (action == PreprocessAction.IGNORE || action == PreprocessAction.PRUNE) {
+                    context.addToIgnoredEntities(entity.getGuid());
+                }
+            }
+        }
+    }
 
     static class HiveStorageDescPreprocessor extends EntityPreprocessor {
         public HiveStorageDescPreprocessor() {
             super(TYPE_HIVE_STORAGEDESC);
+        }
+
+        public static String getHiveTableQualifiedName(String sdQualifiedName) {
+            int sepPos = sdQualifiedName.lastIndexOf(QNAME_SD_SUFFIX);
+
+            return sepPos != -1 ? sdQualifiedName.substring(0, sepPos) : sdQualifiedName;
         }
 
         @Override
@@ -148,14 +152,7 @@ public class HivePreprocessor {
                 }
             }
         }
-
-        public static String getHiveTableQualifiedName(String sdQualifiedName) {
-            int sepPos = sdQualifiedName.lastIndexOf(QNAME_SD_SUFFIX);
-
-            return sepPos != -1 ? sdQualifiedName.substring(0, sepPos) : sdQualifiedName;
-        }
     }
-
 
     static class HiveProcessPreprocessor extends EntityPreprocessor {
         public HiveProcessPreprocessor() {
@@ -184,10 +181,10 @@ public class HivePreprocessor {
             if (context.isIgnoredEntity(entity.getGuid())) {
                 context.addToIgnoredEntities(entity); // so that this will be logged with typeName and qualifiedName
             } else {
-                Object inputs       = entity.getAttribute(ATTRIBUTE_INPUTS);
-                Object outputs      = entity.getAttribute(ATTRIBUTE_OUTPUTS);
-                String startTime    = String.valueOf(entity.getAttribute(ATTRIBUTE_START_TIME));
-                String endTime      = String.valueOf(entity.getAttribute(ATTRIBUTE_END_TIME));
+                Object inputs    = entity.getAttribute(ATTRIBUTE_INPUTS);
+                Object outputs   = entity.getAttribute(ATTRIBUTE_OUTPUTS);
+                String startTime = String.valueOf(entity.getAttribute(ATTRIBUTE_START_TIME));
+                String endTime   = String.valueOf(entity.getAttribute(ATTRIBUTE_END_TIME));
 
                 if (Strings.isNullOrEmpty(startTime) || "null".equals(startTime)) {
                     entity.setAttribute(ATTRIBUTE_START_TIME, System.currentTimeMillis());
@@ -216,13 +213,13 @@ public class HivePreprocessor {
                     // as these entities would be referenced by hive_table entities
                     if (!StringUtils.equals(entity.getTypeName(), TYPE_HIVE_COLUMN_LINEAGE)) {
                         if (!isInputsEmpty) {
-                            for (Object obj : (Collection) inputs) {
+                            for (Object obj : (Collection<?>) inputs) {
                                 String guid = context.getGuid(obj);
 
                                 context.addToReferredEntitiesToMove(guid);
                             }
                         } else if (!isOutputsEmpty) {
-                            for (Object obj : (Collection) outputs) {
+                            for (Object obj : (Collection<?>) outputs) {
                                 String guid = context.getGuid(obj);
 
                                 context.addToReferredEntitiesToMove(guid);
@@ -240,19 +237,20 @@ public class HivePreprocessor {
                 return;
             }
 
-            String[] relationshipNames = new String[]{ATTRIBUTE_INPUTS, ATTRIBUTE_OUTPUTS};
+            String[] relationshipNames = new String[] {ATTRIBUTE_INPUTS, ATTRIBUTE_OUTPUTS};
             for (String relationshipName : relationshipNames) {
                 Object val = entity.getRelationshipAttribute(relationshipName);
                 if (!isEmpty(val) && val instanceof List) {
-                    updateListWithGuids(context, (List) val);
+                    updateListWithGuids(context, (List<?>) val);
                 }
             }
         }
 
-        private void updateListWithGuids(PreprocessorContext context, List list) {
+        private void updateListWithGuids(PreprocessorContext context, List<?> list) {
             for (Object o : list) {
-                String qn = getQualifiedName(o);
+                String qn   = getQualifiedName(o);
                 String guid = context.getGuidForDeletedEntity(qn);
+
                 if (StringUtils.isEmpty(guid)) {
                     continue;
                 }
@@ -262,16 +260,16 @@ public class HivePreprocessor {
         }
 
         private int getCollectionSize(Object obj) {
-            return (obj instanceof Collection) ? ((Collection) obj).size() : 0;
+            return (obj instanceof Collection) ? ((Collection<?>) obj).size() : 0;
         }
 
         private void removeIgnoredObjectIds(Object obj, PreprocessorContext context) {
-            if (obj == null || !(obj instanceof Collection)) {
+            if (!(obj instanceof Collection)) {
                 return;
             }
 
-            Collection   objList  = (Collection) obj;
-            List<Object> toRemove = null;
+            Collection<?> objList  = (Collection<?>) obj;
+            List<Object>  toRemove = null;
 
             for (Object objElem : objList) {
                 boolean removeEntry = false;
@@ -327,7 +325,7 @@ public class HivePreprocessor {
 
                 if (removeEntry) {
                     if (toRemove == null) {
-                        toRemove = new ArrayList();
+                        toRemove = new ArrayList<>();
                     }
 
                     toRemove.add(objElem);

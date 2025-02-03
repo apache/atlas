@@ -25,60 +25,53 @@ import java.security.Principal;
 import java.util.Collections;
 import java.util.Set;
 
-public class PamPrincipal extends Object implements Principal {
-    private String userName;
-    private String gecos;
-    private String homeDir;
-    private String shell;
-    private int uid;
-    private int gid;
-    private Set<String> groups;
+public class PamPrincipal implements Principal {
+    private final String userName;
+    private final String gecos;
+    private final String homeDir;
+    private final String shell;
+    private final int    uid;
+    private final int    gid;
+    private final Set<String> groups;
 
-    public PamPrincipal(UnixUser user)
-    {
+    public PamPrincipal(UnixUser user) {
         super();
+
         userName = user.getUserName();
-        gecos = user.getGecos();
-        homeDir = user.getDir();
-        shell = user.getShell();
-        uid = user.getUID();
-        gid = user.getGID();
-        groups = Collections.unmodifiableSet(user.getGroups());
+        gecos    = user.getGecos();
+        homeDir  = user.getDir();
+        shell    = user.getShell();
+        uid      = user.getUID();
+        gid      = user.getGID();
+        groups   = Collections.unmodifiableSet(user.getGroups());
     }
 
     @Override
-    public String getName()
-    {
+    public String getName() {
         return userName;
     }
 
-    public String getGecos()
-    {
+    public String getGecos() {
         return gecos;
     }
 
-    public String getHomeDir()
-    {
+    public String getHomeDir() {
         return homeDir;
     }
 
-    public String getShell()
-    {
+    public String getShell() {
         return shell;
     }
 
-    public int getUid()
-    {
+    public int getUid() {
         return uid;
     }
 
-    public int getGid()
-    {
+    public int getGid() {
         return gid;
     }
 
-    public Set<String> getGroups()
-    {
+    public Set<String> getGroups() {
         return groups;
     }
 }

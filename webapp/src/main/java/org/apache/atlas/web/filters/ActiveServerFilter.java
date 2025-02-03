@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -36,6 +36,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.HttpHeaders;
+
 import java.io.IOException;
 
 /**
@@ -48,17 +49,20 @@ import java.io.IOException;
  */
 @Component
 public class ActiveServerFilter implements Filter {
-
     private static final Logger LOG = LoggerFactory.getLogger(ActiveServerFilter.class);
+
     private static final String MIGRATION_STATUS_STATIC_PAGE = "migration-status.html";
 
+    private final String[]            adminUriNotFiltered = {"/admin/export", "/admin/import", "/admin/importfile", "/admin/audits",
+            "/admin/purge", "/admin/expimp/audit", "/admin/metrics", "/admin/server", "/admin/audit/", "admin/tasks",
+            "/admin/debug/metrics", "/admin/audits/ageout"};
     private final ActiveInstanceState activeInstanceState;
-    private ServiceState serviceState;
+    private final ServiceState        serviceState;
 
     @Inject
     public ActiveServerFilter(ActiveInstanceState activeInstanceState, ServiceState serviceState) {
         this.activeInstanceState = activeInstanceState;
-        this.serviceState = serviceState;
+        this.serviceState        = serviceState;
     }
 
     @Override
@@ -76,32 +80,40 @@ public class ActiveServerFilter implements Filter {
      * @throws ServletException
      */
     @Override
-    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse,
-                         FilterChain filterChain) throws IOException, ServletException {
+    public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
         if (isFilteredURI(servletRequest)) {
-            LOG.debug("Is a filtered URI: {}. Passing request downstream.",
-                    ((HttpServletRequest)servletRequest).getRequestURI());
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Is a filtered URI: {}. Passing request downstream.", ((HttpServletRequest) servletRequest).getRequestURI());
+            }
+
             filterChain.doFilter(servletRequest, servletResponse);
         } else if (isInstanceActive()) {
             LOG.debug("Active. Passing request downstream");
+
             filterChain.doFilter(servletRequest, servletResponse);
         } else if (serviceState.isInstanceInTransition()) {
             HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
+
             LOG.error("Instance in transition. Service may not be ready to return a result");
+
             httpServletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
         } else if (serviceState.isInstanceInMigration()) {
             if (isRootURI(servletRequest)) {
                 handleMigrationRedirect(servletRequest, servletResponse);
             }
+
             HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
+
             LOG.error("Instance in migration. Service may not be ready to return a result");
+
             httpServletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
         } else {
             HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
-            String activeServerAddress = activeInstanceState.getActiveServerAddress();
+            String              activeServerAddress = activeInstanceState.getActiveServerAddress();
+
             if (activeServerAddress == null) {
-                LOG.error("Could not retrieve active server address as it is null. Cannot redirect request {}",
-                        ((HttpServletRequest)servletRequest).getRequestURI());
+                LOG.error("Could not retrieve active server address as it is null. Cannot redirect request {}", ((HttpServletRequest) servletRequest).getRequestURI());
+
                 httpServletResponse.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             } else {
                 handleRedirect((HttpServletRequest) servletRequest, httpServletResponse, activeServerAddress);
@@ -109,17 +121,23 @@ public class ActiveServerFilter implements Filter {
         }
     }
 
-    final String adminUriNotFiltered[] = { "/admin/export", "/admin/import", "/admin/importfile", "/admin/audits",
-            "/admin/purge", "/admin/expimp/audit", "/admin/metrics", "/admin/server", "/admin/audit/", "admin/tasks",
-            "/admin/debug/metrics", "/admin/audits/ageout"};
+    @Override
+    public void destroy() {
+    }
+
+    boolean isInstanceActive() {
+        return serviceState.getState() == ServiceState.ServiceStateValue.ACTIVE;
+    }
+
     private boolean isFilteredURI(ServletRequest servletRequest) {
         HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
-        String requestURI = httpServletRequest.getRequestURI();
+        String             requestURI         = httpServletRequest.getRequestURI();
 
-        if(requestURI.contains("/admin/")) {
+        if (requestURI.contains("/admin/")) {
             for (String s : adminUriNotFiltered) {
                 if (requestURI.contains(s)) {
                     LOG.trace("URL not supported in HA mode: {}", requestURI);
+
                     return false;
                 }
             }
@@ -132,20 +150,16 @@ public class ActiveServerFilter implements Filter {
 
     private boolean isRootURI(ServletRequest servletRequest) {
         HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
-        String requestURI = httpServletRequest.getRequestURI();
+        String             requestURI         = httpServletRequest.getRequestURI();
+
         return requestURI.equals("/");
     }
 
-    boolean isInstanceActive() {
-        return serviceState.getState() == ServiceState.ServiceStateValue.ACTIVE;
-    }
-
     private void handleMigrationRedirect(ServletRequest servletRequest, ServletResponse servletResponse) throws IOException {
-
         HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
-        HttpServletRequest httpServletRequest = (HttpServletRequest) servletRequest;
+        HttpServletRequest  httpServletRequest  = (HttpServletRequest) servletRequest;
+        String              redirectLocation    = httpServletRequest.getRequestURL() + MIGRATION_STATUS_STATIC_PAGE;
 
-        String redirectLocation = httpServletRequest.getRequestURL() + MIGRATION_STATUS_STATIC_PAGE;
         if (isUnsafeHttpMethod(httpServletRequest)) {
             httpServletResponse.setHeader(HttpHeaders.LOCATION, redirectLocation);
             httpServletResponse.setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
@@ -154,15 +168,14 @@ public class ActiveServerFilter implements Filter {
         }
     }
 
-    private void handleRedirect(HttpServletRequest servletRequest, HttpServletResponse httpServletResponse,
-                                String activeServerAddress) throws IOException {
-        String requestURI = servletRequest.getRequestURI();
+    private void handleRedirect(HttpServletRequest servletRequest, HttpServletResponse httpServletResponse, String activeServerAddress) throws IOException {
+        String requestURI  = servletRequest.getRequestURI();
         String queryString = servletRequest.getQueryString();
 
         if (queryString != null && (!queryString.isEmpty())) {
             //Decoding the queryString from UI to avoid partial encoding issue and re-encoding.
             String decodedQueryString = UriUtils.decode(queryString, "UTF-8");
-            queryString               = UriUtils.encodeQuery(decodedQueryString, "UTF-8");
+            queryString = UriUtils.encodeQuery(decodedQueryString, "UTF-8");
         }
 
         if ((queryString != null) && (!queryString.isEmpty())) {
@@ -172,8 +185,11 @@ public class ActiveServerFilter implements Filter {
         if (requestURI == null) {
             requestURI = "/";
         }
+
         String redirectLocation = activeServerAddress + requestURI;
+
         LOG.info("Not active. Redirecting to {}", redirectLocation);
+
         // A POST/PUT/DELETE require special handling by sending HTTP 307 instead of the regular 301/302.
         // Reference: http://stackoverflow.com/questions/2068418/whats-the-difference-between-a-302-and-a-307-redirect
         if (isUnsafeHttpMethod(servletRequest)) {
@@ -186,13 +202,7 @@ public class ActiveServerFilter implements Filter {
 
     private boolean isUnsafeHttpMethod(HttpServletRequest httpServletRequest) {
         String method = httpServletRequest.getMethod();
-        return (method.equals(HttpMethod.POST)) ||
-                (method.equals(HttpMethod.PUT)) ||
-                (method.equals(HttpMethod.DELETE));
-    }
 
-    @Override
-    public void destroy() {
-
+        return (method.equals(HttpMethod.POST)) || (method.equals(HttpMethod.PUT)) || (method.equals(HttpMethod.DELETE));
     }
 }

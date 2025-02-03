@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -34,34 +34,36 @@ import org.apache.http.NameValuePair;
 import org.apache.http.client.utils.URLEncodedUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.util.UriUtils;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
 import java.io.IOException;
 import java.io.StringWriter;
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.web.util.UriUtils;
 
 /**
  * Utility functions for dealing with servlets.
  */
 public final class Servlets {
-
     private static final Logger LOG = LoggerFactory.getLogger(Servlets.class);
+
+    public static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
+    public static final String BINARY          = MediaType.APPLICATION_OCTET_STREAM;
+
+    private static final int     QUERY_PARAM_MAX_LENGTH = AtlasConfiguration.QUERY_PARAM_MAX_LENGTH.getInt();
+    private static final Charset UTF8_CHARSET           = StandardCharsets.UTF_8;
+    private static final String  DO_AS                  = "doAs";
 
     private Servlets() {
         /* singleton */
     }
-
-    public static final String JSON_MEDIA_TYPE = MediaType.APPLICATION_JSON + "; charset=UTF-8";
-    public static final String BINARY = MediaType.APPLICATION_OCTET_STREAM;
-
-    private static final int QUERY_PARAM_MAX_LENGTH = AtlasConfiguration.QUERY_PARAM_MAX_LENGTH.getInt();
 
     /**
      * Returns the user of the given request.
@@ -71,21 +73,25 @@ public final class Servlets {
      */
     public static String getUserFromRequest(HttpServletRequest httpRequest) {
         String user = httpRequest.getRemoteUser();
+
         if (!StringUtils.isEmpty(user)) {
             return user;
         }
 
         user = httpRequest.getParameter("user.name"); // available in query-param
+
         if (!StringUtils.isEmpty(user)) {
             return user;
         }
 
         user = httpRequest.getHeader("Remote-User"); // backwards-compatibility
+
         if (!StringUtils.isEmpty(user)) {
             return user;
         }
 
         user = getDoAsUser(httpRequest);
+
         if (!StringUtils.isEmpty(user)) {
             return user;
         }
@@ -93,12 +99,10 @@ public final class Servlets {
         return null;
     }
 
-    private static final Charset UTF8_CHARSET = Charset.forName("UTF-8");
-    private static final String DO_AS = "doAs";
-
     public static String getDoAsUser(HttpServletRequest request) {
         if (StringUtils.isNoneEmpty(request.getQueryString())) {
             List<NameValuePair> list = URLEncodedUtils.parse(request.getQueryString(), UTF8_CHARSET);
+
             if (list != null) {
                 for (NameValuePair nv : list) {
                     if (DO_AS.equals(nv.getName())) {
@@ -107,6 +111,7 @@ public final class Servlets {
                 }
             }
         }
+
         return null;
     }
 
@@ -118,6 +123,7 @@ public final class Servlets {
      */
     public static String getRequestURI(HttpServletRequest httpRequest) {
         final StringBuilder url = new StringBuilder(100).append(httpRequest.getRequestURI());
+
         if (httpRequest.getQueryString() != null) {
             url.append('?').append(httpRequest.getQueryString());
         }
@@ -133,6 +139,7 @@ public final class Servlets {
      */
     public static String getRequestURL(HttpServletRequest httpRequest) {
         final StringBuilder url = new StringBuilder(100).append(httpRequest.getRequestURL());
+
         if (httpRequest.getQueryString() != null) {
             url.append('?').append(httpRequest.getQueryString());
         }
@@ -141,17 +148,15 @@ public final class Servlets {
     }
 
     public static Response getErrorResponse(AtlasBaseException e) {
-        String message = e.getMessage() == null ? "Failed with " + e.getClass().getName() : e.getMessage();
-        Response response = getErrorResponse(message, e.getAtlasErrorCode().getHttpCode());
+        String   message  = e.getMessage() == null ? "Failed with " + e.getClass().getName() : e.getMessage();
 
-        return response;
+        return getErrorResponse(message, e.getAtlasErrorCode().getHttpCode());
     }
 
     public static Response getErrorResponse(Throwable e, Response.Status status) {
-        String message = e.getMessage() == null ? "Failed with " + e.getClass().getName() : e.getMessage();
-        Response response = getErrorResponse(message, status);
+        String   message  = e.getMessage() == null ? "Failed with " + e.getClass().getName() : e.getMessage();
 
-        return response;
+        return getErrorResponse(message, status);
     }
 
     public static Response getErrorResponse(String message, Response.Status status) {
@@ -168,7 +173,9 @@ public final class Servlets {
         }
 
         StringWriter writer = new StringWriter();
+
         IOUtils.copy(request.getInputStream(), writer);
+
         return writer.toString();
     }
 
@@ -178,6 +185,7 @@ public final class Servlets {
 
     public static String escapeJsonString(String inputStr) {
         ParamChecker.notNull(inputStr, "Input String cannot be null");
+
         return StringEscapeUtils.escapeJson(inputStr);
     }
 
@@ -216,9 +224,10 @@ public final class Servlets {
 
     public static String decodeQueryString(String query) throws AtlasBaseException {
         try {
-            return UriUtils.decode(query,"UTF-8");
+            return UriUtils.decode(query, "UTF-8");
         } catch (Exception e) {
-            LOG.error("Error occurred while decoding query:" + query, e.getMessage());
+            LOG.error("Error occurred while decoding query: {}{}", e.getMessage(), query);
+
             throw new AtlasBaseException(e.getMessage());
         }
     }

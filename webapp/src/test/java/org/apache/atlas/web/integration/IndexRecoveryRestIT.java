@@ -20,17 +20,17 @@ package org.apache.atlas.web.integration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.commons.lang.StringUtils;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.time.Instant;
 import java.util.Map;
 
-import static org.apache.atlas.repository.Constants.*;
-
+import static org.apache.atlas.repository.Constants.INDEX_RECOVERY_PREFIX;
+import static org.apache.atlas.repository.Constants.PROPERTY_KEY_INDEX_RECOVERY_CUSTOM_TIME;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotEquals;
 
 public class IndexRecoveryRestIT extends BaseResourceIT {
-
     @Test
     public void startIndexRecovery() throws Exception {
         Map<String, String> indexRecoveryDataBefore = atlasClientV2.getIndexRecoveryData();
@@ -38,17 +38,18 @@ public class IndexRecoveryRestIT extends BaseResourceIT {
         try {
             atlasClientV2.startIndexRecovery(null);
         } catch (AtlasServiceException e) {
-            Assert.assertEquals(e.getStatus().getStatusCode(), AtlasErrorCode.BAD_REQUEST.getHttpCode().getStatusCode());
+            assertEquals(e.getStatus().getStatusCode(), AtlasErrorCode.BAD_REQUEST.getHttpCode().getStatusCode());
         }
 
         long now = System.currentTimeMillis();
+
         atlasClientV2.startIndexRecovery(Instant.ofEpochMilli(now));
 
         Map<String, String> indexRecoveryDataAfter = atlasClientV2.getIndexRecoveryData();
 
         String customTimeKey = StringUtils.removeStart(PROPERTY_KEY_INDEX_RECOVERY_CUSTOM_TIME, INDEX_RECOVERY_PREFIX);
-        Assert.assertNotEquals(indexRecoveryDataBefore.get(customTimeKey), indexRecoveryDataAfter.get(customTimeKey));
-        Assert.assertEquals(Instant.ofEpochMilli(now).toString(), indexRecoveryDataAfter.get(customTimeKey));
 
+        assertNotEquals(indexRecoveryDataBefore.get(customTimeKey), indexRecoveryDataAfter.get(customTimeKey));
+        assertEquals(Instant.ofEpochMilli(now).toString(), indexRecoveryDataAfter.get(customTimeKey));
     }
 }

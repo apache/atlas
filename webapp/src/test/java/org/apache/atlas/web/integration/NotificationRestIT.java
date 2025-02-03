@@ -25,7 +25,7 @@ import org.testng.annotations.Test;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 
 import static org.apache.atlas.kafka.KafkaNotification.ATLAS_HOOK_TOPIC;
@@ -33,41 +33,37 @@ import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
 
 public class NotificationRestIT extends BaseResourceIT {
-
     @Test
     public void unAuthPostNotification() throws IOException {
-        AtlasClientV2 unAuthClient  = new AtlasClientV2(atlasUrls, new String[]{"admin", "wr0ng_pa55w0rd"});
+        AtlasClientV2 unAuthClient = new AtlasClientV2(atlasUrls, new String[] {"admin", "wr0ng_pa55w0rd"});
 
         try {
-            unAuthClient.postNotificationToTopic(ATLAS_HOOK_TOPIC, new ArrayList<String>(Arrays.asList("Dummy")));
-        } catch(AtlasServiceException e) {
+            unAuthClient.postNotificationToTopic(ATLAS_HOOK_TOPIC, new ArrayList<String>(Collections.singletonList("Dummy")));
+        } catch (AtlasServiceException e) {
             assertNotNull(e.getStatus(), "expected server error code in the status");
         }
     }
 
     @Test
     public void postNotificationBasicTest() throws Exception {
-        String db_name            = "db_" + randomString();
-        String cluster_name       = "cl" + randomString();
-        String qualifiedName      = db_name + "@" + cluster_name;
+        String dbName        = "db_" + randomString();
+        String clusterName   = "cl" + randomString();
+        String qualifiedName = dbName + "@" + clusterName;
+
         String notificationString = TestResourceFileUtils.getJson("notifications/create-db")
-                .replaceAll("--name--", db_name).replaceAll("--clName--", cluster_name)
+                .replaceAll("--name--", dbName).replaceAll("--clName--", clusterName)
                 .replace("\"--ts--\"", String.valueOf((new Date()).getTime()));
 
         try {
-            atlasClientV2.postNotificationToTopic(ATLAS_HOOK_TOPIC, new ArrayList<String>(Arrays.asList(notificationString)));
+            atlasClientV2.postNotificationToTopic(ATLAS_HOOK_TOPIC, new ArrayList<String>(Collections.singletonList(notificationString)));
 
-            waitFor(MAX_WAIT_TIME, new Predicate() {
-                @Override
-                public boolean evaluate() throws Exception {
-                    ArrayNode results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE_BUILTIN, qualifiedName));
+            waitFor(MAX_WAIT_TIME, () -> {
+                ArrayNode results = searchByDSL(String.format("%s where qualifiedName='%s'", DATABASE_TYPE_BUILTIN, qualifiedName));
 
-                    return results.size() == 1;
-                }
+                return results.size() == 1;
             });
-        } catch(AtlasServiceException e) {
+        } catch (AtlasServiceException e) {
             assertNull(e.getStatus(), "expected no server error code in the status");
         }
-
     }
 }

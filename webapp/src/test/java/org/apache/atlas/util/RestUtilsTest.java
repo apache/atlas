@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,13 +16,6 @@
  * limitations under the License.
  */
 package org.apache.atlas.util;
-
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import java.util.*;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
@@ -43,10 +36,24 @@ import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
-import org.apache.atlas.v1.model.typedef.*;
+import org.apache.atlas.v1.model.typedef.AttributeDefinition;
+import org.apache.atlas.v1.model.typedef.ClassTypeDefinition;
+import org.apache.atlas.v1.model.typedef.Multiplicity;
+import org.apache.atlas.v1.model.typedef.TypesDef;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
-import org.testng.Assert;
 import org.testng.annotations.Test;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertEquals;
 
 /**
  * Validates that conversion from V1 to legacy types (and back) is consistent.  This also tests
@@ -55,21 +62,19 @@ import org.testng.annotations.Test;
  * found in that area.
  */
 public class RestUtilsTest {
-
     @Test
     // "containingDatabase"
     // in tables attribute in "database" type is lost.  See ATLAS-1528.
     public void testBidirectonalCompositeMappingConsistent() throws AtlasBaseException {
-
         ClassTypeDefinition dbV1Type = TypesUtil.createClassTypeDef("database", "", Collections.emptySet(),
-                                           new AttributeDefinition("tables", AtlasBaseTypeDef.getArrayTypeName("table"),
-                                                                   Multiplicity.OPTIONAL, true, "containingDatabase"));
+                new AttributeDefinition("tables", AtlasBaseTypeDef.getArrayTypeName("table"),
+                        Multiplicity.OPTIONAL, true, "containingDatabase"));
 
         ClassTypeDefinition tableV1Type = TypesUtil.createClassTypeDef("table", "", Collections.emptySet(),
-                                            new AttributeDefinition("containingDatabase", "database",
-                                                                    Multiplicity.OPTIONAL, false, "tables"));
+                new AttributeDefinition("containingDatabase", "database",
+                        Multiplicity.OPTIONAL, false, "tables"));
 
-        testV1toV2toV1Conversion(Arrays.asList(dbV1Type, tableV1Type), new boolean[] { true, false });
+        testV1toV2toV1Conversion(Arrays.asList(dbV1Type, tableV1Type), new boolean[] {true, false});
     }
 
     @Test
@@ -77,21 +82,21 @@ public class RestUtilsTest {
     // in "table" attribute in "database".  See ATLAS-1528.
     public void testBidirectonalNonCompositeMappingConsistent() throws AtlasBaseException {
         ClassTypeDefinition dbV1Type = TypesUtil.createClassTypeDef("database", "", Collections.emptySet(),
-                                        new AttributeDefinition("tables", AtlasBaseTypeDef.getArrayTypeName("table"),
-                                                                Multiplicity.OPTIONAL, false, "containingDatabase"));
+                new AttributeDefinition("tables", AtlasBaseTypeDef.getArrayTypeName("table"),
+                        Multiplicity.OPTIONAL, false, "containingDatabase"));
 
         ClassTypeDefinition tableV1Type = TypesUtil.createClassTypeDef("table", "", Collections.emptySet(),
-                                           new AttributeDefinition("containingDatabase", "database",
-                                                                   Multiplicity.OPTIONAL, false, "tables"));
+                new AttributeDefinition("containingDatabase", "database",
+                        Multiplicity.OPTIONAL, false, "tables"));
 
-        testV1toV2toV1Conversion(Arrays.asList(dbV1Type, tableV1Type), new boolean[] { false, false });
+        testV1toV2toV1Conversion(Arrays.asList(dbV1Type, tableV1Type), new boolean[] {false, false});
     }
 
     private AtlasTypeDefGraphStoreV2 makeTypeStore(AtlasTypeRegistry reg) {
         AtlasTypeDefGraphStoreV2 result = mock(AtlasTypeDefGraphStoreV2.class);
 
         for (AtlasEntityType type : reg.getAllEntityTypes()) {
-            String      typeName = type.getTypeName();
+            String      typeName   = type.getTypeName();
             AtlasVertex typeVertex = mock(AtlasVertex.class);
 
             when(result.isTypeVertex(eq(typeVertex), any(TypeCategory.class))).thenReturn(true);
@@ -121,7 +126,7 @@ public class RestUtilsTest {
         String                   attribJson   = AtlasStructDefStoreV2.toJsonFromAttribute(attribute);
         Map                      attrInfo     = AtlasType.fromJson(attribJson, Map.class);
 
-        Assert.assertEquals(attrInfo.get("isComposite"), compositeExpected);
+        assertEquals(attrInfo.get("isComposite"), compositeExpected);
 
         return AtlasStructDefStoreV2.toAttributeDefFromJson(structDef, attrInfo, typeDefStore);
     }
@@ -130,13 +135,13 @@ public class RestUtilsTest {
         List<AtlasEntityDef> convertedEntityDefs = convertV1toV2(typesToTest);
         AtlasTypeRegistry    registry            = createRegistry(convertedEntityDefs);
 
-        for(int i = 0 ; i < convertedEntityDefs.size(); i++) {
-            AtlasEntityDef def =  convertedEntityDefs.get(i);
+        for (int i = 0; i < convertedEntityDefs.size(); i++) {
+            AtlasEntityDef def = convertedEntityDefs.get(i);
 
             for (AtlasAttributeDef attrDef : def.getAttributeDefs()) {
                 AtlasAttributeDef converted = convertToJsonAndBack(registry, def, attrDef, compositeExpected[i]);
 
-                Assert.assertEquals(converted, attrDef);
+                assertEquals(converted, attrDef);
             }
         }
 
@@ -145,12 +150,12 @@ public class RestUtilsTest {
         for (int i = 0; i < typesToTest.size(); i++) {
             ClassTypeDefinition convertedBack = convertedBackTypeDefs.get(i);
 
-            Assert.assertEquals(convertedBack, typesToTest.get(i));
+            assertEquals(convertedBack, typesToTest.get(i));
 
             List<AttributeDefinition> attributeDefinitions = convertedBack.getAttributeDefinitions();
 
-            if (attributeDefinitions.size() > 0) {
-                Assert.assertEquals(attributeDefinitions.get(0).getIsComposite(), compositeExpected[i]);
+            if (!attributeDefinitions.isEmpty()) {
+                assertEquals(attributeDefinitions.get(0).getIsComposite(), compositeExpected[i]);
             }
         }
     }
@@ -181,13 +186,12 @@ public class RestUtilsTest {
     }
 
     private List<AtlasEntityDef> convertV1toV2(List<ClassTypeDefinition> types) throws AtlasBaseException {
-        List<ClassTypeDefinition> classTypeList       = new ArrayList(types);
+        List<ClassTypeDefinition> classTypeList       = new ArrayList<>(types);
         TypesDef                  toConvert           = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), classTypeList);
         String                    json                = AtlasType.toV1Json(toConvert);
         AtlasTypeRegistry         emptyRegistry       = new AtlasTypeRegistry();
         AtlasTypesDef             converted           = TypeConverterUtil.toAtlasTypesDef(json, emptyRegistry);
-        List<AtlasEntityDef>      convertedEntityDefs = converted.getEntityDefs();
 
-        return convertedEntityDefs;
+        return converted.getEntityDefs();
     }
 }

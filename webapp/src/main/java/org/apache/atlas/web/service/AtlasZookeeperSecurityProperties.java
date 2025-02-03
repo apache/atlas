@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,22 +19,27 @@
 package org.apache.atlas.web.service;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Preconditions;
 import org.apache.commons.lang.StringUtils;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 
+import static com.google.common.base.Preconditions.checkArgument;
+
 /**
  * A class that parses configuration strings into Zookeeper ACL and Auth values.
  */
 public class AtlasZookeeperSecurityProperties {
+    private AtlasZookeeperSecurityProperties() {
+        // to block instantiation
+    }
 
     public static ACL parseAcl(String aclString, ACL defaultAcl) {
         if (StringUtils.isEmpty(aclString)) {
             return defaultAcl;
         }
+
         return parseAcl(aclString);
     }
 
@@ -46,20 +51,8 @@ public class AtlasZookeeperSecurityProperties {
      */
     public static ACL parseAcl(String aclString) {
         String[] aclComponents = getComponents(aclString, "acl", "scheme:id");
-        return new ACL(ZooDefs.Perms.ALL, new Id(aclComponents[0], aclComponents[1]));
-    }
 
-    private static String[] getComponents(String securityString, String variableName, String formatExample) {
-        Preconditions.checkArgument(!StringUtils.isEmpty(securityString),
-                String.format("%s cannot be null or empty. " +
-                "Needs to be of form %s", variableName, formatExample));
-        String[] aclComponents = securityString.split(":", 2);
-        if (aclComponents.length != 2) {
-            throw new IllegalArgumentException(
-                    String.format("Invalid %s string. " +
-                    "Needs to be of form %s", variableName, formatExample));
-        }
-        return aclComponents;
+        return new ACL(ZooDefs.Perms.ALL, new Id(aclComponents[0], aclComponents[1]));
     }
 
     /**
@@ -69,6 +62,19 @@ public class AtlasZookeeperSecurityProperties {
      */
     public static AuthInfo parseAuth(String authString) {
         String[] authComponents = getComponents(authString, "authString", "scheme:authString");
+
         return new AuthInfo(authComponents[0], authComponents[1].getBytes(Charsets.UTF_8));
+    }
+
+    private static String[] getComponents(String securityString, String variableName, String formatExample) {
+        checkArgument(!StringUtils.isEmpty(securityString), String.format("%s cannot be null or empty. Needs to be of form %s", variableName, formatExample));
+
+        String[] aclComponents = securityString.split(":", 2);
+
+        if (aclComponents.length != 2) {
+            throw new IllegalArgumentException(String.format("Invalid %s string. Needs to be of form %s", variableName, formatExample));
+        }
+
+        return aclComponents;
     }
 }

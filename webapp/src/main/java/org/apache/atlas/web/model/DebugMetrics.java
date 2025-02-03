@@ -28,7 +28,7 @@ public class DebugMetrics {
 
     public DebugMetrics() {}
 
-    public DebugMetrics(String name){
+    public DebugMetrics(String name) {
         this.name = name;
     }
 

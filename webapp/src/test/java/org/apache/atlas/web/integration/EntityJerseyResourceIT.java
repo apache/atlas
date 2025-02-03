@@ -27,40 +27,47 @@ import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.model.legacy.EntityResult;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
+import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
-import org.apache.atlas.v1.model.typedef.*;
-import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.v1.model.typedef.ClassTypeDefinition;
+import org.apache.atlas.v1.model.typedef.TraitTypeDefinition;
+import org.apache.atlas.v1.model.typedef.TypesDef;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
-import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
 import org.joda.time.DateTime;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.Response;
+
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 
 import static com.sun.jersey.api.client.ClientResponse.Status.BAD_REQUEST;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
-
 
 /**
  * Integration tests for Entity Jersey Resource.
  */
 public class EntityJerseyResourceIT extends BaseResourceIT {
-
     private static final Logger LOG = LoggerFactory.getLogger(EntityJerseyResourceIT.class);
 
     private static final String TRAITS = "traits";
@@ -70,21 +77,20 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         super.setUp();
 
         createTypeDefinitionsV1();
-
     }
 
     @Test
     public void testCreateNestedEntities() throws Exception {
         Referenceable databaseInstance = new Referenceable(DATABASE_TYPE);
-        databaseInstance.set("name", "db_"+ randomString());
+        databaseInstance.set("name", "db_" + randomString());
         databaseInstance.set("description", "foo database");
 
-        int nTables = 5;
-        int colsPerTable=3;
-        List<Referenceable> tables = new ArrayList<>();
-        List<Referenceable> allColumns = new ArrayList<>();
+        int                 nTables      = 5;
+        int                 colsPerTable = 3;
+        List<Referenceable> tables       = new ArrayList<>();
+        List<Referenceable> allColumns   = new ArrayList<>();
 
-        for(int i = 0; i < nTables; i++) {
+        for (int i = 0; i < nTables; i++) {
             String tableName = "db1-table-" + i + randomString();
 
             Referenceable tableInstance = new Referenceable(HIVE_TABLE_TYPE);
@@ -95,7 +101,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
             tables.add(tableInstance);
 
             List<Referenceable> columns = new ArrayList<>();
-            for(int j = 0; j < colsPerTable; j++) {
+            for (int j = 0; j < colsPerTable; j++) {
                 Referenceable columnInstance = new Referenceable(COLUMN_TYPE);
                 columnInstance.set("name", tableName + "-col-" + j + randomString());
                 columnInstance.set("dataType", "String");
@@ -113,28 +119,27 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         assertEquals(entityGUIDs.size(), nTables * (colsPerTable + 1) + 1);
     }
 
-
     @Test
     public void testSubmitEntity() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
+        String        dbName         = "db" + randomString();
+        String        tableName      = "table" + randomString();
         Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
-        Referenceable referenceable = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(referenceable);
+        Id            dbId           = createInstance(hiveDBInstance);
+        Referenceable referenceable  = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id            id             = createInstance(referenceable);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
     }
 
     @Test
     public void testRequestUser() throws Exception {
         Referenceable entity = new Referenceable(DATABASE_TYPE_BUILTIN);
-        String dbName = randomString();
+        String        dbName = randomString();
         entity.set("name", dbName);
         entity.set(QUALIFIED_NAME, dbName);
         entity.set("clusterName", randomString());
@@ -145,11 +150,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         entity.set("parameters", Collections.EMPTY_MAP);
         entity.set("location", "/tmp");
 
-
-        String user = "admin";
+        String      user        = "admin";
         AtlasClient localClient = null;
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            localClient = new AtlasClient(atlasUrls, new String[]{"admin", "admin"});
+            localClient = new AtlasClient(atlasUrls, new String[] {"admin", "admin"});
         } else {
             localClient = new AtlasClient(atlasUrls);
         }
@@ -164,7 +168,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     //API should accept single entity (or jsonarray of entities)
     public void testSubmitSingleEntity() throws Exception {
         Referenceable databaseInstance = new Referenceable(DATABASE_TYPE_BUILTIN);
-        String dbName = randomString();
+        String        dbName           = randomString();
         databaseInstance.set("name", dbName);
         databaseInstance.set(QUALIFIED_NAME, dbName);
         databaseInstance.set("clusterName", randomString());
@@ -177,7 +181,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         ObjectNode response = atlasClientV1.callAPIWithBody(AtlasClient.API_V1.CREATE_ENTITY, AtlasType.toV1Json(databaseInstance));
         assertNotNull(response);
-        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
+        assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         EntityResult entityResult = EntityResult.fromString(response.toString());
         assertEquals(entityResult.getCreatedEntities().size(), 1);
@@ -186,10 +190,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testEntityDeduping() throws Exception {
-        final String dbName = "db" + randomString();
-        Referenceable HiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbIdReference = createInstance(HiveDBInstance);
-        final String dbId = dbIdReference._getId();
+        final String  dbName         = "db" + randomString();
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbIdReference  = createInstance(hiveDBInstance);
+        final String  dbId           = dbIdReference._getId();
 
         assertEntityAudit(dbId, EntityAuditEvent.EntityAuditAction.ENTITY_CREATE);
 
@@ -214,22 +218,11 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 //        assertEquals(results.length(), 1);
     }
 
-    private void assertEntityAudit(String dbid, EntityAuditEvent.EntityAuditAction auditAction) throws Exception {
-        List<EntityAuditEvent> events = atlasClientV1.getEntityAuditEvents(dbid, (short) 100);
-
-        for (EntityAuditEvent event : events) {
-            if (event.getAction() == auditAction) {
-                return;
-            }
-        }
-        fail("Expected audit event with action = " + auditAction);
-    }
-
     @Test
     public void testEntityDefinitionAcrossTypeUpdate() throws Exception {
         //create type
         ClassTypeDefinition typeDefinition = TypesUtil
-                .createClassTypeDef(randomString(), null, Collections.<String>emptySet(),
+                .createClassTypeDef(randomString(), null, Collections.emptySet(),
                         TypesUtil.createUniqueRequiredAttrDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
 
         TypesDef typesDef = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.singletonList(typeDefinition));
@@ -242,23 +235,23 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         String guid = atlasClientV1.createEntity(instance).get(0);
 
         //update type - add attribute
-        typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.getTypeName(), null, Collections.<String>emptySet(),
+        typeDefinition = TypesUtil.createClassTypeDef(typeDefinition.getTypeName(), null, Collections.emptySet(),
                 TypesUtil.createUniqueRequiredAttrDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
                 TypesUtil.createOptionalAttrDef("description", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
-        TypesDef typeDef = new TypesDef(Collections.<EnumTypeDefinition>emptyList(),
-                Collections.<StructTypeDefinition>emptyList(), Collections.<TraitTypeDefinition>emptyList(),
-                Arrays.asList(typeDefinition));
+        TypesDef typeDef = new TypesDef(Collections.emptyList(),
+                Collections.emptyList(), Collections.emptyList(),
+                Collections.singletonList(typeDefinition));
         atlasClientV1.updateType(typeDef);
 
         //Get definition after type update - new attributes should be null
         Referenceable entity = atlasClientV1.getEntity(guid);
-        Assert.assertNull(entity.get("description"));
-        Assert.assertEquals(entity.get("name"), instance.get("name"));
+        assertNull(entity.get("description"));
+        assertEquals(entity.get("name"), instance.get("name"));
     }
 
     @DataProvider
     public Object[][] invalidAttrValues() {
-        return new Object[][]{{null}, {""}};
+        return new Object[][] {{null}, {""}};
     }
 
     @Test(dataProvider = "invalidAttrValues")
@@ -269,17 +262,17 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         try {
             createInstance(databaseInstance);
-            Assert.fail("Expected AtlasServiceException");
+            fail("Expected AtlasServiceException");
         } catch (AtlasServiceException e) {
-            Assert.assertEquals(e.getStatus(), BAD_REQUEST);
+            assertEquals(e.getStatus(), BAD_REQUEST);
         }
     }
 
     @Test
     public void testGetEntityByAttribute() throws Exception {
-        Referenceable db1 = new Referenceable(DATABASE_TYPE_BUILTIN);
-        String dbName = randomString();
-        String qualifiedName = dbName + "@cl1";
+        Referenceable db1           = new Referenceable(DATABASE_TYPE_BUILTIN);
+        String        dbName        = randomString();
+        String        qualifiedName = dbName + "@cl1";
         db1.set(NAME, dbName);
         db1.set(DESCRIPTION, randomString());
         db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, qualifiedName);
@@ -291,16 +284,16 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         //get entity by attribute
         Referenceable referenceable = atlasClientV1.getEntity(DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, qualifiedName);
-        Assert.assertEquals(referenceable.getTypeName(), DATABASE_TYPE_BUILTIN);
-        Assert.assertEquals(referenceable.get(QUALIFIED_NAME), dbName + "@" + "cl1");
+        assertEquals(referenceable.getTypeName(), DATABASE_TYPE_BUILTIN);
+        assertEquals(referenceable.get(QUALIFIED_NAME), dbName + "@" + "cl1");
     }
 
     @Test
     public void testSubmitEntityWithBadDateFormat() {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
+        String        dbName         = "db" + randomString();
+        String        tableName      = "table" + randomString();
         Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = null;
+        Id            dbId           = null;
         try {
             dbId = createInstance(hiveDBInstance);
             Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
@@ -312,39 +305,38 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         } catch (Exception e) {
             // ignore
         }
-
     }
 
     @Test
     public void testAddProperty() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
+        String        dbName         = "db" + randomString();
+        String        tableName      = "table" + randomString();
         Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
-        Referenceable referenceable = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(referenceable);
+        Id            dbId           = createInstance(hiveDBInstance);
+        Referenceable referenceable  = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
+        Id            id             = createInstance(referenceable);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
         //add property
         String description = "bar table - new desc";
         addProperty(guid, "description", description);
 
         ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.GET_ENTITY, null, guid);
-        Assert.assertNotNull(response);
+        assertNotNull(response);
 
         referenceable.set("description", description);
 
         //invalid property for the type
         try {
             addProperty(guid, "invalid_property", "bar table");
-            Assert.fail("Expected AtlasServiceException");
+            fail("Expected AtlasServiceException");
         } catch (AtlasServiceException e) {
-            Assert.assertEquals(e.getStatus().getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
+            assertEquals(e.getStatus().getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
         }
 
         String currentTime = String.valueOf(new DateTime());
@@ -353,71 +345,71 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         // addProperty(guid, "createTime", currentTime);
 
         response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.GET_ENTITY, null, guid);
-        Assert.assertNotNull(response);
+        assertNotNull(response);
 
         referenceable.set("createTime", currentTime);
     }
 
     @Test(expectedExceptions = IllegalArgumentException.class)
     public void testAddNullProperty() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(hiveTableInstance);
+        Id            id                = createInstance(hiveTableInstance);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
         //add property
         addProperty(guid, null, "foo bar");
-        Assert.fail();
+        fail();
     }
 
     @Test(enabled = false)
     public void testAddNullPropertyValue() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(hiveTableInstance);
+        Id            id                = createInstance(hiveTableInstance);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
         //add property
         try {
             addProperty(guid, "description", null);
-            Assert.fail("Expected AtlasServiceException");
-        } catch(AtlasServiceException e) {
-            Assert.assertEquals(e.getStatus().getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
+            fail("Expected AtlasServiceException");
+        } catch (AtlasServiceException e) {
+            assertEquals(e.getStatus().getStatusCode(), Response.Status.BAD_REQUEST.getStatusCode());
         }
     }
 
     @Test
     public void testAddReferenceProperty() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(hiveTableInstance);
+        Id            id                = createInstance(hiveTableInstance);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
         //Create new db instance
@@ -433,8 +425,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         databaseInstance.set("parameters", Collections.EMPTY_MAP);
         databaseInstance.set("location", "/tmp");
 
-        Id dbInstance = createInstance(databaseInstance);
-        String newDBId = dbInstance._getId();
+        Id     dbInstance = createInstance(databaseInstance);
+        String newDBId    = dbInstance._getId();
 
         //Add reference property
         EntityResult entityResult = atlasClientV1.updateEntityAttribute(guid, "db", newDBId);
@@ -445,59 +437,52 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testGetEntityDefinition() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(hiveTableInstance);
+        Id            id                = createInstance(hiveTableInstance);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
         Referenceable entity = atlasClientV1.getEntity(guid);
-        Assert.assertNotNull(entity);
-    }
-
-    private void addProperty(String guid, String property, String value) throws AtlasServiceException {
-        EntityResult entityResult = atlasClientV1.updateEntityAttribute(guid, property, value);
-        assertEquals(entityResult.getUpdateEntities().size(), 1);
-        assertEquals(entityResult.getUpdateEntities().get(0), guid);
+        assertNotNull(entity);
     }
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testGetInvalidEntityDefinition() throws Exception {
-
         ObjectNode response = atlasClientV1.callAPIWithBodyAndParams(AtlasClient.API_V1.GET_ENTITY, null, "blah");
 
-        Assert.assertNotNull(response);
+        assertNotNull(response);
 
-        Assert.assertNotNull(response.get(AtlasClient.ERROR));
+        assertNotNull(response.get(AtlasClient.ERROR));
     }
 
     @Test
     public void testGetEntityList() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(hiveTableInstance);
+        Id            id                = createInstance(hiveTableInstance);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
         List<String> entities = atlasClientV1.listEntities(HIVE_TABLE_TYPE_BUILTIN);
-        Assert.assertNotNull(entities);
-        Assert.assertTrue(entities.contains(guid));
+        assertNotNull(entities);
+        assertTrue(entities.contains(guid));
     }
 
     @Test(expectedExceptions = AtlasServiceException.class)
@@ -507,9 +492,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         ObjectNode response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.GET_ENTITY, queryParams);
         assertNotNull(response);
-        Assert.assertNotNull(response.get(AtlasClient.ERROR));
+        assertNotNull(response.get(AtlasClient.ERROR));
     }
-
 
     @Test
     public void testGetEntityListForNoInstances() throws Exception {
@@ -520,65 +504,52 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         ObjectNode response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.GET_ENTITY, queryParams);
         assertNotNull(response);
-        Assert.assertNotNull(response.get(AtlasClient.REQUEST_ID));
+        assertNotNull(response.get(AtlasClient.REQUEST_ID));
 
         final ArrayNode list = (ArrayNode) response.get(AtlasClient.RESULTS);
-        Assert.assertEquals(list.size(), 0);
-    }
-
-    private String addNewType() throws Exception {
-        String typeName = "test" + randomString();
-        ClassTypeDefinition testTypeDefinition = TypesUtil
-                .createClassTypeDef(typeName, null, Collections.<String>emptySet(),
-                        TypesUtil.createRequiredAttrDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
-                        TypesUtil.createRequiredAttrDef("description", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
-
-        TypesDef typesDef = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.singletonList(testTypeDefinition));
-
-        createType(AtlasType.toV1Json(typesDef));
-        return typeName;
+        assertEquals(list.size(), 0);
     }
 
     @Test
     public void testGetTraitNames() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(hiveTableInstance);
+        Id            id                = createInstance(hiveTableInstance);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
         List<String> traits = atlasClientV1.listTraits(guid);
         assertNotNull(traits);
-        Assert.assertEquals(traits.size(), 7);
+        assertEquals(traits.size(), 7);
     }
 
     @Test
     public void testAddTrait() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(hiveTableInstance);
+        Id            id                = createInstance(hiveTableInstance);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
         String traitName = "PII_Trait" + randomString();
         TraitTypeDefinition piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
+                TypesUtil.createTraitTypeDef(traitName, null, Collections.emptySet());
         String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
 
@@ -593,58 +564,58 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     }
 
     @Test
-    public void testGetTraitDefinitionForEntity() throws Exception{
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+    public void testGetTraitDefinitionForEntity() throws Exception {
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(hiveTableInstance);
+        Id            id                = createInstance(hiveTableInstance);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
-        String traitName = "PII_Trait" + randomString();
-        TraitTypeDefinition piiTrait = TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
+        String              traitName = "PII_Trait" + randomString();
+        TraitTypeDefinition piiTrait  = TypesUtil.createTraitTypeDef(traitName, null, Collections.emptySet());
 
-        TypesDef typesDef = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.singletonList(piiTrait), Collections.emptyList());
-        String traitDefinitionAsJSON = AtlasType.toV1Json(typesDef);
+        TypesDef typesDef              = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.singletonList(piiTrait), Collections.emptyList());
+        String   traitDefinitionAsJSON = AtlasType.toV1Json(typesDef);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
         createType(AtlasType.toV1Json(typesDef));
 
         Struct traitInstance = new Struct(traitName);
         atlasClientV1.addTrait(guid, traitInstance);
         Struct traitDef = atlasClientV1.getTraitDefinition(guid, traitName);
-        Assert.assertEquals(traitDef.getTypeName(), traitName);
+        assertEquals(traitDef.getTypeName(), traitName);
 
         List<Struct> allTraitDefs = atlasClientV1.listTraitDefinitions(guid);
         System.out.println(allTraitDefs.toString());
-        Assert.assertEquals(allTraitDefs.size(), 8);
+        assertEquals(allTraitDefs.size(), 8);
     }
 
     @Test
     public void testAddExistingTrait() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(hiveTableInstance);
+        Id            id                = createInstance(hiveTableInstance);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
         String traitName = "PII_Trait" + randomString();
         TraitTypeDefinition piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
+                TypesUtil.createTraitTypeDef(traitName, null, Collections.emptySet());
         String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
 
@@ -665,23 +636,23 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testAddTraitWithAttribute() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(hiveTableInstance);
+        Id            id                = createInstance(hiveTableInstance);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
         final String traitName = "PII_Trait" + randomString();
         TraitTypeDefinition piiTrait = TypesUtil
-                .createTraitTypeDef(traitName, null, Collections.<String>emptySet(),
+                .createTraitTypeDef(traitName, null, Collections.emptySet(),
                         TypesUtil.createRequiredAttrDef("type", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
         String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
@@ -696,8 +667,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         // verify the response
         Referenceable entity = atlasClientV1.getEntity(guid);
-        Assert.assertNotNull(entity);
-        Assert.assertEquals(entity.getId()._getId(), guid);
+        assertNotNull(entity);
+        assertEquals(entity.getId()._getId(), guid);
 
         assertNotNull(entity.getTrait(traitName));
         assertEquals(entity.getTrait(traitName).get("type"), traitInstance.get("type"));
@@ -707,11 +678,11 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     public void testAddTraitWithNoRegistration() throws Exception {
         final String traitName = "PII_Trait" + randomString();
         TraitTypeDefinition piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
+                TypesUtil.createTraitTypeDef(traitName, null, Collections.emptySet());
         String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
 
-        Struct traitInstance = new Struct(traitName);
+        Struct traitInstance       = new Struct(traitName);
         String traitInstanceAsJSON = AtlasType.toV1Json(traitInstance);
         LOG.debug("traitInstanceAsJSON = {}", traitInstanceAsJSON);
 
@@ -720,23 +691,23 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testDeleteTrait() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(hiveTableInstance);
+        Id            id                = createInstance(hiveTableInstance);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
         String traitName = "PII_Trait" + randomString();
         TraitTypeDefinition piiTrait =
-                TypesUtil.createTraitTypeDef(traitName, null, Collections.<String>emptySet());
+                TypesUtil.createTraitTypeDef(traitName, null, Collections.emptySet());
         String traitDefinitionAsJSON = AtlasType.toV1Json(piiTrait);
         LOG.debug("traitDefinitionAsJSON = {}", traitDefinitionAsJSON);
 
@@ -762,18 +733,18 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test(expectedExceptions = AtlasServiceException.class)
     public void testDeleteTraitNonExistent() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(hiveTableInstance);
+        Id            id                = createInstance(hiveTableInstance);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
         final String traitName = "blah_trait";
@@ -783,23 +754,23 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testDeleteExistentTraitNonExistentForEntity() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id id = createInstance(hiveTableInstance);
+        Id            id                = createInstance(hiveTableInstance);
 
         final String guid = id._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
         final String traitName = "PII_Trait" + randomString();
         TraitTypeDefinition piiTrait = TypesUtil
-                .createTraitTypeDef(traitName, null, Collections.<String>emptySet(),
+                .createTraitTypeDef(traitName, null, Collections.emptySet(),
                         TypesUtil.createRequiredAttrDef("type", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
 
         TypesDef typesDef = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.singletonList(piiTrait), Collections.emptyList());
@@ -816,27 +787,13 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         }
     }
 
-    private String random() {
-        return RandomStringUtils.random(10);
-    }
-
-    private String randomUTF8() throws Exception {
-        String ret = random();
-
-        if (!StandardCharsets.UTF_8.equals(Charset.defaultCharset())) {
-            ret = new String(ret.getBytes(), StandardCharsets.UTF_8.name());
-        }
-
-        return ret;
-    }
-
     @Test
     public void testUTF8() throws Exception {
         String              attrName            = randomUTF8();
         String              attrValue           = randomUTF8();
         String              classType           = randomString(); //Type names cannot be arbitrary UTF8 characters. See org.apache.atlas.type.AtlasTypeUtil#validateType()
-        ClassTypeDefinition classTypeDefinition = TypesUtil.createClassTypeDef(classType, null, Collections.<String>emptySet(), TypesUtil.createUniqueRequiredAttrDef(attrName, AtlasBaseTypeDef.ATLAS_TYPE_STRING));
-        TypesDef            typesDef            = new TypesDef(Collections.<EnumTypeDefinition>emptyList(), Collections.<StructTypeDefinition>emptyList(), Collections.<TraitTypeDefinition>emptyList(), Collections.singletonList(classTypeDefinition));
+        ClassTypeDefinition classTypeDefinition = TypesUtil.createClassTypeDef(classType, null, Collections.emptySet(), TypesUtil.createUniqueRequiredAttrDef(attrName, AtlasBaseTypeDef.ATLAS_TYPE_STRING));
+        TypesDef            typesDef            = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.singletonList(classTypeDefinition));
 
         createType(typesDef);
 
@@ -848,33 +805,32 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         Referenceable createdEntity   = AtlasType.fromV1Json(jsonResponse, Referenceable.class);
         Object        entityAttrValue = createdEntity.get(attrName);
 
-        Assert.assertEquals(entityAttrValue, attrValue,
-                            "attrName=" + attrName + "; attrValue=" + attrValue + "; entityToCreate=" + entityToCreate + "; entityId=" + guid + "; getEntityResponse_Obj=" + objResponse + "; getEntityResponse_Json=" + jsonResponse + "; getEntityResponse_Entity=" + createdEntity);
+        assertEquals(entityAttrValue, attrValue,
+                "attrName=" + attrName + "; attrValue=" + attrValue + "; entityToCreate=" + entityToCreate + "; entityId=" + guid + "; getEntityResponse_Obj=" + objResponse + "; getEntityResponse_Json=" + jsonResponse + "; getEntityResponse_Entity=" + createdEntity);
     }
-
 
     @Test
     public void testPartialUpdateByGuid() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id tableId = createInstance(hiveTableInstance);
+        Id            tableId           = createInstance(hiveTableInstance);
 
         final String guid = tableId._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
-        String colName = "col1"+randomString();
+        String                    colName = "col1" + randomString();
         final List<Referenceable> columns = new ArrayList<>();
-        Map<String, Object> values = new HashMap<>();
+        Map<String, Object>       values  = new HashMap<>();
         values.put(NAME, colName);
         values.put("comment", "col1 comment");
-        values.put(QUALIFIED_NAME, "default.table.col1@"+colName);
+        values.put(QUALIFIED_NAME, "default.table.col1@" + colName);
         values.put("comment", "col1 comment");
         values.put("type", "string");
         values.put("owner", "user1");
@@ -886,17 +842,15 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         Referenceable ref = new Referenceable(BaseResourceIT.COLUMN_TYPE_BUILTIN, values);
         columns.add(ref);
-        Referenceable tableUpdated = new Referenceable(BaseResourceIT.HIVE_TABLE_TYPE_BUILTIN, new HashMap<String, Object>() {{
-            put("columns", columns);
-        }});
+        Referenceable tableUpdated = new Referenceable(BaseResourceIT.HIVE_TABLE_TYPE_BUILTIN, new HashMap<>(Collections.singletonMap("columns", columns)));
 
         LOG.debug("Updating entity= {}", tableUpdated);
         EntityResult entityResult = atlasClientV1.updateEntity(guid, tableUpdated);
         assertEquals(entityResult.getUpdateEntities().size(), 1);
         assertEquals(entityResult.getUpdateEntities().get(0), guid);
 
-        Referenceable entity = atlasClientV1.getEntity(guid);
-        List<Referenceable> refs = (List<Referenceable>) entity.get("columns");
+        Referenceable       entity = atlasClientV1.getEntity(guid);
+        List<Referenceable> refs   = (List<Referenceable>) entity.get("columns");
 
         Referenceable column = refs.get(0);
 
@@ -908,26 +862,26 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
     @Test
     public void testPartialUpdateByUniqueAttributes() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id tableId = createInstance(hiveTableInstance);
+        Id            tableId           = createInstance(hiveTableInstance);
 
         final String guid = tableId._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
-        String colName = "col1"+randomString();
+        String                    colName = "col1" + randomString();
         final List<Referenceable> columns = new ArrayList<>();
-        Map<String, Object> values = new HashMap<>();
+        Map<String, Object>       values  = new HashMap<>();
         values.put(NAME, colName);
         values.put("comment", "col1 comment");
-        values.put(QUALIFIED_NAME, "default.table.col1@"+colName);
+        values.put(QUALIFIED_NAME, "default.table.col1@" + colName);
         values.put("comment", "col1 comment");
         values.put("type", "string");
         values.put("owner", "user1");
@@ -944,9 +898,7 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         values.put("type", "int");
         ref = new Referenceable(BaseResourceIT.COLUMN_TYPE_BUILTIN, values);
         columns.set(0, ref);
-        Referenceable tableUpdated = new Referenceable(BaseResourceIT.HIVE_TABLE_TYPE_BUILTIN, new HashMap<String, Object>() {{
-            put("columns", columns);
-        }});
+        Referenceable tableUpdated = new Referenceable(BaseResourceIT.HIVE_TABLE_TYPE_BUILTIN, new HashMap<>(Collections.singletonMap("columns", columns)));
 
         LOG.debug("Updating entity= {}", tableUpdated);
         EntityResult entityResult = atlasClientV1.updateEntity(BaseResourceIT.HIVE_TABLE_TYPE_BUILTIN, AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
@@ -954,31 +906,31 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         assertEquals(entityResult.getUpdateEntities().size(), 1);
         assertEquals(entityResult.getUpdateEntities().get(0), guid);
 
-        Referenceable entity = atlasClientV1.getEntity(guid);
-        List<Referenceable> refs = (List<Referenceable>) entity.get("columns");
+        Referenceable       entity = atlasClientV1.getEntity(guid);
+        List<Referenceable> refs   = (List<Referenceable>) entity.get("columns");
 
-        Assert.assertTrue(refs.get(0).getValuesMap().equals(values));
-        Assert.assertEquals(refs.get(0).get("type"), "int");
+        assertEquals(values, refs.get(0).getValuesMap());
+        assertEquals(refs.get(0).get("type"), "int");
     }
 
     @Test
     public void testCompleteUpdate() throws Exception {
-        String dbName = "db" + randomString();
-        String tableName = "table" + randomString();
-        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        Id dbId = createInstance(hiveDBInstance);
+        String        dbName            = "db" + randomString();
+        String        tableName         = "table" + randomString();
+        Referenceable hiveDBInstance    = createHiveDBInstanceBuiltIn(dbName);
+        Id            dbId              = createInstance(hiveDBInstance);
         Referenceable hiveTableInstance = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
-        Id tableId = createInstance(hiveTableInstance);
+        Id            tableId           = createInstance(hiveTableInstance);
 
         final String guid = tableId._getId();
         try {
-            Assert.assertNotNull(UUID.fromString(guid));
+            assertNotNull(UUID.fromString(guid));
         } catch (IllegalArgumentException e) {
-            Assert.fail("Response is not a guid, " + guid);
+            fail("Response is not a guid, " + guid);
         }
 
         final List<Referenceable> columns = new ArrayList<>();
-        Map<String, Object> values1 = new HashMap<>();
+        Map<String, Object>       values1 = new HashMap<>();
         values1.put(NAME, "col3");
         values1.put(QUALIFIED_NAME, "default.table.col3@cl1");
         values1.put("comment", "col3 comment");
@@ -1015,20 +967,20 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
 
         hiveTableInstance = atlasClientV1.getEntity(guid);
         List<Referenceable> refs = (List<Referenceable>) hiveTableInstance.get("columns");
-        Assert.assertEquals(refs.size(), 2);
+        assertEquals(refs.size(), 2);
 
         Referenceable col3 = getReferenceable(refs, "col3");
         Referenceable col4 = getReferenceable(refs, "col4");
 
-        Assert.assertEquals(col3.getValuesMap(), values1);
-        Assert.assertEquals(col4.getValuesMap(), values2);
+        assertEquals(col3.getValuesMap(), values1);
+        assertEquals(col4.getValuesMap(), values2);
     }
 
     @Test
     public void testDeleteEntitiesViaRestApi() throws Exception {
         // Create 2 database entities
-        Referenceable db1 = new Referenceable(DATABASE_TYPE_BUILTIN);
-        String dbName = randomString();
+        Referenceable db1    = new Referenceable(DATABASE_TYPE_BUILTIN);
+        String        dbName = randomString();
         db1.set(NAME, dbName);
         db1.set(DESCRIPTION, randomString());
         db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
@@ -1038,8 +990,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         db1.set("location", "/tmp");
         Id db1Id = createInstance(db1);
 
-        Referenceable db2 = new Referenceable(DATABASE_TYPE_BUILTIN);
-        String dbName2 = randomString();
+        Referenceable db2     = new Referenceable(DATABASE_TYPE_BUILTIN);
+        String        dbName2 = randomString();
         db2.set(NAME, dbName2);
         db2.set(QUALIFIED_NAME, dbName2);
         db2.set(CLUSTER_NAME, randomString());
@@ -1056,10 +1008,10 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         queryParams.add(AtlasClient.GUID.toLowerCase(), db1Id._getId());
         queryParams.add(AtlasClient.GUID.toLowerCase(), db2Id._getId());
 
-        ObjectNode response = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.DELETE_ENTITIES, queryParams);
+        ObjectNode   response         = atlasClientV1.callAPIWithQueryParams(AtlasClient.API_V1.DELETE_ENTITIES, queryParams);
         List<String> deletedGuidsList = EntityResult.fromString(response.toString()).getDeletedEntities();
-        Assert.assertTrue(deletedGuidsList.contains(db1Id._getId()));
-        Assert.assertTrue(deletedGuidsList.contains(db2Id._getId()));
+        assertTrue(deletedGuidsList.contains(db1Id._getId()));
+        assertTrue(deletedGuidsList.contains(db2Id._getId()));
 
         // Verify entities were deleted from the repository.
         for (String guid : deletedGuidsList) {
@@ -1071,8 +1023,8 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testDeleteEntitiesViaClientApi() throws Exception {
         // Create 2 database entities
-        Referenceable db1 = new Referenceable(DATABASE_TYPE_BUILTIN);
-        String dbName = randomString();
+        Referenceable db1    = new Referenceable(DATABASE_TYPE_BUILTIN);
+        String        dbName = randomString();
         db1.set("name", dbName);
         db1.set("description", randomString());
         db1.set(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName);
@@ -1080,9 +1032,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         db1.set(CLUSTER_NAME, "cl1");
         db1.set("parameters", Collections.EMPTY_MAP);
         db1.set("location", "/tmp");
-        Id db1Id = createInstance(db1);
-        Referenceable db2 = new Referenceable(DATABASE_TYPE_BUILTIN);
-        String dbName2 = randomString();
+        Id            db1Id   = createInstance(db1);
+        Referenceable db2     = new Referenceable(DATABASE_TYPE_BUILTIN);
+        String        dbName2 = randomString();
         db2.set("name", dbName2);
         db2.set(QUALIFIED_NAME, dbName2);
         db2.set(CLUSTER_NAME, randomString());
@@ -1098,9 +1050,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         List<String> deletedGuidsList = atlasClientV1.deleteEntities(db1Id._getId(), db2Id._getId()).getDeletedEntities();
 
         // Verify that deleteEntities() response has database entity guids
-        Assert.assertEquals(deletedGuidsList.size(), 2);
-        Assert.assertTrue(deletedGuidsList.contains(db1Id._getId()));
-        Assert.assertTrue(deletedGuidsList.contains(db2Id._getId()));
+        assertEquals(deletedGuidsList.size(), 2);
+        assertTrue(deletedGuidsList.contains(db1Id._getId()));
+        assertTrue(deletedGuidsList.contains(db2Id._getId()));
 
         // Verify entities were deleted from the repository.
         for (String guid : deletedGuidsList) {
@@ -1112,9 +1064,9 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
     @Test
     public void testDeleteEntityByUniqAttribute() throws Exception {
         // Create database entity
-        Referenceable db1 = new Referenceable(DATABASE_TYPE_BUILTIN);
-        String dbName = randomString();
-        String qualifiedName = dbName + "@cl1";
+        Referenceable db1           = new Referenceable(DATABASE_TYPE_BUILTIN);
+        String        dbName        = randomString();
+        String        qualifiedName = dbName + "@cl1";
         db1.set(NAME, dbName);
         db1.set(QUALIFIED_NAME, qualifiedName);
         db1.set(CLUSTER_NAME, randomString());
@@ -1130,14 +1082,58 @@ public class EntityJerseyResourceIT extends BaseResourceIT {
         List<String> deletedGuidsList = atlasClientV1.deleteEntity(DATABASE_TYPE_BUILTIN, QUALIFIED_NAME, qualifiedName).getDeletedEntities();
 
         // Verify that deleteEntities() response has database entity guids
-        Assert.assertEquals(deletedGuidsList.size(), 1);
-        Assert.assertTrue(deletedGuidsList.contains(db1Id._getId()));
+        assertEquals(deletedGuidsList.size(), 1);
+        assertTrue(deletedGuidsList.contains(db1Id._getId()));
 
         // Verify entities were deleted from the repository.
         for (String guid : deletedGuidsList) {
             Referenceable entity = atlasClientV1.getEntity(guid);
             assertEquals(entity.getId().getState(), Id.EntityState.DELETED);
         }
+    }
+
+    private void assertEntityAudit(String dbid, EntityAuditEvent.EntityAuditAction auditAction) throws Exception {
+        List<EntityAuditEvent> events = atlasClientV1.getEntityAuditEvents(dbid, (short) 100);
+
+        for (EntityAuditEvent event : events) {
+            if (event.getAction() == auditAction) {
+                return;
+            }
+        }
+        fail("Expected audit event with action = " + auditAction);
+    }
+
+    private void addProperty(String guid, String property, String value) throws AtlasServiceException {
+        EntityResult entityResult = atlasClientV1.updateEntityAttribute(guid, property, value);
+        assertEquals(entityResult.getUpdateEntities().size(), 1);
+        assertEquals(entityResult.getUpdateEntities().get(0), guid);
+    }
+
+    private String addNewType() throws Exception {
+        String typeName = "test" + randomString();
+        ClassTypeDefinition testTypeDefinition = TypesUtil
+                .createClassTypeDef(typeName, null, Collections.emptySet(),
+                        TypesUtil.createRequiredAttrDef("name", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        TypesUtil.createRequiredAttrDef("description", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
+
+        TypesDef typesDef = new TypesDef(Collections.emptyList(), Collections.emptyList(), Collections.emptyList(), Collections.singletonList(testTypeDefinition));
+
+        createType(AtlasType.toV1Json(typesDef));
+        return typeName;
+    }
+
+    private String random() {
+        return RandomStringUtils.random(10);
+    }
+
+    private String randomUTF8() throws Exception {
+        String ret = random();
+
+        if (!StandardCharsets.UTF_8.equals(Charset.defaultCharset())) {
+            ret = new String(ret.getBytes(), StandardCharsets.UTF_8);
+        }
+
+        return ret;
     }
 
     private Referenceable getReferenceable(List<Referenceable> refs, String name) {

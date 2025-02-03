@@ -36,14 +36,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
 public final class LineageUtils {
+    private static final String        VERTEX_ID_ATTR_NAME   = "vertexId";
+    private static final String        TEMP_STRUCT_ID_RESULT = "__IdType";
+    private static final AtomicInteger COUNTER               = new AtomicInteger();
+
     private LineageUtils() {}
-
-    private static final String VERTEX_ID_ATTR_NAME   = "vertexId";
-    private static final String TEMP_STRUCT_ID_RESULT = "__IdType";
-
-    private static final AtomicInteger COUNTER = new AtomicInteger();
 
     public static Struct toLineageStruct(AtlasLineageInfo lineageInfo, AtlasTypeRegistry registry) throws AtlasBaseException {
         Struct ret = new Struct();
@@ -68,14 +66,17 @@ public final class LineageUtils {
                     vertexIdMap.put(Constants.ATTRIBUTE_NAME_TYPENAME, entityHeader.getTypeName());
 
                     Object qualifiedName = entityHeader.getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
+
                     if (qualifiedName == null) {
                         qualifiedName = entityHeader.getDisplayText();
                     }
 
                     Map<String, Object> values = new HashMap<>();
+
                     values.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, qualifiedName);
                     values.put(VERTEX_ID_ATTR_NAME, constructResultStruct(vertexIdMap, true));
                     values.put(AtlasClient.NAME, entityHeader.getDisplayText());
+
                     verticesMap.put(guid, constructResultStruct(values, false));
                 }
             }
@@ -89,14 +90,15 @@ public final class LineageUtils {
 
                 if (direction == AtlasLineageInfo.LineageDirection.INPUT) {
                     if (!edgesMap.containsKey(toEntityId)) {
-                        edgesMap.put(toEntityId, new ArrayList<String>());
+                        edgesMap.put(toEntityId, new ArrayList<>());
                     }
-                    edgesMap.get(toEntityId).add(fromEntityId);
 
+                    edgesMap.get(toEntityId).add(fromEntityId);
                 } else if (direction == AtlasLineageInfo.LineageDirection.OUTPUT) {
                     if (!edgesMap.containsKey(fromEntityId)) {
-                        edgesMap.put(fromEntityId, new ArrayList<String>());
+                        edgesMap.put(fromEntityId, new ArrayList<>());
                     }
+
                     edgesMap.get(fromEntityId).add(toEntityId);
                 }
             }
@@ -122,10 +124,10 @@ public final class LineageUtils {
 
         if (type instanceof AtlasEntityType) {
             AtlasEntityType entityType = (AtlasEntityType) type;
+
             ret = entityType.getAllSuperTypes().contains(AtlasBaseTypeDef.ATLAS_TYPE_DATASET);
         }
 
         return ret;
     }
-
 }

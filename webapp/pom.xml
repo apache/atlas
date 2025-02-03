@@ -32,6 +32,8 @@
     <description>Apache Atlas Web Application</description>
 
     <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
         <debug.jetty.daemon>true</debug.jetty.daemon>
         <logback.configurationFile>file:///${project.build.directory}/../../distro/src/conf/atlas-logback.xml</logback.configurationFile>
         <projectBaseDir>${project.basedir}/..</projectBaseDir>

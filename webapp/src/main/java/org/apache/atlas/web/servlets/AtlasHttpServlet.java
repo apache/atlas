@@ -38,11 +38,13 @@ public class AtlasHttpServlet extends HttpServlet {
         try {
             response.setContentType(TEXT_HTML);
             response.setHeader(XFRAME_OPTION, DENY);
-            ServletContext context = getServletContext();
-            RequestDispatcher rd = context.getRequestDispatcher(template);
+
+            ServletContext    context = getServletContext();
+            RequestDispatcher rd      = context.getRequestDispatcher(template);
+
             rd.include(request, response);
         } catch (Exception e) {
-            LOG.error("Error in AtlasHttpServlet", template, e);
+            LOG.error("Error in AtlasHttpServlet {}", template, e);
         }
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,9 +20,9 @@ package org.apache.atlas.web.filters;
 
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
-import org.apache.atlas.DeleteType;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
 import org.apache.atlas.web.util.DateTimeHelper;
 import org.apache.atlas.web.util.Servlets;
@@ -40,12 +40,14 @@ import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.util.Date;
 import java.util.Set;
 import java.util.UUID;
 
-import static org.apache.atlas.AtlasConfiguration.*;
+import static org.apache.atlas.AtlasConfiguration.REST_API_CREATE_SHELL_ENTITY_FOR_NON_EXISTING_REF;
+import static org.apache.atlas.AtlasConfiguration.REST_API_ENABLE_DELETE_TYPE_OVERRIDE;
 
 /**
  * This records audit information as part of the filter after processing the request
@@ -56,8 +58,14 @@ public class AuditFilter implements Filter {
     private static final Logger LOG       = LoggerFactory.getLogger(AuditFilter.class);
     private static final Logger AUDIT_LOG = LoggerFactory.getLogger("AUDIT");
 
-    private boolean deleteTypeOverrideEnabled                = false;
-    private boolean createShellEntityForNonExistingReference = false;
+    private boolean deleteTypeOverrideEnabled;
+    private boolean createShellEntityForNonExistingReference;
+
+    public static void audit(AuditLog auditLog) {
+        if (AUDIT_LOG.isInfoEnabled() && auditLog != null) {
+            AUDIT_LOG.info(auditLog.toString());
+        }
+    }
 
     @Override
     public void init(FilterConfig filterConfig) throws ServletException {
@@ -70,10 +78,9 @@ public class AuditFilter implements Filter {
     }
 
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain)
-    throws IOException, ServletException {
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
         final long                startTime          = System.currentTimeMillis();
-        final Date                requestTime         = new Date();
+        final Date                requestTime        = new Date();
         final HttpServletRequest  httpRequest        = (HttpServletRequest) request;
         final HttpServletResponse httpResponse       = (HttpServletResponse) response;
         final String              requestId          = UUID.randomUUID().toString();
@@ -116,6 +123,19 @@ public class AuditFilter implements Filter {
         }
     }
 
+    @Override
+    public void destroy() {
+        // do nothing
+    }
+
+    boolean isOperationExcludedFromAudit(String requestHttpMethod, String requestOperation, Configuration config) {
+        try {
+            return AtlasRepositoryConfiguration.isExcludedFromAudit(config, requestHttpMethod, requestOperation);
+        } catch (AtlasException e) {
+            return false;
+        }
+    }
+
     private String formatName(String oldName, String requestId) {
         return oldName + " - " + requestId;
     }
@@ -129,29 +149,8 @@ public class AuditFilter implements Filter {
         if (!isOperationExcludedFromAudit(whatRequest, whatUrlPath.toLowerCase(), null)) {
             audit(new AuditLog(who, fromAddress, whatRequest, whatURL, when, httpStatus, timeTaken));
         } else {
-            if(LOG.isDebugEnabled()) {
-                LOG.debug(" Skipping Audit for {} ", whatURL);
-            }
+            LOG.debug(" Skipping Audit for {}", whatURL);
         }
-    }
-
-    public static void audit(AuditLog auditLog) {
-        if (AUDIT_LOG.isInfoEnabled() && auditLog != null) {
-            AUDIT_LOG.info(auditLog.toString());
-        }
-    }
-
-    boolean isOperationExcludedFromAudit(String requestHttpMethod, String requestOperation, Configuration config) {
-       try {
-        return AtlasRepositoryConfiguration.isExcludedFromAudit(config, requestHttpMethod, requestOperation);
-    } catch (AtlasException e) {
-        return false;
-    }
-    }
-
-    @Override
-    public void destroy() {
-        // do nothing
     }
 
     public static class AuditLog {
@@ -183,23 +182,23 @@ public class AuditFilter implements Filter {
             this.timeTaken     = timeTaken;
         }
 
-        public void setHttpStatus(int httpStatus) { this.httpStatus = httpStatus; }
+        public void setHttpStatus(int httpStatus) {
+            this.httpStatus = httpStatus;
+        }
 
-        public void setTimeTaken(long timeTaken) { this.timeTaken = timeTaken; }
+        public void setTimeTaken(long timeTaken) {
+            this.timeTaken = timeTaken;
+        }
 
         @Override
         public String toString() {
-            StringBuilder sb = new StringBuilder();
-
-            sb.append(DateTimeHelper.formatDateUTC(requestTime))
-              .append(FIELD_SEP).append(userName)
-              .append(FIELD_SEP).append(fromAddress)
-              .append(FIELD_SEP).append(requestMethod)
-              .append(FIELD_SEP).append(requestUrl)
-              .append(FIELD_SEP).append(httpStatus)
-              .append(FIELD_SEP).append(timeTaken);
-
-            return sb.toString();
+            return DateTimeHelper.formatDateUTC(requestTime) +
+                    FIELD_SEP + userName +
+                    FIELD_SEP + fromAddress +
+                    FIELD_SEP + requestMethod +
+                    FIELD_SEP + requestUrl +
+                    FIELD_SEP + httpStatus +
+                    FIELD_SEP + timeTaken;
         }
     }
 }

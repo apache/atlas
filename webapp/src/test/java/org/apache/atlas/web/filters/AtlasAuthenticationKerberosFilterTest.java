@@ -34,6 +34,7 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -47,29 +48,11 @@ import static org.testng.Assert.assertEquals;
  */
 public class AtlasAuthenticationKerberosFilterTest extends BaseSecurityTest {
     public static final String TEST_USER_JAAS_SECTION = "TestUser";
-    public static final String TESTUSER = "testuser";
-    public static final String TESTPASS = "testpass";
+    public static final String TESTUSER               = "testuser";
+    public static final String TESTPASS               = "testpass";
 
     private File userKeytabFile;
     private File httpKeytabFile;
-
-    class TestEmbeddedServer extends EmbeddedServer {
-        public TestEmbeddedServer(int port, String path) throws IOException {
-            super(ATLAS_DEFAULT_BIND_ADDRESS, port, path);
-        }
-
-        Server getServer() {
-            return server;
-        }
-
-        @Override
-        protected WebAppContext getWebAppContext(String path) {
-            WebAppContext application = new WebAppContext(path, "/");
-            application.setDescriptor(System.getProperty("projectBaseDir") + "/webapp/src/test/webapp/WEB-INF/web.xml");
-            application.setClassLoader(Thread.currentThread().getContextClassLoader());
-            return application;
-        }
-    }
 
     @Test(enabled = false)
     public void testKerberosBasedLogin() throws Exception {
@@ -91,7 +74,7 @@ public class AtlasAuthenticationKerberosFilterTest extends BaseSecurityTest {
 
             final URLConnectionFactory connectionFactory = URLConnectionFactory.DEFAULT_SYSTEM_CONNECTION_FACTORY;
             // attempt to hit server and get rejected
-            URL url = new URL("http://localhost:23000/");
+            URL               url        = new URL("http://localhost:23000/");
             HttpURLConnection connection = (HttpURLConnection) connectionFactory.openConnection(url, false);
             connection.setRequestMethod("GET");
             connection.connect();
@@ -105,7 +88,7 @@ public class AtlasAuthenticationKerberosFilterTest extends BaseSecurityTest {
                 @Override
                 public Object run() throws Exception {
                     // attempt to hit server and get rejected
-                    URL url = new URL("http://localhost:23000/");
+                    URL               url        = new URL("http://localhost:23000/");
                     HttpURLConnection connection = (HttpURLConnection) connectionFactory.openConnection(url, true);
                     connection.setRequestMethod("GET");
                     connection.connect();
@@ -124,13 +107,32 @@ public class AtlasAuthenticationKerberosFilterTest extends BaseSecurityTest {
             } else {
                 System.clearProperty("atlas.conf");
             }
-
         }
+    }
+
+    public void setupKDCAndPrincipals() throws Exception {
+        // set up the KDC
+        File kdcWorkDir = startKDC();
+
+        userKeytabFile = createKeytab(kdc, kdcWorkDir, "dgi", "dgi.keytab");
+        httpKeytabFile = createKeytab(kdc, kdcWorkDir, "HTTP", "spnego.service.keytab");
+
+        // create a test user principal
+        kdc.createPrincipal(TESTUSER, TESTPASS);
+
+        String jaas = "TestUser {\n" +
+                "    com.sun.security.auth.module.Krb5LoginModule required\nuseTicketCache=true;\n" +
+                "};\n" +
+                createJAASEntry("Client", "dgi", userKeytabFile) +
+                createJAASEntry("Server", "HTTP", httpKeytabFile);
+
+        File jaasFile = new File(kdcWorkDir, "jaas.txt");
+        FileUtils.write(jaasFile, jaas);
+        bindJVMtoJAASFile(jaasFile);
     }
 
     protected Subject loginTestUser() throws LoginException, IOException {
         LoginContext lc = new LoginContext(TEST_USER_JAAS_SECTION, new CallbackHandler() {
-
             @Override
             public void handle(Callback[] callbacks) throws IOException, UnsupportedCallbackException {
                 for (Callback callback : callbacks) {
@@ -145,8 +147,10 @@ public class AtlasAuthenticationKerberosFilterTest extends BaseSecurityTest {
                 }
             }
         });
+
         // attempt authentication
         lc.login();
+
         return lc.getSubject();
     }
 
@@ -162,26 +166,21 @@ public class AtlasAuthenticationKerberosFilterTest extends BaseSecurityTest {
         return writeConfiguration(props);
     }
 
-    public void setupKDCAndPrincipals() throws Exception {
-        // set up the KDC
-        File kdcWorkDir = startKDC();
+    class TestEmbeddedServer extends EmbeddedServer {
+        public TestEmbeddedServer(int port, String path) throws IOException {
+            super(ATLAS_DEFAULT_BIND_ADDRESS, port, path);
+        }
 
-        userKeytabFile = createKeytab(kdc, kdcWorkDir, "dgi", "dgi.keytab");
-        httpKeytabFile = createKeytab(kdc, kdcWorkDir, "HTTP", "spnego.service.keytab");
+        @Override
+        protected WebAppContext getWebAppContext(String path) {
+            WebAppContext application = new WebAppContext(path, "/");
+            application.setDescriptor(System.getProperty("projectBaseDir") + "/webapp/src/test/webapp/WEB-INF/web.xml");
+            application.setClassLoader(Thread.currentThread().getContextClassLoader());
+            return application;
+        }
 
-        // create a test user principal
-        kdc.createPrincipal(TESTUSER, TESTPASS);
-
-        StringBuilder jaas = new StringBuilder(1024);
-        jaas.append("TestUser {\n" +
-                "    com.sun.security.auth.module.Krb5LoginModule required\nuseTicketCache=true;\n" +
-                "};\n");
-        jaas.append(createJAASEntry("Client", "dgi", userKeytabFile));
-        jaas.append(createJAASEntry("Server", "HTTP", httpKeytabFile));
-
-        File jaasFile = new File(kdcWorkDir, "jaas.txt");
-        FileUtils.write(jaasFile, jaas.toString());
-        bindJVMtoJAASFile(jaasFile);
+        Server getServer() {
+            return server;
+        }
     }
-
 }

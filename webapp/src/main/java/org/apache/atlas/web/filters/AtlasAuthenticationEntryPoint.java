@@ -24,18 +24,16 @@ import org.springframework.security.web.authentication.LoginUrlAuthenticationEnt
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
-@SuppressWarnings("deprecation")
 @Component
 public class AtlasAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPoint {
-
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthenticationEntryPoint.class);
 
-    private String loginPath = "/login.jsp";
+    private static final String LOGIN_PATH = "/login.jsp";
 
     @Inject
     public AtlasAuthenticationEntryPoint(@Value("/login.jsp") String loginFormUrl) {
@@ -43,18 +41,17 @@ public class AtlasAuthenticationEntryPoint extends LoginUrlAuthenticationEntryPo
     }
 
     @Override
-    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException)
-            throws IOException, ServletException {
-
-
+    public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) throws IOException {
         String ajaxRequestHeader = request.getHeader("X-Requested-With");
+
         response.setHeader("X-Frame-Options", "DENY");
 
         if ("XMLHttpRequest".equals(ajaxRequestHeader)) {
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         } else {
-            LOG.debug("redirecting to login page loginPath" + loginPath);
-            response.sendRedirect(loginPath);
+            LOG.debug("redirecting to login page loginPath {}", LOGIN_PATH);
+
+            response.sendRedirect(LOGIN_PATH);
         }
     }
 }

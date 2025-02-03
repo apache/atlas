@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,6 +26,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.ExceptionMapper;
 import javax.ws.rs.ext.Provider;
+
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
@@ -36,7 +37,6 @@ import java.util.concurrent.ThreadLocalRandom;
 @Provider
 @Component
 public class AtlasBaseExceptionMapper implements ExceptionMapper<AtlasBaseException> {
-
     @Override
     public Response toResponse(AtlasBaseException exception) {
         final long id = ThreadLocalRandom.current().nextLong();
@@ -45,12 +45,14 @@ public class AtlasBaseExceptionMapper implements ExceptionMapper<AtlasBaseExcept
         if (exception.getAtlasErrorCode().getHttpCode() == Response.Status.INTERNAL_SERVER_ERROR) {
             ExceptionMapperUtil.logException(id, exception);
         }
+
         return buildAtlasBaseExceptionResponse(exception);
     }
 
     protected Response buildAtlasBaseExceptionResponse(AtlasBaseException baseException) {
         Map<String, String> errorJsonMap = new LinkedHashMap<>();
-        AtlasErrorCode errorCode = baseException.getAtlasErrorCode();
+        AtlasErrorCode      errorCode    = baseException.getAtlasErrorCode();
+
         errorJsonMap.put("errorCode", errorCode.getErrorCode());
         errorJsonMap.put("errorMessage", baseException.getMessage());
 
@@ -64,6 +66,7 @@ public class AtlasBaseExceptionMapper implements ExceptionMapper<AtlasBaseExcept
         if (Response.Status.NO_CONTENT != errorCode.getHttpCode()) {
             responseBuilder.entity(AtlasType.toJson(errorJsonMap));
         }
+
         return responseBuilder.build();
     }
 }

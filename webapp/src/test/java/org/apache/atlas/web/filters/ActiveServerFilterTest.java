@@ -38,8 +38,8 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class ActiveServerFilterTest {
-
     public static final String ACTIVE_SERVER_ADDRESS = "http://localhost:21000/";
+
     @Mock
     private ActiveInstanceState activeInstanceState;
 
@@ -102,10 +102,9 @@ public class ActiveServerFilterTest {
         verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "types");
     }
 
-
     @Test
     public void adminImportRequestsToPassiveServerShouldToActiveServerAddress() throws IOException, ServletException {
-        String importExportUrls[] = {"api/admin/export", "api/admin/import", "api/admin/importfile", "api/admin/audits",
+        String[] importExportUrls = {"api/admin/export", "api/admin/import", "api/admin/importfile", "api/admin/audits",
                 "api/admin/purge", "api/admin/expimp/audit", "api/admin/metrics",
                 "api/admin/server/dummy_name", "api/admin/audit/dummy_guid/details", "api/admin/tasks"};
 
@@ -140,7 +139,6 @@ public class ActiveServerFilterTest {
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
 
         verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "types?query=TRAIT");
-
     }
 
     @Test
@@ -156,9 +154,7 @@ public class ActiveServerFilterTest {
 
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
 
-        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS +
-                "api/atlas/v2/search/basic?limit=25&excludeDeletedEntities=true&spaceParam=firstpart%20secondpart&_=1500969656054&listParam=value1,value2");
-
+        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "api/atlas/v2/search/basic?limit=25&excludeDeletedEntities=true&spaceParam=firstpart%20secondpart&_=1500969656054&listParam=value1,value2");
     }
 
     @Test
@@ -174,11 +170,9 @@ public class ActiveServerFilterTest {
 
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
 
-        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS +
-                "api/atlas/v2/search/basic?limit=25&excludeDeletedEntities=true&spaceParam=firstpart%20secondpart&_=1500969656054&listParam=value1,value2");
-
+        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "api/atlas/v2/search/basic?limit=25&excludeDeletedEntities=true&spaceParam=firstpart%20secondpart&_=1500969656054&listParam=value1,value2");
     }
-    
+
     @Test
     public void testOriginalRequestShouldNotEncodePartiallyEncodedQueryParameters() throws IOException, ServletException {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
@@ -192,9 +186,7 @@ public class ActiveServerFilterTest {
 
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
 
-        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS +
-                "api/atlas/v2/search/basic?limit=25&excludeDeletedEntities=true&query=where%20name=%22ABC%22&_=1500969656054&listParam=value1,value2");
-
+        verify(servletResponse).sendRedirect(ACTIVE_SERVER_ADDRESS + "api/atlas/v2/search/basic?limit=25&excludeDeletedEntities=true&query=where%20name=%22ABC%22&_=1500969656054&listParam=value1,value2");
     }
 
     @Test
@@ -240,13 +232,11 @@ public class ActiveServerFilterTest {
 
         when(activeInstanceState.getActiveServerAddress()).thenReturn(ACTIVE_SERVER_ADDRESS);
         when(servletRequest.getMethod()).thenReturn(HttpMethod.DELETE);
-        when(servletRequest.getRequestURI()).
-                thenReturn("api/atlas/entities/6ebb039f-eaa5-4b9c-ae44-799c7910545d/traits/test_tag_ha3");
+        when(servletRequest.getRequestURI()).thenReturn("api/atlas/entities/6ebb039f-eaa5-4b9c-ae44-799c7910545d/traits/test_tag_ha3");
 
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
 
-        verify(servletResponse).setHeader("Location", ACTIVE_SERVER_ADDRESS
-                + "api/atlas/entities/6ebb039f-eaa5-4b9c-ae44-799c7910545d/traits/test_tag_ha3");
+        verify(servletResponse).setHeader("Location", ACTIVE_SERVER_ADDRESS + "api/atlas/entities/6ebb039f-eaa5-4b9c-ae44-799c7910545d/traits/test_tag_ha3");
         verify(servletResponse).setStatus(HttpServletResponse.SC_TEMPORARY_REDIRECT);
     }
 
@@ -266,10 +256,10 @@ public class ActiveServerFilterTest {
     public void testShouldNotRedirectAdminAPIs() throws IOException, ServletException {
         when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.PASSIVE);
         when(servletRequest.getMethod()).thenReturn(HttpMethod.GET);
-        when(servletRequest.getRequestURI()).
-                thenReturn("api/atlas/admin/asmasn"); // any Admin URI is fine.
+        when(servletRequest.getRequestURI()).thenReturn("api/atlas/admin/asmasn"); // any Admin URI is fine.
 
         ActiveServerFilter activeServerFilter = new ActiveServerFilter(activeInstanceState, serviceState);
+
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
 
         verify(filterChain).doFilter(servletRequest, servletResponse);

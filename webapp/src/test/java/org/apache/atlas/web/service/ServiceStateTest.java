@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -30,7 +30,6 @@ import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 public class ServiceStateTest {
-
     @Mock
     private Configuration configuration;
 
@@ -44,7 +43,8 @@ public class ServiceStateTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
 
         ServiceState serviceState = new ServiceState(configuration);
-        assertEquals(ServiceState.ServiceStateValue.ACTIVE, serviceState.getState());
+
+        assertEquals(serviceState.getState(), ServiceState.ServiceStateValue.ACTIVE);
     }
 
     @Test(expectedExceptions = IllegalStateException.class)
@@ -52,7 +52,9 @@ public class ServiceStateTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
 
         ServiceState serviceState = new ServiceState(configuration);
+
         serviceState.becomingPassive();
+
         fail("Should not allow transition");
     }
 
@@ -62,7 +64,9 @@ public class ServiceStateTest {
         when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY)).thenReturn(true);
 
         ServiceState serviceState = new ServiceState(configuration);
+
         serviceState.becomingPassive();
-        assertEquals(ServiceState.ServiceStateValue.BECOMING_PASSIVE, serviceState.getState());
+
+        assertEquals(serviceState.getState(), ServiceState.ServiceStateValue.BECOMING_PASSIVE);
     }
 }

@@ -18,16 +18,22 @@
 package org.apache.atlas.web.rest;
 
 import org.apache.atlas.AtlasClient;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.discovery.*;
+import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
+import org.apache.atlas.model.discovery.AtlasSearchResult;
+import org.apache.atlas.model.discovery.AtlasSearchResultDownloadStatus;
+import org.apache.atlas.model.discovery.AtlasSuggestionsResult;
+import org.apache.atlas.model.discovery.QuickSearchParameters;
+import org.apache.atlas.model.discovery.RelationshipSearchParameters;
+import org.apache.atlas.model.discovery.SearchParameters;
 import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
 import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.repository.Constants;
@@ -59,11 +65,11 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
 import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,7 +77,16 @@ import java.util.Set;
 
 import static org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType.BASIC;
 import static org.apache.atlas.model.discovery.AtlasSearchResult.AtlasQueryType.DSL;
-import static org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask.*;
+import static org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask.ATTRIBUTE_LABEL_MAP_KEY;
+import static org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask.CLASSIFICATION_KEY;
+import static org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask.CSV_FILE_EXTENSION;
+import static org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask.CSV_FILE_NAME_KEY;
+import static org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask.LIMIT_KEY;
+import static org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask.OFFSET_KEY;
+import static org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask.QUERY_KEY;
+import static org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask.SEARCH_PARAMETERS_JSON_KEY;
+import static org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask.SEARCH_TYPE_KEY;
+import static org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.SearchResultDownloadTask.TYPE_NAME_KEY;
 
 /**
  * REST interface for data discovery using dsl or full text search
@@ -84,13 +99,13 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.searchdownload.Se
 public class DiscoveryREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.DiscoveryREST");
 
-    @Context
-    private       HttpServletRequest httpServletRequest;
-    private final int                maxFullTextQueryLength;
-    private final int                maxDslQueryLength;
-
+    private final int                    maxFullTextQueryLength;
+    private final int                    maxDslQueryLength;
     private final AtlasTypeRegistry     typeRegistry;
     private final AtlasDiscoveryService discoveryService;
+
+    @Context
+    private HttpServletRequest httpServletRequest;
 
     @Inject
     public DiscoveryREST(AtlasTypeRegistry typeRegistry, AtlasDiscoveryService discoveryService, Configuration configuration) {
@@ -103,11 +118,11 @@ public class DiscoveryREST {
     /**
      * Retrieve data for the specified DSL
      *
-     * @param query          DSL query
-     * @param typeName       limit the result to only entities of specified type or its sub-types
+     * @param query DSL query
+     * @param typeName limit the result to only entities of specified type or its sub-types
      * @param classification limit the result to only entities tagged with the given classification or or its sub-types
-     * @param limit          limit the result set to only include the specified number of entries
-     * @param offset         start offset of the result set (useful for pagination)
+     * @param limit limit the result set to only include the specified number of entries
+     * @param offset start offset of the result set (useful for pagination)
      * @return Search results
      * @throws AtlasBaseException
      * @HTTP 200 On successful DSL execution with some results, might return an empty list if execution succeeded
@@ -117,19 +132,18 @@ public class DiscoveryREST {
     @GET
     @Path("/dsl")
     @Timed
-    public AtlasSearchResult searchUsingDSL(@QueryParam("query")          String query,
-                                            @QueryParam("typeName")       String typeName,
-                                            @QueryParam("classification") String classification,
-                                            @QueryParam("limit")          int    limit,
-                                            @QueryParam("offset")         int    offset) throws AtlasBaseException {
-
+    public AtlasSearchResult searchUsingDSL(@QueryParam("query") String query,
+            @QueryParam("typeName") String typeName,
+            @QueryParam("classification") String classification,
+            @QueryParam("limit") int limit,
+            @QueryParam("offset") int offset) throws AtlasBaseException {
         validateDSLSearchParameters(query, typeName, classification);
 
         AtlasPerfTracer perf = null;
+
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingDSL(" + query + "," + typeName
-                        + "," + classification + "," + limit + "," + offset + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingDSL(" + query + "," + typeName + "," + classification + "," + limit + "," + offset + ")");
             }
 
             String queryStr = discoveryService.getDslQueryUsingTypeNameClassification(query, typeName, classification);
@@ -140,9 +154,7 @@ public class DiscoveryREST {
         }
     }
 
-
     /**
-     *
      * @param parameterMap
      * @throws AtlasBaseException
      */
@@ -150,11 +162,11 @@ public class DiscoveryREST {
     @Timed
     @Path("dsl/download/create_file")
     public void dslSearchCreateFile(Map<String, Object> parameterMap) throws AtlasBaseException {
-        SearchParameters parameters     = AtlasJson.fromLinkedHashMap(parameterMap.get("searchParameters"), SearchParameters.class);
+        SearchParameters parameters = AtlasJson.fromLinkedHashMap(parameterMap.get("searchParameters"), SearchParameters.class);
 
         validateDSLSearchParameters(parameters.getQuery(), parameters.getTypeName(), parameters.getClassification());
 
-        Map<String, Object> taskParams  = populateTaskParams(parameters.getQuery(), parameters.getTypeName(), parameters.getClassification(), parameters.getLimit(), parameters.getOffset());
+        Map<String, Object> taskParams = populateTaskParams(parameters.getQuery(), parameters.getTypeName(), parameters.getClassification(), parameters.getLimit(), parameters.getOffset());
 
         discoveryService.createAndQueueSearchResultDownloadTask(taskParams);
     }
@@ -162,8 +174,8 @@ public class DiscoveryREST {
     /**
      * Retrieve data for the specified fulltext query
      *
-     * @param query  Fulltext query
-     * @param limit  limit the result set to only include the specified number of entries
+     * @param query Fulltext query
+     * @param limit limit the result set to only include the specified number of entries
      * @param offset start offset of the result set (useful for pagination)
      * @return Search results
      * @throws AtlasBaseException
@@ -174,21 +186,17 @@ public class DiscoveryREST {
     @GET
     @Path("/fulltext")
     @Timed
-    public AtlasSearchResult searchUsingFullText(@QueryParam("query")                  String  query,
-                                                 @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
-                                                 @QueryParam("limit")                  int     limit,
-                                                 @QueryParam("offset")                 int     offset) throws AtlasBaseException {
+    public AtlasSearchResult searchUsingFullText(@QueryParam("query") String query, @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities, @QueryParam("limit") int limit, @QueryParam("offset") int offset) throws AtlasBaseException {
         // Validate FullText query for max allowed length
-        if(StringUtils.isNotEmpty(query) && query.length() > maxFullTextQueryLength){
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH );
+        if (StringUtils.isNotEmpty(query) && query.length() > maxFullTextQueryLength) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
         }
 
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingFullText(" + query + "," +
-                        limit + "," + offset + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingFullText(" + query + "," + limit + "," + offset + ")");
             }
 
             return discoveryService.searchUsingFullTextQuery(query, excludeDeletedEntities, limit, offset);
@@ -200,11 +208,11 @@ public class DiscoveryREST {
     /**
      * Retrieve data for the specified fulltext query
      *
-     * @param query          Fulltext query
-     * @param typeName       limit the result to only entities of specified type or its sub-types
+     * @param query Fulltext query
+     * @param typeName limit the result to only entities of specified type or its sub-types
      * @param classification limit the result to only entities tagged with the given classification or or its sub-types
-     * @param limit          limit the result set to only include the specified number of entries
-     * @param offset         start offset of the result set (useful for pagination)
+     * @param limit limit the result set to only include the specified number of entries
+     * @param offset start offset of the result set (useful for pagination)
      * @return Search results
      * @throws AtlasBaseException
      * @HTTP 200 On successful FullText lookup with some results, might return an empty list if execution succeeded
@@ -214,18 +222,19 @@ public class DiscoveryREST {
     @GET
     @Path("/basic")
     @Timed
-    public AtlasSearchResult searchUsingBasic(@QueryParam("query")                  String  query,
-                                              @QueryParam("typeName")               String  typeName,
-                                              @QueryParam("classification")         String  classification,
-                                              @QueryParam("sortBy")                 String    sortByAttribute,
-                                              @QueryParam("sortOrder")              SortOrder sortOrder,
-                                              @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
-                                              @QueryParam("limit")                  int     limit,
-                                              @QueryParam("offset")                 int     offset,
-                                              @QueryParam("marker")                 String  marker) throws AtlasBaseException {
+    public AtlasSearchResult searchUsingBasic(@QueryParam("query") String query,
+            @QueryParam("typeName") String typeName,
+            @QueryParam("classification") String classification,
+            @QueryParam("sortBy") String sortByAttribute,
+            @QueryParam("sortOrder") SortOrder sortOrder,
+            @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
+            @QueryParam("limit") int limit,
+            @QueryParam("offset") int offset,
+            @QueryParam("marker") String marker) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
         Servlets.validateQueryParamLength("classification", classification);
         Servlets.validateQueryParamLength("sortBy", sortByAttribute);
+
         if (StringUtils.isNotEmpty(query) && query.length() > maxFullTextQueryLength) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
         }
@@ -234,8 +243,7 @@ public class DiscoveryREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingBasic(" + query + "," +
-                        typeName + "," + classification + "," + limit + "," + offset + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingBasic(" + query + "," + typeName + "," + classification + "," + limit + "," + offset + ")");
             }
 
             SearchParameters searchParameters = new SearchParameters();
@@ -258,11 +266,11 @@ public class DiscoveryREST {
     /**
      * Retrieve data for the specified attribute search query
      *
-     * @param attrName        Attribute name
+     * @param attrName Attribute name
      * @param attrValuePrefix Attibute value to search on
-     * @param typeName        limit the result to only entities of specified type or its sub-types
-     * @param limit           limit the result set to only include the specified number of entries
-     * @param offset          start offset of the result set (useful for pagination)
+     * @param typeName limit the result to only entities of specified type or its sub-types
+     * @param limit limit the result set to only include the specified number of entries
+     * @param offset start offset of the result set (useful for pagination)
      * @return Search results
      * @throws AtlasBaseException
      * @HTTP 200 On successful FullText lookup with some results, might return an empty list if execution succeeded
@@ -272,11 +280,11 @@ public class DiscoveryREST {
     @GET
     @Path("/attribute")
     @Timed
-    public AtlasSearchResult searchUsingAttribute(@QueryParam("attrName")        String attrName,
-                                                  @QueryParam("attrValuePrefix") String attrValuePrefix,
-                                                  @QueryParam("typeName")        String typeName,
-                                                  @QueryParam("limit")           int    limit,
-                                                  @QueryParam("offset")          int    offset) throws AtlasBaseException {
+    public AtlasSearchResult searchUsingAttribute(@QueryParam("attrName") String attrName,
+            @QueryParam("attrValuePrefix") String attrValuePrefix,
+            @QueryParam("typeName") String typeName,
+            @QueryParam("limit") int limit,
+            @QueryParam("offset") int offset) throws AtlasBaseException {
         Servlets.validateQueryParamLength("attrName", attrName);
         Servlets.validateQueryParamLength("attrValuePrefix", attrValuePrefix);
         Servlets.validateQueryParamLength("typeName", typeName);
@@ -285,20 +293,18 @@ public class DiscoveryREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingAttribute(" + attrName + "," +
-                        attrValuePrefix + "," + typeName + "," + limit + "," + offset + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingAttribute(" + attrName + "," + attrValuePrefix + "," + typeName + "," + limit + "," + offset + ")");
             }
 
             if (StringUtils.isEmpty(attrName) && StringUtils.isEmpty(attrValuePrefix)) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS,
-                        String.format("attrName : %s, attrValue: %s for attribute search.", attrName, attrValuePrefix));
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, String.format("attrName : %s, attrValue: %s for attribute search.", attrName, attrValuePrefix));
             }
 
             if (StringUtils.isEmpty(attrName)) {
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
                 if (entityType != null) {
-                    String[] defaultAttrNames = new String[] { AtlasClient.QUALIFIED_NAME, AtlasClient.NAME };
+                    String[] defaultAttrNames = new String[] {AtlasClient.QUALIFIED_NAME, AtlasClient.NAME};
 
                     for (String defaultAttrName : defaultAttrNames) {
                         AtlasStructType.AtlasAttribute attribute = entityType.getAttribute(defaultAttrName);
@@ -363,7 +369,6 @@ public class DiscoveryREST {
     }
 
     /**
-     *
      * @param parameterMap
      * @throws AtlasBaseException
      */
@@ -378,15 +383,14 @@ public class DiscoveryREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.basicSearchCreateFile(" + parameterMap + ")");
             }
 
-            Map<String, String> attributeLabelMap   = (Map<String, String>) parameterMap.get("attributeLabelMap");
-            SearchParameters parameters             = AtlasJson.fromLinkedHashMap(parameterMap.get("searchParameters"), SearchParameters.class);
+            Map<String, String> attributeLabelMap = (Map<String, String>) parameterMap.get("attributeLabelMap");
+            SearchParameters    parameters        = AtlasJson.fromLinkedHashMap(parameterMap.get("searchParameters"), SearchParameters.class);
 
             validateBasicSearchParameters(parameters);
 
-            Map<String, Object> taskParams          = populateTaskParams(parameters, attributeLabelMap);
+            Map<String, Object> taskParams = populateTaskParams(parameters, attributeLabelMap);
 
             discoveryService.createAndQueueSearchResultDownloadTask(taskParams);
-
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -400,7 +404,6 @@ public class DiscoveryREST {
     }
 
     /**
-     *
      * @param fileName
      * @return
      */
@@ -409,15 +412,15 @@ public class DiscoveryREST {
     @Path("download/{filename}")
     @Produces(MediaType.APPLICATION_OCTET_STREAM)
     public Response downloadSearchResultFile(@PathParam("filename") String fileName) {
-
-        File dir        = new File(SearchResultDownloadTask.DOWNLOAD_DIR_PATH, RequestContext.getCurrentUser());
-        File csvFile    = new File(dir, fileName);
+        File dir     = new File(SearchResultDownloadTask.DOWNLOAD_DIR_PATH, RequestContext.getCurrentUser());
+        File csvFile = new File(dir, fileName);
 
         if (!csvFile.exists()) {
             return Response.noContent().build();
         }
 
         Response.ResponseBuilder response = Response.ok(csvFile);
+
         response.header("Content-Disposition", "attachment; filename=\"" + fileName + "\"");
 
         return response.build();
@@ -426,7 +429,7 @@ public class DiscoveryREST {
     /**
      * Relationship search to search for relations(edges)
      *
-     * @param parameters  RelationshipSearchParameters
+     * @param parameters RelationshipSearchParameters
      * @return Atlas search result
      * @throws AtlasBaseException
      * @HTTP 200 On successful search
@@ -450,7 +453,7 @@ public class DiscoveryREST {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "RelationshipFilters specified without Type name");
             }
 
-            if (AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getBoolean() == false) {
+            if (!AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getBoolean()) {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Relationship search is currently disabled, set property " + AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getPropertyName() + " = true to enable");
             }
 
@@ -465,9 +468,9 @@ public class DiscoveryREST {
      *
      * @param relationshipName AtlasRelationshipType name
      * @param sortByAttribute sort the result using this attribute name, default value is 'name'
-     * @param sortOrder       sorting order
-     * @param limit           limit the result set to only include the specified number of entries
-     * @param offset          start offset of the result set (useful for pagination)
+     * @param sortOrder sorting order
+     * @param limit limit the result set to only include the specified number of entries
+     * @param offset start offset of the result set (useful for pagination)
      * @return Atlas search result
      * @throws AtlasBaseException
      * @HTTP 200 On successful search
@@ -476,46 +479,48 @@ public class DiscoveryREST {
     @Path("/relations")
     @GET
     @Timed
-    public AtlasSearchResult relationSearch(@QueryParam("relationshipName") String    relationshipName,
-                                                    @QueryParam("offset")           int       offset,
-                                                    @QueryParam("limit")            int       limit,
-                                                    @QueryParam("sortBy")           String    sortByAttribute,
-                                                    @QueryParam("sortOrder")        SortOrder sortOrder,
-                                                    @QueryParam("marker")           String    marker) throws AtlasBaseException {
+    public AtlasSearchResult relationSearch(@QueryParam("relationshipName") String relationshipName,
+            @QueryParam("offset") int offset,
+            @QueryParam("limit") int limit,
+            @QueryParam("sortBy") String sortByAttribute,
+            @QueryParam("sortOrder") SortOrder sortOrder,
+            @QueryParam("marker") String marker) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relationSearch(" + relationshipName +
-                        ", " + sortByAttribute + ", " + sortOrder + ", " + limit + ", " + offset + ", " + marker + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relationSearch(" + relationshipName + ", " + sortByAttribute + ", " + sortOrder + ", " + limit + ", " + offset + ", " + marker + ")");
             }
 
-            if (AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getBoolean() == false) {
+            if (!AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getBoolean()) {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Relationship search is currently disabled, set property " + AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getPropertyName() + " = true to enable");
             }
+
             RelationshipSearchParameters parameters = new RelationshipSearchParameters();
+
             parameters.setRelationshipName(relationshipName);
             parameters.setSortBy(sortByAttribute);
             parameters.setSortOrder(sortOrder);
             parameters.setLimit(limit);
             parameters.setOffset(offset);
             parameters.setMarker(marker);
-            return discoveryService.searchRelationsWithParameters(parameters);
 
+            return discoveryService.searchRelationsWithParameters(parameters);
         } finally {
             AtlasPerfTracer.log(perf);
         }
     }
+
     /**
      * Relationship search to search for related entities satisfying the search parameters
      *
-     * @param guid            Attribute name
-     * @param relation        relationName
-     * @param attributes      set of attributes in search result.
+     * @param guid Attribute name
+     * @param relation relationName
+     * @param attributes set of attributes in search result.
      * @param sortByAttribute sort the result using this attribute name, default value is 'name'
-     * @param sortOrder       sorting order
-     * @param limit           limit the result set to only include the specified number of entries
-     * @param offset          start offset of the result set (useful for pagination)
+     * @param sortOrder sorting order
+     * @param limit limit the result set to only include the specified number of entries
+     * @param offset start offset of the result set (useful for pagination)
      * @return Atlas search result
      * @throws AtlasBaseException
      * @HTTP 200 On successful search
@@ -524,16 +529,16 @@ public class DiscoveryREST {
     @GET
     @Path("relationship")
     @Timed
-    public AtlasSearchResult searchRelatedEntities(@QueryParam("guid")                            String      guid,
-                                                   @QueryParam("relation")                        String      relation,
-                                                   @QueryParam("attributes")                      Set<String> attributes,
-                                                   @QueryParam("sortBy")                          String      sortByAttribute,
-                                                   @QueryParam("sortOrder")                       SortOrder   sortOrder,
-                                                   @QueryParam("excludeDeletedEntities")          boolean     excludeDeletedEntities,
-                                                   @QueryParam("includeClassificationAttributes") boolean     includeClassificationAttributes,
-                                                   @QueryParam("getApproximateCount")             boolean     getApproximateCount,
-                                                   @QueryParam("limit")                           int         limit,
-                                                   @QueryParam("offset")                          int         offset) throws AtlasBaseException {
+    public AtlasSearchResult searchRelatedEntities(@QueryParam("guid") String guid,
+            @QueryParam("relation") String relation,
+            @QueryParam("attributes") Set<String> attributes,
+            @QueryParam("sortBy") String sortByAttribute,
+            @QueryParam("sortOrder") SortOrder sortOrder,
+            @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
+            @QueryParam("includeClassificationAttributes") boolean includeClassificationAttributes,
+            @QueryParam("getApproximateCount") boolean getApproximateCount,
+            @QueryParam("limit") int limit,
+            @QueryParam("offset") int offset) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
         Servlets.validateQueryParamLength("relation", relation);
         Servlets.validateQueryParamLength("sortBy", sortByAttribute);
@@ -542,11 +547,11 @@ public class DiscoveryREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relatedEntitiesSearch(" + guid +
-                        ", " + relation + ", " + sortByAttribute + ", " + sortOrder + ", " + excludeDeletedEntities + ", " + getApproximateCount + ", " + limit + ", " + offset + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.relatedEntitiesSearch(" + guid + ", " + relation + ", " + sortByAttribute + ", " + sortOrder + ", " + excludeDeletedEntities + ", " + getApproximateCount + ", " + limit + ", " + offset + ")");
             }
 
             SearchParameters parameters = new SearchParameters();
+
             parameters.setAttributes(attributes);
             parameters.setSortBy(sortByAttribute);
             parameters.setSortOrder(sortOrder);
@@ -554,8 +559,8 @@ public class DiscoveryREST {
             parameters.setLimit(limit);
             parameters.setOffset(offset);
             parameters.setIncludeClassificationAttributes(includeClassificationAttributes);
-            return discoveryService.searchRelatedEntities(guid, relation, getApproximateCount, parameters);
 
+            return discoveryService.searchRelatedEntities(guid, relation, getApproximateCount, parameters);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -565,12 +570,11 @@ public class DiscoveryREST {
      * @param savedSearch
      * @return the saved search-object
      * @throws AtlasBaseException
-     * @throws IOException
      */
     @POST
     @Path("saved")
     @Timed
-    public AtlasUserSavedSearch addSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException, IOException {
+    public AtlasUserSavedSearch addSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
         validateUserSavedSearch(savedSearch);
 
         AtlasPerfTracer perf = null;
@@ -612,7 +616,6 @@ public class DiscoveryREST {
     }
 
     /**
-     *
      * @param searchName Name of the saved search
      * @param userName User for whom the search is retrieved
      * @return
@@ -621,8 +624,7 @@ public class DiscoveryREST {
     @GET
     @Path("saved/{name}")
     @Timed
-    public AtlasUserSavedSearch getSavedSearch(@PathParam("name") String searchName,
-                                               @QueryParam("user") String userName) throws AtlasBaseException {
+    public AtlasUserSavedSearch getSavedSearch(@PathParam("name") String searchName, @QueryParam("user") String userName) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", searchName);
         Servlets.validateQueryParamLength("user", userName);
 
@@ -640,10 +642,9 @@ public class DiscoveryREST {
     }
 
     /**
-     *
      * @param userName User for whom the search is retrieved
-     * @throws AtlasBaseException
      * @return list of all saved searches for given user
+     * @throws AtlasBaseException
      */
     @GET
     @Path("saved")
@@ -686,7 +687,6 @@ public class DiscoveryREST {
         }
     }
 
-
     /**
      * Attribute based search for entities satisfying the search parameters
      *
@@ -698,8 +698,7 @@ public class DiscoveryREST {
     @Path("saved/execute/{name}")
     @GET
     @Timed
-    public AtlasSearchResult executeSavedSearchByName(@PathParam("name") String searchName,
-                                                      @QueryParam("user") String userName) throws AtlasBaseException {
+    public AtlasSearchResult executeSavedSearchByName(@PathParam("name") String searchName, @QueryParam("user") String userName) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", searchName);
         Servlets.validateQueryParamLength("user", userName);
 
@@ -707,8 +706,7 @@ public class DiscoveryREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG,
-                        "DiscoveryREST.executeSavedSearchByName(userName=" + userName + ", " + "name=" + searchName + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.executeSavedSearchByName(userName=" + userName + ", " + "name=" + searchName + ")");
             }
 
             AtlasUserSavedSearch savedSearch = discoveryService.getSavedSearchByName(AtlasAuthorizationUtils.getCurrentUserName(), userName, searchName);
@@ -749,7 +747,8 @@ public class DiscoveryREST {
 
     /**
      * Attribute based search for entities satisfying the search parameters
-     *@return Atlas search result
+     *
+     * @return Atlas search result
      * @throws AtlasBaseException
      * @HTTP 200 On successful search
      * @HTTP 400 Tag/Entity doesn't exist or Tag/entity filter is present without tag/type name
@@ -757,16 +756,13 @@ public class DiscoveryREST {
     @Path("/quick")
     @GET
     @Timed
-    public AtlasQuickSearchResult quickSearch(@QueryParam("query")                  String    query,
-                                              @QueryParam("typeName")               String    typeName,
-                                              @QueryParam("excludeDeletedEntities") boolean   excludeDeletedEntities,
-                                              @QueryParam("offset")                 int       offset,
-                                              @QueryParam("limit")                  int       limit,
-                                              @QueryParam("sortBy")                 String    sortByAttribute,
-                                              @QueryParam("sortOrder")              SortOrder sortOrder) throws AtlasBaseException {
-
-
-
+    public AtlasQuickSearchResult quickSearch(@QueryParam("query") String query,
+            @QueryParam("typeName") String typeName,
+            @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
+            @QueryParam("offset") int offset,
+            @QueryParam("limit") int limit,
+            @QueryParam("sortBy") String sortByAttribute,
+            @QueryParam("sortOrder") SortOrder sortOrder) throws AtlasBaseException {
         if (StringUtils.isNotEmpty(query) && query.length() > maxFullTextQueryLength) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
         }
@@ -775,20 +771,18 @@ public class DiscoveryREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.quick(" + query + "," +
-                        "excludeDeletedEntities:" + excludeDeletedEntities + "," + limit + "," + offset + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.quick(" + query + "," + "excludeDeletedEntities:" + excludeDeletedEntities + "," + limit + "," + offset + ")");
             }
 
-            QuickSearchParameters quickSearchParameters = new QuickSearchParameters(query,
-                                                                                    typeName,
-                                                                                    null,  // entityFilters
-                                                                                    false, // includeSubTypes
-                                                                                    excludeDeletedEntities,
-                                                                                    offset,
-                                                                                    limit,
-                                                                                    null, // attributes
-                                                                                    sortByAttribute,
-                                                                                    sortOrder);
+            QuickSearchParameters quickSearchParameters = new QuickSearchParameters(query, typeName,
+                    null,  // entityFilters
+                    false, // includeSubTypes
+                    excludeDeletedEntities,
+                    offset,
+                    limit,
+                    null, // attributes
+                    sortByAttribute,
+                    sortOrder);
 
             return discoveryService.quickSearch(quickSearchParameters);
         } finally {
@@ -798,7 +792,8 @@ public class DiscoveryREST {
 
     /**
      * Attribute based search for entities satisfying the search parameters
-     *@return Atlas search result
+     *
+     * @return Atlas search result
      * @throws AtlasBaseException
      * @HTTP 200 On successful search
      * @HTTP 400 Entity/attribute doesn't exist or entity filter is present without type name
@@ -818,18 +813,15 @@ public class DiscoveryREST {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Limit/offset should be non-negative");
             }
 
-            if (StringUtils.isEmpty(quickSearchParameters.getTypeName()) &&
-                !isEmpty(quickSearchParameters.getEntityFilters())) {
+            if (StringUtils.isEmpty(quickSearchParameters.getTypeName()) && !isEmpty(quickSearchParameters.getEntityFilters())) {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "EntityFilters specified without Type name");
             }
 
-            if (StringUtils.isEmpty(quickSearchParameters.getTypeName()) &&
-                StringUtils.isEmpty(quickSearchParameters.getQuery())){
+            if (StringUtils.isEmpty(quickSearchParameters.getTypeName()) && StringUtils.isEmpty(quickSearchParameters.getQuery())) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_SEARCH_PARAMS);
             }
 
-            if (StringUtils.isEmpty(quickSearchParameters.getTypeName()) &&
-                    (StringUtils.isNotEmpty(quickSearchParameters.getSortBy()))) {
+            if (StringUtils.isEmpty(quickSearchParameters.getTypeName()) && (StringUtils.isNotEmpty(quickSearchParameters.getSortBy()))) {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "SortBy specified without Type name");
             }
 
@@ -859,14 +851,13 @@ public class DiscoveryREST {
     }
 
     private boolean isEmpty(SearchParameters.FilterCriteria filterCriteria) {
-        return filterCriteria == null ||
-                (StringUtils.isEmpty(filterCriteria.getAttributeName()) && CollectionUtils.isEmpty(filterCriteria.getCriterion()));
+        return filterCriteria == null || (StringUtils.isEmpty(filterCriteria.getAttributeName()) && CollectionUtils.isEmpty(filterCriteria.getCriterion()));
     }
 
     private AtlasSearchResult executeSavedSearch(AtlasUserSavedSearch savedSearch) throws AtlasBaseException {
         SearchParameters sp = savedSearch.getSearchParameters();
 
-        if(savedSearch.getSearchType() == AtlasUserSavedSearch.SavedSearchType.ADVANCED) {
+        if (savedSearch.getSearchType() == AtlasUserSavedSearch.SavedSearchType.ADVANCED) {
             String dslQuery = discoveryService.getDslQueryUsingTypeNameClassification(sp.getQuery(), sp.getTypeName(), sp.getClassification());
 
             return discoveryService.searchUsingDslQuery(dslQuery, sp.getLimit(), sp.getOffset());
@@ -890,10 +881,10 @@ public class DiscoveryREST {
             Servlets.validateQueryParamLength("typeName", parameters.getTypeName());
             Servlets.validateQueryParamLength("classification", parameters.getClassification());
             Servlets.validateQueryParamLength("sortBy", parameters.getSortBy());
+
             if (StringUtils.isNotEmpty(parameters.getQuery()) && parameters.getQuery().length() > maxFullTextQueryLength) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
             }
-
         }
     }
 
@@ -904,7 +895,6 @@ public class DiscoveryREST {
     }
 
     private void validateBasicSearchParameters(SearchParameters parameters) throws AtlasBaseException {
-
         if (parameters.getLimit() < 0 || parameters.getOffset() < 0) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Limit/offset should be non-negative");
         }
@@ -917,8 +907,7 @@ public class DiscoveryREST {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "TagFilters specified without tag name");
         }
 
-        if (StringUtils.isEmpty(parameters.getTypeName()) && StringUtils.isEmpty(parameters.getClassification()) &&
-                StringUtils.isEmpty(parameters.getQuery()) && StringUtils.isEmpty(parameters.getTermName())) {
+        if (StringUtils.isEmpty(parameters.getTypeName()) && StringUtils.isEmpty(parameters.getClassification()) && StringUtils.isEmpty(parameters.getQuery()) && StringUtils.isEmpty(parameters.getTermName())) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_SEARCH_PARAMS);
         }
 
@@ -926,7 +915,6 @@ public class DiscoveryREST {
     }
 
     private void validateDSLSearchParameters(String query, String typeName, String classification) throws AtlasBaseException {
-
         Servlets.validateQueryParamLength("typeName", typeName);
         Servlets.validateQueryParamLength("classification", classification);
 
@@ -934,29 +922,31 @@ public class DiscoveryREST {
             if (query.length() > maxDslQueryLength) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_DSL_QUERY_STR_LENGTH);
             }
+
             Servlets.decodeQueryString(query);
         }
     }
 
     private Map<String, Object> populateTaskParams(SearchParameters parameters, Map<String, String> attributeLabelMap) {
+        String searchParametersJson = AtlasJson.toJson(parameters);
+        String attrLabelMapJson     = AtlasJson.toJson(attributeLabelMap);
 
-        String searchParametersJson     = AtlasJson.toJson(parameters);
-        String attrLabelMapJson         = AtlasJson.toJson(attributeLabelMap);
+        Map<String, Object> taskParams = new HashMap<>();
 
-        Map<String, Object> taskParams  = new HashMap<>();
         taskParams.put(SEARCH_TYPE_KEY, BASIC);
         taskParams.put(SEARCH_PARAMETERS_JSON_KEY, searchParametersJson);
         taskParams.put(ATTRIBUTE_LABEL_MAP_KEY, attrLabelMapJson);
 
-        String csvFileName              = RequestContext.getCurrentUser() + "_" + BASIC + "_" + getDateTimeString() + CSV_FILE_EXTENSION;
+        String csvFileName = RequestContext.getCurrentUser() + "_" + BASIC + "_" + getDateTimeString() + CSV_FILE_EXTENSION;
+
         taskParams.put(CSV_FILE_NAME_KEY, csvFileName);
 
         return taskParams;
     }
 
     private Map<String, Object> populateTaskParams(String query, String typeName, String classification, int limit, int offset) {
-
         Map<String, Object> taskParams = new HashMap<>();
+
         taskParams.put(SEARCH_TYPE_KEY, DSL);
         taskParams.put(QUERY_KEY, query);
         taskParams.put(TYPE_NAME_KEY, typeName);
@@ -965,14 +955,15 @@ public class DiscoveryREST {
         taskParams.put(OFFSET_KEY, offset);
 
         String csvFileName = RequestContext.getCurrentUser() + "_" + DSL + "_" + getDateTimeString() + CSV_FILE_EXTENSION;
+
         taskParams.put(CSV_FILE_NAME_KEY, csvFileName);
 
         return taskParams;
     }
 
     private String getDateTimeString() {
-        LocalDateTime localDateTime = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss.SSS");
+        LocalDateTime     localDateTime = LocalDateTime.now();
+        DateTimeFormatter formatter     = DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss.SSS");
 
         return formatter.format(localDateTime);
     }

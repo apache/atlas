@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,7 +19,6 @@
 package org.apache.atlas.web.integration;
 
 import com.fasterxml.jackson.databind.node.ArrayNode;
-import com.google.common.base.Preconditions;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasClientV2;
@@ -67,7 +66,6 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
 import org.testng.annotations.BeforeClass;
 
 import java.util.ArrayList;
@@ -77,11 +75,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_PARAM_ATTRIBUTE;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_INVERSE_REF;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef.CONSTRAINT_TYPE_OWNED_REF;
 import static org.apache.atlas.type.AtlasTypeUtil.createBusinessMetadataDef;
 import static org.apache.atlas.type.AtlasTypeUtil.createOptionalAttrDef;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertTrue;
 
@@ -92,31 +92,40 @@ import static org.testng.Assert.assertTrue;
 public abstract class BaseResourceIT {
     public static final Logger LOG = LoggerFactory.getLogger(BaseResourceIT.class);
 
-    public static final String ATLAS_REST_ADDRESS = "atlas.rest.address";
-    public static final String NAME               = "name";
-    public static final String QUALIFIED_NAME     = "qualifiedName";
-    public static final String CLUSTER_NAME       = "clusterName";
-    public static final String DESCRIPTION        = "description";
-    public static final String PII_TAG            = "pii_Tag";
-    public static final String PHI_TAG            = "phi_Tag";
-    public static final String PCI_TAG            = "pci_Tag";
-    public static final String SOX_TAG            = "sox_Tag";
-    public static final String SEC_TAG            = "sec_Tag";
-    public static final String FINANCE_TAG        = "finance_Tag";
-    public static final String CLASSIFICATION     = "classification";
+    public static final String ATLAS_REST_ADDRESS              = "atlas.rest.address";
+    public static final String NAME                            = "name";
+    public static final String QUALIFIED_NAME                  = "qualifiedName";
+    public static final String CLUSTER_NAME                    = "clusterName";
+    public static final String DESCRIPTION                     = "description";
+    public static final String PII_TAG                         = "pii_Tag";
+    public static final String PHI_TAG                         = "phi_Tag";
+    public static final String PCI_TAG                         = "pci_Tag";
+    public static final String SOX_TAG                         = "sox_Tag";
+    public static final String SEC_TAG                         = "sec_Tag";
+    public static final String FINANCE_TAG                     = "finance_Tag";
+    public static final String CLASSIFICATION                  = "classification";
     public static final String ATLAS_LINEAGE_ON_DEMAND_ENABLED = "atlas.lineage.on.demand.enabled";
 
     protected static final int MAX_WAIT_TIME = 60000;
-
+    protected static final String DATABASE_TYPE_V2     = "hive_db_v2";
+    protected static final String HIVE_TABLE_TYPE_V2   = "hive_table_v2";
+    protected static final String COLUMN_TYPE_V2       = "hive_column_v2";
+    protected static final String HIVE_PROCESS_TYPE_V2 = "hive_process_v2";
+    protected static final String DATABASE_TYPE     = "hive_db_v1";
+    protected static final String HIVE_TABLE_TYPE   = "hive_table_v1";
+    protected static final String COLUMN_TYPE       = "hive_column_v1";
+    protected static final String HIVE_PROCESS_TYPE = "hive_process_v1";
+    protected static final String DATABASE_TYPE_BUILTIN     = "hive_db";
+    protected static final String HIVE_TABLE_TYPE_BUILTIN   = "hive_table";
+    protected static final String COLUMN_TYPE_BUILTIN       = "hive_column";
+    protected static final String HIVE_PROCESS_TYPE_BUILTIN = "hive_process";
     // All service clients
     protected AtlasClient   atlasClientV1;
     protected AtlasClientV2 atlasClientV2;
     protected String[]      atlasUrls;
     protected boolean       isLineageOnDemandEnabled;
-
-
-    protected NotificationInterface notificationInterface = null;
-    protected KafkaNotification     kafkaNotification     = null;
+    protected NotificationInterface notificationInterface;
+    protected KafkaNotification     kafkaNotification;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -134,14 +143,13 @@ public abstract class BaseResourceIT {
 
         atlasUrls = configuration.getStringArray(ATLAS_REST_ADDRESS);
 
-
         if (atlasUrls == null || atlasUrls.length == 0) {
-            atlasUrls = new String[] { "http://localhost:21000/" };
+            atlasUrls = new String[] {"http://localhost:21000/"};
         }
 
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            atlasClientV1 = new AtlasClient(atlasUrls, new String[]{"admin", "admin"});
-            atlasClientV2 = new AtlasClientV2(atlasUrls, new String[]{"admin", "admin"});
+            atlasClientV1 = new AtlasClient(atlasUrls, new String[] {"admin", "admin"});
+            atlasClientV2 = new AtlasClientV2(atlasUrls, new String[] {"admin", "admin"});
         } else {
             atlasClientV1 = new AtlasClient(atlasUrls);
             atlasClientV2 = new AtlasClientV2(atlasUrls);
@@ -170,7 +178,7 @@ public abstract class BaseResourceIT {
         for (AtlasEntityDef entityDef : typesDef.getEntityDefs()) {
             if (atlasClientV2.typeWithNameExists(entityDef.getName())) {
                 LOG.warn("Type with name {} already exists. Skipping", entityDef.getName());
-            } else  {
+            } else {
                 toCreate.getEntityDefs().add(entityDef);
             }
         }
@@ -178,7 +186,7 @@ public abstract class BaseResourceIT {
         for (AtlasClassificationDef classificationDef : typesDef.getClassificationDefs()) {
             if (atlasClientV2.typeWithNameExists(classificationDef.getName())) {
                 LOG.warn("Type with name {} already exists. Skipping", classificationDef.getName());
-            } else  {
+            } else {
                 toCreate.getClassificationDefs().add(classificationDef);
             }
         }
@@ -264,21 +272,18 @@ public abstract class BaseResourceIT {
         System.out.println("created instance for type " + typeName + ", guid: " + guids);
 
         // return the reference to created instance with guid
-        if (guids.size() > 0) {
+        if (!guids.isEmpty()) {
             return new Id(guids.get(guids.size() - 1), 0, referenceable.getTypeName());
         }
 
         return null;
     }
 
-    protected TypesDef getTypesDef(List<EnumTypeDefinition>   enums,
-                                   List<StructTypeDefinition> structs,
-                                   List<TraitTypeDefinition>  traits,
-                                   List<ClassTypeDefinition>  classes){
-        enums   = (enums != null) ? enums : Collections.<EnumTypeDefinition>emptyList();
-        structs = (structs != null) ? structs : Collections.<StructTypeDefinition>emptyList();
-        traits  = (traits != null) ? traits : Collections.<TraitTypeDefinition>emptyList();
-        classes = (classes != null) ? classes : Collections.<ClassTypeDefinition>emptyList();
+    protected TypesDef getTypesDef(List<EnumTypeDefinition> enums, List<StructTypeDefinition> structs, List<TraitTypeDefinition> traits, List<ClassTypeDefinition> classes) {
+        enums   = (enums != null) ? enums : Collections.emptyList();
+        structs = (structs != null) ? structs : Collections.emptyList();
+        traits  = (traits != null) ? traits : Collections.emptyList();
+        classes = (classes != null) ? classes : Collections.emptyList();
 
         return new TypesDef(enums, structs, traits, classes);
     }
@@ -304,9 +309,8 @@ public abstract class BaseResourceIT {
 
                 return entity.getEntitiesByOperation(EntityMutations.EntityOperation.UPDATE).get(0);
             }
-
         } catch (AtlasServiceException e) {
-            LOG.error("Entity {} failed", update ? "update" : "creation", entity);
+            LOG.error("Entity {} failed: {}", update ? "update" : "creation", entity);
         }
 
         return null;
@@ -320,21 +324,6 @@ public abstract class BaseResourceIT {
         return modifyEntity(atlasEntity, true);
     }
 
-    protected static final String DATABASE_TYPE_V2     = "hive_db_v2";
-    protected static final String HIVE_TABLE_TYPE_V2   = "hive_table_v2";
-    protected static final String COLUMN_TYPE_V2       = "hive_column_v2";
-    protected static final String HIVE_PROCESS_TYPE_V2 = "hive_process_v2";
-
-    protected static final String DATABASE_TYPE     = "hive_db_v1";
-    protected static final String HIVE_TABLE_TYPE   = "hive_table_v1";
-    protected static final String COLUMN_TYPE       = "hive_column_v1";
-    protected static final String HIVE_PROCESS_TYPE = "hive_process_v1";
-
-    protected static final String DATABASE_TYPE_BUILTIN     = "hive_db";
-    protected static final String HIVE_TABLE_TYPE_BUILTIN   = "hive_table";
-    protected static final String COLUMN_TYPE_BUILTIN       = "hive_column";
-    protected static final String HIVE_PROCESS_TYPE_BUILTIN = "hive_process";
-
     protected void createTypeDefinitionsV1() throws Exception {
         ClassTypeDefinition dbClsDef = TypesUtil
                 .createClassTypeDef(DATABASE_TYPE, null, null,
@@ -344,18 +333,17 @@ public abstract class BaseResourceIT {
                         attrDef("owner", AtlasBaseTypeDef.ATLAS_TYPE_STRING),
                         attrDef("createTime", AtlasBaseTypeDef.ATLAS_TYPE_LONG),
                         new AttributeDefinition("tables", AtlasBaseTypeDef.getArrayTypeName(HIVE_TABLE_TYPE),
-                                Multiplicity.OPTIONAL, false, "db")
-                );
+                                Multiplicity.OPTIONAL, false, "db"));
 
         ClassTypeDefinition columnClsDef = TypesUtil
                 .createClassTypeDef(COLUMN_TYPE, null, null, attrDef(NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
                         attrDef("dataType", AtlasBaseTypeDef.ATLAS_TYPE_STRING), attrDef("comment", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
 
         StructTypeDefinition structTypeDefinition = new StructTypeDefinition("serdeType", null,
-                Arrays.asList(new AttributeDefinition[]{TypesUtil.createRequiredAttrDef(NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
-                        TypesUtil.createRequiredAttrDef("serde", AtlasBaseTypeDef.ATLAS_TYPE_STRING)}));
+                Arrays.asList(TypesUtil.createRequiredAttrDef(NAME, AtlasBaseTypeDef.ATLAS_TYPE_STRING),
+                        TypesUtil.createRequiredAttrDef("serde", AtlasBaseTypeDef.ATLAS_TYPE_STRING)));
 
-        EnumValue values[] = {new EnumValue("MANAGED", 1), new EnumValue("EXTERNAL", 2),};
+        EnumValue[] values = {new EnumValue("MANAGED", 1), new EnumValue("EXTERNAL", 2)};
 
         EnumTypeDefinition enumTypeDefinition = new EnumTypeDefinition("tableType", null, null, Arrays.asList(values));
 
@@ -382,29 +370,29 @@ public abstract class BaseResourceIT {
                         attrDef("queryGraph", AtlasBaseTypeDef.ATLAS_TYPE_STRING, Multiplicity.REQUIRED));
 
         TraitTypeDefinition classificationTrait = TypesUtil
-                .createTraitTypeDef("classification", null, Collections.<String>emptySet(),
+                .createTraitTypeDef("classification", null, Collections.emptySet(),
                         TypesUtil.createRequiredAttrDef("tag", AtlasBaseTypeDef.ATLAS_TYPE_STRING));
 
-        TraitTypeDefinition piiTrait       = TypesUtil.createTraitTypeDef(PII_TAG, null, Collections.<String>emptySet());
-        TraitTypeDefinition phiTrait       = TypesUtil.createTraitTypeDef(PHI_TAG, null, Collections.<String>emptySet());
-        TraitTypeDefinition pciTrait       = TypesUtil.createTraitTypeDef(PCI_TAG, null, Collections.<String>emptySet());
-        TraitTypeDefinition soxTrait       = TypesUtil.createTraitTypeDef(SOX_TAG, null, Collections.<String>emptySet());
-        TraitTypeDefinition secTrait       = TypesUtil.createTraitTypeDef(SEC_TAG, null, Collections.<String>emptySet());
-        TraitTypeDefinition financeTrait   = TypesUtil.createTraitTypeDef(FINANCE_TAG, null, Collections.<String>emptySet());
-        TraitTypeDefinition factTrait      = TypesUtil.createTraitTypeDef("Fact" + randomString(), null, Collections.<String>emptySet());
-        TraitTypeDefinition etlTrait       = TypesUtil.createTraitTypeDef("ETL" + randomString(), null, Collections.<String>emptySet());
-        TraitTypeDefinition dimensionTrait = TypesUtil.createTraitTypeDef("Dimension" + randomString(), null, Collections.<String>emptySet());
-        TraitTypeDefinition metricTrait    = TypesUtil.createTraitTypeDef("Metric" + randomString(), null, Collections.<String>emptySet());
+        TraitTypeDefinition piiTrait       = TypesUtil.createTraitTypeDef(PII_TAG, null, Collections.emptySet());
+        TraitTypeDefinition phiTrait       = TypesUtil.createTraitTypeDef(PHI_TAG, null, Collections.emptySet());
+        TraitTypeDefinition pciTrait       = TypesUtil.createTraitTypeDef(PCI_TAG, null, Collections.emptySet());
+        TraitTypeDefinition soxTrait       = TypesUtil.createTraitTypeDef(SOX_TAG, null, Collections.emptySet());
+        TraitTypeDefinition secTrait       = TypesUtil.createTraitTypeDef(SEC_TAG, null, Collections.emptySet());
+        TraitTypeDefinition financeTrait   = TypesUtil.createTraitTypeDef(FINANCE_TAG, null, Collections.emptySet());
+        TraitTypeDefinition factTrait      = TypesUtil.createTraitTypeDef("Fact" + randomString(), null, Collections.emptySet());
+        TraitTypeDefinition etlTrait       = TypesUtil.createTraitTypeDef("ETL" + randomString(), null, Collections.emptySet());
+        TraitTypeDefinition dimensionTrait = TypesUtil.createTraitTypeDef("Dimension" + randomString(), null, Collections.emptySet());
+        TraitTypeDefinition metricTrait    = TypesUtil.createTraitTypeDef("Metric" + randomString(), null, Collections.emptySet());
 
         createType(getTypesDef(Collections.singletonList(enumTypeDefinition),
-                               Collections.singletonList(structTypeDefinition),
-                               Arrays.asList(classificationTrait, piiTrait, phiTrait, pciTrait, soxTrait, secTrait, financeTrait, factTrait, etlTrait, dimensionTrait, metricTrait),
-                               Arrays.asList(dbClsDef, columnClsDef, tblClsDef, loadProcessClsDef)));
+                Collections.singletonList(structTypeDefinition),
+                Arrays.asList(classificationTrait, piiTrait, phiTrait, pciTrait, soxTrait, secTrait, financeTrait, factTrait, etlTrait, dimensionTrait, metricTrait),
+                Arrays.asList(dbClsDef, columnClsDef, tblClsDef, loadProcessClsDef)));
     }
 
     protected void createTypeDefinitionsV2() throws Exception {
         AtlasConstraintDef isCompositeSourceConstraint = new AtlasConstraintDef(CONSTRAINT_TYPE_OWNED_REF);
-        AtlasConstraintDef isCompositeTargetConstraint = new AtlasConstraintDef(CONSTRAINT_TYPE_INVERSE_REF, Collections.<String, Object>singletonMap(CONSTRAINT_PARAM_ATTRIBUTE, "randomTable"));
+        AtlasConstraintDef isCompositeTargetConstraint = new AtlasConstraintDef(CONSTRAINT_TYPE_INVERSE_REF, Collections.singletonMap(CONSTRAINT_PARAM_ATTRIBUTE, "randomTable"));
 
         AtlasEntityDef dbClsTypeDef = AtlasTypeUtil.createClassTypeDef(
                 DATABASE_TYPE_V2,
@@ -420,8 +408,7 @@ public abstract class BaseResourceIT {
                         AtlasBaseTypeDef.getArrayTypeName(HIVE_TABLE_TYPE_V2),
                         true,
                         Cardinality.SET,
-                        0, -1, false, true, false, Collections.singletonList(isCompositeSourceConstraint))
-        );
+                        0, -1, false, true, false, Collections.singletonList(isCompositeSourceConstraint)));
 
         AtlasEntityDef columnClsDef = AtlasTypeUtil
                 .createClassTypeDef(COLUMN_TYPE_V2, null,
@@ -431,13 +418,11 @@ public abstract class BaseResourceIT {
 
         AtlasStructDef structTypeDef = AtlasTypeUtil.createStructTypeDef("serdeType",
                 AtlasTypeUtil.createRequiredAttrDef(NAME, "string"),
-                AtlasTypeUtil.createRequiredAttrDef("serde", "string")
-        );
+                AtlasTypeUtil.createRequiredAttrDef("serde", "string"));
 
         AtlasEnumDef enumDef = new AtlasEnumDef("tableType", DESCRIPTION, Arrays.asList(
                 new AtlasEnumDef.AtlasEnumElementDef("MANAGED", null, 1),
-                new AtlasEnumDef.AtlasEnumElementDef("EXTERNAL", null, 2)
-        ));
+                new AtlasEnumDef.AtlasEnumElementDef("EXTERNAL", null, 2)));
 
         AtlasEntityDef tblClsDef = AtlasTypeUtil
                 .createClassTypeDef(HIVE_TABLE_TYPE_V2,
@@ -469,35 +454,34 @@ public abstract class BaseResourceIT {
                         AtlasTypeUtil.createRequiredAttrDef("queryGraph", "string"));
 
         AtlasClassificationDef classificationTrait = AtlasTypeUtil
-                .createTraitTypeDef("classification", Collections.<String>emptySet(),
+                .createTraitTypeDef("classification", Collections.emptySet(),
                         AtlasTypeUtil.createRequiredAttrDef("tag", "string"));
-        AtlasClassificationDef piiTrait     = AtlasTypeUtil.createTraitTypeDef(PII_TAG, Collections.<String>emptySet());
-        AtlasClassificationDef phiTrait     = AtlasTypeUtil.createTraitTypeDef(PHI_TAG, Collections.<String>emptySet());
-        AtlasClassificationDef pciTrait     = AtlasTypeUtil.createTraitTypeDef(PCI_TAG, Collections.<String>emptySet());
-        AtlasClassificationDef soxTrait     = AtlasTypeUtil.createTraitTypeDef(SOX_TAG, Collections.<String>emptySet());
-        AtlasClassificationDef secTrait     = AtlasTypeUtil.createTraitTypeDef(SEC_TAG, Collections.<String>emptySet());
-        AtlasClassificationDef financeTrait = AtlasTypeUtil.createTraitTypeDef(FINANCE_TAG, Collections.<String>emptySet());
+        AtlasClassificationDef piiTrait     = AtlasTypeUtil.createTraitTypeDef(PII_TAG, Collections.emptySet());
+        AtlasClassificationDef phiTrait     = AtlasTypeUtil.createTraitTypeDef(PHI_TAG, Collections.emptySet());
+        AtlasClassificationDef pciTrait     = AtlasTypeUtil.createTraitTypeDef(PCI_TAG, Collections.emptySet());
+        AtlasClassificationDef soxTrait     = AtlasTypeUtil.createTraitTypeDef(SOX_TAG, Collections.emptySet());
+        AtlasClassificationDef secTrait     = AtlasTypeUtil.createTraitTypeDef(SEC_TAG, Collections.emptySet());
+        AtlasClassificationDef financeTrait = AtlasTypeUtil.createTraitTypeDef(FINANCE_TAG, Collections.emptySet());
 
         //bussinessmetadata
-        String _description = "_description";
-        Map<String, String> options = new HashMap<>();
+        String              description = "_description";
+        Map<String, String> options     = new HashMap<>();
         options.put("maxStrLength", "20");
-        AtlasBusinessMetadataDef bmNoApplicableTypes = createBusinessMetadataDef("bmNoApplicableTypes", _description, "1.0",
-                createOptionalAttrDef("attr0", "string", options, _description));
+        AtlasBusinessMetadataDef bmNoApplicableTypes = createBusinessMetadataDef("bmNoApplicableTypes", description, "1.0",
+                createOptionalAttrDef("attr0", "string", options, description));
 
-
-        AtlasBusinessMetadataDef bmNoAttributes = createBusinessMetadataDef("bmNoAttributes", _description, "1.0", null);
+        AtlasBusinessMetadataDef bmNoAttributes = createBusinessMetadataDef("bmNoAttributes", description, "1.0", null);
 
         options.put("applicableEntityTypes", "[\"" + DATABASE_TYPE_V2 + "\",\"" + HIVE_TABLE_TYPE_V2 + "\"]");
 
-        AtlasBusinessMetadataDef bmWithAllTypes = createBusinessMetadataDef("bmWithAllTypes", _description, "1.0",
-                createOptionalAttrDef("attr1", AtlasBusinessMetadataDef.ATLAS_TYPE_BOOLEAN, options, _description),
-                createOptionalAttrDef("attr2", AtlasBusinessMetadataDef.ATLAS_TYPE_BYTE, options, _description),
-                createOptionalAttrDef("attr8", AtlasBusinessMetadataDef.ATLAS_TYPE_STRING, options, _description));
+        AtlasBusinessMetadataDef bmWithAllTypes = createBusinessMetadataDef("bmWithAllTypes", description, "1.0",
+                createOptionalAttrDef("attr1", AtlasBusinessMetadataDef.ATLAS_TYPE_BOOLEAN, options, description),
+                createOptionalAttrDef("attr2", AtlasBusinessMetadataDef.ATLAS_TYPE_BYTE, options, description),
+                createOptionalAttrDef("attr8", AtlasBusinessMetadataDef.ATLAS_TYPE_STRING, options, description));
 
-        AtlasBusinessMetadataDef bmWithAllTypesMV = createBusinessMetadataDef("bmWithAllTypesMV", _description, "1.0",
-                createOptionalAttrDef("attr11", "array<boolean>", options, _description),
-                createOptionalAttrDef("attr18", "array<string>", options, _description));
+        AtlasBusinessMetadataDef bmWithAllTypesMV = createBusinessMetadataDef("bmWithAllTypesMV", description, "1.0",
+                createOptionalAttrDef("attr11", "array<boolean>", options, description),
+                createOptionalAttrDef("attr18", "array<string>", options, description));
 
         AtlasTypesDef typesDef = new AtlasTypesDef(Collections.singletonList(enumDef),
                 Collections.singletonList(structTypeDef),
@@ -508,27 +492,12 @@ public abstract class BaseResourceIT {
         batchCreateTypes(typesDef);
     }
 
-    AttributeDefinition attrDef(String name, String dT) {
-        return attrDef(name, dT, Multiplicity.OPTIONAL, false, null);
-    }
-
-    AttributeDefinition attrDef(String name, String dT, Multiplicity m) {
-        return attrDef(name, dT, m, false, null);
-    }
-
-    AttributeDefinition attrDef(String name, String dT, Multiplicity m, boolean isComposite, String reverseAttributeName) {
-        Preconditions.checkNotNull(name);
-        Preconditions.checkNotNull(dT);
-
-        return new AttributeDefinition(name, dT, m, isComposite, reverseAttributeName);
-    }
-
     protected String randomString() {
         //names cannot start with a digit
         return RandomStringUtils.randomAlphabetic(1) + RandomStringUtils.randomAlphanumeric(9);
     }
 
-    protected Referenceable createHiveTableInstanceBuiltIn(String dbName, String tableName, Id dbId) throws Exception {
+    protected Referenceable createHiveTableInstanceBuiltIn(String dbName, String tableName, Id dbId) {
         Map<String, Object> values = new HashMap<>();
         values.put(NAME, dbName);
         values.put(DESCRIPTION, "foo database");
@@ -550,7 +519,7 @@ public abstract class BaseResourceIT {
         tableInstance.set("tableType", 1); // enum
         tableInstance.set("compressed", false);
 
-        Struct traitInstance = (Struct) tableInstance.getTrait("classification");
+        Struct traitInstance = tableInstance.getTrait("classification");
         traitInstance.set("tag", "foundation_etl");
 
         Struct serde1Instance = new Struct("serdeType");
@@ -564,13 +533,14 @@ public abstract class BaseResourceIT {
         tableInstance.set("serde2", serde2Instance);
 
         List<String> traits = tableInstance.getTraitNames();
-        Assert.assertEquals(traits.size(), 7);
+        assertEquals(traits.size(), 7);
 
         return tableInstance;
     }
 
-    protected AtlasEntity createHiveTableInstanceV2(AtlasEntity databaseInstance, String tableName) throws Exception {
+    protected AtlasEntity createHiveTableInstanceV2(AtlasEntity databaseInstance, String tableName) {
         AtlasEntity tableInstance = new AtlasEntity(HIVE_TABLE_TYPE_V2);
+
         tableInstance.setClassifications(
                 Arrays.asList(new AtlasClassification(CLASSIFICATION),
                         new AtlasClassification(PII_TAG),
@@ -578,8 +548,7 @@ public abstract class BaseResourceIT {
                         new AtlasClassification(PCI_TAG),
                         new AtlasClassification(SOX_TAG),
                         new AtlasClassification(SEC_TAG),
-                        new AtlasClassification(FINANCE_TAG))
-        );
+                        new AtlasClassification(FINANCE_TAG)));
 
         tableInstance.setAttribute(NAME, tableName);
         tableInstance.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableName);
@@ -605,7 +574,7 @@ public abstract class BaseResourceIT {
         tableInstance.setAttribute("serde2", serde2Instance);
 
         List<AtlasClassification> traits = tableInstance.getClassifications();
-        Assert.assertEquals(traits.size(), 7);
+        assertEquals(traits.size(), 7);
 
         return tableInstance;
     }
@@ -639,12 +608,12 @@ public abstract class BaseResourceIT {
         atlasEntity.setAttribute(CLUSTER_NAME, "fooCluster");
         atlasEntity.setAttribute("owner", "user1");
         atlasEntity.setAttribute("locationUri", "/tmp");
-        atlasEntity.setAttribute("createTime",1000);
+        atlasEntity.setAttribute("createTime", 1000);
 
         return atlasEntity;
     }
 
-    protected  AtlasEntity createEntity(String typeName, String name) {
+    protected AtlasEntity createEntity(String typeName, String name) {
         AtlasEntity atlasEntity = new AtlasEntity(typeName);
 
         atlasEntity.setAttribute("name", name);
@@ -652,28 +621,6 @@ public abstract class BaseResourceIT {
         atlasEntity.setAttribute("clusterName", randomString());
 
         return atlasEntity;
-    }
-
-    public interface Predicate {
-
-        /**
-         * Perform a predicate evaluation.
-         *
-         * @return the boolean result of the evaluation.
-         * @throws Exception thrown if the predicate evaluation could not evaluate.
-         */
-        boolean evaluate() throws Exception;
-    }
-
-    public interface NotificationPredicate {
-
-        /**
-         * Perform a predicate evaluation.
-         *
-         * @return the boolean result of the evaluation.
-         * @throws Exception thrown if the predicate evaluation could not evaluate.
-         */
-        boolean evaluate(EntityNotificationV1 notification) throws Exception;
     }
 
     /**
@@ -688,7 +635,7 @@ public abstract class BaseResourceIT {
         long    mustEnd = System.currentTimeMillis() + timeout;
         boolean eval;
 
-        while (!(eval = predicate.evaluate()) && System.currentTimeMillis() < mustEnd) {
+        for (eval = predicate.evaluate(); !eval && System.currentTimeMillis() < mustEnd; eval = predicate.evaluate()) {
             LOG.info("Waiting up to {} msec", mustEnd - System.currentTimeMillis());
 
             Thread.sleep(100);
@@ -700,52 +647,44 @@ public abstract class BaseResourceIT {
     }
 
     protected EntityNotificationV1 waitForNotification(final NotificationConsumer<EntityNotificationV1> consumer, int maxWait,
-                                                       final NotificationPredicate predicate) throws Exception {
+            final NotificationPredicate predicate) throws Exception {
         final TypesUtil.Pair<EntityNotificationV1, String> pair           = TypesUtil.Pair.of(null, null);
         final long                                         maxCurrentTime = System.currentTimeMillis() + maxWait;
 
-        waitFor(maxWait, new Predicate() {
-            @Override
-            public boolean evaluate() throws Exception {
-                try {
-                    while (System.currentTimeMillis() < maxCurrentTime) {
-                        List<AtlasKafkaMessage<EntityNotificationV1>> messageList = consumer.receive();
+        waitFor(maxWait, () -> {
+            try {
+                while (System.currentTimeMillis() < maxCurrentTime) {
+                    List<AtlasKafkaMessage<EntityNotificationV1>> messageList = consumer.receive();
 
-                        if(messageList.size() > 0) {
-                            EntityNotificationV1 notification = messageList.get(0).getMessage();
+                    if (!messageList.isEmpty()) {
+                        EntityNotificationV1 notification = messageList.get(0).getMessage();
 
-                            if (predicate.evaluate(notification)) {
-                                pair.left = notification;
+                        if (predicate.evaluate(notification)) {
+                            pair.left = notification;
 
-                                return true;
-                            }
-                        } else {
-                            LOG.info( System.currentTimeMillis()+ " messageList no records" +maxCurrentTime );
+                            return true;
                         }
+                    } else {
+                        LOG.info(System.currentTimeMillis() + " messageList no records" + maxCurrentTime);
                     }
-                } catch(Exception e) {
-                    LOG.error(" waitForNotification", e);
-                    //ignore
                 }
-
-                return false;
+            } catch (Exception e) {
+                LOG.error(" waitForNotification", e);
+                //ignore
             }
+
+            return false;
         });
 
         return pair.left;
     }
 
     protected NotificationPredicate newNotificationPredicate(final EntityNotificationV1.OperationType operationType,
-                                                             final String typeName, final String guid) {
-        return new NotificationPredicate() {
-            @Override
-            public boolean evaluate(EntityNotificationV1 notification) throws Exception {
-                return notification != null &&
-                        notification.getOperationType() == operationType &&
-                        notification.getEntity().getTypeName().equals(typeName) &&
-                        notification.getEntity().getId()._getId().equals(guid);
-            }
-        };
+            final String typeName, final String guid) {
+        return notification -> notification != null &&
+                notification.getOperationType() == operationType &&
+                notification.getEntity().getTypeName().equals(typeName) &&
+                notification.getEntity().getId()._getId().equals(guid);
     }
 
     protected ArrayNode searchByDSL(String dslQuery) throws AtlasServiceException {
@@ -769,6 +708,40 @@ public abstract class BaseResourceIT {
             kafkaNotification.close();
             kafkaNotification.stop();
         }
+    }
 
+    AttributeDefinition attrDef(String name, String dT) {
+        return attrDef(name, dT, Multiplicity.OPTIONAL, false, null);
+    }
+
+    AttributeDefinition attrDef(String name, String dT, Multiplicity m) {
+        return attrDef(name, dT, m, false, null);
+    }
+
+    AttributeDefinition attrDef(String name, String dT, Multiplicity m, boolean isComposite, String reverseAttributeName) {
+        checkNotNull(name);
+        checkNotNull(dT);
+
+        return new AttributeDefinition(name, dT, m, isComposite, reverseAttributeName);
+    }
+
+    public interface Predicate {
+        /**
+         * Perform a predicate evaluation.
+         *
+         * @return the boolean result of the evaluation.
+         * @throws Exception thrown if the predicate evaluation could not evaluate.
+         */
+        boolean evaluate() throws Exception;
+    }
+
+    public interface NotificationPredicate {
+        /**
+         * Perform a predicate evaluation.
+         *
+         * @return the boolean result of the evaluation.
+         * @throws Exception thrown if the predicate evaluation could not evaluate.
+         */
+        boolean evaluate(EntityNotificationV1 notification) throws Exception;
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -71,21 +71,18 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.StreamingOutput;
-import java.io.IOException;
+
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 
 /**
  * REST for a single entity
@@ -102,15 +99,13 @@ public class EntityREST {
     public static final String PREFIX_ATTR  = "attr:";
     public static final String PREFIX_ATTR_ = "attr_";
 
-
     private final AtlasTypeRegistry      typeRegistry;
     private final AtlasEntityStore       entitiesStore;
     private final EntityAuditRepository  auditRepository;
     private final AtlasInstanceConverter instanceConverter;
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore,
-                      EntityAuditRepository auditRepository, AtlasInstanceConverter instanceConverter) {
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, EntityAuditRepository auditRepository, AtlasInstanceConverter instanceConverter) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
         this.auditRepository   = auditRepository;
@@ -187,14 +182,14 @@ public class EntityREST {
     @GET
     @Path("/uniqueAttribute/type/{typeName}/header")
     @Timed
-    public AtlasEntityHeader getEntityHeaderByUniqueAttributes(@PathParam("typeName") String typeName,
-                                                               @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+    public AtlasEntityHeader getEntityHeaderByUniqueAttributes(@PathParam("typeName") String typeName, @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
 
         AtlasPerfTracer perf = null;
 
         try {
             Map<String, Object> attributes = getAttributes(servletRequest);
+
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getEntityHeaderByUniqueAttributes(" + typeName + "," + attributes + ")");
             }
@@ -231,8 +226,7 @@ public class EntityREST {
     @GET
     @Path("/uniqueAttribute/type/{typeName}")
     @Timed
-    public AtlasEntityWithExtInfo getByUniqueAttributes(@PathParam("typeName") String typeName, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo,
-                                                        @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships, @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+    public AtlasEntityWithExtInfo getByUniqueAttributes(@PathParam("typeName") String typeName, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo, @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships, @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
 
         AtlasPerfTracer perf = null;
@@ -269,14 +263,11 @@ public class EntityREST {
      *
      * PUT /v2/entity/uniqueAttribute/type/aType?attr:aTypeAttribute=someValue
      *
-
      *******/
     @PUT
     @Path("/uniqueAttribute/type/{typeName}")
     @Timed
-    public EntityMutationResponse partialUpdateEntityByUniqueAttrs(@PathParam("typeName") String typeName,
-                                                                   @Context HttpServletRequest servletRequest,
-                                                                   AtlasEntityWithExtInfo entityInfo) throws Exception {
+    public EntityMutationResponse partialUpdateEntityByUniqueAttrs(@PathParam("typeName") String typeName, @Context HttpServletRequest servletRequest, AtlasEntityWithExtInfo entityInfo) throws Exception {
         Servlets.validateQueryParamLength("typeName", typeName);
 
         AtlasPerfTracer perf = null;
@@ -318,8 +309,7 @@ public class EntityREST {
     @DELETE
     @Path("/uniqueAttribute/type/{typeName}")
     @Timed
-    public EntityMutationResponse deleteByUniqueAttribute(@PathParam("typeName") String typeName,
-                                                          @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+    public EntityMutationResponse deleteByUniqueAttribute(@PathParam("typeName") String typeName, @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
 
         AtlasPerfTracer perf = null;
@@ -371,9 +361,7 @@ public class EntityREST {
     @PUT
     @Path("/guid/{guid}")
     @Timed
-    public EntityMutationResponse partialUpdateEntityAttrByGuid(@PathParam("guid") String guid,
-                                                                @QueryParam("name") String attrName,
-                                                                Object attrValue) throws Exception {
+    public EntityMutationResponse partialUpdateEntityAttrByGuid(@PathParam("guid") String guid, @QueryParam("name") String attrName, Object attrValue) throws Exception {
         Servlets.validateQueryParamLength("guid", guid);
         Servlets.validateQueryParamLength("name", attrName);
 
@@ -564,7 +552,6 @@ public class EntityREST {
     /**
      * Updates classifications to an existing entity represented by a guid.
      * @param  guid globally unique identifier for the entity
-     * @return classification for the given entity guid
      */
     @PUT
     @Path("/guid/{guid}/classifications")
@@ -584,7 +571,6 @@ public class EntityREST {
             }
 
             entitiesStore.updateClassifications(guid, classifications);
-
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -598,7 +584,7 @@ public class EntityREST {
     @DELETE
     @Path("/uniqueAttribute/type/{typeName}/classification/{classificationName}")
     @Timed
-    public void deleteClassificationByUniqueAttribute(@PathParam("typeName") String typeName, @Context HttpServletRequest servletRequest,@PathParam("classificationName") String classificationName) throws AtlasBaseException {
+    public void deleteClassificationByUniqueAttribute(@PathParam("typeName") String typeName, @Context HttpServletRequest servletRequest, @PathParam("classificationName") String classificationName) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
         Servlets.validateQueryParamLength("classificationName", classificationName);
 
@@ -631,9 +617,7 @@ public class EntityREST {
     @DELETE
     @Path("/guid/{guid}/classification/{classificationName}")
     @Timed
-    public void deleteClassification(@PathParam("guid") String guid,
-                                     @PathParam("classificationName") final String classificationName,
-                                     @QueryParam("associatedEntityGuid") final String associatedEntityGuid) throws AtlasBaseException {
+    public void deleteClassification(@PathParam("guid") String guid, @PathParam("classificationName") final String classificationName, @QueryParam("associatedEntityGuid") final String associatedEntityGuid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
         Servlets.validateQueryParamLength("classificationName", classificationName);
         Servlets.validateQueryParamLength("associatedEntityGuid", associatedEntityGuid);
@@ -683,10 +667,7 @@ public class EntityREST {
     @GET
     @Path("/bulk/uniqueAttribute/type/{typeName}")
     @Timed
-    public AtlasEntitiesWithExtInfo getEntitiesByUniqueAttributes(@PathParam("typeName") String typeName,
-                                                                  @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo,
-                                                                  @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships,
-                                                                  @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+    public AtlasEntitiesWithExtInfo getEntitiesByUniqueAttributes(@PathParam("typeName") String typeName, @QueryParam("minExtInfo") @DefaultValue("false") boolean minExtInfo, @QueryParam("ignoreRelationships") @DefaultValue("false") boolean ignoreRelationships, @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
 
         AtlasPerfTracer perf = null;
@@ -752,8 +733,7 @@ public class EntityREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" +
-                                                                       (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size()) + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" + (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size()) + ")");
             }
 
             EntityStream entityStream = new AtlasEntityStream(entities);
@@ -781,7 +761,7 @@ public class EntityREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteByGuids(" + guids  + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteByGuids(" + guids + ")");
             }
 
             return entitiesStore.deleteByIds(guids);
@@ -804,7 +784,7 @@ public class EntityREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addClassification(" + request  + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.addClassification(" + request + ")");
             }
 
             AtlasClassification       classification           = request == null ? null : request.getClassification();
@@ -861,12 +841,8 @@ public class EntityREST {
     @GET
     @Path("{guid}/audit")
     @Timed
-    public List<EntityAuditEventV2> getAuditEvents(@PathParam("guid") String guid, @QueryParam("startKey") String startKey,
-                                                   @QueryParam("auditAction") EntityAuditActionV2 auditAction,
-                                                   @QueryParam("count") @DefaultValue("100") short count,
-                                                   @QueryParam("offset") @DefaultValue("-1") int offset,
-                                                   @QueryParam("sortBy") String sortBy,
-                                                   @QueryParam("sortOrder") String sortOrder) throws AtlasBaseException {
+    public List<EntityAuditEventV2> getAuditEvents(@PathParam("guid") String guid, @QueryParam("startKey") String startKey, @QueryParam("auditAction") EntityAuditActionV2 auditAction,
+            @QueryParam("count") @DefaultValue("100") short count, @QueryParam("offset") @DefaultValue("-1") int offset, @QueryParam("sortBy") String sortBy, @QueryParam("sortOrder") String sortOrder) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
 
         try {
@@ -891,7 +867,7 @@ public class EntityREST {
 
             if (sortBy != null || offset > -1) {
                 ret = auditRepository.listEventsV2(guid, auditAction, sortBy, StringUtils.equalsIgnoreCase(sortOrder, "desc"), offset, count);
-            } else if(auditAction != null) {
+            } else if (auditAction != null) {
                 ret = auditRepository.listEventsV2(guid, auditAction, startKey, count);
             } else {
                 List events = auditRepository.listEvents(guid, startKey, count);
@@ -921,7 +897,7 @@ public class EntityREST {
         AtlasPerfTracer perf = null;
 
         try {
-            long  tagUpdateEndTime = System.currentTimeMillis();
+            long tagUpdateEndTime = System.currentTimeMillis();
 
             if (tagUpdateStartTime > tagUpdateEndTime) {
                 throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "fromTimestamp should be less than toTimestamp");
@@ -932,6 +908,7 @@ public class EntityREST {
             }
 
             ClassificationAssociator.Retriever associator = new ClassificationAssociator.Retriever(typeRegistry, auditRepository);
+
             return associator.get(tagUpdateStartTime, tagUpdateEndTime);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -943,7 +920,7 @@ public class EntityREST {
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Timed
-    public String setClassifications(AtlasEntityHeaders entityHeaders) throws AtlasBaseException {
+    public String setClassifications(AtlasEntityHeaders entityHeaders) {
         AtlasPerfTracer perf = null;
 
         try {
@@ -952,6 +929,7 @@ public class EntityREST {
             }
 
             ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(typeRegistry, entitiesStore);
+
             return associator.setClassifications(entityHeaders.getGuidHeaderMap());
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1110,10 +1088,9 @@ public class EntityREST {
     @POST
     @Path("/uniqueAttribute/type/{typeName}/labels")
     @Timed
-    public void setLabels(@PathParam("typeName") String typeName, Set<String> labels,
-                          @Context HttpServletRequest servletRequest) throws AtlasBaseException {
-
+    public void setLabels(@PathParam("typeName") String typeName, Set<String> labels, @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -1138,9 +1115,9 @@ public class EntityREST {
     @PUT
     @Path("/uniqueAttribute/type/{typeName}/labels")
     @Timed
-    public void addLabels(@PathParam("typeName") String typeName, Set<String> labels,
-                          @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+    public void addLabels(@PathParam("typeName") String typeName, Set<String> labels, @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -1165,10 +1142,9 @@ public class EntityREST {
     @DELETE
     @Path("/uniqueAttribute/type/{typeName}/labels")
     @Timed
-    public void removeLabels(@PathParam("typeName") String typeName, Set<String> labels,
-                             @Context HttpServletRequest servletRequest) throws AtlasBaseException {
-
+    public void removeLabels(@PathParam("typeName") String typeName, Set<String> labels, @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
+
         AtlasPerfTracer perf = null;
 
         try {
@@ -1188,6 +1164,38 @@ public class EntityREST {
         } finally {
             AtlasPerfTracer.log(perf);
         }
+    }
+
+    /**
+     * Get the sample Template for uploading/creating bulk BusinessMetaData
+     *
+     * @return Template File
+     * @HTTP 400 If the provided fileType is not supported
+     */
+    @GET
+    @Path("/businessmetadata/import/template")
+    @Produces(MediaType.APPLICATION_OCTET_STREAM)
+    public Response produceTemplate() {
+        return Response.ok((StreamingOutput) outputStream -> outputStream.write(FileUtils.getBusinessMetadataHeaders().getBytes())).header("Content-Disposition", "attachment; filename=\"template_business_metadata\"").build();
+    }
+
+    /**
+     * Upload the file for creating Business Metadata in BULK
+     *
+     * @param uploadedInputStream InputStream of file
+     * @param fileDetail          FormDataContentDisposition metadata of file
+     * @return
+     * @throws AtlasBaseException
+     * @HTTP 200 If Business Metadata creation was successful
+     * @HTTP 400 If Business Metadata definition has invalid or missing information
+     * @HTTP 409 If Business Metadata already exists (duplicate qualifiedName)
+     */
+    @POST
+    @Path("/businessmetadata/import")
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    @Timed
+    public BulkImportResponse importBMAttributes(@FormDataParam("file") InputStream uploadedInputStream, @FormDataParam("file") FormDataContentDisposition fileDetail) throws AtlasBaseException {
+        return entitiesStore.bulkCreateOrUpdateBusinessAttributes(uploadedInputStream, fileDetail.getFileName());
     }
 
     private AtlasEntityType ensureEntityType(String typeName) throws AtlasBaseException {
@@ -1252,13 +1260,7 @@ public class EntityREST {
 
                 String              attrName   = key.substring(sepPos + 1);
                 String              listIdx    = key.substring(PREFIX_ATTR_.length(), sepPos);
-                Map<String, Object> attributes = ret.get(listIdx);
-
-                if (attributes == null) {
-                    attributes = new HashMap<>();
-
-                    ret.put(listIdx, attributes);
-                }
+                Map<String, Object> attributes = ret.computeIfAbsent(listIdx, k -> new HashMap<>());
 
                 attributes.put(attrName, value);
             }
@@ -1286,48 +1288,8 @@ public class EntityREST {
         }
     }
 
-    /**
-     * Get the sample Template for uploading/creating bulk BusinessMetaData
-     *
-     * @return Template File
-     * @throws AtlasBaseException
-     * @HTTP 400 If the provided fileType is not supported
-     */
-    @GET
-    @Path("/businessmetadata/import/template")
-    @Produces(MediaType.APPLICATION_OCTET_STREAM)
-    public Response produceTemplate() {
-        return Response.ok(new StreamingOutput() {
-            @Override
-            public void write(OutputStream outputStream) throws IOException, WebApplicationException {
-                outputStream.write(FileUtils.getBusinessMetadataHeaders().getBytes());
-            }
-        }).header("Content-Disposition", "attachment; filename=\"template_business_metadata\"").build();
-    }
-
-    /**
-     * Upload the file for creating Business Metadata in BULK
-     *
-     * @param uploadedInputStream InputStream of file
-     * @param fileDetail          FormDataContentDisposition metadata of file
-     * @return
-     * @throws AtlasBaseException
-     * @HTTP 200 If Business Metadata creation was successful
-     * @HTTP 400 If Business Metadata definition has invalid or missing information
-     * @HTTP 409 If Business Metadata already exists (duplicate qualifiedName)
-     */
-    @POST
-    @Path("/businessmetadata/import")
-    @Consumes(MediaType.MULTIPART_FORM_DATA)
-    @Timed
-    public BulkImportResponse importBMAttributes(@FormDataParam("file") InputStream uploadedInputStream,
-                                                 @FormDataParam("file") FormDataContentDisposition fileDetail) throws AtlasBaseException {
-
-        return entitiesStore.bulkCreateOrUpdateBusinessAttributes(uploadedInputStream, fileDetail.getFileName());
-    }
-
     private AtlasEntityHeader getEntityHeaderFromPurgedAudit(String guid) throws AtlasBaseException {
-        List<EntityAuditEventV2> auditEvents = auditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_PURGE, null, (short)1);
+        List<EntityAuditEventV2> auditEvents = auditRepository.listEventsV2(guid, EntityAuditActionV2.ENTITY_PURGE, null, (short) 1);
         AtlasEntityHeader        ret         = CollectionUtils.isNotEmpty(auditEvents) ? auditEvents.get(0).getEntityHeader() : null;
 
         if (ret == null) {

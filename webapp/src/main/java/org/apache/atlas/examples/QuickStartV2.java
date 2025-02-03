@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -52,7 +52,14 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ArrayUtils;
 
 import javax.ws.rs.core.MultivaluedMap;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static java.util.Arrays.asList;
 import static org.apache.atlas.AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME;
@@ -67,7 +74,6 @@ import static org.apache.atlas.type.AtlasTypeUtil.createRelationshipEndDef;
 import static org.apache.atlas.type.AtlasTypeUtil.createRelationshipTypeDef;
 import static org.apache.atlas.type.AtlasTypeUtil.createRequiredAttrDef;
 import static org.apache.atlas.type.AtlasTypeUtil.createTraitTypeDef;
-import static org.apache.atlas.type.AtlasTypeUtil.createUniqueRequiredAttrDef;
 import static org.apache.atlas.type.AtlasTypeUtil.toAtlasRelatedObjectId;
 import static org.apache.atlas.type.AtlasTypeUtil.toAtlasRelatedObjectIds;
 
@@ -75,11 +81,11 @@ import static org.apache.atlas.type.AtlasTypeUtil.toAtlasRelatedObjectIds;
  * A driver that sets up sample types and entities using v2 types and entity model for testing purposes.
  */
 public class QuickStartV2 {
-    public static final String ATLAS_REST_ADDRESS          = "atlas.rest.address";
+    public static final String ATLAS_REST_ADDRESS = "atlas.rest.address";
 
-    public static final String SALES_DB                    = "Sales";
-    public static final String REPORTING_DB                = "Reporting";
-    public static final String LOGGING_DB                  = "Logging";
+    public static final String SALES_DB     = "Sales";
+    public static final String REPORTING_DB = "Reporting";
+    public static final String LOGGING_DB   = "Logging";
 
     public static final String SALES_FACT_TABLE            = "sales_fact";
     public static final String PRODUCT_DIM_TABLE           = "product_dim";
@@ -90,27 +96,27 @@ public class QuickStartV2 {
     public static final String LOG_FACT_DAILY_MV_TABLE     = "log_fact_daily_mv";
     public static final String LOG_FACT_MONTHLY_MV_TABLE   = "logging_fact_monthly_mv";
 
-    public static final String TIME_ID_COLUMN              = "time_id";
-    public static final String PRODUCT_ID_COLUMN           = "product_id";
-    public static final String CUSTOMER_ID_COLUMN          = "customer_id";
-    public static final String APP_ID_COLUMN               = "app_id";
-    public static final String MACHINE_ID_COLUMN           = "machine_id";
-    public static final String PRODUCT_NAME_COLUMN         = "product_name";
-    public static final String BRAND_NAME_COLUMN           = "brand_name";
-    public static final String NAME_COLUMN                 = "name";
-    public static final String SALES_COLUMN                = "sales";
-    public static final String LOG_COLUMN                  = "log";
-    public static final String ADDRESS_COLUMN              = "address";
-    public static final String DAY_OF_YEAR_COLUMN          = "dayOfYear";
-    public static final String WEEKDAY_COLUMN              = "weekDay";
+    public static final String TIME_ID_COLUMN      = "time_id";
+    public static final String PRODUCT_ID_COLUMN   = "product_id";
+    public static final String CUSTOMER_ID_COLUMN  = "customer_id";
+    public static final String APP_ID_COLUMN       = "app_id";
+    public static final String MACHINE_ID_COLUMN   = "machine_id";
+    public static final String PRODUCT_NAME_COLUMN = "product_name";
+    public static final String BRAND_NAME_COLUMN   = "brand_name";
+    public static final String NAME_COLUMN         = "name";
+    public static final String SALES_COLUMN        = "sales";
+    public static final String LOG_COLUMN          = "log";
+    public static final String ADDRESS_COLUMN      = "address";
+    public static final String DAY_OF_YEAR_COLUMN  = "dayOfYear";
+    public static final String WEEKDAY_COLUMN      = "weekDay";
 
-    public static final String DIMENSION_CLASSIFICATION    = "Dimension";
-    public static final String FACT_CLASSIFICATION         = "Fact";
-    public static final String PII_CLASSIFICATION          = "PII";
-    public static final String METRIC_CLASSIFICATION       = "Metric";
-    public static final String ETL_CLASSIFICATION          = "ETL";
-    public static final String JDBC_CLASSIFICATION         = "JdbcAccess";
-    public static final String LOGDATA_CLASSIFICATION      = "Log Data";
+    public static final String DIMENSION_CLASSIFICATION = "Dimension";
+    public static final String FACT_CLASSIFICATION      = "Fact";
+    public static final String PII_CLASSIFICATION       = "PII";
+    public static final String METRIC_CLASSIFICATION    = "Metric";
+    public static final String ETL_CLASSIFICATION       = "ETL";
+    public static final String JDBC_CLASSIFICATION      = "JdbcAccess";
+    public static final String LOGDATA_CLASSIFICATION   = "Log Data";
 
     public static final String LOAD_SALES_DAILY_PROCESS         = "loadSalesDaily";
     public static final String LOAD_SALES_DAILY_PROCESS_EXEC1   = "loadSalesDailyExec1";
@@ -122,8 +128,8 @@ public class QuickStartV2 {
     public static final String LOAD_LOGS_MONTHLY_PROCESS_EXEC1  = "loadLogsMonthlyExec1";
     public static final String LOAD_LOGS_MONTHLY_PROCESS_EXEC2  = "loadLogsMonthlyExec2";
 
-    public static final String PRODUCT_DIM_VIEW            = "product_dim_view";
-    public static final String CUSTOMER_DIM_VIEW           = "customer_dim_view";
+    public static final String PRODUCT_DIM_VIEW  = "product_dim_view";
+    public static final String CUSTOMER_DIM_VIEW = "customer_dim_view";
 
     public static final String DATABASE_TYPE               = "DB";
     public static final String COLUMN_TYPE                 = "Column";
@@ -133,22 +139,32 @@ public class QuickStartV2 {
     public static final String LOAD_PROCESS_EXECUTION_TYPE = "LoadProcessExecution";
     public static final String STORAGE_DESC_TYPE           = "StorageDesc";
 
-    public static final String TABLE_DATABASE_TYPE         = "Table_DB";
-    public static final String VIEW_DATABASE_TYPE          = "View_DB";
-    public static final String VIEW_TABLES_TYPE            = "View_Tables";
-    public static final String TABLE_COLUMNS_TYPE          = "Table_Columns";
-    public static final String TABLE_STORAGE_DESC_TYPE     = "Table_StorageDesc";
+    public static final String TABLE_DATABASE_TYPE                 = "Table_DB";
+    public static final String VIEW_DATABASE_TYPE                  = "View_DB";
+    public static final String VIEW_TABLES_TYPE                    = "View_Tables";
+    public static final String TABLE_COLUMNS_TYPE                  = "Table_Columns";
+    public static final String TABLE_STORAGE_DESC_TYPE             = "Table_StorageDesc";
     public static final String PROCESS_PROCESS_EXECUTION_DESC_TYPE = "Process_ProcessExecution";
 
-    public static final String VERSION_1                   = "1.0";
-    public static final String MANAGED_TABLE               = "Managed";
-    public static final String EXTERNAL_TABLE              = "External";
-    public static final String CLUSTER_SUFFIX              = "@cl1";
+    public static final String VERSION_1      = "1.0";
+    public static final String MANAGED_TABLE  = "Managed";
+    public static final String EXTERNAL_TABLE = "External";
+    public static final String CLUSTER_SUFFIX = "@cl1";
 
-    public static final String[] TYPES = { DATABASE_TYPE, TABLE_TYPE, STORAGE_DESC_TYPE, COLUMN_TYPE, LOAD_PROCESS_TYPE, LOAD_PROCESS_EXECUTION_TYPE,
-                                           VIEW_TYPE, JDBC_CLASSIFICATION, ETL_CLASSIFICATION, METRIC_CLASSIFICATION,
-                                           PII_CLASSIFICATION, FACT_CLASSIFICATION, DIMENSION_CLASSIFICATION, LOGDATA_CLASSIFICATION,
-                                           TABLE_DATABASE_TYPE, VIEW_DATABASE_TYPE, VIEW_TABLES_TYPE, TABLE_COLUMNS_TYPE, TABLE_STORAGE_DESC_TYPE };
+    public static final String[] TYPES = {DATABASE_TYPE, TABLE_TYPE, STORAGE_DESC_TYPE, COLUMN_TYPE, LOAD_PROCESS_TYPE, LOAD_PROCESS_EXECUTION_TYPE,
+            VIEW_TYPE, JDBC_CLASSIFICATION, ETL_CLASSIFICATION, METRIC_CLASSIFICATION,
+            PII_CLASSIFICATION, FACT_CLASSIFICATION, DIMENSION_CLASSIFICATION, LOGDATA_CLASSIFICATION,
+            TABLE_DATABASE_TYPE, VIEW_DATABASE_TYPE, VIEW_TABLES_TYPE, TABLE_COLUMNS_TYPE, TABLE_STORAGE_DESC_TYPE};
+
+    private final AtlasClientV2 atlasClientV2;
+
+    QuickStartV2(String[] urls, String[] basicAuthUsernamePassword) {
+        atlasClientV2 = new AtlasClientV2(urls, basicAuthUsernamePassword);
+    }
+
+    QuickStartV2(String[] urls) throws AtlasException {
+        atlasClientV2 = new AtlasClientV2(urls);
+    }
 
     public static void main(String[] args) throws Exception {
         String[] basicAuthUsernamePassword = null;
@@ -184,11 +200,10 @@ public class QuickStartV2 {
             // Shows some lineage information on entity
             quickStartV2.lineage();
         } finally {
-            if (quickStartV2!= null) {
+            if (quickStartV2 != null) {
                 quickStartV2.closeConnection();
             }
         }
-
     }
 
     static String[] getServerUrl(String[] args) throws AtlasException {
@@ -201,22 +216,12 @@ public class QuickStartV2 {
 
         if (ArrayUtils.isEmpty(urls)) {
             System.out.println("org.apache.atlas.examples.QuickStartV2 <Atlas REST address <http/https>://<atlas-fqdn>:<atlas-port> like http://localhost:21000>");
+
             System.exit(-1);
         }
 
         return urls;
     }
-
-    private final AtlasClientV2 atlasClientV2;
-
-    QuickStartV2(String[] urls, String[] basicAuthUsernamePassword) {
-        atlasClientV2 = new AtlasClientV2(urls,basicAuthUsernamePassword);
-    }
-
-    QuickStartV2(String[] urls) throws AtlasException {
-        atlasClientV2 = new AtlasClientV2(urls);
-    }
-
 
     void createTypes() throws Exception {
         AtlasTypesDef atlasTypesDef = createTypeDefinitions();
@@ -230,39 +235,39 @@ public class QuickStartV2 {
 
     AtlasTypesDef createTypeDefinitions() {
         // Entity-Definitions
-        AtlasEntityDef dbTypeDef      = createClassTypeDef(DATABASE_TYPE, DATABASE_TYPE, VERSION_1, Collections.singleton("DataSet"),
-                                                            createOptionalAttrDef("locationUri", "string"),
-                                                            createOptionalAttrDef("createTime", "long"));
+        AtlasEntityDef dbTypeDef = createClassTypeDef(DATABASE_TYPE, DATABASE_TYPE, VERSION_1, Collections.singleton("DataSet"),
+                createOptionalAttrDef("locationUri", "string"),
+                createOptionalAttrDef("createTime", "long"));
 
-        AtlasEntityDef tableTypeDef   = createClassTypeDef(TABLE_TYPE, TABLE_TYPE, VERSION_1, Collections.singleton("DataSet"),
-                                                            new HashMap<String, String>() {{ put("schemaElementsAttribute", "columns"); }} ,
-                                                            createOptionalAttrDef("createTime", "long"),
-                                                            createOptionalAttrDef("lastAccessTime", "long"),
-                                                            createOptionalAttrDef("retention", "long"),
-                                                            createOptionalAttrDef("viewOriginalText", "string"),
-                                                            createOptionalAttrDef("viewExpandedText", "string"),
-                                                            createOptionalAttrDef("tableType", "string"),
-                                                            createOptionalAttrDef("temporary", "boolean"));
+        AtlasEntityDef tableTypeDef = createClassTypeDef(TABLE_TYPE, TABLE_TYPE, VERSION_1, Collections.singleton("DataSet"),
+                new HashMap<>(Collections.singletonMap("schemaElementsAttribute", "columns")),
+                createOptionalAttrDef("createTime", "long"),
+                createOptionalAttrDef("lastAccessTime", "long"),
+                createOptionalAttrDef("retention", "long"),
+                createOptionalAttrDef("viewOriginalText", "string"),
+                createOptionalAttrDef("viewExpandedText", "string"),
+                createOptionalAttrDef("tableType", "string"),
+                createOptionalAttrDef("temporary", "boolean"));
 
-        AtlasEntityDef colTypeDef     = createClassTypeDef(COLUMN_TYPE, COLUMN_TYPE, VERSION_1, Collections.singleton("DataSet"),
-                                                            new HashMap<String, String>() {{ put("schemaAttributes", "[\"name\", \"description\", \"owner\", \"type\", \"comment\", \"position\"]"); }},
-                                                            createOptionalAttrDef("dataType", "string"),
-                                                            createOptionalAttrDef("comment", "string"));
+        AtlasEntityDef colTypeDef = createClassTypeDef(COLUMN_TYPE, COLUMN_TYPE, VERSION_1, Collections.singleton("DataSet"),
+                new HashMap<>(Collections.singletonMap("schemaAttributes", "[\"name\", \"description\", \"owner\", \"type\", \"comment\", \"position\"]")),
+                createOptionalAttrDef("dataType", "string"),
+                createOptionalAttrDef("comment", "string"));
 
-        AtlasEntityDef sdTypeDef      = createClassTypeDef(STORAGE_DESC_TYPE, STORAGE_DESC_TYPE, VERSION_1, Collections.singleton("DataSet"),
-                                                            createOptionalAttrDef("location", "string"),
-                                                            createOptionalAttrDef("inputFormat", "string"),
-                                                            createOptionalAttrDef("outputFormat", "string"),
-                                                            createRequiredAttrDef("compressed", "boolean"));
+        AtlasEntityDef sdTypeDef = createClassTypeDef(STORAGE_DESC_TYPE, STORAGE_DESC_TYPE, VERSION_1, Collections.singleton("DataSet"),
+                createOptionalAttrDef("location", "string"),
+                createOptionalAttrDef("inputFormat", "string"),
+                createOptionalAttrDef("outputFormat", "string"),
+                createRequiredAttrDef("compressed", "boolean"));
 
         AtlasEntityDef processTypeDef = createClassTypeDef(LOAD_PROCESS_TYPE, LOAD_PROCESS_TYPE, VERSION_1, Collections.singleton("Process"),
-                                                            createOptionalAttrDef("userName", "string"),
-                                                            createOptionalAttrDef("startTime", "long"),
-                                                            createOptionalAttrDef("endTime", "long"),
-                                                            createRequiredAttrDef("queryText", "string"),
-                                                            createRequiredAttrDef("queryPlan", "string"),
-                                                            createRequiredAttrDef("queryId", "string"),
-                                                            createRequiredAttrDef("queryGraph", "string"));
+                createOptionalAttrDef("userName", "string"),
+                createOptionalAttrDef("startTime", "long"),
+                createOptionalAttrDef("endTime", "long"),
+                createRequiredAttrDef("queryText", "string"),
+                createRequiredAttrDef("queryPlan", "string"),
+                createRequiredAttrDef("queryId", "string"),
+                createRequiredAttrDef("queryGraph", "string"));
 
         AtlasEntityDef processExecutionTypeDef = createClassTypeDef(LOAD_PROCESS_EXECUTION_TYPE, LOAD_PROCESS_EXECUTION_TYPE, VERSION_1, Collections.singleton("ProcessExecution"),
                 createOptionalAttrDef("userName", "string"),
@@ -275,35 +280,34 @@ public class QuickStartV2 {
 
         processExecutionTypeDef.setOption(AtlasEntityDef.OPTION_DISPLAY_TEXT_ATTRIBUTE, "queryText");
 
-        AtlasEntityDef viewTypeDef    = createClassTypeDef(VIEW_TYPE, VIEW_TYPE, VERSION_1, Collections.singleton("DataSet"));
+        AtlasEntityDef viewTypeDef = createClassTypeDef(VIEW_TYPE, VIEW_TYPE, VERSION_1, Collections.singleton("DataSet"));
 
         // Relationship-Definitions
-        AtlasRelationshipDef tableDatabaseTypeDef            = createRelationshipTypeDef(TABLE_DATABASE_TYPE, TABLE_DATABASE_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
-                                                                                    createRelationshipEndDef(TABLE_TYPE, "db", SINGLE, false),
-                                                                                    createRelationshipEndDef(DATABASE_TYPE, "tables", SET, true));
+        AtlasRelationshipDef tableDatabaseTypeDef = createRelationshipTypeDef(TABLE_DATABASE_TYPE, TABLE_DATABASE_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
+                createRelationshipEndDef(TABLE_TYPE, "db", SINGLE, false),
+                createRelationshipEndDef(DATABASE_TYPE, "tables", SET, true));
 
-        AtlasRelationshipDef viewDatabaseTypeDef             = createRelationshipTypeDef(VIEW_DATABASE_TYPE, VIEW_DATABASE_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
-                                                                                    createRelationshipEndDef(VIEW_TYPE, "db", SINGLE, false),
-                                                                                    createRelationshipEndDef(DATABASE_TYPE, "views", SET, true));
+        AtlasRelationshipDef viewDatabaseTypeDef = createRelationshipTypeDef(VIEW_DATABASE_TYPE, VIEW_DATABASE_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
+                createRelationshipEndDef(VIEW_TYPE, "db", SINGLE, false),
+                createRelationshipEndDef(DATABASE_TYPE, "views", SET, true));
 
-        AtlasRelationshipDef viewTablesTypeDef               = createRelationshipTypeDef(VIEW_TABLES_TYPE, VIEW_TABLES_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
-                                                                                    createRelationshipEndDef(VIEW_TYPE, "inputTables", SET, true),
-                                                                                    createRelationshipEndDef(TABLE_TYPE, "view", SINGLE, false));
+        AtlasRelationshipDef viewTablesTypeDef = createRelationshipTypeDef(VIEW_TABLES_TYPE, VIEW_TABLES_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
+                createRelationshipEndDef(VIEW_TYPE, "inputTables", SET, true),
+                createRelationshipEndDef(TABLE_TYPE, "view", SINGLE, false));
 
-        AtlasRelationshipDef tableColumnsTypeDef             = createRelationshipTypeDef(TABLE_COLUMNS_TYPE, TABLE_COLUMNS_TYPE, VERSION_1, COMPOSITION, PropagateTags.NONE,
-                                                                                    createRelationshipEndDef(TABLE_TYPE, "columns", SET, true),
-                                                                                    createRelationshipEndDef(COLUMN_TYPE, "table", SINGLE, false));
+        AtlasRelationshipDef tableColumnsTypeDef = createRelationshipTypeDef(TABLE_COLUMNS_TYPE, TABLE_COLUMNS_TYPE, VERSION_1, COMPOSITION, PropagateTags.NONE,
+                createRelationshipEndDef(TABLE_TYPE, "columns", SET, true),
+                createRelationshipEndDef(COLUMN_TYPE, "table", SINGLE, false));
 
-        AtlasRelationshipDef tableStorageDescTypeDef         = createRelationshipTypeDef(TABLE_STORAGE_DESC_TYPE, TABLE_STORAGE_DESC_TYPE, VERSION_1, COMPOSITION, PropagateTags.NONE,
-                                                                                    createRelationshipEndDef(TABLE_TYPE, "sd", SINGLE, true),
-                                                                                    createRelationshipEndDef(STORAGE_DESC_TYPE, "table", SINGLE, false));
-        AtlasRelationshipDef processProcessExecutionTypeDef  = createRelationshipTypeDef(PROCESS_PROCESS_EXECUTION_DESC_TYPE, PROCESS_PROCESS_EXECUTION_DESC_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
-                                                                                    createRelationshipEndDef(LOAD_PROCESS_TYPE, "processExecutions", SET, true),
-                                                                                    createRelationshipEndDef(LOAD_PROCESS_EXECUTION_TYPE, "process", SINGLE, false));
-
+        AtlasRelationshipDef tableStorageDescTypeDef = createRelationshipTypeDef(TABLE_STORAGE_DESC_TYPE, TABLE_STORAGE_DESC_TYPE, VERSION_1, COMPOSITION, PropagateTags.NONE,
+                createRelationshipEndDef(TABLE_TYPE, "sd", SINGLE, true),
+                createRelationshipEndDef(STORAGE_DESC_TYPE, "table", SINGLE, false));
+        AtlasRelationshipDef processProcessExecutionTypeDef = createRelationshipTypeDef(PROCESS_PROCESS_EXECUTION_DESC_TYPE, PROCESS_PROCESS_EXECUTION_DESC_TYPE, VERSION_1, AGGREGATION, PropagateTags.NONE,
+                createRelationshipEndDef(LOAD_PROCESS_TYPE, "processExecutions", SET, true),
+                createRelationshipEndDef(LOAD_PROCESS_EXECUTION_TYPE, "process", SINGLE, false));
 
         // Classification-Definitions
-        AtlasClassificationDef dimClassifDef    = createTraitTypeDef(DIMENSION_CLASSIFICATION,  "Dimension Classification", VERSION_1, Collections.emptySet());
+        AtlasClassificationDef dimClassifDef    = createTraitTypeDef(DIMENSION_CLASSIFICATION, "Dimension Classification", VERSION_1, Collections.emptySet());
         AtlasClassificationDef factClassifDef   = createTraitTypeDef(FACT_CLASSIFICATION, "Fact Classification", VERSION_1, Collections.emptySet());
         AtlasClassificationDef piiClassifDef    = createTraitTypeDef(PII_CLASSIFICATION, "PII Classification", VERSION_1, Collections.emptySet());
         AtlasClassificationDef metricClassifDef = createTraitTypeDef(METRIC_CLASSIFICATION, "Metric Classification", VERSION_1, Collections.emptySet());
@@ -331,7 +335,7 @@ public class QuickStartV2 {
 
         testBusinessMetadataDef.setAttributeDefs(Arrays.asList(bmAttrDef1, bmAttrDef2));
 
-        List<AtlasBusinessMetadataDef> businessMetadataDefs  = asList(testBusinessMetadataDef);
+        List<AtlasBusinessMetadataDef> businessMetadataDefs = Collections.singletonList(testBusinessMetadataDef);
 
         return new AtlasTypesDef(Collections.emptyList(), Collections.emptyList(), classificationDefs, entityDefs, relationshipDefs, businessMetadataDefs);
     }
@@ -346,67 +350,67 @@ public class QuickStartV2 {
 
         // Table entities
         AtlasEntity salesFact = createTable(SALES_FACT_TABLE, "sales fact table", salesDB, "Joe", MANAGED_TABLE,
-                                                        Arrays.asList(createColumn(SALES_DB, SALES_FACT_TABLE, TIME_ID_COLUMN, "int", "time id"),
-                                                                      createColumn(SALES_DB, SALES_FACT_TABLE, PRODUCT_ID_COLUMN, "int", "product id"),
-                                                                      createColumn(SALES_DB, SALES_FACT_TABLE, CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
-                                                                      createColumn(SALES_DB, SALES_FACT_TABLE, SALES_COLUMN, "double", "product id", METRIC_CLASSIFICATION)),
-                                                        FACT_CLASSIFICATION);
+                Arrays.asList(createColumn(SALES_DB, SALES_FACT_TABLE, TIME_ID_COLUMN, "int", "time id"),
+                        createColumn(SALES_DB, SALES_FACT_TABLE, PRODUCT_ID_COLUMN, "int", "product id"),
+                        createColumn(SALES_DB, SALES_FACT_TABLE, CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
+                        createColumn(SALES_DB, SALES_FACT_TABLE, SALES_COLUMN, "double", "product id", METRIC_CLASSIFICATION)),
+                FACT_CLASSIFICATION);
 
         AtlasEntity productDim = createTable(PRODUCT_DIM_TABLE, "product dimension table", salesDB, "John Doe", MANAGED_TABLE,
-                                                        Arrays.asList(createColumn(SALES_DB, PRODUCT_DIM_TABLE, PRODUCT_ID_COLUMN, "int", "product id"),
-                                                                      createColumn(SALES_DB, PRODUCT_DIM_TABLE, PRODUCT_NAME_COLUMN, "string", "product name"),
-                                                                      createColumn(SALES_DB, PRODUCT_DIM_TABLE, BRAND_NAME_COLUMN, "int", "brand name")),
-                                                        DIMENSION_CLASSIFICATION);
+                Arrays.asList(createColumn(SALES_DB, PRODUCT_DIM_TABLE, PRODUCT_ID_COLUMN, "int", "product id"),
+                        createColumn(SALES_DB, PRODUCT_DIM_TABLE, PRODUCT_NAME_COLUMN, "string", "product name"),
+                        createColumn(SALES_DB, PRODUCT_DIM_TABLE, BRAND_NAME_COLUMN, "int", "brand name")),
+                DIMENSION_CLASSIFICATION);
 
         AtlasEntity customerDim = createTable(CUSTOMER_DIM_TABLE, "customer dimension table", salesDB, "fetl", EXTERNAL_TABLE,
-                                                        Arrays.asList(createColumn(SALES_DB, CUSTOMER_DIM_TABLE, CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
-                                                                      createColumn(SALES_DB, CUSTOMER_DIM_TABLE, NAME_COLUMN, "string", "customer name", PII_CLASSIFICATION),
-                                                                      createColumn(SALES_DB, CUSTOMER_DIM_TABLE, ADDRESS_COLUMN, "string", "customer address", PII_CLASSIFICATION)),
-                                                        DIMENSION_CLASSIFICATION);
+                Arrays.asList(createColumn(SALES_DB, CUSTOMER_DIM_TABLE, CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
+                        createColumn(SALES_DB, CUSTOMER_DIM_TABLE, NAME_COLUMN, "string", "customer name", PII_CLASSIFICATION),
+                        createColumn(SALES_DB, CUSTOMER_DIM_TABLE, ADDRESS_COLUMN, "string", "customer address", PII_CLASSIFICATION)),
+                DIMENSION_CLASSIFICATION);
 
         AtlasEntity timeDim = createTable(TIME_DIM_TABLE, "time dimension table", salesDB, "John Doe", EXTERNAL_TABLE,
-                                                        Arrays.asList(createColumn(SALES_DB, TIME_DIM_TABLE, TIME_ID_COLUMN, "int", "time id"),
-                                                                      createColumn(SALES_DB, TIME_DIM_TABLE, DAY_OF_YEAR_COLUMN, "int", "day Of Year"),
-                                                                      createColumn(SALES_DB, TIME_DIM_TABLE, WEEKDAY_COLUMN, "int", "week Day")),
-                                                        DIMENSION_CLASSIFICATION);
+                Arrays.asList(createColumn(SALES_DB, TIME_DIM_TABLE, TIME_ID_COLUMN, "int", "time id"),
+                        createColumn(SALES_DB, TIME_DIM_TABLE, DAY_OF_YEAR_COLUMN, "int", "day Of Year"),
+                        createColumn(SALES_DB, TIME_DIM_TABLE, WEEKDAY_COLUMN, "int", "week Day")),
+                DIMENSION_CLASSIFICATION);
 
         AtlasEntity loggingFactDaily = createTable(LOG_FACT_DAILY_MV_TABLE, "log fact daily materialized view", logDB, "Tim ETL", MANAGED_TABLE,
-                                                        Arrays.asList(createColumn(LOGGING_DB, LOG_FACT_DAILY_MV_TABLE, TIME_ID_COLUMN, "int", "time id"),
-                                                                      createColumn(LOGGING_DB, LOG_FACT_DAILY_MV_TABLE, APP_ID_COLUMN, "int", "app id"),
-                                                                      createColumn(LOGGING_DB, LOG_FACT_DAILY_MV_TABLE, MACHINE_ID_COLUMN, "int", "machine id"),
-                                                                      createColumn(LOGGING_DB, LOG_FACT_DAILY_MV_TABLE, LOG_COLUMN, "string", "log data", LOGDATA_CLASSIFICATION)),
-                                                        LOGDATA_CLASSIFICATION);
+                Arrays.asList(createColumn(LOGGING_DB, LOG_FACT_DAILY_MV_TABLE, TIME_ID_COLUMN, "int", "time id"),
+                        createColumn(LOGGING_DB, LOG_FACT_DAILY_MV_TABLE, APP_ID_COLUMN, "int", "app id"),
+                        createColumn(LOGGING_DB, LOG_FACT_DAILY_MV_TABLE, MACHINE_ID_COLUMN, "int", "machine id"),
+                        createColumn(LOGGING_DB, LOG_FACT_DAILY_MV_TABLE, LOG_COLUMN, "string", "log data", LOGDATA_CLASSIFICATION)),
+                LOGDATA_CLASSIFICATION);
 
         AtlasEntity loggingFactMonthly = createTable(LOG_FACT_MONTHLY_MV_TABLE, "logging fact monthly materialized view", logDB, "Tim ETL", MANAGED_TABLE,
-                                                        Arrays.asList(createColumn(LOGGING_DB, LOG_FACT_MONTHLY_MV_TABLE, TIME_ID_COLUMN, "int", "time id"),
-                                                                      createColumn(LOGGING_DB, LOG_FACT_MONTHLY_MV_TABLE, APP_ID_COLUMN, "int", "app id"),
-                                                                      createColumn(LOGGING_DB, LOG_FACT_MONTHLY_MV_TABLE, MACHINE_ID_COLUMN, "int", "machine id"),
-                                                                      createColumn(LOGGING_DB, LOG_FACT_MONTHLY_MV_TABLE, LOG_COLUMN, "string", "log data", LOGDATA_CLASSIFICATION)),
-                                                        LOGDATA_CLASSIFICATION);
+                Arrays.asList(createColumn(LOGGING_DB, LOG_FACT_MONTHLY_MV_TABLE, TIME_ID_COLUMN, "int", "time id"),
+                        createColumn(LOGGING_DB, LOG_FACT_MONTHLY_MV_TABLE, APP_ID_COLUMN, "int", "app id"),
+                        createColumn(LOGGING_DB, LOG_FACT_MONTHLY_MV_TABLE, MACHINE_ID_COLUMN, "int", "machine id"),
+                        createColumn(LOGGING_DB, LOG_FACT_MONTHLY_MV_TABLE, LOG_COLUMN, "string", "log data", LOGDATA_CLASSIFICATION)),
+                LOGDATA_CLASSIFICATION);
 
         AtlasEntity salesFactDaily = createTable(SALES_FACT_DAILY_MV_TABLE, "sales fact daily materialized view", reportingDB, "Joe BI", MANAGED_TABLE,
-                                                        Arrays.asList(createColumn(REPORTING_DB, SALES_FACT_DAILY_MV_TABLE, TIME_ID_COLUMN, "int", "time id"),
-                                                                      createColumn(REPORTING_DB, SALES_FACT_DAILY_MV_TABLE, PRODUCT_ID_COLUMN, "int", "product id"),
-                                                                      createColumn(REPORTING_DB, SALES_FACT_DAILY_MV_TABLE, CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
-                                                                      createColumn(REPORTING_DB, SALES_FACT_DAILY_MV_TABLE, SALES_COLUMN, "double", "product id", METRIC_CLASSIFICATION)),
-                                                        METRIC_CLASSIFICATION);
+                Arrays.asList(createColumn(REPORTING_DB, SALES_FACT_DAILY_MV_TABLE, TIME_ID_COLUMN, "int", "time id"),
+                        createColumn(REPORTING_DB, SALES_FACT_DAILY_MV_TABLE, PRODUCT_ID_COLUMN, "int", "product id"),
+                        createColumn(REPORTING_DB, SALES_FACT_DAILY_MV_TABLE, CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
+                        createColumn(REPORTING_DB, SALES_FACT_DAILY_MV_TABLE, SALES_COLUMN, "double", "product id", METRIC_CLASSIFICATION)),
+                METRIC_CLASSIFICATION);
 
         AtlasEntity salesFactMonthly = createTable(SALES_FACT_MONTHLY_MV_TABLE, "sales fact monthly materialized view", reportingDB, "Jane BI", MANAGED_TABLE,
-                                                        Arrays.asList(createColumn(REPORTING_DB, SALES_FACT_MONTHLY_MV_TABLE, TIME_ID_COLUMN, "int", "time id"),
-                                                                      createColumn(REPORTING_DB, SALES_FACT_MONTHLY_MV_TABLE, PRODUCT_ID_COLUMN, "int", "product id"),
-                                                                      createColumn(REPORTING_DB, SALES_FACT_MONTHLY_MV_TABLE, CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
-                                                                      createColumn(REPORTING_DB, SALES_FACT_MONTHLY_MV_TABLE, SALES_COLUMN, "double", "product id", METRIC_CLASSIFICATION)),
-                                                        METRIC_CLASSIFICATION);
+                Arrays.asList(createColumn(REPORTING_DB, SALES_FACT_MONTHLY_MV_TABLE, TIME_ID_COLUMN, "int", "time id"),
+                        createColumn(REPORTING_DB, SALES_FACT_MONTHLY_MV_TABLE, PRODUCT_ID_COLUMN, "int", "product id"),
+                        createColumn(REPORTING_DB, SALES_FACT_MONTHLY_MV_TABLE, CUSTOMER_ID_COLUMN, "int", "customer id", PII_CLASSIFICATION),
+                        createColumn(REPORTING_DB, SALES_FACT_MONTHLY_MV_TABLE, SALES_COLUMN, "double", "product id", METRIC_CLASSIFICATION)),
+                METRIC_CLASSIFICATION);
 
         // View entities
-        createView(PRODUCT_DIM_VIEW, reportingDB, asList(productDim), DIMENSION_CLASSIFICATION, JDBC_CLASSIFICATION);
-        createView(CUSTOMER_DIM_VIEW, reportingDB, asList(customerDim), DIMENSION_CLASSIFICATION, JDBC_CLASSIFICATION);
+        createView(PRODUCT_DIM_VIEW, reportingDB, Collections.singletonList(productDim), DIMENSION_CLASSIFICATION, JDBC_CLASSIFICATION);
+        createView(CUSTOMER_DIM_VIEW, reportingDB, Collections.singletonList(customerDim), DIMENSION_CLASSIFICATION, JDBC_CLASSIFICATION);
 
         // Process entities
         AtlasEntity loadProcess = createProcess(LOAD_SALES_DAILY_PROCESS, "hive query for daily summary", "John ETL",
-                      asList(salesFact, timeDim),
-                      asList(salesFactDaily),
-                      "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
+                asList(salesFact, timeDim),
+                Collections.singletonList(salesFactDaily),
+                "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
 
         createProcessExecution(loadProcess, LOAD_SALES_DAILY_PROCESS_EXEC1, "hive query execution 1 for daily summary", "John ETL",
                 "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
@@ -415,44 +419,23 @@ public class QuickStartV2 {
                 "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
 
         AtlasEntity loadProcess2 = createProcess(LOAD_SALES_MONTHLY_PROCESS, "hive query for monthly summary", "John ETL",
-                      asList(salesFactDaily),
-                      asList(salesFactMonthly),
-                      "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
+                Collections.singletonList(salesFactDaily),
+                Collections.singletonList(salesFactMonthly),
+                "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
         createProcessExecution(loadProcess2, LOAD_SALES_MONTHLY_PROCESS_EXEC1, "hive query execution 1 for monthly summary", "John ETL",
                 "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
 
         createProcessExecution(loadProcess2, LOAD_SALES_MONTHLY_PROCESS_EXEC2, "hive query execution 2 for monthly summary", "John ETL",
                 "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
 
-
         AtlasEntity loadProcess3 = createProcess(LOAD_LOGS_MONTHLY_PROCESS, "hive query for monthly summary", "Tim ETL",
-                      asList(loggingFactDaily),
-                      asList(loggingFactMonthly),
-                      "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
+                Collections.singletonList(loggingFactDaily),
+                Collections.singletonList(loggingFactMonthly),
+                "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
         createProcessExecution(loadProcess3, LOAD_LOGS_MONTHLY_PROCESS_EXEC1, "hive query execution 1 for monthly summary", "Tim ETL",
                 "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
         createProcessExecution(loadProcess3, LOAD_LOGS_MONTHLY_PROCESS_EXEC2, "hive query execution 1 for monthly summary", "Tim ETL",
                 "create table as select ", "plan", "id", "graph", ETL_CLASSIFICATION);
-    }
-
-    private AtlasEntity createInstance(AtlasEntity entity) throws Exception {
-        return createInstance(new AtlasEntityWithExtInfo(entity));
-    }
-
-    private AtlasEntity createInstance(AtlasEntityWithExtInfo entityWithExtInfo) throws Exception {
-        AtlasEntity             ret      = null;
-        EntityMutationResponse  response = atlasClientV2.createEntity(entityWithExtInfo);
-        List<AtlasEntityHeader> entities = response.getEntitiesByOperation(EntityOperation.CREATE);
-
-        if (CollectionUtils.isNotEmpty(entities)) {
-            AtlasEntityWithExtInfo getByGuidResponse = atlasClientV2.getEntityByGuid(entities.get(0).getGuid());
-
-            ret = getByGuidResponse.getEntity();
-
-            System.out.println("Created entity of type [" + ret.getTypeName() + "], guid: " + ret.getGuid());
-        }
-
-        return ret;
     }
 
     AtlasEntity createDatabase(String name, String description, String owner, String locationUri, String... classificationNames) throws Exception {
@@ -470,19 +453,6 @@ public class QuickStartV2 {
         entity.setClassifications(toAtlasClassifications(classificationNames));
 
         return createInstance(entity);
-    }
-
-    private List<AtlasClassification> toAtlasClassifications(String[] classificationNames) {
-        List<AtlasClassification> ret             = new ArrayList<>();
-        List<String>              classifications = asList(classificationNames);
-
-        if (CollectionUtils.isNotEmpty(classifications)) {
-            for (String classificationName : classifications) {
-                ret.add(new AtlasClassification(classificationName));
-            }
-        }
-
-        return ret;
     }
 
     AtlasEntity createStorageDescriptor(String location, String inputFormat, String outputFormat, boolean compressed) {
@@ -513,8 +483,7 @@ public class QuickStartV2 {
         return ret;
     }
 
-    AtlasEntity createTable(String name, String description, AtlasEntity database, String owner, String tableType,
-                            List<AtlasEntity> columns, String... classificationNames) throws Exception {
+    AtlasEntity createTable(String name, String description, AtlasEntity database, String owner, String tableType, List<AtlasEntity> columns, String... classificationNames) throws Exception {
         AtlasEntity tblEntity = new AtlasEntity(TABLE_TYPE);
 
         // set attributes
@@ -529,6 +498,7 @@ public class QuickStartV2 {
 
         // set relationship attributes
         AtlasEntity storageDesc = createStorageDescriptor("hdfs://host:8000/apps/warehouse/sales", "TextInputFormat", "TextOutputFormat", true);
+
         storageDesc.setRelationshipAttribute("table", toAtlasRelatedObjectId(tblEntity));
 
         tblEntity.setRelationshipAttribute("db", toAtlasRelatedObjectId(database));
@@ -552,9 +522,7 @@ public class QuickStartV2 {
         return createInstance(entityWithExtInfo);
     }
 
-    AtlasEntity createProcess(String name, String description, String user, List<AtlasEntity> inputs, List<AtlasEntity> outputs,
-            String queryText, String queryPlan, String queryId, String queryGraph, String... classificationNames) throws Exception {
-
+    AtlasEntity createProcess(String name, String description, String user, List<AtlasEntity> inputs, List<AtlasEntity> outputs, String queryText, String queryPlan, String queryId, String queryGraph, String... classificationNames) throws Exception {
         AtlasEntity entity = new AtlasEntity(LOAD_PROCESS_TYPE);
 
         // set attributes
@@ -579,15 +547,14 @@ public class QuickStartV2 {
         return createInstance(entity);
     }
 
-    AtlasEntity createProcessExecution(AtlasEntity hiveProcess, String name, String description, String user,
-                              String queryText, String queryPlan, String queryId, String queryGraph, String... classificationNames) throws Exception {
+    AtlasEntity createProcessExecution(AtlasEntity hiveProcess, String name, String description, String user, String queryText, String queryPlan, String queryId, String queryGraph, String... classificationNames) throws Exception {
+        AtlasEntity entity    = new AtlasEntity(LOAD_PROCESS_EXECUTION_TYPE);
+        Long        startTime = System.currentTimeMillis();
+        Long        endTime   = System.currentTimeMillis() + 10000;
 
-        AtlasEntity entity = new AtlasEntity(LOAD_PROCESS_EXECUTION_TYPE);
-        Long startTime = System.currentTimeMillis();
-        Long endTime = System.currentTimeMillis() + 10000;
         // set attributes
         entity.setAttribute("name", name);
-        entity.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, name + CLUSTER_SUFFIX + startTime.toString() + endTime.toString());
+        entity.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, name + CLUSTER_SUFFIX + startTime + endTime);
         entity.setAttribute("description", description);
         entity.setAttribute("user", user);
         entity.setAttribute("startTime", startTime);
@@ -621,6 +588,39 @@ public class QuickStartV2 {
         return createInstance(entity);
     }
 
+    private AtlasEntity createInstance(AtlasEntity entity) throws Exception {
+        return createInstance(new AtlasEntityWithExtInfo(entity));
+    }
+
+    private AtlasEntity createInstance(AtlasEntityWithExtInfo entityWithExtInfo) throws Exception {
+        AtlasEntity             ret      = null;
+        EntityMutationResponse  response = atlasClientV2.createEntity(entityWithExtInfo);
+        List<AtlasEntityHeader> entities = response.getEntitiesByOperation(EntityOperation.CREATE);
+
+        if (CollectionUtils.isNotEmpty(entities)) {
+            AtlasEntityWithExtInfo getByGuidResponse = atlasClientV2.getEntityByGuid(entities.get(0).getGuid());
+
+            ret = getByGuidResponse.getEntity();
+
+            System.out.println("Created entity of type [" + ret.getTypeName() + "], guid: " + ret.getGuid());
+        }
+
+        return ret;
+    }
+
+    private List<AtlasClassification> toAtlasClassifications(String[] classificationNames) {
+        List<AtlasClassification> ret             = new ArrayList<>();
+        List<String>              classifications = asList(classificationNames);
+
+        if (CollectionUtils.isNotEmpty(classifications)) {
+            for (String classificationName : classifications) {
+                ret.add(new AtlasClassification(classificationName));
+            }
+        }
+
+        return ret;
+    }
+
     private void verifyTypesCreated() throws Exception {
         MultivaluedMap<String, String> searchParams = new MultivaluedMapImpl();
 
@@ -631,14 +631,12 @@ public class QuickStartV2 {
             SearchFilter  searchFilter = new SearchFilter(searchParams);
             AtlasTypesDef searchDefs   = atlasClientV2.getAllTypeDefs(searchFilter);
 
-            assert (!searchDefs.isEmpty());
-
             System.out.println("Created type [" + typeName + "]");
         }
     }
 
     private String[] getDSLQueries() {
-        return new String[]{
+        return new String[] {
                 "from DB",
                 "DB",
                 "DB where name=%22Reporting%22",
@@ -679,10 +677,10 @@ public class QuickStartV2 {
                 "Table where name=\"sales_fact\", columns",
                 "Table where name=\"sales_fact\", columns as column select column.name, column.dataType, column.comment",
                 "from DataSet",
-                "from Process" };
+                "from Process"};
     }
 
-    private void search() throws Exception {
+    private void search() {
         System.out.println("\nSample DSL Queries: ");
 
         for (String dslQuery : getDSLQueries()) {
@@ -690,9 +688,9 @@ public class QuickStartV2 {
                 AtlasSearchResult results = atlasClientV2.dslSearchWithParams(dslQuery, 10, 0);
 
                 if (results != null) {
-                    List<AtlasEntityHeader> entitiesResult = results.getEntities();
+                    List<AtlasEntityHeader>   entitiesResult  = results.getEntities();
                     List<AtlasFullTextResult> fullTextResults = results.getFullTextResult();
-                    AttributeSearchResult attribResult = results.getAttributes();
+                    AttributeSearchResult     attribResult    = results.getAttributes();
 
                     if (CollectionUtils.isNotEmpty(entitiesResult)) {
                         System.out.println("query [" + dslQuery + "] returned [" + entitiesResult.size() + "] rows.");
@@ -723,8 +721,7 @@ public class QuickStartV2 {
             AtlasEntityHeader fromEntity = guidEntityMap.get(relation.getFromEntityId());
             AtlasEntityHeader toEntity   = guidEntityMap.get(relation.getToEntityId());
 
-            System.out.println(fromEntity.getDisplayText() + "(" + fromEntity.getTypeName() + ") -> " +
-                               toEntity.getDisplayText()   + "(" + toEntity.getTypeName() + ")");
+            System.out.println(fromEntity.getDisplayText() + "(" + fromEntity.getTypeName() + ") -> " + toEntity.getDisplayText() + "(" + toEntity.getTypeName() + ")");
         }
     }
 

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -51,6 +51,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+
 import java.util.List;
 import java.util.Set;
 
@@ -86,9 +87,7 @@ public class TypesREST {
     public AtlasBaseTypeDef getTypeDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
-        AtlasBaseTypeDef ret = typeDefStore.getByName(name);
-
-        return ret;
+        return typeDefStore.getByName(name);
     }
 
     /**
@@ -104,9 +103,7 @@ public class TypesREST {
     public AtlasBaseTypeDef getTypeDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
-        AtlasBaseTypeDef ret = typeDefStore.getByGuid(guid);
-
-        return ret;
+        return typeDefStore.getByGuid(guid);
     }
 
     /**
@@ -130,7 +127,7 @@ public class TypesREST {
     /**
      * Bulk retrieval API for retrieving all type definitions in Atlas
      * @return A composite wrapper object with lists of all type definitions
-     * @throws Exception
+     * @throws AtlasBaseException
      * @HTTP 200 {@link AtlasTypesDef} with type definitions matching the search criteria or else returns empty list of type definitions
      */
     @GET
@@ -139,9 +136,7 @@ public class TypesREST {
     public AtlasTypesDef getAllTypeDefs(@Context HttpServletRequest httpServletRequest) throws AtlasBaseException {
         SearchFilter searchFilter = getSearchFilter(httpServletRequest);
 
-        AtlasTypesDef typesDef = typeDefStore.searchTypesDef(searchFilter);
-
-        return typesDef;
+        return typeDefStore.searchTypesDef(searchFilter);
     }
 
     /**
@@ -158,9 +153,7 @@ public class TypesREST {
     public AtlasEnumDef getEnumDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
-        AtlasEnumDef ret = typeDefStore.getEnumDefByName(name);
-
-        return ret;
+        return typeDefStore.getEnumDefByName(name);
     }
 
     /**
@@ -177,11 +170,8 @@ public class TypesREST {
     public AtlasEnumDef getEnumDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
-        AtlasEnumDef ret = typeDefStore.getEnumDefByGuid(guid);
-
-        return ret;
+        return typeDefStore.getEnumDefByGuid(guid);
     }
-
 
     /**
      * Get the struct definition by it's name (unique)
@@ -197,9 +187,7 @@ public class TypesREST {
     public AtlasStructDef getStructDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
-        AtlasStructDef ret = typeDefStore.getStructDefByName(name);
-
-        return ret;
+        return typeDefStore.getStructDefByName(name);
     }
 
     /**
@@ -216,9 +204,7 @@ public class TypesREST {
     public AtlasStructDef getStructDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
-        AtlasStructDef ret = typeDefStore.getStructDefByGuid(guid);
-
-        return ret;
+        return typeDefStore.getStructDefByGuid(guid);
     }
 
     /**
@@ -235,9 +221,7 @@ public class TypesREST {
     public AtlasClassificationDef getClassificationDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
-        AtlasClassificationDef ret = typeDefStore.getClassificationDefByName(name);
-
-        return ret;
+        return typeDefStore.getClassificationDefByName(name);
     }
 
     /**
@@ -254,9 +238,7 @@ public class TypesREST {
     public AtlasClassificationDef getClassificationDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
-        AtlasClassificationDef ret = typeDefStore.getClassificationDefByGuid(guid);
-
-        return ret;
+        return typeDefStore.getClassificationDefByGuid(guid);
     }
 
     /**
@@ -273,9 +255,7 @@ public class TypesREST {
     public AtlasEntityDef getEntityDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
-        AtlasEntityDef ret = typeDefStore.getEntityDefByName(name);
-
-        return ret;
+        return typeDefStore.getEntityDefByName(name);
     }
 
     /**
@@ -292,10 +272,9 @@ public class TypesREST {
     public AtlasEntityDef getEntityDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
-        AtlasEntityDef ret = typeDefStore.getEntityDefByGuid(guid);
-
-        return ret;
+        return typeDefStore.getEntityDefByGuid(guid);
     }
+
     /**
      * Get the relationship definition by it's name (unique)
      * @param name relationship name
@@ -310,9 +289,7 @@ public class TypesREST {
     public AtlasRelationshipDef getRelationshipDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
-        AtlasRelationshipDef ret = typeDefStore.getRelationshipDefByName(name);
-
-        return ret;
+        return typeDefStore.getRelationshipDefByName(name);
     }
 
     /**
@@ -329,9 +306,7 @@ public class TypesREST {
     public AtlasRelationshipDef getRelationshipDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
-        AtlasRelationshipDef ret = typeDefStore.getRelationshipDefByGuid(guid);
-
-        return ret;
+        return typeDefStore.getRelationshipDefByGuid(guid);
     }
 
     /**
@@ -348,9 +323,7 @@ public class TypesREST {
     public AtlasBusinessMetadataDef getBusinessMetadataDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
-        AtlasBusinessMetadataDef ret = typeDefStore.getBusinessMetadataDefByGuid(guid);
-
-        return ret;
+        return typeDefStore.getBusinessMetadataDefByGuid(guid);
     }
 
     /**
@@ -367,9 +340,7 @@ public class TypesREST {
     public AtlasBusinessMetadataDef getBusinessMetadataDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
 
-        AtlasBusinessMetadataDef ret = typeDefStore.getBusinessMetadataDefByName(name);
-
-        return ret;
+        return typeDefStore.getBusinessMetadataDefByName(name);
     }
 
     /* Bulk API operation */
@@ -380,7 +351,7 @@ public class TypesREST {
      * @param typesDef A composite wrapper object with corresponding lists of the type definition
      * @return A composite wrapper object with lists of type definitions that were successfully
      * created
-     * @throws Exception
+     * @throws AtlasBaseException
      * @HTTP 200 On successful update of requested type definitions
      * @HTTP 400 On validation failure for any type definitions
      */
@@ -392,8 +363,7 @@ public class TypesREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.createAtlasTypeDefs(" +
-                                                               AtlasTypeUtil.toDebugString(typesDef) + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.createAtlasTypeDefs(" + AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
 
             return typeDefStore.createTypesDef(typesDef);
@@ -406,7 +376,7 @@ public class TypesREST {
      * Bulk update API for all types, changes detected in the type definitions would be persisted
      * @param typesDef A composite object that captures all type definition changes
      * @return A composite object with lists of type definitions that were updated
-     * @throws Exception
+     * @throws AtlasBaseException
      * @HTTP 200 On successful update of requested type definitions
      * @HTTP 400 On validation failure for any type definitions
      */
@@ -419,8 +389,7 @@ public class TypesREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.updateAtlasTypeDefs(" +
-                                                               AtlasTypeUtil.toDebugString(typesDef) + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.updateAtlasTypeDefs(" + AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
 
             return typeDefStore.updateTypesDef(typesDef);
@@ -432,7 +401,7 @@ public class TypesREST {
     /**
      * Bulk delete API for all types
      * @param typesDef A composite object that captures all types to be deleted
-     * @throws Exception
+     * @throws AtlasBaseException
      * @HTTP 204 On successful deletion of the requested type definitions
      * @HTTP 400 On validation failure for any type definitions
      */
@@ -445,11 +414,8 @@ public class TypesREST {
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeDefs(" +
-                                                               AtlasTypeUtil.toDebugString(typesDef) + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeDefs(" + AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
-
-
 
             typeDefStore.deleteTypesDef(typesDef);
         } finally {
