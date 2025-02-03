@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.store.graph;
 
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.repository.graphdb.AtlasVertex;

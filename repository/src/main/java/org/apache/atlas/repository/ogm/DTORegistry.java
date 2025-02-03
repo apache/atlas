@@ -44,7 +44,7 @@ public class DTORegistry {
     }
 
     public <T extends AtlasBaseModelObject> DataTransferObject<T> get(Class<T> t) {
-        return (DataTransferObject<T> ) typeDTOMap.get(t);
+        return (DataTransferObject<T>) typeDTOMap.get(t);
     }
 
     private <T extends AtlasBaseModelObject> void registerDTO(DataTransferObject<T> dto) {
