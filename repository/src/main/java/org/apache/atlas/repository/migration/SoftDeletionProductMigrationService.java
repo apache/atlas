@@ -16,6 +16,7 @@ import java.util.Set;
 
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
+import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 
 public class SoftDeletionProductMigrationService {
@@ -120,7 +121,7 @@ public class SoftDeletionProductMigrationService {
     private boolean deleteEdgeForArchivedProduct(AtlasVertex productVertex) {
         boolean isCommitRequired = false;
         try {
-            Long updatedTime = productVertex.getProperty("__modificationTimestamp", Long.class);
+            Long updatedTime = productVertex.getProperty(MODIFICATION_TIMESTAMP, Long.class);
             Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH).iterator();
 
             if (existingEdges == null || !existingEdges.hasNext()) {
@@ -130,7 +131,7 @@ public class SoftDeletionProductMigrationService {
 
             while (existingEdges.hasNext()) {
                 AtlasEdge edge = existingEdges.next();
-                Long modifiedEdgeTimestamp = edge.getProperty("__modificationTimestamp", Long.class);
+                Long modifiedEdgeTimestamp = edge.getProperty(MODIFICATION_TIMESTAMP, Long.class);
 
                 if (!updatedTime.equals(modifiedEdgeTimestamp)) {
                     LOG.info("Removing edge with different timestamp: {}", edge);
