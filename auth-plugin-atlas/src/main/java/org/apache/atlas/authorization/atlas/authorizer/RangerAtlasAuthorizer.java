@@ -705,14 +705,19 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                 for (AtlasClassification classificationToAuthorize : request.getEntityClassifications()) {
                     rangerResource.setValue(RESOURCE_ENTITY_CLASSIFICATION, request.getClassificationTypeAndAllSuperTypes(classificationToAuthorize.getTypeName()));
 
+                    LOG.info("Checking access for classification: " + classificationToAuthorize.getTypeName());
+
                     ret = checkAccess(rangerRequest, auditHandler);
 
                     if (!ret) {
+                        LOG.info("Access denied for classification: " + classificationToAuthorize.getTypeName());
                         break;
                     }
                 }
             } else {
                 rangerResource.setValue(RESOURCE_ENTITY_CLASSIFICATION, ENTITY_NOT_CLASSIFIED );
+
+                LOG.info("Checking access for entity without classification");
 
                 ret = checkAccess(rangerRequest, auditHandler);
             }
@@ -722,6 +727,8 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
                 auditHandler.flushAudit();
             }
         }
+
+        LOG.info("from RangerAtlasAuthorization isAccessAllowed(" + request + "): " + ret);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== isAccessAllowed(" + request + "): " + ret);
@@ -810,6 +817,8 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
             }
             
             RangerAccessResult result = plugin.isAccessAllowed(request, auditHandler);
+
+            LOG.info("from RangerAtlasAuthorization checkAccess(" + request + "): " + result.getIsAllowed());
 
             ret = result != null && result.getIsAllowed();
         

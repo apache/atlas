@@ -476,6 +476,8 @@ public class RangerBasePlugin {
 
 		if (policyEngine != null) {
 			ret = policyEngine.evaluatePolicies(request, RangerPolicy.POLICY_TYPE_ACCESS, null);
+			LOG.info("Policy engine is not null with the value " + policyEngine);
+			LOG.info("Policy engine evaluation result is " + ret);
 		}
 
 		if (ret != null) {
