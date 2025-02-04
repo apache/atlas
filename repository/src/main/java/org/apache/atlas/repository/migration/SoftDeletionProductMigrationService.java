@@ -58,7 +58,9 @@ public class SoftDeletionProductMigrationService {
                                 count++;
                                 totalUpdatedCount++;
                             }
-                        } else {
+                        }
+
+                        if (DELETED.equals(vertexStatus)) {
                             LOG.info("Removing edges for Archived Product: {}", productGuid);
                             boolean isCommitRequired = deleteEdgeForArchivedProduct(productVertex);
                             if (isCommitRequired) {

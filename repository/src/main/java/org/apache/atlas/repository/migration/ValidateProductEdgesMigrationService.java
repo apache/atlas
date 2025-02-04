@@ -58,7 +58,9 @@ public class ValidateProductEdgesMigrationService {
                             } else {
                                 totalProductChecked++;
                             }
-                        } else {
+                        }
+
+                        if (DELETED.equals(vertexStatus)) {
                             LOG.info("Validating edges for Archived Product: {}", productGuid);
                             boolean edgeWithDifferentTimeStampFound = validateEdgeForArchivedProduct(productVertex);
                             if (edgeWithDifferentTimeStampFound) {
