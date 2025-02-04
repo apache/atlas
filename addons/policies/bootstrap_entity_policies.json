@@ -3395,10 +3395,47 @@
                     "$api-token-default-access"
                 ],
                 "policyResourceCategory": "ENTITY",
-                "isPolicyEnabled": false,
+                "isPolicyEnabled": true,
                 "policyResources":
                 [
                     "entity-type:AIModel",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "CUD_AI_APPLICATION_ENTITY",
+                "qualifiedName": "CUD_AI_APPLICATION_ENTITY",
+                "description": "Allows user to perform cud operation on AIApplication assets.",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources":
+                [
+                    "entity-type:AIApplication",
                     "entity-classification:*",
                     "entity:*"
                 ],
