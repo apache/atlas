@@ -17,11 +17,9 @@
  */
 package org.apache.atlas.web.integration;
 
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.model.discovery.AtlasQuickSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
@@ -50,7 +48,6 @@ import java.util.List;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -65,24 +62,26 @@ public class BasicSearchIT extends BaseResourceIT {
         super.setUp();
 
         String smallDatasetFileName = "hive-db-50-tables.zip";
+
         atlasClientV2.importData(new AtlasImportRequest(), TestResourceFileUtils.getTestFilePath(smallDatasetFileName));
 
         // Create a entity with name/qualified name having special characters
 
         // Create a test tag
         if (!atlasClientV2.typeWithNameExists("fooTag")) {
-            AtlasClassificationDef testClassificationDef = AtlasTypeUtil.createTraitTypeDef("fooTag", "Test tag", "1.0", Collections.<String>emptySet());
+            AtlasClassificationDef testClassificationDef = AtlasTypeUtil.createTraitTypeDef("fooTag", "Test tag", "1.0", Collections.emptySet());
             AtlasTypesDef          typesDef              = new AtlasTypesDef();
+
             typesDef.getClassificationDefs().add(testClassificationDef);
+
             atlasClientV2.createAtlasTypeDefs(typesDef);
         }
 
         try {
-            atlasClientV2.getEntityByAttribute("hdfs_path", new HashMap<String, String>() {{
-                put("qualifiedName", URLEncoder.encode("test$1test+ - && || ! ( ) { } [ ] ^ < > ; : \" % * ` ~", "UTF-8"));
-            }});
+            atlasClientV2.getEntityByAttribute("hdfs_path", new HashMap<>(Collections.singletonMap("qualifiedName", URLEncoder.encode("test$1test+ - && || ! ( ) { } [ ] ^ < > ; : \" % * ` ~", "UTF-8"))));
         } catch (AtlasServiceException e) {
             AtlasEntity hdfsEntity = new AtlasEntity("hdfs_path");
+
             hdfsEntity.setGuid("-1");
             hdfsEntity.setAttribute("description", "1test+ - && || ! ( ) { } [ ] ^ < > ; : \" % * ` ~");
             hdfsEntity.setAttribute("name", "1test+ - && || ! ( ) { } [ ] ^ < > ; : \" % * ` ~");
@@ -90,10 +89,11 @@ public class BasicSearchIT extends BaseResourceIT {
             hdfsEntity.setAttribute("qualifiedName", "test$1test+ - && || ! ( ) { } [ ] ^ < > ; : \" % * ` ~");
             hdfsEntity.setAttribute("path", "/test/foo");
 
-            hdfsEntity.setClassifications(new ArrayList<AtlasClassification>());
+            hdfsEntity.setClassifications(new ArrayList<>());
             hdfsEntity.getClassifications().add(new AtlasClassification("fooTag"));
 
             EntityMutationResponse entityMutationResponse = atlasClientV2.createEntity(new AtlasEntity.AtlasEntityWithExtInfo(hdfsEntity));
+
             if (entityMutationResponse.getCreatedEntities() != null) {
                 assertEquals(entityMutationResponse.getCreatedEntities().size(), 1);
             } else if (entityMutationResponse.getUpdatedEntities() != null) {
@@ -113,7 +113,7 @@ public class BasicSearchIT extends BaseResourceIT {
 
     @DataProvider
     public Object[][] basicSearchJSONNames() {
-        return new String[][]{
+        return new String[][] {
                 {"search-parameters/entity-filters"},
                 {"search-parameters/tag-filters"},
                 {"search-parameters/combination-filters"}
@@ -122,7 +122,7 @@ public class BasicSearchIT extends BaseResourceIT {
 
     @DataProvider
     public Object[][] attributeSearchJSONNames() {
-        return new String[][]{
+        return new String[][] {
                 {"search-parameters/attribute-filters"}
         };
     }
@@ -130,8 +130,8 @@ public class BasicSearchIT extends BaseResourceIT {
     @Test(dataProvider = "basicSearchJSONNames")
     public void testDiscoveryWithSearchParameters(String jsonFile) {
         try {
-            BasicSearchParametersWithExpectation[] testExpectations =
-                    TestResourceFileUtils.readObjectFromJson(jsonFile, BasicSearchParametersWithExpectation[].class);
+            BasicSearchParametersWithExpectation[] testExpectations = TestResourceFileUtils.readObjectFromJson(jsonFile, BasicSearchParametersWithExpectation[].class);
+
             assertNotNull(testExpectations);
 
             for (BasicSearchParametersWithExpectation testExpectation : testExpectations) {
@@ -139,6 +139,7 @@ public class BasicSearchIT extends BaseResourceIT {
                 LOG.info("SearchParameters :{}", testExpectation.searchParameters);
 
                 AtlasSearchResult searchResult = atlasClientV2.facetedSearch(testExpectation.searchParameters);
+
                 if (testExpectation.expectedCount > 0) {
                     assertNotNull(searchResult.getEntities());
                     assertEquals(searchResult.getEntities().size(), testExpectation.expectedCount);
@@ -146,8 +147,7 @@ public class BasicSearchIT extends BaseResourceIT {
 
                 if (testExpectation.searchParameters.getSortBy() != null && !testExpectation.searchParameters.getSortBy().isEmpty()) {
                     assertNotNull(searchResult.getEntities());
-                    assertEquals(searchResult.getEntities().get(0).getAttribute("name"),
-                            "testtable_3");
+                    assertEquals(searchResult.getEntities().get(0).getAttribute("name"), "testtable_3");
                 }
             }
         } catch (IOException | AtlasServiceException e) {
@@ -158,20 +158,23 @@ public class BasicSearchIT extends BaseResourceIT {
     @Test(dataProvider = "attributeSearchJSONNames")
     public void testAttributeSearch(String jsonFile) {
         try {
-            BasicSearchParametersWithExpectation[] testExpectations =
-                    TestResourceFileUtils.readObjectFromJson(jsonFile, BasicSearchParametersWithExpectation[].class);
+            BasicSearchParametersWithExpectation[] testExpectations = TestResourceFileUtils.readObjectFromJson(jsonFile, BasicSearchParametersWithExpectation[].class);
+
             assertNotNull(testExpectations);
 
             for (BasicSearchParametersWithExpectation testExpectation : testExpectations) {
                 LOG.info("TestDescription  :{}", testExpectation.testDescription);
                 LOG.info("SearchParameters :{}", testExpectation.searchParameters);
+
                 SearchParameters parameters = testExpectation.getSearchParameters();
 
                 if (parameters.getEntityFilters() == null || parameters.getEntityFilters().getAttributeName() == null) {
                     continue;
                 }
+
                 SearchParameters.FilterCriteria filterCriteria = parameters.getEntityFilters();
-                AtlasSearchResult searchResult = atlasClientV2.attributeSearch(parameters.getTypeName(), filterCriteria.getAttributeName(), filterCriteria.getAttributeValue(), parameters.getLimit(), parameters.getOffset());
+                AtlasSearchResult               searchResult   = atlasClientV2.attributeSearch(parameters.getTypeName(), filterCriteria.getAttributeName(), filterCriteria.getAttributeValue(), parameters.getLimit(), parameters.getOffset());
+
                 if (testExpectation.expectedCount > 0) {
                     assertNotNull(searchResult.getEntities());
                     assertEquals(searchResult.getEntities().size(), testExpectation.expectedCount);
@@ -179,8 +182,7 @@ public class BasicSearchIT extends BaseResourceIT {
 
                 if (testExpectation.searchParameters.getSortBy() != null && !testExpectation.searchParameters.getSortBy().isEmpty()) {
                     assertNotNull(searchResult.getEntities());
-                    assertEquals(searchResult.getEntities().get(0).getAttribute("name"),
-                            "testtable_1");
+                    assertEquals(searchResult.getEntities().get(0).getAttribute("name"), "testtable_1");
                 }
             }
         } catch (IOException | AtlasServiceException e) {
@@ -191,16 +193,18 @@ public class BasicSearchIT extends BaseResourceIT {
     @Test(dataProvider = "attributeSearchJSONNames")
     public void testSavedSearch(String jsonFile) {
         try {
-            BasicSearchParametersWithExpectation[] testExpectations =
-                    TestResourceFileUtils.readObjectFromJson(jsonFile, BasicSearchParametersWithExpectation[].class);
+            BasicSearchParametersWithExpectation[] testExpectations = TestResourceFileUtils.readObjectFromJson(jsonFile, BasicSearchParametersWithExpectation[].class);
+
             assertNotNull(testExpectations);
 
             for (BasicSearchParametersWithExpectation testExpectation : testExpectations) {
                 LOG.info("TestDescription  :{}", testExpectation.testDescription);
                 LOG.info("SearchParameters :{}", testExpectation.searchParameters);
+
                 SearchParameters parameters = testExpectation.getSearchParameters();
 
                 AtlasUserSavedSearch savedSearch = new AtlasUserSavedSearch();
+
                 savedSearch.setSearchType(AtlasUserSavedSearch.SavedSearchType.BASIC);
                 savedSearch.setName("basic_test");
                 savedSearch.setGuid("");
@@ -208,8 +212,11 @@ public class BasicSearchIT extends BaseResourceIT {
                 savedSearch.setOwnerName("admin");
 
                 userSavedSearch = atlasClientV2.addSavedSearch(savedSearch);
+
                 assertNotNull(userSavedSearch);
+
                 List<AtlasUserSavedSearch> list = atlasClientV2.getSavedSearches("admin");
+
                 assertNotNull(list);
             }
         } catch (IOException | AtlasServiceException e) {
@@ -221,6 +228,7 @@ public class BasicSearchIT extends BaseResourceIT {
     public void testExecuteSavedSearchByName() {
         try {
             AtlasSearchResult searchResult = atlasClientV2.executeSavedSearch("admin", "basic_test");
+
             assertNotNull(searchResult);
         } catch (AtlasServiceException e) {
             fail(e.getMessage());
@@ -231,7 +239,9 @@ public class BasicSearchIT extends BaseResourceIT {
     public void tesUpdateSavedSearch() {
         try {
             userSavedSearch.setSearchType(AtlasUserSavedSearch.SavedSearchType.ADVANCED);
+
             userSavedSearch = atlasClientV2.updateSavedSearch(userSavedSearch);
+
             assertNotNull(userSavedSearch);
             assertEquals(userSavedSearch.getSearchType(), AtlasUserSavedSearch.SavedSearchType.ADVANCED);
         } catch (AtlasServiceException e) {
@@ -243,6 +253,7 @@ public class BasicSearchIT extends BaseResourceIT {
     public void testExecuteSavedSearchByGuid() {
         try {
             AtlasSearchResult searchResult = atlasClientV2.executeSavedSearch(userSavedSearch.getGuid());
+
             assertNotNull(searchResult);
         } catch (AtlasServiceException e) {
             fail(e.getMessage());
@@ -252,8 +263,10 @@ public class BasicSearchIT extends BaseResourceIT {
     @Test(dependsOnMethods = "testExecuteSavedSearchByGuid")
     public void testDeleteSavedSearch() {
         AtlasUserSavedSearch searchAfterDelete = null;
+
         try {
             atlasClientV2.deleteSavedSearch(userSavedSearch.getGuid());
+
             searchAfterDelete = atlasClientV2.getSavedSearch("admin", "basic_test");
         } catch (AtlasServiceException e) {
             assertNull(searchAfterDelete);
@@ -264,8 +277,11 @@ public class BasicSearchIT extends BaseResourceIT {
     public void testGetQuickSearch() {
         try {
             AtlasQuickSearchResult result = atlasClientV2.quickSearch("test", "hdfs_path", false, 2, 0);
+
             assertNotNull(result);
+
             List<AtlasEntityHeader> list = result.getSearchResults().getEntities();
+
             assertEquals(list.size(), 1);
         } catch (AtlasServiceException e) {
             fail(e.getMessage());
@@ -276,10 +292,13 @@ public class BasicSearchIT extends BaseResourceIT {
     public void testPostQuickSearch() {
         try {
             QuickSearchParameters quickSearchParameters = new QuickSearchParameters();
+
             quickSearchParameters.setQuery("test");
             quickSearchParameters.setTypeName("hdfs_path");
-            AtlasQuickSearchResult result = atlasClientV2.quickSearch(quickSearchParameters);
-            List<AtlasEntityHeader> list = result.getSearchResults().getEntities();
+
+            AtlasQuickSearchResult  result = atlasClientV2.quickSearch(quickSearchParameters);
+            List<AtlasEntityHeader> list   = result.getSearchResults().getEntities();
+
             assertEquals(list.size(), 1);
         } catch (AtlasServiceException e) {
             fail(e.getMessage());
@@ -298,9 +317,9 @@ public class BasicSearchIT extends BaseResourceIT {
         }
 
         public BasicSearchParametersWithExpectation(final String testDescription, final SearchParameters searchParameters, final int expectedCount) {
-            this.testDescription = testDescription;
+            this.testDescription  = testDescription;
             this.searchParameters = searchParameters;
-            this.expectedCount = expectedCount;
+            this.expectedCount    = expectedCount;
         }
 
         public SearchParameters getSearchParameters() {

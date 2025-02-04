@@ -29,13 +29,12 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.Collection;
- 
 
 @Component
 public class AtlasFileAuthenticationProvider extends AtlasAbstractAuthenticationProvider {
-
-    private static Logger logger = LoggerFactory.getLogger(AtlasFileAuthenticationProvider.class);
+    private static final Logger logger = LoggerFactory.getLogger(AtlasFileAuthenticationProvider.class);
 
     private final UserDetailsService userDetailsService;
 
@@ -65,7 +64,7 @@ public class AtlasFileAuthenticationProvider extends AtlasAbstractAuthentication
         boolean     isValidPassword = UserDao.checkEncrypted(password, user.getPassword(), username);
 
         if (!isValidPassword) {
-            logger.error("Wrong password " + username);
+            logger.error("Wrong password {}", username);
 
             throw new BadCredentialsException("Wrong password");
         }

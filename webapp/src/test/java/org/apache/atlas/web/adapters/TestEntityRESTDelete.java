@@ -18,6 +18,7 @@
 
 package org.apache.atlas.web.adapters;
 
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
@@ -28,10 +29,8 @@ import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.instance.EntityMutations;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.store.AtlasTypeDefStore;
-import org.apache.atlas.DeleteType;
 import org.apache.atlas.web.rest.EntityREST;
 import org.mockito.Mockito;
-import org.testng.Assert;
 import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Guice;
@@ -39,69 +38,38 @@ import org.testng.annotations.Test;
 
 import javax.inject.Inject;
 import javax.servlet.http.HttpServletRequest;
+
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.AssertJUnit.assertTrue;
 import static org.testng.FileAssert.fail;
 
-@Guice(modules = {TestModules.TestOnlyModule.class})
+@Guice(modules = TestModules.TestOnlyModule.class)
 public class TestEntityRESTDelete {
-
     @Inject
     private AtlasTypeDefStore typeStore;
 
     @Inject
     private EntityREST entityREST;
 
-    private List<AtlasEntity> dbEntities = new ArrayList<>();
+    private final List<AtlasEntity> dbEntities = new ArrayList<>();
 
     @BeforeClass
     public void setUp() throws Exception {
         AtlasTypesDef typesDef = TestUtilsV2.defineHiveTypes();
+
         typeStore.createTypesDef(typesDef);
     }
 
     @AfterMethod
     public void cleanup() {
         RequestContext.clear();
-    }
-
-    private void assertSoftDelete(String guid) throws AtlasBaseException {
-        AtlasEntity.AtlasEntityWithExtInfo entity = entityREST.getById(guid, false, false);
-        assertTrue(entity != null && entity.getEntity().getStatus() == AtlasEntity.Status.DELETED);
-    }
-
-    private void assertHardDelete(String guid) {
-        try {
-            entityREST.getById(guid, false, false);
-            fail("Entity should have been deleted. Exception should have been thrown.");
-        } catch (AtlasBaseException e) {
-            assertTrue(true);
-        }
-    }
-
-    private void createEntities() throws Exception {
-        dbEntities.clear();
-
-        for (int i = 1; i <= 2; i++) {
-            AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
-
-            final EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntity.AtlasEntitiesWithExtInfo(dbEntity));
-
-            assertNotNull(response);
-            List<AtlasEntityHeader> entitiesMutated = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
-
-            assertNotNull(entitiesMutated);
-            Assert.assertEquals(entitiesMutated.size(), 1);
-            assertNotNull(entitiesMutated.get(0));
-            dbEntity.setGuid(entitiesMutated.get(0).getGuid());
-
-            dbEntities.add(dbEntity);
-        }
     }
 
     @Test
@@ -122,6 +90,7 @@ public class TestEntityRESTDelete {
         RequestContext.get().setDeleteType(DeleteType.HARD);
 
         createEntities();
+
         EntityMutationResponse response = entityREST.deleteByGuid(dbEntities.get(0).getGuid());
 
         assertNotNull(response);
@@ -129,13 +98,14 @@ public class TestEntityRESTDelete {
         assertHardDelete(dbEntities.get(0).getGuid());
     }
 
-
     @Test
     public void deleteByGuidsSoft() throws Exception {
         RequestContext.get().setDeleteType(DeleteType.SOFT);
 
         createEntities();
+
         List<String> guids = new ArrayList<>();
+
         guids.add(dbEntities.get(0).getGuid());
         guids.add(dbEntities.get(1).getGuid());
 
@@ -154,9 +124,12 @@ public class TestEntityRESTDelete {
         RequestContext.get().setDeleteType(DeleteType.HARD);
 
         createEntities();
+
         List<String> guids = new ArrayList<>();
+
         guids.add(dbEntities.get(0).getGuid());
         guids.add(dbEntities.get(1).getGuid());
+
         EntityMutationResponse response = entityREST.deleteByGuids(guids);
 
         assertNotNull(response);
@@ -172,8 +145,8 @@ public class TestEntityRESTDelete {
         RequestContext.get().setDeleteType(DeleteType.SOFT);
 
         createEntities();
-        entityREST.deleteByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME,
-                (String) dbEntities.get(0).getAttribute(TestUtilsV2.NAME)));
+
+        entityREST.deleteByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, (String) dbEntities.get(0).getAttribute(TestUtilsV2.NAME)));
 
         assertSoftDelete(dbEntities.get(0).getGuid());
     }
@@ -184,14 +157,50 @@ public class TestEntityRESTDelete {
 
         createEntities();
 
-        entityREST.deleteByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME,
-                (String) dbEntities.get(0).getAttribute(TestUtilsV2.NAME)));
+        entityREST.deleteByUniqueAttribute(TestUtilsV2.DATABASE_TYPE, toHttpServletRequest(TestUtilsV2.NAME, (String) dbEntities.get(0).getAttribute(TestUtilsV2.NAME)));
 
         assertHardDelete(dbEntities.get(0).getGuid());
     }
 
+    private void assertSoftDelete(String guid) throws AtlasBaseException {
+        AtlasEntity.AtlasEntityWithExtInfo entity = entityREST.getById(guid, false, false);
+
+        assertTrue(entity != null && entity.getEntity().getStatus() == AtlasEntity.Status.DELETED);
+    }
+
+    private void assertHardDelete(String guid) {
+        try {
+            entityREST.getById(guid, false, false);
+
+            fail("Entity should have been deleted. Exception should have been thrown.");
+        } catch (AtlasBaseException e) {
+            assertTrue(true);
+        }
+    }
+
+    private void createEntities() throws Exception {
+        dbEntities.clear();
+
+        for (int i = 1; i <= 2; i++) {
+            AtlasEntity dbEntity = TestUtilsV2.createDBEntity();
+
+            final EntityMutationResponse response = entityREST.createOrUpdate(new AtlasEntity.AtlasEntitiesWithExtInfo(dbEntity));
+
+            assertNotNull(response);
+
+            List<AtlasEntityHeader> entitiesMutated = response.getEntitiesByOperation(EntityMutations.EntityOperation.CREATE);
+
+            assertNotNull(entitiesMutated);
+            assertEquals(entitiesMutated.size(), 1);
+            assertNotNull(entitiesMutated.get(0));
+            dbEntity.setGuid(entitiesMutated.get(0).getGuid());
+
+            dbEntities.add(dbEntity);
+        }
+    }
+
     private HttpServletRequest toHttpServletRequest(String attrName, String attrValue) {
-        HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
+        HttpServletRequest    request   = Mockito.mock(HttpServletRequest.class);
         Map<String, String[]> paramsMap = toParametersMap(EntityREST.PREFIX_ATTR + attrName, attrValue);
 
         Mockito.when(request.getParameterMap()).thenReturn(paramsMap);
@@ -200,8 +209,6 @@ public class TestEntityRESTDelete {
     }
 
     private Map<String, String[]> toParametersMap(final String name, final String value) {
-        return new HashMap<String, String[]>() {{
-            put(name, new String[]{value});
-        }};
+        return new HashMap<>(Collections.singletonMap(name, new String[] {value}));
     }
 }

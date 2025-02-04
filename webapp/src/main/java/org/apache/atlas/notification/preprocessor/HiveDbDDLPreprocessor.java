@@ -36,20 +36,20 @@ public class HiveDbDDLPreprocessor extends EntityPreprocessor {
         }
 
         Object dbObject = entity.getRelationshipAttribute(ATTRIBUTE_DB);
+
         if (dbObject == null) {
             return;
         }
 
         String qualifiedName = getQualifiedName(dbObject);
-        String guid = context.getGuidForDeletedEntity(qualifiedName);
+        String guid          = context.getGuidForDeletedEntity(qualifiedName);
+
         if (StringUtils.isEmpty(guid)) {
             return;
         }
 
         setObjectIdWithGuid(dbObject, guid);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("{}: Preprocessor: Updated: {} -> {}", getTypeName(), qualifiedName, guid);
-        }
+        LOG.debug("{}: Preprocessor: Updated: {} -> {}", getTypeName(), qualifiedName, guid);
     }
 }

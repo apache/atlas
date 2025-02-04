@@ -41,8 +41,6 @@ import org.apache.atlas.utils.TestResourceFileUtils;
 import org.apache.atlas.web.TestUtils;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.RandomStringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -62,28 +60,36 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 
 public class GlossaryClientV2IT extends BaseResourceIT {
-    private static final Logger LOG = LoggerFactory.getLogger(GlossaryClientV2IT.class);
     private static final ObjectMapper mapper = new ObjectMapper();
 
-    private AtlasTypesDef typeDefinitions;
-    private AtlasClientV2 clientV2;
-    private AtlasGlossary educationGlossary, healthCareGlossary;
-    private AtlasGlossaryTerm educationTerm, schoolEducationTerm;
-    private AtlasGlossaryCategory educationCategory;
+    private AtlasTypesDef              typeDefinitions;
+    private AtlasClientV2              clientV2;
+    private AtlasGlossary              educationGlossary;
+    private AtlasGlossary              healthCareGlossary;
+    private AtlasGlossaryTerm          educationTerm;
+    private AtlasGlossaryTerm          schoolEducationTerm;
+    private AtlasGlossaryCategory      educationCategory;
     private List<AtlasRelatedObjectId> relatedObjectIds;
-    private AtlasEntityHeader entityHeader;
+    private AtlasEntityHeader          entityHeader;
 
     @BeforeClass
     public void setUp() throws Exception {
         super.setUp();
+
         typeDefinitions = setForGlossary();
+
         createType(typeDefinitions);
 
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            clientV2 = new AtlasClientV2(atlasUrls, new String[]{"admin", "admin"});
+            clientV2 = new AtlasClientV2(atlasUrls, new String[] {"admin", "admin"});
         } else {
             clientV2 = new AtlasClientV2(atlasUrls);
         }
+    }
+
+    protected String randomString() {
+        //names cannot start with a digit
+        return RandomStringUtils.randomAlphabetic(1) + RandomStringUtils.randomAlphanumeric(9);
     }
 
     @AfterClass
@@ -132,7 +138,7 @@ public class GlossaryClientV2IT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testCreateGlossary")
     public void testCreateTerm() throws Exception {
-        AtlasGlossaryTerm term = new AtlasGlossaryTerm();
+        AtlasGlossaryTerm   term   = new AtlasGlossaryTerm();
         AtlasGlossaryHeader header = new AtlasGlossaryHeader();
         header.setGlossaryGuid(educationGlossary.getGuid());
         header.setDisplayText(educationGlossary.getName());
@@ -180,7 +186,7 @@ public class GlossaryClientV2IT extends BaseResourceIT {
     @Test(dependsOnMethods = "testCreateGlossary")
     public void testCreateGlossaryCategory() throws Exception {
         AtlasGlossaryCategory category = new AtlasGlossaryCategory();
-        AtlasGlossaryHeader header = new AtlasGlossaryHeader();
+        AtlasGlossaryHeader   header   = new AtlasGlossaryHeader();
         header.setGlossaryGuid(educationGlossary.getGuid());
         header.setDisplayText(educationGlossary.getName());
         category.setAnchor(header);
@@ -195,7 +201,7 @@ public class GlossaryClientV2IT extends BaseResourceIT {
         List<AtlasGlossaryCategory> glossaryCategories = new ArrayList<>();
 
         AtlasGlossaryCategory category1 = new AtlasGlossaryCategory();
-        AtlasGlossaryHeader header1 = new AtlasGlossaryHeader();
+        AtlasGlossaryHeader   header1   = new AtlasGlossaryHeader();
         header1.setGlossaryGuid(healthCareGlossary.getGuid());
         header1.setDisplayText(healthCareGlossary.getName());
         category1.setAnchor(header1);
@@ -221,16 +227,16 @@ public class GlossaryClientV2IT extends BaseResourceIT {
 
     @Test(dependsOnMethods = "testGetGlossaryByGuid")
     public void testCreateGlossaryTerms() throws Exception {
-        List<AtlasGlossaryTerm> list = new ArrayList<>();
-        int index = 0;
-        List<AtlasGlossary> glossaries = atlasClientV2.getAllGlossaries("ASC", 5, 0);
+        List<AtlasGlossaryTerm> list       = new ArrayList<>();
+        int                     index      = 0;
+        List<AtlasGlossary>     glossaries = atlasClientV2.getAllGlossaries("ASC", 5, 0);
         List<AtlasGlossary> glossaryList = mapper.convertValue(
                 glossaries,
                 new TypeReference<List<AtlasGlossary>>() {
                 });
 
         for (AtlasGlossary glossary : glossaryList) {
-            AtlasGlossaryTerm term = new AtlasGlossaryTerm();
+            AtlasGlossaryTerm   term   = new AtlasGlossaryTerm();
             AtlasGlossaryHeader header = new AtlasGlossaryHeader();
             header.setGlossaryGuid(glossary.getGuid());
             header.setDisplayText(glossary.getName());
@@ -358,11 +364,9 @@ public class GlossaryClientV2IT extends BaseResourceIT {
             String relationshipGuid = entityList.get(0).getRelationshipGuid();
             assertNotNull(relationshipGuid);
             relatedObjectId.setRelationshipGuid(relationshipGuid);
-
         } catch (Exception e) {
             e.printStackTrace();
         }
-
     }
 
     @Test(dependsOnMethods = "testAssignTermToEntities")
@@ -421,7 +425,7 @@ public class GlossaryClientV2IT extends BaseResourceIT {
         }
     }
 
-    @Test()
+    @Test
     public void testProduceTemplate() {
         try {
             String template = atlasClientV2.getGlossaryImportTemplate();
@@ -432,7 +436,7 @@ public class GlossaryClientV2IT extends BaseResourceIT {
         }
     }
 
-    @Test()
+    @Test
     public void testImportGlossaryData() {
         try {
             String             filePath = TestResourceFileUtils.getTestFilePath("template.csv");
@@ -441,9 +445,8 @@ public class GlossaryClientV2IT extends BaseResourceIT {
             assertNotNull(terms);
 
             assertEquals(terms.getSuccessImportInfoList().size(), 1);
-
         } catch (AtlasServiceException ex) {
-            fail("Import GlossaryData should've succeeded : "+ex);
+            fail("Import GlossaryData should've succeeded : " + ex);
         }
     }
 
@@ -464,13 +467,8 @@ public class GlossaryClientV2IT extends BaseResourceIT {
 
     private AtlasTypesDef setForGlossary() throws IOException {
         String filePath = TestUtils.getGlossaryType();
-        String json = FileUtils.readFileToString(new File(filePath));
+        String json     = FileUtils.readFileToString(new File(filePath));
+
         return AtlasType.fromJson(json, AtlasTypesDef.class);
     }
-
-    protected String randomString() {
-        //names cannot start with a digit
-        return RandomStringUtils.randomAlphabetic(1) + RandomStringUtils.randomAlphanumeric(9);
-    }
-
 }

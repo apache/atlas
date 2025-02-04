@@ -48,6 +48,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -61,7 +62,6 @@ import static org.apache.atlas.v1.model.lineage.SchemaResponse.SchemaDetails;
 @Service
 @Deprecated
 public class DataSetLineageResource {
-
     private static final Logger LOG      = LoggerFactory.getLogger(DataSetLineageResource.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.DataSetLineageResource");
 
@@ -72,8 +72,8 @@ public class DataSetLineageResource {
     @Inject
     public DataSetLineageResource(final AtlasLineageService atlasLineageService, final AtlasTypeRegistry typeRegistry, final AtlasEntityStore atlasEntityStore) {
         this.atlasLineageService = atlasLineageService;
-        this.typeRegistry = typeRegistry;
-        this.atlasEntityStore = atlasEntityStore;
+        this.typeRegistry        = typeRegistry;
+        this.atlasEntityStore    = atlasEntityStore;
     }
 
     /**
@@ -86,9 +86,7 @@ public class DataSetLineageResource {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public DataSetLineageResponse inputsGraph(@Context HttpServletRequest request, @PathParam("tableName") String tableName) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> DataSetLineageResource.inputsGraph({})", tableName);
-        }
+        LOG.debug("==> DataSetLineageResource.inputsGraph({})", tableName);
 
         DataSetLineageResponse ret  = new DataSetLineageResponse();
         AtlasPerfTracer        perf = null;
@@ -108,12 +106,15 @@ public class DataSetLineageResource {
             return ret;
         } catch (IllegalArgumentException e) {
             LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
+
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
             LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
+
             throw e;
         } catch (Throwable e) {
             LOG.error("Unable to get lineage inputs graph for table {}", tableName, e);
+
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         } finally {
             AtlasPerfTracer.log(perf);
@@ -130,9 +131,7 @@ public class DataSetLineageResource {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public DataSetLineageResponse outputsGraph(@Context HttpServletRequest request, @PathParam("tableName") String tableName) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> DataSetLineageResource.outputsGraph({})", tableName);
-        }
+        LOG.debug("==> DataSetLineageResource.outputsGraph({})", tableName);
 
         DataSetLineageResponse ret  = new DataSetLineageResponse();
         AtlasPerfTracer        perf = null;
@@ -145,6 +144,7 @@ public class DataSetLineageResource {
             String guid = getGuid(tableName);
 
             AtlasLineageInfo lineageInfo = atlasLineageService.getAtlasLineageInfo(guid, LineageDirection.OUTPUT, -1);
+
             ret.setTableName(tableName);
             ret.setRequestId(Servlets.getRequestId());
             ret.setResults(LineageUtils.toLineageStruct(lineageInfo, typeRegistry));
@@ -152,12 +152,15 @@ public class DataSetLineageResource {
             return ret;
         } catch (IllegalArgumentException e) {
             LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
+
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
             LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
+
             throw e;
         } catch (Throwable e) {
             LOG.error("Unable to get lineage outputs graph for table {}", tableName, e);
+
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         } finally {
             AtlasPerfTracer.log(perf);
@@ -174,9 +177,7 @@ public class DataSetLineageResource {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public SchemaResponse schema(@Context HttpServletRequest request, @PathParam("tableName") String tableName) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> DataSetLineageResource.schema({})", tableName);
-        }
+        LOG.debug("==> DataSetLineageResource.schema({})", tableName);
 
         AtlasPerfTracer perf = null;
         SchemaResponse  ret  = new SchemaResponse();
@@ -191,15 +192,19 @@ public class DataSetLineageResource {
             ret.setRequestId(Servlets.getRequestId());
             ret.setTableName(tableName);
             ret.setResults(schemaDetails);
+
             return ret;
         } catch (IllegalArgumentException e) {
             LOG.error("Unable to get schema for table {}", tableName, e);
+
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
             LOG.error("Unable to get schema for table {}", tableName, e);
+
             throw e;
         } catch (Throwable e) {
             LOG.error("Unable to get schema for table {}", tableName, e);
+
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         } finally {
             AtlasPerfTracer.log(perf);
@@ -211,12 +216,16 @@ public class DataSetLineageResource {
             // TODO: Fix the error code if mismatch
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST);
         }
+
         Map<String, Object> lookupAttributes = new HashMap<>();
+
         lookupAttributes.put("qualifiedName", tableName);
+
         AtlasEntityType                    entityType = typeRegistry.getEntityTypeByName("hive_table");
-        AtlasEntity.AtlasEntityWithExtInfo hive_table = atlasEntityStore.getByUniqueAttributes(entityType, lookupAttributes);
-        if (hive_table != null) {
-            return hive_table.getEntity().getGuid();
+        AtlasEntity.AtlasEntityWithExtInfo hiveTable  = atlasEntityStore.getByUniqueAttributes(entityType, lookupAttributes);
+
+        if (hiveTable != null) {
+            return hiveTable.getEntity().getGuid();
         } else {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_NOT_FOUND, tableName);
         }

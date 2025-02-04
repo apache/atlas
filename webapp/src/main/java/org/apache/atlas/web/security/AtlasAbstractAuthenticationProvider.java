@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- * 
+ *
  * http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing,
  * software distributed under the License is distributed on an
  * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
@@ -19,6 +19,7 @@
 
 package org.apache.atlas.web.security;
 
+import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.security.Groups;
@@ -34,70 +35,14 @@ import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.Arrays;
-
-import org.apache.atlas.utils.AuthenticationUtil;
 
 public abstract class AtlasAbstractAuthenticationProvider implements AuthenticationProvider {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAbstractAuthenticationProvider.class);
-
-    @Override
-    public boolean supports(Class<?> authentication) {
-        return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
-    }
-
-    /**
-     * 
-     * @param authentication
-     * @return
-     */
-    public Authentication getAuthenticationWithGrantedAuthority(
-            Authentication authentication) {
-        UsernamePasswordAuthenticationToken result = null;
-        if (authentication != null && authentication.isAuthenticated()) {
-            final List<GrantedAuthority> grantedAuths = getAuthorities(authentication
-                    .getName());
-            final UserDetails userDetails = new User(authentication.getName(), authentication.getCredentials().toString(),
-                    grantedAuths);
-            result = new UsernamePasswordAuthenticationToken(userDetails,
-                    authentication.getCredentials(), grantedAuths);
-            result.setDetails(authentication.getDetails());
-            return result;
-        }
-        return authentication;
-    }
-
-    /**
-     * This method will be modified when actual roles are introduced.
-     * 
-     */
-    protected List<GrantedAuthority> getAuthorities(String username) {
-        final List<GrantedAuthority> grantedAuths = new ArrayList<>();
-        grantedAuths.add(new SimpleGrantedAuthority("DATA_SCIENTIST"));
-        return grantedAuths;
-    }
-
-
-    public Authentication getAuthenticationWithGrantedAuthorityFromUGI(
-            Authentication authentication) {
-        UsernamePasswordAuthenticationToken result = null;
-        if (authentication != null && authentication.isAuthenticated()) {
-
-            List<GrantedAuthority> grantedAuthsUGI = getAuthoritiesFromUGI(authentication
-                    .getName());
-
-            final UserDetails userDetails = new User(authentication.getName(), authentication.getCredentials().toString(),
-                    grantedAuthsUGI);
-            result = new UsernamePasswordAuthenticationToken(userDetails,
-                    authentication.getCredentials(), grantedAuthsUGI);
-            result.setDetails(authentication.getDetails());
-            return result;
-        }
-        return authentication;
-    }
 
     public static List<GrantedAuthority> getAuthoritiesFromUGI(String userName) {
         Set<String>          userGroups = new HashSet<>();
@@ -106,14 +51,12 @@ public abstract class AtlasAbstractAuthenticationProvider implements Authenticat
         if (ugi != null) {
             String[] groups = ugi.getGroupNames();
 
-            if(LOG.isDebugEnabled()) {
+            if (LOG.isDebugEnabled()) {
                 LOG.debug("UserGroupInformation userGroups=" + Arrays.toString(groups));
             }
 
             if (groups != null) {
-                for (String group : groups) {
-                    userGroups.add(group);
-                }
+                Collections.addAll(userGroups, groups);
             }
         }
 
@@ -124,14 +67,10 @@ public abstract class AtlasAbstractAuthenticationProvider implements Authenticat
                 Groups        gp     = new Groups(config);
                 List<String>  groups = gp.getGroups(userName);
 
-                if(LOG.isDebugEnabled()) {
-                    LOG.debug("Hadoop userGroups=" + groups);
-                }
+                LOG.debug("Hadoop userGroups={}", groups);
 
                 if (groups != null) {
-                    for (String group : groups) {
-                        userGroups.add(group);
-                    }
+                    userGroups.addAll(groups);
                 }
             } catch (java.io.IOException e) {
                 LOG.error("Exception while fetching groups ", e);
@@ -147,4 +86,57 @@ public abstract class AtlasAbstractAuthenticationProvider implements Authenticat
         return ret;
     }
 
+    @Override
+    public boolean supports(Class<?> authentication) {
+        return UsernamePasswordAuthenticationToken.class.isAssignableFrom(authentication);
+    }
+
+    /**
+     * @param authentication
+     * @return
+     */
+    public Authentication getAuthenticationWithGrantedAuthority(Authentication authentication) {
+        UsernamePasswordAuthenticationToken result;
+
+        if (authentication != null && authentication.isAuthenticated()) {
+            final List<GrantedAuthority> grantedAuths = getAuthorities(authentication.getName());
+            final UserDetails            userDetails  = new User(authentication.getName(), authentication.getCredentials().toString(), grantedAuths);
+
+            result = new UsernamePasswordAuthenticationToken(userDetails, authentication.getCredentials(), grantedAuths);
+
+            result.setDetails(authentication.getDetails());
+
+            return result;
+        }
+
+        return authentication;
+    }
+
+    public Authentication getAuthenticationWithGrantedAuthorityFromUGI(Authentication authentication) {
+        UsernamePasswordAuthenticationToken result;
+
+        if (authentication != null && authentication.isAuthenticated()) {
+            List<GrantedAuthority> grantedAuthsUGI = getAuthoritiesFromUGI(authentication.getName());
+            final UserDetails      userDetails     = new User(authentication.getName(), authentication.getCredentials().toString(), grantedAuthsUGI);
+
+            result = new UsernamePasswordAuthenticationToken(userDetails, authentication.getCredentials(), grantedAuthsUGI);
+
+            result.setDetails(authentication.getDetails());
+
+            return result;
+        }
+
+        return authentication;
+    }
+
+    /**
+     * This method will be modified when actual roles are introduced.
+     */
+    protected List<GrantedAuthority> getAuthorities(String username) {
+        final List<GrantedAuthority> grantedAuths = new ArrayList<>();
+
+        grantedAuths.add(new SimpleGrantedAuthority("DATA_SCIENTIST"));
+
+        return grantedAuths;
+    }
 }

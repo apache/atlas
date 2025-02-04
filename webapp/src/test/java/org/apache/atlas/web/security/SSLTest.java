@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,9 +29,6 @@ import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import org.apache.hadoop.security.alias.JavaKeyStoreProvider;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.testng.annotations.AfterClass;
-import org.testng.annotations.BeforeClass;
-import org.testng.annotations.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -42,40 +39,21 @@ import static org.apache.atlas.security.SecurityProperties.SERVER_CERT_PASSWORD_
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
 
 public class SSLTest extends BaseSSLAndKerberosTest {
-    private AtlasClient atlasClient;
-    private Path jksPath;
-    private String providerUrl;
+    private AtlasClient              atlasClient;
+    private Path                     jksPath;
+    private String                   providerUrl;
     private TestSecureEmbeddedServer secureEmbeddedServer;
-    private String originalConf;
-    private String originalHomeDir;
-
-    class TestSecureEmbeddedServer extends SecureEmbeddedServer {
-
-        public TestSecureEmbeddedServer(int port, String path) throws IOException {
-            super(ATLAS_DEFAULT_BIND_ADDRESS, port, path);
-        }
-
-        public Server getServer() {
-            return server;
-        }
-
-        @Override
-        protected WebAppContext getWebAppContext(String path) {
-            WebAppContext application = new WebAppContext(path, "/");
-            application.setDescriptor(System.getProperty("projectBaseDir") + "/webapp/src/test/webapp/WEB-INF/web.xml");
-            application.setClassLoader(Thread.currentThread().getContextClassLoader());
-            return application;
-        }
-    }
+    private String                   originalConf;
+    private String                   originalHomeDir;
 
     //@BeforeClass
     public void setUp() throws Exception {
-        jksPath = new Path(Files.createTempDirectory("tempproviders").toString(), "test.jks");
+        jksPath     = new Path(Files.createTempDirectory("tempproviders").toString(), "test.jks");
         providerUrl = JavaKeyStoreProvider.SCHEME_NAME + "://file/" + jksPath.toUri();
 
         setupCredentials();
         final PropertiesConfiguration configuration = getSSLConfiguration(providerUrl);
-        String persistDir = writeConfiguration(configuration);
+        String                        persistDir    = writeConfiguration(configuration);
         persistSSLClientConfiguration(configuration);
 
         originalConf = System.getProperty("atlas.conf");
@@ -84,7 +62,7 @@ public class SSLTest extends BaseSSLAndKerberosTest {
         originalHomeDir = System.getProperty("atlas.home");
         System.setProperty("atlas.home", TestUtils.getTargetDirectory());
 
-        atlasClient = new AtlasClient(configuration, new String[]{DGI_URL},new String[]{"admin","admin"});
+        atlasClient = new AtlasClient(configuration, new String[] {DGI_URL}, new String[] {"admin", "admin"});
 
         secureEmbeddedServer = new TestSecureEmbeddedServer(21443, getWarPath()) {
             @Override
@@ -105,9 +83,14 @@ public class SSLTest extends BaseSSLAndKerberosTest {
             System.setProperty("atlas.conf", originalConf);
         }
 
-        if(originalHomeDir !=null){
+        if (originalHomeDir != null) {
             System.setProperty("atlas.home", originalHomeDir);
         }
+    }
+
+    //@Test
+    public void testService() throws Exception {
+        atlasClient.listTypes();
     }
 
     protected void setupCredentials() throws Exception {
@@ -121,7 +104,6 @@ public class SSLTest extends BaseSSLAndKerberosTest {
 
         // create new aliases
         try {
-
             char[] storepass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
             provider.createCredentialEntry(KEYSTORE_PASSWORD_KEY, storepass);
 
@@ -142,8 +124,21 @@ public class SSLTest extends BaseSSLAndKerberosTest {
         }
     }
 
-    //@Test
-    public void testService() throws Exception {
-        atlasClient.listTypes();
-   }
+    class TestSecureEmbeddedServer extends SecureEmbeddedServer {
+        public TestSecureEmbeddedServer(int port, String path) throws IOException {
+            super(ATLAS_DEFAULT_BIND_ADDRESS, port, path);
+        }
+
+        public Server getServer() {
+            return server;
+        }
+
+        @Override
+        protected WebAppContext getWebAppContext(String path) {
+            WebAppContext application = new WebAppContext(path, "/");
+            application.setDescriptor(System.getProperty("projectBaseDir") + "/webapp/src/test/webapp/WEB-INF/web.xml");
+            application.setClassLoader(Thread.currentThread().getContextClassLoader());
+            return application;
+        }
+    }
 }

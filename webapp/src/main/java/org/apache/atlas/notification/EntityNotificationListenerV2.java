@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,11 +38,10 @@ import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -68,15 +67,11 @@ import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.QU
 
 @Component
 public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
-    private static final Logger LOG = LoggerFactory.getLogger(EntityNotificationListenerV2.class);
-
     private final AtlasTypeRegistry                              typeRegistry;
     private final EntityNotificationSender<EntityNotificationV2> notificationSender;
 
     @Inject
-    public EntityNotificationListenerV2(AtlasTypeRegistry typeRegistry,
-                                        NotificationInterface notificationInterface,
-                                        Configuration configuration) {
+    public EntityNotificationListenerV2(AtlasTypeRegistry typeRegistry, NotificationInterface notificationInterface, Configuration configuration) {
         this.typeRegistry       = typeRegistry;
         this.notificationSender = new EntityNotificationSender<>(notificationInterface, configuration);
     }
@@ -97,7 +92,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
-    public void onEntitiesPurged(List<AtlasEntity> entities) throws AtlasBaseException {
+    public void onEntitiesPurged(List<AtlasEntity> entities) {
         // do nothing -> notification not sent out for term purged from entities as its been sent in case of delete
     }
 
@@ -144,17 +139,42 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
-    public void onLabelsDeleted(AtlasEntity entity, Set<String> labels) throws AtlasBaseException {
+    public void onRelationshipsAdded(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
+        notifyRelationshipEvents(relationships, RELATIONSHIP_CREATE);
+    }
+
+    @Override
+    public void onRelationshipsUpdated(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
+        notifyRelationshipEvents(relationships, RELATIONSHIP_UPDATE);
+    }
+
+    @Override
+    public void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
+        notifyRelationshipEvents(relationships, RELATIONSHIP_DELETE);
+    }
+
+    @Override
+    public void onRelationshipsPurged(List<AtlasRelationship> relationships) {
+        // do nothing -> notification not sent out for term purged from entities as its been sent in case of delete
+    }
+
+    @Override
+    public void onLabelsAdded(AtlasEntity entity, Set<String> labels) {
+        // do nothing -> notification not sent out for label assignment to entities
+    }
+
+    @Override
+    public void onLabelsDeleted(AtlasEntity entity, Set<String> labels) {
         // do nothing -> notification not sent out for label removal to entities
     }
 
     @Override
-    public void onLabelsAdded(AtlasEntity entity, Set<String> labels) throws AtlasBaseException {
-        // do nothing -> notification not sent out for label assignment to entities
+    public void onBusinessAttributesUpdated(AtlasEntity entity, Map<String, Map<String, Object>> updatedBusinessAttributes) {
+        // do nothing -> notification not sent out for business metadata attribute updation from entities
     }
 
     private void notifyEntityEvents(List<AtlasEntity> entities, OperationType operationType) throws AtlasBaseException {
-        MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
+        MetricRecorder             metric   = RequestContext.get().startMetricRecord("entityNotification");
         List<EntityNotificationV2> messages = new ArrayList<>();
 
         for (AtlasEntity entity : entities) {
@@ -170,7 +190,7 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     }
 
     private void notifyRelationshipEvents(List<AtlasRelationship> relationships, OperationType operationType) throws AtlasBaseException {
-        MetricRecorder metric = RequestContext.get().startMetricRecord("entityNotification");
+        MetricRecorder             metric   = RequestContext.get().startMetricRecord("entityNotification");
         List<EntityNotificationV2> messages = new ArrayList<>();
 
         for (AtlasRelationship relationship : relationships) {
@@ -295,30 +315,5 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         }
 
         return ret;
-    }
-
-    @Override
-    public void onRelationshipsAdded(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
-        notifyRelationshipEvents(relationships, RELATIONSHIP_CREATE);
-    }
-
-    @Override
-    public void onRelationshipsUpdated(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
-        notifyRelationshipEvents(relationships, RELATIONSHIP_UPDATE);
-    }
-
-    @Override
-    public void onRelationshipsDeleted(List<AtlasRelationship> relationships, boolean isImport) throws AtlasBaseException {
-        notifyRelationshipEvents(relationships, RELATIONSHIP_DELETE);
-    }
-
-    @Override
-    public void onRelationshipsPurged(List<AtlasRelationship> relationships) throws AtlasBaseException {
-        // do nothing -> notification not sent out for term purged from entities as its been sent in case of delete
-    }
-
-    @Override
-    public void onBusinessAttributesUpdated(AtlasEntity entity, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException{
-        // do nothing -> notification not sent out for business metadata attribute updation from entities
     }
 }

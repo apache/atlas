@@ -23,9 +23,9 @@ import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityPartialUpdateRequest;
-import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
 import org.apache.atlas.web.integration.BaseResourceIT;
 import org.testng.annotations.AfterClass;
@@ -38,12 +38,11 @@ import static java.lang.Thread.sleep;
 import static org.testng.Assert.assertEquals;
 
 public class NotificationHookConsumerIT extends BaseResourceIT {
-    private static final String TEST_USER = "testuser";
-
     public static final String NAME           = "name";
     public static final String DESCRIPTION    = "description";
     public static final String QUALIFIED_NAME = "qualifiedName";
     public static final String CLUSTER_NAME   = "clusterName";
+    private static final String TEST_USER = "testuser";
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -57,12 +56,6 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
     @AfterClass
     public void teardown() throws Exception {
         cleanUpNotificationService();
-    }
-
-    private void sendHookMessage(HookNotification message) throws NotificationException, InterruptedException {
-        notificationInterface.send(NotificationInterface.NotificationType.HOOK, message);
-
-        sleep(1000);
     }
 
     @Test
@@ -258,5 +251,11 @@ public class NotificationHookConsumerIT extends BaseResourceIT {
 
         assertEquals(actualEntity.get(DESCRIPTION), newEntity.get(DESCRIPTION));
         assertEquals(actualEntity.get("owner"), newEntity.get("owner"));
+    }
+
+    private void sendHookMessage(HookNotification message) throws NotificationException, InterruptedException {
+        notificationInterface.send(NotificationInterface.NotificationType.HOOK, message);
+
+        sleep(1000);
     }
 }

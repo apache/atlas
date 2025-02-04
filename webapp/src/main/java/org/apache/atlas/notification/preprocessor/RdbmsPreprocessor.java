@@ -28,7 +28,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-
 public class RdbmsPreprocessor {
     private static final Logger LOG = LoggerFactory.getLogger(RdbmsPreprocessor.class);
 
@@ -54,6 +53,7 @@ public class RdbmsPreprocessor {
         public RdbmsTablePreprocessor() {
             super(TYPE_RDBMS_TABLE);
         }
+
         @Override
         public void preprocess(AtlasEntity entity, PreprocessorContext context) {
             super.preprocess(entity, context);
@@ -84,24 +84,15 @@ public class RdbmsPreprocessor {
             Object tblName          = tableEntity.getAttribute(ATTRIBUTE_NAME);  // tblName
 
             if (tblQualifiedName != null && tblName != null) {
-                ret = tblQualifiedName.toString().replace("." + tblName.toString() + "@", "@"); // dbName@clusterName
+                ret = tblQualifiedName.toString().replace("." + tblName + "@", "@"); // dbName@clusterName
             }
 
             return ret;
         }
-
     }
 
     static class RdbmsTypePreprocessor extends EntityPreprocessor {
         private static final Set<String> entityTypesToMove = new HashSet<>();
-
-        static {
-            entityTypesToMove.add(TYPE_RDBMS_DB);
-            entityTypesToMove.add(TYPE_RDBMS_TABLE);
-            entityTypesToMove.add(TYPE_RDBMS_COLUMN);
-            entityTypesToMove.add(TYPE_RDBMS_INDEX);
-            entityTypesToMove.add(TYPE_RDBMS_FOREIGN_KEY);
-        }
 
         protected RdbmsTypePreprocessor(String typeName) {
             super(typeName);
@@ -128,18 +119,26 @@ public class RdbmsPreprocessor {
             switch (entity.getTypeName()) {
                 case TYPE_RDBMS_INSTANCE:
                     context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_DATABASES, RELATIONSHIP_TYPE_RDBMS_INSTANCE_DATABASES, ATTRIBUTE_INSTANCE);
-                break;
+                    break;
 
                 case TYPE_RDBMS_DB:
                     context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_TABLES, RELATIONSHIP_TYPE_RDBMS_DB_TABLES, ATTRIBUTE_DB);
-                break;
+                    break;
 
                 case TYPE_RDBMS_TABLE:
                     context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_COLUMNS, RELATIONSHIP_TYPE_RDBMS_TABLE_COLUMNS, ATTRIBUTE_TABLE);
                     context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_INDEXES, RELATIONSHIP_TYPE_RDBMS_TABLE_INDEXES, ATTRIBUTE_TABLE);
                     context.removeRefAttributeAndRegisterToMove(entity, ATTRIBUTE_FOREIGN_KEYS, RELATIONSHIP_TYPE_RDBMS_TABLE_FOREIGN_KEYS, ATTRIBUTE_TABLE);
-                break;
+                    break;
             }
+        }
+
+        static {
+            entityTypesToMove.add(TYPE_RDBMS_DB);
+            entityTypesToMove.add(TYPE_RDBMS_TABLE);
+            entityTypesToMove.add(TYPE_RDBMS_COLUMN);
+            entityTypesToMove.add(TYPE_RDBMS_INDEX);
+            entityTypesToMove.add(TYPE_RDBMS_FOREIGN_KEY);
         }
     }
 }

@@ -20,14 +20,8 @@ package org.apache.atlas.web.filters;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
-
 public class AtlasResponseRequestWrapper extends HttpServletResponseWrapper {
     public AtlasResponseRequestWrapper(HttpServletResponse response) {
         super(response);
     }
 }
-
-
-
-
-

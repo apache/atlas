@@ -55,16 +55,16 @@ public class AtlasDebugMetricsSink implements MetricsSink {
         }
     }
 
-    public HashMap getMetrics() {
+    @Override
+    public void flush() {
+    }
+
+    public HashMap<String, DebugMetrics> getMetrics() {
         return metricStructuredSnapshot;
     }
 
     @Override
     public void init(SubsetConfiguration subsetConfiguration) {
-    }
-
-    @Override
-    public void flush() {
     }
 
     private void setMetricsData(AbstractMetric metric) {
@@ -73,14 +73,8 @@ public class AtlasDebugMetricsSink implements MetricsSink {
 
         if (!StringUtils.isEmpty(fieldCaps)) {
             String       fieldNameLower = fieldCaps.toLowerCase();
-            String       metricType = inferMeasureType(name, fieldNameLower);
-            DebugMetrics debugMetrics = metricStructuredSnapshot.get(fieldCaps);
-
-            if (debugMetrics == null) {
-                debugMetrics = new DebugMetrics(fieldCaps);
-
-                metricStructuredSnapshot.put(fieldCaps, debugMetrics);
-            }
+            String       metricType   = inferMeasureType(name, fieldNameLower);
+            DebugMetrics debugMetrics = metricStructuredSnapshot.computeIfAbsent(fieldCaps, DebugMetrics::new);
 
             updateMetricType(debugMetrics, metricType, metric);
         }

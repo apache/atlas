@@ -22,12 +22,11 @@ package org.apache.atlas.web.filters;
 import java.security.interfaces.RSAPublicKey;
 
 public class SSOAuthenticationProperties {
-
-    private String authenticationProviderUrl = null;
-    private RSAPublicKey publicKey = null;
-    private String cookieName = "hadoop-jwt";
-    private String originalUrlQueryParam = null;
-    private String[] userAgentList = null;
+    private String       authenticationProviderUrl;
+    private RSAPublicKey publicKey;
+    private String       cookieName                = "hadoop-jwt";
+    private String       originalUrlQueryParam;
+    private String[]     userAgentList;
 
     public String getAuthenticationProviderUrl() {
         return authenticationProviderUrl;
@@ -75,4 +74,3 @@ public class SSOAuthenticationProperties {
         this.userAgentList = userAgentList;
     }
 }
-

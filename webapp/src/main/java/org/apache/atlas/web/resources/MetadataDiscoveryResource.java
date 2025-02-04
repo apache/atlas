@@ -49,6 +49,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
+
 import java.util.List;
 
 /**
@@ -59,11 +60,11 @@ import java.util.List;
 @Service
 @Deprecated
 public class MetadataDiscoveryResource {
+    private static final Logger LOG                  = LoggerFactory.getLogger(MetadataDiscoveryResource.class);
+    private static final Logger PERF_LOG             = AtlasPerfTracer.getPerfLogger("rest.MetadataDiscoveryResource");
 
-    private static final Logger LOG = LoggerFactory.getLogger(MetadataDiscoveryResource.class);
-    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.MetadataDiscoveryResource");
-    private static final String QUERY_TYPE_DSL = "dsl";
-    private static final String QUERY_TYPE_FULLTEXT = "full-text";
+    private static final String QUERY_TYPE_DSL       = "dsl";
+    private static final String QUERY_TYPE_FULLTEXT  = "full-text";
     private static final String LIMIT_OFFSET_DEFAULT = "-1";
 
     private final AtlasDiscoveryService  atlasDiscoveryService;
@@ -97,25 +98,23 @@ public class MetadataDiscoveryResource {
     @Path("search")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response search(@QueryParam("query") String query,
-                           @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("limit") int limit,
-                           @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("offset") int offset) {
-        boolean dslQueryFailed = false;
-        Response response = null;
+    public Response search(@QueryParam("query") String query, @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("limit") int limit, @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("offset") int offset) {
+        boolean  dslQueryFailed = false;
+        Response response       = null;
+
         try {
             response = searchUsingQueryDSL(query, limit, offset);
+
             if (response.getStatus() != Response.Status.OK.getStatusCode()) {
                 dslQueryFailed = true;
             }
         } catch (Exception e) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Error while running DSL. Switching to fulltext for query {}", query, e);
-            }
+            LOG.debug("Error while running DSL. Switching to fulltext for query {}", query, e);
 
             dslQueryFailed = true;
         }
 
-        if ( dslQueryFailed ) {
+        if (dslQueryFailed) {
             response = searchUsingFullText(query, limit, offset);
         }
 
@@ -131,21 +130,17 @@ public class MetadataDiscoveryResource {
      * Limit and offset in API are used in conjunction with limit and offset in DSL query
      * Final limit = min(API limit, max(query limit - API offset, 0))
      * Final offset = API offset + query offset
-     *
      * @return JSON representing the type and results.
      */
     @GET
     @Path("search/dsl")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response searchUsingQueryDSL(@QueryParam("query") String dslQuery,
-                                        @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("limit") int limit,
-                                        @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("offset") int offset) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> MetadataDiscoveryResource.searchUsingQueryDSL({}, {}, {})", dslQuery, limit, offset);
-        }
+    public Response searchUsingQueryDSL(@QueryParam("query") String dslQuery, @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("limit") int limit, @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("offset") int offset) {
+        LOG.debug("==> MetadataDiscoveryResource.searchUsingQueryDSL({}, {}, {})", dslQuery, limit, offset);
 
         AtlasPerfTracer perf = null;
+
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingQueryDSL(" + dslQuery + ", " + limit + ", " + offset + ")");
@@ -203,19 +198,20 @@ public class MetadataDiscoveryResource {
             return Response.ok(response).build();
         } catch (IllegalArgumentException e) {
             LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
+
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
             LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
+
             throw e;
         } catch (Throwable e) {
             LOG.error("Unable to get entity list for dslQuery {}", dslQuery, e);
+
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         } finally {
             AtlasPerfTracer.log(perf);
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== MetadataDiscoveryResource.searchUsingQueryDSL({}, {}, {})", dslQuery, limit, offset);
-            }
+            LOG.debug("<== MetadataDiscoveryResource.searchUsingQueryDSL({}, {}, {})", dslQuery, limit, offset);
         }
     }
 
@@ -231,14 +227,11 @@ public class MetadataDiscoveryResource {
     @Path("search/fulltext")
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public Response searchUsingFullText(@QueryParam("query") String query,
-                                        @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("limit") int limit,
-                                        @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("offset") int offset) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> MetadataDiscoveryResource.searchUsingFullText({}, {}, {})", query, limit, offset);
-        }
+    public Response searchUsingFullText(@QueryParam("query") String query, @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("limit") int limit, @DefaultValue(LIMIT_OFFSET_DEFAULT) @QueryParam("offset") int offset) {
+        LOG.debug("==> MetadataDiscoveryResource.searchUsingFullText({}, {}, {})", query, limit, offset);
 
         AtlasPerfTracer perf = null;
+
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MetadataDiscoveryResource.searchUsingFullText(" + query + ", " + limit + ", " + offset + ")");
@@ -269,19 +262,20 @@ public class MetadataDiscoveryResource {
             return Response.ok(response).build();
         } catch (IllegalArgumentException e) {
             LOG.error("Unable to get entity list for query {}", query, e);
+
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.BAD_REQUEST));
         } catch (WebApplicationException e) {
             LOG.error("Unable to get entity list for query {}", query, e);
+
             throw e;
         } catch (Throwable e) {
             LOG.error("Unable to get entity list for query {}", query, e);
+
             throw new WebApplicationException(Servlets.getErrorResponse(e, Response.Status.INTERNAL_SERVER_ERROR));
         } finally {
             AtlasPerfTracer.log(perf);
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== MetadataDiscoveryResource.searchUsingFullText({}, {}, {})", query, limit, offset);
-            }
+            LOG.debug("<== MetadataDiscoveryResource.searchUsingFullText({}, {}, {})", query, limit, offset);
         }
     }
 
@@ -289,7 +283,7 @@ public class MetadataDiscoveryResource {
         int     maxLimit     = AtlasConfiguration.SEARCH_MAX_LIMIT.getInt();
         int     defaultLimit = AtlasConfiguration.SEARCH_DEFAULT_LIMIT.getInt();
         int     limit        = defaultLimit;
-        boolean limitSet     = (limitParam != Integer.valueOf(LIMIT_OFFSET_DEFAULT));
+        boolean limitSet     = (limitParam != Integer.parseInt(LIMIT_OFFSET_DEFAULT));
 
         if (limitSet) {
             ParamChecker.lessThan(limitParam, maxLimit, "limit");
@@ -299,10 +293,11 @@ public class MetadataDiscoveryResource {
         }
 
         int     offset    = 0;
-        boolean offsetSet = (offsetParam != Integer.valueOf(LIMIT_OFFSET_DEFAULT));
+        boolean offsetSet = (offsetParam != Integer.parseInt(LIMIT_OFFSET_DEFAULT));
 
         if (offsetSet) {
             ParamChecker.greaterThan(offsetParam, -1, "offset");
+
             offset = offsetParam;
         }
 
@@ -311,8 +306,7 @@ public class MetadataDiscoveryResource {
 
     private Referenceable getEntity(String guid) throws AtlasBaseException {
         AtlasEntityWithExtInfo entity        = entitiesStore.getById(guid);
-        Referenceable          referenceable = restAdapters.getReferenceable(entity);
 
-        return referenceable;
+        return restAdapters.getReferenceable(entity);
     }
 }

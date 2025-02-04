@@ -25,10 +25,8 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.utils.AtlasPathExtractorUtil;
 import org.apache.atlas.utils.PathExtractorContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.testng.annotations.Test;
 import org.apache.hadoop.fs.Path;
+import org.testng.annotations.Test;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -36,43 +34,43 @@ import java.util.regex.Pattern;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotEquals;
+import static org.testng.Assert.assertNull;
 
 public class AWSS3V2PreprocessorTest {
+    private static final String METADATA_NAMESPACE       = "cm";
+    private static final String QNAME_METADATA_NAMESPACE = '@' + METADATA_NAMESPACE;
+    private static final String AWS_S3_MODEL_VERSION_V2  = "V2";
 
-    private static final Logger LOG = LoggerFactory.getLogger(AWSS3V2PreprocessorTest.class);
-    private static final String METADATA_NAMESPACE          = "cm";
-    private static final String QNAME_METADATA_NAMESPACE    = '@' + METADATA_NAMESPACE;
-    private static final String AWS_S3_MODEL_VERSION_V2     = "V2";
+    private static final String SCHEME_SEPARATOR = "://";
+    private static final String S3_SCHEME        = "s3" + SCHEME_SEPARATOR;
+    private static final String S3A_SCHEME       = "s3a" + SCHEME_SEPARATOR;
+    private static final String ABFS_SCHEME      = "abfs" + SCHEME_SEPARATOR;
 
-    private static final String SCHEME_SEPARATOR            = "://";
-    private static final String S3_SCHEME                   = "s3" + SCHEME_SEPARATOR;
-    private static final String S3A_SCHEME                  = "s3a" + SCHEME_SEPARATOR;
-    private static final String ABFS_SCHEME                 = "abfs" + SCHEME_SEPARATOR;
+    private static final String ATTRIBUTE_NAME           = "name";
+    private static final String ATTRIBUTE_OBJECT_PREFIX  = "objectPrefix";
+    private static final String ATTRIBUTE_QUALIFIED_NAME = "qualifiedName";
 
-    private static final String ATTRIBUTE_NAME              = "name";
-    private static final String ATTRIBUTE_OBJECT_PREFIX     = "objectPrefix";
-    private static final String ATTRIBUTE_QUALIFIED_NAME    = "qualifiedName";
-
-    private static final List<String>  EMPTY_STR_LIST       = new ArrayList<>();
-    private static final List<Pattern> EMPTY_PATTERN_LIST   = new ArrayList<>();
+    private static final List<String>  EMPTY_STR_LIST     = new ArrayList<>();
+    private static final List<Pattern> EMPTY_PATTERN_LIST = new ArrayList<>();
 
     @Test
     public void testS2V2DirectoryPreprocessorForOtherTypes() {
-        PathExtractorContext    extractorContext    = new PathExtractorContext(METADATA_NAMESPACE);
-        final String            ABFS_PATH           = ABFS_SCHEME + "data@razrangersan.dfs.core.windows.net/tmp/cdp-demo/sample.csv";
-        Path                    path                = new Path(ABFS_PATH);
-        AtlasEntityWithExtInfo  entityWithExtInfo   = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity             entity              = entityWithExtInfo.getEntity();
+        PathExtractorContext   extractorContext  = new PathExtractorContext(METADATA_NAMESPACE);
+        final String           abfsPath          = ABFS_SCHEME + "data@razrangersan.dfs.core.windows.net/tmp/cdp-demo/sample.csv";
+        Path                   path              = new Path(abfsPath);
+        AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
-        assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), null);
+        assertNull(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX));
 
-        HookNotification                    hookNotification    = new HookNotification.EntityCreateRequestV2("test", new AtlasEntity.AtlasEntitiesWithExtInfo(entity));
-        AtlasKafkaMessage<HookNotification> kafkaMsg            = new AtlasKafkaMessage(hookNotification, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1);
-        PreprocessorContext                 context             = new PreprocessorContext(kafkaMsg, null, EMPTY_PATTERN_LIST, EMPTY_PATTERN_LIST, null,
+        HookNotification                    hookNotification = new HookNotification.EntityCreateRequestV2("test", new AtlasEntity.AtlasEntitiesWithExtInfo(entity));
+        AtlasKafkaMessage<HookNotification> kafkaMsg         = new AtlasKafkaMessage(hookNotification, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1);
+
+        PreprocessorContext context = new PreprocessorContext(kafkaMsg, null, EMPTY_PATTERN_LIST, EMPTY_PATTERN_LIST, null,
                 EMPTY_STR_LIST, EMPTY_STR_LIST, EMPTY_STR_LIST, false,
                 false, true, false, null);
 
-        EntityPreprocessor                  preprocessor        = new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor();
+        EntityPreprocessor preprocessor = new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor();
 
         preprocessor.preprocess(entity, context);
 
@@ -81,21 +79,22 @@ public class AWSS3V2PreprocessorTest {
 
     @Test
     public void testS2V2DirectoryPreprocessorForFullPath() {
-        PathExtractorContext    extractorContext    = new PathExtractorContext(METADATA_NAMESPACE, AWS_S3_MODEL_VERSION_V2);
-        final String            S3_PATH             = S3A_SCHEME + "aws_bucket1/1234567890/test/data1";
-        Path                    path                = new Path(S3_PATH);
-        AtlasEntityWithExtInfo  entityWithExtInfo   = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity             entity              = entityWithExtInfo.getEntity();
+        PathExtractorContext   extractorContext  = new PathExtractorContext(METADATA_NAMESPACE, AWS_S3_MODEL_VERSION_V2);
+        final String           s3Path            = S3A_SCHEME + "aws_bucket1/1234567890/test/data1";
+        Path                   path              = new Path(s3Path);
+        AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/1234567890/test/data1/");
 
-        HookNotification                    hookNotification    = new HookNotification.EntityCreateRequestV2("test", new AtlasEntity.AtlasEntitiesWithExtInfo(entity));
-        AtlasKafkaMessage<HookNotification> kafkaMsg            = new AtlasKafkaMessage(hookNotification, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1);
-        PreprocessorContext                 context             = new PreprocessorContext(kafkaMsg, null, EMPTY_PATTERN_LIST, EMPTY_PATTERN_LIST, null,
-                                                                        EMPTY_STR_LIST, EMPTY_STR_LIST, EMPTY_STR_LIST, false,
-                                            false, true, false, null);
+        HookNotification                    hookNotification = new HookNotification.EntityCreateRequestV2("test", new AtlasEntity.AtlasEntitiesWithExtInfo(entity));
+        AtlasKafkaMessage<HookNotification> kafkaMsg         = new AtlasKafkaMessage(hookNotification, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1);
 
-        EntityPreprocessor                  preprocessor        = new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor();
+        PreprocessorContext context = new PreprocessorContext(kafkaMsg, null, EMPTY_PATTERN_LIST, EMPTY_PATTERN_LIST, null,
+                EMPTY_STR_LIST, EMPTY_STR_LIST, EMPTY_STR_LIST, false,
+                false, true, false, null);
+
+        EntityPreprocessor preprocessor = new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor();
 
         preprocessor.preprocess(entity, context);
 
@@ -107,21 +106,22 @@ public class AWSS3V2PreprocessorTest {
 
     @Test
     public void testS2V2DirectoryPreprocessorForRootLevelDirectory() {
-        PathExtractorContext    extractorContext    = new PathExtractorContext(METADATA_NAMESPACE, AWS_S3_MODEL_VERSION_V2);
-        final String            S3_PATH             = S3A_SCHEME + "aws_bucket1/root1";
-        Path                    path                = new Path(S3_PATH);
-        AtlasEntityWithExtInfo  entityWithExtInfo   = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity             entity              = entityWithExtInfo.getEntity();
+        PathExtractorContext   extractorContext  = new PathExtractorContext(METADATA_NAMESPACE, AWS_S3_MODEL_VERSION_V2);
+        final String           s3Path            = S3A_SCHEME + "aws_bucket1/root1";
+        Path                   path              = new Path(s3Path);
+        AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/root1/");
 
-        HookNotification                    hookNotification    = new HookNotification.EntityCreateRequestV2("test", new AtlasEntity.AtlasEntitiesWithExtInfo(entity));
-        AtlasKafkaMessage<HookNotification> kafkaMsg            = new AtlasKafkaMessage(hookNotification, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1);
-        PreprocessorContext                 context             = new PreprocessorContext(kafkaMsg, null, EMPTY_PATTERN_LIST, EMPTY_PATTERN_LIST, null,
+        HookNotification                    hookNotification = new HookNotification.EntityCreateRequestV2("test", new AtlasEntity.AtlasEntitiesWithExtInfo(entity));
+        AtlasKafkaMessage<HookNotification> kafkaMsg         = new AtlasKafkaMessage(hookNotification, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1);
+
+        PreprocessorContext context = new PreprocessorContext(kafkaMsg, null, EMPTY_PATTERN_LIST, EMPTY_PATTERN_LIST, null,
                 EMPTY_STR_LIST, EMPTY_STR_LIST, EMPTY_STR_LIST, false,
                 false, true, false, null);
 
-        EntityPreprocessor                  preprocessor        = new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor();
+        EntityPreprocessor preprocessor = new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor();
 
         preprocessor.preprocess(entity, context);
 
@@ -133,21 +133,22 @@ public class AWSS3V2PreprocessorTest {
 
     @Test
     public void testS2V2DirectoryPreprocessorWithSameDirNames() {
-        PathExtractorContext    extractorContext    = new PathExtractorContext(METADATA_NAMESPACE, AWS_S3_MODEL_VERSION_V2);
-        final String            S3_PATH             = S3_SCHEME + "temp/temp/temp/temp/";
-        Path                    path                = new Path(S3_PATH);
-        AtlasEntityWithExtInfo  entityWithExtInfo   = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity             entity              = entityWithExtInfo.getEntity();
+        PathExtractorContext   extractorContext  = new PathExtractorContext(METADATA_NAMESPACE, AWS_S3_MODEL_VERSION_V2);
+        final String           s3Path            = S3_SCHEME + "temp/temp/temp/temp/";
+        Path                   path              = new Path(s3Path);
+        AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/temp/temp/temp/");
 
-        HookNotification                    hookNotification    = new HookNotification.EntityCreateRequestV2("test", new AtlasEntity.AtlasEntitiesWithExtInfo(entity));
-        AtlasKafkaMessage<HookNotification> kafkaMsg            = new AtlasKafkaMessage(hookNotification, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1);
-        PreprocessorContext                 context             = new PreprocessorContext(kafkaMsg, null, EMPTY_PATTERN_LIST, EMPTY_PATTERN_LIST, null,
+        HookNotification                    hookNotification = new HookNotification.EntityCreateRequestV2("test", new AtlasEntity.AtlasEntitiesWithExtInfo(entity));
+        AtlasKafkaMessage<HookNotification> kafkaMsg         = new AtlasKafkaMessage(hookNotification, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1);
+
+        PreprocessorContext context = new PreprocessorContext(kafkaMsg, null, EMPTY_PATTERN_LIST, EMPTY_PATTERN_LIST, null,
                 EMPTY_STR_LIST, EMPTY_STR_LIST, EMPTY_STR_LIST, false,
                 false, true, false, null);
 
-        EntityPreprocessor                  preprocessor        = new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor();
+        EntityPreprocessor preprocessor = new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor();
 
         preprocessor.preprocess(entity, context);
 
@@ -159,22 +160,23 @@ public class AWSS3V2PreprocessorTest {
 
     @Test
     public void testS2V2DirectoryPreprocessorForHookWithCorrectObjectPrefix() {
-        PathExtractorContext    extractorContext    = new PathExtractorContext(METADATA_NAMESPACE, AWS_S3_MODEL_VERSION_V2);
-        final String            S3_PATH             = S3A_SCHEME + "aws_bucket1/root1";
-        Path                    path                = new Path(S3_PATH);
-        AtlasEntityWithExtInfo  entityWithExtInfo   = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity             entity              = entityWithExtInfo.getEntity();
+        PathExtractorContext   extractorContext  = new PathExtractorContext(METADATA_NAMESPACE, AWS_S3_MODEL_VERSION_V2);
+        final String           s3Path            = S3A_SCHEME + "aws_bucket1/root1";
+        Path                   path              = new Path(s3Path);
+        AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         entity.setAttribute(ATTRIBUTE_OBJECT_PREFIX, "/");
         assertNotEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/root1/");
 
-        HookNotification                    hookNotification    = new HookNotification.EntityCreateRequestV2("test", new AtlasEntity.AtlasEntitiesWithExtInfo(entity));
-        AtlasKafkaMessage<HookNotification> kafkaMsg            = new AtlasKafkaMessage(hookNotification, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1);
-        PreprocessorContext                 context             = new PreprocessorContext(kafkaMsg, null, EMPTY_PATTERN_LIST, EMPTY_PATTERN_LIST, null,
+        HookNotification                    hookNotification = new HookNotification.EntityCreateRequestV2("test", new AtlasEntity.AtlasEntitiesWithExtInfo(entity));
+        AtlasKafkaMessage<HookNotification> kafkaMsg         = new AtlasKafkaMessage(hookNotification, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1);
+
+        PreprocessorContext context = new PreprocessorContext(kafkaMsg, null, EMPTY_PATTERN_LIST, EMPTY_PATTERN_LIST, null,
                 EMPTY_STR_LIST, EMPTY_STR_LIST, EMPTY_STR_LIST, false,
                 false, true, false, null);
 
-        EntityPreprocessor                  preprocessor        = new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor();
+        EntityPreprocessor preprocessor = new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor();
 
         preprocessor.preprocess(entity, context);
 
@@ -186,23 +188,24 @@ public class AWSS3V2PreprocessorTest {
 
     @Test
     public void testS2V2DirectoryPreprocessorForHookWithCorrectObjectPrefixHavingSameDirNames() {
-        PathExtractorContext    extractorContext    = new PathExtractorContext(METADATA_NAMESPACE, AWS_S3_MODEL_VERSION_V2);
-        final String            S3_PATH             = S3A_SCHEME + "temp/temp/temp/temp/";
-        Path                    path                = new Path(S3_PATH);
-        AtlasEntityWithExtInfo  entityWithExtInfo   = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
-        AtlasEntity             entity              = entityWithExtInfo.getEntity();
+        PathExtractorContext   extractorContext  = new PathExtractorContext(METADATA_NAMESPACE, AWS_S3_MODEL_VERSION_V2);
+        final String           s3Path            = S3A_SCHEME + "temp/temp/temp/temp/";
+        Path                   path              = new Path(s3Path);
+        AtlasEntityWithExtInfo entityWithExtInfo = AtlasPathExtractorUtil.getPathEntity(path, extractorContext);
+        AtlasEntity            entity            = entityWithExtInfo.getEntity();
 
         assertEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/temp/temp/temp/");
         entity.setAttribute(ATTRIBUTE_OBJECT_PREFIX, "/temp/temp/");
         assertNotEquals(entity.getAttribute(ATTRIBUTE_OBJECT_PREFIX), "/temp/temp/temp/");
 
-        HookNotification                    hookNotification    = new HookNotification.EntityCreateRequestV2("test", new AtlasEntity.AtlasEntitiesWithExtInfo(entity));
-        AtlasKafkaMessage<HookNotification> kafkaMsg            = new AtlasKafkaMessage(hookNotification, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1);
-        PreprocessorContext                 context             = new PreprocessorContext(kafkaMsg, null, EMPTY_PATTERN_LIST, EMPTY_PATTERN_LIST, null,
+        HookNotification                    hookNotification = new HookNotification.EntityCreateRequestV2("test", new AtlasEntity.AtlasEntitiesWithExtInfo(entity));
+        AtlasKafkaMessage<HookNotification> kafkaMsg         = new AtlasKafkaMessage(hookNotification, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1);
+
+        PreprocessorContext context = new PreprocessorContext(kafkaMsg, null, EMPTY_PATTERN_LIST, EMPTY_PATTERN_LIST, null,
                 EMPTY_STR_LIST, EMPTY_STR_LIST, EMPTY_STR_LIST, false,
                 false, true, false, null);
 
-        EntityPreprocessor                  preprocessor        = new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor();
+        EntityPreprocessor preprocessor = new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor();
 
         preprocessor.preprocess(entity, context);
 

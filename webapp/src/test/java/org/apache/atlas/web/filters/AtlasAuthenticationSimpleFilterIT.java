@@ -17,10 +17,11 @@
 package org.apache.atlas.web.filters;
 
 import org.apache.atlas.web.security.BaseSecurityTest;
-import org.testng.Assert;
-import org.testng.annotations.Test;
 import org.apache.commons.codec.binary.Base64;
+import org.testng.annotations.Test;
+
 import javax.ws.rs.core.Response;
+
 import java.net.HttpURLConnection;
 import java.net.URL;
 
@@ -30,49 +31,46 @@ import static org.testng.Assert.assertEquals;
  *
  */
 public class AtlasAuthenticationSimpleFilterIT extends BaseSecurityTest {
-    private Base64 enc = new Base64();
+    private final Base64 enc = new Base64();
 
     @Test(enabled = false)
     public void testSimpleLoginForValidUser() throws Exception {
-        URL url = new URL("http://localhost:31000/api/atlas/admin/session");
+        URL               url        = new URL("http://localhost:31000/api/atlas/admin/session");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
         connection.setRequestMethod("GET");
-        String userpassword = "admin:admin"; // right password
+
+        String userpassword         = "admin:admin"; // right password
         String encodedAuthorization = enc.encodeToString(userpassword.getBytes());
-        connection.setRequestProperty("Authorization", "Basic " +
-                encodedAuthorization);
+
+        connection.setRequestProperty("Authorization", "Basic " + encodedAuthorization);
         connection.connect();
 
         assertEquals(connection.getResponseCode(), Response.Status.OK.getStatusCode());
     }
-
 
     @Test(enabled = true)
     public void testAccessforUnauthenticatedResource() throws Exception {
-
-        URL url = new URL("http://localhost:31000/api/atlas/admin/status");
+        URL               url        = new URL("http://localhost:31000/api/atlas/admin/status");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
         connection.setRequestMethod("GET");
         connection.connect();
         assertEquals(connection.getResponseCode(), Response.Status.OK.getStatusCode());
-
     }
-
-
-
 
     @Test(enabled = false)
     public void testSimpleLoginWithInvalidCrendentials() throws Exception {
-
-        URL url = new URL("http://localhost:31000/api/atlas/admin/session");
+        URL               url        = new URL("http://localhost:31000/api/atlas/admin/session");
         HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
         connection.setRequestMethod("GET");
-        String userpassword = "admin:admin1"; //wrong password
+
+        String userpassword         = "admin:admin1"; //wrong password
         String encodedAuthorization = enc.encodeToString(userpassword.getBytes());
-        connection.setRequestProperty("Authorization", "Basic " +
-                encodedAuthorization);
+
+        connection.setRequestProperty("Authorization", "Basic " + encodedAuthorization);
         connection.connect();
         assertEquals(connection.getResponseCode(), 401);
     }
-
 }

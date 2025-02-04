@@ -34,49 +34,57 @@ import java.io.IOException;
  */
 public class BaseSSLAndKerberosTest extends BaseSecurityTest {
     public static final String TEST_USER_JAAS_SECTION = "TestUser";
-    public static final String TESTUSER = "testuser";
-    public static final String TESTPASS = "testpass";
+    public static final String TESTUSER               = "testuser";
+    public static final String TESTPASS               = "testpass";
+
     protected static final String DGI_URL = "https://localhost:21443/";
-    protected Path jksPath;
+
+    protected Path   jksPath;
     protected String providerUrl;
-    protected File httpKeytabFile;
-    protected File userKeytabFile;
+    protected File   httpKeytabFile;
+    protected File   userKeytabFile;
 
     protected BaseSSLAndKerberosTest() {
         System.setProperty("https.protocols", "TLSv1.2");
     }
 
-    class TestSecureEmbeddedServer extends SecureEmbeddedServer {
+    public void setupKDCAndPrincipals() throws Exception {
+        // set up the KDC
+        File kdcWorkDir = startKDC();
 
-        public TestSecureEmbeddedServer(int port, String path) throws IOException {
-            super(ATLAS_DEFAULT_BIND_ADDRESS, port, path);
-        }
+        userKeytabFile = createKeytab(kdc, kdcWorkDir, "dgi", "dgi.keytab");
+        //createKeytab(kdc, kdcWorkDir, "zookeeper", "dgi.keytab");
+        httpKeytabFile = createKeytab(kdc, kdcWorkDir, "HTTP", "spnego.service.keytab");
 
-        public Server getServer() {
-            return server;
-        }
+        // create a test user principal
+        kdc.createPrincipal(TESTUSER, TESTPASS);
 
-        @Override
-        protected WebAppContext getWebAppContext(String path) {
-            WebAppContext application = new WebAppContext(path, "/");
-            application.setDescriptor(System.getProperty("projectBaseDir") + "/webapp/src/test/webapp/WEB-INF/web.xml");
-            application.setClassLoader(Thread.currentThread().getContextClassLoader());
-            return application;
-        }
+        String jaas = TEST_USER_JAAS_SECTION + " {\n" +
+                "    com.sun.security.auth.module.Krb5LoginModule required\nuseTicketCache=true;\n" +
+                "};\n" +
+                createJAASEntry("Client", "dgi", userKeytabFile) +
+                createJAASEntry("Server", "HTTP", httpKeytabFile);
+
+        File jaasFile = new File(kdcWorkDir, "jaas.txt");
+
+        FileUtils.write(jaasFile, jaas);
+
+        bindJVMtoJAASFile(jaasFile);
     }
 
     protected void setupCredentials() throws Exception {
         Configuration conf = new Configuration(false);
 
         File file = new File(jksPath.toUri().getPath());
+
         file.delete();
+
         conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerUrl);
 
         CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
 
         // create new aliases
         try {
-
             char[] storepass = {'k', 'e', 'y', 'p', 'a', 's', 's'};
             provider.createCredentialEntry(SecurityProperties.KEYSTORE_PASSWORD_KEY, storepass);
 
@@ -97,26 +105,23 @@ public class BaseSSLAndKerberosTest extends BaseSecurityTest {
         }
     }
 
-    public void setupKDCAndPrincipals() throws Exception {
-        // set up the KDC
-        File kdcWorkDir = startKDC();
+    class TestSecureEmbeddedServer extends SecureEmbeddedServer {
+        public TestSecureEmbeddedServer(int port, String path) throws IOException {
+            super(ATLAS_DEFAULT_BIND_ADDRESS, port, path);
+        }
 
-        userKeytabFile = createKeytab(kdc, kdcWorkDir, "dgi", "dgi.keytab");
-        //createKeytab(kdc, kdcWorkDir, "zookeeper", "dgi.keytab");
-        httpKeytabFile = createKeytab(kdc, kdcWorkDir, "HTTP", "spnego.service.keytab");
+        public Server getServer() {
+            return server;
+        }
 
-        // create a test user principal
-        kdc.createPrincipal(TESTUSER, TESTPASS);
+        @Override
+        protected WebAppContext getWebAppContext(String path) {
+            WebAppContext application = new WebAppContext(path, "/");
 
-        StringBuilder jaas = new StringBuilder(1024);
-        jaas.append(TEST_USER_JAAS_SECTION + " {\n" +
-                "    com.sun.security.auth.module.Krb5LoginModule required\nuseTicketCache=true;\n" +
-                "};\n");
-        jaas.append(createJAASEntry("Client", "dgi", userKeytabFile));
-        jaas.append(createJAASEntry("Server", "HTTP", httpKeytabFile));
+            application.setDescriptor(System.getProperty("projectBaseDir") + "/webapp/src/test/webapp/WEB-INF/web.xml");
+            application.setClassLoader(Thread.currentThread().getContextClassLoader());
 
-        File jaasFile = new File(kdcWorkDir, "jaas.txt");
-        FileUtils.write(jaasFile, jaas.toString());
-        bindJVMtoJAASFile(jaasFile);
+            return application;
+        }
     }
 }

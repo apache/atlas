@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,11 +39,20 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.*;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 @Path("v2/notification")
 @Singleton
@@ -51,19 +60,16 @@ import java.util.*;
 @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 @Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 public class NotificationREST {
-    private static final Logger                        LOG                            = LoggerFactory.getLogger(NotificationREST.class);
-    public  static final String                        ATLAS_HOOK_TOPIC               = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
-    public  static final String                        ATLAS_ENTITIES_TOPIC           = AtlasConfiguration.NOTIFICATION_ENTITIES_TOPIC_NAME.getString();
-    private static final String[]                      ATLAS_HOOK_CONSUMER_TOPICS     = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_HOOK_TOPIC);
-    private static final String[]                      ATLAS_ENTITIES_CONSUMER_TOPICS = AtlasConfiguration.NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_ENTITIES_TOPIC);
-    private static final Set<String>                   TOPICS                         = new HashSet<>();
+    private static final Logger LOG = LoggerFactory.getLogger(NotificationREST.class);
+
+    public static final String ATLAS_HOOK_TOPIC     = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
+    public static final String ATLAS_ENTITIES_TOPIC = AtlasConfiguration.NOTIFICATION_ENTITIES_TOPIC_NAME.getString();
+
+    private static final String[]    ATLAS_HOOK_CONSUMER_TOPICS     = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_HOOK_TOPIC);
+    private static final String[]    ATLAS_ENTITIES_CONSUMER_TOPICS = AtlasConfiguration.NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_ENTITIES_TOPIC);
+    private static final Set<String> TOPICS                         = new HashSet<>();
 
     private final NotificationInterface notificationInterface;
-
-    static {
-        TOPICS.addAll(Arrays.asList(ATLAS_HOOK_CONSUMER_TOPICS));
-        TOPICS.addAll(Arrays.asList(ATLAS_ENTITIES_CONSUMER_TOPICS));
-    }
 
     @Inject
     public NotificationREST(NotificationInterface notificationInterface) {
@@ -81,26 +87,26 @@ public class NotificationREST {
     @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
     public void handleNotifications(@PathParam("topicName") String topicName, @Context HttpServletRequest request) throws AtlasBaseException, IOException {
         LOG.debug("Handling notifications for topic {}", topicName);
+
         AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.SERVICE_NOTIFICATION_POST), "post on rest notification service");
 
         if (!TOPICS.contains(topicName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_TOPIC_NAME, topicName);
         }
 
-        String            messagesAsJson = Servlets.getRequestPayload(request);
-        List<String>      messages       = getMessagesToNotify(messagesAsJson);
+        String       messagesAsJson = Servlets.getRequestPayload(request);
+        List<String> messages       = getMessagesToNotify(messagesAsJson);
 
         try {
-            KafkaNotification  notifier  = (KafkaNotification) notificationInterface;
-            notifier.sendInternal(topicName, messages, AtlasHook.isHookMsgsSortEnabled);
+            KafkaNotification notifier = (KafkaNotification) notificationInterface;
 
+            notifier.sendInternal(topicName, messages, AtlasHook.isHookMsgsSortEnabled);
         } catch (NotificationException exception) {
             List<String> failedMessages      = exception.getFailedMessages();
             String       concatenatedMessage = StringUtils.join(failedMessages, "\n");
 
             throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_EXCEPTION, exception, concatenatedMessage);
         }
-
     }
 
     private List<String> getMessagesToNotify(String messagesAsJson) {
@@ -108,6 +114,7 @@ public class NotificationREST {
 
         try {
             ArrayNode messageNodes = AtlasJson.parseToV1ArrayNode(messagesAsJson);
+
             for (JsonNode messageNode : messageNodes) {
                 messages.add(AtlasJson.toV1Json(messageNode));
             }
@@ -118,4 +125,8 @@ public class NotificationREST {
         return messages;
     }
 
+    static {
+        TOPICS.addAll(Arrays.asList(ATLAS_HOOK_CONSUMER_TOPICS));
+        TOPICS.addAll(Arrays.asList(ATLAS_ENTITIES_CONSUMER_TOPICS));
+    }
 }

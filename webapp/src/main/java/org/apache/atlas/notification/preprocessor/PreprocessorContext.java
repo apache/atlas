@@ -45,11 +45,8 @@ import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.QNAME_SEP_CLUSTER_NAME;
 import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.QNAME_SEP_ENTITY_NAME;
 
-
 public class PreprocessorContext {
     private static final Logger LOG = LoggerFactory.getLogger(PreprocessorContext.class);
-
-    public enum PreprocessAction { NONE, IGNORE, PRUNE }
 
     private final AtlasKafkaMessage<HookNotification> kafkaMessage;
     private final AtlasTypeRegistry                   typeRegistry;
@@ -72,7 +69,7 @@ public class PreprocessorContext {
     private final Set<String>                         deletedEntities        = new HashSet<>();
     private final Map<String, String>                 guidAssignments        = new HashMap<>();
     private final EntityCorrelationManager            correlationManager;
-    private       List<AtlasEntity>                   postUpdateEntities     = null;
+    private       List<AtlasEntity>                   postUpdateEntities;
 
     public PreprocessorContext(AtlasKafkaMessage<HookNotification> kafkaMessage, AtlasTypeRegistry typeRegistry, List<Pattern> hiveTablesToIgnore, List<Pattern> hiveTablesToPrune, Map<String, PreprocessAction> hiveTablesCache, List<String> hiveDummyDatabasesToIgnore, List<String> hiveDummyTablesToIgnore, List<String> hiveTablePrefixesToIgnore, boolean hiveTypesRemoveOwnedRefAttrs, boolean rdbmsTypesRemoveOwnedRefAttrs, boolean s3V2DirectoryPruneObjectPrefix, boolean updateHiveProcessNameWithQualifiedName, EntityCorrelationManager correlationManager) {
         this.kafkaMessage                           = kafkaMessage;
@@ -88,24 +85,24 @@ public class PreprocessorContext {
         this.s3V2DirectoryPruneObjectPrefix         = s3V2DirectoryPruneObjectPrefix;
         this.updateHiveProcessNameWithQualifiedName = updateHiveProcessNameWithQualifiedName;
 
-        final HookNotification  message = kafkaMessage.getMessage();
+        final HookNotification message = kafkaMessage.getMessage();
 
         switch (message.getType()) {
             case ENTITY_CREATE_V2:
                 entitiesWithExtInfo = ((HookNotification.EntityCreateRequestV2) message).getEntities();
-            break;
+                break;
 
             case ENTITY_FULL_UPDATE_V2:
                 entitiesWithExtInfo = ((HookNotification.EntityUpdateRequestV2) message).getEntities();
-            break;
+                break;
 
             default:
                 entitiesWithExtInfo = null;
-            break;
+                break;
         }
 
         this.isHivePreProcessEnabled = hiveTypesRemoveOwnedRefAttrs || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty() || updateHiveProcessNameWithQualifiedName;
-        this.correlationManager = correlationManager;
+        this.correlationManager      = correlationManager;
     }
 
     public AtlasKafkaMessage<HookNotification> getKafkaMessage() {
@@ -120,11 +117,17 @@ public class PreprocessorContext {
         return kafkaMessage.getPartition();
     }
 
-    public boolean updateHiveProcessNameWithQualifiedName() { return updateHiveProcessNameWithQualifiedName; }
+    public boolean updateHiveProcessNameWithQualifiedName() {
+        return updateHiveProcessNameWithQualifiedName;
+    }
 
-    public boolean getHiveTypesRemoveOwnedRefAttrs() { return hiveTypesRemoveOwnedRefAttrs; }
+    public boolean getHiveTypesRemoveOwnedRefAttrs() {
+        return hiveTypesRemoveOwnedRefAttrs;
+    }
 
-    public boolean getRdbmsTypesRemoveOwnedRefAttrs() { return rdbmsTypesRemoveOwnedRefAttrs; }
+    public boolean getRdbmsTypesRemoveOwnedRefAttrs() {
+        return rdbmsTypesRemoveOwnedRefAttrs;
+    }
 
     public boolean getS3V2DirectoryPruneObjectPrefix() {
         return s3V2DirectoryPruneObjectPrefix;
@@ -152,19 +155,33 @@ public class PreprocessorContext {
         return referredEntities != null && guid != null ? referredEntities.remove(guid) : null;
     }
 
-    public Set<String> getIgnoredEntities() { return ignoredEntities; }
+    public Set<String> getIgnoredEntities() {
+        return ignoredEntities;
+    }
 
-    public Set<String> getPrunedEntities() { return prunedEntities; }
+    public Set<String> getPrunedEntities() {
+        return prunedEntities;
+    }
 
-    public Set<String> getReferredEntitiesToMove() { return referredEntitiesToMove; }
+    public Set<String> getReferredEntitiesToMove() {
+        return referredEntitiesToMove;
+    }
 
-    public Set<String> getCreatedEntities() { return createdEntities; }
+    public Set<String> getCreatedEntities() {
+        return createdEntities;
+    }
 
-    public Set<String> getDeletedEntities() { return deletedEntities; }
+    public Set<String> getDeletedEntities() {
+        return deletedEntities;
+    }
 
-    public Map<String, String> getGuidAssignments() { return guidAssignments; }
+    public Map<String, String> getGuidAssignments() {
+        return guidAssignments;
+    }
 
-    public List<AtlasEntity> getPostUpdateEntities() { return postUpdateEntities; }
+    public List<AtlasEntity> getPostUpdateEntities() {
+        return postUpdateEntities;
+    }
 
     public PreprocessAction getPreprocessActionForHiveDb(String dbName) {
         PreprocessAction ret = PreprocessAction.NONE;
@@ -245,11 +262,11 @@ public class PreprocessorContext {
     }
 
     public boolean isIgnoredEntity(String guid) {
-        return guid != null ? ignoredEntities.contains(guid) : false;
+        return guid != null && ignoredEntities.contains(guid);
     }
 
     public boolean isPrunedEntity(String guid) {
-        return guid != null ? prunedEntities.contains(guid) : false;
+        return guid != null && prunedEntities.contains(guid);
     }
 
     public void addToIgnoredEntities(AtlasEntity entity) {
@@ -318,7 +335,7 @@ public class PreprocessorContext {
                 AtlasEntity refEntity = getEntity(guid);
 
                 if (refEntity != null) {
-                    Object refAttr = null;
+                    Object refAttr;
 
                     if (refEntity.hasRelationshipAttribute(refAttrName)) {
                         refAttr = refEntity.getRelationshipAttribute(refAttrName);
@@ -434,32 +451,36 @@ public class PreprocessorContext {
     }
 
     public String getTypeName(Object obj) {
-        Object ret = null;
+        Object ret;
 
         if (obj instanceof AtlasObjectId) {
             ret = ((AtlasObjectId) obj).getTypeName();
         } else if (obj instanceof Map) {
-            ret = ((Map) obj).get(AtlasObjectId.KEY_TYPENAME);
+            ret = ((Map<?, ?>) obj).get(AtlasObjectId.KEY_TYPENAME);
         } else if (obj instanceof AtlasEntity) {
             ret = ((AtlasEntity) obj).getTypeName();
         } else if (obj instanceof AtlasEntity.AtlasEntityWithExtInfo) {
             ret = ((AtlasEntity.AtlasEntityWithExtInfo) obj).getEntity().getTypeName();
+        } else {
+            ret = null;
         }
 
         return ret != null ? ret.toString() : null;
     }
 
     public String getGuid(Object obj) {
-        Object ret = null;
+        Object ret;
 
         if (obj instanceof AtlasObjectId) {
             ret = ((AtlasObjectId) obj).getGuid();
         } else if (obj instanceof Map) {
-            ret = ((Map) obj).get(KEY_GUID);
+            ret = ((Map<?, ?>) obj).get(KEY_GUID);
         } else if (obj instanceof AtlasEntity) {
             ret = ((AtlasEntity) obj).getGuid();
         } else if (obj instanceof AtlasEntity.AtlasEntityWithExtInfo) {
             ret = ((AtlasEntity.AtlasEntityWithExtInfo) obj).getEntity().getGuid();
+        } else {
+            ret = null;
         }
 
         return ret != null ? ret.toString() : null;
@@ -468,7 +489,7 @@ public class PreprocessorContext {
     public void collectGuids(Object obj, Set<String> guids) {
         if (obj != null) {
             if (obj instanceof Collection) {
-                Collection objList = (Collection) obj;
+                Collection<?> objList = (Collection<?>) obj;
 
                 for (Object objElem : objList) {
                     collectGuids(objElem, guids);
@@ -487,6 +508,17 @@ public class PreprocessorContext {
         }
     }
 
+    public long getMsgCreated() {
+        return kafkaMessage.getMsgCreated();
+    }
+
+    public boolean isSpooledMessage() {
+        return kafkaMessage.getSpooled();
+    }
+
+    public String getGuidForDeletedEntity(String qualifiedName) {
+        return this.correlationManager.getGuidForDeletedEntityToBeCorrelated(qualifiedName, kafkaMessage.getMsgCreated());
+    }
 
     private boolean isMatch(String name, List<Pattern> patterns) {
         boolean ret = false;
@@ -503,14 +535,16 @@ public class PreprocessorContext {
     }
 
     private AtlasRelatedObjectId setRelationshipType(Object attr, String relationshipType) {
-        AtlasRelatedObjectId ret = null;
+        AtlasRelatedObjectId ret;
 
         if (attr instanceof AtlasRelatedObjectId) {
             ret = (AtlasRelatedObjectId) attr;
         } else if (attr instanceof AtlasObjectId) {
             ret = new AtlasRelatedObjectId((AtlasObjectId) attr);
         } else if (attr instanceof Map) {
-            ret = new AtlasRelatedObjectId((Map) attr);
+            ret = new AtlasRelatedObjectId((Map<?, ?>) attr);
+        } else {
+            ret = null;
         }
 
         if (ret != null) {
@@ -529,7 +563,7 @@ public class PreprocessorContext {
     private void setAssignedGuids(Object obj) {
         if (obj != null) {
             if (obj instanceof Collection) {
-                Collection objList = (Collection) obj;
+                Collection<?> objList = (Collection<?>) obj;
 
                 for (Object objElem : objList) {
                     setAssignedGuids(objElem);
@@ -550,7 +584,7 @@ public class PreprocessorContext {
 
             objId.setGuid(getAssignedGuid(objId.getGuid()));
         } else if (obj instanceof Map) {
-            Map    objId = (Map) obj;
+            Map    objId = (Map<?, ?>) obj;
             Object guid  = objId.get(KEY_GUID);
 
             if (guid != null) {
@@ -560,9 +594,7 @@ public class PreprocessorContext {
     }
 
     private void addToPostUpdate(AtlasEntity entity, String attrName, Object attrVal) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("addToPostUpdate(guid={}, entityType={}, attrName={}", entity.getGuid(), entity.getTypeName(), attrName);
-        }
+        LOG.debug("addToPostUpdate(guid={}, entityType={}, attrName={}", entity.getGuid(), entity.getTypeName(), attrName);
 
         AtlasEntity partialEntity = null;
 
@@ -589,15 +621,5 @@ public class PreprocessorContext {
         }
     }
 
-    public long getMsgCreated() {
-        return kafkaMessage.getMsgCreated();
-    }
-
-    public boolean isSpooledMessage() {
-        return kafkaMessage.getSpooled();
-    }
-
-    public String getGuidForDeletedEntity(String qualifiedName) {
-        return this.correlationManager.getGuidForDeletedEntityToBeCorrelated(qualifiedName, kafkaMessage.getMsgCreated());
-    }
+    public enum PreprocessAction { NONE, IGNORE, PRUNE }
 }
