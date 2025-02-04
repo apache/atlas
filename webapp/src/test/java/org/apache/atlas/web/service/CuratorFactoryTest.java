@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,7 +24,6 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.zookeeper.data.ACL;
-import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -38,7 +37,6 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
 public class CuratorFactoryTest {
-
     @Mock
     private Configuration configuration;
 
@@ -59,12 +57,15 @@ public class CuratorFactoryTest {
         when(zookeeperProperties.getAcl()).thenReturn("sasl:myclient@EXAMPLE.COM");
         when(zookeeperProperties.hasAuth()).thenReturn(true);
         when(zookeeperProperties.getAuth()).thenReturn("sasl:myclient@EXAMPLE.COM");
+
         CuratorFactory curatorFactory = new CuratorFactory(configuration) {
             @Override
             protected void initializeCuratorFramework() {
             }
         };
+
         curatorFactory.enhanceBuilderWithSecurityParameters(zookeeperProperties, builder);
+
         verify(builder).aclProvider(any(ACLProvider.class));
         verify(builder).authorization(eq("sasl"), eq("myclient@EXAMPLE.COM".getBytes(Charsets.UTF_8)));
     }
@@ -74,19 +75,19 @@ public class CuratorFactoryTest {
         when(zookeeperProperties.hasAcl()).thenReturn(true);
         when(zookeeperProperties.getAcl()).thenReturn("sasl:myclient@EXAMPLE.COM");
         when(zookeeperProperties.hasAuth()).thenReturn(false);
+
         CuratorFactory curatorFactory = new CuratorFactory(configuration) {
             @Override
             protected void initializeCuratorFramework() {
             }
         };
+
         curatorFactory.enhanceBuilderWithSecurityParameters(zookeeperProperties, builder);
-        verify(builder).aclProvider(argThat(new ArgumentMatcher<ACLProvider>() {
-            @Override
-            public boolean matches(ACLProvider aclProvider) {
-                ACL acl = aclProvider.getDefaultAcl().get(0);
-                return acl.getId().getId().equals("myclient@EXAMPLE.COM")
-                        && acl.getId().getScheme().equals("sasl");
-            }
+
+        verify(builder).aclProvider(argThat(aclProvider -> {
+            ACL acl = aclProvider.getDefaultAcl().get(0);
+
+            return acl.getId().getId().equals("myclient@EXAMPLE.COM") && acl.getId().getScheme().equals("sasl");
         }));
     }
 
@@ -94,11 +95,13 @@ public class CuratorFactoryTest {
     public void shouldNotAddAnySecureParameters() {
         when(zookeeperProperties.hasAcl()).thenReturn(false);
         when(zookeeperProperties.hasAuth()).thenReturn(false);
+
         CuratorFactory curatorFactory = new CuratorFactory(configuration) {
             @Override
             protected void initializeCuratorFramework() {
             }
         };
+
         verifyZeroInteractions(builder);
     }
 }

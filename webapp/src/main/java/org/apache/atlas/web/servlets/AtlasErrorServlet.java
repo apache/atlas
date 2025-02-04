@@ -17,19 +17,14 @@
  */
 package org.apache.atlas.web.servlets;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-public class AtlasErrorServlet  extends AtlasHttpServlet {
-    public static final Logger LOG = LoggerFactory.getLogger(AtlasErrorServlet.class);
-
+public class AtlasErrorServlet extends AtlasHttpServlet {
     public static final String ERROR_HTML_TEMPLATE = "/error.html.template";
 
     @Override
     protected void service(HttpServletRequest request, HttpServletResponse response) {
-        includeResponse( request,  response, ERROR_HTML_TEMPLATE);
+        includeResponse(request, response, ERROR_HTML_TEMPLATE);
     }
 }

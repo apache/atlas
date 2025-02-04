@@ -28,17 +28,24 @@ import java.io.FileWriter;
 public class TestUtils {
     private static final Logger LOG = LoggerFactory.getLogger(TestUtils.class);
 
-    public static String random(){
+    private TestUtils() {
+        // to block instantiation
+    }
+
+    public static String random() {
         return RandomStringUtils.randomAlphanumeric(10);
     }
 
     public static void writeConfiguration(PropertiesConfiguration configuration, String fileName) throws Exception {
         LOG.debug("Storing configuration in file {}", fileName);
-        File file = new File(fileName);
+
+        File file       = new File(fileName);
         File parentFile = file.getParentFile();
+
         if (!parentFile.exists() && !parentFile.mkdirs()) {
             throw new Exception("Failed to create dir " + parentFile.getAbsolutePath());
         }
+
         file.createNewFile();
         configuration.save(new FileWriter(file));
     }
@@ -48,15 +55,14 @@ public class TestUtils {
     }
 
     public static String getWarPath() {
-        return System.getProperty("projectBaseDir") + String.format("/webapp/target/atlas-webapp-%s",
-                System.getProperty("project.version"));
+        return System.getProperty("projectBaseDir") + String.format("/webapp/target/atlas-webapp-%s", System.getProperty("project.version"));
     }
 
     public static String getTargetDirectory() {
-        return System.getProperty("projectBaseDir") + "/webapp/target" ;
+        return System.getProperty("projectBaseDir") + "/webapp/target";
     }
 
-    public static String getGlossaryType(){
+    public static String getGlossaryType() {
         return System.getProperty("projectBaseDir") + "/webapp/target/models/0000-Area0/0011-glossary_model.json";
     }
 }

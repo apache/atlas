@@ -27,13 +27,13 @@ import org.testng.annotations.Test;
 
 import javax.ws.rs.HttpMethod;
 import javax.ws.rs.core.Response;
+
 import java.util.HashMap;
 
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class DebugMetricsIT extends BaseResourceIT {
-
     @BeforeClass
     public void setUp() throws Exception {
         super.setUp();
@@ -41,36 +41,43 @@ public class DebugMetricsIT extends BaseResourceIT {
 
     @Test
     public void checkMetricCountIncrement() {
-
         // Get the metrics
         AtlasBaseClient.API metricsAPI = new AtlasBaseClient.API(AtlasBaseClient.BASE_URI + "admin/debug/metrics", HttpMethod.GET, Response.Status.OK);
+
         try {
-            String metricsJson = atlasClientV1.callAPI(metricsAPI, String.class, null);
-            HashMap<String, DebugMetrics> currentMetrics = AtlasJson.fromJson(metricsJson, new TypeReference<HashMap<String, DebugMetrics>>() {});
-            DebugMetrics currentCreateOrUpdateDTO = currentMetrics.get("EntityREST_createOrUpdate");
-            long currentCreateOrUpdateCount = 0;
-            if(currentCreateOrUpdateDTO != null) {
+            String                        metricsJson                = atlasClientV1.callAPI(metricsAPI, String.class, null);
+            HashMap<String, DebugMetrics> currentMetrics             = AtlasJson.fromJson(metricsJson, new TypeReference<HashMap<String, DebugMetrics>>() {});
+            DebugMetrics                  currentCreateOrUpdateDTO   = currentMetrics.get("EntityREST_createOrUpdate");
+            long                          currentCreateOrUpdateCount = 0;
+
+            if (currentCreateOrUpdateDTO != null) {
                 currentCreateOrUpdateCount = currentCreateOrUpdateDTO.getNumops();
             }
 
             // hit the api
             AtlasEntity atlasEntity = createEntity(DATABASE_TYPE_BUILTIN, randomString());
+
             atlasClientV2.createEntity(new AtlasEntity.AtlasEntityWithExtInfo(atlasEntity));
 
             atlasEntity = createEntity(DATABASE_TYPE_BUILTIN, randomString());
+
             atlasClientV2.createEntity(new AtlasEntity.AtlasEntityWithExtInfo(atlasEntity));
 
             // get the metrics again
             Thread.sleep(30000); // The metrics take some time to update
+
             metricsJson = atlasClientV1.callAPI(metricsAPI, String.class, null);
-            HashMap<String, DebugMetrics> newMetrics = AtlasJson.fromJson(metricsJson, new TypeReference<HashMap<String, DebugMetrics>>() {});
-            DebugMetrics newCreateOrUpdateDTO = newMetrics.get("EntityREST_createOrUpdate");
+
+            HashMap<String, DebugMetrics> newMetrics           = AtlasJson.fromJson(metricsJson, new TypeReference<HashMap<String, DebugMetrics>>() {});
+            DebugMetrics                  newCreateOrUpdateDTO = newMetrics.get("EntityREST_createOrUpdate");
 
             // check if the metric count has increased
             long newCreateOrUpdateCount = 0;
-            if(newCreateOrUpdateDTO != null) {
+
+            if (newCreateOrUpdateDTO != null) {
                 newCreateOrUpdateCount = newCreateOrUpdateDTO.getNumops();
             }
+
             assertTrue(newCreateOrUpdateCount > currentCreateOrUpdateCount, "Count didn't increase after making API call: expected [" + (currentCreateOrUpdateCount + 2) + "] but found [" + newCreateOrUpdateCount + "]");
         } catch (Exception e) {
             fail("Caught exception while running the test: " + e.getMessage(), e);

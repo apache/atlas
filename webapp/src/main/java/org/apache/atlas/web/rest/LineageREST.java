@@ -18,7 +18,6 @@
 
 package org.apache.atlas.web.rest;
 
-
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.annotation.Timed;
@@ -44,13 +43,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
-import javax.ws.rs.POST;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+
 import java.util.HashMap;
 import java.util.Map;
 
@@ -65,25 +65,26 @@ import java.util.Map;
 public class LineageREST {
     private static final Logger LOG      = LoggerFactory.getLogger(LineageREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.LineageREST");
-    private static final String PREFIX_ATTR = "attr:";
 
-    private final AtlasTypeRegistry typeRegistry;
+    private static final String PREFIX_ATTR       = "attr:";
+    private static final String DEFAULT_DIRECTION = "BOTH";
+    private static final String DEFAULT_DEPTH     = "3";
+
+    private final AtlasTypeRegistry   typeRegistry;
     private final AtlasLineageService atlasLineageService;
-
-    private static final String  DEFAULT_DIRECTION         = "BOTH";
-    private static final String  DEFAULT_DEPTH             = "3";
 
     @Context
     private HttpServletRequest httpServletRequest;
 
     @Inject
     public LineageREST(AtlasTypeRegistry typeRegistry, AtlasLineageService atlasLineageService) {
-        this.typeRegistry = typeRegistry;
+        this.typeRegistry        = typeRegistry;
         this.atlasLineageService = atlasLineageService;
     }
 
     /**
      * Returns lineage info about entity.
+     *
      * @param guid - unique entity id
      * @param direction - input, output or both
      * @param depth - number of hops for lineage
@@ -96,17 +97,14 @@ public class LineageREST {
     @GET
     @Path("/{guid}")
     @Timed
-    public AtlasLineageInfo getLineageGraph(@PathParam("guid") String guid,
-                                            @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION)  LineageDirection direction,
-                                            @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth) throws AtlasBaseException {
+    public AtlasLineageInfo getLineageGraph(@PathParam("guid") String guid, @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION) LineageDirection direction, @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
 
         AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageREST.getLineageGraph(" + guid + "," + direction +
-                                                               "," + depth + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageREST.getLineageGraph(" + guid + "," + direction + "," + depth + ")");
             }
 
             return atlasLineageService.getAtlasLineageInfo(guid, direction, depth);
@@ -117,6 +115,7 @@ public class LineageREST {
 
     /**
      * Returns lineage info about entity.
+     *
      * @return AtlasLineageInfo
      * @throws AtlasBaseException
      * @HTTP 200 If Lineage exists for the given entity
@@ -128,17 +127,16 @@ public class LineageREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Timed
-    public AtlasLineageInfo getLineageGraph(@PathParam("guid") String guid,
-                                            Map<String, LineageOnDemandConstraints> lineageConstraintsMapByGuid) throws AtlasBaseException {
+    public AtlasLineageInfo getLineageGraph(@PathParam("guid") String guid, Map<String, LineageOnDemandConstraints> lineageConstraintsMapByGuid) throws AtlasBaseException {
         if (!AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getBoolean()) {
-            LOG.warn("LineageREST: "+ AtlasErrorCode.LINEAGE_ON_DEMAND_NOT_ENABLED.getFormattedErrorMessage(AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getPropertyName()));
+            LOG.warn("LineageREST: {}", AtlasErrorCode.LINEAGE_ON_DEMAND_NOT_ENABLED.getFormattedErrorMessage(AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getPropertyName()));
 
             throw new AtlasBaseException(AtlasErrorCode.LINEAGE_ON_DEMAND_NOT_ENABLED, AtlasConfiguration.LINEAGE_ON_DEMAND_ENABLED.getPropertyName());
         }
 
         Servlets.validateQueryParamLength("guid", guid);
 
-        AtlasPerfTracer  perf = null;
+        AtlasPerfTracer perf = null;
 
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -153,11 +151,11 @@ public class LineageREST {
 
     /**
      * Returns lineage info about entity.
-     *
+     * <p>
      * In addition to the typeName path parameter, attribute key-value pair(s) can be provided in the following format
-     *
+     * <p>
      * attr:<attrName>=<attrValue>
-     *
+     * <p>
      * NOTE: The attrName and attrValue should be unique across entities, eg. qualifiedName
      *
      * @param typeName - typeName of entity
@@ -174,19 +172,18 @@ public class LineageREST {
     @Consumes(Servlets.JSON_MEDIA_TYPE)
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Timed
-    public AtlasLineageInfo getLineageByUniqueAttribute(@PathParam("typeName") String typeName, @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION) LineageDirection direction,
-                                                        @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth, @Context HttpServletRequest servletRequest) throws AtlasBaseException {
+    public AtlasLineageInfo getLineageByUniqueAttribute(@PathParam("typeName") String typeName, @QueryParam("direction") @DefaultValue(DEFAULT_DIRECTION) LineageDirection direction, @QueryParam("depth") @DefaultValue(DEFAULT_DEPTH) int depth, @Context HttpServletRequest servletRequest) throws AtlasBaseException {
         Servlets.validateQueryParamLength("typeName", typeName);
+
         AtlasPerfTracer perf = null;
 
         try {
-            AtlasEntityType entityType = ensureEntityType(typeName);
+            AtlasEntityType     entityType = ensureEntityType(typeName);
             Map<String, Object> attributes = getAttributes(servletRequest);
-            String guid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(entityType, attributes);
+            String              guid       = AtlasGraphUtilsV2.getGuidByUniqueAttributes(entityType, attributes);
 
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageREST.getLineageByUniqueAttribute(" + typeName + "," + attributes + "," + direction +
-                        "," + depth + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageREST.getLineageByUniqueAttribute(" + typeName + "," + attributes + "," + direction + "," + depth + ")");
             }
 
             return atlasLineageService.getAtlasLineageInfo(guid, direction, depth);
@@ -204,7 +201,7 @@ public class LineageREST {
 
                 if (key != null && key.startsWith(PREFIX_ATTR)) {
                     String[] values = e.getValue();
-                    String value = values != null && values.length > 0 ? values[0] : null;
+                    String   value  = values != null && values.length > 0 ? values[0] : null;
 
                     attributes.put(key.substring(PREFIX_ATTR.length()), value);
                 }

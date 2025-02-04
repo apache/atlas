@@ -32,9 +32,9 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
+
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Enumeration;
@@ -193,22 +193,22 @@ public class LocalServletRequest implements HttpServletRequest {
     }
 
     @Override
-    public void logout() throws ServletException {
+    public void logout() {
         throw new IllegalStateException("Not supported");
     }
 
     @Override
-    public Collection<Part> getParts() throws IOException, ServletException {
+    public Collection<Part> getParts() {
         throw new IllegalStateException("Not supported");
     }
 
     @Override
-    public Part getPart(String name) throws IOException, ServletException {
+    public Part getPart(String name) {
         throw new IllegalStateException("Not supported");
     }
 
     @Override
-    public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException {
+    public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) {
         throw new IllegalStateException("Not supported");
     }
 
@@ -228,7 +228,7 @@ public class LocalServletRequest implements HttpServletRequest {
     }
 
     @Override
-    public void setCharacterEncoding(String env) throws UnsupportedEncodingException {
+    public void setCharacterEncoding(String env) {
         throw new IllegalStateException("Not supported");
     }
 
@@ -248,7 +248,7 @@ public class LocalServletRequest implements HttpServletRequest {
     }
 
     @Override
-    public ServletInputStream getInputStream() throws IOException {
+    public ServletInputStream getInputStream() {
         throw new IllegalStateException("Not supported");
     }
 
@@ -293,7 +293,7 @@ public class LocalServletRequest implements HttpServletRequest {
     }
 
     @Override
-    public BufferedReader getReader() throws IOException {
+    public BufferedReader getReader() {
         throw new IllegalStateException("Not supported");
     }
 

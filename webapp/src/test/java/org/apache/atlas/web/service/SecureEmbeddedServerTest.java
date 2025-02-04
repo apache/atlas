@@ -23,34 +23,39 @@ import org.apache.atlas.web.TestUtils;
 import org.apache.atlas.web.security.BaseSecurityTest;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
 
 import static org.apache.atlas.security.SecurityProperties.CERT_STORES_CREDENTIAL_PROVIDER_PATH;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.fail;
 
 public class SecureEmbeddedServerTest extends SecureEmbeddedServerTestBase {
     @Test
     public void testServerConfiguredUsingCredentialProvider() throws Exception {
         // setup the configuration
         final PropertiesConfiguration configuration = new PropertiesConfiguration();
+
         configuration.setProperty(CERT_STORES_CREDENTIAL_PROVIDER_PATH, providerUrl);
         configuration.setProperty("atlas.services.enabled", false);
         configuration.setProperty("atlas.notification.embedded", "false");
+
         // setup the credential provider
         setupCredentials();
 
-        String persistDir = BaseSecurityTest.writeConfiguration(configuration);
+        String persistDir   = BaseSecurityTest.writeConfiguration(configuration);
         String originalConf = System.getProperty("atlas.conf");
+
         System.setProperty("atlas.conf", persistDir);
 
         ApplicationProperties.forceReload();
+
         SecureEmbeddedServer secureEmbeddedServer = null;
+
         try {
-            secureEmbeddedServer = new SecureEmbeddedServer(EmbeddedServer.ATLAS_DEFAULT_BIND_ADDRESS,
-                21443, TestUtils.getWarPath()) {
+            secureEmbeddedServer = new SecureEmbeddedServer(EmbeddedServer.ATLAS_DEFAULT_BIND_ADDRESS, 21443, TestUtils.getWarPath()) {
                 @Override
                 protected PropertiesConfiguration getConfiguration() {
                     return configuration;
@@ -59,26 +64,30 @@ public class SecureEmbeddedServerTest extends SecureEmbeddedServerTestBase {
                 @Override
                 protected WebAppContext getWebAppContext(String path) {
                     WebAppContext application = new WebAppContext(path, "/");
-                    application.setDescriptor(
-                            System.getProperty("projectBaseDir") + "/webapp/src/test/webapp/WEB-INF/web.xml");
+
+                    application.setDescriptor(System.getProperty("projectBaseDir") + "/webapp/src/test/webapp/WEB-INF/web.xml");
                     application.setClassLoader(Thread.currentThread().getContextClassLoader());
+
                     return application;
                 }
-
             };
+
             secureEmbeddedServer.server.start();
 
-            URL url = new URL("https://localhost:21443/api/atlas/admin/status");
+            URL               url        = new URL("https://localhost:21443/api/atlas/admin/status");
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
             connection.setRequestMethod("GET");
             connection.connect();
 
             // test to see whether server is up and root page can be served
-            Assert.assertEquals(connection.getResponseCode(), 200);
-        } catch(Throwable e) {
-            Assert.fail("War deploy failed", e);
+            assertEquals(connection.getResponseCode(), 200);
+        } catch (Throwable e) {
+            fail("War deploy failed", e);
         } finally {
-            secureEmbeddedServer.server.stop();
+            if (secureEmbeddedServer != null) {
+                secureEmbeddedServer.server.stop();
+            }
 
             if (originalConf == null) {
                 System.clearProperty("atlas.conf");

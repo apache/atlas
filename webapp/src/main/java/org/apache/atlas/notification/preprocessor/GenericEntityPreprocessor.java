@@ -19,19 +19,26 @@ package org.apache.atlas.notification.preprocessor;
 
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.commons.collections.CollectionUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
 import java.util.List;
 import java.util.regex.Pattern;
 
 public class GenericEntityPreprocessor extends EntityPreprocessor {
-    private static final Logger LOG = LoggerFactory.getLogger(GenericEntityPreprocessor.class);
     private final List<Pattern> entitiesToIgnore;
     private final List<Pattern> entityTypesToIgnore;
+
     public GenericEntityPreprocessor(List<Pattern> entityTypesToIgnore, List<Pattern> entitiesToIgnore) {
         super("Generic");
+
         this.entityTypesToIgnore = entityTypesToIgnore;
-        this.entitiesToIgnore = entitiesToIgnore;
+        this.entitiesToIgnore    = entitiesToIgnore;
+    }
+
+    @Override
+    public void preprocess(AtlasEntity entity, PreprocessorContext context) {
+        if (entity != null && isToBeIgnored(entity)) {
+            context.addToIgnoredEntities(entity);
+        }
     }
 
     private boolean isMatch(String property, List<Pattern> patterns) {
@@ -39,8 +46,8 @@ public class GenericEntityPreprocessor extends EntityPreprocessor {
     }
 
     private boolean isToBeIgnored(AtlasEntity entity) {
-        String qualifiedName = getQualifiedName(entity);
-        boolean decision = false;
+        String  qualifiedName = getQualifiedName(entity);
+        boolean decision;
 
         if (CollectionUtils.isEmpty(this.entityTypesToIgnore)) { // Will Ignore all entities whose qualified name matches the ignore pattern.
             decision = isMatch(qualifiedName, this.entitiesToIgnore);
@@ -51,11 +58,5 @@ public class GenericEntityPreprocessor extends EntityPreprocessor {
         }
 
         return decision;
-    }
-    @Override
-    public void preprocess(AtlasEntity entity, PreprocessorContext context) {
-        if (entity != null && isToBeIgnored(entity)) {
-            context.addToIgnoredEntities(entity);
-        }
     }
 }

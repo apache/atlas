@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,6 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+
 import java.util.Objects;
 
 /**
@@ -45,6 +46,38 @@ public abstract class AbstractParam<T> {
         } catch (Exception e) {
             throw new WebApplicationException(error(input, e));
         }
+    }
+
+    /**
+     * Returns the underlying value.
+     *
+     * @return the underlying value
+     */
+    public T get() {
+        return value;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(value);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        } else if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+
+        AbstractParam<?> that = (AbstractParam<?>) o;
+
+        return Objects.equals(value, that.value);
+    }
+
+    @Override
+    public String toString() {
+        return value.toString();
     }
 
     /**
@@ -100,34 +133,7 @@ public abstract class AbstractParam<T> {
      *
      * @param input the raw input
      * @return {@code input}, parsed as an instance of {@code T}
-     * @throws Exception if there is an error parsing the input
+     * @throws AtlasBaseException if there is an error parsing the input
      */
     protected abstract T parse(String input) throws AtlasBaseException;
-
-    /**
-     * Returns the underlying value.
-     *
-     * @return the underlying value
-     */
-    public T get() {
-        return value;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        AbstractParam<?> that = (AbstractParam<?>) o;
-        return Objects.equals(value, that.value);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(value);
-    }
-
-    @Override
-    public String toString() {
-        return value.toString();
-    }
 }

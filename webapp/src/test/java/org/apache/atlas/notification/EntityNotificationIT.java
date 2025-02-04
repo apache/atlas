@@ -19,21 +19,25 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.AtlasClient;
-import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.v1.model.notification.EntityNotificationV1;
 import org.apache.atlas.v1.model.notification.EntityNotificationV1.OperationType;
-import org.apache.atlas.v1.model.typedef.*;
-import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.v1.model.typedef.TraitTypeDefinition;
+import org.apache.atlas.v1.model.typedef.TypesDef;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.atlas.web.integration.BaseResourceIT;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -43,12 +47,12 @@ import static org.testng.Assert.assertTrue;
  * Entity Notification Integration Tests.
  */
 public class EntityNotificationIT extends BaseResourceIT {
-    private final String                DATABASE_NAME         = "db" + randomString();
-    private final String                TABLE_NAME            = "table" + randomString();
-    private       Id                    tableId;
-    private       Id                    dbId;
-    private       String                traitName;
-    private       NotificationConsumer  notificationConsumer;
+    private final String               databaseName = "db" + randomString();
+    private final String               tableName    = "table" + randomString();
+    private       Id                   tableId;
+    private       Id                   dbId;
+    private       String               traitName;
+    private       NotificationConsumer notificationConsumer;
 
     @BeforeClass
     public void setUp() throws Exception {
@@ -58,9 +62,9 @@ public class EntityNotificationIT extends BaseResourceIT {
 
         createTypeDefinitionsV1();
 
-        Referenceable HiveDBInstance = createHiveDBInstanceBuiltIn(DATABASE_NAME);
+        Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(databaseName);
 
-        dbId = createInstance(HiveDBInstance);
+        dbId = createInstance(hiveDBInstance);
 
         notificationConsumer = notificationInterface.createConsumers(NotificationType.ENTITIES, 1).get(0);
     }
@@ -71,7 +75,7 @@ public class EntityNotificationIT extends BaseResourceIT {
     }
 
     public void testCreateEntity() throws Exception {
-        Referenceable tableInstance = createHiveTableInstanceBuiltIn(DATABASE_NAME, TABLE_NAME, dbId);
+        Referenceable tableInstance = createHiveTableInstanceBuiltIn(databaseName, tableName, dbId);
 
         tableId = createInstance(tableInstance);
 
@@ -94,8 +98,8 @@ public class EntityNotificationIT extends BaseResourceIT {
     public void testDeleteEntity() throws Exception {
         final String        tableName      = "table-" + randomString();
         final String        dbName         = "db-" + randomString();
-        final Referenceable HiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
-        final Id            dbId           = createInstance(HiveDBInstance);
+        final Referenceable hiveDBInstance = createHiveDBInstanceBuiltIn(dbName);
+        final Id            dbId           = createInstance(hiveDBInstance);
         final Referenceable tableInstance  = createHiveTableInstanceBuiltIn(dbName, tableName, dbId);
         final Id            tableId        = createInstance(tableInstance);
         final String        guid           = tableId._getId();
@@ -182,20 +186,18 @@ public class EntityNotificationIT extends BaseResourceIT {
         assertFalse(entityNotification.getEntity().getTraitNames().contains(traitName));
     }
 
-
     // ----- helper methods ---------------------------------------------------
 
-    private void createTrait(String traitName, String ... superTraitNames) throws Exception {
+    private void createTrait(String traitName, String... superTraitNames) throws Exception {
         TraitTypeDefinition traitDef = TypesUtil.createTraitTypeDef(traitName, null, new HashSet<>(Arrays.asList(superTraitNames)));
-        TypesDef            typesDef = new TypesDef(Collections.<EnumTypeDefinition>emptyList(),
-                                                    Collections.<StructTypeDefinition>emptyList(),
-                                                    Collections.singletonList(traitDef),
-                                                    Collections.<ClassTypeDefinition>emptyList());
+        TypesDef typesDef = new TypesDef(Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.singletonList(traitDef),
+                Collections.emptyList());
         String traitDefinitionJSON = AtlasType.toV1Json(typesDef);
 
         LOG.debug("Trait definition = {}", traitDefinitionJSON);
 
         createType(traitDefinitionJSON);
     }
-
 }

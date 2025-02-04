@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,14 +28,14 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.notification.HookNotification.HookNotificationType;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
-import org.apache.atlas.util.AtlasMetricsUtil;
-import org.apache.atlas.v1.model.instance.Referenceable;
-import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.util.AtlasMetricsUtil;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
 import org.apache.atlas.web.service.ServiceState;
 import org.apache.commons.configuration.Configuration;
 import org.apache.kafka.common.TopicPartition;
@@ -47,12 +47,22 @@ import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.anyBoolean;
+import static org.mockito.Mockito.anyList;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -128,15 +138,15 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testCommitIsCalledWhenMessageIsProcessed() throws AtlasServiceException, AtlasException {
-        NotificationHookConsumer               notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null);
-        NotificationConsumer                   consumer                 = mock(NotificationConsumer.class);
-        NotificationHookConsumer.HookConsumer  hookConsumer             = notificationHookConsumer.new HookConsumer(consumer);
-        EntityCreateRequest                    message                  = mock(EntityCreateRequest.class);
-        Referenceable                          mock                     = mock(Referenceable.class);
+        NotificationHookConsumer              notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null);
+        NotificationConsumer                  consumer                 = mock(NotificationConsumer.class);
+        NotificationHookConsumer.HookConsumer hookConsumer             = notificationHookConsumer.new HookConsumer(consumer);
+        EntityCreateRequest                   message                  = mock(EntityCreateRequest.class);
+        Referenceable                         mock                     = mock(Referenceable.class);
 
         when(message.getUser()).thenReturn("user");
         when(message.getType()).thenReturn(HookNotificationType.ENTITY_CREATE);
-        when(message.getEntities()).thenReturn(Arrays.asList(mock));
+        when(message.getEntities()).thenReturn(Collections.singletonList(mock));
 
         hookConsumer.handleMessage(new AtlasKafkaMessage(message, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1));
 
@@ -171,7 +181,7 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testConsumersStartedIfHAIsDisabled() throws Exception {
-        List<NotificationConsumer<Object>> consumers = new ArrayList();
+        List<NotificationConsumer<Object>> consumers                = new ArrayList();
         NotificationConsumer               notificationConsumerMock = mock(NotificationConsumer.class);
 
         consumers.add(notificationConsumerMock);
@@ -188,7 +198,7 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testConsumersAreNotStartedIfHAIsEnabled() throws Exception {
-        List<NotificationConsumer<Object>> consumers = new ArrayList();
+        List<NotificationConsumer<Object>> consumers                = new ArrayList();
         NotificationConsumer               notificationConsumerMock = mock(NotificationConsumer.class);
 
         consumers.add(notificationConsumerMock);
@@ -206,7 +216,7 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testConsumersAreStartedWhenInstanceBecomesActive() throws Exception {
-        List<NotificationConsumer<Object>> consumers = new ArrayList();
+        List<NotificationConsumer<Object>> consumers                = new ArrayList();
         NotificationConsumer               notificationConsumerMock = mock(NotificationConsumer.class);
 
         consumers.add(notificationConsumerMock);
@@ -227,7 +237,7 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void testConsumersAreStoppedWhenInstanceBecomesPassive() throws Exception {
-        List<NotificationConsumer<Object>> consumers = new ArrayList();
+        List<NotificationConsumer<Object>> consumers                = new ArrayList();
         NotificationConsumer               notificationConsumerMock = mock(NotificationConsumer.class);
 
         consumers.add(notificationConsumerMock);

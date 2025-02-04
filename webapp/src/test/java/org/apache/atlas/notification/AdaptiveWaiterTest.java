@@ -20,15 +20,13 @@ package org.apache.atlas.notification;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
-import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
 public class AdaptiveWaiterTest {
-
-    private final int maxDuration = 100;
-    private final int minDuration = 5;
-    private final int increment   = 5;
-    private NotificationHookConsumer.AdaptiveWaiter waiter;
+    private final int                                     maxDuration = 100;
+    private final int                                     minDuration = 5;
+    private final int                                     increment   = 5;
+    private       NotificationHookConsumer.AdaptiveWaiter waiter;
 
     @BeforeClass
     public void setup() {

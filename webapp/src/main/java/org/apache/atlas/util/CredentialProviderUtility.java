@@ -28,6 +28,7 @@ import org.apache.hadoop.security.alias.CredentialProviderFactory;
 import java.io.Console;
 import java.io.IOException;
 import java.util.Arrays;
+
 import static org.apache.atlas.security.SecurityProperties.KEYSTORE_PASSWORD_KEY;
 import static org.apache.atlas.security.SecurityProperties.SERVER_CERT_PASSWORD_KEY;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
@@ -38,18 +39,9 @@ import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_K
  * of the DGC server.
  */
 public class CredentialProviderUtility {
-    private static final String[] KEYS = new String[] { KEYSTORE_PASSWORD_KEY, TRUSTSTORE_PASSWORD_KEY, SERVER_CERT_PASSWORD_KEY };
-    public static abstract class TextDevice {
-        public abstract void printf(String fmt, Object... params);
-
-        public abstract String readLine(String fmt, Object... args);
-
-        public abstract char[] readPassword(String fmt, Object... args);
-
-    }
-
-    private static TextDevice DEFAULT_TEXT_DEVICE = new TextDevice() {
-        Console console = System.console();
+    private static final String[]   KEYS                = new String[] {KEYSTORE_PASSWORD_KEY, TRUSTSTORE_PASSWORD_KEY, SERVER_CERT_PASSWORD_KEY};
+    private static final TextDevice DEFAULT_TEXT_DEVICE = new TextDevice() {
+        final Console console = System.console();
 
         @Override
         public void printf(String fmt, Object... params) {
@@ -69,6 +61,10 @@ public class CredentialProviderUtility {
 
     public static TextDevice textDevice = DEFAULT_TEXT_DEVICE;
 
+    private CredentialProviderUtility() {
+        // to block instantiation
+    }
+
     public static void main(String[] args) throws IOException {
         try {
             CommandLine cmd                    = new DefaultParser().parse(createOptions(), args);
@@ -84,6 +80,7 @@ public class CredentialProviderUtility {
             if (generatePasswordOption) {
                 String userName = cmd.getOptionValue("u");
                 String password = cmd.getOptionValue("p");
+
                 if (userName != null && password != null) {
                     String  encryptedPassword = UserDao.encrypt(password);
                     boolean silentOption      = cmd.hasOption("s");
@@ -103,10 +100,14 @@ public class CredentialProviderUtility {
             if (key != null && cred != null && providerPath != null) {
                 if (!StringUtils.isEmpty(String.valueOf(cred))) {
                     Configuration conf = new Configuration(false);
+
                     conf.set(CredentialProviderFactory.CREDENTIAL_PROVIDER_PATH, providerPath);
+
                     CredentialProvider provider = CredentialProviderFactory.getProviders(conf).get(0);
+
                     provider.createCredentialEntry(key, cred);
                     provider.flush();
+
                     System.out.println("Password is stored in Credential Provider");
                 } else {
                     System.out.println("Please enter a valid password");
@@ -121,7 +122,7 @@ public class CredentialProviderUtility {
         // prompt for the provider name
         CredentialProvider provider = getCredentialProvider(textDevice);
 
-        if(provider != null) {
+        if (provider != null) {
             for (String key : KEYS) {
                 char[] cred = getPassword(textDevice, key);
 
@@ -164,8 +165,9 @@ public class CredentialProviderUtility {
 
     /**
      * Retrieves a password from the command line.
-     * @param textDevice  the system console.
-     * @param key   the password key/alias.
+     *
+     * @param textDevice the system console.
+     * @param key the password key/alias.
      * @return the password.
      */
     private static char[] getPassword(TextDevice textDevice, String key) {
@@ -204,8 +206,10 @@ public class CredentialProviderUtility {
         return ret;
     }
 
-    /**\
+    /**
+     * \
      * Returns a credential provider for the entered JKS path.
+     *
      * @param textDevice the system console.
      * @return the Credential provider
      * @throws IOException
@@ -222,5 +226,13 @@ public class CredentialProviderUtility {
         }
 
         return null;
+    }
+
+    public abstract static class TextDevice {
+        public abstract void printf(String fmt, Object... params);
+
+        public abstract String readLine(String fmt, Object... args);
+
+        public abstract char[] readPassword(String fmt, Object... args);
     }
 }

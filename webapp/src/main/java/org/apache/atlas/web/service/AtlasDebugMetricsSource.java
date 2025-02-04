@@ -33,133 +33,240 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.*;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.AVG_TIME;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DEBUG_METRICS_CONTEXT;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_addSavedSearch;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_deleteSavedSearch;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_executeSavedSearchByGuid;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_executeSavedSearchByName;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_getSavedSearch;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_getSavedSearches;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_getSuggestions;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_quickSearch;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_quickSearchQuickSearchParams;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_searchRelatedEntities;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_searchUsingAttribute;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_searchUsingBasic;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_searchUsingDSL;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_searchUsingFullText;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_searchWithParameters;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.DiscoveryREST_updateSavedSearch;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_addClassification;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_addClassifications;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_addClassificationsByUA;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_addLabels;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_addLabelsByTypeName;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_addOrUpdateBMByName;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_addOrUpdateBusinessAttributes;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_createOrUpdate;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_createOrUpdateBulk;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_deleteByGuid;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_deleteByGuids;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_deleteByUA;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_deleteClassification;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_deleteClassificationByUA;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_getAuditEvents;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_getByGuids;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_getById;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_getByUniqueAttributes;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_getClassification;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_getClassifications;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_getEntitiesByUA;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_getEntityHeaderByUA;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_getEntityHeaders;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_getHeaderById;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_importBMAttributes;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_partialUpdateEntityAttrByGuid;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_partialUpdateEntityByUA;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_removeBMByName;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_removeBusinessAttributes;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_removeLabels;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_removeLabelsByTypeName;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_setClassifications;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_setLabels;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_setLabelsByTypeName;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_updateClassifications;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.EntityREST_updateClassificationsByUA;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_assignTermToEntities;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_createGlossary;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_createGlossaryCategories;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_createGlossaryCategory;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_createGlossaryTerm;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_createGlossaryTerms;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_deleteGlossary;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_deleteGlossaryCategory;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_deleteGlossaryTerm;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_disassociateTermAssignmentFromEntities;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_getCategoryTerms;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_getDetailedGlossary;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_getEntitiesAssignedWithTerm;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_getGlossaries;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_getGlossary;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_getGlossaryCategories;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_getGlossaryCategoriesHeaders;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_getGlossaryCategory;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_getGlossaryTerm;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_getGlossaryTermHeaders;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_getGlossaryTerms;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_getRelatedCategories;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_getRelatedTerms;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_importGlossaryData;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_partialUpdateGlossary;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_partialUpdateGlossaryCategory;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_partialUpdateGlossaryTerm;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_removeTermAssignmentFromEntities;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_updateGlossary;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_updateGlossaryCategory;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.GlossaryREST_updateGlossaryTerm;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.LineageREST_getLineageByUA;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.LineageREST_getLineageGraph;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.MAX_TIME;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.MIN_TIME;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.NUM_OPS;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.NotificationHookConsumer_doWork;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.RelationshipREST_create;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.RelationshipREST_deleteById;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.RelationshipREST_getById;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.RelationshipREST_update;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.STD_DEV_TIME;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_createAtlasTypeDefs;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_deleteAtlasTypeByName;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_deleteAtlasTypeDefs;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getAllTypeDefs;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getBusinessMetadataDefByGuid;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getBusinessMetadataDefByName;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getClassificationDefByGuid;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getClassificationDefByName;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getEntityDefByGuid;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getEntityDefByName;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getEnumDefByGuid;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getEnumDefByName;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getRelationshipDefByGuid;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getRelationshipDefByName;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getStructDefByGuid;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getStructDefByName;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getTypeDefByGuid;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getTypeDefByName;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_getTypeDefHeaders;
+import static org.apache.atlas.web.service.DebugMetricsWrapper.Constants.TypesREST_updateAtlasTypeDefs;
 
 @Metrics(context = DEBUG_METRICS_CONTEXT)
 public class AtlasDebugMetricsSource {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasDebugMetricsSource.class);
 
-    protected @Metric(always = true)  MutableRate entityREST_getById;
-    protected @Metric(always = true)  MutableRate entityREST_createOrUpdate;
-    protected @Metric(always = true)  MutableRate entityREST_partialUpdateEntityAttrByGuid;
-    protected @Metric(always = true)  MutableRate entityREST_deleteByGuid;
-    protected @Metric(always = true)  MutableRate entityREST_getClassification;
-    protected @Metric(always = true)  MutableRate entityREST_getClassifications;
-    protected @Metric(always = true)  MutableRate entityREST_addClassificationsByUniqAttr;
-    protected @Metric(always = true)  MutableRate entityREST_addClassifications;
-    protected @Metric(always = true)  MutableRate entityREST_deleteClassificationByUniqAttr;
-    protected @Metric(always = true)  MutableRate entityREST_deleteClassification;
-    protected @Metric(always = true)  MutableRate entityREST_getHeaderById;
-    protected @Metric(always = true)  MutableRate entityREST_getEntityHeaderByUniqAttr;
-    protected @Metric(always = true)  MutableRate entityREST_getByUniqueAttributes;
-    protected @Metric(always = true)  MutableRate entityREST_partialUpdateEntityByUniqAttr;
-    protected @Metric(always = true)  MutableRate entityREST_deleteByUniqAttr;
-    protected @Metric(always = true)  MutableRate entityREST_updateClassificationsByUniqAttr;
-    protected @Metric(always = true)  MutableRate entityREST_updateClassifications;
-    protected @Metric(always = true)  MutableRate entityREST_getEntitiesByUniqAttr;
-    protected @Metric(always = true)  MutableRate entityREST_getByGuids;
-    protected @Metric(always = true)  MutableRate entityREST_createOrUpdateBulk;
-    protected @Metric(always = true)  MutableRate entityREST_deleteByGuids;
-    protected @Metric(always = true)  MutableRate entityREST_addClassification;
-    protected @Metric(always = true)  MutableRate entityREST_getAuditEvents;
-    protected @Metric(always = true)  MutableRate entityREST_getEntityHeaders;
-    protected @Metric(always = true)  MutableRate entityREST_setClassifications;
-    protected @Metric(always = true)  MutableRate entityREST_addOrUpdateBusinessAttributes;
-    protected @Metric(always = true)  MutableRate entityREST_removeBusinessAttributes;
-    protected @Metric(always = true)  MutableRate entityREST_addOrUpdateBusinessAttributesByName;
-    protected @Metric(always = true)  MutableRate entityREST_removeBusinessAttributesByName;
-    protected @Metric(always = true)  MutableRate entityREST_setLabels;
-    protected @Metric(always = true)  MutableRate entityREST_addLabels;
-    protected @Metric(always = true)  MutableRate entityREST_removeLabels;
-    protected @Metric(always = true)  MutableRate entityREST_removeLabelsByTypeName;
-    protected @Metric(always = true)  MutableRate entityREST_setLabelsByTypeName;
-    protected @Metric(always = true)  MutableRate entityREST_addLabelsByTypeName;
-    protected @Metric(always = true)  MutableRate entityREST_importBMAttributes;
-
-    protected @Metric(always = true)  MutableRate typesREST_getEntityDefByName;
-    protected @Metric(always = true)  MutableRate typesREST_getTypeDefByName;
-    protected @Metric(always = true)  MutableRate typesREST_getTypeDefByGuid;
-    protected @Metric(always = true)  MutableRate typesREST_getTypeDefHeaders;
-    protected @Metric(always = true)  MutableRate typesREST_getAllTypeDefs;
-    protected @Metric(always = true)  MutableRate typesREST_getEnumDefByName;
-    protected @Metric(always = true)  MutableRate typesREST_getEnumDefByGuid;
-    protected @Metric(always = true)  MutableRate typesREST_getStructDefByName;
-    protected @Metric(always = true)  MutableRate typesREST_getStructDefByGuid;
-    protected @Metric(always = true)  MutableRate typesREST_getClassificationDefByName;
-    protected @Metric(always = true)  MutableRate typesREST_getClassificationDefByGuid;
-    protected @Metric(always = true)  MutableRate typesREST_getEntityDefByGuid;
-    protected @Metric(always = true)  MutableRate typesREST_getRelationshipDefByName;
-    protected @Metric(always = true)  MutableRate typesREST_getRelationshipDefByGuid;
-    protected @Metric(always = true)  MutableRate typesREST_getBusinessMetadataDefByGuid;
-    protected @Metric(always = true)  MutableRate typesREST_getBusinessMetadataDefByName;
-    protected @Metric(always = true)  MutableRate typesREST_createAtlasTypeDefs;
-    protected @Metric(always = true)  MutableRate typesREST_updateAtlasTypeDefs;
-    protected @Metric(always = true)  MutableRate typesREST_deleteAtlasTypeDefs;
-    protected @Metric(always = true)  MutableRate typesREST_deleteAtlasTypeByName;
-
-
-    protected @Metric(always = true)  MutableRate glossaryREST_getGlossaries;
-    protected @Metric(always = true)  MutableRate glossaryREST_getGlossary;
-    protected @Metric(always = true)  MutableRate glossaryREST_getDetailedGlossary;
-    protected @Metric(always = true)  MutableRate glossaryREST_getGlossaryTerm;
-    protected @Metric(always = true)  MutableRate glossaryREST_getGlossaryCategory;
-    protected @Metric(always = true)  MutableRate glossaryREST_createGlossary;
-    protected @Metric(always = true)  MutableRate glossaryREST_createGlossaryTerm;
-    protected @Metric(always = true)  MutableRate glossaryREST_createGlossaryTerms;
-    protected @Metric(always = true)  MutableRate glossaryREST_createGlossaryCategory;
-    protected @Metric(always = true)  MutableRate glossaryREST_createGlossaryCategories;
-    protected @Metric(always = true)  MutableRate glossaryREST_updateGlossary;
-    protected @Metric(always = true)  MutableRate glossaryREST_partialUpdateGlossary;
-    protected @Metric(always = true)  MutableRate glossaryREST_updateGlossaryTerm;
-    protected @Metric(always = true)  MutableRate glossaryREST_partialUpdateGlossaryTerm;
-    protected @Metric(always = true)  MutableRate glossaryREST_updateGlossaryCategory;
-    protected @Metric(always = true)  MutableRate glossaryREST_partialUpdateGlossaryCategory;
-    protected @Metric(always = true)  MutableRate glossaryREST_deleteGlossary;
-    protected @Metric(always = true)  MutableRate glossaryREST_deleteGlossaryTerm;
-    protected @Metric(always = true)  MutableRate glossaryREST_deleteGlossaryCategory;
-    protected @Metric(always = true)  MutableRate glossaryREST_getGlossaryTerms;
-    protected @Metric(always = true)  MutableRate glossaryREST_getGlossaryTermHeaders;
-    protected @Metric(always = true)  MutableRate glossaryREST_getGlossaryCategories;
-    protected @Metric(always = true)  MutableRate glossaryREST_getGlossaryCategoriesHeaders;
-    protected @Metric(always = true)  MutableRate glossaryREST_getCategoryTerms;
-    protected @Metric(always = true)  MutableRate glossaryREST_getRelatedTerms;
-    protected @Metric(always = true)  MutableRate glossaryREST_getEntitiesAssignedWithTerm;
-    protected @Metric(always = true)  MutableRate glossaryREST_assignTermToEntities;
-    protected @Metric(always = true)  MutableRate glossaryREST_removeTermAssignmentFromEntities;
-    protected @Metric(always = true)  MutableRate glossaryREST_disassociateTermAssignmentFromEntities;
-    protected @Metric(always = true)  MutableRate glossaryREST_getRelatedCategories;
-    protected @Metric(always = true)  MutableRate glossaryREST_importGlossaryData;
-
-    protected @Metric(always = true)  MutableRate discoveryREST_quickSearchQuickSearchParams;
-    protected @Metric(always = true)  MutableRate discoveryREST_searchUsingFullText;
-    protected @Metric(always = true)  MutableRate discoveryREST_searchUsingAttribute;
-    protected @Metric(always = true)  MutableRate discoveryREST_searchWithParameters;
-    protected @Metric(always = true)  MutableRate discoveryREST_searchRelatedEntities;
-    protected @Metric(always = true)  MutableRate discoveryREST_updateSavedSearch;
-    protected @Metric(always = true)  MutableRate discoveryREST_getSavedSearch;
-    protected @Metric(always = true)  MutableRate discoveryREST_getSavedSearches;
-    protected @Metric(always = true)  MutableRate discoveryREST_deleteSavedSearch;
-    protected @Metric(always = true)  MutableRate discoveryREST_executeSavedSearchByName;
-    protected @Metric(always = true)  MutableRate discoveryREST_executeSavedSearchByGuid;
-    protected @Metric(always = true)  MutableRate discoveryREST_getSuggestions;
-    protected @Metric(always = true)  MutableRate discoveryREST_searchUsingDSL;
-    protected @Metric(always = true)  MutableRate discoveryREST_searchUsingBasic;
-    protected @Metric(always = true)  MutableRate discoveryREST_quickSearch;
-    protected @Metric(always = true)  MutableRate discoveryREST_addSavedSearch;
-
-    protected @Metric(always = true)  MutableRate notificationHookConsumer_doWork;
-
-    protected @Metric(always = true)  MutableRate lineageREST_getLineageByUniqAttr;
-    protected @Metric(always = true)  MutableRate lineageREST_getLineageGraph;
-
-    protected @Metric(always = true)  MutableRate relationshipREST_create;
-    protected @Metric(always = true)  MutableRate relationshipREST_update;
-    protected @Metric(always = true)  MutableRate relationshipREST_getById;
-    protected @Metric(always = true)  MutableRate relationshipREST_deleteById;
-
-
     public static final Map<String, String> fieldLowerCaseUpperCaseMap = new HashMap<>();
     public static final Set<String>         debugMetricsAttributes     = new HashSet<>();
+
+    protected @Metric(always = true) MutableRate entityREST_getById;
+    protected @Metric(always = true) MutableRate entityREST_createOrUpdate;
+    protected @Metric(always = true) MutableRate entityREST_partialUpdateEntityAttrByGuid;
+    protected @Metric(always = true) MutableRate entityREST_deleteByGuid;
+    protected @Metric(always = true) MutableRate entityREST_getClassification;
+    protected @Metric(always = true) MutableRate entityREST_getClassifications;
+    protected @Metric(always = true) MutableRate entityREST_addClassificationsByUniqAttr;
+    protected @Metric(always = true) MutableRate entityREST_addClassifications;
+    protected @Metric(always = true) MutableRate entityREST_deleteClassificationByUniqAttr;
+    protected @Metric(always = true) MutableRate entityREST_deleteClassification;
+    protected @Metric(always = true) MutableRate entityREST_getHeaderById;
+    protected @Metric(always = true) MutableRate entityREST_getEntityHeaderByUniqAttr;
+    protected @Metric(always = true) MutableRate entityREST_getByUniqueAttributes;
+    protected @Metric(always = true) MutableRate entityREST_partialUpdateEntityByUniqAttr;
+    protected @Metric(always = true) MutableRate entityREST_deleteByUniqAttr;
+    protected @Metric(always = true) MutableRate entityREST_updateClassificationsByUniqAttr;
+    protected @Metric(always = true) MutableRate entityREST_updateClassifications;
+    protected @Metric(always = true) MutableRate entityREST_getEntitiesByUniqAttr;
+    protected @Metric(always = true) MutableRate entityREST_getByGuids;
+    protected @Metric(always = true) MutableRate entityREST_createOrUpdateBulk;
+    protected @Metric(always = true) MutableRate entityREST_deleteByGuids;
+    protected @Metric(always = true) MutableRate entityREST_addClassification;
+    protected @Metric(always = true) MutableRate entityREST_getAuditEvents;
+    protected @Metric(always = true) MutableRate entityREST_getEntityHeaders;
+    protected @Metric(always = true) MutableRate entityREST_setClassifications;
+    protected @Metric(always = true) MutableRate entityREST_addOrUpdateBusinessAttributes;
+    protected @Metric(always = true) MutableRate entityREST_removeBusinessAttributes;
+    protected @Metric(always = true) MutableRate entityREST_addOrUpdateBusinessAttributesByName;
+    protected @Metric(always = true) MutableRate entityREST_removeBusinessAttributesByName;
+    protected @Metric(always = true) MutableRate entityREST_setLabels;
+    protected @Metric(always = true) MutableRate entityREST_addLabels;
+    protected @Metric(always = true) MutableRate entityREST_removeLabels;
+    protected @Metric(always = true) MutableRate entityREST_removeLabelsByTypeName;
+    protected @Metric(always = true) MutableRate entityREST_setLabelsByTypeName;
+    protected @Metric(always = true) MutableRate entityREST_addLabelsByTypeName;
+    protected @Metric(always = true) MutableRate entityREST_importBMAttributes;
+    protected @Metric(always = true) MutableRate typesREST_getEntityDefByName;
+    protected @Metric(always = true) MutableRate typesREST_getTypeDefByName;
+    protected @Metric(always = true) MutableRate typesREST_getTypeDefByGuid;
+    protected @Metric(always = true) MutableRate typesREST_getTypeDefHeaders;
+    protected @Metric(always = true) MutableRate typesREST_getAllTypeDefs;
+    protected @Metric(always = true) MutableRate typesREST_getEnumDefByName;
+    protected @Metric(always = true) MutableRate typesREST_getEnumDefByGuid;
+    protected @Metric(always = true) MutableRate typesREST_getStructDefByName;
+    protected @Metric(always = true) MutableRate typesREST_getStructDefByGuid;
+    protected @Metric(always = true) MutableRate typesREST_getClassificationDefByName;
+    protected @Metric(always = true) MutableRate typesREST_getClassificationDefByGuid;
+    protected @Metric(always = true) MutableRate typesREST_getEntityDefByGuid;
+    protected @Metric(always = true) MutableRate typesREST_getRelationshipDefByName;
+    protected @Metric(always = true) MutableRate typesREST_getRelationshipDefByGuid;
+    protected @Metric(always = true) MutableRate typesREST_getBusinessMetadataDefByGuid;
+    protected @Metric(always = true) MutableRate typesREST_getBusinessMetadataDefByName;
+    protected @Metric(always = true) MutableRate typesREST_createAtlasTypeDefs;
+    protected @Metric(always = true) MutableRate typesREST_updateAtlasTypeDefs;
+    protected @Metric(always = true) MutableRate typesREST_deleteAtlasTypeDefs;
+    protected @Metric(always = true) MutableRate typesREST_deleteAtlasTypeByName;
+    protected @Metric(always = true) MutableRate glossaryREST_getGlossaries;
+    protected @Metric(always = true) MutableRate glossaryREST_getGlossary;
+    protected @Metric(always = true) MutableRate glossaryREST_getDetailedGlossary;
+    protected @Metric(always = true) MutableRate glossaryREST_getGlossaryTerm;
+    protected @Metric(always = true) MutableRate glossaryREST_getGlossaryCategory;
+    protected @Metric(always = true) MutableRate glossaryREST_createGlossary;
+    protected @Metric(always = true) MutableRate glossaryREST_createGlossaryTerm;
+    protected @Metric(always = true) MutableRate glossaryREST_createGlossaryTerms;
+    protected @Metric(always = true) MutableRate glossaryREST_createGlossaryCategory;
+    protected @Metric(always = true) MutableRate glossaryREST_createGlossaryCategories;
+    protected @Metric(always = true) MutableRate glossaryREST_updateGlossary;
+    protected @Metric(always = true) MutableRate glossaryREST_partialUpdateGlossary;
+    protected @Metric(always = true) MutableRate glossaryREST_updateGlossaryTerm;
+    protected @Metric(always = true) MutableRate glossaryREST_partialUpdateGlossaryTerm;
+    protected @Metric(always = true) MutableRate glossaryREST_updateGlossaryCategory;
+    protected @Metric(always = true) MutableRate glossaryREST_partialUpdateGlossaryCategory;
+    protected @Metric(always = true) MutableRate glossaryREST_deleteGlossary;
+    protected @Metric(always = true) MutableRate glossaryREST_deleteGlossaryTerm;
+    protected @Metric(always = true) MutableRate glossaryREST_deleteGlossaryCategory;
+    protected @Metric(always = true) MutableRate glossaryREST_getGlossaryTerms;
+    protected @Metric(always = true) MutableRate glossaryREST_getGlossaryTermHeaders;
+    protected @Metric(always = true) MutableRate glossaryREST_getGlossaryCategories;
+    protected @Metric(always = true) MutableRate glossaryREST_getGlossaryCategoriesHeaders;
+    protected @Metric(always = true) MutableRate glossaryREST_getCategoryTerms;
+    protected @Metric(always = true) MutableRate glossaryREST_getRelatedTerms;
+    protected @Metric(always = true) MutableRate glossaryREST_getEntitiesAssignedWithTerm;
+    protected @Metric(always = true) MutableRate glossaryREST_assignTermToEntities;
+    protected @Metric(always = true) MutableRate glossaryREST_removeTermAssignmentFromEntities;
+    protected @Metric(always = true) MutableRate glossaryREST_disassociateTermAssignmentFromEntities;
+    protected @Metric(always = true) MutableRate glossaryREST_getRelatedCategories;
+    protected @Metric(always = true) MutableRate glossaryREST_importGlossaryData;
+    protected @Metric(always = true) MutableRate discoveryREST_quickSearchQuickSearchParams;
+    protected @Metric(always = true) MutableRate discoveryREST_searchUsingFullText;
+    protected @Metric(always = true) MutableRate discoveryREST_searchUsingAttribute;
+    protected @Metric(always = true) MutableRate discoveryREST_searchWithParameters;
+    protected @Metric(always = true) MutableRate discoveryREST_searchRelatedEntities;
+    protected @Metric(always = true) MutableRate discoveryREST_updateSavedSearch;
+    protected @Metric(always = true) MutableRate discoveryREST_getSavedSearch;
+    protected @Metric(always = true) MutableRate discoveryREST_getSavedSearches;
+    protected @Metric(always = true) MutableRate discoveryREST_deleteSavedSearch;
+    protected @Metric(always = true) MutableRate discoveryREST_executeSavedSearchByName;
+    protected @Metric(always = true) MutableRate discoveryREST_executeSavedSearchByGuid;
+    protected @Metric(always = true) MutableRate discoveryREST_getSuggestions;
+    protected @Metric(always = true) MutableRate discoveryREST_searchUsingDSL;
+    protected @Metric(always = true) MutableRate discoveryREST_searchUsingBasic;
+    protected @Metric(always = true) MutableRate discoveryREST_quickSearch;
+    protected @Metric(always = true) MutableRate discoveryREST_addSavedSearch;
+    protected @Metric(always = true) MutableRate notificationHookConsumer_doWork;
+    protected @Metric(always = true) MutableRate lineageREST_getLineageByUniqAttr;
+    protected @Metric(always = true) MutableRate lineageREST_getLineageGraph;
+    protected @Metric(always = true) MutableRate relationshipREST_create;
+    protected @Metric(always = true) MutableRate relationshipREST_update;
+    protected @Metric(always = true) MutableRate relationshipREST_getById;
+    protected @Metric(always = true) MutableRate relationshipREST_deleteById;
 
     public AtlasDebugMetricsSource() {
         initAttrList();
@@ -206,19 +313,16 @@ public class AtlasDebugMetricsSource {
     }
 
     private void populateFieldList() {
-        Field fields[] = AtlasDebugMetricsSource.class.getDeclaredFields();
-
-        for (int i = 0; i < fields.length; i++) {
-            if (fields[i].getAnnotation(Metric.class) == null) {
+        for (Field field : AtlasDebugMetricsSource.class.getDeclaredFields()) {
+            if (field.getAnnotation(Metric.class) == null) {
                 continue;
             }
 
-            String name = fields[i].getName();
+            String name = field.getName();
 
-            for(String metricName : debugMetricsAttributes) {
+            for (String metricName : debugMetricsAttributes) {
                 fieldLowerCaseUpperCaseMap.put(name.toLowerCase() + metricName, StringUtils.capitalize(name));
             }
-
         }
     }
 
@@ -248,7 +352,7 @@ public class AtlasDebugMetricsSource {
                 relationshipREST_deleteById.add(timeConsumed);
                 break;
 
-                //DiscoveryREST apis
+            //DiscoveryREST apis
             case DiscoveryREST_searchUsingFullText:
                 discoveryREST_searchUsingFullText.add(timeConsumed);
                 break;
