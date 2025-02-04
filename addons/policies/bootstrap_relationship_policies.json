@@ -941,8 +941,8 @@
                     "end-two-entity-classification:*",
                     "end-one-entity:*",
                     "end-two-entity:*",
-                    "end-one-entity-type:AIApplication",
-                    "end-two-entity-type:AIModel",
+                    "end-one-entity-type:AIModel",
+                    "end-two-entity-type:AIApplication",
                     "relationship-type:*"
                 ],
                 "policyActions":
