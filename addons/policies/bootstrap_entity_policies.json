@@ -3355,8 +3355,6 @@
                 [],
                 "policyRoles":
                 [
-                    "$admin",
-                    "$api-token-default-access",
                     "$member",
                     "$guest"
                 ],
@@ -3377,9 +3375,43 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "CUD_AI_MODEL_ENTITY",
-                "qualifiedName": "CUD_AI_MODEL_ENTITY",
-                "description": "Allows user to perform cud operation on AIModel assets.",
+                "name": "READ_AI_MODEL_ENTITIES",
+                "qualifiedName": "READ_AI_MODEL_ENTITIES",
+                "description": "Allows user to perform read operation on AI model assets",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$member",
+                    "$guest"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources":
+                [
+                    "entity-type:AIModel",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "CRUD_AI_MODEL_ENTITY",
+                "qualifiedName": "CRUD_AI_MODEL_ENTITY",
+                "description": "Allows user to perform crud operation on AIModel assets.",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
@@ -3406,7 +3438,8 @@
                 [
                     "entity-create",
                     "entity-update",
-                    "entity-delete"
+                    "entity-delete",
+                    "entity-read"
                 ]
             }
         },
@@ -3414,9 +3447,9 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "CUD_AI_APPLICATION_ENTITY",
-                "qualifiedName": "CUD_AI_APPLICATION_ENTITY",
-                "description": "Allows user to perform cud operation on AIApplication assets.",
+                "name": "CRUD_AI_APPLICATION_ENTITY",
+                "qualifiedName": "CRUD_AI_APPLICATION_ENTITY",
+                "description": "Allows user to perform crud operation on AIApplication assets.",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
@@ -3443,7 +3476,8 @@
                 [
                     "entity-create",
                     "entity-update",
-                    "entity-delete"
+                    "entity-delete",
+                    "entity-read"
                 ]
             }
         }
