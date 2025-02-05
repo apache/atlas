@@ -787,7 +787,6 @@
 
     <modules>
         <module>build-tools</module>
-        <module>test-tools</module>
 
         <module>intg</module>
         <module>common</module>
