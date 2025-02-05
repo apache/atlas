@@ -61,7 +61,7 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
     @Override
     public void commit(TopicPartition partition, long offset) {
         if (!autoCommitEnabled) {
-            LOG.info(" commiting the offset ==>> {}", offset);
+            LOG.debug(" commiting the offset ==>> {}", offset);
 
             kafkaConsumer.commitSync(Collections.singletonMap(partition, new OffsetAndMetadata(offset)));
         }
