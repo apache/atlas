@@ -28,7 +28,6 @@ on:
       - master
       - lineageondemand
       - makerlogic
-      - mlh-96-vuln
 
 jobs:
   build:
