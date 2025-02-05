@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,9 +24,9 @@ import org.apache.atlas.model.notification.AtlasNotificationBaseMessage;
 import org.apache.atlas.model.notification.AtlasNotificationBaseMessage.CompressionKind;
 import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.model.notification.AtlasNotificationStringMessage;
-import org.apache.atlas.type.AtlasType;
-import org.apache.atlas.model.notification.MessageVersion;
 import org.apache.atlas.model.notification.MessageSource;
+import org.apache.atlas.model.notification.MessageVersion;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,53 +47,74 @@ import static org.apache.atlas.AtlasConfiguration.NOTIFICATION_SPLIT_MESSAGE_SEG
 public abstract class AtlasNotificationMessageDeserializer<T> implements MessageDeserializer<T> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasNotificationMessageDeserializer.class);
 
+    public static final String VERSION_MISMATCH_MSG = "Notification message version mismatch. Expected %s but recieved %s. Message %s";
 
-    public static final String VERSION_MISMATCH_MSG =
-        "Notification message version mismatch. Expected %s but recieved %s. Message %s";
-
-    private final TypeReference<T> messageType;
+    private final TypeReference<T>                           messageType;
     private final TypeReference<AtlasNotificationMessage<T>> notificationMessageType;
     private final MessageVersion                             expectedVersion;
     private final Logger                                     notificationLogger;
 
-
-    private final Map<String, SplitMessageAggregator> splitMsgBuffer = new HashMap<>();
+    private final Map<String, SplitMessageAggregator> splitMsgBuffer                = new HashMap<>();
     private final long                                splitMessageBufferPurgeIntervalMs;
     private final long                                splitMessageSegmentsWaitTimeMs;
-    private long                                      splitMessagesLastPurgeTime    = System.currentTimeMillis();
     private final AtomicLong                          messageCountTotal             = new AtomicLong(0);
     private final AtomicLong                          messageCountSinceLastInterval = new AtomicLong(0);
-    private long                                      msgCreated;
-    private boolean                                   spooled;
-    private String                                    source;
-    // ----- Constructors ----------------------------------------------------
+    private       long                                splitMessagesLastPurgeTime    = System.currentTimeMillis();
+    private       long                                msgCreated;
+    private       boolean                             spooled;
+    private       String                              source;
 
+    // ----- Constructors ----------------------------------------------------
     /**
      * Create a notification message deserializer.
      *
      * @param expectedVersion         the expected message version
      * @param notificationLogger      logger for message version mismatch
      */
-    public AtlasNotificationMessageDeserializer(TypeReference<T> messageType,
-                                                TypeReference<AtlasNotificationMessage<T>> notificationMessageType,
-                                                MessageVersion expectedVersion, Logger notificationLogger) {
+    public AtlasNotificationMessageDeserializer(TypeReference<T> messageType, TypeReference<AtlasNotificationMessage<T>> notificationMessageType, MessageVersion expectedVersion, Logger notificationLogger) {
         this(messageType, notificationMessageType, expectedVersion, notificationLogger,
-             NOTIFICATION_SPLIT_MESSAGE_SEGMENTS_WAIT_TIME_SECONDS.getLong() * 1000,
-             NOTIFICATION_SPLIT_MESSAGE_BUFFER_PURGE_INTERVAL_SECONDS.getLong() * 1000);
+                NOTIFICATION_SPLIT_MESSAGE_SEGMENTS_WAIT_TIME_SECONDS.getLong() * 1000,
+                NOTIFICATION_SPLIT_MESSAGE_BUFFER_PURGE_INTERVAL_SECONDS.getLong() * 1000);
     }
 
-    public AtlasNotificationMessageDeserializer(TypeReference<T> messageType,
-                                                TypeReference<AtlasNotificationMessage<T>> notificationMessageType,
-                                                MessageVersion expectedVersion,
-                                                Logger notificationLogger,
-                                                long splitMessageSegmentsWaitTimeMs,
-                                                long splitMessageBufferPurgeIntervalMs) {
+    public AtlasNotificationMessageDeserializer(TypeReference<T> messageType, TypeReference<AtlasNotificationMessage<T>> notificationMessageType, MessageVersion expectedVersion, Logger notificationLogger, long splitMessageSegmentsWaitTimeMs, long splitMessageBufferPurgeIntervalMs) {
         this.messageType                       = messageType;
         this.notificationMessageType           = notificationMessageType;
         this.expectedVersion                   = expectedVersion;
         this.notificationLogger                = notificationLogger;
         this.splitMessageSegmentsWaitTimeMs    = splitMessageSegmentsWaitTimeMs;
         this.splitMessageBufferPurgeIntervalMs = splitMessageBufferPurgeIntervalMs;
+    }
+
+    @VisibleForTesting
+    static void purgeStaleMessages(Map<String, SplitMessageAggregator> splitMsgBuffer, long now, long maxWaitTime) {
+        LOG.debug("==> purgeStaleMessages(bufferedMessageCount={})", splitMsgBuffer.size());
+
+        List<SplitMessageAggregator> evictionList = null;
+
+        for (SplitMessageAggregator aggregrator : splitMsgBuffer.values()) {
+            long waitTime = now - aggregrator.getFirstSplitTimestamp();
+
+            if (waitTime < maxWaitTime) {
+                continue;
+            }
+
+            if (evictionList == null) {
+                evictionList = new ArrayList<>();
+            }
+
+            evictionList.add(aggregrator);
+        }
+
+        if (evictionList != null) {
+            for (SplitMessageAggregator aggregrator : evictionList) {
+                LOG.error("evicting notification msgID={}, totalSplitCount={}, receivedSplitCount={}", aggregrator.getMsgId(), aggregrator.getTotalSplitCount(), aggregrator.getReceivedSplitCount());
+
+                splitMsgBuffer.remove(aggregrator.getMsgId());
+            }
+        }
+
+        LOG.debug("<== purgeStaleMessages(bufferedMessageCount={})", splitMsgBuffer.size());
     }
 
     public TypeReference<T> getMessageType() {
@@ -123,18 +144,19 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
 
         messageCountTotal.incrementAndGet();
         messageCountSinceLastInterval.incrementAndGet();
+
         this.msgCreated = 0;
-        this.spooled = false;
-        this.source  = null;
+        this.spooled    = false;
+        this.source     = null;
 
         AtlasNotificationBaseMessage msg = AtlasType.fromV1Json(messageJson, AtlasNotificationMessage.class);
 
         if (msg == null || msg.getVersion() == null) { // older style messages not wrapped with AtlasNotificationMessage
             ret = AtlasType.fromV1Json(messageJson, messageType);
-        } else  {
+        } else {
             this.msgCreated = ((AtlasNotificationMessage) msg).getMsgCreationTime();
-            this.spooled = ((AtlasNotificationMessage) msg).getSpooled();
-            this.source = msg.getSource() != null ? msg.getSource().getSource() : null;
+            this.spooled    = ((AtlasNotificationMessage) msg).getSpooled();
+            this.source     = msg.getSource() != null ? msg.getSource().getSource() : null;
 
             String msgJson = messageJson;
 
@@ -250,11 +272,10 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
             }
         }
 
-
         long now                = System.currentTimeMillis();
         long timeSinceLastPurge = now - splitMessagesLastPurgeTime;
 
-        if(timeSinceLastPurge >= splitMessageBufferPurgeIntervalMs) {
+        if (timeSinceLastPurge >= splitMessageBufferPurgeIntervalMs) {
             purgeStaleMessages(splitMsgBuffer, now, splitMessageSegmentsWaitTimeMs);
 
             LOG.info("Notification processing stats: total={}, sinceLastStatsReport={}", messageCountTotal.get(), messageCountSinceLastInterval.getAndSet(0));
@@ -265,42 +286,7 @@ public abstract class AtlasNotificationMessageDeserializer<T> implements Message
         return ret;
     }
 
-    @VisibleForTesting
-    static void purgeStaleMessages(Map<String, SplitMessageAggregator> splitMsgBuffer, long now, long maxWaitTime) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> purgeStaleMessages(bufferedMessageCount=" + splitMsgBuffer.size() + ")");
-        }
-
-        List<SplitMessageAggregator> evictionList = null;
-
-        for (SplitMessageAggregator aggregrator : splitMsgBuffer.values()) {
-            long waitTime = now - aggregrator.getFirstSplitTimestamp();
-
-            if (waitTime < maxWaitTime) {
-                continue;
-            }
-
-            if(evictionList == null) {
-                evictionList = new ArrayList<>();
-            }
-
-             evictionList.add(aggregrator);
-        }
-
-        if(evictionList != null) {
-            for (SplitMessageAggregator aggregrator : evictionList) {
-                LOG.error("evicting notification msgID={}, totalSplitCount={}, receivedSplitCount={}", aggregrator.getMsgId(), aggregrator.getTotalSplitCount(), aggregrator.getReceivedSplitCount());
-                splitMsgBuffer.remove(aggregrator.getMsgId());
-            }
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== purgeStaleMessages(bufferedMessageCount=" + splitMsgBuffer.size() + ")");
-        }
-    }
-
     // ----- helper methods --------------------------------------------------
-
     /**
      * Check the message version against the expected version.
      *

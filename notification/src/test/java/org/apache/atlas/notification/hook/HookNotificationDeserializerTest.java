@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,14 +18,14 @@
 
 package org.apache.atlas.notification.hook;
 
-import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.model.notification.MessageSource;
+import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.notification.entity.EntityNotificationTest;
+import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.instance.Struct;
-import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
-import org.apache.atlas.type.AtlasType;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.testng.annotations.Test;
 
@@ -41,8 +41,8 @@ import static org.testng.Assert.assertTrue;
  * HookMessageDeserializer tests.
  */
 public class HookNotificationDeserializerTest {
-    private HookMessageDeserializer deserializer = new HookMessageDeserializer();
     MessageSource source = new MessageSource(this.getClass().getSimpleName());
+    private final HookMessageDeserializer deserializer = new HookMessageDeserializer();
 
     @Test
     public void testDeserialize() throws Exception {
@@ -70,13 +70,13 @@ public class HookNotificationDeserializerTest {
 
     @Test
     public void testDeserializeCompressedMessage() throws Exception {
-        Referenceable       entity     = generateLargeEntityWithTrait();
-        EntityUpdateRequest message    = new EntityUpdateRequest("user1", entity);
-        List<String>       jsonMsgList = new ArrayList<>();
+        Referenceable       entity      = generateLargeEntityWithTrait();
+        EntityUpdateRequest message     = new EntityUpdateRequest("user1", entity);
+        List<String>        jsonMsgList = new ArrayList<>();
 
         AbstractNotification.createNotificationMessages(message, jsonMsgList, source);
 
-        assertTrue(jsonMsgList.size() == 1);
+        assertEquals(jsonMsgList.size(), 1);
 
         String compressedMsg   = jsonMsgList.get(0);
         String uncompressedMsg = AtlasType.toV1Json(message);
@@ -104,7 +104,7 @@ public class HookNotificationDeserializerTest {
     }
 
     private Referenceable generateEntityWithTrait() {
-        Referenceable ret = EntityNotificationTest.getEntity("id", new Struct("MyTrait", Collections.<String, Object>emptyMap()));
+        Referenceable ret = EntityNotificationTest.getEntity("id", new Struct("MyTrait", Collections.emptyMap()));
 
         return ret;
     }
@@ -139,11 +139,10 @@ public class HookNotificationDeserializerTest {
         assertEquals(deserializedEntity.getTypeName(), entity.getTypeName());
         assertEquals(deserializedEntity.getTraits(), entity.getTraits());
         assertEquals(deserializedEntity.getTrait(traitName).hashCode(), entity.getTrait(traitName).hashCode());
-
     }
 
     private Referenceable generateLargeEntityWithTrait() {
-        Referenceable ret = EntityNotificationTest.getEntity("id", new Struct("MyTrait", Collections.<String, Object>emptyMap()));
+        Referenceable ret = EntityNotificationTest.getEntity("id", new Struct("MyTrait", Collections.emptyMap()));
 
         // add 100 attributes, each with value of size 10k
         // Json Size=1,027,984; GZipped Size=16,387 ==> will compress, but not split
@@ -156,7 +155,7 @@ public class HookNotificationDeserializerTest {
     }
 
     private Referenceable generateVeryLargeEntityWithTrait() {
-        Referenceable ret = EntityNotificationTest.getEntity("id", new Struct("MyTrait", Collections.<String, Object>emptyMap()));
+        Referenceable ret = EntityNotificationTest.getEntity("id", new Struct("MyTrait", Collections.emptyMap()));
 
         // add 300 attributes, each with value of size 10k
         // Json Size=3,082,384; GZipped Size=2,313,357 ==> will compress & split

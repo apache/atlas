@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -20,12 +20,12 @@ package org.apache.atlas.notification;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.notification.AtlasNotificationBaseMessage;
+import org.apache.atlas.model.notification.AtlasNotificationBaseMessage.CompressionKind;
 import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.model.notification.AtlasNotificationStringMessage;
-import org.apache.atlas.model.notification.AtlasNotificationBaseMessage.CompressionKind;
 import org.apache.atlas.model.notification.MessageSource;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.model.notification.MessageVersion;
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -48,15 +48,14 @@ import static org.apache.atlas.model.notification.AtlasNotificationBaseMessage.M
 public abstract class AbstractNotification implements NotificationInterface {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractNotification.class);
 
-    private static String        msgIdPrefix = UUID.randomUUID().toString();
-    private static AtomicInteger msgIdSuffix = new AtomicInteger(0);
-
     /**
      * The current expected version for notification messages.
      */
     public static final MessageVersion CURRENT_MESSAGE_VERSION = new MessageVersion("1.0.0");
+    public static final int            MAX_BYTES_PER_CHAR      = 4;  // each char can encode upto 4 bytes in UTF-8
 
-    public static final int MAX_BYTES_PER_CHAR = 4;  // each char can encode upto 4 bytes in UTF-8
+    private static String        msgIdPrefix = UUID.randomUUID().toString();
+    private static AtomicInteger msgIdSuffix = new AtomicInteger(0);
 
     /**
      * IP address of the host in which this process has started
@@ -77,75 +76,13 @@ public abstract class AbstractNotification implements NotificationInterface {
     protected AbstractNotification() {
     }
 
-    @Override
-    public void init(String source, Object failedMessagesLogger) {
-    }
-
-    // ----- NotificationInterface -------------------------------------------
-
-    @Override
-    public <T> void send(NotificationType type, List<T> messages) throws NotificationException {
-        send(type, messages, new MessageSource());
-    }
-
-    @Override
-    public <T> void send(NotificationType type, List<T> messages, MessageSource source) throws NotificationException {
-        List<String> strMessages = new ArrayList<>(messages.size());
-
-        for (int index = 0; index < messages.size(); index++) {
-            createNotificationMessages(messages.get(index), strMessages, source);
-        }
-
-        sendInternal(type, strMessages);
-    }
-
-    @Override
-    public <T> void send(NotificationType type, T... messages) throws NotificationException {
-        send(type, Arrays.asList(messages));
-    }
-
-    @Override
-    public void setCurrentUser(String user) {
-        currentUser = user;
-    }
-
-    // ----- AbstractNotification --------------------------------------------
-    /**
-     * Send the given messages.
-     *
-     * @param type      the message type
-     * @param messages  the array of messages to send
-     *
-     * @throws NotificationException if an error occurs while sending
-     */
-    public abstract void sendInternal(NotificationType type, List<String> messages) throws NotificationException;
-
-
-    // ----- utility methods -------------------------------------------------
-
     public static String getMessageJson(Object message) {
         AtlasNotificationMessage<?> notificationMsg = new AtlasNotificationMessage<>(CURRENT_MESSAGE_VERSION, message);
 
         return AtlasType.toV1Json(notificationMsg);
     }
 
-    private static String getHostAddress() {
-        if (StringUtils.isEmpty(localHostAddress)) {
-            try {
-                localHostAddress =  Inet4Address.getLocalHost().getHostAddress();
-            } catch (UnknownHostException e) {
-                LOG.warn("failed to get local host address", e);
-
-                localHostAddress =  "";
-            }
-        }
-
-        return localHostAddress;
-    }
-
-    private static String getCurrentUser() {
-        return currentUser;
-    }
+    // ----- NotificationInterface -------------------------------------------
 
     /**
      * Get the notification message JSON from the given object.
@@ -225,6 +162,68 @@ public abstract class AbstractNotification implements NotificationInterface {
         }
     }
 
+    @Override
+    public void init(String source, Object failedMessagesLogger) {
+    }
+
+    /**
+     * Send the given messages.
+     *
+     * @param type      the message type
+     * @param messages  the array of messages to send
+     *
+     * @throws NotificationException if an error occurs while sending
+     */
+    public abstract void sendInternal(NotificationType type, List<String> messages) throws NotificationException;
+
+    private static String getHostAddress() {
+        if (StringUtils.isEmpty(localHostAddress)) {
+            try {
+                localHostAddress = Inet4Address.getLocalHost().getHostAddress();
+            } catch (UnknownHostException e) {
+                LOG.warn("failed to get local host address", e);
+
+                localHostAddress = "";
+            }
+        }
+
+        return localHostAddress;
+    }
+
+    // ----- AbstractNotification --------------------------------------------
+
+    private static String getCurrentUser() {
+        return currentUser;
+    }
+
+    // ----- utility methods -------------------------------------------------
+
+    @Override
+    public void setCurrentUser(String user) {
+        currentUser = user;
+    }
+
+    @Override
+    public <T> void send(NotificationType type, T... messages) throws NotificationException {
+        send(type, Arrays.asList(messages));
+    }
+
+    @Override
+    public <T> void send(NotificationType type, List<T> messages) throws NotificationException {
+        send(type, messages, new MessageSource());
+    }
+
+    @Override
+    public <T> void send(NotificationType type, List<T> messages, MessageSource source) throws NotificationException {
+        List<String> strMessages = new ArrayList<>(messages.size());
+
+        for (T message : messages) {
+            createNotificationMessages(message, strMessages, source);
+        }
+
+        sendInternal(type, strMessages);
+    }
+
     private static String getNextMessageId() {
         String nextMsgIdPrefix = msgIdPrefix;
         int    nextMsgIdSuffix = msgIdSuffix.getAndIncrement();
@@ -234,6 +233,6 @@ public abstract class AbstractNotification implements NotificationInterface {
             msgIdSuffix = new AtomicInteger(0);
         }
 
-        return nextMsgIdPrefix + "_" + Integer.toString(nextMsgIdSuffix);
+        return nextMsgIdPrefix + "_" + nextMsgIdSuffix;
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,6 +21,11 @@ import org.apache.atlas.notification.AbstractNotificationConsumer;
 import org.apache.atlas.notification.AtlasNotificationMessageDeserializer;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.commons.collections.MapUtils;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.OffsetAndMetadata;
+import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -28,12 +33,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.clients.consumer.OffsetAndMetadata;
 
 /**
  * Kafka specific notification consumer.
@@ -45,7 +44,7 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
 
     private final KafkaConsumer kafkaConsumer;
     private final boolean       autoCommitEnabled;
-    private       long          pollTimeoutMilliSeconds = 1000L;
+    private final long          pollTimeoutMilliSeconds;
 
     public AtlasKafkaConsumer(NotificationInterface.NotificationType notificationType, KafkaConsumer kafkaConsumer, boolean autoCommitEnabled, long pollTimeoutMilliSeconds) {
         this(notificationType.getDeserializer(), kafkaConsumer, autoCommitEnabled, pollTimeoutMilliSeconds);
@@ -57,6 +56,29 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
         this.autoCommitEnabled       = autoCommitEnabled;
         this.kafkaConsumer           = kafkaConsumer;
         this.pollTimeoutMilliSeconds = pollTimeoutMilliSeconds;
+    }
+
+    @Override
+    public void commit(TopicPartition partition, long offset) {
+        if (!autoCommitEnabled) {
+            LOG.info(" commiting the offset ==>> {}", offset);
+
+            kafkaConsumer.commitSync(Collections.singletonMap(partition, new OffsetAndMetadata(offset)));
+        }
+    }
+
+    @Override
+    public void close() {
+        if (kafkaConsumer != null) {
+            kafkaConsumer.close();
+        }
+    }
+
+    @Override
+    public void wakeup() {
+        if (kafkaConsumer != null) {
+            kafkaConsumer.wakeup();
+        }
     }
 
     public List<AtlasKafkaMessage<T>> receive() {
@@ -78,31 +100,6 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
         return receiveRawRecords(this.pollTimeoutMilliSeconds, lastCommittedPartitionOffset);
     }
 
-
-    @Override
-    public void commit(TopicPartition partition, long offset) {
-        if (!autoCommitEnabled) {
-            if (LOG.isDebugEnabled()) {
-                LOG.info(" commiting the offset ==>> " + offset);
-            }
-            kafkaConsumer.commitSync(Collections.singletonMap(partition, new OffsetAndMetadata(offset)));
-        }
-    }
-
-    @Override
-    public void close() {
-        if (kafkaConsumer != null) {
-            kafkaConsumer.close();
-        }
-    }
-
-    @Override
-    public void wakeup() {
-        if (kafkaConsumer != null) {
-            kafkaConsumer.wakeup();
-        }
-    }
-
     private List<AtlasKafkaMessage<T>> receiveRawRecords(long timeoutMilliSeconds, Map<TopicPartition, Long> lastCommittedPartitionOffset) {
         return receive(timeoutMilliSeconds, lastCommittedPartitionOffset, true);
     }
@@ -112,7 +109,7 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
     }
 
     private List<AtlasKafkaMessage<T>> receive(long timeoutMilliSeconds, Map<TopicPartition, Long> lastCommittedPartitionOffset, boolean isRawDataRequired) {
-        List<AtlasKafkaMessage<T>> messages = new ArrayList();
+        List<AtlasKafkaMessage<T>> messages = new ArrayList<>();
 
         ConsumerRecords<?, ?> records = kafkaConsumer != null ? kafkaConsumer.poll(timeoutMilliSeconds) : null;
 
@@ -127,10 +124,9 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
                 if (MapUtils.isNotEmpty(lastCommittedPartitionOffset)
                         && lastCommittedPartitionOffset.containsKey(topicPartition)
                         && record.offset() < lastCommittedPartitionOffset.get(topicPartition)) {
-
                     commit(topicPartition, record.offset());
                     LOG.info("Skipping already processed message: topic={}, partition={} offset={}. Last processed offset={}",
-                                record.topic(), record.partition(), record.offset(), lastCommittedPartitionOffset.get(topicPartition));
+                            record.topic(), record.partition(), record.offset(), lastCommittedPartitionOffset.get(topicPartition));
                     continue;
                 }
 
@@ -147,14 +143,12 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
                     continue;
                 }
 
-                AtlasKafkaMessage kafkaMessage = null;
+                AtlasKafkaMessage kafkaMessage;
 
                 if (isRawDataRequired) {
-                    kafkaMessage = new AtlasKafkaMessage(message, record.offset(), record.topic(), record.partition(),
-                            deserializer.getMsgCreated(), deserializer.getSpooled(), deserializer.getSource(), record.value().toString());
+                    kafkaMessage = new AtlasKafkaMessage(message, record.offset(), record.topic(), record.partition(), deserializer.getMsgCreated(), deserializer.getSpooled(), deserializer.getSource(), record.value().toString());
                 } else {
-                    kafkaMessage = new AtlasKafkaMessage(message, record.offset(), record.topic(), record.partition(),
-                            deserializer.getMsgCreated(), deserializer.getSpooled(), deserializer.getSource());
+                    kafkaMessage = new AtlasKafkaMessage(message, record.offset(), record.topic(), record.partition(), deserializer.getMsgCreated(), deserializer.getSpooled(), deserializer.getSource());
                 }
 
                 messages.add(kafkaMessage);
@@ -162,6 +156,5 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
         }
 
         return messages;
-
     }
 }
