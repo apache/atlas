@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -23,9 +23,10 @@ import kafka.zookeeper.ZooKeeperClientException;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.service.Service;
+import org.apache.atlas.util.CommandHandlerUtility;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
-import org.apache.kafka.clients.producer.*;
+import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.KafkaException;
 import org.apache.kafka.common.utils.Time;
 import org.apache.zookeeper.server.NIOServerCnxnFactory;
@@ -35,37 +36,36 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.apache.atlas.util.CommandHandlerUtility;
 import scala.Option;
 
 import javax.inject.Inject;
+
 import java.io.File;
 import java.io.IOException;
+import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
-import java.net.BindException;
-import java.util.*;
+import java.util.Properties;
 
 @Component
 @Order(3)
 public class EmbeddedKafkaServer implements Service {
     public static final Logger LOG = LoggerFactory.getLogger(EmbeddedKafkaServer.class);
 
-    public  static final String PROPERTY_PREFIX   = "atlas.kafka";
-    private static final String ATLAS_KAFKA_DATA  = "data";
-    public  static final String PROPERTY_EMBEDDED = "atlas.notification.embedded";
+    public static final String PROPERTY_PREFIX   = "atlas.kafka";
+    public static final String PROPERTY_EMBEDDED = "atlas.notification.embedded";
 
+    private static final String ATLAS_KAFKA_DATA          = "data";
     private static final int    MAX_RETRY_TO_ACQUIRE_PORT = 3;
 
     private final boolean           isEmbedded;
-    private       Properties        properties;
+    private final Properties        properties;
     private       KafkaServer       kafkaServer;
     private       ServerCnxnFactory factory;
 
-
     @Inject
-    public EmbeddedKafkaServer(Configuration applicationProperties) throws AtlasException {
+    public EmbeddedKafkaServer(Configuration applicationProperties) {
         Configuration kafkaConf = ApplicationProperties.getSubsetConfiguration(applicationProperties, PROPERTY_PREFIX);
 
         this.isEmbedded = applicationProperties.getBoolean(PROPERTY_EMBEDDED, false);
@@ -110,18 +110,18 @@ public class EmbeddedKafkaServer implements Service {
 
         LOG.info("Starting zookeeper at {}", zkValue);
 
-        URL zkAddress    = getURL(zkValue);
+        URL  zkAddress   = getURL(zkValue);
         File snapshotDir = constructDir("zk/txn");
         File logDir      = constructDir("zk/snap");
 
         for (int attemptCount = 0; attemptCount < MAX_RETRY_TO_ACQUIRE_PORT; attemptCount++) {
             try {
-                factory     = NIOServerCnxnFactory.createFactory(new InetSocketAddress(zkAddress.getHost(), zkAddress.getPort()), 1024);
+                factory = NIOServerCnxnFactory.createFactory(new InetSocketAddress(zkAddress.getHost(), zkAddress.getPort()), 1024);
                 break;
             } catch (BindException e) {
                 LOG.warn("Attempt {}: Starting zookeeper at {} failed", attemptCount, zkValue);
 
-                if(attemptCount == MAX_RETRY_TO_ACQUIRE_PORT - 1) {
+                if (attemptCount == MAX_RETRY_TO_ACQUIRE_PORT - 1) {
                     throw e;
                 }
 

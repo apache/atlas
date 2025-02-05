@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -39,10 +39,16 @@ import java.util.Arrays;
  * Use this class to create a Kafka topic with specific configuration like number of partitions, replicas, etc.
  */
 public class AtlasTopicCreator {
-
     private static final Logger LOG = LoggerFactory.getLogger(AtlasTopicCreator.class);
 
     public static final String ATLAS_NOTIFICATION_CREATE_TOPICS_KEY = "atlas.notification.create.topics";
+
+    public static void main(String[] args) throws AtlasException {
+        Configuration     configuration     = ApplicationProperties.get();
+        AtlasTopicCreator atlasTopicCreator = new AtlasTopicCreator();
+
+        atlasTopicCreator.createAtlasTopic(configuration, args);
+    }
 
     /**
      * Create an Atlas topic.
@@ -61,46 +67,46 @@ public class AtlasTopicCreator {
             if (!handleSecurity(atlasProperties)) {
                 return;
             }
-            try(KafkaUtils kafkaUtils = getKafkaUtils(atlasProperties)) {
+
+            try (KafkaUtils kafkaUtils = getKafkaUtils(atlasProperties)) {
                 int numPartitions = atlasProperties.getInt("atlas.notification.partitions", 1);
-                int numReplicas = atlasProperties.getInt("atlas.notification.replicas", 1);
+                int numReplicas   = atlasProperties.getInt("atlas.notification.replicas", 1);
+
                 kafkaUtils.createTopics(Arrays.asList(topicNames), numPartitions, numReplicas);
             } catch (Exception e) {
-                LOG.error("Error while creating topics e :" + e.getMessage(), e);
+                LOG.error("Error while creating topics e :{}", e.getMessage(), e);
             }
         } else {
-            LOG.info("Not creating topics {} as {} is false", StringUtils.join(topicNames, ","),
-                    ATLAS_NOTIFICATION_CREATE_TOPICS_KEY);
+            LOG.info("Not creating topics {} as {} is false", StringUtils.join(topicNames, ","), ATLAS_NOTIFICATION_CREATE_TOPICS_KEY);
         }
     }
 
     @VisibleForTesting
     protected boolean handleSecurity(Configuration atlasProperties) {
         if (AuthenticationUtil.isKerberosAuthenticationEnabled(atlasProperties)) {
-            String kafkaPrincipal = atlasProperties.getString("atlas.notification.kafka.service.principal");
-            String kafkaKeyTab = atlasProperties.getString("atlas.notification.kafka.keytab.location");
-            org.apache.hadoop.conf.Configuration hadoopConf = new org.apache.hadoop.conf.Configuration();
+            String                               kafkaPrincipal = atlasProperties.getString("atlas.notification.kafka.service.principal");
+            String                               kafkaKeyTab    = atlasProperties.getString("atlas.notification.kafka.keytab.location");
+            org.apache.hadoop.conf.Configuration hadoopConf     = new org.apache.hadoop.conf.Configuration();
+
             SecurityUtil.setAuthenticationMethod(UserGroupInformation.AuthenticationMethod.KERBEROS, hadoopConf);
+
             try {
                 String serverPrincipal = SecurityUtil.getServerPrincipal(kafkaPrincipal, (String) null);
+
                 UserGroupInformation.setConfiguration(hadoopConf);
                 UserGroupInformation.loginUserFromKeytab(serverPrincipal, kafkaKeyTab);
             } catch (IOException e) {
                 LOG.warn("Could not login as {} from keytab file {}", kafkaPrincipal, kafkaKeyTab, e);
+
                 return false;
             }
         }
+
         return true;
     }
 
     // This method is added to mock the creation of kafkaUtils object while writing the test cases
     KafkaUtils getKafkaUtils(Configuration configuration) {
         return new KafkaUtils(configuration);
-    }
-
-    public static void main(String[] args) throws AtlasException {
-        Configuration configuration = ApplicationProperties.get();
-        AtlasTopicCreator atlasTopicCreator = new AtlasTopicCreator();
-        atlasTopicCreator.createAtlasTopic(configuration, args);
     }
 }

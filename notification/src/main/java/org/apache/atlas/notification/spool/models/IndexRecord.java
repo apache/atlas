@@ -20,13 +20,12 @@ package org.apache.atlas.notification.spool.models;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import org.apache.atlas.type.AtlasType;
-import org.apache.commons.lang.StringUtils;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
+
 import java.io.Serializable;
 import java.util.UUID;
 
@@ -34,7 +33,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.PROPERTY)
@@ -85,84 +84,84 @@ public class IndexRecord implements Serializable {
                 + ", lastAttempt=" + lastAttempt + "]";
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
     public String getId() {
         return this.id;
     }
 
-    public void setPath(String path) {
-        this.path = path;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getPath() {
         return this.path;
     }
 
-    public void setLine(int line) {
-        this.line = line;
+    public void setPath(String path) {
+        this.path = path;
     }
 
     public int getLine() {
         return line;
     }
 
-    public void setCreated(long fileCreateTime) {
-        this.created = fileCreateTime;
+    public void setLine(int line) {
+        this.line = line;
     }
 
     public long getCreated() {
         return this.created;
     }
 
-    public void setWriteCompleted(long writeCompleted) {
-        this.writeCompleted = writeCompleted;
+    public void setCreated(long fileCreateTime) {
+        this.created = fileCreateTime;
     }
 
     public long getWriteCompleted() {
         return this.writeCompleted;
     }
 
-    public void setDoneCompleted(long doneCompleted) {
-        this.doneCompleted = doneCompleted;
+    public void setWriteCompleted(long writeCompleted) {
+        this.writeCompleted = writeCompleted;
     }
 
     public long getDoneCompleted() {
         return doneCompleted;
     }
 
-    public void setLastSuccess(long lastSuccess) {
-        this.lastSuccess = lastSuccess;
+    public void setDoneCompleted(long doneCompleted) {
+        this.doneCompleted = doneCompleted;
     }
 
     public long getLastSuccess() {
         return lastSuccess;
     }
 
-    public void setLastFailed(long lastFailed) {
-        this.lastFailed = lastFailed;
+    public void setLastSuccess(long lastSuccess) {
+        this.lastSuccess = lastSuccess;
     }
 
-    public void setStatus(String status) {
-        this.status = status;
+    public void setLastFailed(long lastFailed) {
+        this.lastFailed = lastFailed;
     }
 
     public String getStatus() {
         return this.status;
     }
 
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
     public void setLastAttempt(boolean lastAttempt) {
         this.lastAttempt = lastAttempt;
     }
 
-    public void setFailedAttempt(int failedAttempt) {
-        this.failedAttempt = failedAttempt;
-    }
-
     public int getFailedAttempt() {
         return failedAttempt;
+    }
+
+    public void setFailedAttempt(int failedAttempt) {
+        this.failedAttempt = failedAttempt;
     }
 
     @JsonIgnore

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,35 +33,10 @@ import java.util.List;
  * </ol>
  */
 public interface NotificationInterface {
-
     /**
      * Prefix for Atlas notification related configuration properties.
      */
     String PROPERTY_PREFIX = "atlas.notification";
-
-    /**
-     * Atlas notification types.
-     */
-    enum NotificationType {
-        // Notifications from the Atlas integration hooks.
-        HOOK(new HookMessageDeserializer()),
-
-        // Notifications from the Atlas integration hooks - unsorted.
-        HOOK_UNSORTED(new HookMessageDeserializer()),
-
-        // Notifications to entity change consumers.
-        ENTITIES(new EntityMessageDeserializer());
-
-        private final AtlasNotificationMessageDeserializer deserializer;
-
-        NotificationType(AtlasNotificationMessageDeserializer deserializer) {
-            this.deserializer = deserializer;
-        }
-
-        public AtlasNotificationMessageDeserializer getDeserializer() {
-            return deserializer;
-        }
-    }
 
     /**
      *
@@ -125,4 +100,28 @@ public interface NotificationInterface {
      *
      */
     boolean isReady(NotificationType type);
+
+    /**
+     * Atlas notification types.
+     */
+    enum NotificationType {
+        // Notifications from the Atlas integration hooks.
+        HOOK(new HookMessageDeserializer()),
+
+        // Notifications from the Atlas integration hooks - unsorted.
+        HOOK_UNSORTED(new HookMessageDeserializer()),
+
+        // Notifications to entity change consumers.
+        ENTITIES(new EntityMessageDeserializer());
+
+        private final AtlasNotificationMessageDeserializer deserializer;
+
+        NotificationType(AtlasNotificationMessageDeserializer deserializer) {
+            this.deserializer = deserializer;
+        }
+
+        public AtlasNotificationMessageDeserializer getDeserializer() {
+            return deserializer;
+        }
+    }
 }

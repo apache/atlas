@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import java.io.DataInput;
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.nio.channels.OverlappingFileLockException;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,6 +65,7 @@ public class Publisher implements Runnable {
 
             while (true) {
                 checkAndWaitIfDestinationDown();
+
                 if (this.isDrain) {
                     break;
                 }
@@ -75,6 +75,7 @@ public class Publisher implements Runnable {
                 }
 
                 record = fetchNext(record);
+
                 if (record != null && processAndDispatch(record)) {
                     indexManagement.removeAsDone(record);
 
@@ -106,31 +107,9 @@ public class Publisher implements Runnable {
         return isDestDown;
     }
 
-    private void checkAndWaitIfDestinationDown() throws InterruptedException {
-        isDestDown = !notificationHandler.isReady(NotificationInterface.NotificationType.HOOK);
-        if (isDestDown) {
-            LOG.info("Publisher.waitIfDestinationDown(source={}): {}: Destination is down. Sleeping for: {} ms. Queue: {} items",
-                     this.source, notificationHandlerName, retryDestinationMS, indexManagement.getQueueSize());
-
-            Thread.sleep(retryDestinationMS);
-        }
-    }
-
-    private IndexRecord fetchNext(IndexRecord record) {
-        if (record == null) {
-            try {
-                record = indexManagement.next();
-            } catch (Exception e) {
-                LOG.error("Publisher.fetchNext(source={}): failed!. publisher={}", this.source, notificationHandlerName, e);
-            }
-        }
-
-        return record;
-    }
-
     @VisibleForTesting
-    boolean processAndDispatch(IndexRecord record) throws IOException {
-        boolean ret = true;
+    boolean processAndDispatch(IndexRecord record) {
+        boolean ret;
 
         if (SpoolUtils.fileExists(record)) {
             FileLockedReadWrite fileLockedRead = new FileLockedReadWrite(source);
@@ -180,14 +159,38 @@ public class Publisher implements Runnable {
         return ret;
     }
 
+    private void checkAndWaitIfDestinationDown() throws InterruptedException {
+        isDestDown = !notificationHandler.isReady(NotificationInterface.NotificationType.HOOK);
+
+        if (isDestDown) {
+            LOG.info("Publisher.waitIfDestinationDown(source={}): {}: Destination is down. Sleeping for: {} ms. Queue: {} items", this.source, notificationHandlerName, retryDestinationMS, indexManagement.getQueueSize());
+
+            Thread.sleep(retryDestinationMS);
+        }
+    }
+
+    private IndexRecord fetchNext(IndexRecord record) {
+        if (record == null) {
+            try {
+                record = indexManagement.next();
+            } catch (Exception e) {
+                LOG.error("Publisher.fetchNext(source={}): failed!. publisher={}", this.source, notificationHandlerName, e);
+            }
+        }
+
+        return record;
+    }
+
     private void dispatch(IndexRecord record, int lineInSpoolFile, List<String> messages) throws Exception {
-        if (notificationHandler == null || messages == null || messages.size() == 0) {
+        if (notificationHandler == null || messages == null || messages.isEmpty()) {
             LOG.error("Publisher.dispatch(source={}): consumer={}: error sending logs", this.source, notificationHandlerName);
         } else {
             dispatch(record.getPath(), messages);
 
             record.setCurrentLine(lineInSpoolFile);
+
             indexManagement.update(record);
+
             isDestDown = false;
         }
     }
@@ -214,24 +217,26 @@ public class Publisher implements Runnable {
 
     /**
      * Reason for pauseBeforeSend:
-     *  - EntityCorrelation is needed to be able to stitch lineage to the correct entity.
-     *  - Background: When messages are added to Kafka queue directly, the ordering is incidentally guaranteed, where
-     *     messages from lineage producing hooks reach immediately after messages from entities producing hooks.
-     *  - When Spooled messages are posted onto Kafka, this order cannot be guaranteed. The entity correlation logic within Atlas
-     *     can attach lineage to the correct entity, provided that the entity participating in the lineage is already present.
-     *
-     *   This logic of entity correlation works well for majority of cases except where lineage entities are created before regular entities.
-     *   In this case, shell entities get created in the absence of real entities. Problem is that there is 1 shell entity for any number of references.
-     *   Circumventing this limitation is not easy.
-     *
-     *   The pauseBeforeSend forces the situation where HiveMetaStore generated messages reach Kafka before lineage-producing hooks.
+     * - EntityCorrelation is needed to be able to stitch lineage to the correct entity.
+     * - Background: When messages are added to Kafka queue directly, the ordering is incidentally guaranteed, where
+     * messages from lineage producing hooks reach immediately after messages from entities producing hooks.
+     * - When Spooled messages are posted onto Kafka, this order cannot be guaranteed. The entity correlation logic within Atlas
+     * can attach lineage to the correct entity, provided that the entity participating in the lineage is already present.
+     * <p>
+     * This logic of entity correlation works well for majority of cases except where lineage entities are created before regular entities.
+     * In this case, shell entities get created in the absence of real entities. Problem is that there is 1 shell entity for any number of references.
+     * Circumventing this limitation is not easy.
+     * <p>
+     * The pauseBeforeSend forces the situation where HiveMetaStore generated messages reach Kafka before lineage-producing hooks.
      *
      * @throws InterruptedException
      */
     private void pauseBeforeSend() throws InterruptedException {
         if (!configuration.isHiveMetaStore()) {
             int waitMs = configuration.getPauseBeforeSendSec() * 1000;
+
             LOG.info("Waiting before dispatch: {}", waitMs);
+
             Thread.sleep(waitMs);
         }
     }

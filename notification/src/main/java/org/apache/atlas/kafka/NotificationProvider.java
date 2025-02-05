@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -37,19 +37,23 @@ public class NotificationProvider {
     private static final Logger LOG = LoggerFactory.getLogger(NotificationProvider.class);
 
     @VisibleForTesting
-    public  static final String CONF_ATLAS_HOOK_SPOOL_ENABLED = "atlas.hook.spool.enabled";
-    private static final String CONF_ATLAS_HOOK_SPOOL_DIR     = "atlas.hook.spool.dir";
+    public static final  String CONF_ATLAS_HOOK_SPOOL_ENABLED = "atlas.hook.spool.enabled";
 
+    private static final String  CONF_ATLAS_HOOK_SPOOL_DIR             = "atlas.hook.spool.dir";
     private static final boolean CONF_ATLAS_HOOK_SPOOL_ENABLED_DEFAULT = false;
 
     private static NotificationInterface notificationProvider;
 
+    private NotificationProvider() {
+        // to block instantiation
+    }
+
     public static NotificationInterface get() {
         if (notificationProvider == null) {
             try {
-                Configuration        conf        = ApplicationProperties.get();
-                String               spoolDir    = getSpoolDir(conf);
-                AbstractNotification absNotifier = null;
+                Configuration        conf     = ApplicationProperties.get();
+                String               spoolDir = getSpoolDir(conf);
+                AbstractNotification absNotifier;
 
                 if (AtlasHook.isRESTNotificationEnabled) {
                     absNotifier = new RestNotification(conf);
@@ -72,7 +76,9 @@ public class NotificationProvider {
                 throw new RuntimeException("Error while initializing Notification interface", e);
             }
         }
+
         LOG.debug("NotificationInterface of type {} is enabled", notificationProvider.getClass().getSimpleName());
+
         return notificationProvider;
     }
 

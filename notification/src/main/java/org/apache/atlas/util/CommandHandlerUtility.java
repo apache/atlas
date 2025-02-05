@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -33,16 +33,21 @@ public class CommandHandlerUtility {
     private static final String SHELL_CMD                   = "/bin/sh";
     private static final String SHELL_CMD_OPTION            = "-c";
     private static final String FIND_PROCESS_ID_CMD_FORMAT  = "lsof -i:%s | tail -n 1 | tr -s ' ' | cut -d' ' -f2";
-    private static final String KILL_PROCESS_CMD_FORMAT     = "kill %s %s" ;
+    private static final String KILL_PROCESS_CMD_FORMAT     = "kill %s %s";
     private static final int    SLEEP_AFTER_SOFT_KILL_IN_MS = 4000;
+
+    private CommandHandlerUtility() {
+        // to block instantiation
+    }
 
     public static void tryKillingProcessUsingPort(int port, boolean forceKill) {
         String processID = findProcessIdUsingPort(port);
+
         sendKillToPID(processID, forceKill);
     }
 
     private static String findProcessIdUsingPort(int port) {
-        String         retPID = "";
+        String retPID = "";
 
         final String[] cmd = {
                 SHELL_CMD,
@@ -52,12 +57,12 @@ public class CommandHandlerUtility {
 
         try {
             Process p = Runtime.getRuntime().exec(cmd);
-            retPID = new BufferedReader(new InputStreamReader(p.getInputStream()))
-                    .lines().collect(Collectors.joining("\n"));
+
+            retPID = new BufferedReader(new InputStreamReader(p.getInputStream())).lines().collect(Collectors.joining("\n"));
 
             if (StringUtils.isEmpty(retPID)) {
-                String errorMsg = new BufferedReader(new InputStreamReader(p.getErrorStream()))
-                        .lines().collect(Collectors.joining("\n"));
+                String errorMsg = new BufferedReader(new InputStreamReader(p.getErrorStream())).lines().collect(Collectors.joining("\n"));
+
                 throw new IOException(errorMsg);
             }
         } catch (IOException e) {
@@ -79,6 +84,7 @@ public class CommandHandlerUtility {
 
             if (!forceKill) {
                 LOG.info("Sleeping for {} milliseconds after soft kill", SLEEP_AFTER_SOFT_KILL_IN_MS);
+
                 Thread.sleep(SLEEP_AFTER_SOFT_KILL_IN_MS);
             }
         } catch (IOException | InterruptedException e) {

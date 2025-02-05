@@ -32,22 +32,25 @@ import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.io.UnsupportedEncodingException;
-import java.text.SimpleDateFormat;
 
 public class SpoolUtils {
     private static final Logger LOG = LoggerFactory.getLogger(SpoolUtils.class);
 
-    private static final String           USER_SPECIFIC_PATH_NAME_FORMAT = "%s-%s";
-    public  static final String           DEFAULT_CHAR_SET              = "UTF-8";
-    private static final String           DEFAULT_LINE_SEPARATOR        = System.getProperty("line.separator");
-    private static final String           FILE_EXT_JSON                 = ".json";
-    public  static final String           FILE_EXT_LOG                  = ".log";
-    private static final String           SPOOL_FILE_NAME_FORMAT_PREFIX = "%s.%s%s";
-    private static final String           INDEX_FILE_CLOSED_SUFFIX      = "_closed.json";
-    private static final String           INDEX_FILE_PUBLISH_SUFFIX     = "_publish.json";
-    private static final String           INDEX_FILE_NAME_FORMAT        = "index-%s-%s" + FILE_EXT_JSON;
-    private static final String           SPOOL_FILE_NAME_FORMAT        = "spool-%s-%s-%s" + FILE_EXT_LOG;
-    private static final String           RECORD_EMPTY = StringUtils.leftPad(StringUtils.EMPTY, IndexRecord.RECORD_SIZE) + SpoolUtils.getLineSeparator();
+    public static final  String DEFAULT_CHAR_SET               = "UTF-8";
+    public static final  String FILE_EXT_LOG                   = ".log";
+    private static final String USER_SPECIFIC_PATH_NAME_FORMAT = "%s-%s";
+    private static final String DEFAULT_LINE_SEPARATOR         = System.lineSeparator();
+    private static final String FILE_EXT_JSON                  = ".json";
+    private static final String SPOOL_FILE_NAME_FORMAT_PREFIX  = "%s.%s%s";
+    private static final String INDEX_FILE_CLOSED_SUFFIX       = "_closed.json";
+    private static final String INDEX_FILE_PUBLISH_SUFFIX      = "_publish.json";
+    private static final String INDEX_FILE_NAME_FORMAT         = "index-%s-%s" + FILE_EXT_JSON;
+    private static final String SPOOL_FILE_NAME_FORMAT         = "spool-%s-%s-%s" + FILE_EXT_LOG;
+    private static final String RECORD_EMPTY                   = StringUtils.leftPad(StringUtils.EMPTY, IndexRecord.RECORD_SIZE) + SpoolUtils.getLineSeparator();
+
+    private SpoolUtils() {
+        // to block instantiation
+    }
 
     public static File getCreateFile(File file, String source) throws IOException {
         if (createFileIfNotExists(file, source)) {
@@ -65,8 +68,6 @@ public class SpoolUtils {
 
             if (!ret) {
                 LOG.error("SpoolUtils.createFileIfNotExists(source={}): error creating file {}", source, file.getPath());
-
-                ret = false;
             }
         }
 
@@ -76,28 +77,17 @@ public class SpoolUtils {
     public static File getCreateDirectoryWithPermissionCheck(File file, String user) {
         File ret = getCreateDirectory(file);
 
-        LOG.info("SpoolUtils.getCreateDirectory({}): Checking permissions...");
+        LOG.info("SpoolUtils.getCreateDirectory({}): Checking permissions...", file);
+
         if (!file.canWrite() || !file.canRead()) {
             File fileWithUserSuffix = getFileWithUserSuffix(file, user);
-            LOG.error("SpoolUtils.getCreateDirectory({}, {}): Insufficient permissions for user: {}! Will create: {}",
-                    file.getAbsolutePath(), user, user, fileWithUserSuffix);
+
+            LOG.error("SpoolUtils.getCreateDirectory({}, {}): Insufficient permissions for user: {}! Will create: {}", file.getAbsolutePath(), user, user, fileWithUserSuffix);
+
             ret = getCreateDirectory(fileWithUserSuffix);
         }
 
         return ret;
-    }
-
-    private static File getFileWithUserSuffix(File file, String user) {
-        if (!file.isDirectory()) {
-            return file;
-        }
-
-        String absolutePath = file.getAbsolutePath();
-        if (absolutePath.endsWith(File.pathSeparator)) {
-            absolutePath = StringUtils.removeEnd(absolutePath, File.pathSeparator);
-        }
-
-        return new File(String.format(USER_SPECIFIC_PATH_NAME_FORMAT, absolutePath, user));
     }
 
     public static File getCreateDirectory(File file) {
@@ -139,16 +129,12 @@ public class SpoolUtils {
         return record != null && new File(record.getPath()).exists();
     }
 
-    static String getSpoolFileName(String source, String handlerName, String guid) {
-        return String.format(SPOOL_FILE_NAME_FORMAT, source, handlerName, guid);
-    }
-
     public static String getSpoolFilePath(SpoolConfiguration cfg, String spoolDir, String archiveFolder, String suffix) {
-        File   ret         = null;
-        String fileName    = getSpoolFileName(cfg.getSourceName(), cfg.getMessageHandlerName(), suffix);
+        String fileName  = getSpoolFileName(cfg.getSourceName(), cfg.getMessageHandlerName(), suffix);
         int    lastDot   = StringUtils.lastIndexOf(fileName, '.');
         String baseName  = fileName.substring(0, lastDot);
         String extension = fileName.substring(lastDot);
+        File   ret;
 
         for (int sequence = 1; true; sequence++) {
             ret = new File(spoolDir, fileName);
@@ -197,5 +183,22 @@ public class SpoolUtils {
         }
 
         return records;
+    }
+
+    static String getSpoolFileName(String source, String handlerName, String guid) {
+        return String.format(SPOOL_FILE_NAME_FORMAT, source, handlerName, guid);
+    }
+
+    private static File getFileWithUserSuffix(File file, String user) {
+        if (!file.isDirectory()) {
+            return file;
+        }
+
+        String absolutePath = file.getAbsolutePath();
+        if (absolutePath.endsWith(File.pathSeparator)) {
+            absolutePath = StringUtils.removeEnd(absolutePath, File.pathSeparator);
+        }
+
+        return new File(String.format(USER_SPECIFIC_PATH_NAME_FORMAT, absolutePath, user));
     }
 }

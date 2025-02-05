@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,8 +21,9 @@ package org.apache.atlas.notification;
 import com.fasterxml.jackson.core.type.TypeReference;
 import org.apache.atlas.kafka.AtlasKafkaMessage;
 import org.apache.atlas.model.notification.AtlasNotificationMessage;
-import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.model.notification.MessageVersion;
+import org.apache.atlas.type.AtlasType;
+import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
@@ -37,108 +38,79 @@ import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.fail;
-import org.apache.kafka.common.TopicPartition;
 
 /**
  * AbstractNotificationConsumer tests.
  */
 public class AbstractNotificationConsumerTest {
-
     @Test
-    public void testReceive() throws Exception {
-        Logger logger = mock(Logger.class);
-
-        TestMessage testMessage1 = new TestMessage("sValue1", 99);
-        TestMessage testMessage2 = new TestMessage("sValue2", 98);
-        TestMessage testMessage3 = new TestMessage("sValue3", 97);
-        TestMessage testMessage4 = new TestMessage("sValue4", 96);
-
-        List jsonList = new LinkedList<>();
+    public void testReceive() {
+        TestMessage  testMessage1 = new TestMessage("sValue1", 99);
+        TestMessage  testMessage2 = new TestMessage("sValue2", 98);
+        TestMessage  testMessage3 = new TestMessage("sValue3", 97);
+        TestMessage  testMessage4 = new TestMessage("sValue4", 96);
+        List<String> jsonList     = new LinkedList<>();
 
         jsonList.add(AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), testMessage1)));
         jsonList.add(AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), testMessage2)));
         jsonList.add(AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), testMessage3)));
         jsonList.add(AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), testMessage4)));
 
-        NotificationConsumer<TestMessage> consumer = new TestNotificationConsumer(jsonList, logger);
+        NotificationConsumer<TestMessage> consumer = new TestNotificationConsumer(jsonList, mock(Logger.class));
 
         List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive();
 
         assertFalse(messageList.isEmpty());
-
         assertEquals(messageList.get(0).getMessage(), testMessage1);
-
         assertEquals(messageList.get(1).getMessage(), testMessage2);
-
         assertEquals(messageList.get(2).getMessage(), testMessage3);
-
         assertEquals(messageList.get(3).getMessage(), testMessage4);
     }
 
     @Test
-    public void testNextBackVersion() throws Exception {
-        Logger logger = mock(Logger.class);
+    public void testNextBackVersion() {
+        TestMessage  testMessage1 = new TestMessage("sValue1", 99);
+        TestMessage  testMessage2 = new TestMessage("sValue2", 98);
+        TestMessage  testMessage3 = new TestMessage("sValue3", 97);
+        TestMessage  testMessage4 = new TestMessage("sValue4", 96);
+        List<String> jsonList     = new LinkedList<>();
 
-        TestMessage testMessage1 = new TestMessage("sValue1", 99);
-        TestMessage testMessage2 = new TestMessage("sValue2", 98);
-        TestMessage testMessage3 = new TestMessage("sValue3", 97);
-        TestMessage testMessage4 = new TestMessage("sValue4", 96);
+        jsonList.add(AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), testMessage1)));
+        jsonList.add(AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("0.0.5"), testMessage2)));
+        jsonList.add(AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("0.5.0"), testMessage3)));
+        jsonList.add(AtlasType.toV1Json(testMessage4));
 
-        List jsonList = new LinkedList<>();
-
-        String json1 = AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), testMessage1));
-        String json2 = AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("0.0.5"), testMessage2));
-        String json3 = AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("0.5.0"), testMessage3));
-        String json4 = AtlasType.toV1Json(testMessage4);
-
-        jsonList.add(json1);
-        jsonList.add(json2);
-        jsonList.add(json3);
-        jsonList.add(json4);
-
-        NotificationConsumer<TestMessage> consumer = new TestNotificationConsumer(jsonList, logger);
+        NotificationConsumer<TestMessage> consumer = new TestNotificationConsumer(jsonList, mock(Logger.class));
 
         List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive();
 
-        assertEquals(new TestMessage("sValue1", 99), messageList.get(0).getMessage());
-
-        assertEquals(new TestMessage("sValue2", 98), messageList.get(1).getMessage());
-
-        assertEquals(new TestMessage("sValue3", 97), messageList.get(2).getMessage());
-
-        assertEquals(new TestMessage("sValue4", 96), messageList.get(3).getMessage());
-
+        assertEquals(messageList.get(0).getMessage(), new TestMessage("sValue1", 99));
+        assertEquals(messageList.get(1).getMessage(), new TestMessage("sValue2", 98));
+        assertEquals(messageList.get(2).getMessage(), new TestMessage("sValue3", 97));
+        assertEquals(messageList.get(3).getMessage(), new TestMessage("sValue4", 96));
     }
 
     @Test
-    public void testNextForwardVersion() throws Exception {
-        Logger logger = mock(Logger.class);
+    public void testNextForwardVersion() {
+        TestMessage  testMessage1 = new TestMessage("sValue1", 99);
+        TestMessage  testMessage2 = new TestMessage("sValue2", 98);
+        List<String> jsonList     = new LinkedList<>();
 
-        TestMessage testMessage1 = new TestMessage("sValue1", 99);
-        TestMessage testMessage2 = new TestMessage("sValue2", 98);
+        jsonList.add(AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), testMessage1)));
+        jsonList.add(AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("2.0.0"), testMessage2)));
 
-        List jsonList = new LinkedList<>();
+        NotificationConsumer<TestMessage> consumer = new TestNotificationConsumer(jsonList, mock(Logger.class));
 
-        String json1 = AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("1.0.0"), testMessage1));
-        String json2 = AtlasType.toV1Json(new AtlasNotificationMessage<>(new MessageVersion("2.0.0"), testMessage2));
-
-        jsonList.add(json1);
-        jsonList.add(json2);
-
-        NotificationConsumer<TestMessage> consumer = new TestNotificationConsumer(jsonList, logger);
         try {
             List<AtlasKafkaMessage<TestMessage>> messageList = consumer.receive();
 
-            messageList.get(1).getMessage();
+            TestMessage ignored = messageList.get(1).getMessage();
 
             fail("Expected VersionMismatchException!");
         } catch (IncompatibleVersionException e) {
-
+            // ignored
         }
-
     }
-
-
 
     private static class TestMessage {
         private String s;
@@ -169,28 +141,30 @@ public class AbstractNotificationConsumerTest {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
-            TestMessage that = (TestMessage) o;
-            return i == that.i &&
-                    Objects.equals(s, that.s);
+        public int hashCode() {
+            return Objects.hash(s, i);
         }
 
         @Override
-        public int hashCode() {
-            return Objects.hash(s, i);
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            } else if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+
+            TestMessage that = (TestMessage) o;
+
+            return i == that.i && Objects.equals(s, that.s);
         }
     }
 
     private static class TestNotificationConsumer extends AbstractNotificationConsumer<TestMessage> {
         private static final String TEST_TOPIC_NAME = "TEST_TOPIC";
 
-        private final List<TestMessage> messageList;
-        private       int              index = 0;
+        private final List<String> messageList;
 
-
-        public TestNotificationConsumer(List<TestMessage> messages, Logger logger) {
+        public TestNotificationConsumer(List<String> messages, Logger logger) {
             super(new TestMessageDeserializer());
 
             this.messageList = messages;
@@ -208,7 +182,6 @@ public class AbstractNotificationConsumerTest {
 
         @Override
         public void wakeup() {
-
         }
 
         @Override
@@ -218,10 +191,12 @@ public class AbstractNotificationConsumerTest {
 
         @Override
         public List<AtlasKafkaMessage<TestMessage>> receive(long timeoutMilliSeconds) {
-            List<AtlasKafkaMessage<TestMessage>> tempMessageList = new ArrayList();
-            for(Object json :  messageList) {
-                tempMessageList.add(new AtlasKafkaMessage(deserializer.deserialize((String) json), -1, TEST_TOPIC_NAME, -1));
+            List<AtlasKafkaMessage<TestMessage>> tempMessageList = new ArrayList<>();
+
+            for (String json : messageList) {
+                tempMessageList.add(new AtlasKafkaMessage<>(deserializer.deserialize(json), -1, TEST_TOPIC_NAME, -1));
             }
+
             return tempMessageList;
         }
 
@@ -242,15 +217,13 @@ public class AbstractNotificationConsumerTest {
          */
         private static final Logger NOTIFICATION_LOGGER = LoggerFactory.getLogger(TestMessageDeserializer.class);
 
-
         // ----- Constructors ----------------------------------------------------
 
         /**
          * Create a hook notification message deserializer.
          */
         public TestMessageDeserializer() {
-            super(new TypeReference<TestMessage>() {}, new TypeReference<AtlasNotificationMessage<TestMessage>>() {},
-                  AbstractNotification.CURRENT_MESSAGE_VERSION, NOTIFICATION_LOGGER);
+            super(new TypeReference<TestMessage>() {}, new TypeReference<AtlasNotificationMessage<TestMessage>>() {}, AbstractNotification.CURRENT_MESSAGE_VERSION, NOTIFICATION_LOGGER);
         }
     }
 }

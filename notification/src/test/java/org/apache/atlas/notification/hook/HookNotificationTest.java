@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,15 +24,14 @@ import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
 import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV2;
-import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
 import org.apache.atlas.model.notification.HookNotification.EntityPartialUpdateRequestV2;
+import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
 import org.apache.atlas.model.notification.HookNotification.HookNotificationType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateRequest;
-
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -43,14 +42,12 @@ import java.util.Map;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertTrue;
 
-
 public class HookNotificationTest {
-    private HookMessageDeserializer deserializer = new HookMessageDeserializer();
-
     private static final String  ATTR_VALUE_STRING  = "strValue";
     private static final Integer ATTR_VALUE_INTEGER = 10;
     private static final Boolean ATTR_VALUE_BOOLEAN = Boolean.TRUE;
-    private static final Date    ATTR_VALUE_DATE    = new Date();
+    private static final Date                    ATTR_VALUE_DATE = new Date();
+    private final        HookMessageDeserializer deserializer    = new HookMessageDeserializer();
 
     @Test
     public void testNewMessageSerDe() throws Exception {
@@ -62,8 +59,8 @@ public class HookNotificationTest {
 
         String user = "user";
 
-        EntityCreateRequest request           = new EntityCreateRequest(user, entity1, entity2);
-        String              notificationJson  = AtlasType.toV1Json(request);
+        EntityCreateRequest request            = new EntityCreateRequest(user, entity1, entity2);
+        String              notificationJson   = AtlasType.toV1Json(request);
         HookNotification    actualNotification = deserializer.deserialize(notificationJson);
 
         assertEquals(actualNotification.getType(), HookNotificationType.ENTITY_CREATE);
@@ -77,7 +74,7 @@ public class HookNotificationTest {
         Referenceable actualEntity1 = createRequest.getEntities().get(0);
 
         assertEquals(actualEntity1.getTypeName(), "sometype");
-        assertEquals(((Referenceable)actualEntity1.get("complex")).getTypeName(), "othertype");
+        assertEquals(((Referenceable) actualEntity1.get("complex")).getTypeName(), "othertype");
         assertEquals(createRequest.getEntities().get(1).getTypeName(), "newtype");
     }
 
@@ -115,7 +112,6 @@ public class HookNotificationTest {
                 + "  \"type\": \"ENTITY_CREATE\"\n"
                 + "}";
 
-
         HookNotification actualNotification = deserializer.deserialize(notificationJson);
 
         assertEquals(actualNotification.getType(), HookNotificationType.ENTITY_CREATE);
@@ -148,10 +144,10 @@ public class HookNotificationTest {
 
         assertEquals(createRequest.getEntities().getEntities().size(), 2);
 
-        AtlasEntity   actualEntity1     = createRequest.getEntities().getEntities().get(0);
-        AtlasEntity   actualEntity2     = createRequest.getEntities().getEntities().get(1);
-        AtlasEntity   actualEntity3     = createRequest.getEntities().getReferredEntity(entity3.getGuid());
-        Map           actualComplexAttr = (Map)actualEntity1.getAttribute("complex");
+        AtlasEntity actualEntity1     = createRequest.getEntities().getEntities().get(0);
+        AtlasEntity actualEntity2     = createRequest.getEntities().getEntities().get(1);
+        AtlasEntity actualEntity3     = createRequest.getEntities().getReferredEntity(entity3.getGuid());
+        Map         actualComplexAttr = (Map) actualEntity1.getAttribute("complex");
 
         assertEquals(actualEntity1.getGuid(), entity1.getGuid());
         assertEquals(actualEntity1.getTypeName(), entity1.getTypeName());
@@ -192,10 +188,10 @@ public class HookNotificationTest {
 
         assertEquals(updateRequest.getEntities().getEntities().size(), 2);
 
-        AtlasEntity   actualEntity1     = updateRequest.getEntities().getEntities().get(0);
-        AtlasEntity   actualEntity2     = updateRequest.getEntities().getEntities().get(1);
-        AtlasEntity   actualEntity3     = updateRequest.getEntities().getReferredEntity(entity3.getGuid());
-        Map           actualComplexAttr = (Map)actualEntity1.getAttribute("complex");
+        AtlasEntity actualEntity1     = updateRequest.getEntities().getEntities().get(0);
+        AtlasEntity actualEntity2     = updateRequest.getEntities().getEntities().get(1);
+        AtlasEntity actualEntity3     = updateRequest.getEntities().getReferredEntity(entity3.getGuid());
+        Map         actualComplexAttr = (Map) actualEntity1.getAttribute("complex");
 
         assertEquals(actualEntity1.getGuid(), entity1.getGuid());
         assertEquals(actualEntity1.getTypeName(), entity1.getTypeName());
@@ -235,10 +231,10 @@ public class HookNotificationTest {
 
         assertEquals(updateRequest.getEntity().getReferredEntities().size(), 2);
 
-        AtlasEntity   actualEntity1     = updateRequest.getEntity().getEntity();
-        AtlasEntity   actualEntity2     = updateRequest.getEntity().getReferredEntity(entity2.getGuid());
-        AtlasEntity   actualEntity3     = updateRequest.getEntity().getReferredEntity(entity3.getGuid());
-        Map           actualComplexAttr = (Map)actualEntity1.getAttribute("complex");
+        AtlasEntity actualEntity1     = updateRequest.getEntity().getEntity();
+        AtlasEntity actualEntity2     = updateRequest.getEntity().getReferredEntity(entity2.getGuid());
+        AtlasEntity actualEntity3     = updateRequest.getEntity().getReferredEntity(entity3.getGuid());
+        Map         actualComplexAttr = (Map) actualEntity1.getAttribute("complex");
 
         assertEquals(actualEntity1.getGuid(), entity1.getGuid());
         assertEquals(actualEntity1.getTypeName(), entity1.getTypeName());

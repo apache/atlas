@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -31,14 +31,15 @@ public class SpoolConfiguration {
     private static final int    PROP_FILE_MESSAGE_BATCH_SIZE_DEFAULT            = 100;
     private static final String PROP_HIVE_METASTORE_NAME_DEFAULT                = "HiveMetastoreHookImpl";
     private static final String PROPERTY_PREFIX_SPOOL                           = "atlas.hook.spool.";
-    public  static final String PROP_FILE_SPOOL_LOCAL_DIR                       = PROPERTY_PREFIX_SPOOL + "dir";
     private static final String PROP_FILE_SPOOL_ARCHIVE_DIR                     = PROPERTY_PREFIX_SPOOL + "archive.dir";
     private static final String PROP_FILE_SPOOL_ARCHIVE_MAX_FILES_COUNT         = PROPERTY_PREFIX_SPOOL + "archive.max.files";
-    public  static final String PROP_FILE_SPOOL_FILE_ROLLOVER_SEC               = PROPERTY_PREFIX_SPOOL + "file.rollover.sec";
-    public  static final String PROP_FILE_SPOOL_DEST_RETRY_MS                   = PROPERTY_PREFIX_SPOOL + "destination.retry.ms";
     private static final String PROP_MESSAGE_BATCH_SIZE                         = PROPERTY_PREFIX_SPOOL + "destination.message.batchsize";
-    public  static final String PROP_FILE_SPOOL_PAUSE_BEFORE_SEND_SEC           = PROPERTY_PREFIX_SPOOL + "pause.before.send.sec";
     private static final String PROP_HIVE_METASTORE_NAME                        = PROPERTY_PREFIX_SPOOL + "hivemetastore.name";
+
+    public static final  String PROP_FILE_SPOOL_LOCAL_DIR             = PROPERTY_PREFIX_SPOOL + "dir";
+    public static final  String PROP_FILE_SPOOL_FILE_ROLLOVER_SEC     = PROPERTY_PREFIX_SPOOL + "file.rollover.sec";
+    public static final  String PROP_FILE_SPOOL_DEST_RETRY_MS         = PROPERTY_PREFIX_SPOOL + "destination.retry.ms";
+    public static final  String PROP_FILE_SPOOL_PAUSE_BEFORE_SEND_SEC = PROPERTY_PREFIX_SPOOL + "pause.before.send.sec";
 
     private final Configuration config;
 
@@ -48,15 +49,15 @@ public class SpoolConfiguration {
     private final int    retryDestinationMS;
     private final int    fileRollOverSec;
     private final int    fileSpoolMaxFilesCount;
-    private       String spoolDirPath;
-    private       String archiveDir;
     private final int    pauseBeforeSendSec;
     private final String hiveMetaStoreName;
+    private       String spoolDirPath;
+    private       String archiveDir;
     private       String sourceName;
-     private      String user;
+    private       String user;
 
     public SpoolConfiguration(Configuration cfg, String messageHandlerName) {
-        this.config = cfg;
+        this.config                 = cfg;
         this.messageHandlerName     = messageHandlerName;
         this.maxArchivedFilesCount  = cfg.getInt(PROP_FILE_SPOOL_ARCHIVE_MAX_FILES_COUNT, PROP_FILE_SPOOL_ARCHIVE_MAX_FILES_COUNT_DEFAULT);
         this.messageBatchSize       = cfg.getInt(PROP_MESSAGE_BATCH_SIZE, PROP_FILE_MESSAGE_BATCH_SIZE_DEFAULT);
@@ -108,6 +109,7 @@ public class SpoolConfiguration {
 
     public File getArchiveDir() {
         this.archiveDir = config.getString(PROP_FILE_SPOOL_ARCHIVE_DIR, new File(getSpoolDirPath(), PROP_FILE_SPOOL_ARCHIVE_DIR_DEFAULT).toString());
+
         return new File(this.archiveDir);
     }
 

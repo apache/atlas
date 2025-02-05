@@ -55,52 +55,38 @@ public class IndexManagement {
         String sourceName = config.getSourceName();
 
         File spoolDir = SpoolUtils.getCreateDirectoryWithPermissionCheck(config.getSpoolDir(), config.getUser());
+
         if (spoolDir == null) {
-            throw new AtlasException(String.format("%s: %s not found or inaccessible!", sourceName, spoolDir.getAbsolutePath()));
+            throw new AtlasException(String.format("%s: %s not found or inaccessible!", sourceName, spoolDir));
         }
 
         config.setSpoolDir(spoolDir.getAbsolutePath());
 
         File archiveDir = SpoolUtils.getCreateDirectory(config.getArchiveDir());
+
         if (archiveDir == null) {
-            throw new AtlasException(String.format("%s: %s not found or inaccessible!", sourceName, archiveDir.getAbsolutePath()));
+            throw new AtlasException(String.format("%s: %s not found or inaccessible!", sourceName, archiveDir));
         }
 
         File indexFile = SpoolUtils.getCreateFile(config.getIndexFile(), sourceName);
 
         if (indexFile == null) {
-            throw new AtlasException(String.format("%s: %s not found or inaccessible!", sourceName, indexFile.getAbsolutePath()));
+            throw new AtlasException(String.format("%s: %s not found or inaccessible!", sourceName, indexFile));
         }
 
         File indexDoneFile = SpoolUtils.getCreateFile(config.getIndexDoneFile(), sourceName);
 
         if (indexDoneFile == null) {
-            throw new AtlasException(String.format("%s: %s not found or inaccessible!", sourceName, indexDoneFile.getAbsolutePath()));
+            throw new AtlasException(String.format("%s: %s not found or inaccessible!", sourceName, indexDoneFile));
         }
 
         performInit(indexFile.getAbsolutePath(), sourceName);
     }
 
-    @VisibleForTesting
-    void performInit(String indexFilePath, String source) {
-        try {
-            File spoolDir      = config.getSpoolDir();
-            File archiveDir    = config.getArchiveDir();
-            File indexFile     = config.getIndexFile();
-            File indexDoneFile = config.getIndexDoneFile();
-
-            indexFileManager = new IndexFileManager(source, indexFile, indexDoneFile, archiveDir, config.getMaxArchiveFiles());
-            indexReader      = new IndexReader(source, indexFileManager, config.getRetryDestinationMS());
-            indexWriter      = new IndexWriter(source, config, indexFileManager, indexReader, spoolDir, archiveDir, config.getFileRolloverSec());
-        } catch (Exception e) {
-            LOG.error("{}: init: Failed! Error loading records from index file: {}", config.getSourceName(), indexFilePath);
-        }
-    }
-
     public boolean isPending() {
         return !indexReader.isEmpty()
                 || (indexWriter.getCurrent() != null && indexWriter.getCurrent().isStatusWriteInProgress())
-                || (indexReader.currentIndexRecord != null && indexReader.currentIndexRecord.getStatus() == IndexRecord.STATUS_READ_IN_PROGRESS);
+                || (indexReader.currentIndexRecord != null && IndexRecord.STATUS_READ_IN_PROGRESS.equals(indexReader.currentIndexRecord.getStatus()));
     }
 
     public synchronized DataOutput getSpoolWriter() throws IOException {
@@ -140,11 +126,6 @@ public class IndexManagement {
         this.indexWriter.rolloverIfNeeded();
     }
 
-    @VisibleForTesting
-    IndexFileManager getIndexFileManager() {
-        return this.indexFileManager;
-    }
-
     public void update(IndexRecord record) {
         this.indexFileManager.updateIndex(record);
 
@@ -153,6 +134,27 @@ public class IndexManagement {
 
     public void flushSpoolWriter() throws IOException {
         this.indexWriter.flushCurrent();
+    }
+
+    @VisibleForTesting
+    void performInit(String indexFilePath, String source) {
+        try {
+            File spoolDir      = config.getSpoolDir();
+            File archiveDir    = config.getArchiveDir();
+            File indexFile     = config.getIndexFile();
+            File indexDoneFile = config.getIndexDoneFile();
+
+            indexFileManager = new IndexFileManager(source, indexFile, indexDoneFile, archiveDir, config.getMaxArchiveFiles());
+            indexReader      = new IndexReader(source, indexFileManager, config.getRetryDestinationMS());
+            indexWriter      = new IndexWriter(source, config, indexFileManager, indexReader, spoolDir, archiveDir, config.getFileRolloverSec());
+        } catch (Exception e) {
+            LOG.error("{}: init: Failed! Error loading records from index file: {}", config.getSourceName(), indexFilePath);
+        }
+    }
+
+    @VisibleForTesting
+    IndexFileManager getIndexFileManager() {
+        return this.indexFileManager;
     }
 
     static class IndexWriter {
@@ -168,10 +170,7 @@ public class IndexManagement {
         private       DataOutput          currentWriter;
         private       boolean             fileWriteInProgress;
 
-
-        public IndexWriter(String source, SpoolConfiguration config, IndexFileManager indexFileManager,
-                           IndexReader indexReader,
-                           File spoolFolder, File archiveFolder, int rollOverTimeout) {
+        public IndexWriter(String source, SpoolConfiguration config, IndexFileManager indexFileManager, IndexReader indexReader, File spoolFolder, File archiveFolder, int rollOverTimeout) {
             this.source              = source;
             this.config              = config;
             this.indexFileManager    = indexFileManager;
@@ -184,16 +183,12 @@ public class IndexManagement {
             setCurrent(indexFileManager.getFirstWriteInProgressRecord());
         }
 
-        public void setCurrent(IndexRecord indexRecord) {
-            this.currentIndexRecord = indexRecord;
-        }
-
         public IndexRecord getCurrent() {
             return this.currentIndexRecord;
         }
 
-        private void setCurrentWriter(File file) throws IOException {
-            this.currentWriter = fileLockedReadWrite.getOutput(file);
+        public void setCurrent(IndexRecord indexRecord) {
+            this.currentIndexRecord = indexRecord;
         }
 
         public synchronized DataOutput getWriter() {
@@ -247,19 +242,6 @@ public class IndexManagement {
             }
         }
 
-        private boolean shouldRolloverSpoolFile() {
-            return currentIndexRecord != null &&
-                    (System.currentTimeMillis() - currentIndexRecord.getCreated() > this.rollOverTimeout);
-        }
-
-        void flushCurrent() throws IOException {
-            DataOutput pw = getWriter();
-
-            if (pw != null) {
-                fileLockedReadWrite.flush();
-            }
-        }
-
         public void setFileWriteInProgress(boolean val) {
             this.fileWriteInProgress = val;
         }
@@ -309,6 +291,22 @@ public class IndexManagement {
 
             LOG.info("<== IndexWriter.stop(source={})", this.config.getSourceName());
         }
+
+        void flushCurrent() throws IOException {
+            DataOutput pw = getWriter();
+
+            if (pw != null) {
+                fileLockedReadWrite.flush();
+            }
+        }
+
+        private void setCurrentWriter(File file) throws IOException {
+            this.currentWriter = fileLockedReadWrite.getOutput(file);
+        }
+
+        private boolean shouldRolloverSpoolFile() {
+            return currentIndexRecord != null && (System.currentTimeMillis() - currentIndexRecord.getCreated() > this.rollOverTimeout);
+        }
     }
 
     static class IndexReader {
@@ -326,18 +324,8 @@ public class IndexManagement {
 
             List<IndexRecord> records = indexFileManager.getRecords();
 
-            records.stream().forEach(x -> addIfStatus(x, IndexRecord.STATUS_READ_IN_PROGRESS));
-            records.stream().forEach(x -> addIfStatus(x, IndexRecord.STATUS_PENDING));
-        }
-
-        private void addIfStatus(IndexRecord record, String status) {
-            if (record != null && record.getStatus().equals(status)) {
-                if (!SpoolUtils.fileExists(record)) {
-                    LOG.error("IndexReader.addIfStatus(source={}): file {} not found!", this.source, record.getPath());
-                } else {
-                    addToPublishQueue(record);
-                }
-            }
+            records.forEach(x -> addIfStatus(x, IndexRecord.STATUS_READ_IN_PROGRESS));
+            records.forEach(x -> addIfStatus(x, IndexRecord.STATUS_PENDING));
         }
 
         public void addToPublishQueue(IndexRecord record) {
@@ -352,6 +340,7 @@ public class IndexManagement {
 
         public IndexRecord next() throws InterruptedException {
             this.currentIndexRecord = blockingQueue.poll(retryDestinationMS, TimeUnit.MILLISECONDS);
+
             if (this.currentIndexRecord != null) {
                 this.currentIndexRecord.setStatus(IndexRecord.STATUS_READ_IN_PROGRESS);
             }
@@ -379,6 +368,16 @@ public class IndexManagement {
             indexRecord.setDone();
 
             indexFileManager.remove(indexRecord);
+        }
+
+        private void addIfStatus(IndexRecord record, String status) {
+            if (record != null && record.getStatus().equals(status)) {
+                if (!SpoolUtils.fileExists(record)) {
+                    LOG.error("IndexReader.addIfStatus(source={}): file {} not found!", this.source, record.getPath());
+                } else {
+                    addToPublishQueue(record);
+                }
+            }
         }
     }
 
@@ -446,24 +445,6 @@ public class IndexManagement {
             fileOperations.update(indexFile, record.getId(), SpoolUtils.getRecordForWriting(record));
         }
 
-        private void compactFile(File file) {
-            LOG.info("IndexFileManager.compactFile(source={}): compacting file {}", source, file.getAbsolutePath());
-
-            try {
-                fileOperations.compact(file);
-            } finally {
-                LOG.info("IndexFileManager.compactFile(source={}): done compacting file {}", source, file.getAbsolutePath());
-            }
-        }
-
-        private void appendToDoneFile(IndexRecord indexRecord) {
-            String json = SpoolUtils.getRecordForWriting(indexRecord);
-
-            fileOperations.append(indexDoneFile, json);
-
-            archiver.archive(indexRecord);
-        }
-
         @VisibleForTesting
         IndexRecords loadRecords(File file) {
             String[] items = fileOperations.load(file);
@@ -488,6 +469,24 @@ public class IndexManagement {
             appendToIndexFile(record);
 
             return record;
+        }
+
+        private void compactFile(File file) {
+            LOG.info("IndexFileManager.compactFile(source={}): compacting file {}", source, file.getAbsolutePath());
+
+            try {
+                fileOperations.compact(file);
+            } finally {
+                LOG.info("IndexFileManager.compactFile(source={}): done compacting file {}", source, file.getAbsolutePath());
+            }
+        }
+
+        private void appendToDoneFile(IndexRecord indexRecord) {
+            String json = SpoolUtils.getRecordForWriting(indexRecord);
+
+            fileOperations.append(indexDoneFile, json);
+
+            archiver.archive(indexRecord);
         }
     }
 }
