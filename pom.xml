@@ -804,7 +804,6 @@
         <module>auth-plugin-atlas</module>
 
         <module>webapp</module>
-        <module>docs</module>
 
         <module>plugin-classloader</module>
         <module>tools/classification-updater</module>
