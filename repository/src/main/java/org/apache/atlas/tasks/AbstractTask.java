@@ -16,6 +16,7 @@
  * limitations under the License.
  */
 package org.apache.atlas.tasks;
+import org.apache.atlas.RequestContext;
 
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.slf4j.Logger;
@@ -27,12 +28,15 @@ public abstract class AbstractTask {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractTask.class);
     private final AtlasTask task;
 
+    public static final String X_ATLAN_TASK_GUID = "x-atlan-task-guid";
+
     public AbstractTask(AtlasTask task) {
         this.task = task;
     }
 
     public void run() throws Exception {
         try {
+            RequestContext.get().addRequestContextHeader(X_ATLAN_TASK_GUID, getTaskGuid());
             perform();
         } catch (Exception exception) {
             task.setStatus(Status.FAILED);
