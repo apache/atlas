@@ -22,12 +22,7 @@ name: Java CI with Maven
 on:
   push:
     branches:
-      - alpha
-      - beta
-      - development
-      - master
-      - lineageondemand
-      - makerlogic
+      - staging
 
 jobs:
   build:
