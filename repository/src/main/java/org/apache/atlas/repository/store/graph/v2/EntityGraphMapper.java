@@ -195,7 +195,6 @@ public class EntityGraphMapper {
     private final EntityGraphRetriever       retrieverNoRelation;
 
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
-    private static final Set<String> edgeLabelsForHardDeletion = new HashSet<>(Arrays.asList(OUTPUT_PORT_PRODUCT_EDGE_LABEL, INPUT_PORT_PRODUCT_EDGE_LABEL, TERM_ASSIGNMENT_LABEL));
 
     @Inject
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
@@ -1978,7 +1977,7 @@ public class EntityGraphMapper {
 
            if ((element instanceof AtlasEdge)) {
                AtlasEdge edge = (AtlasEdge) element;
-               if ((removedElements.contains(element) && (edgeLabelsForHardDeletion.contains(edge.getLabel())))) {
+               if ((removedElements.contains(element)) && (Arrays.asList(EDGE_LABELS_FOR_HARD_DELETION).contains(edge.getLabel()))) {
                    continue;
                }
                else {
@@ -3047,12 +3046,11 @@ public class EntityGraphMapper {
                         recordEntityUpdateForNonRelationsipAttribute(edge.getInVertex());
                         recordEntityUpdateForNonRelationsipAttribute(edge.getOutVertex());
 
-                        boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
+                        deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
                                 true, attribute.getRelationshipEdgeDirection(), entityVertex);
 
-                        if (!deleted) {
-                            additionalElements.add(edge);
-                        }
+                        additionalElements.add(edge);
+
                     }
 
                     return additionalElements;

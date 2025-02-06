@@ -15,19 +15,18 @@ import java.util.Set;
 
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP;
+import static org.apache.atlas.repository.Constants.EDGE_LABELS_FOR_HARD_DELETION;
+import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 
 public class ValidateProductEdgesMigrationService {
 
     private static final Logger LOG = LoggerFactory.getLogger(ValidateProductEdgesMigrationService.class);
 
-    private final AtlasGraph graph;
     private final Set<String> productGuids;
     private final GraphHelper graphHelper;
 
-    public ValidateProductEdgesMigrationService(AtlasGraph graph, Set<String> productGuids, GraphHelper graphHelper) {
-        this.graph = graph;
+    public ValidateProductEdgesMigrationService(Set<String> productGuids, GraphHelper graphHelper) {
         this.productGuids = productGuids;
         this.graphHelper = graphHelper;
     }
@@ -44,13 +43,12 @@ public class ValidateProductEdgesMigrationService {
                 if (productGuid != null && !productGuid.trim().isEmpty()) {
                     AtlasVertex productVertex = graphHelper.getVertexForGUID(productGuid);
 
-                    AtlasEntity.Status vertexStatus = getStatus(productVertex);
-
-                    if (vertexStatus == null) {
+                    if (productVertex == null) {
                         LOG.info("ProductGUID with no vertex found: {}", productGuid);
                     } else {
+                        AtlasEntity.Status vertexStatus = getStatus(productVertex);
+
                         if (ACTIVE.equals(vertexStatus)) {
-                            LOG.info("Validating edges for Active Product: {}", productGuid);
                             boolean softDeletedEdgesFound = validateEdgeForActiveProduct(productVertex);
                             if (softDeletedEdgesFound) {
                                 count++;
@@ -61,7 +59,6 @@ public class ValidateProductEdgesMigrationService {
                         }
 
                         if (DELETED.equals(vertexStatus)) {
-                            LOG.info("Validating edges for Archived Product: {}", productGuid);
                             boolean edgeWithDifferentTimeStampFound = validateEdgeForArchivedProduct(productVertex);
                             if (edgeWithDifferentTimeStampFound) {
                                 count++;
@@ -92,7 +89,7 @@ public class ValidateProductEdgesMigrationService {
         boolean softDeletedEdgesFound = false;
 
         try {
-            Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH).iterator();
+            Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH, EDGE_LABELS_FOR_HARD_DELETION).iterator();
 
             if (existingEdges == null || !existingEdges.hasNext()) {
                 LOG.info("No edges found for Product: {}", productVertex);
@@ -105,7 +102,6 @@ public class ValidateProductEdgesMigrationService {
                 AtlasEntity.Status edgeStatus = getStatus(edge);
 
                 if (DELETED.equals(edgeStatus)) {
-                    LOG.info("Found soft deleted edge: {}", edge);
                     softDeletedEdgesFound = true;
                 }
             }
@@ -120,8 +116,8 @@ public class ValidateProductEdgesMigrationService {
     public boolean validateEdgeForArchivedProduct (AtlasVertex productVertex) {
         boolean edgeWithDifferentTimeStampFound = false;
         try {
-            Long updatedTime = productVertex.getProperty(MODIFICATION_TIMESTAMP, Long.class);
-            Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH).iterator();
+            Long updatedTime = productVertex.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+            Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH, EDGE_LABELS_FOR_HARD_DELETION).iterator();
 
             if (existingEdges == null || !existingEdges.hasNext()) {
                 LOG.info("No edges found for Product: {}", productVertex);
@@ -130,7 +126,7 @@ public class ValidateProductEdgesMigrationService {
 
             while (existingEdges.hasNext()) {
                 AtlasEdge edge = existingEdges.next();
-                Long modifiedEdgeTimestamp = edge.getProperty(MODIFICATION_TIMESTAMP, Long.class);
+                Long modifiedEdgeTimestamp = edge.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
 
                 if (!updatedTime.equals(modifiedEdgeTimestamp)) {
                     LOG.info("Found edge with different timestamp: {}", edge);

@@ -16,7 +16,8 @@ import java.util.Set;
 
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
-import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP;
+import static org.apache.atlas.repository.Constants.EDGE_LABELS_FOR_HARD_DELETION;
+import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 
 public class SoftDeletionProductMigrationService {
@@ -40,19 +41,17 @@ public class SoftDeletionProductMigrationService {
             int count = 0;
             int totalUpdatedCount = 0;
             for (String productGuid: productGuids) {
-                LOG.info("Restoring state for Product: {}", productGuid);
+                LOG.info("Removing edges for Product: {}", productGuid);
 
                 if (productGuid != null && !productGuid.trim().isEmpty()) {
                     AtlasVertex productVertex = graphHelper.getVertexForGUID(productGuid);
 
                     if (productVertex == null) {
                         LOG.info("ProductGUID with no vertex found: {}", productGuid);
-                        continue;
                     } else {
                         AtlasEntity.Status vertexStatus = getStatus(productVertex);
 
                         if (ACTIVE.equals(vertexStatus)) {
-                            LOG.info("Removing edges for Active Product: {}", productGuid);
                             boolean isCommitRequired = deleteEdgeForActiveProduct(productVertex);
                             if (isCommitRequired) {
                                 count++;
@@ -61,7 +60,6 @@ public class SoftDeletionProductMigrationService {
                         }
 
                         if (DELETED.equals(vertexStatus)) {
-                            LOG.info("Removing edges for Archived Product: {}", productGuid);
                             boolean isCommitRequired = deleteEdgeForArchivedProduct(productVertex);
                             if (isCommitRequired) {
                                 count++;
@@ -94,10 +92,9 @@ public class SoftDeletionProductMigrationService {
     public boolean deleteEdgeForActiveProduct(AtlasVertex productVertex) {
         boolean isCommitRequired = false;
         try {
-            Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH).iterator();
+            Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH, EDGE_LABELS_FOR_HARD_DELETION).iterator();
 
             if (existingEdges == null || !existingEdges.hasNext()) {
-                LOG.info("No edges found for Product: {}", productVertex);
                 return isCommitRequired;
             }
 
@@ -105,7 +102,6 @@ public class SoftDeletionProductMigrationService {
                 AtlasEdge edge = existingEdges.next();
 
                 AtlasEntity.Status edgeStatus = getStatus(edge);
-                LOG.info("Edge status: {}", edgeStatus);
 
                 if (DELETED.equals(edgeStatus)) {
                     graph.removeEdge(edge);
@@ -123,24 +119,21 @@ public class SoftDeletionProductMigrationService {
     private boolean deleteEdgeForArchivedProduct(AtlasVertex productVertex) {
         boolean isCommitRequired = false;
         try {
-            Long updatedTime = productVertex.getProperty(MODIFICATION_TIMESTAMP, Long.class);
-            Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH).iterator();
+            Long updatedTime = productVertex.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+            Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH, EDGE_LABELS_FOR_HARD_DELETION).iterator();
 
             if (existingEdges == null || !existingEdges.hasNext()) {
-                LOG.info("No edges found for Product: {}", productVertex);
                 return isCommitRequired;
             }
 
             while (existingEdges.hasNext()) {
                 AtlasEdge edge = existingEdges.next();
-                Long modifiedEdgeTimestamp = edge.getProperty(MODIFICATION_TIMESTAMP, Long.class);
+                Long modifiedEdgeTimestamp = edge.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
 
                 if (!updatedTime.equals(modifiedEdgeTimestamp)) {
                     LOG.info("Removing edge with different timestamp: {}", edge);
                     graph.removeEdge(edge);
                     isCommitRequired = true;
-                } else {
-                    LOG.info("Keeping edge with matching timestamp: {}", edge);
                 }
             }
         } catch (Exception e) {

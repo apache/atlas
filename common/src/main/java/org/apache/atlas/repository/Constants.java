@@ -162,8 +162,6 @@ public final class Constants {
     public static final String UD_RELATIONSHIP_END_NAME_FROM = "userDefRelationshipFrom";
     public static final String UD_RELATIONSHIP_END_NAME_TO = "userDefRelationshipTo";
 
-    public static final String MODIFICATION_TIMESTAMP = "__modificationTimestamp";
-
     /**
      * SQL property keys.
      */
@@ -317,6 +315,12 @@ public final class Constants {
 
     public static final String VERTEX_ID_IN_IMPORT_KEY = "__vIdInImport";
     public static final String EDGE_ID_IN_IMPORT_KEY   = "__eIdInImport";
+
+    /*
+     * Edge labels for data product relations which are hard deleted
+     */
+
+    public static final String[] EDGE_LABELS_FOR_HARD_DELETION = { OUTPUT_PORT_PRODUCT_EDGE_LABEL, INPUT_PORT_PRODUCT_EDGE_LABEL, TERM_ASSIGNMENT_LABEL };
 
     /*
      * elasticsearch attributes

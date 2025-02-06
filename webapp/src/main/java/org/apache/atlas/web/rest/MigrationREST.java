@@ -396,7 +396,7 @@ public class MigrationREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.bulkValidateProductEdges(" + guids + ")");
             }
 
-            ValidateProductEdgesMigrationService migrationService = new ValidateProductEdgesMigrationService(graph, guids, new GraphHelper(graph));
+            ValidateProductEdgesMigrationService migrationService = new ValidateProductEdgesMigrationService(guids, new GraphHelper(graph));
             flag = migrationService.validateEdgeMigration();
 
         } catch (Exception e) {
