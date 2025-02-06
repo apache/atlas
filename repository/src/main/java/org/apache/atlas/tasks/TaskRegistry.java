@@ -35,6 +35,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasMetricType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -466,11 +467,12 @@ public class TaskRegistry {
             }
         }
         if(mismatches > 0) {
-            AtlasPerfMetrics.Metric indexsearchMetric = new AtlasPerfMetrics.Metric(TASK_MISMATCH_TAG);
-            indexsearchMetric.addTag("name", TASK_MISMATCH_TAG);
-            indexsearchMetric.setInvocations(mismatches);
-            indexsearchMetric.setTotalTimeMSecs(0);
-            RequestContext.get().addApplicationMetrics(indexsearchMetric);
+            AtlasPerfMetrics.Metric mismatchMetrics = new AtlasPerfMetrics.Metric(TASK_MISMATCH_TAG);
+            mismatchMetrics.setMetricType(AtlasMetricType.COUNTER);
+            mismatchMetrics.addTag("name", TASK_MISMATCH_TAG);
+            mismatchMetrics.setInvocations(mismatches);
+            mismatchMetrics.setTotalTimeMSecs(0);
+            RequestContext.get().addApplicationMetrics(mismatchMetrics);
         }
         return ret;
     }
