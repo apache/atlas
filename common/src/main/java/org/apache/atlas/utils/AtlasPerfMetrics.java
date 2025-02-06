@@ -166,5 +166,8 @@ public class AtlasPerfMetrics {
             invocations++;
         }
 
+        public void setInvocations(long invocations) {
+            this.invocations = invocations;
+        }
     }
 }

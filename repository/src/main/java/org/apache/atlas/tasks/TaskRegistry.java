@@ -68,6 +68,7 @@ public class TaskRegistry {
     public static final int TASK_FETCH_BATCH_SIZE = 100;
     public static final List<Map<String, Object>> SORT_ARRAY = Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc")));
     public static final String JANUSGRAPH_VERTEX_INDEX = "janusgraph_vertex_index";
+    public static final String TASK_MISMATCH_TAG = "mismatchTask";
 
     private AtlasGraph graph;
     private TaskService taskService;
@@ -464,8 +465,13 @@ public class TaskRegistry {
                 break;
             }
         }
-        RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("elasticSearchTaskMismatch"), mismatches);
-
+        if(mismatches > 0) {
+            AtlasPerfMetrics.Metric indexsearchMetric = new AtlasPerfMetrics.Metric(TASK_MISMATCH_TAG);
+            indexsearchMetric.addTag("name", TASK_MISMATCH_TAG);
+            indexsearchMetric.setInvocations(mismatches);
+            indexsearchMetric.setTotalTimeMSecs(0);
+            RequestContext.get().addApplicationMetrics(indexsearchMetric);
+        }
         return ret;
     }
 
