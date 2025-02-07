@@ -666,7 +666,7 @@
         <profile>
             <id>skipMinify</id>
             <properties>
-<!--                <project.build.dashboardv2.gruntBuild>build</project.build.dashboardv2.gruntBuild>-->
+                <project.build.dashboardv2.gruntBuild>build</project.build.dashboardv2.gruntBuild>
             </properties>
         </profile>
 
