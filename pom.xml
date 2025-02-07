@@ -666,7 +666,7 @@
         <profile>
             <id>skipMinify</id>
             <properties>
-                <project.build.dashboardv2.gruntBuild>build</project.build.dashboardv2.gruntBuild>
+<!--                <project.build.dashboardv2.gruntBuild>build</project.build.dashboardv2.gruntBuild>-->
             </properties>
         </profile>
 
@@ -796,7 +796,7 @@
 
         <module>repository</module>
         <module>authorization</module>
-        <module>dashboardv2</module>
+<!--        <module>dashboardv2</module>-->
 
         <module>auth-agents-cred</module>
         <module>auth-agents-common</module>
@@ -1463,12 +1463,12 @@
                 <version>${project.version}</version>
             </dependency>
 
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-dashboardv2</artifactId>
-                <version>${project.version}</version>
-                <type>war</type>
-            </dependency>
+<!--            <dependency>-->
+<!--                <groupId>org.apache.atlas</groupId>-->
+<!--                <artifactId>atlas-dashboardv2</artifactId>-->
+<!--                <version>${project.version}</version>-->
+<!--                <type>war</type>-->
+<!--            </dependency>-->
 
             <dependency>
                 <groupId>org.apache.atlas</groupId>
