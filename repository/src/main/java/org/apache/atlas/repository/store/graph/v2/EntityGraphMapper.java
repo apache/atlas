@@ -1974,8 +1974,14 @@ public class EntityGraphMapper {
        for (int index = 0; allArrayElements != null && index < allArrayElements.size(); index++) {
            Object element = allArrayElements.get(index);
 
-           if (element instanceof AtlasEdge) {
-               AtlasGraphUtilsV2.setEncodedProperty((AtlasEdge) element, ATTRIBUTE_INDEX_PROPERTY_KEY, index);
+           if ((element instanceof AtlasEdge)) {
+               AtlasEdge edge = (AtlasEdge) element;
+               if ((removedElements.contains(element)) && (Arrays.asList(EDGE_LABELS_FOR_HARD_DELETION).contains(edge.getLabel()))) {
+                   continue;
+               }
+               else {
+                   AtlasGraphUtilsV2.setEncodedProperty((AtlasEdge) element, ATTRIBUTE_INDEX_PROPERTY_KEY, index);
+               }
             }
         }
 
@@ -3000,7 +3006,7 @@ public class EntityGraphMapper {
                     List<AtlasEdge> additionalElements = new ArrayList<>();
 
                     for (AtlasEdge edge : edgesToRemove) {
-                        if (getStatus(edge) == DELETED ) {
+                        if (getStatus(edge) == DELETED) {
                             continue;
                         }
 

@@ -97,7 +97,6 @@ public abstract class DeleteHandlerV1 {
     private   final AtlasGraph           graph;
     private   final TaskUtil             taskUtil;
 
-
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
         this.typeRegistry                  = typeRegistry;
         this.graphHelper                   = new GraphHelper(graph);
@@ -386,7 +385,8 @@ public abstract class DeleteHandlerV1 {
             // for relationship edges, inverse vertex's relationship attribute doesn't need to be updated.
             // only delete the reference relationship edge
             if (GraphHelper.isRelationshipEdge(edge)) {
-                deleteEdge(edge, isInternalType || isCustomRelationship(edge));
+                deleteEdge(edge, isInternalType || isCustomRelationship(edge) || isHardDeleteProductRelationship(edge));
+
                 AtlasVertex referencedVertex = entityRetriever.getReferencedEntityVertex(edge, relationshipDirection, entityVertex);
 
                 if (referencedVertex != null) {
@@ -403,7 +403,7 @@ public abstract class DeleteHandlerV1 {
                 //legacy case - not a relationship edge
                 //If deleting just the edge, reverse attribute should be updated for any references
                 //For example, for the department type system, if the person's manager edge is deleted, subordinates of manager should be updated
-                deleteEdge(edge, true, isInternalType || isCustomRelationship(edge));
+                deleteEdge(edge, true, isInternalType || isCustomRelationship(edge) || isHardDeleteProductRelationship(edge));
             }
         }
 
@@ -997,7 +997,7 @@ public abstract class DeleteHandlerV1 {
 
         if (edge != null) {
             boolean isInternal = isInternalType(inVertex) && isInternalType(outVertex);
-            deleteEdge(edge, isInternal || isCustomRelationship(edge));
+            deleteEdge(edge, isInternal || isCustomRelationship(edge) || isHardDeleteProductRelationship(edge));
 
             final RequestContext requestContext = RequestContext.get();
             final String         outId          = GraphHelper.getGuid(outVertex);
@@ -1082,6 +1082,11 @@ public abstract class DeleteHandlerV1 {
 
     private boolean isCustomRelationship(final AtlasEdge edge) {
         return edge.getLabel().equals(UD_RELATIONSHIP_EDGE_LABEL);
+    }
+
+    private boolean isHardDeleteProductRelationship(final AtlasEdge edge) {
+//        return EDGE_LABELS_FOR_HARD_DELETION.contains(edge.getLabel());
+        return Arrays.asList(EDGE_LABELS_FOR_HARD_DELETION).contains(edge.getLabel());
     }
 
     private void addToPropagatedClassificationNames(AtlasVertex entityVertex, String classificationName) {
