@@ -33,12 +33,12 @@ import org.apache.atlas.plugin.policyevaluator.RangerPolicyItemEvaluator;
 import java.util.Set;
 
 import static org.apache.atlas.authorization.atlas.authorizer.RangerAtlasAuthorizer.CLASSIFICATION_PRIVILEGES;
-import static org.apache.atlas.services.atlas.RangerServiceAtlas.RESOURCE_CLASSIFICATION;
-import static org.apache.atlas.services.atlas.RangerServiceAtlas.RESOURCE_ENTITY_BUSINESS_METADATA;
-import static org.apache.atlas.services.atlas.RangerServiceAtlas.RESOURCE_ENTITY_ID;
-import static org.apache.atlas.services.atlas.RangerServiceAtlas.RESOURCE_ENTITY_LABEL;
-import static org.apache.atlas.services.atlas.RangerServiceAtlas.RESOURCE_ENTITY_OWNER;
-import static org.apache.atlas.services.atlas.RangerServiceAtlas.RESOURCE_ENTITY_TYPE;
+import static org.apache.atlas.authorization.utils.RangerAtlasConstants.RESOURCE_CLASSIFICATION;
+import static org.apache.atlas.authorization.utils.RangerAtlasConstants.RESOURCE_ENTITY_BUSINESS_METADATA;
+import static org.apache.atlas.authorization.utils.RangerAtlasConstants.RESOURCE_ENTITY_ID;
+import static org.apache.atlas.authorization.utils.RangerAtlasConstants.RESOURCE_ENTITY_LABEL;
+import static org.apache.atlas.authorization.utils.RangerAtlasConstants.RESOURCE_ENTITY_OWNER;
+import static org.apache.atlas.authorization.utils.RangerAtlasConstants.RESOURCE_ENTITY_TYPE;
 
 
 public class RangerAtlasAuthorizerUtil {

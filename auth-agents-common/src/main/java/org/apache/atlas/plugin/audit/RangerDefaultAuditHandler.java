@@ -19,21 +19,20 @@
 
 package org.apache.atlas.plugin.audit;
 
+import org.apache.atlas.type.AtlasType;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.atlas.audit.model.AuthzAuditEvent;
 import org.apache.atlas.audit.provider.AuditHandler;
 import org.apache.atlas.audit.provider.MiscUtil;
-import org.apache.atlas.authorization.hadoop.constants.RangerHadoopConstants;
 import org.apache.atlas.plugin.contextenricher.RangerTagForEval;
 import org.apache.atlas.plugin.policyengine.*;
 import org.apache.atlas.plugin.service.RangerBasePlugin;
-import org.apache.atlas.plugin.util.JsonUtilsV2;
 import org.apache.atlas.plugin.util.RangerAccessRequestUtil;
 import org.apache.atlas.plugin.util.RangerRESTUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -46,14 +45,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 
 public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
-	private static final Log LOG = LogFactory.getLog(RangerDefaultAuditHandler.class);
+	private static final Logger LOG = LoggerFactory.getLogger(RangerDefaultAuditHandler.class);
 
 	private static final String       CONF_AUDIT_ID_STRICT_UUID     = "xasecure.audit.auditid.strict.uuid";
 	private static final boolean      DEFAULT_AUDIT_ID_STRICT_UUID  = false;
 
 
 	private   final boolean         auditIdStrictUUID;
-	protected final String          moduleName;
+	protected final String          moduleName = null;
 	private   final RangerRESTUtils restUtils      = new RangerRESTUtils();
 	private         long            sequenceNumber = 0;
 	private         String          UUID           = MiscUtil.generateUniqueId();
@@ -63,12 +62,10 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 
 	public RangerDefaultAuditHandler() {
 		auditIdStrictUUID = DEFAULT_AUDIT_ID_STRICT_UUID;
-		moduleName        = RangerHadoopConstants.DEFAULT_RANGER_MODULE_ACL_NAME;
 	}
 
 	public RangerDefaultAuditHandler(Configuration config) {
 		auditIdStrictUUID = config.getBoolean(CONF_AUDIT_ID_STRICT_UUID, DEFAULT_AUDIT_ID_STRICT_UUID);
-		moduleName        = config.get(RangerHadoopConstants.AUDITLOG_RANGER_MODULE_ACL_NAME_PROP , RangerHadoopConstants.DEFAULT_RANGER_MODULE_ACL_NAME);
 	}
 
 	@Override
@@ -304,7 +301,7 @@ public class RangerDefaultAuditHandler implements RangerAccessResultProcessor {
 	private String writeObjectAsString(Serializable obj) {
 		String jsonStr = StringUtils.EMPTY;
 		try {
-			jsonStr = JsonUtilsV2.objToJson(obj);
+			jsonStr = AtlasType.toJson(obj);
 		} catch (Exception e) {
 			LOG.error("Cannot create JSON string for object:[" + obj + "]", e);
 		}

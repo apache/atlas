@@ -18,7 +18,6 @@
 
 package org.apache.atlas.notification;
 
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -49,6 +48,7 @@ import org.testng.annotations.Test;
 import java.util.List;
 import java.util.Properties;
 
+import static org.apache.atlas.repository.Constants.DATA_SET_SUPER_TYPE;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
@@ -207,7 +207,7 @@ public class NotificationHookConsumerKafkaTest {
     }
 
     Referenceable createEntity() {
-        final Referenceable entity = new Referenceable(AtlasClient.DATA_SET_SUPER_TYPE);
+        final Referenceable entity = new Referenceable(DATA_SET_SUPER_TYPE);
 
         entity.set(NAME, "db" + randomString());
         entity.set(DESCRIPTION, randomString());
@@ -217,7 +217,7 @@ public class NotificationHookConsumerKafkaTest {
     }
 
     AtlasEntity createV2Entity() {
-        final AtlasEntity entity = new AtlasEntity(AtlasClient.DATA_SET_SUPER_TYPE);
+        final AtlasEntity entity = new AtlasEntity(DATA_SET_SUPER_TYPE);
 
         entity.setAttribute(NAME, "db" + randomString());
         entity.setAttribute(DESCRIPTION, randomString());

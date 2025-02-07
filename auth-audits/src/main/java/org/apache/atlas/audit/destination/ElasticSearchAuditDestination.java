@@ -19,21 +19,15 @@
 
 package org.apache.atlas.audit.destination;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.http.HttpHost;
-import org.apache.http.auth.AuthSchemeProvider;
 import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.config.AuthSchemes;
-import org.apache.http.config.Lookup;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.impl.auth.SPNegoSchemeFactory;
 import org.apache.atlas.audit.model.AuditEventBase;
 import org.apache.atlas.audit.model.AuthzAuditEvent;
 import org.apache.atlas.audit.provider.MiscUtil;
-import org.apache.atlas.authorization.credutils.CredentialsProviderUtil;
-import org.apache.atlas.authorization.credutils.kerberos.KerberosCredentialsProvider;
+import org.apache.atlas.audit.utils.CredentialsProviderUtil;
 import org.elasticsearch.action.admin.indices.open.OpenIndexRequest;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequest;
@@ -44,14 +38,9 @@ import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 import org.elasticsearch.client.RestHighLevelClient;
 
-import javax.security.auth.Subject;
-import javax.security.auth.kerberos.KerberosTicket;
-import java.io.File;
-import java.security.PrivilegedActionException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -78,7 +67,6 @@ public class ElasticSearchAuditDestination extends AuditDestination {
     private int port;
     private String password;
     private String hosts;
-    private Subject subject;
 
     public ElasticSearchAuditDestination() {
         propPrefix = CONFIG_PREFIX;
@@ -185,21 +173,6 @@ public class ElasticSearchAuditDestination extends AuditDestination {
                 }
             }
         }
-        if (subject != null) {
-            KerberosTicket ticket = CredentialsProviderUtil.getTGT(subject);
-            try {
-                if (new Date().getTime() > ticket.getEndTime().getTime()){
-                    client = null;
-                    CredentialsProviderUtil.ticketExpireTime80 = 0;
-                    newClient();
-                } else if (CredentialsProviderUtil.ticketWillExpire(ticket)) {
-                    subject = CredentialsProviderUtil.login(user, password);
-                }
-            } catch (PrivilegedActionException e) {
-                LOG.error("PrivilegedActionException:", e);
-                throw new RuntimeException(e);
-            }
-        }
         return client;
     }
 
@@ -212,22 +185,12 @@ public class ElasticSearchAuditDestination extends AuditDestination {
                         .<HttpHost>toArray(i -> new HttpHost[i])
         );
         if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password) && !user.equalsIgnoreCase("NONE") && !password.equalsIgnoreCase("NONE")) {
-            if (password.contains("keytab") && new File(password).exists()) {
-                final KerberosCredentialsProvider credentialsProvider =
-                        CredentialsProviderUtil.getKerberosCredentials(user, password);
-                Lookup<AuthSchemeProvider> authSchemeRegistry = RegistryBuilder.<AuthSchemeProvider>create()
-                        .register(AuthSchemes.SPNEGO, new SPNegoSchemeFactory()).build();
-                restClientBuilder.setHttpClientConfigCallback(clientBuilder -> {
-                    clientBuilder.setDefaultCredentialsProvider(credentialsProvider);
-                    clientBuilder.setDefaultAuthSchemeRegistry(authSchemeRegistry);
-                    return clientBuilder;
-                });
-            } else {
-                final CredentialsProvider credentialsProvider =
+
+            final CredentialsProvider credentialsProvider =
                         CredentialsProviderUtil.getBasicCredentials(user, password);
-                restClientBuilder.setHttpClientConfigCallback(clientBuilder ->
+            restClientBuilder.setHttpClientConfigCallback(clientBuilder ->
                         clientBuilder.setDefaultCredentialsProvider(credentialsProvider));
-            }
+
         } else {
             LOG.error("ElasticSearch Credentials not provided!!");
             final CredentialsProvider credentialsProvider = null;
@@ -239,9 +202,6 @@ public class ElasticSearchAuditDestination extends AuditDestination {
 
     private RestHighLevelClient newClient() {
         try {
-            if (StringUtils.isNotBlank(user) && StringUtils.isNotBlank(password) && password.contains("keytab") && new File(password).exists()) {
-                subject = CredentialsProviderUtil.login(user, password);
-            }
             RestClientBuilder restClientBuilder =
                     getRestClientBuilder(hosts, protocol, user, password, port);
             RestHighLevelClient restHighLevelClient = new RestHighLevelClient(restClientBuilder);

@@ -19,20 +19,20 @@
 
 package org.apache.atlas.plugin.model;
 
-import org.apache.htrace.shaded.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.io.Serializable;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 
 public class RangerValidityRecurrence implements Serializable {
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)
     public static class ValidityInterval {
@@ -74,7 +74,7 @@ public class RangerValidityRecurrence implements Serializable {
         }
     }
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.FIELD)
     public static class RecurrenceSchedule {

@@ -64,8 +64,6 @@ import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
-import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.model.TypeCategory.*;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;

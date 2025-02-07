@@ -32,11 +32,6 @@
     <dependencies>
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-client-v1</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-common</artifactId>
         </dependency>
 

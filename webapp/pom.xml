@@ -113,11 +113,6 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-client-v1</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-client-v2</artifactId>
         </dependency>
 
@@ -154,18 +149,6 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>auth-plugin-atlas</artifactId>
             <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-janusgraph-hbase2</artifactId>
-            <version>${project.version}</version>
-            <exclusions>
-              <exclusion>
-                <groupId>org.noggit</groupId>
-                <artifactId>noggit</artifactId>
-              </exclusion>
-            </exclusions>
         </dependency>
 
         <dependency>
@@ -565,12 +548,6 @@
             <artifactId>jackson-core</artifactId>
             <version>${jackson.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-index-repair-tool</artifactId>
-            <version>3.0.0-SNAPSHOT</version>
-            <scope>compile</scope>
-        </dependency>
 
         <dependency>
             <groupId>com.aayushatharva.brotli4j</groupId>
@@ -911,8 +888,8 @@
                     <configFile>${project.parent.basedir}/build-tools/src/main/resources/enunciate.xml</configFile>
                     <enunciateArtifactId/>
                     <docsDir>${project.build.directory}/api/v2/</docsDir>
-                    <source>1.8</source>
-                    <target>1.8</target>
+                    <source>17</source>
+                    <target>17</target>
                     <skipEnunciate>${skipEnunciate}</skipEnunciate>
                 </configuration>
                 <dependencies>

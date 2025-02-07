@@ -18,7 +18,7 @@
 
 package org.apache.atlas.repository.audit;
 
-import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.model.EntityAuditEvent;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;

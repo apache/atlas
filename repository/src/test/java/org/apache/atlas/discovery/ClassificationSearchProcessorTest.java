@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.discovery;
 
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.BasicTestSetup;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -47,6 +46,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.model.discovery.SearchParameters.*;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
@@ -323,7 +323,7 @@ public class ClassificationSearchProcessorTest extends BasicTestSetup {
     private void createDimensionTaggedEntityAndDelete() throws AtlasBaseException {
         AtlasEntity entityToDelete = new AtlasEntity(HIVE_TABLE_TYPE);
         entityToDelete.setAttribute("name", "entity to be deleted");
-        entityToDelete.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "entity.tobedeleted");
+        entityToDelete.setAttribute(QUALIFIED_NAME, "entity.tobedeleted");
 
         List<AtlasClassification> cls = new ArrayList<>();
         cls.add(new AtlasClassification(DIMENSION_CLASSIFICATION));
@@ -341,7 +341,7 @@ public class ClassificationSearchProcessorTest extends BasicTestSetup {
     private void createDimensionalTaggedEntityWithAttr() throws AtlasBaseException {
         AtlasEntity entityToDelete = new AtlasEntity(HIVE_TABLE_TYPE);
         entityToDelete.setAttribute("name", "Entity1");
-        entityToDelete.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "entity.one");
+        entityToDelete.setAttribute(QUALIFIED_NAME, "entity.one");
 
         List<AtlasClassification> cls = new ArrayList<>();
         cls.add(new AtlasClassification(DIMENSIONAL_CLASSIFICATION, new HashMap<String, Object>() {{

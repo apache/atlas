@@ -20,7 +20,7 @@
 package org.apache.atlas.plugin.util;
 
 
-import org.apache.htrace.shaded.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;

@@ -25,8 +25,9 @@ ATLAS_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=%s.log"
 ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_HEAP_OPTS="-Xmx1024m"
-DEFAULT_JVM_OPTS="-Dlogback.configurationFile=atlas-logback.xml -Djava.net.preferIPv4Stack=true -server"
+DEFAULT_JVM_OPTS="-Dlog4j.configuration=atlas-log4j.xml -Djava.net.preferIPv4Stack=true -server"
 JOLOKIA_JVM_OPTS="-javaagent:/opt/apache-atlas/libext/jolokia-jvm-agent.jar=port=7777,host=0.0.0.0"
+ADD_OPENS_JAVA_17_JVM_OPTS="--add-opens java.base/java.lang=ALL-UNNAMED"
 
 def main():
 
@@ -47,11 +48,13 @@ def main():
         jvm_confdir = confdir
         jvm_logdir = logdir
 
+    jvm_opts_list = ADD_OPENS_JAVA_17_JVM_OPTS.split()
+
     #create sys property for conf dirs
     if not is_setup:
-        jvm_opts_list = (ATLAS_LOG_OPTS % (jvm_logdir, "application")).split()
+        jvm_opts_list.extend((ATLAS_LOG_OPTS % (jvm_logdir, "application")).split())
     else:
-        jvm_opts_list = (ATLAS_LOG_OPTS % (jvm_logdir, "atlas_setup")).split()
+        jvm_opts_list.extend((ATLAS_LOG_OPTS % (jvm_logdir, "atlas_setup")).split())
 
     cmd_opts = (ATLAS_COMMAND_OPTS % jvm_atlas_home)
     jvm_opts_list.extend(cmd_opts.split())

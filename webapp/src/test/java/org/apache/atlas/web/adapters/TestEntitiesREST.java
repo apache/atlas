@@ -28,12 +28,12 @@ import static org.apache.atlas.model.discovery.SearchParameters.FilterCriteria.C
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.CUSTOM_ATTRIBUTES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 import static org.apache.atlas.utils.TestLoadModelUtils.createTypesAsNeeded;
 
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.TestUtilsV2;
@@ -814,7 +814,7 @@ public class TestEntitiesREST {
 
         if ( retrievedColumnEntity != null) {
             LOG.info("verifying entity of type {} ", columns.get(0).getTypeName());
-            Assert.assertEquals(columns.get(0).getAttribute(AtlasClient.NAME), retrievedColumnEntity.getAttribute(AtlasClient.NAME));
+            Assert.assertEquals(columns.get(0).getAttribute(NAME), retrievedColumnEntity.getAttribute(NAME));
             Assert.assertEquals(columns.get(0).getAttribute("type"), retrievedColumnEntity.getAttribute("type"));
         }
 
@@ -822,7 +822,7 @@ public class TestEntitiesREST {
             LOG.info("verifying entity of type {} ", tableEntity.getTypeName());
 
             //String
-            Assert.assertEquals(tableEntity.getAttribute(AtlasClient.NAME), retrievedTableEntity.getAttribute(AtlasClient.NAME));
+            Assert.assertEquals(tableEntity.getAttribute(NAME), retrievedTableEntity.getAttribute(NAME));
             //Map
             Assert.assertEquals(tableEntity.getAttribute("parametersMap"), retrievedTableEntity.getAttribute("parametersMap"));
             //enum

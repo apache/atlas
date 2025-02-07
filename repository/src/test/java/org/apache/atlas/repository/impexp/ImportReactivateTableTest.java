@@ -45,7 +45,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 
-import static org.apache.atlas.AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getInputStreamFrom;
 import static org.apache.atlas.repository.impexp.ZipFileResourceTestUtils.getDefaultImportRequest;
 import static org.apache.atlas.utils.TestLoadModelUtils.loadFsModel;
@@ -178,7 +178,7 @@ public class ImportReactivateTableTest extends AtlasTestBase {
         String name = "new_column";
 
         ret.setAttribute("name", name);
-        ret.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, name + REPL_FROM);
+        ret.setAttribute(QUALIFIED_NAME, name + REPL_FROM);
         ret.setAttribute("type", "int");
         ret.setAttribute("comment", name);
 

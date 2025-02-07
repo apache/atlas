@@ -66,9 +66,10 @@ public class EmbeddedServer {
         LinkedBlockingQueue<Runnable> queue         = new LinkedBlockingQueue<>(queueSize);
         int                           minThreads    = AtlasConfiguration.WEBSERVER_MIN_THREADS.getInt();
         int                           maxThreads    = AtlasConfiguration.WEBSERVER_MAX_THREADS.getInt();
+        int                           reservedThreads    = AtlasConfiguration.WEBSERVER_RESERVED_THREADS.getInt();
         long                          keepAliveTime = AtlasConfiguration.WEBSERVER_KEEPALIVE_SECONDS.getLong();
         ThreadPoolExecutor            executor      = new ThreadPoolExecutor(maxThreads, maxThreads, keepAliveTime, TimeUnit.SECONDS, queue);
-        ExecutorThreadPool            pool          = new ExecutorThreadPool(executor, minThreads);
+        ExecutorThreadPool            pool          = new ExecutorThreadPool(executor, reservedThreads);
 
         server = new Server(pool);
 

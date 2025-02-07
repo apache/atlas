@@ -29,8 +29,8 @@
     <artifactId>auth-agents-common</artifactId>
 
     <properties>
-        <maven.compiler.source>8</maven.compiler.source>
-        <maven.compiler.target>8</maven.compiler.target>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
 
         <jackson-jaxrs.version>1.9.13</jackson-jaxrs.version>
         <guava.version>31.1-jre</guava.version>
@@ -96,7 +96,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.4</version>
+                <version>${maven-shade-plugin}</version>
                 <executions>
                     <execution>
                         <phase>package</phase>

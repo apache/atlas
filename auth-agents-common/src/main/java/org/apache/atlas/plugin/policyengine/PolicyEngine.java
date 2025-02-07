@@ -35,7 +35,7 @@ import org.apache.atlas.plugin.policyevaluator.RangerPolicyEvaluator;
 import org.apache.atlas.plugin.policyresourcematcher.RangerPolicyResourceMatcher;
 import org.apache.atlas.plugin.resourcematcher.RangerAbstractResourceMatcher;
 import org.apache.atlas.plugin.service.RangerAuthContext;
-import org.apache.atlas.plugin.store.EmbeddedServiceDefsUtil;
+import org.apache.atlas.plugin.store.ServiceDefsUtil;
 import org.apache.atlas.plugin.util.RangerPerfTracer;
 import org.apache.atlas.plugin.util.RangerPolicyDeltaUtil;
 import org.apache.atlas.plugin.util.RangerReadWriteLock;
@@ -704,7 +704,7 @@ public class PolicyEngine {
                         List<String>                      resourceValues  = entry.getValue();
                         RangerPolicy.RangerPolicyResource policyResource  = new RangerPolicy.RangerPolicyResource();
                         policyResource.setIsExcludes(false);
-                        policyResource.setIsRecursive(EmbeddedServiceDefsUtil.isRecursiveEnabled(serviceDef, resourceDefName));
+                        policyResource.setIsRecursive(ServiceDefsUtil.isRecursiveEnabled(serviceDef, resourceDefName));
                         policyResource.setValues(resourceValues);
                         policyResources.put(resourceDefName, policyResource);
                     }

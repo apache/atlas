@@ -19,6 +19,7 @@
 
 package org.apache.atlas.plugin.util;
 
+import org.apache.atlas.authorization.utils.RangerAtlasConstants;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
@@ -29,8 +30,7 @@ import org.apache.atlas.plugin.model.RangerServiceDef.RangerAccessTypeDef;
 import org.apache.atlas.plugin.model.RangerServiceDef.RangerDataMaskTypeDef;
 import org.apache.atlas.plugin.model.RangerServiceDef.RangerResourceDef;
 import org.apache.atlas.plugin.policyengine.RangerPluginContext;
-import org.apache.atlas.plugin.store.AbstractServiceStore;
-import org.apache.atlas.plugin.store.EmbeddedServiceDefsUtil;
+import org.apache.atlas.plugin.store.ServiceDefsUtil;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,7 +48,7 @@ public class ServiceDefUtil {
         if(serviceDef != null) {
             Configuration config = pluginContext != null ? pluginContext.getConfig() : null;
             boolean enableDenyAndExceptionsInPoliciesHiddenOption = config == null || config.getBoolean("ranger.servicedef.enableDenyAndExceptionsInPolicies", true);
-            boolean defaultValue = enableDenyAndExceptionsInPoliciesHiddenOption || StringUtils.equalsIgnoreCase(serviceDef.getName(), EmbeddedServiceDefsUtil.EMBEDDED_SERVICEDEF_TAG_NAME);
+            boolean defaultValue = enableDenyAndExceptionsInPoliciesHiddenOption || StringUtils.equalsIgnoreCase(serviceDef.getName(), ServiceDefsUtil.EMBEDDED_SERVICEDEF_TAG_NAME);
 
             ret = ServiceDefUtil.getBooleanValue(serviceDef.getOptions(), RangerServiceDef.OPTION_ENABLE_DENY_AND_EXCEPTIONS_IN_POLICIES, defaultValue);
         }
@@ -196,7 +196,7 @@ public class ServiceDefUtil {
 
             if (CollectionUtils.isNotEmpty(accessTypeDefs)) {
 
-                String prefix = componentType + AbstractServiceStore.COMPONENT_ACCESSTYPE_SEPARATOR;
+                String prefix = componentType + RangerAtlasConstants.COMPONENT_ACCESSTYPE_SEPARATOR;
 
                 List<RangerServiceDef.RangerAccessTypeDef> unneededAccessTypeDefs = null;
 
@@ -232,7 +232,7 @@ public class ServiceDefUtil {
                             accessTypeDef.setImpliedGrants(newImpliedGrants);
 
                         }
-                    } else if (StringUtils.contains(accessType, AbstractServiceStore.COMPONENT_ACCESSTYPE_SEPARATOR)) {
+                    } else if (StringUtils.contains(accessType, RangerAtlasConstants.COMPONENT_ACCESSTYPE_SEPARATOR)) {
                         if(unneededAccessTypeDefs == null) {
                             unneededAccessTypeDefs = new ArrayList<>();
                         }

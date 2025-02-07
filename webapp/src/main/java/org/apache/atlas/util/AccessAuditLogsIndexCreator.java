@@ -17,7 +17,7 @@
 package org.apache.atlas.util;
 
 import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.authorization.credutils.CredentialsProviderUtil;
+import org.apache.atlas.audit.utils.CredentialsProviderUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;

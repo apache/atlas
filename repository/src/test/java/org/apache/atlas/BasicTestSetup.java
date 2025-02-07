@@ -41,6 +41,8 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.utils.TestLoadModelUtils.loadModelFromJson;
 import static org.testng.Assert.fail;
 
@@ -335,7 +337,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
     AtlasEntity database(String name, String description, String owner, String locationUri, String... traitNames) {
         AtlasEntity database = new AtlasEntity(DATABASE_TYPE);
         database.setAttribute("name", name);
-        database.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "qualified:" + name);
+        database.setAttribute(QUALIFIED_NAME, "qualified:" + name);
         database.setAttribute("description", description);
         database.setAttribute("userDescription", description);
         database.setAttribute("owner", owner);
@@ -350,7 +352,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
     protected AtlasEntity storageDescriptor(String location, String inputFormat, String outputFormat, boolean compressed, List<AtlasEntity> columns) {
         AtlasEntity storageDescriptor = new AtlasEntity(STORAGE_DESC_TYPE);
         storageDescriptor.setAttribute("location", location);
-        storageDescriptor.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "qualified:" + location);
+        storageDescriptor.setAttribute(QUALIFIED_NAME, "qualified:" + location);
         storageDescriptor.setAttribute("inputFormat", inputFormat);
         storageDescriptor.setAttribute("outputFormat", outputFormat);
         storageDescriptor.setAttribute("compressed", compressed);
@@ -362,7 +364,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
     protected AtlasEntity column(String name, String dataType, String comment, String... traitNames) {
         AtlasEntity column = new AtlasEntity(COLUMN_TYPE);
         column.setAttribute("name", name);
-        column.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "qualified:" + name);
+        column.setAttribute(QUALIFIED_NAME, "qualified:" + name);
         column.setAttribute("type", dataType);
         column.setAttribute("comment", comment);
         column.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
@@ -372,12 +374,12 @@ public abstract class BasicTestSetup extends AtlasTestBase {
 
     protected AtlasEntity table(String name, String description, AtlasEntity db, AtlasEntity sd, String owner, String tableType,
                                 List<AtlasEntity> columns, String... traitNames) {
-        String dbName      = db.getAttribute(AtlasClient.NAME).toString();
+        String dbName      = db.getAttribute(NAME).toString();
         String clusterName = db.getAttribute("clusterName").toString();
 
         AtlasEntity table = new AtlasEntity(HIVE_TABLE_TYPE);
         table.setAttribute("name", name);
-        table.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName + "." + name);
+        table.setAttribute(QUALIFIED_NAME, dbName + "." + name);
         table.setAttribute("description", description);
         table.setAttribute("owner", owner);
         table.setAttribute("tableType", tableType);
@@ -400,14 +402,14 @@ public abstract class BasicTestSetup extends AtlasTestBase {
             table.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
         }
 
-        sd.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName + "." + name + "@" + clusterName + "_storage");
+        sd.setAttribute(QUALIFIED_NAME, dbName + "." + name + "@" + clusterName + "_storage");
 
         AtlasObjectId tableId = getAtlasObjectId(table);
 
         sd.setAttribute("table", tableId);
 
         for (AtlasEntity column : columns) {
-            column.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, dbName + "." + name + "." + column.getAttribute(AtlasClient.NAME).toString() + "@" + clusterName);
+            column.setAttribute(QUALIFIED_NAME, dbName + "." + name + "." + column.getAttribute(NAME).toString() + "@" + clusterName);
             column.setAttribute("table", tableId);
         }
 
@@ -432,7 +434,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
                                       String queryText, String queryPlan, String queryId, String queryGraph, String... traitNames) {
         AtlasEntity process = new AtlasEntity(HIVE_PROCESS_TYPE);
         process.setAttribute("name", name);
-        process.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
+        process.setAttribute(QUALIFIED_NAME, name);
         process.setAttribute("description", description);
         process.setAttribute("userName", user);
         process.setAttribute("startTime", System.currentTimeMillis());
@@ -455,7 +457,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
     AtlasEntity view(String name, AtlasEntity dbId, List<AtlasEntity> inputTables, String... traitNames) {
         AtlasEntity view = new AtlasEntity(VIEW_TYPE);
         view.setAttribute("name", name);
-        view.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
+        view.setAttribute(QUALIFIED_NAME, name);
         view.setAttribute("userName", "testUser");
         view.setAttribute("startTime", System.currentTimeMillis());
         view.setAttribute("endTime", System.currentTimeMillis() + 10000);
@@ -474,8 +476,8 @@ public abstract class BasicTestSetup extends AtlasTestBase {
 
     AtlasEntity datasetSubType(final String name, String owner) {
         AtlasEntity datasetSubType = new AtlasEntity(DATASET_SUBTYPE);
-        datasetSubType.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
-        datasetSubType.setAttribute(AtlasClient.NAME, name);
+        datasetSubType.setAttribute(QUALIFIED_NAME, name);
+        datasetSubType.setAttribute(NAME, name);
         datasetSubType.setAttribute("owner", owner);
 
         return datasetSubType;
@@ -484,7 +486,7 @@ public abstract class BasicTestSetup extends AtlasTestBase {
     public EntityMutationResponse createDummyEntity(String name, String type, String... traitNames) throws AtlasBaseException {
         AtlasEntity entity = new AtlasEntity(type);
         entity.setAttribute("name", name);
-        entity.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, name);
+        entity.setAttribute(QUALIFIED_NAME, name);
         entity.setClassifications(Stream.of(traitNames).map(AtlasClassification::new).collect(Collectors.toList()));
         EntityMutationResponse resp = entityStore.createOrUpdate(new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(entity)), false);
         return resp;

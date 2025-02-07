@@ -18,14 +18,11 @@
  */
 package org.apache.atlas.audit.provider;
 
-import com.google.gson.GsonBuilder;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.atlas.audit.model.AuditEventBase;
 import org.apache.atlas.audit.model.AuthzAuditEvent;
 
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.TrustManagerFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -40,22 +37,6 @@ public abstract class BaseAuditHandler implements AuditHandler {
 	private static final Log LOG = LogFactory.getLog(BaseAuditHandler.class);
 
 	static final String AUDIT_LOG_FAILURE_REPORT_MIN_INTERVAL_PROP = "xasecure.audit.log.failure.report.min.interval.ms";
-
-	public static final String RANGER_POLICYMGR_CLIENT_KEY_FILE                  = "xasecure.policymgr.clientssl.keystore";
-	public static final String RANGER_POLICYMGR_CLIENT_KEY_FILE_TYPE             = "xasecure.policymgr.clientssl.keystore.type";
-	public static final String RANGER_POLICYMGR_CLIENT_KEY_FILE_CREDENTIAL       = "xasecure.policymgr.clientssl.keystore.credential.file";
-	public static final String RANGER_POLICYMGR_CLIENT_KEY_FILE_CREDENTIAL_ALIAS = "sslKeyStore";
-	public static final String RANGER_POLICYMGR_CLIENT_KEY_FILE_TYPE_DEFAULT     = "jks";
-
-	public static final String RANGER_POLICYMGR_TRUSTSTORE_FILE                  = "xasecure.policymgr.clientssl.truststore";
-	public static final String RANGER_POLICYMGR_TRUSTSTORE_FILE_TYPE             = "xasecure.policymgr.clientssl.truststore.type";
-	public static final String RANGER_POLICYMGR_TRUSTSTORE_FILE_CREDENTIAL       = "xasecure.policymgr.clientssl.truststore.credential.file";
-	public static final String RANGER_POLICYMGR_TRUSTSTORE_FILE_CREDENTIAL_ALIAS = "sslTrustStore";
-	public static final String RANGER_POLICYMGR_TRUSTSTORE_FILE_TYPE_DEFAULT     = "jks";
-
-	public static final String RANGER_SSL_KEYMANAGER_ALGO_TYPE					 = KeyManagerFactory.getDefaultAlgorithm();
-	public static final String RANGER_SSL_TRUSTMANAGER_ALGO_TYPE				 = TrustManagerFactory.getDefaultAlgorithm();
-	public static final String RANGER_SSL_CONTEXT_ALGO_TYPE					     = "TLS";
 
 	public static final String PROP_CONFIG = "config";
 
@@ -74,9 +55,6 @@ public abstract class BaseAuditHandler implements AuditHandler {
 
 	protected String providerName = null;
 	protected String parentPath = null;
-
-	protected int failedRetryTimes = 3;
-	protected int failedRetrySleep = 3 * 1000;
 
 	int errorLogIntervalMS = 30 * 1000; // Every 30 seconds
 	long lastErrorLogMS = 0;
@@ -129,14 +107,6 @@ public abstract class BaseAuditHandler implements AuditHandler {
 			}
 		}
 		LOG.info("providerName=" + getName());
-
-		try {
-			new GsonBuilder().setDateFormat("yyyyMMdd-HH:mm:ss.SSS-Z").create();
-		} catch (Throwable excp) {
-			LOG.warn(
-					"Log4jAuditProvider.init(): failed to create GsonBuilder object. events will be formated using toString(), instead of Json",
-					excp);
-		}
 
 		mLogFailureReportMinIntervalInMs = MiscUtil.getIntProperty(props,
 				AUDIT_LOG_FAILURE_REPORT_MIN_INTERVAL_PROP, 60 * 1000);

@@ -57,7 +57,7 @@ import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.OW
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.QUALIFIED_NAME;
 
 @Component
-@EnableConditional(property = "atlas.enable.entity.notifications")
+@EnableConditional(property = "atlas.enable.entity.notifications", isDefault = true)
 public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     private static final Logger LOG = LoggerFactory.getLogger(EntityNotificationListenerV2.class);
 

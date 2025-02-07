@@ -19,10 +19,11 @@
 package org.apache.atlas.web.util;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.atlas.AtlasClient;
 import org.testng.annotations.Test;
 
 import javax.ws.rs.core.Response;
+
+import static org.apache.atlas.repository.Constants.ERROR;
 import static org.testng.Assert.*;
 
 @Test
@@ -35,6 +36,6 @@ public class ServletsTest {
         assertNotNull(response);
         ObjectNode responseEntity = (ObjectNode) response.getEntity();
         assertNotNull(responseEntity);
-        assertNotNull(responseEntity.get(AtlasClient.ERROR));
+        assertNotNull(responseEntity.get(ERROR));
     }
 }

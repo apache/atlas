@@ -18,7 +18,6 @@
 package org.apache.atlas.discovery;
 
 import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.BasicTestSetup;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.TestModules;
@@ -46,6 +45,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.apache.atlas.model.discovery.SearchParameters.*;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.testng.Assert.*;
 import static org.testng.Assert.assertNotNull;
 
@@ -725,7 +725,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
         for (String nameStr : nameList) {
             AtlasEntity entityToDelete = new AtlasEntity(HIVE_TABLE_TYPE);
             entityToDelete.setAttribute("name", nameStr);
-            entityToDelete.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, "qualifiedName"+System.currentTimeMillis());
+            entityToDelete.setAttribute(QUALIFIED_NAME, "qualifiedName"+System.currentTimeMillis());
 
             //create entity
             EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(entityToDelete)), false);
@@ -737,7 +737,7 @@ public class AtlasDiscoveryServiceTest extends BasicTestSetup {
             qfStr = qfStr.replace("name","qf");
             AtlasEntity entityToDelete = new AtlasEntity(HIVE_TABLE_TYPE);
             entityToDelete.setAttribute("name", "name"+System.currentTimeMillis());
-            entityToDelete.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, qfStr);
+            entityToDelete.setAttribute(QUALIFIED_NAME, qfStr);
 
             //create entity
             EntityMutationResponse response = entityStore.createOrUpdate(new AtlasEntityStream(new AtlasEntity.AtlasEntitiesWithExtInfo(entityToDelete)), false);

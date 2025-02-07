@@ -19,7 +19,6 @@
 package org.apache.atlas.web.util;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.LocalServletRequest;
@@ -46,6 +45,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import org.springframework.web.util.UriUtils;
+
+import static org.apache.atlas.repository.Constants.ERROR;
 
 /**
  * Utility functions for dealing with servlets.
@@ -156,7 +157,7 @@ public final class Servlets {
 
     public static Response getErrorResponse(String message, Response.Status status) {
         Object     errorEntity = escapeJsonString(message);
-        ObjectNode errorJson   = AtlasJson.createV1ObjectNode(AtlasClient.ERROR, errorEntity);
+        ObjectNode errorJson   = AtlasJson.createV1ObjectNode(ERROR, errorEntity);
 
         return Response.status(status).entity(errorJson).type(JSON_MEDIA_TYPE).build();
     }

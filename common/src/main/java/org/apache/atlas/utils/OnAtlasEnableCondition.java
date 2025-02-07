@@ -30,18 +30,21 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 import org.springframework.core.type.AnnotationMetadata;
 
+import java.util.Map;
+
 public class OnAtlasEnableCondition implements Condition {
     private final Logger LOG = LoggerFactory.getLogger(OnAtlasEnableCondition.class);
 
     @Override
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         boolean matches = false;
-        String propertyName = (String) metadata.getAnnotationAttributes(EnableConditional.class.getName()).get("property");
+        Map<String, Object> attributes = metadata.getAnnotationAttributes(EnableConditional.class.getName());
+        String propertyName = (String) attributes.get("property");
         if (metadata instanceof AnnotatedTypeMetadata) {
 
             try {
                 Configuration configuration = ApplicationProperties.get();
-                boolean enabled = configuration.getBoolean(propertyName, true);
+                boolean enabled = configuration.getBoolean(propertyName, (boolean) attributes.get("isDefault"));
                 return enabled;
             } catch (AtlasException e) {
                 LOG.error("Unable to load atlas properties. Dependent bean configuration may fail");
