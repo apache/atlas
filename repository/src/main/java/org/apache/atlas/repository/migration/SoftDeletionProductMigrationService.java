@@ -92,7 +92,7 @@ public class SoftDeletionProductMigrationService {
     public boolean deleteEdgeForActiveProduct(AtlasVertex productVertex) {
         boolean isCommitRequired = false;
         try {
-            Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH, EDGE_LABELS_FOR_HARD_DELETION).iterator();
+            Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH, (String[]) EDGE_LABELS_FOR_HARD_DELETION.toArray(new String[0])).iterator();
 
             if (existingEdges == null || !existingEdges.hasNext()) {
                 return isCommitRequired;
@@ -120,7 +120,7 @@ public class SoftDeletionProductMigrationService {
         boolean isCommitRequired = false;
         try {
             Long updatedTime = productVertex.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
-            Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH, EDGE_LABELS_FOR_HARD_DELETION).iterator();
+            Iterator<AtlasEdge> existingEdges = productVertex.getEdges(AtlasEdgeDirection.BOTH, (String[]) EDGE_LABELS_FOR_HARD_DELETION.toArray(new String[0])).iterator();
 
             if (existingEdges == null || !existingEdges.hasNext()) {
                 return isCommitRequired;

@@ -1977,7 +1977,7 @@ public class EntityGraphMapper {
 
            if ((element instanceof AtlasEdge)) {
                AtlasEdge edge = (AtlasEdge) element;
-               if ((removedElements.contains(element)) && (Arrays.asList(EDGE_LABELS_FOR_HARD_DELETION).contains(edge.getLabel()))) {
+               if ((removedElements.contains(element)) && ((EDGE_LABELS_FOR_HARD_DELETION).contains(edge.getLabel()))) {
                    continue;
                }
                else {
