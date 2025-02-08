@@ -421,11 +421,11 @@
             <artifactId>aspectjweaver</artifactId>
             <version>1.8.9</version>
         </dependency>
-<!--        <dependency>-->
-<!--            <groupId>org.apache.atlas</groupId>-->
-<!--            <artifactId>atlas-dashboardv2</artifactId>-->
-<!--            <type>war</type>-->
-<!--        </dependency>-->
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-dashboardv2</artifactId>
+            <type>war</type>
+        </dependency>
         <dependency>
             <groupId>org.easymock</groupId>
             <artifactId>easymock</artifactId>
