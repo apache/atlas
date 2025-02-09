@@ -18,22 +18,11 @@ package com.couchbase.atlas.connector.entities;
 
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.type.AtlasTypeUtil;
 
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import java.util.UUID;
 
 public class CouchbaseCollection extends CouchbaseAtlasEntity<CouchbaseCollection> {
-
     private CouchbaseScope scope;
 
     private long documentsAnalyzed;
@@ -48,6 +37,21 @@ public class CouchbaseCollection extends CouchbaseAtlasEntity<CouchbaseCollectio
         AtlasEntity entity = super.atlasEntity(atlas);
         entity.setRelationshipAttribute("scope", scope.atlasEntity(atlas));
         return entity;
+    }
+
+    @Override
+    protected String qualifiedName() {
+        return String.format("%s/%s", scope.qualifiedName(), name());
+    }
+
+    @Override
+    public String atlasTypeName() {
+        return "couchbase_collection";
+    }
+
+    @Override
+    public UUID id() {
+        return UUID.nameUUIDFromBytes(String.format("%s:%s:%s", atlasTypeName(), scope().id().toString(), name()).getBytes(Charset.defaultCharset()));
     }
 
     @Override
@@ -67,21 +71,6 @@ public class CouchbaseCollection extends CouchbaseAtlasEntity<CouchbaseCollectio
     public CouchbaseCollection incrementAnalyzedDocuments() {
         this.documentsAnalyzed++;
         return this;
-    }
-
-    @Override
-    protected String qualifiedName() {
-        return String.format("%s/%s", scope.qualifiedName(), name());
-    }
-
-    @Override
-    public String atlasTypeName() {
-        return "couchbase_collection";
-    }
-
-    @Override
-    public UUID id() {
-        return UUID.nameUUIDFromBytes(String.format("%s:%s:%s", atlasTypeName(), scope().id().toString(), name()).getBytes(Charset.defaultCharset()));
     }
 
     public CouchbaseScope scope() {

@@ -22,10 +22,10 @@ import java.util.Map;
 
 public class AtlasConfig {
     private static final Map<String, String> ENV    = System.getenv();
-    private static       AtlasClientV2       client = null;
+    private static       AtlasClientV2       client;
 
     public static String[] urls() {
-        return new String[] { ENV.getOrDefault("ATLAS_URL", "http://localhost:21000") };
+        return new String[] {ENV.getOrDefault("ATLAS_URL", "http://localhost:21000")};
     }
 
     public static String username() {
@@ -38,6 +38,10 @@ public class AtlasConfig {
 
     public static String[] auth() {
         return new String[] {username(), password()};
+    }
+
+    private AtlasConfig() {
+        // to block instantiation
     }
 
     public static AtlasClientV2 client() {
