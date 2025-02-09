@@ -26,7 +26,6 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.SSLUtil;
 import org.apache.commons.cli.CommandLine;
@@ -57,29 +56,28 @@ import java.util.function.Consumer;
 public class RepairIndex {
     private static final Logger LOG = LoggerFactory.getLogger(RepairIndex.class);
 
-    private static final int EXIT_CODE_SUCCESS = 0;
-    private static final int EXIT_CODE_FAILED = 1;
-    private static final int  MAX_TRIES_ON_FAILURE = 3;
-
-    private static final String INDEX_NAME_VERTEX_INDEX = "vertex_index";
-    private static final String INDEX_NAME_FULLTEXT_INDEX = "fulltext_index";
-    private static final String INDEX_NAME_EDGE_INDEX = "edge_index";
-    private static final String DEFAULT_ATLAS_URL = "http://localhost:21000/";
+    private static final int EXIT_CODE_SUCCESS                      = 0;
+    private static final int EXIT_CODE_FAILED                       = 1;
+    private static final int MAX_TRIES_ON_FAILURE                   = 3;
+    private static final String INDEX_NAME_VERTEX_INDEX             = "vertex_index";
+    private static final String INDEX_NAME_FULLTEXT_INDEX           = "fulltext_index";
+    private static final String INDEX_NAME_EDGE_INDEX               = "edge_index";
+    private static final String DEFAULT_ATLAS_URL                   = "http://localhost:21000/";
     private static final String APPLICATION_PROPERTY_ATLAS_ENDPOINT = "atlas.rest.address";
 
-    private static JanusGraph graph;
+    private static JanusGraph    graph;
     private static AtlasClientV2 atlasClientV2;
-    private static boolean isSelectiveRestore;
+    private static boolean       isSelectiveRestore;
 
     public static void main(String[] args) {
         int exitCode = EXIT_CODE_FAILED;
         LOG.info("Started index repair");
 
         try {
-            CommandLine cmd = getCommandLine(args);
-            String guid = cmd.getOptionValue("g");
+            CommandLine cmd  = getCommandLine(args);
+            String      guid = cmd.getOptionValue("g");
 
-            if(guid != null && !guid.isEmpty()){
+            if (guid != null && !guid.isEmpty()) {
                 isSelectiveRestore = true;
                 String uid = cmd.getOptionValue("u");
                 String pwd = cmd.getOptionValue("p");
@@ -108,7 +106,7 @@ public class RepairIndex {
 
         if (isSelectiveRestore) {
             repairIndex.restoreSelective(guid);
-        }else{
+        } else {
             repairIndex.restoreAll();
         }
 
@@ -131,24 +129,24 @@ public class RepairIndex {
     }
 
     private static String[] getIndexes() {
-        return new String[]{ INDEX_NAME_VERTEX_INDEX, INDEX_NAME_EDGE_INDEX, INDEX_NAME_FULLTEXT_INDEX};
+        return new String[] {INDEX_NAME_VERTEX_INDEX, INDEX_NAME_EDGE_INDEX, INDEX_NAME_FULLTEXT_INDEX};
     }
 
     private static void setupAtlasClient(String uid, String pwd) throws AtlasException {
         String[] atlasEndpoint = getAtlasRESTUrl();
         if (atlasEndpoint == null || atlasEndpoint.length == 0) {
-            atlasEndpoint = new String[]{DEFAULT_ATLAS_URL};
+            atlasEndpoint = new String[] {DEFAULT_ATLAS_URL};
         }
-        atlasClientV2 = getAtlasClientV2(atlasEndpoint, new String[]{uid, pwd});
+        atlasClientV2 = getAtlasClientV2(atlasEndpoint, new String[] {uid, pwd});
     }
 
     private void restoreAll() throws Exception {
-        for (String indexName : getIndexes()){
+        for (String indexName : getIndexes()) {
             displayCrlf("Restoring: " + indexName);
             long startTime = System.currentTimeMillis();
 
-            ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
-            JanusGraphIndex index = mgmt.getGraphIndex(indexName);
+            ManagementSystem mgmt  = (ManagementSystem) graph.openManagement();
+            JanusGraphIndex  index = mgmt.getGraphIndex(indexName);
             mgmt.updateIndex(index, SchemaAction.REINDEX).get();
             mgmt.commit();
 
@@ -159,15 +157,14 @@ public class RepairIndex {
         }
     }
 
-
-    private void restoreSelective(String guid) throws Exception  {
+    private void restoreSelective(String guid) throws Exception {
         Set<String> referencedGUIDs = new HashSet<>(getEntityAndReferenceGuids(guid));
-        displayCrlf("processing referencedGuids => "+ referencedGUIDs);
+        displayCrlf("processing referencedGuids => " + referencedGUIDs);
 
-        StandardJanusGraph janusGraph = (StandardJanusGraph) graph;
-        IndexSerializer indexSerializer = janusGraph.getIndexSerializer();
+        StandardJanusGraph janusGraph      = (StandardJanusGraph) graph;
+        IndexSerializer    indexSerializer = janusGraph.getIndexSerializer();
 
-        for (String indexName : getIndexes()){
+        for (String indexName : getIndexes()) {
             displayCrlf("Restoring: " + indexName);
             long startTime = System.currentTimeMillis();
             reindexVertex(indexName, indexSerializer, referencedGUIDs);
@@ -179,19 +176,19 @@ public class RepairIndex {
 
     private static void reindexVertex(String indexName, IndexSerializer indexSerializer, Set<String> entityGUIDs) throws Exception {
         Map<String, Map<String, List<IndexEntry>>> documentsPerStore = new java.util.HashMap<>();
-        ManagementSystem mgmt = (ManagementSystem) graph.openManagement();
-        StandardJanusGraphTx tx = mgmt.getWrappedTx();
-        BackendTransaction mutator = tx.getTxHandle();
-        JanusGraphIndex index = mgmt.getGraphIndex(indexName);
-        MixedIndexType indexType = (MixedIndexType) mgmt.getSchemaVertex(index).asIndexType();
+        ManagementSystem                           mgmt              = (ManagementSystem) graph.openManagement();
+        StandardJanusGraphTx                       tx                = mgmt.getWrappedTx();
+        BackendTransaction                         mutator           = tx.getTxHandle();
+        JanusGraphIndex                            index             = mgmt.getGraphIndex(indexName);
+        MixedIndexType                             indexType         = (MixedIndexType) mgmt.getSchemaVertex(index).asIndexType();
 
-        for (String entityGuid : entityGUIDs){
+        for (String entityGuid : entityGUIDs) {
             for (int attemptCount = 1; attemptCount <= MAX_TRIES_ON_FAILURE; attemptCount++) {
                 AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entityGuid);
                 try {
                     indexSerializer.reindexElement(vertex.getWrappedElement(), indexType, documentsPerStore);
                     break;
-                }catch (Exception e){
+                } catch (Exception e) {
                     displayCrlf("Exception: " + e.getMessage());
                     displayCrlf("Pausing before retry..");
                     Thread.sleep(2000 * attemptCount);
@@ -204,8 +201,8 @@ public class RepairIndex {
     private static Set<String> getEntityAndReferenceGuids(String guid) throws Exception {
         Set<String> set = new HashSet<>();
         set.add(guid);
-        AtlasEntityWithExtInfo entity = atlasClientV2.getEntityByGuid(guid);
-        Map<String, AtlasEntity> map = entity.getReferredEntities();
+        AtlasEntityWithExtInfo   entity = atlasClientV2.getEntityByGuid(guid);
+        Map<String, AtlasEntity> map    = entity.getReferredEntities();
         if (map == null || map.isEmpty()) {
             return set;
         }
@@ -230,21 +227,19 @@ public class RepairIndex {
     }
 
     private static String[] getAtlasRESTUrl() {
-        Configuration atlasConf = null;
+        Configuration atlasConf;
         try {
             atlasConf = ApplicationProperties.get();
             return atlasConf.getStringArray(APPLICATION_PROPERTY_ATLAS_ENDPOINT);
         } catch (AtlasException e) {
-            return new String[]{DEFAULT_ATLAS_URL};
+            return new String[] {DEFAULT_ATLAS_URL};
         }
     }
 
     private static AtlasClientV2 getAtlasClientV2(String[] atlasEndpoint, String[] uidPwdFromCommandLine) throws AtlasException {
         AtlasClientV2 atlasClientV2;
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            String[] uidPwd = (uidPwdFromCommandLine[0] == null || uidPwdFromCommandLine[1] == null)
-                    ? AuthenticationUtil.getBasicAuthenticationInput()
-                    : uidPwdFromCommandLine;
+            String[] uidPwd = (uidPwdFromCommandLine[0] == null || uidPwdFromCommandLine[1] == null) ? AuthenticationUtil.getBasicAuthenticationInput() : uidPwdFromCommandLine;
 
             atlasClientV2 = new AtlasClientV2(atlasEndpoint, uidPwd);
         } else {
