@@ -1085,8 +1085,7 @@ public abstract class DeleteHandlerV1 {
     }
 
     private boolean isHardDeleteProductRelationship(final AtlasEdge edge) {
-//        return EDGE_LABELS_FOR_HARD_DELETION.contains(edge.getLabel());
-        return Arrays.asList(EDGE_LABELS_FOR_HARD_DELETION).contains(edge.getLabel());
+        return EDGE_LABELS_FOR_HARD_DELETION.contains(edge.getLabel());
     }
 
     private void addToPropagatedClassificationNames(AtlasVertex entityVertex, String classificationName) {

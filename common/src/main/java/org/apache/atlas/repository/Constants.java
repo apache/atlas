@@ -320,8 +320,7 @@ public final class Constants {
      * Edge labels for data product relations which are hard deleted
      */
 
-    public static final String[] EDGE_LABELS_FOR_HARD_DELETION = { OUTPUT_PORT_PRODUCT_EDGE_LABEL, INPUT_PORT_PRODUCT_EDGE_LABEL, TERM_ASSIGNMENT_LABEL };
-
+    public static final Set<String> EDGE_LABELS_FOR_HARD_DELETION = new HashSet<>(Arrays.asList( OUTPUT_PORT_PRODUCT_EDGE_LABEL, INPUT_PORT_PRODUCT_EDGE_LABEL, TERM_ASSIGNMENT_LABEL ));
     /*
      * elasticsearch attributes
      */
