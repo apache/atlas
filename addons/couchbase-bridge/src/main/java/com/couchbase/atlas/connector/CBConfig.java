@@ -37,7 +37,9 @@ public class CBConfig {
     private static       Client              mockDcpClient;
     private static       Cluster             cluster;
 
-
+    private CBConfig() {
+        // to block instantiation
+    }
 
     public static String address() {
         return ENV.getOrDefault("CB_CLUSTER", "couchbase://localhost");
@@ -106,7 +108,7 @@ public class CBConfig {
 
         Client.Builder builder = Client.builder()
                 .collectionsAware(true)
-                .seedNodes(String.format("%s:%s",address(),dcpPort()))
+                .seedNodes(String.format("%s:%s", address(), dcpPort()))
                 .connectionString(address())
                 .credentials(username(), password());
 

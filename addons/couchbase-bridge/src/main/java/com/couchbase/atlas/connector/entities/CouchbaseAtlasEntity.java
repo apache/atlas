@@ -19,7 +19,6 @@ package com.couchbase.atlas.connector.entities;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.typedef.AtlasStructDef;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -32,23 +31,28 @@ import java.util.UUID;
  * The class uses "Self-Builder" pattern:
  * 1. First, create the "builder" instance of the class
  * 2. Populate the identifying fields of the class (check the `qualifiedName` method of the entity for the list)
- *          (all setters return the instance just as a Builder would)
+ * (all setters return the instance just as a Builder would)
  * 3. Call `get()` method to resolve the instance and replace it with previously loaded from Atlas data (if present)
- *
+ * <p>
  * Example:
  * ```java
- *  clusterEntity = new CouchbaseCluster()
- *      .name(CBConfig.address())
- *      .url(CBConfig.address())
- *      .get();
+ * clusterEntity = new CouchbaseCluster()
+ * .name(CBConfig.address())
+ * .url(CBConfig.address())
+ * .get();
  * ```
  *
  * @param <E> extending class
  */
 public abstract class CouchbaseAtlasEntity<E extends CouchbaseAtlasEntity<?>> {
-    private static final Map<Class, Map<String, AtlasEntity>> ENTITY_BY_TYPE_AND_ID = Collections.synchronizedMap(new HashMap<>());
-    private static final Map<Class, Map<String, CouchbaseAtlasEntity>> MODEL_BY_TYPE_AND_ID = Collections.synchronizedMap(new HashMap<>());
-    private String name;
+    private static final Map<Class, Map<String, AtlasEntity>>          ENTITY_BY_TYPE_AND_ID = Collections.synchronizedMap(new HashMap<>());
+    private static final Map<Class, Map<String, CouchbaseAtlasEntity>> MODEL_BY_TYPE_AND_ID  = Collections.synchronizedMap(new HashMap<>());
+    private              String                                        name;
+
+    public static void dropCache() {
+        ENTITY_BY_TYPE_AND_ID.clear();
+        MODEL_BY_TYPE_AND_ID.clear();
+    }
 
     public String name() {
         return name;
@@ -72,9 +76,7 @@ public abstract class CouchbaseAtlasEntity<E extends CouchbaseAtlasEntity<?>> {
                         cache(load(atlas)
                                 .orElseGet(() ->
                                         atlasEntity()
-                                        .orElseGet(() -> new AtlasEntity(atlasTypeName())))
-                        )
-                );
+                                                .orElseGet(() -> new AtlasEntity(atlasTypeName())))));
 
         atlasEntity.setAttribute("name", name);
         atlasEntity.setAttribute("qualifiedName", qualifiedName());
@@ -84,10 +86,9 @@ public abstract class CouchbaseAtlasEntity<E extends CouchbaseAtlasEntity<?>> {
         return atlasEntity;
     }
 
-    protected abstract String qualifiedName();
-
     /**
      * Looks up precreated atlas entity in the entity cache
+     *
      * @return Optional of the cached entity
      */
     public Optional<AtlasEntity> atlasEntity() {
@@ -97,14 +98,60 @@ public abstract class CouchbaseAtlasEntity<E extends CouchbaseAtlasEntity<?>> {
         });
     }
 
+    public abstract String atlasTypeName();
+
+    public abstract UUID id();
+
+    /**
+     * First checks if the entity has been loaded and cached and, if not, then tries to load it from Atlas
+     *
+     * @param atlas Atlas client to use
+     * @return true if the entity found either in cache or in Atlas
+     */
+    public boolean exists(AtlasClientV2 atlas) {
+        if (!exists()) {
+            return load(atlas).isPresent();
+        }
+        return true;
+    }
+
+    /**
+     * Returns pre-cached model with provided identifiers or caches this model and returns it
+     *
+     * @return the model
+     */
+    public E get() {
+        Class<E> type = (Class<E>) getClass();
+        String   id   = id().toString();
+
+        // ensure valid cache structure
+        if (!MODEL_BY_TYPE_AND_ID.containsKey(type)) {
+            MODEL_BY_TYPE_AND_ID.put(type, Collections.synchronizedMap(new HashMap<>()));
+        }
+
+        // put the model into the cache, if not already present
+        Map<String, CouchbaseAtlasEntity> modelsById = MODEL_BY_TYPE_AND_ID.get(type);
+        if (!modelsById.containsKey(id)) {
+            try {
+                modelsById.put(id, this);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        return (E) modelsById.get(id);
+    }
+
+    protected abstract String qualifiedName();
+
     /**
      * Checks whether the model has the Atlas Entity created for it
      * by looking it up in the entity cache.
      * NOTE: this method does not check if the entity has been saved in Atlas so,
-     *      it will return true when the entity is already created and cached but is yet to be sent to Atlas
-     *
+     * it will return true when the entity is already created and cached but is yet to be sent to Atlas
+     * <p>
      * This method is _mostly_ used in related objects when setting relationship field to ensure that related
-     *      model has an AtlasEntity that can be referenced when storing relationship information.
+     * model has an AtlasEntity that can be referenced when storing relationship information.
      *
      * @return true if the entity found
      */
@@ -112,12 +159,9 @@ public abstract class CouchbaseAtlasEntity<E extends CouchbaseAtlasEntity<?>> {
         return cachedEntity().isPresent();
     }
 
-    public abstract String atlasTypeName();
-
-    public abstract UUID id();
-
     /**
      * Invoked when the entity needs to be updated with values from the model
+     *
      * @param entity the entity to write the values into
      */
     protected void updateAtlasEntity(AtlasEntity entity) {
@@ -126,6 +170,7 @@ public abstract class CouchbaseAtlasEntity<E extends CouchbaseAtlasEntity<?>> {
 
     /**
      * Invoked when the model needs to be updated with values from the entity
+     *
      * @param entity the entity to read the values from
      */
     protected void updateJavaModel(AtlasEntity entity) {
@@ -134,6 +179,7 @@ public abstract class CouchbaseAtlasEntity<E extends CouchbaseAtlasEntity<?>> {
 
     /**
      * Loads the entity for this model from Atlas and stores it in the entity cache
+     *
      * @param client Atlas client to use
      * @return loaded entity
      */
@@ -161,6 +207,7 @@ public abstract class CouchbaseAtlasEntity<E extends CouchbaseAtlasEntity<?>> {
 
     /**
      * Puts an entity into the entity cache
+     *
      * @param atlasEntity the entity to cache
      * @return the same entity
      */
@@ -175,53 +222,10 @@ public abstract class CouchbaseAtlasEntity<E extends CouchbaseAtlasEntity<?>> {
 
     /**
      * Looks up the entity in the cache
+     *
      * @return Optional of cached entity
      */
     private Optional<AtlasEntity> cachedEntity() {
         return Optional.ofNullable(ENTITY_BY_TYPE_AND_ID.getOrDefault(getClass(), (Map<String, AtlasEntity>) Collections.EMPTY_MAP).getOrDefault(id().toString(), null));
-    }
-
-    /**
-     * First checks if the entity has been loaded and cached and, if not, then tries to load it from Atlas
-     * @param atlas Atlas client to use
-     * @return true if the entity found either in cache or in Atlas
-     */
-    public boolean exists(AtlasClientV2 atlas) {
-        if (!exists()) {
-            return load(atlas).isPresent();
-        }
-        return true;
-    }
-
-    /**
-     * Returns pre-cached model with provided identifiers or caches this model and returns it
-     *
-     * @return the model
-     */
-    public E get() {
-        Class<E> type = (Class<E>) getClass();
-        String id = id().toString();
-
-        // ensure valid cache structure
-        if (!MODEL_BY_TYPE_AND_ID.containsKey(type)) {
-            MODEL_BY_TYPE_AND_ID.put(type, Collections.synchronizedMap(new HashMap<>()));
-        }
-
-        // put the model into the cache, if not already present
-        Map<String, CouchbaseAtlasEntity> modelsById = MODEL_BY_TYPE_AND_ID.get(type);
-        if (!modelsById.containsKey(id)) {
-            try {
-                modelsById.put(id, this);
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        }
-
-        return (E) modelsById.get(id);
-    }
-
-    public static void dropCache() {
-        ENTITY_BY_TYPE_AND_ID.clear();
-        MODEL_BY_TYPE_AND_ID.clear();
     }
 }

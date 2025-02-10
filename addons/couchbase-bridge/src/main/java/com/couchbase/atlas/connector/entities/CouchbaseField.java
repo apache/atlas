@@ -18,32 +18,21 @@ package com.couchbase.atlas.connector.entities;
 
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.type.AtlasTypeUtil;
 
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
 import java.util.UUID;
 
 public class CouchbaseField extends CouchbaseAtlasEntity<CouchbaseField> {
-    public static final String TYPE_NAME = "couchbase_field";
-    private CouchbaseFieldType fieldType;
-    private String fieldPath;
-    private long documentCount = 0;
+    public static final String             TYPE_NAME     = "couchbase_field";
+    private             CouchbaseFieldType fieldType;
+    private             String             fieldPath;
+    private             long               documentCount;
 
     private CouchbaseField parentField;
 
     private CouchbaseCollection collection;
 
     public CouchbaseField() {
-
     }
 
     public CouchbaseFieldType fieldType() {
@@ -97,13 +86,6 @@ public class CouchbaseField extends CouchbaseAtlasEntity<CouchbaseField> {
     }
 
     @Override
-    protected void updateAtlasEntity(AtlasEntity entity) {
-        entity.setAttribute("fieldType", fieldType.toString());
-        entity.setAttribute("fieldPath", fieldPath);
-        entity.setAttribute("documentCount", documentCount);
-    }
-
-    @Override
     protected String qualifiedName() {
         return String.format("%s/%s:%s", collection.qualifiedName(), fieldPath(), fieldType());
     }
@@ -116,6 +98,13 @@ public class CouchbaseField extends CouchbaseAtlasEntity<CouchbaseField> {
     @Override
     public UUID id() {
         return UUID.nameUUIDFromBytes(qualifiedName().getBytes(Charset.defaultCharset()));
+    }
+
+    @Override
+    protected void updateAtlasEntity(AtlasEntity entity) {
+        entity.setAttribute("fieldType", fieldType.toString());
+        entity.setAttribute("fieldPath", fieldPath);
+        entity.setAttribute("documentCount", documentCount);
     }
 
     public CouchbaseField parentField() {

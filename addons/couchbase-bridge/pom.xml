@@ -31,6 +31,10 @@
 
     <name>Apache Atlas Couchbase Bridge</name>
     <description>Apache Atlas Couchbase Bridge Module</description>
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
 
     <dependencies>
         <dependency>

@@ -18,28 +18,19 @@ package com.couchbase.atlas.connector.entities;
 
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.type.AtlasTypeUtil;
 
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 public class CouchbaseScope extends CouchbaseAtlasEntity<CouchbaseScope> {
+    public static final String          TYPE_NAME = "couchbase_scope";
 
-    public static final String TYPE_NAME = "couchbase_scope";
-    private CouchbaseBucket bucket;
+    private final transient Map<String, CouchbaseCollection> collections = Collections.synchronizedMap(new HashMap<>());
 
-    private transient Map<String, CouchbaseCollection> collections = Collections.synchronizedMap(new HashMap<>());
+    private             CouchbaseBucket bucket;
 
     public CouchbaseBucket bucket() {
         return bucket;
@@ -48,18 +39,6 @@ public class CouchbaseScope extends CouchbaseAtlasEntity<CouchbaseScope> {
     public CouchbaseScope bucket(CouchbaseBucket bucket) {
         this.bucket = bucket;
         return this;
-    }
-
-    @Override
-    public UUID id() {
-        return UUID.nameUUIDFromBytes(
-                String.format(
-                        "%s:%s:%s",
-                        atlasTypeName(),
-                        bucket().id().toString(),
-                        name()
-                ).getBytes(Charset.defaultCharset())
-        );
     }
 
     @Override
@@ -79,13 +58,19 @@ public class CouchbaseScope extends CouchbaseAtlasEntity<CouchbaseScope> {
         return TYPE_NAME;
     }
 
+    @Override
+    public UUID id() {
+        return UUID.nameUUIDFromBytes(
+                String.format("%s:%s:%s",
+                        atlasTypeName(),
+                        bucket().id().toString(),
+                        name()
+                ).getBytes(Charset.defaultCharset()));
+    }
+
     public CouchbaseCollection collection(String name) {
         if (!collections.containsKey(name)) {
-            collections.put(name, new CouchbaseCollection()
-                    .name(name)
-                    .scope(this)
-                    .get()
-            );
+            collections.put(name, new CouchbaseCollection().name(name).scope(this).get());
         }
 
         return collections.get(name);

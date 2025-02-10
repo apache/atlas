@@ -16,14 +16,11 @@
 
 package com.couchbase.atlas.connector.entities;
 
-import com.couchbase.client.core.error.InvalidArgumentException;
 import com.couchbase.client.java.json.JsonObject;
-import org.apache.atlas.model.typedef.AtlasEnumDef;
-import org.apache.atlas.type.AtlasTypeUtil;
 
 import javax.annotation.Nonnull;
+
 import java.util.Collection;
-import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
@@ -67,5 +64,4 @@ public enum CouchbaseFieldType {
     public String toString() {
         return super.toString().toLowerCase(Locale.getDefault());
     }
-
 }

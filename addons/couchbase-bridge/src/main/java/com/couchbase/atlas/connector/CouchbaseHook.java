@@ -44,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -57,13 +58,12 @@ import java.util.stream.Stream;
 public class CouchbaseHook extends AtlasHook implements ControlEventHandler, DataEventHandler {
     private static final Logger LOG = LoggerFactory.getLogger(CouchbaseHook.class);
 
-    protected static CouchbaseHook               INSTANCE;
-    protected static Client                      DCP;
-    protected static AtlasClientV2               ATLAS;
-    private   static Consumer<List<AtlasEntity>> createInterceptor;
-    private   static Consumer<List<AtlasEntity>> updateInterceptor;
-    private   static boolean                     loop = true;
-
+    protected static CouchbaseHook               instance;
+    protected static Client                      dcpClient;
+    protected static AtlasClientV2               atlasClient;
+    private static   Consumer<List<AtlasEntity>> createInterceptor;
+    private static   Consumer<List<AtlasEntity>> updateInterceptor;
+    private static   boolean                     loop = true;
 
     private CouchbaseCluster clusterEntity;
     private CouchbaseBucket  bucketEntity;
@@ -75,33 +75,31 @@ public class CouchbaseHook extends AtlasHook implements ControlEventHandler, Dat
      */
     public static void main(String[] args) {
         // create instances of DCP client,
-        DCP = CBConfig.dcpClient();
+        dcpClient = CBConfig.dcpClient();
 
         // Atlas client,
-        ATLAS = AtlasConfig.client();
+        atlasClient = AtlasConfig.client();
 
         // and DCP handler
-        INSTANCE = new CouchbaseHook();
+        instance = new CouchbaseHook();
 
         // register DCP handler with DCP client
-        DCP.controlEventHandler(INSTANCE);
-        DCP.dataEventHandler(INSTANCE);
+        dcpClient.controlEventHandler(instance);
+        dcpClient.dataEventHandler(instance);
 
         // Connect to the cluster
-        DCP.connect().block();
+        dcpClient.connect().block();
 
         LOG.info("DCP client connected.");
 
-        // Ensure the existence of corresponding
-        // CouchbaseCluster, CouchbaseBucket, CouchbaseScope
-        // entities and store them in local cache
-        INSTANCE.initializeAtlasContext();
+        // Ensure the existence of corresponding CouchbaseCluster, CouchbaseBucket, CouchbaseScope entities and store them in local cache
+        instance.initializeAtlasContext();
 
         // Start listening to DCP
-        DCP.initializeState(StreamFrom.NOW, StreamTo.INFINITY).block();
+        dcpClient.initializeState(StreamFrom.NOW, StreamTo.INFINITY).block();
 
         System.out.println("Starting the stream...");
-        DCP.startStreaming().block();
+        dcpClient.startStreaming().block();
 
         System.out.println("Started the stream.");
         // And then just loop the loop
@@ -109,39 +107,124 @@ public class CouchbaseHook extends AtlasHook implements ControlEventHandler, Dat
             while (loop) {
                 Thread.sleep(1000);
             }
-        } catch (InterruptedException e) {
-
+        } catch (InterruptedException ignored) {
         } finally {
-            DCP.disconnect().block();
+            dcpClient.disconnect().block();
         }
     }
 
+    protected static void setEntityInterceptors(Consumer<List<AtlasEntity>> createInterceptor, Consumer<List<AtlasEntity>> updateInterceptor) {
+        CouchbaseHook.createInterceptor = createInterceptor;
+        CouchbaseHook.updateInterceptor = updateInterceptor;
+    }
+
+    static void loop(boolean loop) {
+        CouchbaseHook.loop = loop;
+    }
+
+    @Override
+    public void onEvent(ChannelFlowController flowController, ByteBuf event) {
+        // Probabilistic sampling
+        if (Math.random() > CBConfig.dcpSampleRatio()) {
+            LOG.debug("Skipping DCP message.");
+            return;
+        }
+
+        if (DcpMutationMessage.is(event)) {
+            try {
+                // Borrowed from Couchbeans :)
+                // Gathering some information about the message.
+                CollectionIdAndKey ckey           = MessageUtil.getCollectionIdAndKey(event, true);
+                CollectionInfo     collectionInfo = collectionInfo(MessageUtil.getVbucket(event), ckey.collectionId());
+                String             collectionName = collectionInfo.name();
+                String             scopeName      = collectionInfo.scope().name();
+
+                LOG.debug("Received DCP mutation message for scope '{}' and collection '{}'", scopeName, collectionName);
+
+                CouchbaseScope scopeEntity = bucketEntity.scope(scopeName);
+
+                // Because Atlas doesn't support upserts,
+                // we need to send new entities in a separate message
+                // from already existing ones
+                List<AtlasEntity> toCreate = new ArrayList<>();
+                List<AtlasEntity> toUpdate = new ArrayList<>();
+
+                if (!scopeEntity.exists(atlasClient)) {
+                    toCreate.add(scopeEntity.atlasEntity(atlasClient));
+
+                    LOG.debug("Creating scope: {}", scopeEntity.qualifiedName());
+                } else {
+                    toUpdate.add(scopeEntity.atlasEntity(atlasClient));
+
+                    LOG.debug("Updating scope: {}", scopeEntity.qualifiedName());
+                }
+
+                CouchbaseCollection collectionEntity = scopeEntity.collection(collectionName);
+
+                // Let's record this attempt to analyze a collection document so that we can calculate field frequencies when filtering them via DCP_FIELD_THRESHOLD
+                collectionEntity.incrementAnalyzedDocuments();
+
+                // and then schedule it to be sent to Atlas
+                if (!collectionEntity.exists(atlasClient)) {
+                    toCreate.add(collectionEntity.atlasEntity(atlasClient));
+                } else {
+                    toUpdate.add(collectionEntity.atlasEntity(atlasClient));
+                }
+
+                Map<String, Object> document = JsonObject.fromJson(DcpMutationMessage.contentBytes(event)).toMap();
+
+                System.out.println(String.format("Document keys: %s", document.keySet()));
+
+                // for each field in the document...
+                document.entrySet().stream()
+                        // transform the field into CouchbaseField either by loading corresponding entity or by creating it
+                        .filter(e -> e.getValue() != null)
+                        .flatMap(entry -> processField(collectionEntity, (Collection<String>) Collections.EMPTY_LIST, null, entry.getKey(), entry.getValue()))
+                        // update document counter on the field entity
+                        .peek(CouchbaseField::incrementDocumentCount)
+                        // Only passes fields that either already in Atlas or pass DCP_FIELD_THRESHOLD setting
+                        .filter(field -> field.exists(atlasClient) || field.documentCount() / (float) collectionEntity.documentsAnalyzed() > CBConfig.dcpFieldThreshold())
+                        // Schedule the entity either for creation or to be updated in Atlas
+                        .forEach(field -> {
+                            if (field.exists(atlasClient)) {
+                                toUpdate.add(field.atlasEntity(atlasClient));
+                            } else {
+                                toCreate.add(field.atlasEntity(atlasClient));
+                            }
+                        });
+
+                createEntities(toCreate);
+                updateEntities(toUpdate);
+
+                System.out.println("Notified Atlas");
+            } catch (Exception e) {
+                LOG.error("Failed to process DCP message", e);
+            }
+        }
+    }
+
+    @Override
+    public String getMessageSource() {
+        return "couchbase";
+    }
+
     /**
-     * Ensures the existence of CouchbaseCluster,
-     * CouchbaseBucket and Couchbase scope entities
-     * and stores them into local cache
+     * Ensures the existence of CouchbaseCluster, CouchbaseBucket and Couchbase scope entities and stores them into local cache
      */
     private void initializeAtlasContext() {
         LOG.debug("Creating cluster/bucket/scope entities");
 
-        clusterEntity = new CouchbaseCluster()
-                .name(CBConfig.address())
-                .url(CBConfig.address())
-                .get();
-
-        bucketEntity = new CouchbaseBucket()
-                .name(CBConfig.bucket())
-                .cluster(clusterEntity)
-                .get();
+        clusterEntity = new CouchbaseCluster().name(CBConfig.address()).url(CBConfig.address()).get();
+        bucketEntity  = new CouchbaseBucket().name(CBConfig.bucket()).cluster(clusterEntity).get();
 
         List<AtlasEntity> entitiesToCreate = new ArrayList<>();
 
-        if (!clusterEntity.exists(ATLAS)) {
-            entitiesToCreate.add(clusterEntity.atlasEntity(ATLAS));
+        if (!clusterEntity.exists(atlasClient)) {
+            entitiesToCreate.add(clusterEntity.atlasEntity(atlasClient));
         }
 
-        if (!bucketEntity.exists(ATLAS)) {
-            entitiesToCreate.add(bucketEntity.atlasEntity(ATLAS));
+        if (!bucketEntity.exists(atlasClient)) {
+            entitiesToCreate.add(bucketEntity.atlasEntity(atlasClient));
         }
 
         if (!entitiesToCreate.isEmpty()) {
@@ -174,97 +257,14 @@ public class CouchbaseHook extends AtlasHook implements ControlEventHandler, Dat
         notifyEntities(Arrays.asList(request), null);
     }
 
-    @Override
-    public void onEvent(ChannelFlowController flowController, ByteBuf event) {
-        // Probabilistic sampling
-        if (Math.random() > CBConfig.dcpSampleRatio()) {
-            LOG.debug("Skipping DCP message.");
-            return;
-        }
-
-        if (DcpMutationMessage.is(event)) {
-            try {
-                // Borrowed from Couchbeans :)
-                // Gathering some information about the message.
-                CollectionIdAndKey ckey           = MessageUtil.getCollectionIdAndKey(event, true);
-                CollectionInfo     collectionInfo = collectionInfo(MessageUtil.getVbucket(event), ckey.collectionId());
-                String             collectionName = collectionInfo.name();
-                String             scopeName      = collectionInfo.scope().name();
-
-                LOG.debug("Received DCP mutation message for scope '{}' and collection '{}'", scopeName, collectionName);
-
-                CouchbaseScope scopeEntity = bucketEntity.scope(scopeName);
-
-                // Because Atlas doesn't support upserts,
-                // we need to send new entities in a separate message
-                // from already existing ones
-                List<AtlasEntity> toCreate = new ArrayList<>();
-                List<AtlasEntity> toUpdate = new ArrayList<>();
-
-                if (!scopeEntity.exists(ATLAS)) {
-                    toCreate.add(scopeEntity.atlasEntity(ATLAS));
-
-                    LOG.debug("Creating scope: {}", scopeEntity.qualifiedName());
-                } else {
-                    toUpdate.add(scopeEntity.atlasEntity(ATLAS));
-
-                    LOG.debug("Updating scope: {}", scopeEntity.qualifiedName());
-                }
-
-                CouchbaseCollection collectionEntity = scopeEntity.collection(collectionName);
-
-                // Let's record this attempt to analyze a collection document
-                // so that we can calculate field frequencies
-                // when filtering them via DCP_FIELD_THRESHOLD
-                collectionEntity.incrementAnalyzedDocuments();
-
-                // and then schedule it to be sent to Atlas
-                if (!collectionEntity.exists(ATLAS)) {
-                    toCreate.add(collectionEntity.atlasEntity(ATLAS));
-                } else {
-                    toUpdate.add(collectionEntity.atlasEntity(ATLAS));
-                }
-
-                Map<String, Object> document = JsonObject.fromJson(DcpMutationMessage.contentBytes(event)).toMap();
-
-                System.out.println(String.format("Document keys: %s", document.keySet()));
-
-                // for each field in the document...
-                document.entrySet().stream()
-                        // transform the field into CouchbaseField either by loading corresponding entity or by creating it
-                        .filter(e -> e.getValue() != null)
-                        .flatMap(entry -> processField(collectionEntity, (Collection<String>) Collections.EMPTY_LIST, null, entry.getKey(), entry.getValue()))
-                        // update document counter on the field entity
-                        .peek(CouchbaseField::incrementDocumentCount)
-                        // Only passes fields that either already in Atlas or pass DCP_FIELD_THRESHOLD setting
-                        .filter(field -> field.exists(ATLAS) || field.documentCount() / (float) collectionEntity.documentsAnalyzed() > CBConfig.dcpFieldThreshold())
-                        // Schedule the entity either for creation or to be updated in Atlas
-                        .forEach(field -> {
-                            if (field.exists(ATLAS)) {
-                                toUpdate.add(field.atlasEntity(ATLAS));
-                            } else {
-                                toCreate.add(field.atlasEntity(ATLAS));
-                            }
-                        });
-
-                createEntities(toCreate);
-                updateEntities(toUpdate);
-
-                System.out.println("Notified Atlas");
-            } catch (Exception e) {
-                LOG.error("Failed to process DCP message", e);
-            }
-        }
-    }
-
     /**
      * Constructs a {@link CouchbaseField} from field information
      *
      * @param collectionEntity the {@link CouchbaseCollection} to which the field belongs
-     * @param path             the path to the field inside the collection document excluding the field itself
-     * @param parent           the parent field, if present or null
-     * @param name             the name of the field
-     * @param value            the value for the field from received document
+     * @param path the path to the field inside the collection document excluding the field itself
+     * @param parent the parent field, if present or null
+     * @param name the name of the field
+     * @param value the value for the field from received document
      * @return constructed or loaded from Atlas {@link CouchbaseField}
      */
     private static Stream<CouchbaseField> processField(CouchbaseCollection collectionEntity, Collection<String> path, @Nullable CouchbaseField parent, String name, Object value) {
@@ -277,13 +277,7 @@ public class CouchbaseHook extends AtlasHook implements ControlEventHandler, Dat
         fieldPath.add(name);
 
         // constructing the field entity and loading it from cache or Atlas, if previously stored there
-        CouchbaseField rootField = new CouchbaseField()
-                .name(name)
-                .fieldPath(fieldPath.stream().collect(Collectors.joining(".")))
-                .fieldType(fieldType)
-                .collection(collectionEntity)
-                .parentField(parent)
-                .get();
+        CouchbaseField rootField = new CouchbaseField().name(name).fieldPath(fieldPath.stream().collect(Collectors.joining("."))).fieldType(fieldType).collection(collectionEntity).parentField(parent).get();
 
         // return value
         Stream<CouchbaseField> result = Stream.of(rootField);
@@ -301,19 +295,13 @@ public class CouchbaseHook extends AtlasHook implements ControlEventHandler, Dat
                         result,
                         ((Map<String, ?>) value).entrySet().stream()
                                 // recursion
-                                .flatMap(entity -> processField(collectionEntity, fieldPath, rootField, entity.getKey(), entity.getValue()))
-                );
+                                .flatMap(entity -> processField(collectionEntity, fieldPath, rootField, entity.getKey(), entity.getValue())));
             } else {
                 throw new IllegalArgumentException(String.format("Incorrect value type '%s' for field type 'object': a Map was expected instead.", value.getClass()));
             }
         }
 
         return result;
-    }
-
-    @Override
-    public String getMessageSource() {
-        return "couchbase";
     }
 
     /**
@@ -324,18 +312,6 @@ public class CouchbaseHook extends AtlasHook implements ControlEventHandler, Dat
      * @return the name of the collection
      */
     private static CollectionInfo collectionInfo(int vbucket, long collid) {
-        return DCP.sessionState()
-                .get(vbucket)
-                .getCollectionsManifest()
-                .getCollection(collid);
-    }
-
-    protected static void setEntityInterceptors(Consumer<List<AtlasEntity>> createInterceptor, Consumer<List<AtlasEntity>> updateInterceptor) {
-        CouchbaseHook.createInterceptor = createInterceptor;
-        CouchbaseHook.updateInterceptor = updateInterceptor;
-    }
-
-    static void loop(boolean loop) {
-        CouchbaseHook.loop = loop;
+        return dcpClient.sessionState().get(vbucket).getCollectionsManifest().getCollection(collid);
     }
 }
