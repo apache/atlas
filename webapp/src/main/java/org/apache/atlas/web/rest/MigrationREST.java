@@ -10,6 +10,7 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.migration.ValidateProductEdgesMigrationService;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
@@ -28,6 +29,7 @@ import org.keycloak.representations.idm.UserRepresentation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.apache.atlas.repository.migration.SoftDeletionProductMigrationService;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -348,6 +350,62 @@ public class MigrationREST {
             AtlasPerfTracer.log(perf);
         }
         return Boolean.TRUE;
+    }
+
+    @POST
+    @Path("product/remove-edges")
+    @Timed
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Boolean bulkProductsRedundantEdgeRemoval(Set<String> guids) throws Exception {
+        AtlasPerfTracer perf = null;
+        try {
+            if (CollectionUtils.isEmpty(guids)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Product GUIDs are required for removing redundant edges");
+            }
+
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.bulkProductsRedundantEdgeRemoval(" + guids + ")");
+            }
+
+            SoftDeletionProductMigrationService migrationService = new SoftDeletionProductMigrationService(graph, guids, new GraphHelper(graph), transactionInterceptHelper);
+            migrationService.startEdgeMigration();
+
+        } catch (Exception e) {
+            LOG.error("Error while removing edges for guid: {}", guids, e);
+            throw e;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+        return Boolean.TRUE;
+    }
+
+    @POST
+    @Path("product/validate-edges")
+    @Timed
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Boolean bulkValidateProductEdges(Set<String> guids) throws Exception {
+        AtlasPerfTracer perf = null;
+
+        boolean flag = false;
+        try {
+            if (CollectionUtils.isEmpty(guids)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Product GUIDs are required for validating edges");
+            }
+
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.bulkValidateProductEdges(" + guids + ")");
+            }
+
+            ValidateProductEdgesMigrationService migrationService = new ValidateProductEdgesMigrationService(guids, new GraphHelper(graph));
+            flag = migrationService.validateEdgeMigration();
+
+        } catch (Exception e) {
+            LOG.error("Error while validating edges for guid: {}", guids, e);
+            throw e;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+        return flag;
     }
 
     private List<AtlasEntity> getEntitiesByIndexSearch(IndexSearchParams indexSearchParams, Boolean minExtInfo, boolean ignoreRelationships) throws AtlasBaseException {
