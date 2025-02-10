@@ -30,27 +30,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.UUID;
 
 public class CouchbaseCluster extends CouchbaseAtlasEntity<CouchbaseCluster> {
     public static final String TYPE_NAME = "couchbase_cluster";
-    private String url;
-
-    public String url() {
-        return url;
-    }
-
-    public CouchbaseCluster url(String url) {
-        this.url = url;
-        return this;
-    }
+    private             String url;
 
     public static AtlasEntityDef atlasEntityDef() {
         AtlasEntityDef definition = AtlasTypeUtil.createClassTypeDef(
                 "couchbase_cluster",
-                new HashSet<>()
-        );
+                new HashSet<>());
 
         definition.getSuperTypes().add("Asset");
         definition.setServiceType("couchbase");
@@ -68,8 +57,7 @@ public class CouchbaseCluster extends CouchbaseAtlasEntity<CouchbaseCluster> {
                 true,
                 true,
                 true,
-                Collections.EMPTY_LIST
-        ));
+                Collections.EMPTY_LIST));
 
         return definition;
     }
@@ -87,26 +75,21 @@ public class CouchbaseCluster extends CouchbaseAtlasEntity<CouchbaseCluster> {
                                 "couchbase_cluster",
                                 "buckets",
                                 AtlasStructDef.AtlasAttributeDef.Cardinality.SET,
-                                true
-                        ),
+                                true),
                         new AtlasRelationshipEndDef(
                                 "couchbase_bucket",
                                 "cluster",
                                 AtlasStructDef.AtlasAttributeDef.Cardinality.SINGLE,
-                                false
-                        )
-                )
-        );
+                                false)));
     }
 
-    @Override
-    public String atlasTypeName() {
-        return TYPE_NAME;
+    public String url() {
+        return url;
     }
 
-    @Override
-    public UUID id() {
-        return UUID.nameUUIDFromBytes(String.format("%s:%s", atlasTypeName(), url()).getBytes(Charset.defaultCharset()));
+    public CouchbaseCluster url(String url) {
+        this.url = url;
+        return this;
     }
 
     @Override
@@ -119,6 +102,16 @@ public class CouchbaseCluster extends CouchbaseAtlasEntity<CouchbaseCluster> {
     @Override
     protected String qualifiedName() {
         return url();
+    }
+
+    @Override
+    public String atlasTypeName() {
+        return TYPE_NAME;
+    }
+
+    @Override
+    public UUID id() {
+        return UUID.nameUUIDFromBytes(String.format("%s:%s", atlasTypeName(), url()).getBytes(Charset.defaultCharset()));
     }
 
     @Override

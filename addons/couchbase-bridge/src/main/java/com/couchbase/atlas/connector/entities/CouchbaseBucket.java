@@ -18,27 +18,22 @@ package com.couchbase.atlas.connector.entities;
 
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.typedef.AtlasEntityDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipDef;
-import org.apache.atlas.model.typedef.AtlasRelationshipEndDef;
-import org.apache.atlas.model.typedef.AtlasStructDef;
-import org.apache.atlas.type.AtlasTypeUtil;
 
 import java.nio.charset.Charset;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.UUID;
 
 public class CouchbaseBucket extends CouchbaseAtlasEntity<CouchbaseBucket> {
-    public static final String TYPE_NAME = "couchbase_bucket";
-    private CouchbaseCluster cluster;
-    private transient Map<String, CouchbaseScope> scopes = Collections.synchronizedMap(new HashMap<>());
+    public static final String                      TYPE_NAME  = "couchbase_bucket";
+
+    private final transient Map<String, CouchbaseScope> scopes = Collections.synchronizedMap(new HashMap<>());
+
+    private                 CouchbaseCluster            cluster;
+
+    public CouchbaseBucket() {
+    }
 
     @Override
     public AtlasEntity atlasEntity(AtlasClientV2 atlas) {
@@ -52,8 +47,14 @@ public class CouchbaseBucket extends CouchbaseAtlasEntity<CouchbaseBucket> {
         return String.format("%s/%s", cluster.qualifiedName(), name());
     }
 
-    public CouchbaseBucket() {
+    @Override
+    public String atlasTypeName() {
+        return TYPE_NAME;
+    }
 
+    @Override
+    public UUID id() {
+        return UUID.nameUUIDFromBytes(String.format("%s:%s:%s", atlasTypeName(), cluster().id(), name()).getBytes(Charset.defaultCharset()));
     }
 
     public CouchbaseCluster cluster() {
@@ -65,23 +66,9 @@ public class CouchbaseBucket extends CouchbaseAtlasEntity<CouchbaseBucket> {
         return this;
     }
 
-    @Override
-    public String atlasTypeName() {
-        return TYPE_NAME;
-    }
-
-    @Override
-    public UUID id() {
-        return UUID.nameUUIDFromBytes(String.format("%s:%s:%s", atlasTypeName(), cluster().id(), name()).getBytes(Charset.defaultCharset()));
-    }
-
     public CouchbaseScope scope(String name) {
         if (!scopes.containsKey(name)) {
-            scopes.put(name, new CouchbaseScope()
-                    .bucket(this)
-                    .name(name)
-                    .get()
-            );
+            scopes.put(name, new CouchbaseScope().bucket(this).name(name).get());
         }
 
         return scopes.get(name);
