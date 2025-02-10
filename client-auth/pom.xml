@@ -32,7 +32,7 @@
     <properties>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
-        <keycloak-admin-client.version>15.1.0</keycloak-admin-client.version>
+        <keycloak-admin-client.version>26.1.0</keycloak-admin-client.version>
     </properties>
 
     <dependencies>

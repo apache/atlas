@@ -404,16 +404,11 @@
             <artifactId>aspectjweaver</artifactId>
             <version>1.8.9</version>
         </dependency>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-dashboardv2</artifactId>
-            <type>war</type>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-dashboardv3</artifactId>
-            <type>war</type>
-        </dependency>
+<!--        <dependency>-->
+<!--            <groupId>org.apache.atlas</groupId>-->
+<!--            <artifactId>atlas-dashboardv2</artifactId>-->
+<!--            <type>war</type>-->
+<!--        </dependency>-->
         <dependency>
             <groupId>org.easymock</groupId>
             <artifactId>easymock</artifactId>
@@ -457,7 +452,7 @@
         <dependency>
             <groupId>com.nimbusds</groupId>
             <artifactId>nimbus-jose-jwt</artifactId>
-            <version>9.8.1</version>
+            <version>9.37.2</version>
             <scope>compile</scope>
             <exclusions>
                 <exclusion>
@@ -591,16 +586,11 @@
                     <archiveClasses>true</archiveClasses>
                     <attachClasses>true</attachClasses>
                     <overlays>
-                        <overlay>
-                            <groupId>org.apache.atlas</groupId>
-                            <artifactId>atlas-dashboardv2</artifactId>
-                            <skip>${skipOverlay}</skip>
-                        </overlay>
-                        <overlay>
-                            <groupId>org.apache.atlas</groupId>
-                            <artifactId>atlas-dashboardv3</artifactId>
-                            <skip>${skipOverlay}</skip>
-                        </overlay>
+<!--                        <overlay>-->
+<!--                            <groupId>org.apache.atlas</groupId>-->
+<!--                            <artifactId>atlas-dashboardv2</artifactId>-->
+<!--                            <skip>${skipOverlay}</skip>-->
+<!--                        </overlay>-->
                         <overlay>
                             <!-- empty groupId/artifactId represents the current build -->
                         </overlay>
