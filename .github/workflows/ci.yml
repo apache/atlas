@@ -70,6 +70,14 @@ jobs:
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
           SKIPTESTS=false docker compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
+          ATLAS_BUILD_CONTAINER=$(docker ps -a -q --filter "name=atlas-build")
+          EXIT_CODE=$(docker inspect --format '{{.State.ExitCode}}' "$ATLAS_BUILD_CONTAINER")
+          
+          # If the exit code is non-zero, fail the workflow
+          if [ "$EXIT_CODE" -ne 0 ]; then
+            echo "atlas-build container failed with exit code $EXIT_CODE."
+            exit 1
+          fi
 
       - name: Cache downloaded archives
         if: success()
