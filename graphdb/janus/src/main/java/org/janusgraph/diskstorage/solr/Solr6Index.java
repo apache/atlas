@@ -121,6 +121,7 @@ import org.janusgraph.graphdb.query.condition.Condition;
 import org.janusgraph.graphdb.query.condition.Not;
 import org.janusgraph.graphdb.query.condition.Or;
 import org.janusgraph.graphdb.query.condition.PredicateCondition;
+import org.janusgraph.graphdb.tinkerpop.optimize.step.Aggregation;
 import org.janusgraph.graphdb.types.ParameterType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -597,6 +598,11 @@ public class Solr6Index implements IndexProvider {
         }
     }
 
+    @Override
+    public Number queryAggregation(IndexQuery indexQuery, KeyInformation.IndexRetriever indexRetriever, BaseTransaction baseTransaction, Aggregation aggregation) throws BackendException {
+        return null;
+    }
+
     // This method will create a map of field ids to values.  In the case of multiValued fields,
     // it will consolidate all the values into one List or Set so it can be updated with a single Solr operation
     private Map<String, Object> collectFieldValues(List<IndexEntry> content, String collectionName,
@@ -672,7 +678,6 @@ public class Solr6Index implements IndexProvider {
                 doc -> doc.getFieldValue(keyIdField).toString());
     }
 
-    @Override
     public Long queryCount(IndexQuery query, KeyInformation.IndexRetriever information, BaseTransaction tx) throws BackendException {
         try {
             String collection = query.getStore();
@@ -1062,6 +1067,11 @@ public class Solr6Index implements IndexProvider {
             logger.error("Unable to clear storage from index due to general error.", e);
             throw new PermanentBackendException(e);
         }
+    }
+
+    @Override
+    public void clearStore(String s) throws BackendException {
+
     }
 
     @Override

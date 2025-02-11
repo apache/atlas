@@ -812,7 +812,6 @@ public class EntityREST {
                                                  @QueryParam("skipProcessEdgeRestoration") @DefaultValue("false") boolean skipProcessEdgeRestoration
     ) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-        RequestContext.get().setEnableCache(false);
         RequestContext.get().setSkipProcessEdgeRestoration(skipProcessEdgeRestoration);
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {

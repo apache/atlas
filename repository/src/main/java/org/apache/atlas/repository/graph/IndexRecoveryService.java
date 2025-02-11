@@ -21,7 +21,6 @@ import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConstants;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContext;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -182,6 +181,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
                             continue;
                         }
                         boolean indexHealthy = isIndexHealthy();
+
                         if (this.txRecoveryObject == null && indexHealthy) {
                             startMonitoring();
                         }
@@ -228,7 +228,6 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
             try {
                 startTime        = recoveryInfoManagement.getStartTime();
                 Instant newStartTime = Instant.now();
-                this.graph.setEnableCache(false);
                 txRecoveryObject = this.graph.getManagementSystem().startIndexRecovery(startTime);
                 recoveryInfoManagement.updateStartTime(newStartTime.toEpochMilli());
 
