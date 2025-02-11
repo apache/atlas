@@ -2,7 +2,6 @@ package org.apache.atlas.service;
 
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.commons.lang.StringUtils;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;

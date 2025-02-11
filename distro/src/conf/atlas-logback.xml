@@ -1,0 +1,177 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+  ~ Licensed to the Apache Software Foundation (ASF) under one
+  ~ or more contributor license agreements.  See the NOTICE file
+  ~ distributed with this work for additional information
+  ~ regarding copyright ownership.  The ASF licenses this file
+  ~ to you under the Apache License, Version 2.0 (the
+  ~ "License"); you may not use this file except in compliance
+  ~ with the License.  You may obtain a copy of the License at
+  ~
+  ~     http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+
+<configuration>
+  <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+    <param name="Target" value="System.out"/>
+    <encoder>
+      <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+    </encoder>
+    <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+      <level>INFO</level>
+    </filter>
+  </appender>
+
+  <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${atlas.log.dir}/${atlas.log.file}</file>
+    <append>true</append>
+    <encoder>
+      <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${atlas.log.dir}/${atlas.log.file}-%d</fileNamePattern>
+      <maxHistory>20</maxHistory>
+      <cleanHistoryOnStart>true</cleanHistoryOnStart>
+    </rollingPolicy>
+  </appender>
+
+  <appender name="LARGE_MESSAGES" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${atlas.log.dir}/large_messages.log</file>
+    <append>true</append>
+    <encoder>
+      <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${atlas.log.dir}/large_messages-%d.log</fileNamePattern>
+      <maxHistory>20</maxHistory>
+      <cleanHistoryOnStart>false</cleanHistoryOnStart>
+    </rollingPolicy>
+  </appender>
+
+  <appender name="AUDIT" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${atlas.log.dir}/audit.log</file>
+    <append>true</append>
+    <encoder>
+      <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${atlas.log.dir}/audit-%d.log</fileNamePattern>
+      <maxHistory>20</maxHistory>
+      <cleanHistoryOnStart>false</cleanHistoryOnStart>
+    </rollingPolicy>
+  </appender>
+
+  <appender name="TASKS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${atlas.log.dir}/tasks.log</file>
+    <append>true</append>
+    <encoder>
+      <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${atlas.log.dir}/tasks-%d.log</fileNamePattern>
+      <maxHistory>20</maxHistory>
+      <cleanHistoryOnStart>false</cleanHistoryOnStart>
+    </rollingPolicy>
+  </appender>
+
+  <appender name="METRICS" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${atlas.log.dir}/metrics.log</file>
+    <append>true</append>
+    <encoder>
+      <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${atlas.log.dir}/metrics-%d.log</fileNamePattern>
+      <maxHistory>20</maxHistory>
+      <cleanHistoryOnStart>false</cleanHistoryOnStart>
+    </rollingPolicy>
+  </appender>
+
+  <appender name="FAILED" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${atlas.log.dir}/failed.log</file>
+    <append>true</append>
+    <encoder>
+      <pattern>%date [%thread] %level{5} [%file:%line] %msg%n</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${atlas.log.dir}/failed-%d.log</fileNamePattern>
+      <maxHistory>20</maxHistory>
+      <cleanHistoryOnStart>false</cleanHistoryOnStart>
+    </rollingPolicy>
+  </appender>
+
+  <!-- Uncomment the following for perf logs -->
+  <!--
+  <appender name="perf_appender" class="ch.qos.logback.core.rolling.RollingFileAppender">
+    <file>${atlas.log.dir}/atlas_perf.log</file>
+    <append>true</append>
+    <encoder>
+      <pattern>%date [%thread] %msg%n</pattern>
+    </encoder>
+    <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+      <fileNamePattern>${atlas.log.dir}/atlas_perf-%d.log</fileNamePattern>
+      <maxHistory>20</maxHistory>
+      <cleanHistoryOnStart>false</cleanHistoryOnStart>
+    </rollingPolicy>
+  </appender>
+
+  <logger name="perf_appender" additivity="false" level="debug">
+    <appender-ref ref="perf_appender"/>
+  </logger>
+  -->
+
+  <logger name="org.apache.atlas" additivity="false" level="info">
+    <appender-ref ref="FILE"/>
+  </logger>
+
+  <logger name="org.janusgraph" additivity="false" level="warn">
+    <appender-ref ref="FILE"/>
+  </logger>
+
+  <logger name="org.springframework" additivity="false" level="warn">
+    <appender-ref ref="console"/>
+  </logger>
+
+  <logger name="org.eclipse" additivity="false" level="warn">
+    <appender-ref ref="console"/>
+  </logger>
+
+  <logger name="com.sun.jersey" additivity="false" level="warn">
+    <appender-ref ref="console"/>
+  </logger>
+
+  <!-- to avoid logs - The configuration log.flush.interval.messages = 1 was supplied but isn't a known config -->
+  <logger name="org.apache.kafka.common.config.AbstractConfig" additivity="false" level="error">
+    <appender-ref ref="FILE"/>
+  </logger>
+
+  <logger name="AUDIT" additivity="false" level="info">
+    <appender-ref ref="AUDIT"/>
+  </logger>
+
+  <logger name="LARGE_MESSAGES" additivity="false" level="warn">
+    <appender-ref ref="LARGE_MESSAGES"/>
+  </logger>
+
+  <logger name="METRICS" additivity="false" level="debug">
+    <appender-ref ref="METRICS"/>
+  </logger>
+
+  <logger name="FAILED" additivity="false" level="info">
+    <appender-ref ref="FAILED"/>
+  </logger>
+
+  <logger name="TASKS" additivity="false" level="info">
+    <appender-ref ref="TASKS"/>
+  </logger>
+
+  <root level="warn">
+    <appender-ref ref="FILE"/>
+  </root>
+</configuration>
