@@ -9,6 +9,7 @@ on:
       - staging
       - beta
       - mlh41-integration-tests
+      - mlh41tests
     types:
       - completed
 
