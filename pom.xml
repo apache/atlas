@@ -2003,27 +2003,6 @@
 
             <!--The findbugs-maven-plugin is outdated and does not officially support Java 17. To analyze code with a tool like FindBugs on Java 17, you should migrate to SpotBugs-->
 
-            <!--<plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <version>3.0.5</version>
-                <configuration>
-                    &lt;!&ndash;debug>true</debug &ndash;&gt;
-                    <xmlOutput>true</xmlOutput>
-                    <failOnError>false</failOnError>
-                    <skip>${skipCheck}</skip>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>findbugs-check</id>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                        <phase>verify</phase>
-                    </execution>
-                </executions>
-            </plugin>-->
-
             <!-- Source code metrics: mvn javancss:report or mvn site -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

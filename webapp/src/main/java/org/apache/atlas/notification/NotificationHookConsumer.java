@@ -110,7 +110,7 @@ import static org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.
  */
 @Component
 @Order(5)
-@EnableConditional(property = "atlas.notification.hook.enable")
+@EnableConditional(property = "atlas.notification.hook.enable", isDefault = true)
 @DependsOn(value = {"atlasTypeDefStoreInitializer", "atlasTypeDefGraphStoreV2"})
 public class NotificationHookConsumer implements Service, ActiveStateChangeHandler {
     private static final Logger LOG        = LoggerFactory.getLogger(NotificationHookConsumer.class);
