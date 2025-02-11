@@ -21,6 +21,10 @@ package org.apache.atlas.tools;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
+import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV2;
+import org.apache.atlas.model.notification.HookNotification.EntityPartialUpdateRequestV2;
+import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
 import org.apache.atlas.notification.AtlasNotificationMessageDeserializer;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.utils.AtlasJson;
@@ -29,10 +33,6 @@ import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityCreateReq
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityDeleteRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityPartialUpdateRequest;
 import org.apache.atlas.v1.model.notification.HookNotificationV1.EntityUpdateRequest;
-import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
-import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV2;
-import org.apache.atlas.model.notification.HookNotification.EntityPartialUpdateRequestV2;
-import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
 import org.apache.commons.cli.BasicParser;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
@@ -40,8 +40,18 @@ import org.apache.commons.cli.Options;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.util.*;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.IntSummaryStatistics;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class NotificationAnalyzer {
