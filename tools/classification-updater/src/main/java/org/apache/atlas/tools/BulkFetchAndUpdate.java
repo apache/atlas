@@ -45,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.MultivaluedMap;
+
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -64,20 +65,23 @@ import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 public class BulkFetchAndUpdate {
     private static final Logger LOG = LoggerFactory.getLogger(BulkFetchAndUpdate.class);
 
-    private static final String DATE_FORMAT_SUPPORTED = "yyyy-MM-dd'T'HH:mm:ss";
-    private static final String OPTION_FROM = "f";
-
+    private static final String DATE_FORMAT_SUPPORTED               = "yyyy-MM-dd'T'HH:mm:ss";
+    private static final String OPTION_FROM                         = "f";
     private static final String APPLICATION_PROPERTY_ATLAS_ENDPOINT = "atlas.rest.address";
-    private static final String SYSTEM_PROPERTY_USER_DIR = "user.dir";
-    private static final String STEP_PREPARE = "prepare";
-    private static final String STEP_UPDATE = "update";
-    private static final int EXIT_CODE_SUCCESS = 0;
-    private static final int EXIT_CODE_FAILED = 1;
-    private static final String DEFAULT_ATLAS_URL = "http://localhost:21000/";
-    private static final String FILE_CLASSIFICATION_DEFS = "classification-definitions.json";
-    private static final String FILE_ENTITY_HEADERS = "entity-headers.json";
+    private static final String SYSTEM_PROPERTY_USER_DIR            = "user.dir";
+    private static final String STEP_PREPARE                        = "prepare";
+    private static final String STEP_UPDATE                         = "update";
+    private static final String DEFAULT_ATLAS_URL                   = "http://localhost:21000/";
+    private static final String FILE_CLASSIFICATION_DEFS            = "classification-definitions.json";
+    private static final String FILE_ENTITY_HEADERS                 = "entity-headers.json";
+    private static final int    EXIT_CODE_SUCCESS                   = 0;
+    private static final int    EXIT_CODE_FAILED                    = 1;
 
-    private final static String[] filesToUse = new String[] {
+    private BulkFetchAndUpdate() {
+        // to block instantiation
+    }
+
+    private static final String[] filesToUse = new String[] {
             FILE_CLASSIFICATION_DEFS,
             FILE_ENTITY_HEADERS
     };
@@ -86,21 +90,21 @@ public class BulkFetchAndUpdate {
         int exitCode = EXIT_CODE_FAILED;
 
         try {
-            long fromTimestamp = 0L;
-            CommandLine cmd = getCommandLine(args);
+            long        fromTimestamp = 0L;
+            CommandLine cmd           = getCommandLine(args);
 
             String stepToExecute = cmd.getOptionValue("s").trim();
-            String uid = cmd.getOptionValue("u");
-            String pwd = cmd.getOptionValue("p");
-            String directory = cmd.getOptionValue("d");
-            String fromTime = cmd.getOptionValue(OPTION_FROM);
-            String basePath = getDirectory(directory);
+            String uid           = cmd.getOptionValue("u");
+            String pwd           = cmd.getOptionValue("p");
+            String directory     = cmd.getOptionValue("d");
+            String fromTime      = cmd.getOptionValue(OPTION_FROM);
+            String basePath      = getDirectory(directory);
 
             displayCrLf(basePath);
 
             String[] atlasEndpoint = getAtlasRESTUrl();
             if (atlasEndpoint == null || atlasEndpoint.length == 0) {
-                atlasEndpoint = new String[]{DEFAULT_ATLAS_URL};
+                atlasEndpoint = new String[] {DEFAULT_ATLAS_URL};
             }
 
             if (StringUtils.equals(stepToExecute, STEP_PREPARE)) {
@@ -138,7 +142,7 @@ public class BulkFetchAndUpdate {
                 return 0;
             }
 
-            TimeZone utc = TimeZone.getDefault();
+            TimeZone         utc              = TimeZone.getDefault();
             SimpleDateFormat simpleDateFormat = new SimpleDateFormat(DATE_FORMAT_SUPPORTED);
             simpleDateFormat.setTimeZone(utc);
 
@@ -150,7 +154,7 @@ public class BulkFetchAndUpdate {
     }
 
     private static void process(String stepToExecute, String basePath, String[] atlasEndpoint, String uid, String pwd, long fromTimestamp) throws Exception {
-        AtlasClientV2 atlasClientV2 = getAtlasClientV2(atlasEndpoint, new String[]{uid, pwd});
+        AtlasClientV2 atlasClientV2 = getAtlasClientV2(atlasEndpoint, new String[] {uid, pwd});
 
         switch (stepToExecute) {
             case STEP_PREPARE: {
@@ -207,24 +211,21 @@ public class BulkFetchAndUpdate {
     }
 
     private static String[] getAtlasRESTUrl() {
-        Configuration atlasConf = null;
+        Configuration atlasConf;
         try {
             atlasConf = ApplicationProperties.get();
             return atlasConf.getStringArray(APPLICATION_PROPERTY_ATLAS_ENDPOINT);
         } catch (AtlasException e) {
-            return new String[]{DEFAULT_ATLAS_URL};
+            return new String[] {DEFAULT_ATLAS_URL};
         }
     }
 
     private static AtlasClientV2 getAtlasClientV2(String[] atlasEndpoint, String[] uidPwdFromCommandLine) throws IOException {
         AtlasClientV2 atlasClientV2;
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            String[] uidPwd = (uidPwdFromCommandLine[0] == null || uidPwdFromCommandLine[1] == null)
-                    ? AuthenticationUtil.getBasicAuthenticationInput()
-                    : uidPwdFromCommandLine;
+            String[] uidPwd = (uidPwdFromCommandLine[0] == null || uidPwdFromCommandLine[1] == null) ? AuthenticationUtil.getBasicAuthenticationInput() : uidPwdFromCommandLine;
 
             atlasClientV2 = new AtlasClientV2(atlasEndpoint, uidPwd);
-
         } else {
             UserGroupInformation ugi = UserGroupInformation.getCurrentUser();
             atlasClientV2 = new AtlasClientV2(ugi, ugi.getShortUserName(), atlasEndpoint);
@@ -247,6 +248,7 @@ public class BulkFetchAndUpdate {
             fn.accept(String.format(formatMessage[0], formatMessage[1]));
         }
     }
+
     private static void closeReader(BufferedReader bufferedReader) {
         try {
             if (bufferedReader == null) {
@@ -273,7 +275,7 @@ public class BulkFetchAndUpdate {
     }
 
     private static boolean fileCheck(String basePath, String file, boolean existCheck) {
-        String errorMessage = existCheck ? "does not exist" : "exists" ;
+        String errorMessage = existCheck ? "does not exist" : "exists";
         if (checkFileExists(basePath + file) != existCheck) {
             displayCrLf(String.format("File '%s' %s!", basePath + file, errorMessage));
             return false;
@@ -299,17 +301,19 @@ public class BulkFetchAndUpdate {
     }
 
     private static class Preparer {
-        private static final String  ATTR_NAME_QUALIFIED_NAME = "qualifiedName";
+        private static final String ATTR_NAME_QUALIFIED_NAME = "qualifiedName";
 
-        private AtlasClientV2 atlasClientV2;
-        private Map<String, String> typeNameUniqueAttributeNameMap = new HashMap<>();
+        private final AtlasClientV2 atlasClientV2;
+        private final Map<String, String> typeNameUniqueAttributeNameMap = new HashMap<>();
 
         public Preparer(AtlasClientV2 atlasClientV2) {
             this.atlasClientV2 = atlasClientV2;
         }
 
         public void run(String basePath, long fromTimestamp) throws Exception {
-            if (!fileCheck(basePath, filesToUse, false)) return;
+            if (!fileCheck(basePath, filesToUse, false)) {
+                return;
+            }
 
             displayCrLf("Starting: from: " + fromTimestamp + " to: " + "current time (" + System.currentTimeMillis() + ")...");
             writeClassificationDefs(basePath, FILE_CLASSIFICATION_DEFS, getAllClassificationsDefs());
@@ -318,9 +322,7 @@ public class BulkFetchAndUpdate {
         }
 
         private void writeClassificationDefs(String basePath, String fileName, List<AtlasClassificationDef> classificationDefs) throws IOException {
-            FileWriter fileWriter = null;
-            try {
-                fileWriter = getFileWriter(basePath, fileName);
+            try (FileWriter fileWriter = getFileWriter(basePath, fileName)) {
                 for (AtlasClassificationDef classificationDef : classificationDefs) {
                     try {
                         classificationDef.setGuid(null);
@@ -332,15 +334,10 @@ public class BulkFetchAndUpdate {
                     }
                 }
             }
-            finally {
-                if (fileWriter != null) {
-                    fileWriter.close();
-                }
-            }
         }
 
         private void writeEntityHeaders(String basePath, String fileName, long fromTimestamp) throws AtlasServiceException, IOException {
-            FileWriter fileWriter = null;
+            FileWriter fileWriter;
 
             try {
                 fileWriter = getFileWriter(basePath, fileName);
@@ -351,8 +348,8 @@ public class BulkFetchAndUpdate {
             }
 
             try {
-                AtlasEntityHeaders entityHeaders = atlasClientV2.getEntityHeaders(fromTimestamp);
-                int guidHeaderMapSize = entityHeaders.getGuidHeaderMap().size();
+                AtlasEntityHeaders entityHeaders     = atlasClientV2.getEntityHeaders(fromTimestamp);
+                int                guidHeaderMapSize = entityHeaders.getGuidHeaderMap().size();
                 try {
                     displayCrLf("Read entities: " + guidHeaderMapSize);
                     AtlasEntityHeaders updatedHeaders = removeEntityGuids(entityHeaders);
@@ -361,7 +358,7 @@ public class BulkFetchAndUpdate {
                     displayCrLf("Writing entities: " + updatedHeaders.getGuidHeaderMap().size());
                 } catch (Exception e) {
                     LOG.error("Error writing: {}", guidHeaderMapSize, e);
-                    displayCrLf("Error writing: " + e.toString());
+                    displayCrLf("Error writing: " + e);
                 }
             } finally {
                 if (fileWriter != null) {
@@ -412,7 +409,7 @@ public class BulkFetchAndUpdate {
                     if (!found) {
                         currentHeader.getClassifications().add(c);
                     } else {
-                        displayCrLf("Ignoring: " + c.toString());
+                        displayCrLf("Ignoring: " + c);
                         LOG.warn("Ignoring: {}", AtlasJson.toJson(c));
                     }
                 }
@@ -467,15 +464,16 @@ public class BulkFetchAndUpdate {
     }
 
     private static class Updater {
-        private AtlasClientV2 atlasClientV2;
+        private final AtlasClientV2 atlasClientV2;
 
         public Updater(AtlasClientV2 atlasClientV2) {
-
             this.atlasClientV2 = atlasClientV2;
         }
 
         public void run(String basePath) throws Exception {
-            if (!fileCheck(basePath, filesToUse, true)) return;
+            if (!fileCheck(basePath, filesToUse, true)) {
+                return;
+            }
 
             displayCrLf("Starting...");
             readAndCreateOrUpdateClassificationDefs(basePath, FILE_CLASSIFICATION_DEFS);
@@ -508,9 +506,10 @@ public class BulkFetchAndUpdate {
         private void readAndCreateOrUpdateClassificationDefs(String basePath, String fileName) throws Exception {
             BufferedReader bufferedReader = null;
             try {
+                String cd;
                 bufferedReader = getBufferedReader(basePath, fileName);
 
-                for (String cd; (cd = bufferedReader.readLine()) != null; ) {
+                while ((cd = bufferedReader.readLine()) != null) {
                     AtlasClassificationDef classificationDef = AtlasType.fromJson(cd, AtlasClassificationDef.class);
                     createOrUpdateClassification(classificationDef);
                 }
@@ -520,7 +519,7 @@ public class BulkFetchAndUpdate {
         }
 
         private void createOrUpdateClassification(AtlasClassificationDef classificationDef) {
-            String name = classificationDef.getName();
+            String        name     = classificationDef.getName();
             AtlasTypesDef typesDef = new AtlasTypesDef(null, null, Collections.singletonList(classificationDef), null, null);
             try {
                 display("%s -> ", name);
@@ -538,15 +537,12 @@ public class BulkFetchAndUpdate {
         }
 
         private void updateClassification(AtlasClassificationDef classificationDef) {
-            String name = classificationDef.getName();
+            String        name     = classificationDef.getName();
             AtlasTypesDef typesDef = new AtlasTypesDef(null, null, Collections.singletonList(classificationDef), null, null);
             try {
                 display("Update: %s -> ", name);
                 atlasClientV2.updateAtlasTypeDefs(typesDef);
                 displayCrLf(" [Done]");
-            } catch (AtlasServiceException e) {
-                LOG.error("{} skipped!", name, e);
-                displayCrLf(" [Skipped]", name);
             } catch (Exception ex) {
                 LOG.error("{} skipped!", name, ex);
                 displayCrLf(" [Skipped]", name);
