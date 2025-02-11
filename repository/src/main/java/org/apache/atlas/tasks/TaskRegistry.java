@@ -35,6 +35,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.DirectIndexQueryResult;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasMetricType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
@@ -53,6 +54,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -67,6 +69,7 @@ public class TaskRegistry {
     public static final int TASK_FETCH_BATCH_SIZE = 100;
     public static final List<Map<String, Object>> SORT_ARRAY = Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc")));
     public static final String JANUSGRAPH_VERTEX_INDEX = "janusgraph_vertex_index";
+    public static final String TASK_MISMATCH_TAG = "mismatchTask";
 
     private AtlasGraph graph;
     private TaskService taskService;
@@ -398,6 +401,7 @@ public class TaskRegistry {
         Map<String, Object> dsl = mapOf("query", mapOf("bool", mapOf("should", statusClauseList)));
         dsl.put("sort", Collections.singletonList(mapOf(Constants.TASK_CREATED_TIME, mapOf("order", "asc"))));
         dsl.put("size", size);
+        long mismatches = 0;
         int totalFetched = 0;
         while (true) {
             int fetched = 0;
@@ -436,8 +440,14 @@ public class TaskRegistry {
                             } else {
                                 LOG.warn("Status mismatch for task with guid: {}. Expected PENDING/IN_PROGRESS but found: {}",
                                         atlasTask.getGuid(), atlasTask.getStatus());
-                                String docId = LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay()));
-                                repairMismatchedTask(atlasTask, docId);
+                                mismatches++;
+                                try {
+                                    String docId = LongEncoding.encode(Long.parseLong(vertex.getIdForDisplay()));
+                                    repairMismatchedTask(atlasTask, docId);
+                                }
+                                catch (Exception e){
+                                    e.printStackTrace();
+                                }
                             }
                         } else {
                             LOG.warn("Null vertex while re-queuing tasks at index {}", fetched);
@@ -456,7 +466,14 @@ public class TaskRegistry {
                 break;
             }
         }
-
+        if(mismatches > 0) {
+            AtlasPerfMetrics.Metric mismatchMetrics = new AtlasPerfMetrics.Metric(TASK_MISMATCH_TAG);
+            mismatchMetrics.setMetricType(AtlasMetricType.COUNTER);
+            mismatchMetrics.addTag("name", TASK_MISMATCH_TAG);
+            mismatchMetrics.setInvocations(mismatches);
+            mismatchMetrics.setTotalTimeMSecs(0);
+            RequestContext.get().addApplicationMetrics(mismatchMetrics);
+        }
         return ret;
     }
 
@@ -466,10 +483,14 @@ public class TaskRegistry {
         try {
             // Create a map for the fields to be updated
             Map<String, Object> fieldsToUpdate = new HashMap<>();
-            fieldsToUpdate.put("__task_endTime", atlasTask.getEndTime().getTime());
-            fieldsToUpdate.put("__task_timeTakenInSeconds", atlasTask.getTimeTakenInSeconds());
+            if(Objects.nonNull(atlasTask.getEndTime())) {
+                fieldsToUpdate.put("__task_endTime", atlasTask.getEndTime().getTime());
+            }
+            if(Objects.nonNull(atlasTask.getTimeTakenInSeconds())) {
+                fieldsToUpdate.put("__task_timeTakenInSeconds", atlasTask.getTimeTakenInSeconds());
+            }
             fieldsToUpdate.put("__task_status", atlasTask.getStatus().toString());
-            fieldsToUpdate.put("__task_modificationTimestamp", atlasTask.getUpdatedTime().getTime()); // Set current timestamp
+            fieldsToUpdate.put("__task_modificationTimestamp", atlasTask.getUpdatedTime().getTime());
 
             // Convert fieldsToUpdate map to JSON using Jackson
             ObjectMapper objectMapper = new ObjectMapper();
