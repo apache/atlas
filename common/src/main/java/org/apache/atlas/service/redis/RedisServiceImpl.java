@@ -19,7 +19,7 @@ public class RedisServiceImpl extends AbstractRedisService{
     public void init() throws AtlasException {
         redisClient = Redisson.create(getProdConfig());
         redisCacheClient = Redisson.create(getCacheImplConfig());
-        LOG.info("Sentinel redis client created successfully.");
+        LOG.debug("Sentinel redis client created successfully.");
     }
 
     @Override

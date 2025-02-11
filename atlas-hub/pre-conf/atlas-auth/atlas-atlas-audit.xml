@@ -111,7 +111,7 @@
 	<!-- Log4j audit provider configuration -->
 	<property>
 		<name>xasecure.audit.destination.log4j</name>
-		<value>false</value>
+		<value>true</value>
 	</property>	
 
 	<property>
@@ -130,7 +130,7 @@
 	</property>
 	<property>
 		<name>xasecure.audit.destination.elasticsearch.urls</name>
-		<value>logging-master.logging.svc.cluster.local</value>
+		<value>atlas-elasticsearch-master.atlas.svc.cluster.local</value>
 	</property>
 	<property>
 		<name>xasecure.audit.destination.elasticsearch.index</name>
