@@ -120,10 +120,6 @@
                       <artifactId>*</artifactId>
                   </exclusion>
                   <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-                  <exclusion>
                       <groupId>com.codahale.metrics</groupId>
                       <artifactId>metrics-core</artifactId>
                   </exclusion>
@@ -137,6 +133,10 @@
             <exclusions>
                 <exclusion>
                     <groupId>ch.qos.logback</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>cassandra-hadoop-util</groupId>
                     <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
@@ -211,10 +211,6 @@
                 <exclusion>
                     <groupId>org.codehaus.woodstox</groupId>
                     <artifactId>woodstox-core-asl</artifactId>
-                </exclusion>
-                <exclusion>
-                    <groupId>io.netty</groupId>
-                    <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
