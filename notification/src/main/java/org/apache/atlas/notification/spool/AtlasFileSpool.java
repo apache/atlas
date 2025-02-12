@@ -31,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 import static org.apache.atlas.repository.Constants.FILE_SPOOL_SOURCE;
 
 public class AtlasFileSpool implements NotificationInterface {
@@ -42,7 +43,7 @@ public class AtlasFileSpool implements NotificationInterface {
     private final Spooler              spooler;
     private final Publisher            publisher;
     private       Thread               publisherThread;
-    private       Boolean              initDone = null;
+    private       Boolean              initDone;
     private       String               currentUser;
 
     public AtlasFileSpool(Configuration configuration, AbstractNotification notificationHandler) {
@@ -89,6 +90,7 @@ public class AtlasFileSpool implements NotificationInterface {
     @Override
     public void setCurrentUser(String user) {
         this.notificationHandler.setCurrentUser(user);
+
         this.currentUser = user;
     }
 
@@ -110,23 +112,15 @@ public class AtlasFileSpool implements NotificationInterface {
     }
 
     @Override
-    public boolean isReady(NotificationType type) {
-        return true;
-    }
-
-    @Override
     public <T> void send(NotificationType type, List<T> messages, MessageSource source) throws NotificationException {
         List<String> serializedMessages = getSerializedMessages(messages, source);
+
         if (hasInitSucceeded() && (this.indexManagement.isPending() || this.publisher.isDestinationDown())) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("AtlasFileSpool.send(): sending to spooler");
-            }
+            LOG.debug("AtlasFileSpool.send(): sending to spooler");
 
             spooler.sendInternal(type, serializedMessages);
         } else {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("AtlasFileSpool.send(): sending to notificationHandler");
-            }
+            LOG.debug("AtlasFileSpool.send(): sending to notificationHandler");
 
             try {
                 notificationHandler.sendInternal(type, serializedMessages);
@@ -146,15 +140,6 @@ public class AtlasFileSpool implements NotificationInterface {
         }
     }
 
-    private <T> List<String> getSerializedMessages(List<T> messages, MessageSource source) {
-        List<String> serializedMessages = new ArrayList<>(messages.size());
-        for (int index = 0; index < messages.size(); index++) {
-            notificationHandler.createNotificationMessages(messages.get(index), serializedMessages, source);
-        }
-
-        return serializedMessages;
-    }
-
     @Override
     public void close() {
         try {
@@ -166,6 +151,21 @@ public class AtlasFileSpool implements NotificationInterface {
         } catch (InterruptedException e) {
             LOG.error("Interrupted! source={}", this.config.getSourceName(), e);
         }
+    }
+
+    @Override
+    public boolean isReady(NotificationType type) {
+        return true;
+    }
+
+    private <T> List<String> getSerializedMessages(List<T> messages, MessageSource source) {
+        List<String> serializedMessages = new ArrayList<>(messages.size());
+
+        for (T message : messages) {
+            AbstractNotification.createNotificationMessages(message, serializedMessages, source);
+        }
+
+        return serializedMessages;
     }
 
     private void startPublisher() {
@@ -183,6 +183,6 @@ public class AtlasFileSpool implements NotificationInterface {
     }
 
     private boolean hasInitSucceeded() {
-        return this.initDone != null && this.initDone == true;
+        return this.initDone != null && this.initDone;
     }
 }

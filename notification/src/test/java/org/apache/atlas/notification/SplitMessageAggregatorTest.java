@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,24 +19,24 @@ package org.apache.atlas.notification;
 
 import org.apache.atlas.model.notification.AtlasNotificationBaseMessage.CompressionKind;
 import org.apache.atlas.model.notification.AtlasNotificationStringMessage;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.testng.Assert.assertEquals;
 
 public class SplitMessageAggregatorTest {
     @Test
     public void verifyEviction() throws InterruptedException {
         Map<String, SplitMessageAggregator> map = getStringSplitMessageAggregatorMap();
 
-        Thread.currentThread().sleep(500);
+        Thread.sleep(500);
 
         AtlasNotificationMessageDeserializer.purgeStaleMessages(map, System.currentTimeMillis(), 250);
 
-        Assert.assertEquals(map.size(), 0);
+        assertEquals(map.size(), 0);
     }
-
 
     @Test
     public void verifyEvictionDoesNotOccur() throws InterruptedException {
@@ -44,11 +44,11 @@ public class SplitMessageAggregatorTest {
 
         int expectedSize = map.size();
 
-        Thread.currentThread().sleep(500);
+        Thread.sleep(500);
 
         AtlasNotificationMessageDeserializer.purgeStaleMessages(map, System.currentTimeMillis(), Long.MAX_VALUE);
 
-        Assert.assertEquals(map.size(), expectedSize);
+        assertEquals(map.size(), expectedSize);
     }
 
     private Map<String, SplitMessageAggregator> getStringSplitMessageAggregatorMap() {
@@ -66,7 +66,7 @@ public class SplitMessageAggregatorTest {
         for (int i = 0; i < splitCount; i++) {
             AtlasNotificationStringMessage sm = new AtlasNotificationStringMessage("aaaaa", id, CompressionKind.NONE, i, splitCount);
 
-            if(sma == null) {
+            if (sma == null) {
                 sma = new SplitMessageAggregator(sm);
             } else {
                 sma.add(sm);

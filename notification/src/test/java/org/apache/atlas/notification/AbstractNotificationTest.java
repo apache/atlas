@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,9 +19,9 @@
 package org.apache.atlas.notification;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.HookNotificationType;
+import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.type.AtlasType;
 import org.apache.commons.configuration.Configuration;
@@ -32,13 +32,12 @@ import java.util.List;
 import java.util.Map;
 
 import static org.mockito.Mockito.mock;
-import static org.testng.Assert.*;
+import static org.testng.Assert.assertEquals;
 
 /**
  * AbstractNotification tests.
  */
 public class AbstractNotificationTest {
-
     @org.testng.annotations.Test
     public void testSend() throws Exception {
         MessageSource    source        = new MessageSource();
@@ -55,8 +54,8 @@ public class AbstractNotificationTest {
 
         notification.send(NotificationType.HOOK, message1, message2, message3);
 
-        assertEquals(NotificationType.HOOK, notification.type);
-        assertEquals(3, notification.messages.size());
+        assertEquals(notification.type, NotificationType.HOOK);
+        assertEquals(notification.messages.size(), 3);
 
         for (int i = 0; i < notification.messages.size(); i++) {
             assertEqualsMessageJson(notification.messages.get(i), messageJson.get(i));
@@ -88,13 +87,6 @@ public class AbstractNotificationTest {
         }
     }
 
-    public static class Test extends HookNotification {
-
-        public Test(HookNotificationType type, String user) {
-            super(type, user);
-        }
-    }
-
     // ignore msgCreationTime in Json
     private void assertEqualsMessageJson(String msgJsonActual, String msgJsonExpected) {
         Map<Object, Object> msgActual   = AtlasType.fromV1Json(msgJsonActual, Map.class);
@@ -106,6 +98,12 @@ public class AbstractNotificationTest {
         assertEquals(msgActual, msgExpected);
     }
 
+    public static class Test extends HookNotification {
+        public Test(HookNotificationType type, String user) {
+            super(type, user);
+        }
+    }
+
     public static class TestNotification extends AbstractNotification {
         private NotificationType type;
         private List<String>     messages;
@@ -115,9 +113,7 @@ public class AbstractNotificationTest {
         }
 
         @Override
-        public void sendInternal(NotificationType notificationType, List<String> notificationMessages)
-            throws NotificationException {
-
+        public void sendInternal(NotificationType notificationType, List<String> notificationMessages) {
             type     = notificationType;
             messages = notificationMessages;
         }

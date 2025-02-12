@@ -35,4 +35,5 @@
     <suppress files="AtlasGraphTraversalSource.java" checks="MethodName"/>
     <suppress files="DeleteHandlerV1.java" checks="MethodName"/>
     <suppress files="Id.java" checks="MethodName"/>
+    <suppress files="KafkaNotification.java" checks="StaticVariableName"/>
 </suppressions>

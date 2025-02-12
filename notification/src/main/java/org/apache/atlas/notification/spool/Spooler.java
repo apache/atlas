@@ -56,27 +56,29 @@ public class Spooler extends AbstractNotification {
     }
 
     @Override
-    public void sendInternal(NotificationType type, List<String> messages) {
-        for (int i = 0; i < messages.size(); i++) {
-            AtlasNotificationMessage e = AtlasType.fromV1Json(messages.get(i), AtlasNotificationMessage.class);
-            e.setSpooled(true);
-
-            messages.set(i, AtlasType.toV1Json(e));
-        }
-
-        boolean ret = write(messages);
-        if (failedMessagesLogger != null && !ret) {
-            writeToFailedMessages(messages);
-        }
-    }
-
-    @Override
     public void close() {
     }
 
     @Override
     public boolean isReady(NotificationType type) {
         return true;
+    }
+
+    @Override
+    public void sendInternal(NotificationType type, List<String> messages) {
+        for (int i = 0; i < messages.size(); i++) {
+            AtlasNotificationMessage e = AtlasType.fromV1Json(messages.get(i), AtlasNotificationMessage.class);
+
+            e.setSpooled(true);
+
+            messages.set(i, AtlasType.toV1Json(e));
+        }
+
+        boolean ret = write(messages);
+
+        if (failedMessagesLogger != null && !ret) {
+            writeToFailedMessages(messages);
+        }
     }
 
     @VisibleForTesting
@@ -109,7 +111,7 @@ public class Spooler extends AbstractNotification {
     }
 
     private boolean writeInternal(List<String> messages) {
-        boolean ret = false;
+        boolean ret;
 
         try {
             byte[]     lineSeparatorBytes = SpoolUtils.getLineSeparator().getBytes(SpoolUtils.DEFAULT_CHAR_SET);

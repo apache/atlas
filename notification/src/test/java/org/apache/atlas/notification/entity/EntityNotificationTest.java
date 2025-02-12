@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,10 +18,10 @@
 
 package org.apache.atlas.notification.entity;
 
-import org.apache.atlas.v1.model.instance.Referenceable;
-import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.v1.model.instance.Referenceable;
+import org.apache.atlas.v1.model.instance.Struct;
 import org.apache.atlas.v1.model.notification.EntityNotificationV1;
 import org.apache.atlas.v1.model.notification.EntityNotificationV1.OperationType;
 import org.testng.annotations.Test;
@@ -42,28 +42,42 @@ import static org.testng.Assert.assertTrue;
  * EntityNotificationV1 tests.
  */
 public class EntityNotificationTest {
+    public static Referenceable getEntity(String id, Struct... traits) {
+        String              typeName   = "typeName";
+        List<String>        traitNames = new LinkedList<>();
+        Map<String, Struct> traitMap   = new HashMap<>();
+
+        for (Struct trait : traits) {
+            String traitName = trait.getTypeName();
+
+            traitNames.add(traitName);
+            traitMap.put(traitName, trait);
+        }
+
+        return new Referenceable(id, typeName, new HashMap<>(), traitNames, traitMap);
+    }
 
     @Test
-    public void testGetEntity() throws Exception {
+    public void testGetEntity() {
         Referenceable        entity             = getEntity("id");
-        EntityNotificationV1 entityNotification = new EntityNotificationV1(entity, OperationType.ENTITY_CREATE, Collections.<Struct>emptyList());
+        EntityNotificationV1 entityNotification = new EntityNotificationV1(entity, OperationType.ENTITY_CREATE, Collections.emptyList());
 
         assertEquals(entity, entityNotification.getEntity());
     }
 
     @Test
-    public void testGetOperationType() throws Exception {
+    public void testGetOperationType() {
         Referenceable        entity             = getEntity("id");
-        EntityNotificationV1 entityNotification = new EntityNotificationV1(entity, OperationType.ENTITY_CREATE, Collections.<Struct>emptyList());
+        EntityNotificationV1 entityNotification = new EntityNotificationV1(entity, OperationType.ENTITY_CREATE, Collections.emptyList());
 
-        assertEquals(EntityNotificationV1.OperationType.ENTITY_CREATE, entityNotification.getOperationType());
+        assertEquals(entityNotification.getOperationType(), OperationType.ENTITY_CREATE);
     }
 
     @Test
-    public void testGetAllTraits() throws Exception {
+    public void testGetAllTraits() {
         Referenceable entity    = getEntity("id");
         String        traitName = "MyTrait";
-        List<Struct>  traitInfo = Collections.singletonList(new Struct(traitName, Collections.<String, Object>emptyMap()));
+        List<Struct>  traitInfo = Collections.singletonList(new Struct(traitName, Collections.emptyMap()));
 
         EntityNotificationV1 entityNotification = new EntityNotificationV1(entity, OperationType.TRAIT_ADD, traitInfo);
 
@@ -71,7 +85,7 @@ public class EntityNotificationTest {
     }
 
     @Test
-    public void testGetAllTraitsSuperTraits() throws Exception {
+    public void testGetAllTraitsSuperTraits() {
         AtlasTypeRegistry       typeRegistry        = mock(AtlasTypeRegistry.class);
         String                  traitName           = "MyTrait";
         Struct                  myTrait             = new Struct(traitName);
@@ -92,7 +106,7 @@ public class EntityNotificationTest {
 
         List<Struct> allTraits = entityNotification.getAllTraits();
 
-        assertEquals(2, allTraits.size());
+        assertEquals(allTraits.size(), 2);
 
         for (Struct trait : allTraits) {
             String typeName = trait.getTypeName();
@@ -102,27 +116,12 @@ public class EntityNotificationTest {
     }
 
     @Test
-    public void testEquals() throws Exception {
+    public void testEquals() {
         Referenceable        entity              = getEntity("id");
-        EntityNotificationV1 entityNotification2 = new EntityNotificationV1(entity, OperationType.ENTITY_CREATE, Collections.<Struct>emptyList());
-        EntityNotificationV1 entityNotification  = new EntityNotificationV1(entity, OperationType.ENTITY_CREATE, Collections.<Struct>emptyList());
+        EntityNotificationV1 entityNotification2 = new EntityNotificationV1(entity, OperationType.ENTITY_CREATE, Collections.emptyList());
+        EntityNotificationV1 entityNotification  = new EntityNotificationV1(entity, OperationType.ENTITY_CREATE, Collections.emptyList());
 
-        assertTrue(entityNotification.equals(entityNotification2));
-        assertTrue(entityNotification2.equals(entityNotification));
-    }
-
-    public static Referenceable getEntity(String id, Struct... traits) {
-        String              typeName   = "typeName";
-        List<String>        traitNames = new LinkedList<>();
-        Map<String, Struct> traitMap   = new HashMap<>();
-
-        for (Struct trait : traits) {
-            String traitName = trait.getTypeName();
-
-            traitNames.add(traitName);
-            traitMap.put(traitName, trait);
-        }
-
-        return new Referenceable(id, typeName, new HashMap<String, Object>(), traitNames, traitMap);
+        assertEquals(entityNotification2, entityNotification);
+        assertEquals(entityNotification, entityNotification2);
     }
 }
