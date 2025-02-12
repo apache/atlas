@@ -107,6 +107,7 @@ public class AuditFilter implements Filter {
             requestContext.setClientOrigin(httpRequest.getHeader(X_ATLAN_CLIENT_ORIGIN));
             requestContext.setMetricRegistry(metricsRegistry);
             MDC.put(TRACE_ID, internalRequestId);
+            MDC.put(X_ATLAN_CLIENT_ORIGIN, ofNullable(httpRequest.getHeader(X_ATLAN_CLIENT_ORIGIN)).orElse(EMPTY));
             MDC.put(X_ATLAN_REQUEST_ID, ofNullable(httpRequest.getHeader(X_ATLAN_REQUEST_ID)).orElse(EMPTY));
             if (StringUtils.isNotEmpty(deleteType)) {
                 if (deleteTypeOverrideEnabled) {
