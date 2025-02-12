@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,24 +19,30 @@ package org.apache.atlas.notification;
 
 import org.apache.atlas.AtlasException;
 
+import java.util.Collections;
 import java.util.List;
 
 /**
  * Exception from notification.
  */
 public class NotificationException extends AtlasException {
-    private List<String> failedMessages;
+    private final List<String> failedMessages;
 
     public NotificationException(Exception e) {
         super(e);
+
+        failedMessages = Collections.emptyList();
     }
 
     public NotificationException(Exception e, String errorMsg) {
         super(errorMsg, e);
+
+        failedMessages = Collections.emptyList();
     }
 
     public NotificationException(Exception e, List<String> failedMessages) {
         super(e);
+
         this.failedMessages = failedMessages;
     }
 

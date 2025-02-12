@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -44,6 +44,14 @@ public abstract class FileOperation {
     private       File   file;
     private       String id;
 
+    public FileOperation(String source) {
+        this(source, false);
+    }
+
+    public FileOperation(String source, boolean notifyConcurrency) {
+        this.source = source;
+    }
+
     public static RandomAccessFile createRandomAccessFileForRead(File file) throws FileNotFoundException {
         return new RandomAccessFile(file, RANDOM_ACCESS_FILE_OPEN_MODE_R);
     }
@@ -68,20 +76,8 @@ public abstract class FileOperation {
         return -1;
     }
 
-    public FileOperation(String source) {
-        this(source, false);
-    }
-
-    public FileOperation(String source, boolean notifyConcurrency) {
-        this.source = source;
-    }
-
     public String getSource() {
         return source;
-    }
-
-    public void setId(String id) {
-        this.id = id;
     }
 
     public void perform(File file) {
@@ -96,18 +92,26 @@ public abstract class FileOperation {
 
     public void perform(File file, String id, String json) {
         this.setId(id);
+
         perform(file, json);
     }
 
     public abstract FileLock run(RandomAccessFile randomAccessFile, FileChannel channel, String json) throws IOException;
 
-
     protected File getFile() {
         return this.file;
     }
 
+    private void setFile(File file) {
+        this.file = file;
+    }
+
     protected String getId() {
         return this.id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     protected void close(RandomAccessFile randomAccessFile, FileChannel channel, FileLock lock) {
@@ -130,11 +134,6 @@ public abstract class FileOperation {
         } catch (IOException exception) {
             LOG.error("FileOperation(source={}).close(): failed", getSource(), exception);
         }
-    }
-
-
-    private void setFile(File file) {
-        this.file = file;
     }
 
     private void performWithRetry(File file, String json) {
