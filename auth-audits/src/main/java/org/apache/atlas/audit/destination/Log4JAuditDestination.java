@@ -101,7 +101,7 @@ public class Log4JAuditDestination extends AuditDestination {
 			MDC.put(AUTH_AUDIT_ACTION, event.getAction());
 			MDC.put(AUTH_AUDIT_ENTITY_GUID, event.getEntityGuid());
 			MDC.put(AUTH_AUDIT_POLICY_ID, event.getPolicyId());
-			MDC.put(AUTH_AUDIT_RESOURCE, event.getResourceType());
+			MDC.put(AUTH_AUDIT_RESOURCE, event.getResourcePath());
 			MDC.put(AUTH_AUDIT_RESULT, String.valueOf(event.getAccessResult()));
 			MDC.put(AUTH_AUDIT_CLIENT_IP, event.getClientIP());
 			MDC.put(AUTH_AUDIT_AGENT, event.getAgentId());

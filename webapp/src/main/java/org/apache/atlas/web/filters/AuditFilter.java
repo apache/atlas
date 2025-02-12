@@ -107,6 +107,7 @@ public class AuditFilter implements Filter {
             requestContext.setClientOrigin(httpRequest.getHeader(X_ATLAN_CLIENT_ORIGIN));
             requestContext.setMetricRegistry(metricsRegistry);
             MDC.put(TRACE_ID, internalRequestId);
+            MDC.put(X_ATLAN_CLIENT_ORIGIN, ofNullable(httpRequest.getHeader(X_ATLAN_CLIENT_ORIGIN)).orElse(EMPTY));
             MDC.put(X_ATLAN_REQUEST_ID, ofNullable(httpRequest.getHeader(X_ATLAN_REQUEST_ID)).orElse(EMPTY));
             if (StringUtils.isNotEmpty(deleteType)) {
                 if (deleteTypeOverrideEnabled) {
@@ -164,7 +165,7 @@ public class AuditFilter implements Filter {
             MDC.put("requestUrl", auditLog.requestUrl);
             MDC.put("httpStatus", String.valueOf(auditLog.httpStatus));
             MDC.put("timeTaken", String.valueOf(auditLog.timeTaken));
-            AUDIT_LOG.info("Capturing audit log");
+            AUDIT_LOG.info("ATLAS_AUDIT - {} {} {} {}", auditLog.requestMethod, auditLog.requestUrl, auditLog.httpStatus, auditLog.timeTaken);
         }
     }
 
