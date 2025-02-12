@@ -78,6 +78,8 @@ import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPro
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
+import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getState;
 
 public abstract class DeleteHandlerV1 {
     public static final Logger  LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
