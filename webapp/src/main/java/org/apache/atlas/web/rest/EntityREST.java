@@ -387,7 +387,8 @@ public class EntityREST {
 
             AtlasEntityType entityType = ensureEntityType(typeName);
 
-            return entitiesStore.deleteByUniqueAttributes(entityType, attributes);
+            return entitiesStore.
+                    deleteByUniqueAttributes(entityType, attributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -883,8 +884,9 @@ public class EntityREST {
     @DELETE
     @Path("/bulk/uniqueAttribute")
     @Timed
-    public EntityMutationResponse bulkDeleteByUniqueAttribute(List<AtlasObjectId> objectIds) throws AtlasBaseException {
+    public EntityMutationResponse bulkDeleteByUniqueAttribute(List<AtlasObjectId> objectIds, @QueryParam("skipHasLineageCalculation") @DefaultValue("false") boolean skipHasLineageCalculation) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
+        RequestContext.get().setSkipHasLineageCalculation(skipHasLineageCalculation);
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.bulkDeleteByUniqueAttribute(" + objectIds.size() + ")");
