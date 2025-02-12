@@ -1137,7 +1137,8 @@ public class EntityGraphRetriever {
     }
 
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
-        boolean shouldPrefetch = !isPolicyAttribute(attributes)
+        boolean shouldPrefetch = RequestContext.get().isInvokedByIndexSearch()
+                && !isPolicyAttribute(attributes)
                 && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION.getBoolean();
 
         if (shouldPrefetch) {

@@ -50,6 +50,23 @@ public class AtlasPerfMetrics {
         }
     }
 
+    public void recordMetric(MetricRecorder recorder, long invocations) {
+        if (recorder != null) {
+            final String name = recorder.name;
+            final long timeTaken = recorder.getElapsedTime();
+            Metric metric = metrics.get(name);
+
+            if (metric == null) {
+                metric = new Metric(name);
+
+                metrics.put(name, metric);
+            }
+
+            metric.invocations += invocations;
+            metric.totalTimeMSecs += timeTaken;
+        }
+    }
+
     public void clear() {
         metrics.clear();
     }
@@ -149,5 +166,8 @@ public class AtlasPerfMetrics {
             invocations++;
         }
 
+        public void setInvocations(long invocations) {
+            this.invocations = invocations;
+        }
     }
 }
