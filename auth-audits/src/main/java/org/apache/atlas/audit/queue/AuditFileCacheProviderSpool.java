@@ -19,8 +19,8 @@
 
 package org.apache.atlas.audit.queue;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.atlas.audit.utils.AuthObjectUtil;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 //import org.apache.log4j.MDC;
@@ -41,6 +41,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -115,8 +116,6 @@ public class AuditFileCacheProviderSpool implements Runnable {
     boolean isDestDown 	= false;
     boolean isSpoolingSuccessful = true;
 
-    private Gson gson = null;
-
     public AuditFileCacheProviderSpool(AuditHandler consumerProvider) {
         this.consumerProvider = consumerProvider;
     }
@@ -140,8 +139,6 @@ public class AuditFileCacheProviderSpool implements Runnable {
         }
 
         try {
-            gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
-                    .create();
             // Initial folder and file properties
             String logFolderProp = MiscUtil.getStringProperty(props, propPrefix
                     + "." + PROP_FILE_SPOOL_LOCAL_DIR);
@@ -597,8 +594,7 @@ public class AuditFileCacheProviderSpool implements Runnable {
             String line;
             while ((line = br.readLine()) != null) {
                 if (!line.isEmpty() && !line.startsWith("#")) {
-                    AuditIndexRecord record = gson.fromJson(line,
-                            AuditIndexRecord.class);
+                    AuditIndexRecord record = AuthObjectUtil.fromJson(line, AuditIndexRecord.class);
                     indexRecords.add(record);
                 }
             }
@@ -645,7 +641,7 @@ public class AuditFileCacheProviderSpool implements Runnable {
     synchronized void saveIndexFile() throws FileNotFoundException, IOException {
         PrintWriter out = new PrintWriter(indexFile,"UTF-8");
         for (AuditIndexRecord auditIndexRecord : indexRecords) {
-            out.println(gson.toJson(auditIndexRecord));
+            out.println(AuthObjectUtil.toJson(auditIndexRecord));
         }
         out.close();
         // printIndex();
@@ -657,7 +653,7 @@ public class AuditFileCacheProviderSpool implements Runnable {
         logger.info("Moving to done file. " + indexRecord.filePath
                 + ", queueName=" + FILE_CACHE_PROVIDER_NAME + ", consumer="
                 + consumerProvider.getName());
-        String line = gson.toJson(indexRecord);
+        String line = AuthObjectUtil.toJson(indexRecord);
         PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(
                 indexDoneFile, true),"UTF-8")));
         out.println(line);
@@ -705,8 +701,7 @@ public class AuditFileCacheProviderSpool implements Runnable {
                     int filesDeletedCount = 0;
                     while ((line = br.readLine()) != null) {
                         if (!line.isEmpty() && !line.startsWith("#")) {
-                            AuditIndexRecord record = gson.fromJson(line,
-                                    AuditIndexRecord.class);
+                            AuditIndexRecord record = AuthObjectUtil.fromJson(line, AuditIndexRecord.class);
                             logFile = new File(record.filePath);
                             String fileName = logFile.getName();
                             archiveFile = new File(archiveFolder, fileName);

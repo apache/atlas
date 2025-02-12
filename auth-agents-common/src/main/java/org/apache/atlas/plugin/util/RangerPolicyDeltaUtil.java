@@ -26,7 +26,7 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.plugin.model.RangerPolicyDelta;
-import org.apache.atlas.plugin.store.EmbeddedServiceDefsUtil;
+import org.apache.atlas.plugin.store.ServiceDefsUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -119,7 +119,7 @@ public class RangerPolicyDeltaUtil {
                 final String  serviceType = delta.getServiceType();
                 final String  policyType  = delta.getPolicyType();
 
-                if (serviceType == null || (!serviceType.equals(EmbeddedServiceDefsUtil.EMBEDDED_SERVICEDEF_TAG_NAME) &&
+                if (serviceType == null || (!serviceType.equals(ServiceDefsUtil.EMBEDDED_SERVICEDEF_TAG_NAME) &&
                         !serviceType.equals(componentServiceType))) {
                     isValid = false;
                 } else if (StringUtils.isEmpty(policyType) || (!RangerPolicy.POLICY_TYPE_ACCESS.equals(policyType)

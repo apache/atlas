@@ -22,7 +22,13 @@ name: Java CI with Maven
 on:
   push:
     branches:
-      - staging
+      - alpha
+      - beta
+      - development
+      - master
+      - lineageondemand
+      - makerlogic
+      - java17squashstaghelper
 
 jobs:
   build:
@@ -32,10 +38,13 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Set up JDK 1.8
+      - name: Set up JDK 17
         uses: actions/setup-java@v1
         with:
-          java-version: 1.8
+          java-version: 17
+
+      - name: Print JDK version
+        run: java -version
 
       - name: Cache Maven packages
         uses: actions/cache@v2

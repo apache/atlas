@@ -49,7 +49,6 @@ import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.rest.RestStatus;
-import org.janusgraph.diskstorage.solr.Solr6Index;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -111,8 +110,9 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     @Override
     public void applySearchWeight(String collectionName, Map<String, Integer> indexFieldName2SearchWeightMap) {
         SolrClient solrClient = null;
+        //TODO: j17
 
-        try {
+        /*try {
             solrClient = Solr6Index.getSolrClient(); // get solr client using same settings as that of Janus Graph
 
             if (solrClient == null) {
@@ -176,15 +176,16 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
             LOG.debug("Releasing the solr client from usage.");
 
             Solr6Index.releaseSolrClient(solrClient);
-        }
+        }*/
     }
 
 
     @Override
     public Map<String, List<AtlasAggregationEntry>> getAggregatedMetrics(AggregationContext aggregationContext) {
         SolrClient solrClient = null;
+        //TODO: j17
 
-        try {
+        /*try {
             solrClient = Solr6Index.getSolrClient(); // get solr client using same settings as that of Janus Graph
 
             if (solrClient == null) {
@@ -282,7 +283,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
             LOG.error("Error encountered in getting the aggregation metrics. Will return empty aggregation.", e);
         } finally {
             Solr6Index.releaseSolrClient(solrClient);
-        }
+        }*/
 
         return Collections.EMPTY_MAP;
     }
@@ -290,8 +291,9 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     @Override
     public void applySuggestionFields(String collectionName, List<String> suggestionProperties) {
         SolrClient solrClient = null;
+        //TODO: j17
 
-        try {
+        /*try {
             solrClient = Solr6Index.getSolrClient(); // get solr client using same settings as that of Janus Graph
 
             if (solrClient == null) {
@@ -313,7 +315,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
             LOG.error(msg, t);
         } finally {
             Solr6Index.releaseSolrClient(solrClient);
-        }
+        }*/
 
         LOG.info("Applied suggestion fields request handler for collection {}.", collectionName);
     }
@@ -321,8 +323,9 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
     @Override
     public List<String> getSuggestions(String prefixString, String indexFieldName) {
         SolrClient solrClient = null;
+        //TODO: j17
 
-        try {
+        /*try {
             solrClient = Solr6Index.getSolrClient(); // get solr client using same settings as that of Janus Graph
 
             if (solrClient == null) {
@@ -373,15 +376,17 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
             LOG.error(msg);
         } finally {
             Solr6Index.releaseSolrClient(solrClient);
-        }
+        }*/
 
         return Collections.EMPTY_LIST;
     }
 
     private boolean isSolrHealthy() throws SolrServerException, IOException {
-        SolrClient client = Solr6Index.getSolrClient();
+        //TODO: j17
+        /*SolrClient client = Solr6Index.getSolrClient();
 
-        return client != null && client.ping(Constants.VERTEX_INDEX).getStatus() == SOLR_HEALTHY_STATUS;
+        return client != null && client.ping(Constants.VERTEX_INDEX).getStatus() == SOLR_HEALTHY_STATUS;*/
+        return true;
     }
 
     private boolean isElasticsearchHealthy() throws ElasticsearchException, IOException {
@@ -527,7 +532,8 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         return ret.toString();
     }
 
-    private SolrResponse updateFreeTextRequestHandler(SolrClient solrClient, String collectionName,
+    //TODO: j17
+    /*private SolrResponse updateFreeTextRequestHandler(SolrClient solrClient, String collectionName,
                                                     Map<String, Integer> indexFieldName2SearchWeightMap,
                                                     Solr6Index.Mode mode) throws IOException, SolrServerException, AtlasBaseException {
         String searchWeightString = generateSearchWeightString(indexFieldName2SearchWeightMap);
@@ -543,9 +549,10 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         String payLoadString      = generatePayLoadForFreeText("create-requesthandler", searchWeightString);
 
         return performRequestHandlerAction(collectionName, solrClient, payLoadString, mode);
-    }
+    }*/
 
-    private SolrResponse performRequestHandlerAction(String collectionName,
+    //TODO: j17
+    /*private SolrResponse performRequestHandlerAction(String collectionName,
                                                    SolrClient solrClient,
                                                    String actionPayLoad,
                                                    Solr6Index.Mode mode) throws IOException, SolrServerException, AtlasBaseException {
@@ -570,7 +577,7 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
             default:
                 throw new IllegalArgumentException("Unsupported Solr operation mode: " + mode);
         }
-    }
+    }*/
 
     private SolrResponse validateResponseForSuccess(SolrResponse solrResponse) throws AtlasBaseException {
         if(solrResponse == null) {

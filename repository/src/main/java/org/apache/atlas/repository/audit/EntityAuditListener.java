@@ -19,8 +19,8 @@
 package org.apache.atlas.repository.audit;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.EntityAuditEvent;
-import org.apache.atlas.EntityAuditEvent.EntityAuditAction;
+import org.apache.atlas.model.EntityAuditEvent;
+import org.apache.atlas.model.EntityAuditEvent.EntityAuditAction;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.listener.EntityChangeListener;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
@@ -46,8 +46,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TERM_ADD;
-import static org.apache.atlas.EntityAuditEvent.EntityAuditAction.TERM_DELETE;
+import static org.apache.atlas.model.EntityAuditEvent.EntityAuditAction.TERM_ADD;
+import static org.apache.atlas.model.EntityAuditEvent.EntityAuditAction.TERM_DELETE;
 
 /**
  * Listener on entity create/update/delete, tag add/delete. Adds the corresponding audit event to the audit repository.

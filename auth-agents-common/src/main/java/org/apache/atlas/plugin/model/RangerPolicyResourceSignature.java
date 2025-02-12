@@ -24,7 +24,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.atlas.authorization.hadoop.config.RangerAdminConfig;
+import org.apache.atlas.authorization.config.RangerAdminConfig;
 import org.apache.atlas.plugin.model.RangerPolicy.RangerPolicyItemCondition;
 import org.apache.atlas.plugin.model.RangerPolicy.RangerPolicyResource;
 import org.apache.commons.lang.StringUtils;
@@ -57,24 +57,6 @@ public class RangerPolicyResourceSignature {
 		}
 	}
 
-	/**
-	 * Only added for testability.  Do not make public
-	 * @param string
-	 */
-	RangerPolicyResourceSignature(String string) {
-		_policy = null;
-		if (string == null) {
-			_string = "";
-		} else {
-			_string = string;
-		}
-		if (RangerAdminConfig.getInstance().isFipsEnabled()) {
-			_hash = DigestUtils.sha384Hex(_string);
-		} else {
-			_hash = DigestUtils.sha256Hex(_string);
-		}
-	}
-	
 	String asString() {
 		return _string;
 	}

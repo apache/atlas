@@ -673,6 +673,9 @@
     </profiles>
 
     <properties>
+        <maven-compiler-plugin>3.13.0</maven-compiler-plugin>
+        <maven-shade-plugin>3.4.0</maven-shade-plugin>
+        <maven-war-plugin>3.4.0</maven-war-plugin>
         <akka.version>2.3.7</akka.version>
         <antlr4.plugin.version>4.5</antlr4.plugin.version>
         <antlr4.version>4.7</antlr4.version>
@@ -699,7 +702,7 @@
         <dropwizard-metrics>3.2.2</dropwizard-metrics>
         <elasticsearch.version>7.17.4</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
-        <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
+        <enunciate-maven-plugin.version>2.17.0</enunciate-maven-plugin.version>
         <failsafe.version>2.18.1</failsafe.version>
         <falcon.version>0.8</falcon.version>
         <fastutil.version>6.5.16</fastutil.version>
@@ -715,16 +718,13 @@
         <hppc.version>0.8.1</hppc.version>
         <httpcomponents-httpclient.version>4.5.13</httpcomponents-httpclient.version>
         <httpcomponents-httpcore.version>4.4.13</httpcomponents-httpcore.version>
-        <jackson.databind.version>2.12.4</jackson.databind.version>
+        <jackson.databind.version>2.13.4.2</jackson.databind.version>
         <jackson.version>2.12.4</jackson.version>
         <janusgraph.version>1.0.0</janusgraph.version>
         <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
         <jaxb.api.version>2.3.1</jaxb.api.version>
         <javax-inject.version>1</javax-inject.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
-        <java.version.required>1.8</java.version.required>
-        <javac.source.version>1.8</javac.source.version>
-        <javac.target.version>1.8</javac.target.version>
         <jersey-spring.version>1.19.4</jersey-spring.version>
         <jersey.version>1.19</jersey.version>
         <jettison.version>1.3.7</jettison.version>
@@ -798,7 +798,6 @@
         <module>authorization</module>
 <!--        <module>dashboardv2</module>-->
 
-        <module>auth-agents-cred</module>
         <module>auth-agents-common</module>
         <module>auth-audits</module>
         <module>auth-plugin-atlas</module>
@@ -806,9 +805,6 @@
         <module>webapp</module>
 
         <module>plugin-classloader</module>
-        <module>tools/classification-updater</module>
-        <module>tools/atlas-index-repair</module>
-
         <module>distro</module>
     </modules>
 
@@ -816,14 +812,6 @@
         <repository>
             <id>central</id>
             <url>https://repo1.maven.org/maven2</url>
-            <snapshots>
-                <enabled>false</enabled>
-            </snapshots>
-        </repository>
-        <repository>
-            <id>hortonworks.repo</id>
-            <url>https://repo.hortonworks.com/content/repositories/releases</url>
-            <name>Hortonworks Repo</name>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
@@ -870,6 +858,18 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-core</artifactId>
+                <version>1.38.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>jakarta.annotation</groupId>
+                <artifactId>jakarta.annotation-api</artifactId>
+                <version>2.1.1</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.antlr</groupId>
                 <artifactId>antlr4-runtime</artifactId>
@@ -1298,76 +1298,6 @@
             </dependency>
 
             <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-client</artifactId>
-                <version>${hbase.version}</version>
-                <exclusions>
-                    <exclusion>
-                        <artifactId>avro</artifactId>
-                        <groupId>org.apache.avro</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>jruby-complete</artifactId>
-                        <groupId>org.jruby</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>asm</artifactId>
-                        <groupId>asm</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.apache.hadoop</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.codehaus.jackson</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <artifactId>*</artifactId>
-                        <groupId>org.mortbay.jetty</groupId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>junit</groupId>
-                        <artifactId>junit</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-server</artifactId>
-                <version>${hbase.version}</version>
-                <classifier>tests</classifier>
-                <exclusions>
-                    <exclusion>
-                        <groupId>junit</groupId>
-                        <artifactId>junit</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.hbase</groupId>
-                <artifactId>hbase-server</artifactId>
-                <version>${hbase.version}</version>
-                <scope>provided</scope>
-                <exclusions>
-                    <exclusion>
-                        <groupId>org.mortbay.jetty</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>tomcat</groupId>
-                        <artifactId>*</artifactId>
-                    </exclusion>
-                    <exclusion>
-                        <groupId>junit</groupId>
-                        <artifactId>junit</artifactId>
-                    </exclusion>
-                </exclusions>
-            </dependency>
-
-            <dependency>
                 <groupId>javax.servlet</groupId>
                 <artifactId>javax.servlet-api</artifactId>
                 <version>${javax.servlet.version}</version>
@@ -1661,10 +1591,10 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.7.0</version>
+                    <version>${maven-compiler-plugin}</version>
                     <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
+                        <source>17</source>
+                        <target>17</target>
                     </configuration>
                 </plugin>
 
@@ -1707,7 +1637,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-war-plugin</artifactId>
-                    <version>2.6</version>
+                    <version>${maven-war-plugin}</version>
                 </plugin>
 
                 <plugin>
@@ -2061,25 +1991,7 @@
                 </executions>
             </plugin>
 
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
-                <configuration>
-                    <!--debug>true</debug -->
-                    <xmlOutput>true</xmlOutput>
-                    <failOnError>false</failOnError>
-                    <skip>${skipCheck}</skip>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>findbugs-check</id>
-                        <goals>
-                            <goal>check</goal>
-                        </goals>
-                        <phase>verify</phase>
-                    </execution>
-                </executions>
-            </plugin>
+            <!--The findbugs-maven-plugin is outdated and does not officially support Java 17. To analyze code with a tool like FindBugs on Java 17, you should migrate to SpotBugs-->
 
             <!-- Source code metrics: mvn javancss:report or mvn site -->
             <plugin>

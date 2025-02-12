@@ -18,8 +18,8 @@
 package org.apache.atlas.web.service;
 
 import org.apache.atlas.web.model.DebugMetrics;
+import org.apache.commons.configuration2.SubsetConfiguration;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.hbase.shaded.org.apache.commons.configuration2.SubsetConfiguration;
 import org.apache.hadoop.metrics2.AbstractMetric;
 import org.apache.hadoop.metrics2.MetricsRecord;
 import org.apache.hadoop.metrics2.MetricsSink;
@@ -57,6 +57,10 @@ public class AtlasDebugMetricsSink implements MetricsSink {
 
     public HashMap getMetrics() {
         return metricStructuredSnapshot;
+    }
+
+    @Override
+    public void init(SubsetConfiguration subsetConfiguration) {
     }
 
     @Override
@@ -108,10 +112,5 @@ public class AtlasDebugMetricsSink implements MetricsSink {
 
     private static String inferMeasureType(String fullName, String nameWithoutMetricType) {
         return fullName.replaceFirst(nameWithoutMetricType, "");
-    }
-
-    @Override
-    public void init(SubsetConfiguration subsetConfiguration) {
-
     }
 }
