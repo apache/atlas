@@ -442,7 +442,17 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     @GraphTransaction
     public EntityMutationResponse createOrUpdate(EntityStream entityStream,  boolean replaceClassifications,
                                                  boolean replaceBusinessAttributes, boolean isOverwriteBusinessAttributes) throws AtlasBaseException {
-        return createOrUpdate(entityStream, false, replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
+        return createOrUpdate(entityStream, false, replaceClassifications, false, replaceBusinessAttributes, isOverwriteBusinessAttributes);
+    }
+
+    @Override
+    @GraphTransaction
+    public EntityMutationResponse createOrUpdate(EntityStream entityStream,
+                                                 boolean replaceClassifications, boolean appendClassifications,
+                                                 boolean replaceBusinessAttributes, boolean isOverwriteBusinessAttributes) throws AtlasBaseException {
+        return createOrUpdate(entityStream, false,
+                replaceClassifications, appendClassifications,
+                replaceBusinessAttributes, isOverwriteBusinessAttributes);
     }
 
     @Override
@@ -1542,7 +1552,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
-    private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate, boolean replaceClassifications, boolean replaceBusinessAttributes, boolean isOverwriteBusinessAttribute) throws AtlasBaseException {
+    private EntityMutationResponse createOrUpdate(EntityStream entityStream, boolean isPartialUpdate,
+                                                  boolean replaceClassifications, boolean appendClassifications,
+                                                  boolean replaceBusinessAttributes, boolean isOverwriteBusinessAttribute) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> createOrUpdate()");
         }
@@ -1655,7 +1667,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
 
             EntityMutationResponse ret = entityGraphMapper.mapAttributesAndClassifications(context, isPartialUpdate,
-                    replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttribute);
+                    replaceClassifications, appendClassifications,
+                    replaceBusinessAttributes, isOverwriteBusinessAttribute);
 
             ret.setGuidAssignments(context.getGuidAssignments());
 

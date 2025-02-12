@@ -175,6 +175,20 @@ public interface AtlasEntityStore {
                                           boolean replaceBusinessAttributes,
                                           boolean isOverwriteBusinessAttributes) throws AtlasBaseException;
 
+    /**
+     * Create or update  entities in the stream
+     * @param entityStream AtlasEntityStream
+     * @param replaceClassifications Replaces current tags with the tags sent in classifications list
+     * @param appendClassifications Applies tag diff based on addOrUpdateClassifications & removeClassifications lists
+     * @return EntityMutationResponse Entity mutations operations with the corresponding set of entities on which these operations were performed
+     * @throws AtlasBaseException
+     */
+    EntityMutationResponse createOrUpdate(EntityStream entityStream,
+                                          boolean replaceClassifications,
+                                          boolean appendClassifications,
+                                          boolean replaceBusinessAttributes,
+                                          boolean isOverwriteBusinessAttributes) throws AtlasBaseException;
+
 
     /**
      * Create or update  entities with parameters necessary for import process

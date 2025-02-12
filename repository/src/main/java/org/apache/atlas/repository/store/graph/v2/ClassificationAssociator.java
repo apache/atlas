@@ -121,9 +121,9 @@ public class ClassificationAssociator {
         static final String STATUS_PARTIAL = "(Partial)";
 
         private static final String PROCESS_FORMAT = "%s:%s:%s:%s -> %s:%s";
-        static final String PROCESS_ADD = "Add";
-        static final String PROCESS_UPDATE = "Update";
-        static final String PROCESS_DELETE = "Delete";
+        public static final String PROCESS_ADD = "Add";
+        public static final String PROCESS_UPDATE = "Update";
+        public static final String PROCESS_DELETE = "Delete";
         static final String JSONIFY_STRING_FORMAT = "\"%s\",";
 
         private final AtlasGraph graph;
@@ -438,7 +438,7 @@ public class ClassificationAssociator {
         }
     }
 
-    private static class ListOps<V extends AtlasClassification> {
+    public static class ListOps<V extends AtlasClassification> {
         public List<V> intersect(List<V> lhs, List<V> rhs) {
             if (CollectionUtils.isEmpty(rhs)) {
                 return null;

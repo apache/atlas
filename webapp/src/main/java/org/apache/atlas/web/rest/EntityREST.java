@@ -808,10 +808,16 @@ public class EntityREST {
     @Timed
     public EntityMutationResponse createOrUpdate(AtlasEntitiesWithExtInfo entities,
                                                  @QueryParam("replaceClassifications") @DefaultValue("false") boolean replaceClassifications,
+                                                 @QueryParam("appendClassifications") @DefaultValue("false") boolean appendClassifications,
                                                  @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
                                                  @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes,
                                                  @QueryParam("skipProcessEdgeRestoration") @DefaultValue("false") boolean skipProcessEdgeRestoration
     ) throws AtlasBaseException {
+
+        if (replaceClassifications && appendClassifications) {
+            throw new AtlasBaseException(BAD_REQUEST, "Both replaceClassifications and appendClassifications can't be true");
+        }
+
         AtlasPerfTracer perf = null;
         RequestContext.get().setEnableCache(false);
         RequestContext.get().setSkipProcessEdgeRestoration(skipProcessEdgeRestoration);
@@ -825,7 +831,9 @@ public class EntityREST {
 
             EntityStream entityStream = new AtlasEntityStream(entities);
 
-            return entitiesStore.createOrUpdate(entityStream, replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
+            return entitiesStore.createOrUpdate(entityStream,
+                    replaceClassifications, appendClassifications,
+                    replaceBusinessAttributes, isOverwriteBusinessAttributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
