@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -26,7 +26,6 @@ public class AtlasSearchResultScrubRequest extends AtlasAccessRequest {
     private final AtlasTypeRegistry typeRegistry;
     private final AtlasSearchResult searchResult;
 
-
     public AtlasSearchResultScrubRequest(AtlasTypeRegistry typeRegistry, AtlasSearchResult searchResult) {
         this(typeRegistry, searchResult, null, null);
     }
@@ -38,7 +37,9 @@ public class AtlasSearchResultScrubRequest extends AtlasAccessRequest {
         this.searchResult = searchResult;
     }
 
-    public AtlasTypeRegistry getTypeRegistry() { return typeRegistry; }
+    public AtlasTypeRegistry getTypeRegistry() {
+        return typeRegistry;
+    }
 
     public AtlasSearchResult getSearchResult() {
         return searchResult;
@@ -51,5 +52,3 @@ public class AtlasSearchResultScrubRequest extends AtlasAccessRequest {
                 ", forwardedAddresses=" + getForwardedAddresses() + ", remoteIPAddress=" + getRemoteIPAddress() + "]";
     }
 }
-
-
