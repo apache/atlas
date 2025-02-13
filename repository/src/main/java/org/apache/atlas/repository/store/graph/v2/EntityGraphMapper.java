@@ -49,6 +49,7 @@ import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
+import org.apache.atlas.repository.util.AtlasEntityUtils;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
@@ -118,6 +119,9 @@ import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_ADD;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_DELETE;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_UPDATE;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.INPUT_PORT_GUIDS_ATTR;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.OUTPUT_PORT_GUIDS_ATTR;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.*;
@@ -331,6 +335,7 @@ public class EntityGraphMapper {
     public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context,
                                                                   final boolean isPartialUpdate,
                                                                   final boolean replaceClassifications,
+                                                                  final boolean appendClassifications,
                                                                   boolean replaceBusinessAttributes,
                                                                   boolean isOverwriteBusinessAttribute) throws AtlasBaseException {
 
@@ -363,7 +368,12 @@ public class EntityGraphMapper {
                     setCustomAttributes(vertex, createdEntity);
                     setSystemAttributesToEntity(vertex, createdEntity);
                     resp.addEntity(CREATE, constructHeader(createdEntity, vertex, entityType.getAllAttributes()));
-                    addClassifications(context, guid, createdEntity.getClassifications());
+
+                    if (appendClassifications) {
+                        addClassifications(context, guid, createdEntity.getAddOrUpdateClassifications());
+                    } else {
+                        addClassifications(context, guid, createdEntity.getClassifications());
+                    }
 
                     if (MapUtils.isNotEmpty(createdEntity.getBusinessAttributes())) {
                         addOrUpdateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes());
@@ -420,6 +430,26 @@ public class EntityGraphMapper {
                     if (replaceClassifications) {
                         deleteClassifications(guid);
                         addClassifications(context, guid, updatedEntity.getClassifications());
+                    } else if (appendClassifications) {
+                        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff(updatedEntity.getGuid(),
+                                updatedEntity.getAddOrUpdateClassifications(),
+                                entityRetriever.getAllClassifications(vertex),
+                                updatedEntity.getRemoveClassifications());
+                        if (MapUtils.isNotEmpty(diff)) {
+                            if (diff.containsKey(PROCESS_DELETE)) {
+                                for (AtlasClassification tag : diff.get(PROCESS_DELETE)) {
+                                    deleteClassification(updatedEntity.getGuid(), tag.getTypeName());
+                                }
+                            }
+
+                            if (diff.containsKey(PROCESS_UPDATE)) {
+                                updateClassifications(context, updatedEntity.getGuid(), diff.get(PROCESS_UPDATE));
+                            }
+
+                            if (diff.containsKey(PROCESS_ADD)) {
+                                addClassifications(context, updatedEntity.getGuid(), diff.get(PROCESS_ADD));
+                            }
+                        }
                     }
 
                     if (replaceBusinessAttributes) {
