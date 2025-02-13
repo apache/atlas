@@ -18,11 +18,13 @@
 
 package org.apache.atlas.repository.store.graph.v2;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.util.AtlasEntityUtils;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -35,20 +37,26 @@ import java.util.Map;
 import java.util.Objects;
 
 import static org.apache.atlas.repository.graph.GraphHelper.getCustomAttributes;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_ADD;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_DELETE;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_UPDATE;
 
 public class AtlasEntityComparator {
     private final AtlasTypeRegistry    typeRegistry;
     private final EntityGraphRetriever entityRetriever;
     private final Map<String, String>  guidRefMap;
-    private final boolean              skipClassificationCompare;
+    private final boolean              appendClassifications;
+    private final boolean              replaceClassifications;
     private final boolean              skipBusinessAttributeCompare;
 
     public AtlasEntityComparator(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, Map<String, String> guidRefMap,
-                                 boolean skipClassificationCompare, boolean skipBusinessAttributeCompare) {
+                                 boolean replaceClassifications, boolean appendClassifications,
+                                 boolean skipBusinessAttributeCompare) {
         this.typeRegistry                 = typeRegistry;
         this.entityRetriever              = entityRetriever;
         this.guidRefMap                   = guidRefMap;
-        this.skipClassificationCompare    = skipClassificationCompare;
+        this.appendClassifications        = appendClassifications;
+        this.replaceClassifications       = replaceClassifications;
         this.skipBusinessAttributeCompare = skipBusinessAttributeCompare;
     }
 
@@ -152,17 +160,35 @@ public class AtlasEntityComparator {
             }
         }
 
-        if (!skipClassificationCompare) {
+        if (replaceClassifications || appendClassifications) {
             List<AtlasClassification> newVal  = updatedEntity.getClassifications();
             List<AtlasClassification> currVal = (storedEntity != null) ? storedEntity.getClassifications() : entityRetriever.getAllClassifications(storedVertex);
 
-            if (!Objects.equals(currVal, newVal)) {
-                diffEntity.setClassifications(newVal);
+            if (replaceClassifications) {
+                if (!Objects.equals(currVal, newVal)) {
+                    diffEntity.setClassifications(newVal);
 
-                sectionsWithDiff++;
+                    sectionsWithDiff++;
 
-                if (findOnlyFirstDiff) {
-                    return new AtlasEntityDiffResult(diffEntity, true, false, false);
+                    if (findOnlyFirstDiff) {
+                        return new AtlasEntityDiffResult(diffEntity, true, false, false);
+                    }
+                }
+            }
+
+            if (appendClassifications) {
+                Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff(updatedEntity.getGuid(),
+                        updatedEntity.getAddOrUpdateClassifications(),
+                        currVal,
+                        updatedEntity.getRemoveClassifications());
+
+                if (MapUtils.isNotEmpty(diff)) {
+                    sectionsWithDiff++;
+                    RequestContext.get().addTagsAppendDiff(updatedEntity.getGuid(), diff);
+
+                    if (findOnlyFirstDiff) {
+                        return new AtlasEntityDiffResult(diffEntity, true, false, false);
+                    }
                 }
             }
         }

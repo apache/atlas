@@ -118,6 +118,8 @@ public class RequestContext {
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
     private Map<AtlasClassification, Collection<Object>> addedClassificationAndVertices = new HashMap<>();
 
+    Map<String, Object> tagsAppendDiff = new HashMap<>();
+
 
     private RequestContext() {
     }
@@ -475,6 +477,14 @@ public class RequestContext {
 
     public void addAddedClassificationAndVertices(AtlasClassification classification, Collection<Object> vertices) {
         this.addedClassificationAndVertices.put(classification, vertices);
+    }
+
+    public Map<String, List<AtlasClassification>> getTagsAppendDiff(String entityGuid) {
+        return (Map<String, List<AtlasClassification>>) tagsAppendDiff.get(entityGuid);
+    }
+
+    public void addTagsAppendDiff(String entityGuid, Map<String, List<AtlasClassification>> tagsAppendDiff) {
+        this.tagsAppendDiff.put(entityGuid, tagsAppendDiff);
     }
 
     public void addToDeletedEdgesIds(String edgeId) {

@@ -430,12 +430,12 @@ public class EntityGraphMapper {
                     if (replaceClassifications) {
                         deleteClassifications(guid);
                         addClassifications(context, guid, updatedEntity.getClassifications());
+
                     } else if (appendClassifications) {
-                        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff(updatedEntity.getGuid(),
-                                updatedEntity.getAddOrUpdateClassifications(),
-                                entityRetriever.getAllClassifications(vertex),
-                                updatedEntity.getRemoveClassifications());
+                        Map<String, List<AtlasClassification>> diff = RequestContext.get().getTagsAppendDiff(guid);
+
                         if (MapUtils.isNotEmpty(diff)) {
+                            List<AtlasClassification> finalTags = new ArrayList<>();
                             if (diff.containsKey(PROCESS_DELETE)) {
                                 for (AtlasClassification tag : diff.get(PROCESS_DELETE)) {
                                     deleteClassification(updatedEntity.getGuid(), tag.getTypeName());
@@ -443,12 +443,20 @@ public class EntityGraphMapper {
                             }
 
                             if (diff.containsKey(PROCESS_UPDATE)) {
+                                finalTags.addAll(diff.get(PROCESS_UPDATE));
                                 updateClassifications(context, updatedEntity.getGuid(), diff.get(PROCESS_UPDATE));
                             }
 
                             if (diff.containsKey(PROCESS_ADD)) {
+                                finalTags.addAll(diff.get(PROCESS_ADD));
                                 addClassifications(context, updatedEntity.getGuid(), diff.get(PROCESS_ADD));
                             }
+
+                            if (diff.containsKey("NOOP")) {
+                                finalTags.addAll(diff.get("NOOP"));
+                            }
+
+                            RequestContext.get().getDifferentialEntity(guid).setClassifications(finalTags);  // For notifications
                         }
                     }
 

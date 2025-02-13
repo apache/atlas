@@ -1588,7 +1588,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 MetricRecorder checkForUnchangedEntities = RequestContext.get().startMetricRecord("checkForUnchangedEntities");
 
                 List<AtlasEntity>     entitiesToSkipUpdate = new ArrayList<>();
-                AtlasEntityComparator entityComparator     = new AtlasEntityComparator(typeRegistry, entityRetriever, context.getGuidAssignments(), !replaceClassifications, !replaceBusinessAttributes);
+                AtlasEntityComparator entityComparator     = new AtlasEntityComparator(typeRegistry, entityRetriever, context.getGuidAssignments(), replaceClassifications, appendClassifications, !replaceBusinessAttributes);
                 RequestContext        reqContext           = RequestContext.get();
 
                 for (AtlasEntity entity : context.getUpdatedEntities()) {
