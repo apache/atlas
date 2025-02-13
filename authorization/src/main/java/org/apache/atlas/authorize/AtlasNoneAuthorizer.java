@@ -21,7 +21,6 @@ package org.apache.atlas.authorize;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class AtlasNoneAuthorizer implements AtlasAuthorizer {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasNoneAuthorizer.class);
 
@@ -33,24 +32,24 @@ public class AtlasNoneAuthorizer implements AtlasAuthorizer {
         LOG.info("AtlasNoneAuthorizer.cleanUp()");
     }
 
-    public boolean isAccessAllowed(AtlasAdminAccessRequest request) throws AtlasAuthorizationException {
+    public boolean isAccessAllowed(AtlasAdminAccessRequest request) {
         return true;
     }
 
-    public boolean isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException {
+    public boolean isAccessAllowed(AtlasEntityAccessRequest request) {
         return true;
     }
 
-    public boolean isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException {
+    public boolean isAccessAllowed(AtlasTypeAccessRequest request) {
         return true;
     }
 
     @Override
-    public boolean isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
+    public boolean isAccessAllowed(AtlasRelationshipAccessRequest request) {
         return true;
     }
 
-    public void scrubSearchResults(AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {
-
+    @Override
+    public void scrubSearchResults(AtlasSearchResultScrubRequest request) {
     }
 }
