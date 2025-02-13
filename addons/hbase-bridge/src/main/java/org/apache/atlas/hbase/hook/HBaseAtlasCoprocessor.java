@@ -18,15 +18,13 @@
 
 package org.apache.atlas.hbase.hook;
 
-
 import org.apache.atlas.hbase.bridge.HBaseAtlasHook;
-import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.client.SnapshotDescription;
 import org.apache.hadoop.hbase.client.TableDescriptor;
 import org.apache.hadoop.hbase.coprocessor.MasterCoprocessor;
-import org.apache.hadoop.hbase.coprocessor.BulkLoadObserver;
 import org.apache.hadoop.hbase.coprocessor.MasterCoprocessorEnvironment;
 import org.apache.hadoop.hbase.coprocessor.MasterObserver;
 import org.apache.hadoop.hbase.coprocessor.ObserverContext;
@@ -128,7 +126,4 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
             LOG.debug("<== HBaseAtlasCoprocessor.postRestoreSnapshot()");
         }
     }
-
 }
-
-

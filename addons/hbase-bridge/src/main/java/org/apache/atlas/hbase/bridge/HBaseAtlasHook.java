@@ -19,8 +19,8 @@
 package org.apache.atlas.hbase.bridge;
 
 import org.apache.atlas.AtlasConstants;
-import org.apache.atlas.hbase.model.HBaseOperationContext;
 import org.apache.atlas.hbase.model.HBaseDataTypes;
+import org.apache.atlas.hbase.model.HBaseOperationContext;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -30,8 +30,8 @@ import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV
 import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
 import org.apache.hadoop.hbase.client.TableDescriptor;
 import org.apache.hadoop.hbase.coprocessor.MasterCoprocessorEnvironment;
@@ -55,7 +55,6 @@ import static org.apache.atlas.repository.Constants.HBASE_SOURCE;
 public class HBaseAtlasHook extends AtlasHook {
     private static final Logger LOG = LoggerFactory.getLogger(HBaseAtlasHook.class);
 
-    
     public static final String ATTR_DESCRIPTION           = "description";
     public static final String ATTR_ATLAS_ENDPOINT        = "atlas.rest.address";
     public static final String ATTR_PARAMETERS            = "parameters";
@@ -138,11 +137,10 @@ public class HBaseAtlasHook extends AtlasHook {
         if (ret == null) {
             try {
                 synchronized (HBaseAtlasHook.class) {
-                    ret = me;
-
-                    if (ret == null) {
-                        me = ret = new HBaseAtlasHook();
+                    if (me == null) {
+                        me = new HBaseAtlasHook();
                     }
+                    ret = me;
                 }
             } catch (Exception e) {
                 LOG.error("Caught exception instantiating the Atlas HBase hook.", e);
@@ -304,7 +302,6 @@ public class HBaseAtlasHook extends AtlasHook {
         hbaseOperationContext.addMessage(new EntityDeleteRequestV2(hbaseOperationContext.getUser(), Collections.singletonList(columnFamilyId)));
     }
 
-
     /**
      * Construct the qualified name used to uniquely identify a ColumnFamily instance in Atlas.
      *
@@ -458,24 +455,24 @@ public class HBaseAtlasHook extends AtlasHook {
         columnFamily.setAttribute(ATTR_OWNER, hbaseOperationContext.getOwner());
         columnFamily.setRelationshipAttribute(ATTR_TABLE, AtlasTypeUtil.getAtlasRelatedObjectId(table, RELATIONSHIP_HBASE_TABLE_COLUMN_FAMILIES));
 
-        if (columnFamilyDescriptor!= null) {
+        if (columnFamilyDescriptor != null) {
             columnFamily.setAttribute(ATTR_CF_BLOCK_CACHE_ENABLED, columnFamilyDescriptor.isBlockCacheEnabled());
-            columnFamily.setAttribute(ATTR_CF_BLOOMFILTER_TYPE, (columnFamilyDescriptor.getBloomFilterType() != null ? columnFamilyDescriptor.getBloomFilterType().name():null));
+            columnFamily.setAttribute(ATTR_CF_BLOOMFILTER_TYPE, (columnFamilyDescriptor.getBloomFilterType() != null ? columnFamilyDescriptor.getBloomFilterType().name() : null));
             columnFamily.setAttribute(ATTR_CF_CACHED_BLOOM_ON_WRITE, columnFamilyDescriptor.isCacheBloomsOnWrite());
             columnFamily.setAttribute(ATTR_CF_CACHED_DATA_ON_WRITE, columnFamilyDescriptor.isCacheDataOnWrite());
             columnFamily.setAttribute(ATTR_CF_CACHED_INDEXES_ON_WRITE, columnFamilyDescriptor.isCacheIndexesOnWrite());
-            columnFamily.setAttribute(ATTR_CF_COMPACTION_COMPRESSION_TYPE, (columnFamilyDescriptor.getCompactionCompressionType() != null ? columnFamilyDescriptor.getCompactionCompressionType().name():null));
-            columnFamily.setAttribute(ATTR_CF_COMPRESSION_TYPE, (columnFamilyDescriptor.getCompressionType() != null ? columnFamilyDescriptor.getCompressionType().name():null));
-            columnFamily.setAttribute(ATTR_CF_DATA_BLOCK_ENCODING, (columnFamilyDescriptor.getDataBlockEncoding() != null ? columnFamilyDescriptor.getDataBlockEncoding().name():null));
+            columnFamily.setAttribute(ATTR_CF_COMPACTION_COMPRESSION_TYPE, (columnFamilyDescriptor.getCompactionCompressionType() != null ? columnFamilyDescriptor.getCompactionCompressionType().name() : null));
+            columnFamily.setAttribute(ATTR_CF_COMPRESSION_TYPE, (columnFamilyDescriptor.getCompressionType() != null ? columnFamilyDescriptor.getCompressionType().name() : null));
+            columnFamily.setAttribute(ATTR_CF_DATA_BLOCK_ENCODING, (columnFamilyDescriptor.getDataBlockEncoding() != null ? columnFamilyDescriptor.getDataBlockEncoding().name() : null));
             columnFamily.setAttribute(ATTR_CF_ENCRYPTION_TYPE, columnFamilyDescriptor.getEncryptionType());
             columnFamily.setAttribute(ATTR_CF_EVICT_BLOCK_ONCLOSE, columnFamilyDescriptor.isEvictBlocksOnClose());
-            columnFamily.setAttribute(ATTR_CF_INMEMORY_COMPACTION_POLICY, (columnFamilyDescriptor.getInMemoryCompaction() != null ? columnFamilyDescriptor.getInMemoryCompaction().name():null));
-            columnFamily.setAttribute(ATTR_CF_KEEP_DELETE_CELLS, ( columnFamilyDescriptor.getKeepDeletedCells() != null ? columnFamilyDescriptor.getKeepDeletedCells().name():null));
+            columnFamily.setAttribute(ATTR_CF_INMEMORY_COMPACTION_POLICY, (columnFamilyDescriptor.getInMemoryCompaction() != null ? columnFamilyDescriptor.getInMemoryCompaction().name() : null));
+            columnFamily.setAttribute(ATTR_CF_KEEP_DELETE_CELLS, (columnFamilyDescriptor.getKeepDeletedCells() != null ? columnFamilyDescriptor.getKeepDeletedCells().name() : null));
             columnFamily.setAttribute(ATTR_CF_MAX_VERSIONS, columnFamilyDescriptor.getMaxVersions());
             columnFamily.setAttribute(ATTR_CF_MIN_VERSIONS, columnFamilyDescriptor.getMinVersions());
             columnFamily.setAttribute(ATTR_CF_NEW_VERSION_BEHAVIOR, columnFamilyDescriptor.isNewVersionBehavior());
             columnFamily.setAttribute(ATTR_CF_MOB_ENABLED, columnFamilyDescriptor.isMobEnabled());
-            columnFamily.setAttribute(ATTR_CF_MOB_COMPATCTPARTITION_POLICY, ( columnFamilyDescriptor.getMobCompactPartitionPolicy() != null ? columnFamilyDescriptor.getMobCompactPartitionPolicy().name():null));
+            columnFamily.setAttribute(ATTR_CF_MOB_COMPATCTPARTITION_POLICY, (columnFamilyDescriptor.getMobCompactPartitionPolicy() != null ? columnFamilyDescriptor.getMobCompactPartitionPolicy().name() : null));
             columnFamily.setAttribute(ATTR_CF_PREFETCH_BLOCK_ONOPEN, columnFamilyDescriptor.isPrefetchBlocksOnOpen());
             columnFamily.setAttribute(ATTR_CF_STORAGE_POLICY, columnFamilyDescriptor.getStoragePolicy());
             columnFamily.setAttribute(ATTR_CF_TTL, columnFamilyDescriptor.getTimeToLive());
@@ -673,6 +670,6 @@ public class HBaseAtlasHook extends AtlasHook {
     }
 
     private User getActiveUser(ObserverContext<?> ctx) throws IOException {
-        return (User)ctx.getCaller().orElse(User.getCurrent());
+        return (User) ctx.getCaller().orElse(User.getCurrent());
     }
 }
