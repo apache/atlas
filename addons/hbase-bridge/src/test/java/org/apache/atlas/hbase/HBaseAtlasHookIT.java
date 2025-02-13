@@ -28,14 +28,17 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.atlas.utils.ParamChecker;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.hadoop.hbase.*;
+import org.apache.hadoop.hbase.HBaseConfiguration;
+import org.apache.hadoop.hbase.HBaseTestingUtility;
+import org.apache.hadoop.hbase.HColumnDescriptor;
+import org.apache.hadoop.hbase.HTableDescriptor;
+import org.apache.hadoop.hbase.NamespaceDescriptor;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.Admin;
 import org.apache.hadoop.hbase.client.Connection;
 import org.apache.hadoop.hbase.client.ConnectionFactory;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
@@ -46,10 +49,10 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.fail;
 import static org.testng.AssertJUnit.assertFalse;
-
 
 public class HBaseAtlasHookIT {
     private   static final Logger LOG          = LoggerFactory.getLogger(HBaseAtlasHookIT.class);
@@ -59,7 +62,6 @@ public class HBaseAtlasHookIT {
     private HBaseTestingUtility utility;
     private int                 port;
     private AtlasClientV2       atlasClient;
-
 
     @BeforeClass
     public void setUp() {
@@ -105,9 +107,9 @@ public class HBaseAtlasHookIT {
             AtlasEntityWithExtInfo nameSpaceRef           = atlasClient.getEntityByGuid(nameSpace);
             String                 nameSpaceQualifiedName = HBaseAtlasHook.getNameSpaceQualifiedName(CLUSTER_NAME, ns.getName());
 
-            Assert.assertEquals(nameSpaceRef.getEntity().getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), nameSpaceQualifiedName);
+            assertEquals(nameSpaceRef.getEntity().getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), nameSpaceQualifiedName);
         } else {
-            Assert.fail("Unable to create AtlasClient for Testing");
+            fail("Unable to create AtlasClient for Testing");
         }
     }
 
@@ -145,14 +147,13 @@ public class HBaseAtlasHookIT {
             AtlasEntityWithExtInfo tableRef   = atlasClient.getEntityByGuid(table);
             String                 entityName = HBaseAtlasHook.getTableQualifiedName(CLUSTER_NAME, namespace, tablename);
 
-            Assert.assertEquals(tableRef.getEntity().getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), entityName);
+            assertEquals(tableRef.getEntity().getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME), entityName);
         } else {
-            Assert.fail("Unable to create AtlasClient for Testing");
+            fail("Unable to create AtlasClient for Testing");
         }
     }
 
     // Methods for creating HBase
-
     private void createAtlasClient() {
         try {
             org.apache.commons.configuration.Configuration configuration = ApplicationProperties.get();
@@ -161,7 +162,7 @@ public class HBaseAtlasHookIT {
             configuration.setProperty("atlas.cluster.name", CLUSTER_NAME);
 
             if (atlasEndPoint == null || atlasEndPoint.length == 0) {
-                atlasEndPoint = new String[]{ATLAS_URL};
+                atlasEndPoint = new String[] {ATLAS_URL};
             }
 
             Iterator<String> keys = configuration.getKeys();
@@ -173,7 +174,7 @@ public class HBaseAtlasHookIT {
             if (AuthenticationUtil.isKerberosAuthenticationEnabled()) {
                 atlasClient = new AtlasClientV2(atlasEndPoint);
             } else {
-                atlasClient = new AtlasClientV2(configuration, atlasEndPoint, new String[]{"admin", "admin"});
+                atlasClient = new AtlasClientV2(configuration, atlasEndPoint, new String[] {"admin", "admin"});
             }
         } catch (Exception e) {
             LOG.error("Unable to create AtlasClient for Testing ", e);
@@ -206,7 +207,6 @@ public class HBaseAtlasHookIT {
 
         utility.startMiniCluster();
     }
-
 
     public AtlasClientV2 getAtlasClient() {
         AtlasClientV2 ret = null;
@@ -256,7 +256,6 @@ public class HBaseAtlasHookIT {
         void evaluate() throws Exception;
     }
 
-
     protected String assertEntityIsRegistered(final String typeName, final String property, final String value,
                                               final HBaseAtlasHookIT.AssertPredicate assertPredicate) throws Exception {
         waitFor(30000, new HBaseAtlasHookIT.Predicate() {
@@ -302,6 +301,4 @@ public class HBaseAtlasHookIT {
             }
         }
     }
-
-
 }

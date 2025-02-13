@@ -34,6 +34,8 @@
 
     <properties>
         <apache.log4j.version>2.17.1</apache.log4j.version>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
         <hadoop.version>3.0.3</hadoop.version>
         <javax.ws.rs-api.version>2.1.1</javax.ws.rs-api.version>
         <jetty.version>9.3.14.v20161028</jetty.version>
