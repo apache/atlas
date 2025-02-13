@@ -413,10 +413,10 @@ public class AdminResource {
     @GET
     @Path("metrics")
     @Produces(Servlets.JSON_MEDIA_TYPE)
-    public AtlasMetrics getMetrics() {
+    public AtlasMetrics getMetrics(@QueryParam("excludeTypeAndSubTypeEntity") @DefaultValue("true") Boolean excludeTypeAndSubTypeEntity) {
         LOG.debug("==> AdminResource.getMetrics()");
 
-        AtlasMetrics metrics = metricsService.getMetrics();
+        AtlasMetrics metrics = metricsService.getMetrics(excludeTypeAndSubTypeEntity);
 
         LOG.debug("<== AdminResource.getMetrics()");
 
@@ -1112,7 +1112,7 @@ public class AdminResource {
     private void saveMetrics() throws AtlasBaseException {
         LOG.debug("==> AdminResource.saveMetrics()");
 
-        AtlasMetrics metrics = metricsService.getMetrics();
+        AtlasMetrics metrics = metricsService.getMetrics(false);
 
         AtlasMetricsStat metricsStat = new AtlasMetricsStat(metrics);
 
