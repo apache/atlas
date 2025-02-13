@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -24,8 +24,6 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.MapUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.Date;
@@ -35,18 +33,15 @@ import java.util.Map;
 import java.util.Set;
 
 public class AtlasAccessRequest {
-    private static Logger LOG = LoggerFactory.getLogger(AtlasAccessRequest.class);
-
     private static final String DEFAULT_ENTITY_ID_ATTRIBUTE = "qualifiedName";
 
     private final AtlasPrivilege action;
     private final Date           accessTime;
-    private       String         user            = null;
-    private       Set<String>    userGroups      = null;
-    private       String         clientIPAddress = null;
+    private       String         user;
+    private       Set<String>    userGroups;
+    private       String         clientIPAddress;
     private       List<String>   forwardedAddresses;
     private       String         remoteIPAddress;
-
 
     protected AtlasAccessRequest(AtlasPrivilege action) {
         this(action, null, null, new Date(), null);
@@ -56,11 +51,11 @@ public class AtlasAccessRequest {
         this(action, user, userGroups, new Date(), null, null, null);
     }
 
-    protected AtlasAccessRequest(AtlasPrivilege action, String user, Set<String> userGroups, Date accessTime,
-                                 String clientIPAddress, List<String> forwardedAddresses, String remoteIPAddress) {
+    protected AtlasAccessRequest(AtlasPrivilege action, String user, Set<String> userGroups, Date accessTime, String clientIPAddress, List<String> forwardedAddresses, String remoteIPAddress) {
         this(action, user, userGroups, accessTime, clientIPAddress);
-        this.forwardedAddresses  = forwardedAddresses;
-        this.remoteIPAddress     = remoteIPAddress;
+
+        this.forwardedAddresses = forwardedAddresses;
+        this.remoteIPAddress    = remoteIPAddress;
     }
 
     protected AtlasAccessRequest(AtlasPrivilege action, String user, Set<String> userGroups, Date accessTime, String clientIPAddress) {
@@ -96,20 +91,20 @@ public class AtlasAccessRequest {
         return forwardedAddresses;
     }
 
-    public String getRemoteIPAddress() {
-        return remoteIPAddress;
-    }
-
-    public String getClientIPAddress() {
-        return clientIPAddress;
-    }
-
     public void setForwardedAddresses(List<String> forwardedAddresses) {
         this.forwardedAddresses = forwardedAddresses;
     }
 
+    public String getRemoteIPAddress() {
+        return remoteIPAddress;
+    }
+
     public void setRemoteIPAddress(String remoteIPAddress) {
         this.remoteIPAddress = remoteIPAddress;
+    }
+
+    public String getClientIPAddress() {
+        return clientIPAddress;
     }
 
     public void setClientIPAddress(String clientIPAddress) {
@@ -169,7 +164,6 @@ public class AtlasAccessRequest {
                         break;
                     }
                 }
-
             }
         }
 
@@ -194,10 +188,9 @@ public class AtlasAccessRequest {
 
     @Override
     public String toString() {
-        return "AtlasAccessRequest[" + "action=" + action + ", accessTime=" + accessTime +", user='" + user + '\'' +
+        return "AtlasAccessRequest[" + "action=" + action + ", accessTime=" + accessTime + ", user='" + user + '\'' +
                 ", userGroups=" + userGroups + ", clientIPAddress='" + clientIPAddress + '\'' +
                 ", forwardedAddresses=" + forwardedAddresses + ", remoteIPAddress='" + remoteIPAddress + '\'' +
                 ']';
-
     }
 }

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -25,10 +25,9 @@ import java.util.Set;
 
 public class AtlasRelationshipAccessRequest extends AtlasAccessRequest {
     private final AtlasTypeRegistry typeRegistry;
-    private final String            relationshipType ;
+    private final String            relationshipType;
     private final AtlasEntityHeader end1Entity;
     private final AtlasEntityHeader end2Entity;
-
 
     public AtlasRelationshipAccessRequest(AtlasTypeRegistry typeRegistry, AtlasPrivilege action, String relationshipType, AtlasEntityHeader end1Entity, AtlasEntityHeader end2Entity) {
         this(typeRegistry, action, relationshipType, end1Entity, end2Entity, null, null);
@@ -54,7 +53,6 @@ public class AtlasRelationshipAccessRequest extends AtlasAccessRequest {
     public String getRelationshipType() {
         return relationshipType;
     }
-
 
     public Set<String> getEnd1EntityTypeAndAllSuperTypes() {
         return super.getEntityTypeAndAllSuperTypes(end1Entity == null ? null : end1Entity.getTypeName(), typeRegistry);

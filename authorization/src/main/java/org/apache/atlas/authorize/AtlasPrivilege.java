@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,45 +18,45 @@
 package org.apache.atlas.authorize;
 
 public enum AtlasPrivilege {
-     TYPE_CREATE("type-create"),
-     TYPE_UPDATE("type-update"),
-     TYPE_DELETE("type-delete"),
+    TYPE_CREATE("type-create"),
+    TYPE_UPDATE("type-update"),
+    TYPE_DELETE("type-delete"),
 
-     ENTITY_READ("entity-read"),
-     ENTITY_CREATE("entity-create"),
-     ENTITY_UPDATE("entity-update"),
-     ENTITY_DELETE("entity-delete"),
-     ENTITY_READ_CLASSIFICATION("entity-read-classification"),
-     ENTITY_ADD_CLASSIFICATION("entity-add-classification"),
-     ENTITY_UPDATE_CLASSIFICATION("entity-update-classification"),
-     ENTITY_REMOVE_CLASSIFICATION("entity-remove-classification"),
+    ENTITY_READ("entity-read"),
+    ENTITY_CREATE("entity-create"),
+    ENTITY_UPDATE("entity-update"),
+    ENTITY_DELETE("entity-delete"),
+    ENTITY_READ_CLASSIFICATION("entity-read-classification"),
+    ENTITY_ADD_CLASSIFICATION("entity-add-classification"),
+    ENTITY_UPDATE_CLASSIFICATION("entity-update-classification"),
+    ENTITY_REMOVE_CLASSIFICATION("entity-remove-classification"),
 
-     ADMIN_EXPORT("admin-export"),
-     ADMIN_IMPORT("admin-import"),
+    ADMIN_EXPORT("admin-export"),
+    ADMIN_IMPORT("admin-import"),
 
-     RELATIONSHIP_ADD("add-relationship"),
-     RELATIONSHIP_UPDATE("update-relationship"),
-     RELATIONSHIP_REMOVE("remove-relationship"),
+    RELATIONSHIP_ADD("add-relationship"),
+    RELATIONSHIP_UPDATE("update-relationship"),
+    RELATIONSHIP_REMOVE("remove-relationship"),
 
-     ADMIN_PURGE("admin-purge"),
+    ADMIN_PURGE("admin-purge"),
 
-     ENTITY_ADD_LABEL("entity-add-label"),
-     ENTITY_REMOVE_LABEL("entity-remove-label"),
-     ENTITY_UPDATE_BUSINESS_METADATA("entity-update-business-metadata"),
+    ENTITY_ADD_LABEL("entity-add-label"),
+    ENTITY_REMOVE_LABEL("entity-remove-label"),
+    ENTITY_UPDATE_BUSINESS_METADATA("entity-update-business-metadata"),
 
-     TYPE_READ("type-read"),
+    TYPE_READ("type-read"),
 
-     ADMIN_AUDITS("admin-audits"),
+    ADMIN_AUDITS("admin-audits"),
 
-     SERVICE_NOTIFICATION_POST("service-notification-post");
+    SERVICE_NOTIFICATION_POST("service-notification-post");
 
-     private final String type;
+    private final String type;
 
-     AtlasPrivilege(String actionType){
-           this.type = actionType;
-     }
+    AtlasPrivilege(String actionType) {
+        this.type = actionType;
+    }
 
-     public String getType() {
-          return type;
-     }
+    public String getType() {
+        return type;
+    }
 }

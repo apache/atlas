@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -18,18 +18,22 @@
 
 package org.apache.atlas.authorize.simple;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.ListIterator;
-import java.util.Set;
-
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.authorize.*;
-import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.*;
+import org.apache.atlas.authorize.AtlasAccessRequest;
+import org.apache.atlas.authorize.AtlasAdminAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizer;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
+import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
+import org.apache.atlas.authorize.AtlasTypeAccessRequest;
+import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
+import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.AtlasAdminPermission;
+import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.AtlasAuthzRole;
+import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.AtlasEntityPermission;
+import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.AtlasRelationshipPermission;
+import org.apache.atlas.authorize.simple.AtlasSimpleAuthzPolicy.AtlasTypePermission;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -42,6 +46,13 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.HashSet;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.Set;
+
 import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_ADD_CLASSIFICATION;
 import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_REMOVE_CLASSIFICATION;
 import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_UPDATE_CLASSIFICATION;
@@ -50,21 +61,14 @@ import static org.apache.atlas.authorize.AtlasPrivilege.TYPE_DELETE;
 import static org.apache.atlas.authorize.AtlasPrivilege.TYPE_READ;
 import static org.apache.atlas.authorize.AtlasPrivilege.TYPE_UPDATE;
 
-
 public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasSimpleAuthorizer.class);
 
-    private final static String WILDCARD_ASTERISK = "*";
-
-    private final static Set<AtlasPrivilege> CLASSIFICATION_PRIVILEGES = new HashSet<AtlasPrivilege>() {{
-                                                                                add(ENTITY_ADD_CLASSIFICATION);
-                                                                                add(ENTITY_REMOVE_CLASSIFICATION);
-                                                                                add(ENTITY_UPDATE_CLASSIFICATION);
-                                                                            }};
+    private static final Set<AtlasPrivilege> CLASSIFICATION_PRIVILEGES = new HashSet<>();
+    private static final String              REGEX_MATCHALL            = ".*";
+    private static final String              WILDCARD_ASTERISK         = "*";
 
     private AtlasSimpleAuthzPolicy authzPolicy;
-
-    private final static String REGEX_MATCHALL = ".*";
 
     public AtlasSimpleAuthorizer() {
     }
@@ -73,11 +77,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     public void init() {
         LOG.info("==> SimpleAtlasAuthorizer.init()");
 
-        InputStream inputStream = null;
-
-        try {
-            inputStream = ApplicationProperties.getFileAsInputStream(ApplicationProperties.get(), "atlas.authorizer.simple.authz.policy.file", "atlas-simple-authz-policy.json");
-
+        try (InputStream inputStream = ApplicationProperties.getFileAsInputStream(ApplicationProperties.get(), "atlas.authorizer.simple.authz.policy.file", "atlas-simple-authz-policy.json")) {
             authzPolicy = AtlasJson.fromJson(inputStream, AtlasSimpleAuthzPolicy.class);
 
             addImpliedTypeReadPrivilege(authzPolicy);
@@ -85,14 +85,6 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             LOG.error("SimpleAtlasAuthorizer.init(): initialization failed", e);
 
             throw new RuntimeException(e);
-        } finally {
-            if (inputStream != null) {
-                try {
-                    inputStream.close();
-                } catch (IOException excp) {
-                    // ignore
-                }
-            }
         }
 
         LOG.info("<== SimpleAtlasAuthorizer.init()");
@@ -108,13 +100,10 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
-    public boolean isAccessAllowed(AtlasAdminAccessRequest request) throws AtlasAuthorizationException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> SimpleAtlasAuthorizer.isAccessAllowed({})", request);
-        }
+    public boolean isAccessAllowed(AtlasAdminAccessRequest request) {
+        LOG.debug("==> SimpleAtlasAuthorizer.isAccessAllowed({})", request);
 
-        boolean ret = false;
-
+        boolean     ret   = false;
         Set<String> roles = getRoles(request.getUser(), request.getUserGroups());
 
         for (String role : roles) {
@@ -133,18 +122,59 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             }
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
-        }
+        LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
 
         return ret;
     }
 
     @Override
-    public boolean isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> SimpleAtlasAuthorizer.isAccessAllowed({})", request);
+    public boolean isAccessAllowed(AtlasEntityAccessRequest request) {
+        LOG.debug("==> SimpleAtlasAuthorizer.isAccessAllowed({})", request);
+
+        boolean           ret           = false;
+        final String      action        = request.getAction() != null ? request.getAction().getType() : null;
+        final Set<String> entityTypes   = request.getEntityTypeAndAllSuperTypes();
+        final String      entityId      = request.getEntityId();
+        final String      attribute     = request.getAttributeName();
+        final Set<String> entClsToAuthz = new HashSet<>(request.getEntityClassifications());
+        final Set<String> roles         = getRoles(request.getUser(), request.getUserGroups());
+
+        for (String role : roles) {
+            List<AtlasEntityPermission> permissions = getEntityPermissionsForRole(role);
+
+            if (permissions != null) {
+                for (AtlasEntityPermission permission : permissions) {
+                    if (isMatch(action, permission.getPrivileges()) && isMatchAny(entityTypes, permission.getEntityTypes()) &&
+                            isMatch(entityId, permission.getEntityIds()) && isMatch(attribute, permission.getAttributes()) &&
+                            isLabelMatch(request, permission) && isBusinessMetadataMatch(request, permission) && isClassificationMatch(request, permission)) {
+                        // 1. entity could have multiple classifications
+                        // 2. access for these classifications could be granted by multiple AtlasEntityPermission entries
+                        // 3. classifications allowed by the current permission will be removed from entClsToAuthz
+                        // 4. request will be allowed once entClsToAuthz is empty i.e. user has permission for all classifications
+                        entClsToAuthz.removeIf(entityClassification -> isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getEntityClassifications()));
+
+                        ret = CollectionUtils.isEmpty(entClsToAuthz);
+
+                        if (ret) {
+                            break;
+                        }
+                    }
+                }
+            }
         }
+
+        if (!ret) {
+            LOG.debug("isAccessAllowed={}; classificationsWithNoAccess={}", ret, entClsToAuthz);
+        }
+
+        LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
+
+        return ret;
+    }
+
+    @Override
+    public boolean isAccessAllowed(AtlasTypeAccessRequest request) {
+        LOG.debug("==> SimpleAtlasAuthorizer.isAccessAllowed({})", request);
 
         boolean ret = false;
 
@@ -160,8 +190,8 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
 
                 for (AtlasTypePermission permission : permissions) {
                     if (isMatch(action, permission.getPrivileges()) &&
-                        isMatch(typeCategory, permission.getTypeCategories()) &&
-                        isMatch(typeName, permission.getTypeNames())) {
+                            isMatch(typeCategory, permission.getTypeCategories()) &&
+                            isMatch(typeName, permission.getTypeNames())) {
                         ret = true;
 
                         break;
@@ -170,15 +200,13 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             }
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
-        }
+        LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
 
         return ret;
     }
 
     @Override
-    public boolean isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
+    public boolean isAccessAllowed(AtlasRelationshipAccessRequest request) {
         final Set<String> roles                       = getRoles(request.getUser(), request.getUserGroups());
         final String      relationShipType            = request.getRelationshipType();
         final Set<String> end1EntityTypeAndSuperTypes = request.getEnd1EntityTypeAndAllSuperTypes();
@@ -203,29 +231,17 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
                 if (isMatch(relationShipType, permission.getRelationshipTypes()) && isMatch(action, permission.getPrivileges())) {
                     //End1 permission check
                     if (!hasEnd1EntityAccess) {
-                         if (isMatchAny(end1EntityTypeAndSuperTypes, permission.getEnd1EntityType()) && isMatch(end1EntityId, permission.getEnd1EntityId())) {
-                             for (Iterator<String> iter = end1Classifications.iterator(); iter.hasNext();) {
-                                 String entityClassification = iter.next();
+                        if (isMatchAny(end1EntityTypeAndSuperTypes, permission.getEnd1EntityType()) && isMatch(end1EntityId, permission.getEnd1EntityId())) {
+                            end1Classifications.removeIf(entityClassification -> isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getEnd1EntityClassification()));
 
-                                 if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getEnd1EntityClassification())) {
-                                     iter.remove();
-                                 }
-                             }
-
-                             hasEnd1EntityAccess = CollectionUtils.isEmpty(end1Classifications);
+                            hasEnd1EntityAccess = CollectionUtils.isEmpty(end1Classifications);
                         }
                     }
 
                     //End2 permission chech
                     if (!hasEnd2EntityAccess) {
                         if (isMatchAny(end2EntityTypeAndSuperTypes, permission.getEnd2EntityType()) && isMatch(end2EntityId, permission.getEnd2EntityId())) {
-                            for (Iterator<String> iter = end2Classifications.iterator(); iter.hasNext();) {
-                                String entityClassification = iter.next();
-
-                                if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getEnd2EntityClassification())) {
-                                    iter.remove();
-                                }
-                            }
+                            end2Classifications.removeIf(entityClassification -> isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getEnd2EntityClassification()));
 
                             hasEnd2EntityAccess = CollectionUtils.isEmpty(end2Classifications);
                         }
@@ -238,66 +254,8 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
-    public boolean isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> SimpleAtlasAuthorizer.isAccessAllowed({})", request);
-        }
-
-        boolean           ret            = false;
-        final String      action         = request.getAction() != null ? request.getAction().getType() : null;
-        final Set<String> entityTypes    = request.getEntityTypeAndAllSuperTypes();
-        final String      entityId       = request.getEntityId();
-        final String      attribute      = request.getAttributeName();
-        final Set<String> entClsToAuthz  = new HashSet<>(request.getEntityClassifications());
-        final Set<String> roles          = getRoles(request.getUser(), request.getUserGroups());
-
-        for (String role : roles) {
-            List<AtlasEntityPermission> permissions = getEntityPermissionsForRole(role);
-
-            if (permissions != null) {
-                for (AtlasEntityPermission permission : permissions) {
-                    if (isMatch(action, permission.getPrivileges()) && isMatchAny(entityTypes, permission.getEntityTypes()) &&
-                        isMatch(entityId, permission.getEntityIds()) && isMatch(attribute, permission.getAttributes()) &&
-                        isLabelMatch(request, permission) && isBusinessMetadataMatch(request, permission) && isClassificationMatch(request, permission)) {
-
-                        // 1. entity could have multiple classifications
-                        // 2. access for these classifications could be granted by multiple AtlasEntityPermission entries
-                        // 3. classifications allowed by the current permission will be removed from entClsToAuthz
-                        // 4. request will be allowed once entClsToAuthz is empty i.e. user has permission for all classifications
-                        for (Iterator<String> iter = entClsToAuthz.iterator(); iter.hasNext(); ) {
-                            String entityClassification = iter.next();
-
-                            if (isMatchAny(request.getClassificationTypeAndAllSuperTypes(entityClassification), permission.getEntityClassifications())) {
-                                iter.remove();
-                            }
-                        }
-
-                        ret = CollectionUtils.isEmpty(entClsToAuthz);
-
-                        if (ret) {
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        if (LOG.isDebugEnabled()) {
-            if (!ret) {
-                LOG.debug("isAccessAllowed={}; classificationsWithNoAccess={}", ret, entClsToAuthz);
-            }
-
-            LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
-        }
-
-        return ret;
-    }
-
-    @Override
-    public void scrubSearchResults(AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> SimpleAtlasAuthorizer.scrubSearchResults({})", request);
-        }
+    public void scrubSearchResults(AtlasSearchResultScrubRequest request) {
+        LOG.debug("==> SimpleAtlasAuthorizer.scrubSearchResults({})", request);
 
         final AtlasSearchResult result = request.getSearchResult();
 
@@ -321,13 +279,11 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             }
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== SimpleAtlasAuthorizer.scrubSearchResults({}): {}", request, result);
-        }
+        LOG.debug("<== SimpleAtlasAuthorizer.scrubSearchResults({}): {}", request, result);
     }
 
     @Override
-    public void filterTypesDef(AtlasTypesDefFilterRequest request) throws AtlasAuthorizationException {
+    public void filterTypesDef(AtlasTypesDefFilterRequest request) {
         AtlasTypesDef typesDef = request.getTypesDef();
 
         filterTypes(request, typesDef.getEnumDefs());
@@ -361,9 +317,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             }
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== getRoles({}, {}): {}", userName, userGroups, ret);
-        }
+        LOG.debug("<== getRoles({}, {}): {}", userName, userGroups, ret);
 
         return ret;
     }
@@ -404,7 +358,6 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
         return ret;
     }
 
-
     private List<AtlasRelationshipPermission> getRelationshipPermissionsForRole(String roleName) {
         List<AtlasRelationshipPermission> ret = null;
 
@@ -418,11 +371,9 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     }
 
     private boolean isMatch(String value, List<String> patterns) {
-        boolean ret = false;
+        boolean ret = value == null;
 
-        if (value == null) {
-            ret = true;
-        } if (CollectionUtils.isNotEmpty(patterns)) {
+        if (CollectionUtils.isNotEmpty(patterns)) {
             for (String pattern : patterns) {
                 if (isMatch(value, pattern)) {
                     ret = true;
@@ -432,7 +383,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             }
         }
 
-        if (!ret && LOG.isDebugEnabled()) {
+        if (!ret) {
             LOG.debug("<== isMatch({}, {}): {}", value, patterns, ret);
         }
 
@@ -440,11 +391,9 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     }
 
     private boolean isMatchAny(Set<String> values, List<String> patterns) {
-        boolean ret = false;
+        boolean ret = CollectionUtils.isEmpty(values);
 
-        if (CollectionUtils.isEmpty(values)) {
-            ret = true;
-        }if (CollectionUtils.isNotEmpty(patterns)) {
+        if (CollectionUtils.isNotEmpty(patterns)) {
             for (String value : values) {
                 if (isMatch(value, patterns)) {
                     ret = true;
@@ -454,7 +403,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             }
         }
 
-        if (!ret && LOG.isDebugEnabled()) {
+        if (!ret) {
             LOG.debug("<== isMatchAny({}, {}): {}", values, patterns, ret);
         }
 
@@ -473,7 +422,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
         return ret;
     }
 
-    private void checkAccessAndScrub(AtlasEntityHeader entity, AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {
+    private void checkAccessAndScrub(AtlasEntityHeader entity, AtlasSearchResultScrubRequest request) {
         if (entity != null && request != null) {
             final AtlasEntityAccessRequest entityAccessRequest = new AtlasEntityAccessRequest(request.getTypeRegistry(), AtlasPrivilege.ENTITY_READ, entity, request.getUser(), request.getUserGroups());
 
@@ -486,20 +435,20 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     }
 
     private boolean isLabelMatch(AtlasEntityAccessRequest request, AtlasEntityPermission permission) {
-        return (AtlasPrivilege.ENTITY_ADD_LABEL.equals(request.getAction()) || AtlasPrivilege.ENTITY_REMOVE_LABEL.equals(request.getAction())) ? isMatch(request.getLabel(), permission.getLabels()) : true;
+        return !AtlasPrivilege.ENTITY_ADD_LABEL.equals(request.getAction()) && !AtlasPrivilege.ENTITY_REMOVE_LABEL.equals(request.getAction()) || isMatch(request.getLabel(), permission.getLabels());
     }
 
     private boolean isBusinessMetadataMatch(AtlasEntityAccessRequest request, AtlasEntityPermission permission) {
-        return AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.equals(request.getAction()) ? isMatch(request.getBusinessMetadata(), permission.getBusinessMetadata()) : true;
+        return !AtlasPrivilege.ENTITY_UPDATE_BUSINESS_METADATA.equals(request.getAction()) || isMatch(request.getBusinessMetadata(), permission.getBusinessMetadata());
     }
 
     private boolean isClassificationMatch(AtlasEntityAccessRequest request, AtlasEntityPermission permission) {
-        return (CLASSIFICATION_PRIVILEGES.contains(request.getAction()) && request.getClassification() != null) ? isMatch(request.getClassification().getTypeName(), permission.getClassifications()) : true;
+        return !CLASSIFICATION_PRIVILEGES.contains(request.getAction()) || request.getClassification() == null || isMatch(request.getClassification().getTypeName(), permission.getClassifications());
     }
 
-    private void filterTypes(AtlasAccessRequest request, List<? extends AtlasBaseTypeDef> typeDefs)throws AtlasAuthorizationException {
+    private void filterTypes(AtlasAccessRequest request, List<? extends AtlasBaseTypeDef> typeDefs) {
         if (typeDefs != null) {
-            for (ListIterator<? extends AtlasBaseTypeDef> iter = typeDefs.listIterator(); iter.hasNext();) {
+            for (ListIterator<? extends AtlasBaseTypeDef> iter = typeDefs.listIterator(); iter.hasNext(); ) {
                 AtlasBaseTypeDef       typeDef     = iter.next();
                 AtlasTypeAccessRequest typeRequest = new AtlasTypeAccessRequest(request.getAction(), typeDef, request.getUser(), request.getUserGroups());
 
@@ -536,6 +485,10 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             }
         }
     }
+
+    static {
+        CLASSIFICATION_PRIVILEGES.add(ENTITY_ADD_CLASSIFICATION);
+        CLASSIFICATION_PRIVILEGES.add(ENTITY_REMOVE_CLASSIFICATION);
+        CLASSIFICATION_PRIVILEGES.add(ENTITY_UPDATE_CLASSIFICATION);
+    }
 }
-
-
