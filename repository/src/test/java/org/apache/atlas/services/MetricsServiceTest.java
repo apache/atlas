@@ -158,7 +158,7 @@ public class MetricsServiceTest extends AtlasTestBase {
 
     @Test(groups = "Metrics.CREATE")
     public void testGetMetrics() {
-        metrics = metricsService.getMetrics();
+        metrics = metricsService.getMetrics(false);
 
         assertNotNull(metrics);
 

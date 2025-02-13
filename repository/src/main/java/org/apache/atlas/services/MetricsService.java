@@ -57,6 +57,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
@@ -118,7 +119,7 @@ public class MetricsService {
     }
 
     @GraphTransaction
-    public AtlasMetrics getMetrics() {
+    public AtlasMetrics getMetrics(Boolean excludeTypeAndSubTypeEntity) {
         final AtlasTypesDef                typesDef                          = getTypesDef();
         Collection<AtlasEntityDef>         entityDefs                        = typesDef.getEntityDefs();
         Collection<AtlasClassificationDef> classificationDefs                = typesDef.getClassificationDefs();
@@ -158,30 +159,31 @@ public class MetricsService {
                 }
             }
 
-            for (AtlasEntityDef entityDef : entityDefs) {
-                AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityDef.getName());
+            if (!excludeTypeAndSubTypeEntity) {
+                entityDefs.stream().forEach(entityDef -> {
+                    AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityDef.getName());
 
-                long entityActiveCount  = 0;
-                long entityDeletedCount = 0;
-                long entityShellCount   = 0;
+                    long entityActiveCount = entityType.getTypeAndAllSubTypes().stream()
+                            .mapToLong(type -> activeEntityCount.getOrDefault(type, 0L))
+                            .sum();
 
-                for (String type : entityType.getTypeAndAllSubTypes()) {
-                    entityActiveCount  += activeEntityCount.get(type) == null ? 0 : activeEntityCount.get(type);
-                    entityDeletedCount += deletedEntityCount.get(type) == null ? 0 : deletedEntityCount.get(type);
-                    entityShellCount   += shellEntityCount.get(type) == null ? 0 : shellEntityCount.get(type);
-                }
+                    long entityDeletedCount = entityType.getTypeAndAllSubTypes().stream()
+                            .mapToLong(type -> deletedEntityCount.getOrDefault(type, 0L))
+                            .sum();
 
-                if (entityActiveCount > 0) {
-                    activeEntityCountTypeAndSubTypes.put(entityType.getTypeName(), entityActiveCount);
-                }
+                    long entityShellCount = entityType.getTypeAndAllSubTypes().stream()
+                            .mapToLong(type -> shellEntityCount.getOrDefault(type, 0L))
+                            .sum();
 
-                if (entityDeletedCount > 0) {
-                    deletedEntityCountTypeAndSubTypes.put(entityType.getTypeName(), entityDeletedCount);
-                }
+                    Optional.ofNullable(entityActiveCount).filter(count -> count > 0)
+                            .ifPresent(count -> activeEntityCountTypeAndSubTypes.put(entityType.getTypeName(), count));
 
-                if (entityShellCount > 0) {
-                    shellEntityCountTypeAndSubTypes.put(entityType.getTypeName(), entityShellCount);
-                }
+                    Optional.ofNullable(entityDeletedCount).filter(count -> count > 0)
+                            .ifPresent(count -> deletedEntityCountTypeAndSubTypes.put(entityType.getTypeName(), count));
+
+                    Optional.ofNullable(entityShellCount).filter(count -> count > 0)
+                            .ifPresent(count -> shellEntityCountTypeAndSubTypes.put(entityType.getTypeName(), count));
+                });
             }
         }
 
@@ -207,9 +209,12 @@ public class MetricsService {
         metrics.addMetric(ENTITY, METRIC_ENTITY_ACTIVE, activeEntityCount);
         metrics.addMetric(ENTITY, METRIC_ENTITY_DELETED, deletedEntityCount);
         metrics.addMetric(ENTITY, METRIC_ENTITY_SHELL, shellEntityCount);
-        metrics.addMetric(ENTITY, METRIC_ENTITY_ACTIVE_INCL_SUBTYPES, activeEntityCountTypeAndSubTypes);
-        metrics.addMetric(ENTITY, METRIC_ENTITY_DELETED_INCL_SUBTYPES, deletedEntityCountTypeAndSubTypes);
-        metrics.addMetric(ENTITY, METRIC_ENTITY_SHELL_INCL_SUBTYPES, shellEntityCountTypeAndSubTypes);
+
+        if (!excludeTypeAndSubTypeEntity) {
+            metrics.addMetric(ENTITY, METRIC_ENTITY_ACTIVE_INCL_SUBTYPES, activeEntityCountTypeAndSubTypes);
+            metrics.addMetric(ENTITY, METRIC_ENTITY_DELETED_INCL_SUBTYPES, deletedEntityCountTypeAndSubTypes);
+            metrics.addMetric(ENTITY, METRIC_ENTITY_SHELL_INCL_SUBTYPES, shellEntityCountTypeAndSubTypes);
+        }
 
         metrics.addMetric(TAG, METRIC_ENTITIES_PER_TAG, taggedEntityCount);
         metrics.addMetric(SYSTEM, METRIC_MEMORY, AtlasMetricJVMUtil.getMemoryDetails());
