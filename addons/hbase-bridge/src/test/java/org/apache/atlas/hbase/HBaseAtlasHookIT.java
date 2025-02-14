@@ -59,7 +59,7 @@ public class HBaseAtlasHookIT {
     protected static final String ATLAS_URL    = "http://localhost:31000/";
     protected static final String CLUSTER_NAME = "primary";
 
-    private HBaseTestingUtility utility;
+    private HBaseTestingUtility hBaseTestingUtility;
     private int                 port;
     private AtlasClientV2       atlasClient;
 
@@ -76,12 +76,12 @@ public class HBaseAtlasHookIT {
     @AfterClass
     public void cleanup() throws Exception {
         LOG.info("Stopping mini cluster.. ");
-        utility.shutdownMiniCluster();
+        hBaseTestingUtility.shutdownMiniCluster();
     }
 
     @Test
     public void testGetMetaTableRows() throws Exception {
-        List<byte[]> results = utility.getMetaTableRows();
+        List<byte[]> results = hBaseTestingUtility.getMetaTableRows();
         assertFalse("results should have some entries and is empty.", results.isEmpty());
     }
 
@@ -194,18 +194,18 @@ public class HBaseAtlasHookIT {
         LOG.info("Creating Hbase Admin...");
 
         port    = getFreePort();
-        utility = new HBaseTestingUtility();
+        hBaseTestingUtility = new HBaseTestingUtility();
 
-        utility.getConfiguration().set("test.hbase.zookeeper.property.clientPort", String.valueOf(port));
-        utility.getConfiguration().set("hbase.master.port", String.valueOf(getFreePort()));
-        utility.getConfiguration().set("hbase.master.info.port", String.valueOf(getFreePort()));
-        utility.getConfiguration().set("hbase.regionserver.port", String.valueOf(getFreePort()));
-        utility.getConfiguration().set("hbase.regionserver.info.port", String.valueOf(getFreePort()));
-        utility.getConfiguration().set("zookeeper.znode.parent", "/hbase-unsecure");
-        utility.getConfiguration().set("hbase.table.sanity.checks", "false");
-        utility.getConfiguration().set("hbase.coprocessor.master.classes", "org.apache.atlas.hbase.hook.HBaseAtlasCoprocessor");
+        hBaseTestingUtility.getConfiguration().set("test.hbase.zookeeper.property.clientPort", String.valueOf(port));
+        hBaseTestingUtility.getConfiguration().set("hbase.master.port", String.valueOf(getFreePort()));
+        hBaseTestingUtility.getConfiguration().set("hbase.master.info.port", String.valueOf(getFreePort()));
+        hBaseTestingUtility.getConfiguration().set("hbase.regionserver.port", String.valueOf(getFreePort()));
+        hBaseTestingUtility.getConfiguration().set("hbase.regionserver.info.port", String.valueOf(getFreePort()));
+        hBaseTestingUtility.getConfiguration().set("zookeeper.znode.parent", "/hbase-unsecure");
+        hBaseTestingUtility.getConfiguration().set("hbase.table.sanity.checks", "false");
+        hBaseTestingUtility.getConfiguration().set("hbase.coprocessor.master.classes", "org.apache.atlas.hbase.hook.HBaseAtlasCoprocessor");
 
-        utility.startMiniCluster();
+        hBaseTestingUtility.startMiniCluster();
     }
 
     public AtlasClientV2 getAtlasClient() {
@@ -221,9 +221,8 @@ public class HBaseAtlasHookIT {
     }
 
     protected String assertNameSpaceIsRegistered(String nameSpace, HBaseAtlasHookIT.AssertPredicate assertPredicate) throws Exception {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Searching for nameSpace {}", nameSpace);
-        }
+        LOG.debug("Searching for nameSpace {}", nameSpace);
+
         String nameSpaceQualifiedName = HBaseAtlasHook.getNameSpaceQualifiedName(CLUSTER_NAME, nameSpace);
         return assertEntityIsRegistered(HBaseDataTypes.HBASE_NAMESPACE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
                                         nameSpaceQualifiedName, assertPredicate);
@@ -234,9 +233,8 @@ public class HBaseAtlasHookIT {
     }
 
     protected String assertTableIsRegistered(String nameSpace, String tableName, HBaseAtlasHookIT.AssertPredicate assertPredicate) throws Exception {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Searching for nameSpace:Table {} {}", nameSpace, tableName);
-        }
+        LOG.debug("Searching for nameSpace:Table {} {}", nameSpace, tableName);
+
         String tableQualifiedName = HBaseAtlasHook.getTableQualifiedName(CLUSTER_NAME, nameSpace, tableName);
         return assertEntityIsRegistered(HBaseDataTypes.HBASE_TABLE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName,
                                         assertPredicate);
@@ -294,9 +292,8 @@ public class HBaseAtlasHookIT {
                 if (System.currentTimeMillis() >= mustEnd) {
                     fail("Assertions failed. Failing after waiting for timeout " + timeout + " msecs", e);
                 }
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Waiting up to {} msec as assertion failed", mustEnd - System.currentTimeMillis(), e);
-                }
+
+                LOG.debug("Waiting up to {} msec as assertion failed", mustEnd - System.currentTimeMillis(), e);
                 Thread.sleep(5000);
             }
         }

@@ -51,21 +51,15 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
     private MasterCoprocessor       implMasterCoprocessor;
 
     public HBaseAtlasCoprocessor() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasCoprocessor.HBaseAtlasCoprocessor()");
-        }
+        LOG.debug("==> HBaseAtlasCoprocessor.HBaseAtlasCoprocessor()");
 
         this.init();
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.HBaseAtlasCoprocessor()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.HBaseAtlasCoprocessor()");
     }
 
     private void init() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasCoprocessor.init()");
-        }
+        LOG.debug("==> HBaseAtlasCoprocessor.init()");
 
         try {
             atlasPluginClassLoader = AtlasPluginClassLoader.getInstance(ATLAS_PLUGIN_TYPE, this.getClass());
@@ -87,9 +81,7 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.init()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.init()");
     }
 
     @Override
@@ -99,9 +91,7 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
 
     @Override
     public void start(CoprocessorEnvironment env) throws IOException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasCoprocessor.start()");
-        }
+        LOG.debug("==> HBaseAtlasCoprocessor.start()");
 
         try {
             activatePluginClassLoader();
@@ -111,16 +101,13 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
         } finally {
             deactivatePluginClassLoader();
         }
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.start()");
-        }
+
+        LOG.debug("<== HBaseAtlasCoprocessor.start()");
     }
 
     @Override
     public void postCreateTable(ObserverContext<MasterCoprocessorEnvironment> ctx, TableDescriptor desc, RegionInfo[] regions) throws IOException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasCoprocessor.postCreateTable()");
-        }
+        LOG.debug("==> HBaseAtlasCoprocessor.postCreateTable()");
 
         try {
             activatePluginClassLoader();
@@ -129,16 +116,12 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.postCreateTable()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.postCreateTable()");
     }
 
     @Override
     public void postModifyTable(ObserverContext<MasterCoprocessorEnvironment> ctx, TableName tableName, TableDescriptor htd) throws IOException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasCoprocessor.postModifyTable()");
-        }
+        LOG.debug("==> HBaseAtlasCoprocessor.postModifyTable()");
 
         try {
             activatePluginClassLoader();
@@ -147,16 +130,12 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.postModifyTable()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.postModifyTable()");
     }
 
     @Override
     public void postDeleteTable(ObserverContext<MasterCoprocessorEnvironment> ctx, TableName tableName) throws IOException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasCoprocessor.postDeleteTable()");
-        }
+        LOG.debug("==> HBaseAtlasCoprocessor.postDeleteTable()");
 
         try {
             activatePluginClassLoader();
@@ -165,16 +144,12 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.postDeleteTable()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.postDeleteTable()");
     }
 
     @Override
     public void postCreateNamespace(ObserverContext<MasterCoprocessorEnvironment> ctx, NamespaceDescriptor ns) throws IOException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasCoprocessor.preCreateNamespace()");
-        }
+        LOG.debug("==> HBaseAtlasCoprocessor.preCreateNamespace()");
 
         try {
             activatePluginClassLoader();
@@ -183,16 +158,12 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.preCreateNamespace()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.preCreateNamespace()");
     }
 
     @Override
     public void postDeleteNamespace(ObserverContext<MasterCoprocessorEnvironment> ctx, String ns) throws IOException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasCoprocessor.preDeleteNamespace()");
-        }
+        LOG.debug("==> HBaseAtlasCoprocessor.preDeleteNamespace()");
 
         try {
             activatePluginClassLoader();
@@ -201,16 +172,12 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.preDeleteNamespace()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.preDeleteNamespace()");
     }
 
     @Override
     public void postModifyNamespace(ObserverContext<MasterCoprocessorEnvironment> ctx, NamespaceDescriptor ns) throws IOException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasCoprocessor.preModifyNamespace()");
-        }
+        LOG.debug("==> HBaseAtlasCoprocessor.preModifyNamespace()");
 
         try {
             activatePluginClassLoader();
@@ -219,16 +186,12 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.preModifyNamespace()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.preModifyNamespace()");
     }
 
     @Override
     public void postCloneSnapshot(ObserverContext<MasterCoprocessorEnvironment> observerContext, SnapshotDescription snapshot, TableDescriptor tableDescriptor) throws IOException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasCoprocessor.postCloneSnapshot()");
-        }
+        LOG.debug("==> HBaseAtlasCoprocessor.postCloneSnapshot()");
 
         try {
             activatePluginClassLoader();
@@ -237,16 +200,12 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.postCloneSnapshot()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.postCloneSnapshot()");
     }
 
     @Override
     public void postRestoreSnapshot(ObserverContext<MasterCoprocessorEnvironment> observerContext, SnapshotDescription snapshot, TableDescriptor tableDescriptor) throws IOException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasCoprocessor.postRestoreSnapshot()");
-        }
+        LOG.debug("==> HBaseAtlasCoprocessor.postRestoreSnapshot()");
 
         try {
             activatePluginClassLoader();
@@ -255,9 +214,7 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.postRestoreSnapshot()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.postRestoreSnapshot()");
     }
 
     private void activatePluginClassLoader() {

@@ -137,10 +137,12 @@ public class HBaseAtlasHook extends AtlasHook {
         if (ret == null) {
             try {
                 synchronized (HBaseAtlasHook.class) {
-                    if (me == null) {
-                        me = new HBaseAtlasHook();
-                    }
                     ret = me;
+
+                    if (ret == null) {
+                        ret = new HBaseAtlasHook();
+                        me  = ret;
+                    }
                 }
             } catch (Exception e) {
                 LOG.error("Caught exception instantiating the Atlas HBase hook.", e);
@@ -517,9 +519,7 @@ public class HBaseAtlasHook extends AtlasHook {
     }
 
     public void sendHBaseNameSpaceOperation(final NamespaceDescriptor namespaceDescriptor, final String nameSpace, final OPERATION operation, ObserverContext<MasterCoprocessorEnvironment> ctx) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasHook.sendHBaseNameSpaceOperation()");
-        }
+        LOG.debug("==> HBaseAtlasHook.sendHBaseNameSpaceOperation()");
 
         try {
             final UserGroupInformation ugi  = getUGI(ctx);
@@ -532,15 +532,11 @@ public class HBaseAtlasHook extends AtlasHook {
             LOG.error("HBaseAtlasHook.sendHBaseNameSpaceOperation(): failed to send notification", t);
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasHook.sendHBaseNameSpaceOperation()");
-        }
+        LOG.debug("<== HBaseAtlasHook.sendHBaseNameSpaceOperation()");
     }
 
     public void sendHBaseTableOperation(TableDescriptor tableDescriptor, final TableName tableName, final OPERATION operation, ObserverContext<MasterCoprocessorEnvironment> ctx) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasHook.sendHBaseTableOperation()");
-        }
+        LOG.debug("==> HBaseAtlasHook.sendHBaseTableOperation()");
 
         try {
             final UserGroupInformation ugi  = getUGI(ctx);
@@ -553,9 +549,7 @@ public class HBaseAtlasHook extends AtlasHook {
             LOG.error("<== HBaseAtlasHook.sendHBaseTableOperation(): failed to send notification", t);
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasHook.sendHBaseTableOperation()");
-        }
+        LOG.debug("<== HBaseAtlasHook.sendHBaseTableOperation()");
     }
 
     private void sendNotification(HBaseOperationContext hbaseOperationContext) {
@@ -569,24 +563,17 @@ public class HBaseAtlasHook extends AtlasHook {
     }
 
     private HBaseOperationContext handleHBaseNameSpaceOperation(NamespaceDescriptor namespaceDescriptor, String nameSpace, OPERATION operation, UserGroupInformation ugi, String userName) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasHook.handleHBaseNameSpaceOperation()");
-        }
+        LOG.debug("==> HBaseAtlasHook.handleHBaseNameSpaceOperation()");
 
         HBaseOperationContext hbaseOperationContext = new HBaseOperationContext(namespaceDescriptor, nameSpace, operation, ugi, userName, userName);
         createAtlasInstances(hbaseOperationContext);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasHook.handleHBaseNameSpaceOperation(): {}",  hbaseOperationContext);
-        }
-
+        LOG.debug("<== HBaseAtlasHook.handleHBaseNameSpaceOperation(): {}",  hbaseOperationContext);
         return hbaseOperationContext;
     }
 
     private HBaseOperationContext handleHBaseTableOperation(TableDescriptor tableDescriptor, TableName tableName, OPERATION operation, UserGroupInformation ugi, String userName) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasHook.handleHBaseTableOperation()");
-        }
+        LOG.debug("==> HBaseAtlasHook.handleHBaseTableOperation()");
 
         Map<String, String>  hbaseConf          = null;
         String               owner              = null;
@@ -617,16 +604,12 @@ public class HBaseAtlasHook extends AtlasHook {
         HBaseOperationContext hbaseOperationContext = new HBaseOperationContext(tableNameSpace, tableDescriptor, tableName, columnFamilyDescriptors, operation, ugi, userName, owner, hbaseConf);
         createAtlasInstances(hbaseOperationContext);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasHook.handleHBaseTableOperation(): {}",  hbaseOperationContext);
-        }
+        LOG.debug("<== HBaseAtlasHook.handleHBaseTableOperation(): {}",  hbaseOperationContext);
         return hbaseOperationContext;
     }
 
     private HBaseOperationContext handleHBaseColumnFamilyOperation(ColumnFamilyDescriptor columnFamilyDescriptor, TableName tableName, String columnFamily, OPERATION operation, UserGroupInformation ugi, String userName) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasHook.handleHBaseColumnFamilyOperation()");
-        }
+        LOG.debug("==> HBaseAtlasHook.handleHBaseColumnFamilyOperation()");
 
         String               owner     = userName;
         Map<String, String>  hbaseConf = new HashMap<>();
@@ -643,9 +626,7 @@ public class HBaseAtlasHook extends AtlasHook {
         HBaseOperationContext hbaseOperationContext = new HBaseOperationContext(tableNameSpace, tableName, columnFamilyDescriptor, columnFamily, operation, ugi, userName, owner, hbaseConf);
         createAtlasInstances(hbaseOperationContext);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasHook.handleHBaseColumnFamilyOperation(): {}",  hbaseOperationContext);
-        }
+        LOG.debug("<== HBaseAtlasHook.handleHBaseColumnFamilyOperation(): {}",  hbaseOperationContext);
         return hbaseOperationContext;
     }
 

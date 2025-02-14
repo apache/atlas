@@ -631,11 +631,11 @@ public class HBaseBridge {
 
                 LOG.info("Updated {} entity: name={}, guid={} ", ret.getEntity().getTypeName(), ret.getEntity().getAttribute(ATTRIBUTE_QUALIFIED_NAME), ret.getEntity().getGuid());
             } else {
-                LOG.info("Entity: name={} ", entity.toString() + " not updated as it is unchanged from what is in Atlas");
+                LOG.info("Entity: name={} not updated as it is unchanged from what is in Atlas", entity);
                 ret = entity;
             }
         } else {
-            LOG.info("Entity: name={} ", entity.toString() + " not updated as it is unchanged from what is in Atlas");
+            LOG.info("Entity: name={} not updated as it is unchanged from what is in Atlas", entity);
             ret = entity;
         }
 
