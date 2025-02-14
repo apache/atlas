@@ -124,6 +124,7 @@ public class ClassificationAssociator {
         public static final String PROCESS_ADD = "Add";
         public static final String PROCESS_UPDATE = "Update";
         public static final String PROCESS_DELETE = "Delete";
+        public static final String PROCESS_NOOP = "NOOP";
         static final String JSONIFY_STRING_FORMAT = "\"%s\",";
 
         private final AtlasGraph graph;

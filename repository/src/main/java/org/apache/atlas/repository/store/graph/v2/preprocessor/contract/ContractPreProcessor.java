@@ -54,8 +54,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
         super(graph, typeRegistry, entityRetriever, discovery);
         this.storeDifferentialAudits = storeDifferentialAudits;
         this.discovery = discovery;
-        this.entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, null, true, false, true);
-
+        this.entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, null, new BulkRequestContext());
     }
 
     @Override
@@ -277,7 +276,7 @@ public class ContractPreProcessor extends AbstractContractPreProcessor {
     }
 
     private void recordEntityMutatedDetails(EntityMutationContext context, AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
-        AtlasEntityComparator entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, context.getGuidAssignments(), true, false, true);
+        AtlasEntityComparator entityComparator = new AtlasEntityComparator(typeRegistry, entityRetriever, context.getGuidAssignments(), new BulkRequestContext());
         AtlasEntityComparator.AtlasEntityDiffResult diffResult   = entityComparator.getDiffResult(entity, vertex, !storeDifferentialAudits);
         RequestContext        reqContext           = RequestContext.get();
         if (diffResult.hasDifference()) {

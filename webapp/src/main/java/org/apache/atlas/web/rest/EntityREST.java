@@ -40,6 +40,7 @@ import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v2.BulkRequestContext;
 import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
@@ -415,7 +416,12 @@ public class EntityREST {
             }
             validateAttributeLength(Lists.newArrayList(entity.getEntity()));
 
-            return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
+            BulkRequestContext context = new BulkRequestContext.Builder()
+                    .setReplaceClassifications(replaceClassifications)
+                    .setReplaceBusinessAttributes(replaceBusinessAttributes)
+                    .setOverwriteBusinessAttributes(isOverwriteBusinessAttributes)
+                    .build();
+            return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), context);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -808,14 +814,15 @@ public class EntityREST {
     @Timed
     public EntityMutationResponse createOrUpdate(AtlasEntitiesWithExtInfo entities,
                                                  @QueryParam("replaceClassifications") @DefaultValue("false") boolean replaceClassifications,
+                                                 @QueryParam("replaceTags") @DefaultValue("false") boolean replaceTags,
                                                  @QueryParam("appendClassifications") @DefaultValue("false") boolean appendClassifications,
                                                  @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
                                                  @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes,
                                                  @QueryParam("skipProcessEdgeRestoration") @DefaultValue("false") boolean skipProcessEdgeRestoration
     ) throws AtlasBaseException {
 
-        if (replaceClassifications && appendClassifications) {
-            throw new AtlasBaseException(BAD_REQUEST, "Both replaceClassifications and appendClassifications can't be true");
+        if ((replaceClassifications ? 1 : 0) + (replaceTags ? 1 : 0) + (appendClassifications ? 1 : 0) > 1) {
+            throw new AtlasBaseException(BAD_REQUEST, "Only one of [replaceClassifications, replaceTags, appendClassifications] can be true");
         }
 
         AtlasPerfTracer perf = null;
@@ -831,9 +838,14 @@ public class EntityREST {
 
             EntityStream entityStream = new AtlasEntityStream(entities);
 
-            return entitiesStore.createOrUpdate(entityStream,
-                    replaceClassifications, appendClassifications,
-                    replaceBusinessAttributes, isOverwriteBusinessAttributes);
+            BulkRequestContext context = new BulkRequestContext.Builder()
+                    .setReplaceClassifications(replaceClassifications)
+                    .setReplaceTags(replaceTags)
+                    .setAppendClassifications(appendClassifications)
+                    .setReplaceBusinessAttributes(replaceBusinessAttributes)
+                    .setOverwriteBusinessAttributes(isOverwriteBusinessAttributes)
+                    .build();
+            return entitiesStore.createOrUpdate(entityStream, context);
         } finally {
             AtlasPerfTracer.log(perf);
         }

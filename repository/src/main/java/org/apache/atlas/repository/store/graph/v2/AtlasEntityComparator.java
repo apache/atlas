@@ -37,27 +37,19 @@ import java.util.Map;
 import java.util.Objects;
 
 import static org.apache.atlas.repository.graph.GraphHelper.getCustomAttributes;
-import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_ADD;
-import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_DELETE;
-import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_UPDATE;
 
 public class AtlasEntityComparator {
     private final AtlasTypeRegistry    typeRegistry;
     private final EntityGraphRetriever entityRetriever;
     private final Map<String, String>  guidRefMap;
-    private final boolean              appendClassifications;
-    private final boolean              replaceClassifications;
-    private final boolean              skipBusinessAttributeCompare;
+    private BulkRequestContext context;
 
     public AtlasEntityComparator(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, Map<String, String> guidRefMap,
-                                 boolean replaceClassifications, boolean appendClassifications,
-                                 boolean skipBusinessAttributeCompare) {
+                                 BulkRequestContext creteOrUpdateContext) {
         this.typeRegistry                 = typeRegistry;
         this.entityRetriever              = entityRetriever;
         this.guidRefMap                   = guidRefMap;
-        this.appendClassifications        = appendClassifications;
-        this.replaceClassifications       = replaceClassifications;
-        this.skipBusinessAttributeCompare = skipBusinessAttributeCompare;
+        this.context                      = creteOrUpdateContext;
     }
 
     public AtlasEntityDiffResult getDiffResult(AtlasEntity updatedEntity, AtlasEntity storedEntity, boolean findOnlyFirstDiff) throws AtlasBaseException {
@@ -160,11 +152,11 @@ public class AtlasEntityComparator {
             }
         }
 
-        if (replaceClassifications || appendClassifications) {
+        if (context.isReplaceClassifications() || context.isReplaceTags() || context.isAppendClassifications()) {
             List<AtlasClassification> newVal  = updatedEntity.getClassifications();
             List<AtlasClassification> currVal = (storedEntity != null) ? storedEntity.getClassifications() : entityRetriever.getAllClassifications(storedVertex);
 
-            if (replaceClassifications) {
+            if (context.isReplaceClassifications()) {
                 if (!Objects.equals(currVal, newVal)) {
                     diffEntity.setClassifications(newVal);
 
@@ -174,17 +166,24 @@ public class AtlasEntityComparator {
                         return new AtlasEntityDiffResult(diffEntity, true, false, false);
                     }
                 }
-            }
+            } else {
 
-            if (appendClassifications) {
-                Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff(updatedEntity.getGuid(),
-                        updatedEntity.getAddOrUpdateClassifications(),
-                        currVal,
-                        updatedEntity.getRemoveClassifications());
+                Map<String, List<AtlasClassification>> diff;
+
+                if (context.isReplaceTags()) {
+                    diff = AtlasEntityUtils.validateAndGetTagsDiff(updatedEntity.getGuid(),
+                            updatedEntity.getClassifications(),
+                            currVal);
+                } else {
+                    diff = AtlasEntityUtils.validateAndGetTagsDiff(updatedEntity.getGuid(),
+                            updatedEntity.getAddOrUpdateClassifications(),
+                            currVal,
+                            updatedEntity.getRemoveClassifications());
+                }
 
                 if (MapUtils.isNotEmpty(diff)) {
                     sectionsWithDiff++;
-                    RequestContext.get().addTagsAppendDiff(updatedEntity.getGuid(), diff);
+                    RequestContext.get().addTagsDiff(updatedEntity.getGuid(), diff);
 
                     if (findOnlyFirstDiff) {
                         return new AtlasEntityDiffResult(diffEntity, true, false, false);
@@ -195,7 +194,7 @@ public class AtlasEntityComparator {
 
         if (updatedEntity.getCustomAttributes() != null) {
             // event coming from hook does not have custom attributes, such events must not remove existing attributes
-            // UI sends empty object in case of of intended removal.
+            // UI sends empty object in case of intended removal.
             Map<String, String> newCustomAttributes  = updatedEntity.getCustomAttributes();
             Map<String, String> currCustomAttributes = (storedEntity != null) ? storedEntity.getCustomAttributes() : getCustomAttributes(storedVertex);
 
@@ -211,7 +210,7 @@ public class AtlasEntityComparator {
             }
         }
 
-        if (!skipBusinessAttributeCompare) {
+        if (context.isReplaceBusinessAttributes()) {
             Map<String, Map<String, Object>> newBusinessMetadata  = updatedEntity.getBusinessAttributes();
             Map<String, Map<String, Object>> currBusinessMetadata = (storedEntity != null) ? storedEntity.getBusinessAttributes() : entityRetriever.getBusinessMetadata(storedVertex);;
 

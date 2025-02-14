@@ -49,7 +49,6 @@ import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
-import org.apache.atlas.repository.util.AtlasEntityUtils;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
@@ -121,6 +120,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEnt
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_ADD;
 import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_DELETE;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_NOOP;
 import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_UPDATE;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.INPUT_PORT_GUIDS_ATTR;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.OUTPUT_PORT_GUIDS_ATTR;
@@ -334,10 +334,7 @@ public class EntityGraphMapper {
 
     public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context,
                                                                   final boolean isPartialUpdate,
-                                                                  final boolean replaceClassifications,
-                                                                  final boolean appendClassifications,
-                                                                  boolean replaceBusinessAttributes,
-                                                                  boolean isOverwriteBusinessAttribute) throws AtlasBaseException {
+                                                                  BulkRequestContext bulkRequestContext) throws AtlasBaseException {
 
         MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributesAndClassifications");
 
@@ -369,7 +366,7 @@ public class EntityGraphMapper {
                     setSystemAttributesToEntity(vertex, createdEntity);
                     resp.addEntity(CREATE, constructHeader(createdEntity, vertex, entityType.getAllAttributes()));
 
-                    if (appendClassifications) {
+                    if (bulkRequestContext.isAppendClassifications()) {
                         addClassifications(context, guid, createdEntity.getAddOrUpdateClassifications());
                     } else {
                         addClassifications(context, guid, createdEntity.getClassifications());
@@ -427,12 +424,12 @@ public class EntityGraphMapper {
 
                     setCustomAttributes(vertex, updatedEntity);
 
-                    if (replaceClassifications) {
+                    if (bulkRequestContext.isReplaceClassifications()) {
                         deleteClassifications(guid);
                         addClassifications(context, guid, updatedEntity.getClassifications());
 
-                    } else if (appendClassifications) {
-                        Map<String, List<AtlasClassification>> diff = RequestContext.get().getTagsAppendDiff(guid);
+                    } else {
+                        Map<String, List<AtlasClassification>> diff = RequestContext.get().getAndRemoveTagsDiff(guid);
 
                         if (MapUtils.isNotEmpty(diff)) {
                             List<AtlasClassification> finalTags = new ArrayList<>();
@@ -452,7 +449,7 @@ public class EntityGraphMapper {
                                 addClassifications(context, updatedEntity.getGuid(), diff.get(PROCESS_ADD));
                             }
 
-                            if (diff.containsKey("NOOP")) {
+                            if (diff.containsKey(PROCESS_NOOP)) {
                                 finalTags.addAll(diff.get("NOOP"));
                             }
 
@@ -460,14 +457,14 @@ public class EntityGraphMapper {
                         }
                     }
 
-                    if (replaceBusinessAttributes) {
-                        if (MapUtils.isEmpty(updatedEntity.getBusinessAttributes()) && isOverwriteBusinessAttribute) {
+                    if (bulkRequestContext.isReplaceBusinessAttributes()) {
+                        if (MapUtils.isEmpty(updatedEntity.getBusinessAttributes()) && bulkRequestContext.isOverwriteBusinessAttributes()) {
                             Map<String, Map<String, Object>> businessMetadata = entityRetriever.getBusinessMetadata(vertex);
                             if (MapUtils.isNotEmpty(businessMetadata)) {
                                 removeBusinessAttributes(vertex, entityType, businessMetadata);
                             }
                         } else {
-                            addOrUpdateBusinessAttributes(guid, updatedEntity.getBusinessAttributes(), isOverwriteBusinessAttribute);
+                            addOrUpdateBusinessAttributes(guid, updatedEntity.getBusinessAttributes(), bulkRequestContext.isOverwriteBusinessAttributes());
                         }
                     }
 
