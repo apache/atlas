@@ -56,15 +56,15 @@ public final class SampleAppConstants {
     public static final String ENTITY_TYPE_DATASET = "DataSet";
     public static final String ENTITY_TYPE_PROCESS = "Process";
 
-    public static final String PII_TAG                   = "SAMPLE_PII";
-    public static final String FINANCE_TAG               = "SAMPLE_FINANCE";
-    public static final String CLASSIFIED_TAG            = "SAMPLE_CLASSIFIED";
-    public static final String METRIC_TAG                = "SAMPLE_METRIC";
+    public static final String PII_TAG        = "SAMPLE_PII";
+    public static final String FINANCE_TAG    = "SAMPLE_FINANCE";
+    public static final String CLASSIFIED_TAG = "SAMPLE_CLASSIFIED";
+    public static final String METRIC_TAG     = "SAMPLE_METRIC";
 
-    public static final String DATABASE_TYPE             = "sample_db_type";
-    public static final String PROCESS_TYPE              = "sample_process_type";
-    public static final String TABLE_TYPE                = "sample_table_type";
-    public static final String COLUMN_TYPE               = "sample_column_type";
+    public static final String DATABASE_TYPE = "sample_db_type";
+    public static final String PROCESS_TYPE  = "sample_process_type";
+    public static final String TABLE_TYPE    = "sample_table_type";
+    public static final String COLUMN_TYPE   = "sample_column_type";
 
     public static final String TABLE_DATABASE_TYPE       = "sample_db_tables";
     public static final String TABLE_COLUMNS_TYPE        = "sample_table_columns";
@@ -72,4 +72,7 @@ public final class SampleAppConstants {
     public static final String BUSINESS_METADATA_TYPE    = "sample_bmWithAllTypes";
     public static final String BUSINESS_METADATA_TYPE_MV = "sample_bmWithAllTypesMV";
     public static final String STRUCT_TYPE_SERDE         = "sample_serdeType";
+
+    private SampleAppConstants()    {
+    }
 }

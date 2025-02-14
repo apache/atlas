@@ -31,4 +31,9 @@
     <modules>
         <module>sample-app</module>
     </modules>
+
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
 </project>
