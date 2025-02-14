@@ -170,8 +170,6 @@ public class AtlasAuthorizationUtils {
 
         RequestContext.get().endMetricRecord(metric);
 
-        LOG.info("from Atlas AuthorizationUtils isAccessAllowed: ret={}", ret);
-
         return ret;
     }
 

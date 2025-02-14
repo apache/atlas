@@ -306,8 +306,6 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             }
         }
 
-        LOG.info("isAccessAllowed={}; classificationsWithNoAccess={}", ret, entClsToAuthz);
-
         if (LOG.isDebugEnabled()) {
             if (!ret) {
                 LOG.debug("isAccessAllowed={}; classificationsWithNoAccess={}", ret, entClsToAuthz);
