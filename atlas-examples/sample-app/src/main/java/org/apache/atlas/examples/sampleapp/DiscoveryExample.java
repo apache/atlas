@@ -26,7 +26,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import java.util.List;
 
 public class DiscoveryExample {
-    private static final String[] DSL_QUERIES = new String[] { "from DataSet", "from Process" };
+    private static final String[] DSL_QUERIES = new String[] {"from DataSet", "from Process"};
 
     private final AtlasClientV2 client;
 

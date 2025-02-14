@@ -49,7 +49,9 @@ public class GlossaryExample {
     public void getGlossaryDetail() throws Exception {
         AtlasGlossaryExtInfo extInfo = client.getGlossaryExtInfo(empGlossary.getGuid());
 
-        assert (extInfo != null);
+        if (extInfo == null) {
+            throw new IllegalStateException("Glossary extended info is null for GUID: " + empGlossary.getGuid());
+        }
 
         SampleApp.log("Glossary extended info: " + extInfo.getGuid() + "; name: " + extInfo.getName() + "; language: " + extInfo.getLanguage());
     }
@@ -82,7 +84,7 @@ public class GlossaryExample {
             return;
         }
 
-        AtlasGlossaryHeader   glossary  = new AtlasGlossaryHeader();
+        AtlasGlossaryHeader   glossary = new AtlasGlossaryHeader();
         AtlasGlossaryCategory category = new AtlasGlossaryCategory();
 
         glossary.setGlossaryGuid(empGlossary.getGuid());
