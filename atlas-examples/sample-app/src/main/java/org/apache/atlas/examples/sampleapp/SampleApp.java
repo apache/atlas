@@ -101,7 +101,7 @@ public class SampleApp {
 
         discoveryExample.testSearch();
         discoveryExample.quickSearch(entity.getTypeName());
-        discoveryExample.basicSearch(entity.getTypeName(), SampleAppConstants.METRIC_TAG, (String)entity.getAttribute(SampleAppConstants.ATTR_NAME));
+        discoveryExample.basicSearch(entity.getTypeName(), SampleAppConstants.METRIC_TAG, (String) entity.getAttribute(SampleAppConstants.ATTR_NAME));
     }
 
     private void glossaryExample() throws Exception {
@@ -116,11 +116,11 @@ public class SampleApp {
 
     private static String[] getUserInput() {
         try {
-            String  username = System.console().readLine("Enter username: ");
-            char[]  pwChar   = System.console().readPassword("Enter password: ");
-            String  password = (pwChar != null) ? new String(pwChar) : "";
+            String username = System.console().readLine("Enter username: ");
+            char[] pwChar   = System.console().readPassword("Enter password: ");
+            String password = (pwChar != null) ? new String(pwChar) : "";
 
-            return new String[] { username, password };
+            return new String[] {username, password};
         } catch (Exception e) {
             System.out.print("Error while reading user input");
             System.exit(1);
@@ -133,7 +133,7 @@ public class SampleApp {
         try {
             String atlasServerUrl = System.console().readLine("Enter Atlas server URL: ");
 
-            return new String[] { atlasServerUrl };
+            return new String[] {atlasServerUrl};
         } catch (Exception e) {
             System.out.print("Error while reading user input");
             System.exit(1);

@@ -33,7 +33,33 @@ import java.util.Arrays;
 import java.util.List;
 
 import static java.util.Arrays.asList;
-import static org.apache.atlas.examples.sampleapp.SampleAppConstants.*;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_COLUMNS;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_COMMENT;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_COMPRESSED;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_CREATE_TIME;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_DATA_TYPE;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_DB;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_END_TIME;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_INPUTS;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_LAST_ACCESS_TIME;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_LEVEL;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_LOCATION_URI;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_OPERATION_TYPE;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_OUTPUTS;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_OWNER;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_QUERY_GRAPH;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_QUERY_ID;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_QUERY_PLAN;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_QUERY_TEXT;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_SERDE;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_SERDE1;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_SERDE2;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_START_TIME;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_TABLE;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_TABLE_TYPE;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_USERNAME;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.STRUCT_TYPE_SERDE;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.TABLE_DATABASE_TYPE;
 import static org.apache.atlas.type.AtlasTypeUtil.toAtlasRelatedObjectId;
 import static org.apache.atlas.type.AtlasTypeUtil.toAtlasRelatedObjectIds;
 
@@ -115,11 +141,25 @@ public class EntityExample {
         }
     }
 
+    protected AtlasEntity createHiveDBInstance(String dbName) {
+        AtlasEntity entity = new AtlasEntity(SampleAppConstants.DATABASE_TYPE);
+
+        entity.setAttribute(ATTR_NAME, dbName);
+        entity.setAttribute(ATTR_DESCRIPTION, "employee database");
+        entity.setAttribute(METADATA_NAMESPACE_SUFFIX, "employeeCluster");
+        entity.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, dbName + METADATA_NAMESPACE_SUFFIX);
+        entity.setAttribute(ATTR_OWNER, "user");
+        entity.setAttribute(ATTR_LOCATION_URI, "/tmp");
+        entity.setAttribute(ATTR_CREATE_TIME, 1000);
+
+        return entity;
+    }
+
     private AtlasEntity createTableEntity(String tableName) throws Exception {
         return createHiveTable(dbEntity, tableName, MANAGED_TABLE,
                 Arrays.asList(createColumn(COLUMN_TIME_ID, "int", "time id"),
-                              createColumn(COLUMN_CUSTOMER_ID, "int", "customer id", SampleAppConstants.PII_TAG),
-                              createColumn(COLUMN_COMPANY_ID, "double", "company id", SampleAppConstants.FINANCE_TAG)),
+                        createColumn(COLUMN_CUSTOMER_ID, "int", "customer id", SampleAppConstants.PII_TAG),
+                        createColumn(COLUMN_COMPANY_ID, "double", "company id", SampleAppConstants.FINANCE_TAG)),
                 SampleAppConstants.METRIC_TAG);
     }
 
@@ -131,8 +171,7 @@ public class EntityExample {
     }
 
     private AtlasEntityHeader createProcess(String name, String description, String user, List<AtlasEntity> inputs, List<AtlasEntity> outputs,
-                                            String queryText, String queryPlan, String queryId, String queryGraph, String... classificationNames) throws Exception {
-
+            String queryText, String queryPlan, String queryId, String queryGraph, String... classificationNames) throws Exception {
         AtlasEntity entity = new AtlasEntity(SampleAppConstants.PROCESS_TYPE);
 
         entity.setAttribute(ATTR_NAME, name);
@@ -212,24 +251,10 @@ public class EntityExample {
         return hiveDBInstance;
     }
 
-    protected AtlasEntity createHiveDBInstance(String dbName) {
-        AtlasEntity entity = new AtlasEntity(SampleAppConstants.DATABASE_TYPE);
-
-        entity.setAttribute(ATTR_NAME, dbName);
-        entity.setAttribute(ATTR_DESCRIPTION, "employee database");
-        entity.setAttribute(METADATA_NAMESPACE_SUFFIX, "employeeCluster");
-        entity.setAttribute(REFERENCEABLE_ATTRIBUTE_NAME, dbName + METADATA_NAMESPACE_SUFFIX);
-        entity.setAttribute(ATTR_OWNER, "user");
-        entity.setAttribute(ATTR_LOCATION_URI, "/tmp");
-        entity.setAttribute(ATTR_CREATE_TIME, 1000);
-
-        return entity;
-    }
-
     private AtlasEntity createHiveTable(AtlasEntity database, String tableName, String tableType, List<AtlasEntity> columns, String... classificationNames) throws Exception {
         AtlasEntityWithExtInfo entityWithExtInfo = new AtlasEntityWithExtInfo();
+        AtlasEntity            hiveTableInstance = createHiveTable(database, tableName, tableType, classificationNames);
 
-        AtlasEntity hiveTableInstance = createHiveTable(database, tableName, tableType, classificationNames);
         entityWithExtInfo.setEntity(hiveTableInstance);
         hiveTableInstance.setRelationshipAttribute(ATTR_COLUMNS, toAtlasRelatedObjectIds(columns));
 
@@ -268,6 +293,7 @@ public class EntityExample {
         table.setAttribute(ATTR_SERDE1, serde1);
 
         AtlasStruct serde2 = new AtlasStruct(STRUCT_TYPE_SERDE);
+
         serde2.setAttribute(ATTR_NAME, "serde2");
         serde2.setAttribute(ATTR_SERDE, "serde2");
         table.setAttribute(ATTR_SERDE2, serde2);
