@@ -121,14 +121,14 @@ public class HBaseBridge {
     private final AtlasClientV2 atlasClientV2;
     private final Admin         hbaseAdmin;
 
-
     public static void main(String[] args) {
-        int exitCode = EXIT_CODE_FAILED;
-        AtlasClientV2 atlasClientV2  =null;
+        int           exitCode       = EXIT_CODE_FAILED;
+        AtlasClientV2 atlasClientV2  = null;
 
         try {
             Options options = new Options();
-            options.addOption("n","namespace", true, "namespace");
+
+            options.addOption("n", "namespace", true, "namespace");
             options.addOption("t", "table", true, "tablename");
             options.addOption("f", "filename", true, "filename");
 
@@ -141,9 +141,8 @@ public class HBaseBridge {
             String[]          urls              = atlasConf.getStringArray(ATLAS_ENDPOINT);
 
             if (urls == null || urls.length == 0) {
-                urls = new String[] { DEFAULT_ATLAS_URL };
+                urls = new String[] {DEFAULT_ATLAS_URL};
             }
-
 
             if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
                 String[] basicAuthUsernamePassword = AuthenticationUtil.getBasicAuthenticationInput();
@@ -164,8 +163,8 @@ public class HBaseBridge {
                     BufferedReader br   = new BufferedReader(new FileReader(f));
                     String         line = null;
 
-                    while((line = br.readLine()) != null) {
-                        String val[] = line.split(":");
+                    while ((line = br.readLine()) != null) {
+                        String[] val = line.split(":");
 
                         if (ArrayUtils.isNotEmpty(val)) {
                             namespaceToImport = val[0];
@@ -189,15 +188,15 @@ public class HBaseBridge {
 
                 exitCode = EXIT_CODE_SUCCESS;
             }
-        } catch(ParseException e) {
+        } catch (ParseException e) {
             LOG.error("Failed to parse arguments. Error: ", e.getMessage());
             printUsage();
-        } catch(Exception e) {
+        } catch (Exception e) {
             System.out.println("ImportHBaseEntities failed. Please check the log file for the detailed error message");
 
             LOG.error("ImportHBaseEntities failed", e);
-        }finally {
-            if(atlasClientV2!=null) {
+        } finally {
+            if (atlasClientV2 != null) {
                 atlasClientV2.close();
             }
         }
@@ -236,13 +235,16 @@ public class HBaseBridge {
         if (StringUtils.isEmpty(namespaceToImport) && StringUtils.isEmpty(tableToImport)) {
             // when both NameSpace and Table options are not present
             importNameSpaceAndTable();
+
             ret = true;
         } else if (StringUtils.isNotEmpty(namespaceToImport)) {
             // When Namespace option is present or both namespace and table options are present
             importNameSpaceWithTable(namespaceToImport, tableToImport);
+
             ret = true;
         } else  if (StringUtils.isNotEmpty(tableToImport)) {
             importTable(tableToImport);
+
             ret = true;
         }
 
@@ -330,7 +332,7 @@ public class HBaseBridge {
                 hTableDescriptors = getTableDescriptors(matchingNameSpaceDescriptors);
             }
         } else {
-            tableToImport = namespaceToImport +":" + tableToImport;
+            tableToImport = namespaceToImport + ":" + tableToImport;
 
             TableDescriptor[] htds = hbaseAdmin.listTables(Pattern.compile(tableToImport));
 
@@ -349,13 +351,13 @@ public class HBaseBridge {
     private List<NamespaceDescriptor> getMatchingNameSpaces(String nameSpace) throws Exception {
         List<NamespaceDescriptor> ret                  = new ArrayList<>();
         NamespaceDescriptor[]     namespaceDescriptors = hbaseAdmin.listNamespaceDescriptors();
-        Pattern                                pattern = Pattern.compile(nameSpace);
+        Pattern                   pattern              = Pattern.compile(nameSpace);
 
-        for (NamespaceDescriptor namespaceDescriptor:namespaceDescriptors){
+        for (NamespaceDescriptor namespaceDescriptor : namespaceDescriptors) {
             String  nmSpace = namespaceDescriptor.getName();
             Matcher matcher = pattern.matcher(nmSpace);
 
-            if (matcher.find()){
+            if (matcher.find()) {
                 ret.add(namespaceDescriptor);
             }
         }
@@ -366,7 +368,7 @@ public class HBaseBridge {
     private List<TableDescriptor> getTableDescriptors(List<NamespaceDescriptor> namespaceDescriptors) throws Exception {
         List<TableDescriptor> ret = new ArrayList<>();
 
-        for(NamespaceDescriptor namespaceDescriptor:namespaceDescriptors) {
+        for (NamespaceDescriptor namespaceDescriptor : namespaceDescriptors) {
             TableDescriptor[] tableDescriptors = hbaseAdmin.listTableDescriptorsByNamespace(namespaceDescriptor.getName());
 
             ret.addAll(Arrays.asList(tableDescriptors));
@@ -381,13 +383,13 @@ public class HBaseBridge {
         AtlasEntityWithExtInfo nsEntity        = findNameSpaceEntityInAtlas(nsQualifiedName);
 
         if (nsEntity == null) {
-            LOG.info("Importing NameSpace: " + nsQualifiedName);
+            LOG.info("Importing NameSpace: {}", nsQualifiedName);
 
             AtlasEntity entity = getNameSpaceEntity(nsName, null);
 
             nsEntity = createEntityInAtlas(new AtlasEntityWithExtInfo(entity));
         } else {
-            LOG.info("NameSpace already present in Atlas. Updating it..: " + nsQualifiedName);
+            LOG.info("NameSpace already present in Atlas. Updating it..: {}", nsQualifiedName);
 
             AtlasEntity entity = getNameSpaceEntity(nsName, nsEntity.getEntity());
 
@@ -404,13 +406,13 @@ public class HBaseBridge {
         AtlasEntityWithExtInfo ret              = findTableEntityInAtlas(tblQualifiedName);
 
         if (ret == null) {
-            LOG.info("Importing Table: " + tblQualifiedName);
+            LOG.info("Importing Table: {}", tblQualifiedName);
 
             AtlasEntity entity = getTableEntity(nameSpace, tableName, owner, nameSapceEntity, htd, null);
 
             ret = createEntityInAtlas(new AtlasEntityWithExtInfo(entity));
         } else {
-            LOG.info("Table already present in Atlas. Updating it..: " + tblQualifiedName);
+            LOG.info("Table already present in Atlas. Updating it..: {}", tblQualifiedName);
 
             AtlasEntity entity = getTableEntity(nameSpace, tableName, owner, nameSapceEntity, htd, ret.getEntity());
 
@@ -431,14 +433,15 @@ public class HBaseBridge {
                     cfIDs.add(AtlasTypeUtil.getAtlasObjectId(cfEntity.getEntity()));
                 }
             }
+
             tableEntity.setRelationshipAttribute(COLUMN_FAMILIES, AtlasTypeUtil.getAtlasRelatedObjectIdList(cfIDs, HBaseAtlasHook.RELATIONSHIP_HBASE_TABLE_COLUMN_FAMILIES));
         }
 
         return ret;
     }
 
-    protected List<AtlasEntityWithExtInfo> createOrUpdateColumnFamilies(String nameSpace, String tableName, String owner, ColumnFamilyDescriptor[] hcdts , AtlasEntity tableEntity) throws Exception {
-        List<AtlasEntityWithExtInfo > ret = new ArrayList<>();
+    protected List<AtlasEntityWithExtInfo> createOrUpdateColumnFamilies(String nameSpace, String tableName, String owner, ColumnFamilyDescriptor[] hcdts, AtlasEntity tableEntity) throws Exception {
+        List<AtlasEntityWithExtInfo> ret = new ArrayList<>();
 
         if (hcdts != null) {
             AtlasObjectId tableId = AtlasTypeUtil.getAtlasObjectId(tableEntity);
@@ -449,13 +452,13 @@ public class HBaseBridge {
                 AtlasEntityWithExtInfo cfEntity        = findColumnFamiltyEntityInAtlas(cfQualifiedName);
 
                 if (cfEntity == null) {
-                    LOG.info("Importing Column-family: " + cfQualifiedName);
+                    LOG.info("Importing Column-family: {}", cfQualifiedName);
 
                     AtlasEntity entity = getColumnFamilyEntity(nameSpace, tableName, owner, columnFamilyDescriptor, tableId, null);
 
                     cfEntity = createEntityInAtlas(new AtlasEntityWithExtInfo(entity));
                 } else {
-                    LOG.info("ColumnFamily already present in Atlas. Updating it..: " + cfQualifiedName);
+                    LOG.info("ColumnFamily already present in Atlas. Updating it..: {}", cfQualifiedName);
 
                     AtlasEntity entity = getColumnFamilyEntity(nameSpace, tableName, owner, columnFamilyDescriptor, tableId, cfEntity.getEntity());
 
@@ -476,6 +479,7 @@ public class HBaseBridge {
 
         try {
             ret = findEntityInAtlas(HBaseDataTypes.HBASE_NAMESPACE.getName(), nsQualifiedName);
+
             clearRelationshipAttributes(ret);
         } catch (Exception e) {
             ret = null; // entity doesn't exist in Atlas
@@ -489,6 +493,7 @@ public class HBaseBridge {
 
         try {
             ret = findEntityInAtlas(HBaseDataTypes.HBASE_TABLE.getName(), tableQualifiedName);
+
             clearRelationshipAttributes(ret);
         } catch (Exception e) {
             ret = null; // entity doesn't exist in Atlas
@@ -502,6 +507,7 @@ public class HBaseBridge {
 
         try {
             ret = findEntityInAtlas(HBaseDataTypes.HBASE_COLUMN_FAMILY.getName(), columnFamilyQualifiedName);
+
             clearRelationshipAttributes(ret);
         } catch (Exception e) {
             ret = null; // entity doesn't exist in Atlas
@@ -517,7 +523,7 @@ public class HBaseBridge {
     }
 
     private AtlasEntity getNameSpaceEntity(String nameSpace, AtlasEntity nsEtity) {
-        AtlasEntity ret  = null ;
+        AtlasEntity ret;
 
         if (nsEtity == null) {
             ret = new AtlasEntity(HBaseDataTypes.HBASE_NAMESPACE.getName());
@@ -536,7 +542,7 @@ public class HBaseBridge {
     }
 
     private AtlasEntity getTableEntity(String nameSpace, String tableName, String owner, AtlasEntity nameSpaceEntity, TableDescriptor htd, AtlasEntity atlasEntity) {
-        AtlasEntity ret = null;
+        AtlasEntity ret;
 
         if (atlasEntity == null) {
             ret = new AtlasEntity(HBaseDataTypes.HBASE_TABLE.getName());
@@ -563,8 +569,8 @@ public class HBaseBridge {
         return ret;
     }
 
-    private AtlasEntity getColumnFamilyEntity(String nameSpace, String tableName, String owner, ColumnFamilyDescriptor hcdt, AtlasObjectId tableId, AtlasEntity atlasEntity){
-        AtlasEntity ret = null;
+    private AtlasEntity getColumnFamilyEntity(String nameSpace, String tableName, String owner, ColumnFamilyDescriptor hcdt, AtlasObjectId tableId, AtlasEntity atlasEntity) {
+        AtlasEntity ret;
 
         if (atlasEntity == null) {
             ret = new AtlasEntity(HBaseDataTypes.HBASE_COLUMN_FAMILY.getName());
@@ -582,24 +588,24 @@ public class HBaseBridge {
         ret.setAttribute(DESCRIPTION_ATTR, cfName);
         ret.setAttribute(OWNER, owner);
         ret.setAttribute(ATTR_CF_BLOCK_CACHE_ENABLED, hcdt.isBlockCacheEnabled());
-        ret.setAttribute(ATTR_CF_BLOOMFILTER_TYPE, (hcdt.getBloomFilterType() != null ? hcdt.getBloomFilterType().name():null));
+        ret.setAttribute(ATTR_CF_BLOOMFILTER_TYPE, (hcdt.getBloomFilterType() != null ? hcdt.getBloomFilterType().name() : null));
         ret.setAttribute(ATTR_CF_CACHED_BLOOM_ON_WRITE, hcdt.isCacheBloomsOnWrite());
         ret.setAttribute(ATTR_CF_CACHED_DATA_ON_WRITE, hcdt.isCacheDataOnWrite());
         ret.setAttribute(ATTR_CF_CACHED_INDEXES_ON_WRITE, hcdt.isCacheIndexesOnWrite());
-        ret.setAttribute(ATTR_CF_COMPACTION_COMPRESSION_TYPE, (hcdt.getCompactionCompressionType() != null ? hcdt.getCompactionCompressionType().name():null));
-        ret.setAttribute(ATTR_CF_COMPRESSION_TYPE, (hcdt.getCompressionType() != null ? hcdt.getCompressionType().name():null));
-        ret.setAttribute(ATTR_CF_DATA_BLOCK_ENCODING, (hcdt.getDataBlockEncoding() != null ? hcdt.getDataBlockEncoding().name():null));
+        ret.setAttribute(ATTR_CF_COMPACTION_COMPRESSION_TYPE, (hcdt.getCompactionCompressionType() != null ? hcdt.getCompactionCompressionType().name() : null));
+        ret.setAttribute(ATTR_CF_COMPRESSION_TYPE, (hcdt.getCompressionType() != null ? hcdt.getCompressionType().name() : null));
+        ret.setAttribute(ATTR_CF_DATA_BLOCK_ENCODING, (hcdt.getDataBlockEncoding() != null ? hcdt.getDataBlockEncoding().name() : null));
         ret.setAttribute(ATTR_CF_ENCRYPTION_TYPE, hcdt.getEncryptionType());
         ret.setAttribute(ATTR_CF_EVICT_BLOCK_ONCLOSE, hcdt.isEvictBlocksOnClose());
-        ret.setAttribute(ATTR_CF_KEEP_DELETE_CELLS, ( hcdt.getKeepDeletedCells() != null ? hcdt.getKeepDeletedCells().name():null));
+        ret.setAttribute(ATTR_CF_KEEP_DELETE_CELLS, (hcdt.getKeepDeletedCells() != null ? hcdt.getKeepDeletedCells().name() : null));
         ret.setAttribute(ATTR_CF_MAX_VERSIONS, hcdt.getMaxVersions());
         ret.setAttribute(ATTR_CF_MIN_VERSIONS, hcdt.getMinVersions());
         ret.setAttribute(ATTR_CF_PREFETCH_BLOCK_ONOPEN, hcdt.isPrefetchBlocksOnOpen());
         ret.setAttribute(ATTR_CF_TTL, hcdt.getTimeToLive());
-        ret.setAttribute(ATTR_CF_INMEMORY_COMPACTION_POLICY, (hcdt.getInMemoryCompaction() != null ? hcdt.getInMemoryCompaction().name():null));
-        ret.setAttribute(ATTR_CF_MOB_COMPATCTPARTITION_POLICY, ( hcdt.getMobCompactPartitionPolicy() != null ? hcdt.getMobCompactPartitionPolicy().name():null));
-        ret.setAttribute(ATTR_CF_MOB_ENABLED,hcdt.isMobEnabled());
-        ret.setAttribute(ATTR_CF_NEW_VERSION_BEHAVIOR,hcdt.isNewVersionBehavior());
+        ret.setAttribute(ATTR_CF_INMEMORY_COMPACTION_POLICY, (hcdt.getInMemoryCompaction() != null ? hcdt.getInMemoryCompaction().name() : null));
+        ret.setAttribute(ATTR_CF_MOB_COMPATCTPARTITION_POLICY, (hcdt.getMobCompactPartitionPolicy() != null ? hcdt.getMobCompactPartitionPolicy().name() : null));
+        ret.setAttribute(ATTR_CF_MOB_ENABLED, hcdt.isMobEnabled());
+        ret.setAttribute(ATTR_CF_NEW_VERSION_BEHAVIOR, hcdt.isNewVersionBehavior());
 
         return ret;
     }
@@ -616,6 +622,7 @@ public class HBaseBridge {
 
             LOG.info("Created {} entity: name={}, guid={}", ret.getEntity().getTypeName(), ret.getEntity().getAttribute(ATTRIBUTE_QUALIFIED_NAME), ret.getEntity().getGuid());
         }
+
         return ret;
     }
 
@@ -633,11 +640,13 @@ public class HBaseBridge {
 
                 LOG.info("Updated {} entity: name={}, guid={} ", ret.getEntity().getTypeName(), ret.getEntity().getAttribute(ATTRIBUTE_QUALIFIED_NAME), ret.getEntity().getGuid());
             } else {
-                LOG.info("Entity: name={} ", entity.toString() + " not updated as it is unchanged from what is in Atlas" );
+                LOG.info("Entity: name={} not updated as it is unchanged from what is in Atlas", entity);
+
                 ret = entity;
             }
         } else {
-            LOG.info("Entity: name={} ", entity.toString() + " not updated as it is unchanged from what is in Atlas" );
+            LOG.info("Entity: name={} not updated as it is unchanged from what is in Atlas", entity);
+
             ret = entity;
         }
 
@@ -654,6 +663,7 @@ public class HBaseBridge {
      */
     private static String getColumnFamilyQualifiedName(String metadataNamespace, String nameSpace, String tableName, String columnFamily) {
         tableName = stripNameSpace(tableName);
+
         return String.format(HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT, nameSpace, tableName, columnFamily, metadataNamespace);
     }
 
@@ -666,6 +676,7 @@ public class HBaseBridge {
      */
     private static String getTableQualifiedName(String metadataNamespace, String nameSpace, String tableName) {
         tableName = stripNameSpace(tableName);
+
         return String.format(HBASE_TABLE_QUALIFIED_NAME_FORMAT, nameSpace, tableName, metadataNamespace);
     }
 
@@ -679,15 +690,15 @@ public class HBaseBridge {
         return String.format(HBASE_NAMESPACE_QUALIFIED_NAME, nameSpace, metadataNamespace);
     }
 
-    private static String stripNameSpace(String tableName){
-        tableName = tableName.substring(tableName.indexOf(":")+1);
+    private static String stripNameSpace(String tableName) {
+        tableName = tableName.substring(tableName.indexOf(":") + 1);
 
         return tableName;
     }
 
     private static void printUsage() {
         System.out.println("Usage 1: import-hbase.sh [-n <namespace regex> OR --namespace <namespace regex >] [-t <table regex > OR --table <table regex>]");
-        System.out.println("Usage 2: import-hbase.sh [-f <filename>]" );
+        System.out.println("Usage 2: import-hbase.sh [-f <filename>]");
         System.out.println("   Format:");
         System.out.println("        namespace1:tbl1");
         System.out.println("        namespace1:tbl2");

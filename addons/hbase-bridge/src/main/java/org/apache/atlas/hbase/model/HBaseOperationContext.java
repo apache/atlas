@@ -21,8 +21,6 @@ package org.apache.atlas.hbase.model;
 import org.apache.atlas.hbase.bridge.HBaseAtlasHook;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
-import org.apache.hadoop.hbase.HTableDescriptor;
-import org.apache.hadoop.hbase.HColumnDescriptor;
 import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
 import org.apache.hadoop.hbase.client.TableDescriptor;
@@ -30,7 +28,6 @@ import org.apache.hadoop.security.UserGroupInformation;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import java.util.Map;
 
 public class HBaseOperationContext {
@@ -48,8 +45,7 @@ public class HBaseOperationContext {
     private final ColumnFamilyDescriptor   columnFamilyDescriptor;
 
     public HBaseOperationContext(NamespaceDescriptor namespaceDescriptor, String nameSpace, TableDescriptor tableDescriptor, TableName tableName, ColumnFamilyDescriptor[] columnFamilyDescriptors,
-                                 ColumnFamilyDescriptor columnFamilyDescriptor, String columnFamily, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi , String user, String owner,
-                                 Map<String, String> hbaseConf) {
+                                 ColumnFamilyDescriptor columnFamilyDescriptor, String columnFamily, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi, String user, String owner, Map<String, String> hbaseConf) {
         this.namespaceDescriptor     = namespaceDescriptor;
         this.nameSpace               = nameSpace;
         this.tableDescriptor         = tableDescriptor;
@@ -64,15 +60,15 @@ public class HBaseOperationContext {
         this.hbaseConf               = hbaseConf;
     }
 
-    public  HBaseOperationContext(NamespaceDescriptor namespaceDescriptor, String nameSpace, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi , String user, String owner) {
+    public  HBaseOperationContext(NamespaceDescriptor namespaceDescriptor, String nameSpace, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi, String user, String owner) {
         this(namespaceDescriptor, nameSpace, null, null, null, null, null, operation, ugi, user, owner, null);
     }
 
-    public  HBaseOperationContext(String nameSpace, TableDescriptor tableDescriptor, TableName tableName,  ColumnFamilyDescriptor[] columnFamilyDescriptors, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi, String user, String owner, Map<String,String> hbaseConf) {
+    public  HBaseOperationContext(String nameSpace, TableDescriptor tableDescriptor, TableName tableName,  ColumnFamilyDescriptor[] columnFamilyDescriptors, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi, String user, String owner, Map<String, String> hbaseConf) {
         this(null, nameSpace, tableDescriptor, tableName, columnFamilyDescriptors, null, null, operation, ugi, user, owner, hbaseConf);
     }
 
-    public  HBaseOperationContext(String nameSpace, TableName tableName, ColumnFamilyDescriptor columnFamilyDescriptor, String columnFamily, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi, String user, String owner, Map<String,String> hbaseConf) {
+    public  HBaseOperationContext(String nameSpace, TableName tableName, ColumnFamilyDescriptor columnFamilyDescriptor, String columnFamily, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi, String user, String owner, Map<String, String> hbaseConf) {
         this(null, nameSpace, null, tableName, null, columnFamilyDescriptor, columnFamily, operation, ugi, user, owner, hbaseConf);
     }
 
@@ -137,7 +133,9 @@ public class HBaseOperationContext {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+
         toString(sb);
+
         return sb.toString();
     }
 
@@ -145,30 +143,34 @@ public class HBaseOperationContext {
         sb.append("HBaseOperationContext={");
         sb.append("Operation={").append(operation).append("} ");
         sb.append("User ={").append(user).append("} ");
-        if (nameSpace != null ) {
+
+        if (nameSpace != null) {
             sb.append("NameSpace={").append(nameSpace).append("}");
         } else {
             if (namespaceDescriptor != null) {
                 sb.append("NameSpace={").append(namespaceDescriptor.toString()).append("}");
             }
         }
-        if (tableName != null ) {
+
+        if (tableName != null) {
             sb.append("Table={").append(tableName).append("}");
         } else {
-            if ( columnFamilyDescriptor != null) {
+            if (columnFamilyDescriptor != null) {
                 sb.append("Table={").append(tableDescriptor.toString()).append("}");
             }
         }
-        if (columnFamily != null ) {
+
+        if (columnFamily != null) {
             sb.append("Columm Family={").append(columnFamily).append("}");
         } else {
-            if ( columnFamilyDescriptor != null) {
+            if (columnFamilyDescriptor != null) {
                 sb.append("Columm Family={").append(columnFamilyDescriptor.toString()).append("}");
             }
         }
+
         sb.append("Message ={").append(getMessages()).append("} ");
         sb.append(" }");
+
         return sb;
     }
-
 }

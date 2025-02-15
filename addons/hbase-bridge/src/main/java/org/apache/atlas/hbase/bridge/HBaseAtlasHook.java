@@ -19,8 +19,8 @@
 package org.apache.atlas.hbase.bridge;
 
 import org.apache.atlas.AtlasConstants;
-import org.apache.atlas.hbase.model.HBaseOperationContext;
 import org.apache.atlas.hbase.model.HBaseDataTypes;
+import org.apache.atlas.hbase.model.HBaseOperationContext;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -30,8 +30,8 @@ import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV
 import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.ColumnFamilyDescriptor;
 import org.apache.hadoop.hbase.client.TableDescriptor;
 import org.apache.hadoop.hbase.coprocessor.MasterCoprocessorEnvironment;
@@ -55,7 +55,6 @@ import static org.apache.atlas.repository.Constants.HBASE_SOURCE;
 public class HBaseAtlasHook extends AtlasHook {
     private static final Logger LOG = LoggerFactory.getLogger(HBaseAtlasHook.class);
 
-    
     public static final String ATTR_DESCRIPTION           = "description";
     public static final String ATTR_ATLAS_ENDPOINT        = "atlas.rest.address";
     public static final String ATTR_PARAMETERS            = "parameters";
@@ -141,7 +140,8 @@ public class HBaseAtlasHook extends AtlasHook {
                     ret = me;
 
                     if (ret == null) {
-                        me = ret = new HBaseAtlasHook();
+                        ret = new HBaseAtlasHook();
+                        me  = ret;
                     }
                 }
             } catch (Exception e) {
@@ -304,7 +304,6 @@ public class HBaseAtlasHook extends AtlasHook {
         hbaseOperationContext.addMessage(new EntityDeleteRequestV2(hbaseOperationContext.getUser(), Collections.singletonList(columnFamilyId)));
     }
 
-
     /**
      * Construct the qualified name used to uniquely identify a ColumnFamily instance in Atlas.
      *
@@ -430,7 +429,7 @@ public class HBaseAtlasHook extends AtlasHook {
     }
 
     private List<AtlasEntity> buildColumnFamilies(HBaseOperationContext hbaseOperationContext, AtlasEntity nameSpace, AtlasEntity table) {
-        List<AtlasEntity>   columnFamilies     = new ArrayList<>();
+        List<AtlasEntity>        columnFamilies          = new ArrayList<>();
         ColumnFamilyDescriptor[] columnFamilyDescriptors = hbaseOperationContext.gethColumnDescriptors();
 
         if (columnFamilyDescriptors != null) {
@@ -458,24 +457,24 @@ public class HBaseAtlasHook extends AtlasHook {
         columnFamily.setAttribute(ATTR_OWNER, hbaseOperationContext.getOwner());
         columnFamily.setRelationshipAttribute(ATTR_TABLE, AtlasTypeUtil.getAtlasRelatedObjectId(table, RELATIONSHIP_HBASE_TABLE_COLUMN_FAMILIES));
 
-        if (columnFamilyDescriptor!= null) {
+        if (columnFamilyDescriptor != null) {
             columnFamily.setAttribute(ATTR_CF_BLOCK_CACHE_ENABLED, columnFamilyDescriptor.isBlockCacheEnabled());
-            columnFamily.setAttribute(ATTR_CF_BLOOMFILTER_TYPE, (columnFamilyDescriptor.getBloomFilterType() != null ? columnFamilyDescriptor.getBloomFilterType().name():null));
+            columnFamily.setAttribute(ATTR_CF_BLOOMFILTER_TYPE, (columnFamilyDescriptor.getBloomFilterType() != null ? columnFamilyDescriptor.getBloomFilterType().name() : null));
             columnFamily.setAttribute(ATTR_CF_CACHED_BLOOM_ON_WRITE, columnFamilyDescriptor.isCacheBloomsOnWrite());
             columnFamily.setAttribute(ATTR_CF_CACHED_DATA_ON_WRITE, columnFamilyDescriptor.isCacheDataOnWrite());
             columnFamily.setAttribute(ATTR_CF_CACHED_INDEXES_ON_WRITE, columnFamilyDescriptor.isCacheIndexesOnWrite());
-            columnFamily.setAttribute(ATTR_CF_COMPACTION_COMPRESSION_TYPE, (columnFamilyDescriptor.getCompactionCompressionType() != null ? columnFamilyDescriptor.getCompactionCompressionType().name():null));
-            columnFamily.setAttribute(ATTR_CF_COMPRESSION_TYPE, (columnFamilyDescriptor.getCompressionType() != null ? columnFamilyDescriptor.getCompressionType().name():null));
-            columnFamily.setAttribute(ATTR_CF_DATA_BLOCK_ENCODING, (columnFamilyDescriptor.getDataBlockEncoding() != null ? columnFamilyDescriptor.getDataBlockEncoding().name():null));
+            columnFamily.setAttribute(ATTR_CF_COMPACTION_COMPRESSION_TYPE, (columnFamilyDescriptor.getCompactionCompressionType() != null ? columnFamilyDescriptor.getCompactionCompressionType().name() : null));
+            columnFamily.setAttribute(ATTR_CF_COMPRESSION_TYPE, (columnFamilyDescriptor.getCompressionType() != null ? columnFamilyDescriptor.getCompressionType().name() : null));
+            columnFamily.setAttribute(ATTR_CF_DATA_BLOCK_ENCODING, (columnFamilyDescriptor.getDataBlockEncoding() != null ? columnFamilyDescriptor.getDataBlockEncoding().name() : null));
             columnFamily.setAttribute(ATTR_CF_ENCRYPTION_TYPE, columnFamilyDescriptor.getEncryptionType());
             columnFamily.setAttribute(ATTR_CF_EVICT_BLOCK_ONCLOSE, columnFamilyDescriptor.isEvictBlocksOnClose());
-            columnFamily.setAttribute(ATTR_CF_INMEMORY_COMPACTION_POLICY, (columnFamilyDescriptor.getInMemoryCompaction() != null ? columnFamilyDescriptor.getInMemoryCompaction().name():null));
-            columnFamily.setAttribute(ATTR_CF_KEEP_DELETE_CELLS, ( columnFamilyDescriptor.getKeepDeletedCells() != null ? columnFamilyDescriptor.getKeepDeletedCells().name():null));
+            columnFamily.setAttribute(ATTR_CF_INMEMORY_COMPACTION_POLICY, (columnFamilyDescriptor.getInMemoryCompaction() != null ? columnFamilyDescriptor.getInMemoryCompaction().name() : null));
+            columnFamily.setAttribute(ATTR_CF_KEEP_DELETE_CELLS, (columnFamilyDescriptor.getKeepDeletedCells() != null ? columnFamilyDescriptor.getKeepDeletedCells().name() : null));
             columnFamily.setAttribute(ATTR_CF_MAX_VERSIONS, columnFamilyDescriptor.getMaxVersions());
             columnFamily.setAttribute(ATTR_CF_MIN_VERSIONS, columnFamilyDescriptor.getMinVersions());
             columnFamily.setAttribute(ATTR_CF_NEW_VERSION_BEHAVIOR, columnFamilyDescriptor.isNewVersionBehavior());
             columnFamily.setAttribute(ATTR_CF_MOB_ENABLED, columnFamilyDescriptor.isMobEnabled());
-            columnFamily.setAttribute(ATTR_CF_MOB_COMPATCTPARTITION_POLICY, ( columnFamilyDescriptor.getMobCompactPartitionPolicy() != null ? columnFamilyDescriptor.getMobCompactPartitionPolicy().name():null));
+            columnFamily.setAttribute(ATTR_CF_MOB_COMPATCTPARTITION_POLICY, (columnFamilyDescriptor.getMobCompactPartitionPolicy() != null ? columnFamilyDescriptor.getMobCompactPartitionPolicy().name() : null));
             columnFamily.setAttribute(ATTR_CF_PREFETCH_BLOCK_ONOPEN, columnFamilyDescriptor.isPrefetchBlocksOnOpen());
             columnFamily.setAttribute(ATTR_CF_STORAGE_POLICY, columnFamilyDescriptor.getStoragePolicy());
             columnFamily.setAttribute(ATTR_CF_TTL, columnFamilyDescriptor.getTimeToLive());
@@ -520,14 +519,13 @@ public class HBaseAtlasHook extends AtlasHook {
     }
 
     public void sendHBaseNameSpaceOperation(final NamespaceDescriptor namespaceDescriptor, final String nameSpace, final OPERATION operation, ObserverContext<MasterCoprocessorEnvironment> ctx) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasHook.sendHBaseNameSpaceOperation()");
-        }
+        LOG.debug("==> HBaseAtlasHook.sendHBaseNameSpaceOperation()");
 
         try {
-            final UserGroupInformation ugi  = getUGI(ctx);
-            final User user                 = getActiveUser(ctx);
-            final String userName           = (user != null) ? user.getShortName() : null;
+            final UserGroupInformation ugi      = getUGI(ctx);
+            final User                 user     = getActiveUser(ctx);
+            final String               userName = (user != null) ? user.getShortName() : null;
+
             HBaseOperationContext hbaseOperationContext = handleHBaseNameSpaceOperation(namespaceDescriptor, nameSpace, operation, ugi, userName);
 
             sendNotification(hbaseOperationContext);
@@ -535,20 +533,17 @@ public class HBaseAtlasHook extends AtlasHook {
             LOG.error("HBaseAtlasHook.sendHBaseNameSpaceOperation(): failed to send notification", t);
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasHook.sendHBaseNameSpaceOperation()");
-        }
+        LOG.debug("<== HBaseAtlasHook.sendHBaseNameSpaceOperation()");
     }
 
     public void sendHBaseTableOperation(TableDescriptor tableDescriptor, final TableName tableName, final OPERATION operation, ObserverContext<MasterCoprocessorEnvironment> ctx) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasHook.sendHBaseTableOperation()");
-        }
+        LOG.debug("==> HBaseAtlasHook.sendHBaseTableOperation()");
 
         try {
-            final UserGroupInformation ugi  = getUGI(ctx);
-            final User user                 = getActiveUser(ctx);
-            final String userName           = (user != null) ? user.getShortName() : null;
+            final UserGroupInformation ugi      = getUGI(ctx);
+            final User                 user     = getActiveUser(ctx);
+            final String               userName = (user != null) ? user.getShortName() : null;
+
             HBaseOperationContext hbaseOperationContext = handleHBaseTableOperation(tableDescriptor, tableName, operation, ugi, userName);
 
             sendNotification(hbaseOperationContext);
@@ -556,9 +551,7 @@ public class HBaseAtlasHook extends AtlasHook {
             LOG.error("<== HBaseAtlasHook.sendHBaseTableOperation(): failed to send notification", t);
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasHook.sendHBaseTableOperation()");
-        }
+        LOG.debug("<== HBaseAtlasHook.sendHBaseTableOperation()");
     }
 
     private void sendNotification(HBaseOperationContext hbaseOperationContext) {
@@ -572,37 +565,34 @@ public class HBaseAtlasHook extends AtlasHook {
     }
 
     private HBaseOperationContext handleHBaseNameSpaceOperation(NamespaceDescriptor namespaceDescriptor, String nameSpace, OPERATION operation, UserGroupInformation ugi, String userName) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasHook.handleHBaseNameSpaceOperation()");
-        }
+        LOG.debug("==> HBaseAtlasHook.handleHBaseNameSpaceOperation()");
 
         HBaseOperationContext hbaseOperationContext = new HBaseOperationContext(namespaceDescriptor, nameSpace, operation, ugi, userName, userName);
+
         createAtlasInstances(hbaseOperationContext);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasHook.handleHBaseNameSpaceOperation(): {}",  hbaseOperationContext);
-        }
+        LOG.debug("<== HBaseAtlasHook.handleHBaseNameSpaceOperation(): {}",  hbaseOperationContext);
 
         return hbaseOperationContext;
     }
 
     private HBaseOperationContext handleHBaseTableOperation(TableDescriptor tableDescriptor, TableName tableName, OPERATION operation, UserGroupInformation ugi, String userName) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasHook.handleHBaseTableOperation()");
-        }
+        LOG.debug("==> HBaseAtlasHook.handleHBaseTableOperation()");
 
-        Map<String, String>  hbaseConf          = null;
-        String               owner              = null;
-        String               tableNameSpace     = null;
-        TableName            hbaseTableName     = null;
-        ColumnFamilyDescriptor[]  columnFamilyDescriptors = null;
+        Map<String, String>      hbaseConf               = null;
+        String                   owner                   = null;
+        String                   tableNameSpace          = null;
+        TableName                hbaseTableName          = null;
+        ColumnFamilyDescriptor[] columnFamilyDescriptors = null;
 
         if (tableDescriptor != null) {
-            owner = tableDescriptor.getOwnerString();
-            hbaseConf = null;
+            owner          = tableDescriptor.getOwnerString();
+            hbaseConf      = null;
             hbaseTableName = tableDescriptor.getTableName();
+
             if (hbaseTableName != null) {
                 tableNameSpace = hbaseTableName.getNamespaceAsString();
+
                 if (tableNameSpace == null) {
                     tableNameSpace = hbaseTableName.getNameWithNamespaceInclAsString();
                 }
@@ -618,23 +608,21 @@ public class HBaseAtlasHook extends AtlasHook {
         }
 
         HBaseOperationContext hbaseOperationContext = new HBaseOperationContext(tableNameSpace, tableDescriptor, tableName, columnFamilyDescriptors, operation, ugi, userName, owner, hbaseConf);
+
         createAtlasInstances(hbaseOperationContext);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasHook.handleHBaseTableOperation(): {}",  hbaseOperationContext);
-        }
+        LOG.debug("<== HBaseAtlasHook.handleHBaseTableOperation(): {}",  hbaseOperationContext);
+
         return hbaseOperationContext;
     }
 
     private HBaseOperationContext handleHBaseColumnFamilyOperation(ColumnFamilyDescriptor columnFamilyDescriptor, TableName tableName, String columnFamily, OPERATION operation, UserGroupInformation ugi, String userName) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasHook.handleHBaseColumnFamilyOperation()");
-        }
+        LOG.debug("==> HBaseAtlasHook.handleHBaseColumnFamilyOperation()");
 
-        String               owner     = userName;
-        Map<String, String>  hbaseConf = new HashMap<>();
+        String               owner          = userName;
+        Map<String, String>  hbaseConf      = new HashMap<>();
+        String               tableNameSpace = tableName.getNamespaceAsString();
 
-        String tableNameSpace = tableName.getNamespaceAsString();
         if (tableNameSpace == null) {
             tableNameSpace = tableName.getNameWithNamespaceInclAsString();
         }
@@ -644,17 +632,18 @@ public class HBaseAtlasHook extends AtlasHook {
         }
 
         HBaseOperationContext hbaseOperationContext = new HBaseOperationContext(tableNameSpace, tableName, columnFamilyDescriptor, columnFamily, operation, ugi, userName, owner, hbaseConf);
+
         createAtlasInstances(hbaseOperationContext);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasHook.handleHBaseColumnFamilyOperation(): {}",  hbaseOperationContext);
-        }
+        LOG.debug("<== HBaseAtlasHook.handleHBaseColumnFamilyOperation(): {}",  hbaseOperationContext);
+
         return hbaseOperationContext;
     }
 
     private UserGroupInformation getUGI(ObserverContext<?> ctx) {
         UserGroupInformation ugi  = null;
         User                 user = null;
+
         try {
             user = getActiveUser(ctx);
             ugi  = UserGroupInformation.getLoginUser();
@@ -669,10 +658,11 @@ public class HBaseAtlasHook extends AtlasHook {
         }
 
         LOG.info("HBaseAtlasHook: UGI: {}",  ugi);
+
         return ugi;
     }
 
     private User getActiveUser(ObserverContext<?> ctx) throws IOException {
-        return (User)ctx.getCaller().orElse(User.getCurrent());
+        return (User) ctx.getCaller().orElse(User.getCurrent());
     }
 }

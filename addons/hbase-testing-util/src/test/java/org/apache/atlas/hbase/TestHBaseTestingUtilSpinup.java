@@ -27,43 +27,43 @@ import java.util.List;
 
 import static org.testng.AssertJUnit.assertFalse;
 
-
 /**
  * Make sure we can spin up a HBTU without a hbase-site.xml
  */
 public class TestHBaseTestingUtilSpinup {
-  private final HBaseTestingUtility UTIL = new HBaseTestingUtility();
+    private final HBaseTestingUtility hBaseTestingUtility = new HBaseTestingUtility();
 
-  public TestHBaseTestingUtilSpinup() throws Exception {
-    UTIL.getConfiguration().set("test.hbase.zookeeper.property.clientPort", String.valueOf(getFreePort()));
-    UTIL.getConfiguration().set("hbase.master.port", String.valueOf(getFreePort()));
-    UTIL.getConfiguration().set("hbase.master.info.port", String.valueOf(getFreePort()));
-    UTIL.getConfiguration().set("hbase.regionserver.port", String.valueOf(getFreePort()));
-    UTIL.getConfiguration().set("hbase.regionserver.info.port", String.valueOf(getFreePort()));
-    UTIL.getConfiguration().set("zookeeper.znode.parent", "/hbase-unsecure");
-    UTIL.getConfiguration().set("hbase.table.sanity.checks", "false");
-  }
-
-  @Test
-  public void testGetMetaTableRows() throws Exception {
-    try (MiniHBaseCluster miniCluster = UTIL.startMiniCluster()) {
-      if (!UTIL.getHBaseCluster().waitForActiveAndReadyMaster(30000)) {
-        throw new RuntimeException("Active master not ready");
-      }
-
-      List<byte[]> results = UTIL.getMetaTableRows();
-      assertFalse("results should have some entries and is empty.", results.isEmpty());
-    } finally {
-      UTIL.shutdownMiniCluster();
+    public TestHBaseTestingUtilSpinup() throws Exception {
+        hBaseTestingUtility.getConfiguration().set("test.hbase.zookeeper.property.clientPort", String.valueOf(getFreePort()));
+        hBaseTestingUtility.getConfiguration().set("hbase.master.port", String.valueOf(getFreePort()));
+        hBaseTestingUtility.getConfiguration().set("hbase.master.info.port", String.valueOf(getFreePort()));
+        hBaseTestingUtility.getConfiguration().set("hbase.regionserver.port", String.valueOf(getFreePort()));
+        hBaseTestingUtility.getConfiguration().set("hbase.regionserver.info.port", String.valueOf(getFreePort()));
+        hBaseTestingUtility.getConfiguration().set("zookeeper.znode.parent", "/hbase-unsecure");
+        hBaseTestingUtility.getConfiguration().set("hbase.table.sanity.checks", "false");
     }
-  }
 
-  private static int getFreePort() throws IOException {
-    ServerSocket serverSocket = new ServerSocket(0);
-    int          port         = serverSocket.getLocalPort();
+    @Test
+    public void testGetMetaTableRows() throws Exception {
+        try (MiniHBaseCluster miniCluster = hBaseTestingUtility.startMiniCluster()) {
+            if (!hBaseTestingUtility.getHBaseCluster().waitForActiveAndReadyMaster(30000)) {
+                throw new RuntimeException("Active master not ready");
+            }
 
-    serverSocket.close();
+            List<byte[]> results = hBaseTestingUtility.getMetaTableRows();
 
-    return port;
-  }
+            assertFalse("results should have some entries and is empty.", results.isEmpty());
+        } finally {
+            hBaseTestingUtility.shutdownMiniCluster();
+        }
+    }
+
+    private static int getFreePort() throws IOException {
+        ServerSocket serverSocket = new ServerSocket(0);
+        int          port         = serverSocket.getLocalPort();
+
+        serverSocket.close();
+
+        return port;
+    }
 }
