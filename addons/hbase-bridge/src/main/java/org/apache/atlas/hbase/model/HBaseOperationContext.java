@@ -45,8 +45,7 @@ public class HBaseOperationContext {
     private final ColumnFamilyDescriptor   columnFamilyDescriptor;
 
     public HBaseOperationContext(NamespaceDescriptor namespaceDescriptor, String nameSpace, TableDescriptor tableDescriptor, TableName tableName, ColumnFamilyDescriptor[] columnFamilyDescriptors,
-                                 ColumnFamilyDescriptor columnFamilyDescriptor, String columnFamily, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi, String user, String owner,
-                                 Map<String, String> hbaseConf) {
+                                 ColumnFamilyDescriptor columnFamilyDescriptor, String columnFamily, HBaseAtlasHook.OPERATION operation, UserGroupInformation ugi, String user, String owner, Map<String, String> hbaseConf) {
         this.namespaceDescriptor     = namespaceDescriptor;
         this.nameSpace               = nameSpace;
         this.tableDescriptor         = tableDescriptor;
@@ -134,7 +133,9 @@ public class HBaseOperationContext {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
+
         toString(sb);
+
         return sb.toString();
     }
 
@@ -142,6 +143,7 @@ public class HBaseOperationContext {
         sb.append("HBaseOperationContext={");
         sb.append("Operation={").append(operation).append("} ");
         sb.append("User ={").append(user).append("} ");
+
         if (nameSpace != null) {
             sb.append("NameSpace={").append(nameSpace).append("}");
         } else {
@@ -149,6 +151,7 @@ public class HBaseOperationContext {
                 sb.append("NameSpace={").append(namespaceDescriptor.toString()).append("}");
             }
         }
+
         if (tableName != null) {
             sb.append("Table={").append(tableName).append("}");
         } else {
@@ -156,6 +159,7 @@ public class HBaseOperationContext {
                 sb.append("Table={").append(tableDescriptor.toString()).append("}");
             }
         }
+
         if (columnFamily != null) {
             sb.append("Columm Family={").append(columnFamily).append("}");
         } else {
@@ -163,8 +167,10 @@ public class HBaseOperationContext {
                 sb.append("Columm Family={").append(columnFamilyDescriptor.toString()).append("}");
             }
         }
+
         sb.append("Message ={").append(getMessages()).append("} ");
         sb.append(" }");
+
         return sb;
     }
 }
