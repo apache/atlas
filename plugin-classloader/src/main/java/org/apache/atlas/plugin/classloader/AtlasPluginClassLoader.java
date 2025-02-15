@@ -83,17 +83,13 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
 
     @Override
     public Class<?> findClass(String name) throws ClassNotFoundException {
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("==> AtlasPluginClassLoader.findClass({})", name);
-        }
+        LOG.trace("==> AtlasPluginClassLoader.findClass({})", name);
 
         Class<?> ret = null;
 
         try {
             // first try to find the class in pluginClassloader
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("AtlasPluginClassLoader.findClass({}): calling pluginClassLoader.findClass()", name);
-            }
+            LOG.trace("AtlasPluginClassLoader.findClass({}): calling pluginClassLoader.findClass()", name);
 
             ret = super.findClass(name);
         } catch (Throwable e) {
@@ -101,31 +97,23 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
             MyClassLoader savedClassLoader = getComponentClassLoader();
 
             if (savedClassLoader != null) {
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("AtlasPluginClassLoader.findClass({}): calling componentClassLoader.findClass()", name);
-                }
+                LOG.trace("AtlasPluginClassLoader.findClass({}): calling componentClassLoader.findClass()", name);
 
                 ret = savedClassLoader.findClass(name);
             }
         }
 
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("<== AtlasPluginClassLoader.findClass({}): {}", name, ret);
-        }
+        LOG.trace("<== AtlasPluginClassLoader.findClass({}): {}", name, ret);
 
         return ret;
     }
 
     @Override
     public URL findResource(String name) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasPluginClassLoader.findResource({}) ", name);
-        }
+        LOG.debug("==> AtlasPluginClassLoader.findResource({}) ", name);
 
         // first try to find the resource from pluginClassloader
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("AtlasPluginClassLoader.findResource({}): calling pluginClassLoader.findResource()", name);
-        }
+        LOG.debug("AtlasPluginClassLoader.findResource({}): calling pluginClassLoader.findResource()", name);
 
         URL ret = super.findResource(name);
 
@@ -133,29 +121,22 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
             MyClassLoader savedClassLoader = getComponentClassLoader();
 
             if (savedClassLoader != null) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("AtlasPluginClassLoader.findResource({}): calling componentClassLoader.getResource()", name);
-                }
+                LOG.debug("AtlasPluginClassLoader.findResource({}): calling componentClassLoader.getResource()", name);
 
                 ret = savedClassLoader.getResource(name);
             }
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasPluginClassLoader.findResource({}): {}", name, ret);
-        }
+        LOG.debug("<== AtlasPluginClassLoader.findResource({}): {}", name, ret);
 
         return ret;
     }
 
     @Override
     public Enumeration<URL> findResources(String name) throws IOException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasPluginClassLoader.findResources({})", name);
-        }
+        LOG.debug("==> AtlasPluginClassLoader.findResources({})", name);
 
-        Enumeration<URL> ret = null;
-
+        Enumeration<URL> ret;
         Enumeration<URL> resourcesInPluginClsLoader    = findResourcesUsingPluginClassLoader(name);
         Enumeration<URL> resourcesInComponentClsLoader = findResourcesUsingComponentClassLoader(name);
 
@@ -167,26 +148,20 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
             ret = resourcesInComponentClsLoader;
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasPluginClassLoader.findResources({}): {}", name, ret);
-        }
+        LOG.debug("<== AtlasPluginClassLoader.findResources({}): {}", name, ret);
 
         return ret;
     }
 
     @Override
     public Class<?> loadClass(String name) throws ClassNotFoundException {
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("==> AtlasPluginClassLoader.loadClass({})", name);
-        }
+        LOG.trace("==> AtlasPluginClassLoader.loadClass({})", name);
 
         Class<?> ret = null;
 
         try {
             // first try to load the class from pluginClassloader
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("AtlasPluginClassLoader.loadClass({}): calling pluginClassLoader.loadClass()", name);
-            }
+            LOG.trace("AtlasPluginClassLoader.loadClass({}): calling pluginClassLoader.loadClass()", name);
 
             ret = super.loadClass(name);
         } catch (Throwable e) {
@@ -194,39 +169,29 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
             MyClassLoader savedClassLoader = getComponentClassLoader();
 
             if (savedClassLoader != null) {
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("AtlasPluginClassLoader.loadClass({}): calling componentClassLoader.loadClass()", name);
-                }
+                LOG.trace("AtlasPluginClassLoader.loadClass({}): calling componentClassLoader.loadClass()", name);
 
                 ret = savedClassLoader.loadClass(name);
             }
         }
 
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("<== AtlasPluginClassLoader.loadClass({}): {}", name, ret);
-        }
+        LOG.trace("<== AtlasPluginClassLoader.loadClass({}): {}", name, ret);
 
         return ret;
     }
 
     public void activate() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasPluginClassLoader.activate()");
-        }
+        LOG.debug("==> AtlasPluginClassLoader.activate()");
 
         preActivateClassLoader.set(Thread.currentThread().getContextClassLoader());
 
         Thread.currentThread().setContextClassLoader(this);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasPluginClassLoader.activate()");
-        }
+        LOG.debug("<== AtlasPluginClassLoader.activate()");
     }
 
     public void deactivate() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasPluginClassLoader.deactivate()");
-        }
+        LOG.debug("==> AtlasPluginClassLoader.deactivate()");
 
         ClassLoader classLoader = preActivateClassLoader.get();
 
@@ -234,6 +199,7 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
             preActivateClassLoader.remove();
         } else {
             MyClassLoader savedClassLoader = getComponentClassLoader();
+
             if (savedClassLoader != null && savedClassLoader.getParent() != null) {
                 classLoader = savedClassLoader.getParent();
             }
@@ -242,13 +208,10 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
         if (classLoader != null) {
             Thread.currentThread().setContextClassLoader(classLoader);
         } else {
-            LOG.warn("AtlasPluginClassLoader.deactivate() was not successful.Couldn't not get the saved "
-                    + "componentClassLoader...");
+            LOG.warn("AtlasPluginClassLoader.deactivate() was not successful.Couldn't not get the saved componentClassLoader...");
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasPluginClassLoader.deactivate()");
-        }
+        LOG.debug("<== AtlasPluginClassLoader.deactivate()");
     }
 
     private MyClassLoader getComponentClassLoader() {
@@ -256,9 +219,7 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
     }
 
     private Enumeration<URL> findResourcesUsingPluginClassLoader(String name) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasPluginClassLoader.findResourcesUsingPluginClassLoader({})", name);
-        }
+        LOG.debug("==> AtlasPluginClassLoader.findResourcesUsingPluginClassLoader({})", name);
 
         Enumeration<URL> ret = null;
 
@@ -266,22 +227,16 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
             ret = super.findResources(name);
         } catch (Throwable excp) {
             // Ignore exceptions
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("AtlasPluginClassLoader.findResourcesUsingPluginClassLoader({}): resource not found in plugin", name, excp);
-            }
+            LOG.debug("AtlasPluginClassLoader.findResourcesUsingPluginClassLoader({}): resource not found in plugin", name, excp);
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasPluginClassLoader.findResourcesUsingPluginClassLoader({}): {}", name, ret);
-        }
+        LOG.debug("<== AtlasPluginClassLoader.findResourcesUsingPluginClassLoader({}): {}", name, ret);
 
         return ret;
     }
 
     private Enumeration<URL> findResourcesUsingComponentClassLoader(String name) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasPluginClassLoader.findResourcesUsingComponentClassLoader({})", name);
-        }
+        LOG.debug("==> AtlasPluginClassLoader.findResourcesUsingComponentClassLoader({})", name);
 
         Enumeration<URL> ret = null;
 
@@ -289,20 +244,14 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
             MyClassLoader savedClassLoader = getComponentClassLoader();
 
             if (savedClassLoader != null) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("AtlasPluginClassLoader.findResourcesUsingComponentClassLoader({}): calling componentClassLoader.getResources()", name);
-                }
+                LOG.debug("AtlasPluginClassLoader.findResourcesUsingComponentClassLoader({}): calling componentClassLoader.getResources()", name);
 
                 ret = savedClassLoader.getResources(name);
             }
 
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("<== AtlasPluginClassLoader.findResourcesUsingComponentClassLoader({}): {}", name, ret);
-            }
+            LOG.debug("<== AtlasPluginClassLoader.findResourcesUsingComponentClassLoader({}): {}", name, ret);
         } catch (Throwable t) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("AtlasPluginClassLoader.findResourcesUsingComponentClassLoader({}): class not found in componentClassLoader.", name, t);
-            }
+            LOG.debug("AtlasPluginClassLoader.findResourcesUsingComponentClassLoader({}): class not found in componentClassLoader.", name, t);
         }
 
         return ret;
