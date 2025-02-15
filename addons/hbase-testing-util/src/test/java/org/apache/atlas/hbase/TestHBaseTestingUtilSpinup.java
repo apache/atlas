@@ -51,6 +51,7 @@ public class TestHBaseTestingUtilSpinup {
             }
 
             List<byte[]> results = hBaseTestingUtility.getMetaTableRows();
+
             assertFalse("results should have some entries and is empty.", results.isEmpty());
         } finally {
             hBaseTestingUtility.shutdownMiniCluster();
