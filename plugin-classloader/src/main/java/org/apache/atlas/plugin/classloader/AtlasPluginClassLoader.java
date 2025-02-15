@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,6 @@
  * limitations under the License.
  */
 package org.apache.atlas.plugin.classloader;
-
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,11 +66,11 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
                 ret = pluginClassLoaders.get(pluginType);
 
                 if (ret == null) {
-					ret = AccessController.doPrivileged(new PrivilegedExceptionAction<AtlasPluginClassLoader>() {
-					    public AtlasPluginClassLoader run() throws URISyntaxException {
-					        return new AtlasPluginClassLoader(pluginType, pluginClass);
-					    }
-					});
+                    ret = AccessController.doPrivileged(new PrivilegedExceptionAction<AtlasPluginClassLoader>() {
+                        public AtlasPluginClassLoader run() throws URISyntaxException {
+                            return new AtlasPluginClassLoader(pluginType, pluginClass);
+                        }
+                    });
 
                     if (ret != null) {
                         pluginClassLoaders.put(pluginType, ret);
@@ -118,41 +117,6 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
     }
 
     @Override
-    public Class<?> loadClass(String name) throws ClassNotFoundException {
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("==> AtlasPluginClassLoader.loadClass({})", name);
-        }
-
-        Class<?> ret = null;
-
-        try {
-            // first try to load the class from pluginClassloader
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("AtlasPluginClassLoader.loadClass({}): calling pluginClassLoader.loadClass()", name);
-            }
-
-            ret = super.loadClass(name);
-        } catch (Throwable e) {
-            // on failure to load from pluginClassLoader, try to load from componentClassLoader
-            MyClassLoader savedClassLoader = getComponentClassLoader();
-
-            if (savedClassLoader != null) {
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("AtlasPluginClassLoader.loadClass({}): calling componentClassLoader.loadClass()", name);
-                }
-
-                ret = savedClassLoader.loadClass(name);
-            }
-        }
-
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("<== AtlasPluginClassLoader.loadClass({}): {}", name, ret);
-        }
-
-        return ret;
-    }
-
-    @Override
     public URL findResource(String name) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasPluginClassLoader.findResource({}) ", name);
@@ -192,7 +156,7 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
 
         Enumeration<URL> ret = null;
 
-        Enumeration<URL> resourcesInPluginClsLoader = findResourcesUsingPluginClassLoader(name);
+        Enumeration<URL> resourcesInPluginClsLoader    = findResourcesUsingPluginClassLoader(name);
         Enumeration<URL> resourcesInComponentClsLoader = findResourcesUsingComponentClassLoader(name);
 
         if (resourcesInPluginClsLoader != null && resourcesInComponentClsLoader != null) {
@@ -205,6 +169,41 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AtlasPluginClassLoader.findResources({}): {}", name, ret);
+        }
+
+        return ret;
+    }
+
+    @Override
+    public Class<?> loadClass(String name) throws ClassNotFoundException {
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("==> AtlasPluginClassLoader.loadClass({})", name);
+        }
+
+        Class<?> ret = null;
+
+        try {
+            // first try to load the class from pluginClassloader
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("AtlasPluginClassLoader.loadClass({}): calling pluginClassLoader.loadClass()", name);
+            }
+
+            ret = super.loadClass(name);
+        } catch (Throwable e) {
+            // on failure to load from pluginClassLoader, try to load from componentClassLoader
+            MyClassLoader savedClassLoader = getComponentClassLoader();
+
+            if (savedClassLoader != null) {
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("AtlasPluginClassLoader.loadClass({}): calling componentClassLoader.loadClass()", name);
+                }
+
+                ret = savedClassLoader.loadClass(name);
+            }
+        }
+
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("<== AtlasPluginClassLoader.loadClass({}): {}", name, ret);
         }
 
         return ret;
@@ -310,8 +309,8 @@ public final class AtlasPluginClassLoader extends URLClassLoader {
     }
 
     static class MergeEnumeration implements Enumeration<URL> { //NOPMD
-        private Enumeration<URL> e1 = null;
-        private Enumeration<URL> e2 = null;
+        private Enumeration<URL> e1;
+        private Enumeration<URL> e2;
 
         public MergeEnumeration(Enumeration<URL> e1, Enumeration<URL> e2) {
             this.e1 = e1;

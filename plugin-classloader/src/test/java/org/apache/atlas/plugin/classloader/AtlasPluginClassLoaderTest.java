@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,24 +17,23 @@
  */
 package org.apache.atlas.plugin.classloader;
 
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import static org.testng.Assert.fail;
 
 public class AtlasPluginClassLoaderTest {
-
     @Test
     public void testClassLoader() throws Exception {
         String cls = "org.apache.atlas.service.Services";
 
         try {
             loadClass(cls, null);
-            Assert.fail("Expected ClassNotFoundException");
+            fail("Expected ClassNotFoundException");
         } catch (ClassNotFoundException e) {
             //expected
         }
 
-        AtlasPluginClassLoader classLoader = new AtlasPluginClassLoader(new String[]{ "../common/target" }, this.getClass());
+        AtlasPluginClassLoader classLoader = new AtlasPluginClassLoader(new String[] {"../common/target"}, this.getClass());
 
         classLoader.activate();
 
@@ -51,7 +50,7 @@ public class AtlasPluginClassLoaderTest {
         //After disable, class loading should fail again
         try {
             loadClass(cls, null);
-            Assert.fail("Expected ClassNotFoundException");
+            fail("Expected ClassNotFoundException");
         } catch (ClassNotFoundException e) {
             //expected
         }
