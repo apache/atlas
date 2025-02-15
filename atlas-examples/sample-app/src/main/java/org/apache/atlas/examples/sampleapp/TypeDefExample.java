@@ -33,14 +33,42 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
 
 import javax.ws.rs.core.MultivaluedMap;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.apache.atlas.examples.sampleapp.SampleAppConstants.*;
-import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.*;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_ATTR1;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_ATTR11;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_ATTR18;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_ATTR2;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_ATTR8;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_COMMENT;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_CREATE_TIME;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_DATA_TYPE;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_END_TIME;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_LAST_ACCESS_TIME;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_QUERY_GRAPH;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_QUERY_ID;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_QUERY_PLAN;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_QUERY_TEXT;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_RANDOM_TABLE;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_SERDE;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_SERDE1;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_SERDE2;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_START_TIME;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_TABLE_TYPE;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_TEMPORARY;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ATTR_USERNAME;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ENTITY_TYPE_DATASET;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ENTITY_TYPE_PROCESS;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.ENUM_TABLE_TYPE;
+import static org.apache.atlas.examples.sampleapp.SampleAppConstants.STRUCT_TYPE_SERDE;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BOOLEAN;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_BYTE;
+import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory.AGGREGATION;
 import static org.apache.atlas.model.typedef.AtlasRelationshipDef.RelationshipCategory.COMPOSITION;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
@@ -83,11 +111,11 @@ public class TypeDefExample {
         List<AtlasRelationshipDef>     relationshipDefs    = createAtlasRelationshipDef();
 
         AtlasTypesDef typesDef = new AtlasTypesDef(Collections.singletonList(tableTypeDef),
-                                                   Collections.singletonList(serDeDef),
-                                                   classificationDefs,
-                                                   Arrays.asList(databaseDef, tableDef, columnDef, processDef),
-                                                   relationshipDefs,
-                                                   businessMetadataDef);
+                Collections.singletonList(serDeDef),
+                classificationDefs,
+                Arrays.asList(databaseDef, tableDef, columnDef, processDef),
+                relationshipDefs,
+                businessMetadataDef);
 
         this.typesDef = batchCreateTypes(typesDef);
     }
@@ -102,7 +130,9 @@ public class TypeDefExample {
 
             AtlasTypesDef typesDef = client.getAllTypeDefs(searchFilter);
 
-            assert (!typesDef.isEmpty());
+            if (typesDef.isEmpty()) {
+                throw new IllegalStateException("Type definition is empty for type: " + typeName);
+            }
 
             SampleApp.log("Created type: " + typeName);
         }
@@ -120,55 +150,55 @@ public class TypeDefExample {
 
     private AtlasEntityDef createDatabaseDef() {
         return AtlasTypeUtil.createClassTypeDef(SampleAppConstants.DATABASE_TYPE,
-                                                Collections.singleton(ENTITY_TYPE_DATASET),
-                                                AtlasTypeUtil.createOptionalAttrDef("locationUri", "string"),
-                                                AtlasTypeUtil.createOptionalAttrDef(ATTR_CREATE_TIME, "long"),
-                                                new AtlasAttributeDef(ATTR_RANDOM_TABLE,
-                                                        AtlasBaseTypeDef.getArrayTypeName(SampleAppConstants.TABLE_TYPE),
-                                                        true, AtlasAttributeDef.Cardinality.SET));
+                Collections.singleton(ENTITY_TYPE_DATASET),
+                AtlasTypeUtil.createOptionalAttrDef("locationUri", "string"),
+                AtlasTypeUtil.createOptionalAttrDef(ATTR_CREATE_TIME, "long"),
+                new AtlasAttributeDef(ATTR_RANDOM_TABLE,
+                        AtlasBaseTypeDef.getArrayTypeName(SampleAppConstants.TABLE_TYPE),
+                        true, AtlasAttributeDef.Cardinality.SET));
     }
 
     private AtlasEntityDef createTableDef() {
         return AtlasTypeUtil.createClassTypeDef(SampleAppConstants.TABLE_TYPE,
-                                                Collections.singleton(ENTITY_TYPE_DATASET),
-                                                createOptionalAttrDef(ATTR_CREATE_TIME, "long"),
-                                                createOptionalAttrDef(ATTR_LAST_ACCESS_TIME, "date"),
-                                                createOptionalAttrDef(ATTR_TEMPORARY, "boolean"),
-                                                createOptionalAttrDef(ATTR_TABLE_TYPE, ENUM_TABLE_TYPE),
-                                                createOptionalAttrDef(ATTR_SERDE1, STRUCT_TYPE_SERDE),
-                                                createOptionalAttrDef(ATTR_SERDE2, STRUCT_TYPE_SERDE));
+                Collections.singleton(ENTITY_TYPE_DATASET),
+                createOptionalAttrDef(ATTR_CREATE_TIME, "long"),
+                createOptionalAttrDef(ATTR_LAST_ACCESS_TIME, "date"),
+                createOptionalAttrDef(ATTR_TEMPORARY, "boolean"),
+                createOptionalAttrDef(ATTR_TABLE_TYPE, ENUM_TABLE_TYPE),
+                createOptionalAttrDef(ATTR_SERDE1, STRUCT_TYPE_SERDE),
+                createOptionalAttrDef(ATTR_SERDE2, STRUCT_TYPE_SERDE));
     }
 
     private AtlasEntityDef createColumnDef() {
         return AtlasTypeUtil.createClassTypeDef(SampleAppConstants.COLUMN_TYPE,
-                                                Collections.singleton(ENTITY_TYPE_DATASET),
-                                                AtlasTypeUtil.createOptionalAttrDef(ATTR_DATA_TYPE, "string"),
-                                                AtlasTypeUtil.createOptionalAttrDef(ATTR_COMMENT, "string"));
+                Collections.singleton(ENTITY_TYPE_DATASET),
+                AtlasTypeUtil.createOptionalAttrDef(ATTR_DATA_TYPE, "string"),
+                AtlasTypeUtil.createOptionalAttrDef(ATTR_COMMENT, "string"));
     }
 
     private AtlasEntityDef createProcessDef() {
         return AtlasTypeUtil.createClassTypeDef(SampleAppConstants.PROCESS_TYPE,
-                                                Collections.singleton(ENTITY_TYPE_PROCESS),
-                                                AtlasTypeUtil.createOptionalAttrDef(ATTR_USERNAME, "string"),
-                                                AtlasTypeUtil.createOptionalAttrDef(ATTR_START_TIME, "long"),
-                                                AtlasTypeUtil.createOptionalAttrDef(ATTR_END_TIME, "long"),
-                                                AtlasTypeUtil.createRequiredAttrDef(ATTR_QUERY_TEXT, "string"),
-                                                AtlasTypeUtil.createRequiredAttrDef(ATTR_QUERY_PLAN, "string"),
-                                                AtlasTypeUtil.createRequiredAttrDef(ATTR_QUERY_ID, "string"),
-                                                AtlasTypeUtil.createRequiredAttrDef(ATTR_QUERY_GRAPH, "string"));
+                Collections.singleton(ENTITY_TYPE_PROCESS),
+                AtlasTypeUtil.createOptionalAttrDef(ATTR_USERNAME, "string"),
+                AtlasTypeUtil.createOptionalAttrDef(ATTR_START_TIME, "long"),
+                AtlasTypeUtil.createOptionalAttrDef(ATTR_END_TIME, "long"),
+                AtlasTypeUtil.createRequiredAttrDef(ATTR_QUERY_TEXT, "string"),
+                AtlasTypeUtil.createRequiredAttrDef(ATTR_QUERY_PLAN, "string"),
+                AtlasTypeUtil.createRequiredAttrDef(ATTR_QUERY_ID, "string"),
+                AtlasTypeUtil.createRequiredAttrDef(ATTR_QUERY_GRAPH, "string"));
     }
 
     private AtlasStructDef createSerDeDef() {
         return AtlasTypeUtil.createStructTypeDef(SampleAppConstants.STRUCT_TYPE_SERDE,
-                                                 AtlasTypeUtil.createRequiredAttrDef(SampleAppConstants.ATTR_NAME, "string"),
-                                                 AtlasTypeUtil.createRequiredAttrDef(ATTR_SERDE, "string"));
+                AtlasTypeUtil.createRequiredAttrDef(SampleAppConstants.ATTR_NAME, "string"),
+                AtlasTypeUtil.createRequiredAttrDef(ATTR_SERDE, "string"));
     }
 
     private AtlasEnumDef createTableTypeEnumDef() {
         return new AtlasEnumDef(SampleAppConstants.ENUM_TABLE_TYPE,
-                                SampleAppConstants.ATTR_DESCRIPTION,
-                                Arrays.asList(new AtlasEnumDef.AtlasEnumElementDef("MANAGED", null, 1),
-                                              new AtlasEnumDef.AtlasEnumElementDef("EXTERNAL", null, 2)));
+                SampleAppConstants.ATTR_DESCRIPTION,
+                Arrays.asList(new AtlasEnumDef.AtlasEnumElementDef("MANAGED", null, 1),
+                        new AtlasEnumDef.AtlasEnumElementDef("EXTERNAL", null, 2)));
     }
 
     private List<AtlasClassificationDef> createClassificationDefs() {
@@ -189,31 +219,31 @@ public class TypeDefExample {
         options.put("applicableEntityTypes", "[\"" + SampleAppConstants.DATABASE_TYPE + "\",\"" + SampleAppConstants.TABLE_TYPE + "\"]");
 
         AtlasBusinessMetadataDef bmWithAllTypes = createBusinessMetadataDef(SampleAppConstants.BUSINESS_METADATA_TYPE,
-                                                                            description,
-                                                                            "1.0",
-                                                                            createOptionalAttrDef(ATTR_ATTR1, ATLAS_TYPE_BOOLEAN, options, description),
-                                                                            createOptionalAttrDef(ATTR_ATTR2, ATLAS_TYPE_BYTE, options, description),
-                                                                            createOptionalAttrDef(ATTR_ATTR8, ATLAS_TYPE_STRING, options, description));
+                description,
+                "1.0",
+                createOptionalAttrDef(ATTR_ATTR1, ATLAS_TYPE_BOOLEAN, options, description),
+                createOptionalAttrDef(ATTR_ATTR2, ATLAS_TYPE_BYTE, options, description),
+                createOptionalAttrDef(ATTR_ATTR8, ATLAS_TYPE_STRING, options, description));
 
         AtlasBusinessMetadataDef bmWithAllTypesMV = createBusinessMetadataDef(SampleAppConstants.BUSINESS_METADATA_TYPE_MV,
-                                                                              description,
-                                                                              "1.0",
-                                                                              createOptionalAttrDef(ATTR_ATTR11, "array<boolean>", options, description),
-                                                                              createOptionalAttrDef(ATTR_ATTR18, "array<string>", options, description));
+                description,
+                "1.0",
+                createOptionalAttrDef(ATTR_ATTR11, "array<boolean>", options, description),
+                createOptionalAttrDef(ATTR_ATTR18, "array<string>", options, description));
 
         return Arrays.asList(bmWithAllTypes, bmWithAllTypesMV);
     }
 
     private List<AtlasRelationshipDef> createAtlasRelationshipDef() {
         AtlasRelationshipDef dbTablesDef = createRelationshipTypeDef(SampleAppConstants.TABLE_DATABASE_TYPE, SampleAppConstants.TABLE_DATABASE_TYPE,
-                                                                     "1.0", AGGREGATION, AtlasRelationshipDef.PropagateTags.NONE,
-                                                                     createRelationshipEndDef(SampleAppConstants.TABLE_TYPE, "db", SINGLE, false),
-                                                                     createRelationshipEndDef(SampleAppConstants.DATABASE_TYPE, "tables", SET, true));
+                "1.0", AGGREGATION, AtlasRelationshipDef.PropagateTags.NONE,
+                createRelationshipEndDef(SampleAppConstants.TABLE_TYPE, "db", SINGLE, false),
+                createRelationshipEndDef(SampleAppConstants.DATABASE_TYPE, "tables", SET, true));
 
         AtlasRelationshipDef tableColumnsDef = createRelationshipTypeDef(SampleAppConstants.TABLE_COLUMNS_TYPE, SampleAppConstants.TABLE_COLUMNS_TYPE,
-                                                                         "1.0", COMPOSITION, AtlasRelationshipDef.PropagateTags.NONE,
-                                                                         createRelationshipEndDef(SampleAppConstants.TABLE_TYPE, "columns", SET, true),
-                                                                         createRelationshipEndDef(SampleAppConstants.COLUMN_TYPE, "table", SINGLE, false));
+                "1.0", COMPOSITION, AtlasRelationshipDef.PropagateTags.NONE,
+                createRelationshipEndDef(SampleAppConstants.TABLE_TYPE, "columns", SET, true),
+                createRelationshipEndDef(SampleAppConstants.COLUMN_TYPE, "table", SINGLE, false));
 
         return Arrays.asList(dbTablesDef, tableColumnsDef);
     }
