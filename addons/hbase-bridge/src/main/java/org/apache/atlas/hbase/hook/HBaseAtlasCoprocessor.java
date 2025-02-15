@@ -18,15 +18,13 @@
 
 package org.apache.atlas.hbase.hook;
 
-
 import org.apache.atlas.hbase.bridge.HBaseAtlasHook;
-import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.NamespaceDescriptor;
+import org.apache.hadoop.hbase.TableName;
 import org.apache.hadoop.hbase.client.RegionInfo;
 import org.apache.hadoop.hbase.client.SnapshotDescription;
 import org.apache.hadoop.hbase.client.TableDescriptor;
 import org.apache.hadoop.hbase.coprocessor.MasterCoprocessor;
-import org.apache.hadoop.hbase.coprocessor.BulkLoadObserver;
 import org.apache.hadoop.hbase.coprocessor.MasterCoprocessorEnvironment;
 import org.apache.hadoop.hbase.coprocessor.MasterObserver;
 import org.apache.hadoop.hbase.coprocessor.ObserverContext;
@@ -48,87 +46,72 @@ public class HBaseAtlasCoprocessor implements MasterCoprocessor, MasterObserver,
 
     @Override
     public void postCreateTable(ObserverContext<MasterCoprocessorEnvironment> observerContext, TableDescriptor tableDescriptor, RegionInfo[] hRegionInfos) throws IOException {
-        LOG.info("==> HBaseAtlasCoprocessor.postCreateTable()");
+        LOG.debug("==> HBaseAtlasCoprocessor.postCreateTable()");
 
         hbaseAtlasHook.sendHBaseTableOperation(tableDescriptor, null, HBaseAtlasHook.OPERATION.CREATE_TABLE, observerContext);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.postCreateTable()");
-        }
+
+        LOG.debug("<== HBaseAtlasCoprocessor.postCreateTable()");
     }
 
     @Override
     public void postDeleteTable(ObserverContext<MasterCoprocessorEnvironment> observerContext, TableName tableName) throws IOException {
-        LOG.info("==> HBaseAtlasCoprocessor.postDeleteTable()");
+        LOG.debug("==> HBaseAtlasCoprocessor.postDeleteTable()");
+
         hbaseAtlasHook.sendHBaseTableOperation(null, tableName, HBaseAtlasHook.OPERATION.DELETE_TABLE, observerContext);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.postDeleteTable()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.postDeleteTable()");
     }
 
     @Override
     public void postModifyTable(ObserverContext<MasterCoprocessorEnvironment> observerContext, TableName tableName, TableDescriptor tableDescriptor) throws IOException {
-        LOG.info("==> HBaseAtlasCoprocessor.postModifyTable()");
+        LOG.debug("==> HBaseAtlasCoprocessor.postModifyTable()");
+
         hbaseAtlasHook.sendHBaseTableOperation(tableDescriptor, tableName, HBaseAtlasHook.OPERATION.ALTER_TABLE, observerContext);
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.postModifyTable()");
-        }
+
+        LOG.debug("<== HBaseAtlasCoprocessor.postModifyTable()");
     }
 
     @Override
     public void postCreateNamespace(ObserverContext<MasterCoprocessorEnvironment> observerContext, NamespaceDescriptor namespaceDescriptor) throws IOException {
-        LOG.info("==> HBaseAtlasCoprocessor.postCreateNamespace()");
+        LOG.debug("==> HBaseAtlasCoprocessor.postCreateNamespace()");
 
         hbaseAtlasHook.sendHBaseNameSpaceOperation(namespaceDescriptor, null, HBaseAtlasHook.OPERATION.CREATE_NAMESPACE, observerContext);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.postCreateNamespace()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.postCreateNamespace()");
     }
 
     @Override
     public void postDeleteNamespace(ObserverContext<MasterCoprocessorEnvironment> observerContext, String s) throws IOException {
-        LOG.info("==> HBaseAtlasCoprocessor.postDeleteNamespace()");
+        LOG.debug("==> HBaseAtlasCoprocessor.postDeleteNamespace()");
 
         hbaseAtlasHook.sendHBaseNameSpaceOperation(null, s, HBaseAtlasHook.OPERATION.DELETE_NAMESPACE, observerContext);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> HBaseAtlasCoprocessor.postDeleteNamespace()");
-        }
+        LOG.debug("==> HBaseAtlasCoprocessor.postDeleteNamespace()");
     }
 
     @Override
     public void postModifyNamespace(ObserverContext<MasterCoprocessorEnvironment> observerContext, NamespaceDescriptor namespaceDescriptor) throws IOException {
-        LOG.info("==> HBaseAtlasCoprocessor.postModifyNamespace()");
+        LOG.debug("==> HBaseAtlasCoprocessor.postModifyNamespace()");
 
         hbaseAtlasHook.sendHBaseNameSpaceOperation(namespaceDescriptor, null, HBaseAtlasHook.OPERATION.ALTER_NAMESPACE, observerContext);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.postModifyNamespace()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.postModifyNamespace()");
     }
 
     @Override
     public void postCloneSnapshot(ObserverContext<MasterCoprocessorEnvironment> observerContext, SnapshotDescription snapshot, TableDescriptor tableDescriptor) throws IOException {
-        LOG.info("==> HBaseAtlasCoprocessor.postCloneSnapshot()");
+        LOG.debug("==> HBaseAtlasCoprocessor.postCloneSnapshot()");
 
         hbaseAtlasHook.sendHBaseTableOperation(tableDescriptor, null, HBaseAtlasHook.OPERATION.CREATE_TABLE, observerContext);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.postCloneSnapshot()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.postCloneSnapshot()");
     }
 
     @Override
     public void postRestoreSnapshot(ObserverContext<MasterCoprocessorEnvironment> observerContext, SnapshotDescription snapshot, TableDescriptor tableDescriptor) throws IOException {
-        LOG.info("==> HBaseAtlasCoprocessor.postRestoreSnapshot()");
+        LOG.debug("==> HBaseAtlasCoprocessor.postRestoreSnapshot()");
 
         hbaseAtlasHook.sendHBaseTableOperation(tableDescriptor, snapshot.getTableName(), HBaseAtlasHook.OPERATION.ALTER_TABLE, observerContext);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== HBaseAtlasCoprocessor.postRestoreSnapshot()");
-        }
+        LOG.debug("<== HBaseAtlasCoprocessor.postRestoreSnapshot()");
     }
-
 }
-
-
