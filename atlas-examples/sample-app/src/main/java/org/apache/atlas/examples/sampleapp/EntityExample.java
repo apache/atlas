@@ -253,8 +253,8 @@ public class EntityExample {
 
     private AtlasEntity createHiveTable(AtlasEntity database, String tableName, String tableType, List<AtlasEntity> columns, String... classificationNames) throws Exception {
         AtlasEntityWithExtInfo entityWithExtInfo = new AtlasEntityWithExtInfo();
+        AtlasEntity            hiveTableInstance = createHiveTable(database, tableName, tableType, classificationNames);
 
-        AtlasEntity hiveTableInstance = createHiveTable(database, tableName, tableType, classificationNames);
         entityWithExtInfo.setEntity(hiveTableInstance);
         hiveTableInstance.setRelationshipAttribute(ATTR_COLUMNS, toAtlasRelatedObjectIds(columns));
 
@@ -293,6 +293,7 @@ public class EntityExample {
         table.setAttribute(ATTR_SERDE1, serde1);
 
         AtlasStruct serde2 = new AtlasStruct(STRUCT_TYPE_SERDE);
+
         serde2.setAttribute(ATTR_NAME, "serde2");
         serde2.setAttribute(ATTR_SERDE, "serde2");
         table.setAttribute(ATTR_SERDE2, serde2);
