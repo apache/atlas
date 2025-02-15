@@ -28,6 +28,7 @@ public class AtlasPluginClassLoaderTest {
 
         try {
             loadClass(cls, null);
+
             fail("Expected ClassNotFoundException");
         } catch (ClassNotFoundException e) {
             //expected
@@ -40,6 +41,7 @@ public class AtlasPluginClassLoaderTest {
         //org.apache.atlas.service.Services class should be loadable now
         //should also load org.apache.atlas.service.Service
         Class<?> servicesCls = loadClass(cls, null);
+
         loadClass("org.apache.atlas.service.Service", servicesCls.getClassLoader());
 
         //Fall back to current class loader should also work
@@ -50,6 +52,7 @@ public class AtlasPluginClassLoaderTest {
         //After disable, class loading should fail again
         try {
             loadClass(cls, null);
+
             fail("Expected ClassNotFoundException");
         } catch (ClassNotFoundException e) {
             //expected
@@ -60,6 +63,7 @@ public class AtlasPluginClassLoaderTest {
         if (classLoader == null) {
             classLoader = Thread.currentThread().getContextClassLoader();
         }
+
         return Class.forName(cls, true, classLoader);
     }
 }
