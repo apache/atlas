@@ -127,6 +127,7 @@ public class HBaseBridge {
 
         try {
             Options options = new Options();
+
             options.addOption("n", "namespace", true, "namespace");
             options.addOption("t", "table", true, "tablename");
             options.addOption("f", "filename", true, "filename");
@@ -234,13 +235,16 @@ public class HBaseBridge {
         if (StringUtils.isEmpty(namespaceToImport) && StringUtils.isEmpty(tableToImport)) {
             // when both NameSpace and Table options are not present
             importNameSpaceAndTable();
+
             ret = true;
         } else if (StringUtils.isNotEmpty(namespaceToImport)) {
             // When Namespace option is present or both namespace and table options are present
             importNameSpaceWithTable(namespaceToImport, tableToImport);
+
             ret = true;
         } else  if (StringUtils.isNotEmpty(tableToImport)) {
             importTable(tableToImport);
+
             ret = true;
         }
 
@@ -379,13 +383,13 @@ public class HBaseBridge {
         AtlasEntityWithExtInfo nsEntity        = findNameSpaceEntityInAtlas(nsQualifiedName);
 
         if (nsEntity == null) {
-            LOG.info("Importing NameSpace: " + nsQualifiedName);
+            LOG.info("Importing NameSpace: {}", nsQualifiedName);
 
             AtlasEntity entity = getNameSpaceEntity(nsName, null);
 
             nsEntity = createEntityInAtlas(new AtlasEntityWithExtInfo(entity));
         } else {
-            LOG.info("NameSpace already present in Atlas. Updating it..: " + nsQualifiedName);
+            LOG.info("NameSpace already present in Atlas. Updating it..: {}", nsQualifiedName);
 
             AtlasEntity entity = getNameSpaceEntity(nsName, nsEntity.getEntity());
 
@@ -402,13 +406,13 @@ public class HBaseBridge {
         AtlasEntityWithExtInfo ret              = findTableEntityInAtlas(tblQualifiedName);
 
         if (ret == null) {
-            LOG.info("Importing Table: " + tblQualifiedName);
+            LOG.info("Importing Table: {}", tblQualifiedName);
 
             AtlasEntity entity = getTableEntity(nameSpace, tableName, owner, nameSapceEntity, htd, null);
 
             ret = createEntityInAtlas(new AtlasEntityWithExtInfo(entity));
         } else {
-            LOG.info("Table already present in Atlas. Updating it..: " + tblQualifiedName);
+            LOG.info("Table already present in Atlas. Updating it..: {}", tblQualifiedName);
 
             AtlasEntity entity = getTableEntity(nameSpace, tableName, owner, nameSapceEntity, htd, ret.getEntity());
 
@@ -429,6 +433,7 @@ public class HBaseBridge {
                     cfIDs.add(AtlasTypeUtil.getAtlasObjectId(cfEntity.getEntity()));
                 }
             }
+
             tableEntity.setRelationshipAttribute(COLUMN_FAMILIES, AtlasTypeUtil.getAtlasRelatedObjectIdList(cfIDs, HBaseAtlasHook.RELATIONSHIP_HBASE_TABLE_COLUMN_FAMILIES));
         }
 
@@ -447,13 +452,13 @@ public class HBaseBridge {
                 AtlasEntityWithExtInfo cfEntity        = findColumnFamiltyEntityInAtlas(cfQualifiedName);
 
                 if (cfEntity == null) {
-                    LOG.info("Importing Column-family: " + cfQualifiedName);
+                    LOG.info("Importing Column-family: {}", cfQualifiedName);
 
                     AtlasEntity entity = getColumnFamilyEntity(nameSpace, tableName, owner, columnFamilyDescriptor, tableId, null);
 
                     cfEntity = createEntityInAtlas(new AtlasEntityWithExtInfo(entity));
                 } else {
-                    LOG.info("ColumnFamily already present in Atlas. Updating it..: " + cfQualifiedName);
+                    LOG.info("ColumnFamily already present in Atlas. Updating it..: {}", cfQualifiedName);
 
                     AtlasEntity entity = getColumnFamilyEntity(nameSpace, tableName, owner, columnFamilyDescriptor, tableId, cfEntity.getEntity());
 
@@ -474,6 +479,7 @@ public class HBaseBridge {
 
         try {
             ret = findEntityInAtlas(HBaseDataTypes.HBASE_NAMESPACE.getName(), nsQualifiedName);
+
             clearRelationshipAttributes(ret);
         } catch (Exception e) {
             ret = null; // entity doesn't exist in Atlas
@@ -487,6 +493,7 @@ public class HBaseBridge {
 
         try {
             ret = findEntityInAtlas(HBaseDataTypes.HBASE_TABLE.getName(), tableQualifiedName);
+
             clearRelationshipAttributes(ret);
         } catch (Exception e) {
             ret = null; // entity doesn't exist in Atlas
@@ -500,6 +507,7 @@ public class HBaseBridge {
 
         try {
             ret = findEntityInAtlas(HBaseDataTypes.HBASE_COLUMN_FAMILY.getName(), columnFamilyQualifiedName);
+
             clearRelationshipAttributes(ret);
         } catch (Exception e) {
             ret = null; // entity doesn't exist in Atlas
@@ -515,7 +523,7 @@ public class HBaseBridge {
     }
 
     private AtlasEntity getNameSpaceEntity(String nameSpace, AtlasEntity nsEtity) {
-        AtlasEntity ret  = null;
+        AtlasEntity ret;
 
         if (nsEtity == null) {
             ret = new AtlasEntity(HBaseDataTypes.HBASE_NAMESPACE.getName());
@@ -534,7 +542,7 @@ public class HBaseBridge {
     }
 
     private AtlasEntity getTableEntity(String nameSpace, String tableName, String owner, AtlasEntity nameSpaceEntity, TableDescriptor htd, AtlasEntity atlasEntity) {
-        AtlasEntity ret = null;
+        AtlasEntity ret;
 
         if (atlasEntity == null) {
             ret = new AtlasEntity(HBaseDataTypes.HBASE_TABLE.getName());
@@ -562,7 +570,7 @@ public class HBaseBridge {
     }
 
     private AtlasEntity getColumnFamilyEntity(String nameSpace, String tableName, String owner, ColumnFamilyDescriptor hcdt, AtlasObjectId tableId, AtlasEntity atlasEntity) {
-        AtlasEntity ret = null;
+        AtlasEntity ret;
 
         if (atlasEntity == null) {
             ret = new AtlasEntity(HBaseDataTypes.HBASE_COLUMN_FAMILY.getName());
@@ -614,6 +622,7 @@ public class HBaseBridge {
 
             LOG.info("Created {} entity: name={}, guid={}", ret.getEntity().getTypeName(), ret.getEntity().getAttribute(ATTRIBUTE_QUALIFIED_NAME), ret.getEntity().getGuid());
         }
+
         return ret;
     }
 
@@ -632,10 +641,12 @@ public class HBaseBridge {
                 LOG.info("Updated {} entity: name={}, guid={} ", ret.getEntity().getTypeName(), ret.getEntity().getAttribute(ATTRIBUTE_QUALIFIED_NAME), ret.getEntity().getGuid());
             } else {
                 LOG.info("Entity: name={} not updated as it is unchanged from what is in Atlas", entity);
+
                 ret = entity;
             }
         } else {
             LOG.info("Entity: name={} not updated as it is unchanged from what is in Atlas", entity);
+
             ret = entity;
         }
 
@@ -652,6 +663,7 @@ public class HBaseBridge {
      */
     private static String getColumnFamilyQualifiedName(String metadataNamespace, String nameSpace, String tableName, String columnFamily) {
         tableName = stripNameSpace(tableName);
+
         return String.format(HBASE_COLUMN_FAMILY_QUALIFIED_NAME_FORMAT, nameSpace, tableName, columnFamily, metadataNamespace);
     }
 
@@ -664,6 +676,7 @@ public class HBaseBridge {
      */
     private static String getTableQualifiedName(String metadataNamespace, String nameSpace, String tableName) {
         tableName = stripNameSpace(tableName);
+
         return String.format(HBASE_TABLE_QUALIFIED_NAME_FORMAT, nameSpace, tableName, metadataNamespace);
     }
 
