@@ -55,7 +55,8 @@ import static org.testng.Assert.fail;
 import static org.testng.AssertJUnit.assertFalse;
 
 public class HBaseAtlasHookIT {
-    private   static final Logger LOG          = LoggerFactory.getLogger(HBaseAtlasHookIT.class);
+    private static final Logger LOG = LoggerFactory.getLogger(HBaseAtlasHookIT.class);
+
     protected static final String ATLAS_URL    = "http://localhost:31000/";
     protected static final String CLUSTER_NAME = "primary";
 
@@ -76,12 +77,14 @@ public class HBaseAtlasHookIT {
     @AfterClass
     public void cleanup() throws Exception {
         LOG.info("Stopping mini cluster.. ");
+
         hBaseTestingUtility.shutdownMiniCluster();
     }
 
     @Test
     public void testGetMetaTableRows() throws Exception {
         List<byte[]> results = hBaseTestingUtility.getMetaTableRows();
+
         assertFalse("results should have some entries and is empty.", results.isEmpty());
     }
 
@@ -166,8 +169,10 @@ public class HBaseAtlasHookIT {
             }
 
             Iterator<String> keys = configuration.getKeys();
+
             while (keys.hasNext()) {
                 String key = keys.next();
+
                 LOG.info("{} = {} ", key, configuration.getString(key));
             }
 
@@ -193,7 +198,7 @@ public class HBaseAtlasHookIT {
     private void createHBaseCluster() throws Exception {
         LOG.info("Creating Hbase Admin...");
 
-        port    = getFreePort();
+        port                = getFreePort();
         hBaseTestingUtility = new HBaseTestingUtility();
 
         hBaseTestingUtility.getConfiguration().set("test.hbase.zookeeper.property.clientPort", String.valueOf(port));
@@ -210,9 +215,11 @@ public class HBaseAtlasHookIT {
 
     public AtlasClientV2 getAtlasClient() {
         AtlasClientV2 ret = null;
+
         if (atlasClient != null) {
             ret = atlasClient;
         }
+
         return ret;
     }
 
@@ -224,8 +231,8 @@ public class HBaseAtlasHookIT {
         LOG.debug("Searching for nameSpace {}", nameSpace);
 
         String nameSpaceQualifiedName = HBaseAtlasHook.getNameSpaceQualifiedName(CLUSTER_NAME, nameSpace);
-        return assertEntityIsRegistered(HBaseDataTypes.HBASE_NAMESPACE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME,
-                                        nameSpaceQualifiedName, assertPredicate);
+
+        return assertEntityIsRegistered(HBaseDataTypes.HBASE_NAMESPACE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, nameSpaceQualifiedName, assertPredicate);
     }
 
     protected String assertTableIsRegistered(String nameSpace, String tableName) throws Exception {
@@ -236,8 +243,8 @@ public class HBaseAtlasHookIT {
         LOG.debug("Searching for nameSpace:Table {} {}", nameSpace, tableName);
 
         String tableQualifiedName = HBaseAtlasHook.getTableQualifiedName(CLUSTER_NAME, nameSpace, tableName);
-        return assertEntityIsRegistered(HBaseDataTypes.HBASE_TABLE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName,
-                                        assertPredicate);
+
+        return assertEntityIsRegistered(HBaseDataTypes.HBASE_TABLE.getName(), AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName, assertPredicate);
     }
 
     public interface AssertPredicate {
@@ -254,8 +261,7 @@ public class HBaseAtlasHookIT {
         void evaluate() throws Exception;
     }
 
-    protected String assertEntityIsRegistered(final String typeName, final String property, final String value,
-                                              final HBaseAtlasHookIT.AssertPredicate assertPredicate) throws Exception {
+    protected String assertEntityIsRegistered(final String typeName, final String property, final String value, final HBaseAtlasHookIT.AssertPredicate assertPredicate) throws Exception {
         waitFor(30000, new HBaseAtlasHookIT.Predicate() {
             @Override
             public void evaluate() throws Exception {
@@ -282,6 +288,7 @@ public class HBaseAtlasHookIT {
      */
     protected void waitFor(int timeout, HBaseAtlasHookIT.Predicate predicate) throws Exception {
         ParamChecker.notNull(predicate, "predicate");
+
         long mustEnd = System.currentTimeMillis() + timeout;
 
         while (true) {
