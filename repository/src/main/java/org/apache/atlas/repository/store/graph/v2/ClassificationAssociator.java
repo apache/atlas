@@ -439,7 +439,7 @@ public class ClassificationAssociator {
         }
     }
 
-    public static class ListOps<V extends AtlasClassification> {
+    private static class ListOps<V extends AtlasClassification> {
         public List<V> intersect(List<V> lhs, List<V> rhs) {
             if (CollectionUtils.isEmpty(rhs)) {
                 return null;
