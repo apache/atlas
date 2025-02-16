@@ -183,6 +183,7 @@ public class AtlasEntityComparator {
 
                 if (MapUtils.isNotEmpty(diff)) {
                     sectionsWithDiff++;
+                    diffEntity.setClassifications(newVal);
                     RequestContext.get().addTagsDiff(updatedEntity.getGuid(), diff);
 
                     if (findOnlyFirstDiff) {

@@ -23,10 +23,8 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
-import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,8 +36,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.NAME;
@@ -148,20 +144,13 @@ public final class AtlasEntityUtils {
             List<AtlasClassification> toRemove = new ArrayList<>();
             List<AtlasClassification> toPreserve = new ArrayList<>();
 
-            Map<String, AtlasClassification> currentTagWithKeys = new HashMap<>();
-            Optional.ofNullable(currentTags).orElse(Collections.emptyList()).forEach(x -> currentTagWithKeys.put(generateClassificationComparisonKey(entityGuid, x), x));
-
-            Map<String, AtlasClassification> newTagWithKeys = new HashMap<>();
-            newTags.forEach(x -> {
-                if (StringUtils.isEmpty(x.getEntityGuid())) {
-                    x.setEntityGuid(entityGuid);
-                }
-                newTagWithKeys.put(generateClassificationComparisonKey(entityGuid, x), x);
-            });
+            Map<String, AtlasClassification> currentTagWithKeys = getMapWithTagKeys(entityGuid, currentTags);
+            Map<String, AtlasClassification> newTagWithKeys = getMapWithTagKeys(entityGuid, newTags);
 
             List<String> keysToAdd = (List<String>) CollectionUtils.subtract(newTagWithKeys.keySet(), currentTagWithKeys.keySet());
             List<String> keysToRemove = (List<String>) CollectionUtils.subtract(currentTagWithKeys.keySet(), newTagWithKeys.keySet());
             List<String> keysCommon = (List<String>) CollectionUtils.intersection(currentTagWithKeys.keySet(), newTagWithKeys.keySet());
+
 
             List<String> keysToUpdate = keysCommon.stream().filter(key -> !newTagWithKeys.get(key).checkForUpdate(currentTagWithKeys.get(key))).collect(Collectors.toList());
             List<String> keysUnChanged = keysCommon.stream().filter(key -> newTagWithKeys.get(key).checkForUpdate(currentTagWithKeys.get(key))).collect(Collectors.toList());
@@ -192,30 +181,88 @@ public final class AtlasEntityUtils {
         try {
             Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
 
+            /*if (CollectionUtils.isEmpty(currentTags)) {
+                if (!CollectionUtils.isEmpty(newTags)) {
+                    // Remove all existing tags
+                    bucket(PROCESS_ADD, operationListMap, newTags);
+                }
+                return operationListMap;
+            }*/
+
+            Map<String, AtlasClassification> currentTagWithKeys = getMapWithTagKeys(entityGuid, currentTags);
+            Map<String, AtlasClassification> newTagWithKeys = getMapWithTagKeys(entityGuid, newTags);
+            Map<String, AtlasClassification> removeTagWithKeys = getMapWithTagKeys(entityGuid, tagsToRemove);
+
+            /*if (CollectionUtils.subtract(currentTagWithKeys.keySet(), removeTagWithKeys.keySet()).isEmpty()) {
+                bucket(PROCESS_DELETE, operationListMap, tagsToRemove);
+                return operationListMap;
+            }*/
+
+            List<AtlasClassification> toAdd = new ArrayList<>();
+            List<AtlasClassification> toUpdate = new ArrayList<>();
+            List<AtlasClassification> toRemove = new ArrayList<>();
+
+            removeTagWithKeys.keySet().forEach(key -> {
+                if (currentTagWithKeys.containsKey(key)) {
+                    toRemove.add(removeTagWithKeys.get(key));
+                    newTagWithKeys.remove(key); // performs dedup across addOrUpdate & remove tags list
+                    currentTagWithKeys.remove(key); // to maintain NOOP list
+                } else {
+                    //ignoring the tag as it was not already present on the asset
+                }
+            });
+
+            for (String newTagKey: newTagWithKeys.keySet()) {
+                AtlasClassification newTag = newTagWithKeys.get(newTagKey);
+
+                if (currentTagWithKeys.containsKey(newTagKey)) {
+                    boolean hasDiff = !newTag.checkForUpdate(currentTagWithKeys.get(newTagKey));
+                    if (hasDiff) {
+                        toUpdate.add(newTag);
+                        currentTagWithKeys.remove(newTagKey);
+                    }
+                } else {
+                    toAdd.add(newTag);
+                }
+            }
+
+            bucket(PROCESS_DELETE, operationListMap, toRemove);
+            bucket(PROCESS_UPDATE, operationListMap, toUpdate);
+            bucket(PROCESS_ADD, operationListMap, toAdd);
+            bucket(PROCESS_NOOP, operationListMap, new ArrayList<>(currentTagWithKeys.values()));
+
+            return operationListMap;
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    /*public static Map<String, List<AtlasClassification>> validateAndGetTagsDiff(String entityGuid,
+                                                                                List<AtlasClassification> newTags,
+                                                                                List<AtlasClassification> currentTags,
+                                                                                List<AtlasClassification> tagsToRemove) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("validateAndGetTagsDiffAppend");
+
+        try {
+            Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
+
             List<AtlasClassification> toAdd = new ArrayList<>();
             List<AtlasClassification> toUpdate = new ArrayList<>();
             List<AtlasClassification> toRemove = new ArrayList<>();
             List<AtlasClassification> toPreserve = new ArrayList<>();
 
-            Map<String, AtlasClassification> currentTagWithKeys = new HashMap<>();
-            Optional.ofNullable(currentTags).orElse(Collections.emptyList()).forEach(x -> currentTagWithKeys.put(generateClassificationComparisonKey(x), x));
+            Map<String, AtlasClassification> currentTagWithKeys = getMapWithTagKeys(entityGuid, currentTags);
+            Map<String, AtlasClassification> newTagWithKeys = getMapWithTagKeys(entityGuid, newTags);
+            Map<String, AtlasClassification> removeTagWithKeys = getMapWithTagKeys(entityGuid, tagsToRemove);
 
-            Map<String, AtlasClassification> newTagWithKeys = new HashMap<>();
-            Optional.ofNullable(newTags).orElse(Collections.emptyList()).forEach(x -> newTagWithKeys.put(generateClassificationComparisonKey(x), x));
-
-            for (AtlasClassification tagToRemove: Optional.ofNullable(tagsToRemove).orElse(Collections.emptyList())) {
-                if (StringUtils.isEmpty(tagToRemove.getEntityGuid())) {
-                    tagToRemove.setEntityGuid(entityGuid);
-                }
-
-                String tagToRemoveKey = generateClassificationComparisonKey(tagToRemove);
-                if (currentTagWithKeys.containsKey(tagToRemoveKey)) {
-                    toRemove.add(tagToRemove);
-                    newTagWithKeys.remove(tagToRemoveKey); // performs dedup across addOrUpdate & remove tags list
+            removeTagWithKeys.keySet().forEach(key -> {
+                if (currentTagWithKeys.containsKey(key)) {
+                    toRemove.add(removeTagWithKeys.get(key));
+                    newTagWithKeys.remove(key); // performs dedup across addOrUpdate & remove tags list
                 } else {
                     //ignoring the tag as it was not already present on the asset
                 }
-            }
+            });
 
             for (String newTagKey: newTagWithKeys.keySet()) {
                 AtlasClassification newTag = newTagWithKeys.get(newTagKey);
@@ -245,7 +292,7 @@ public final class AtlasEntityUtils {
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
-    }
+    }*/
 
     /*public static Map<String, List<AtlasClassification>> validateAndGetTagsDiff(String entityGuid,
                                                                                 List<AtlasClassification> newTags,
@@ -300,11 +347,7 @@ public final class AtlasEntityUtils {
     }*/
 
     private static String generateClassificationComparisonKey(AtlasClassification classification) {
-        return generateClassificationComparisonKey(classification.getEntityGuid(), classification);
-    }
-
-    private static String generateClassificationComparisonKey(String entityGuid, AtlasClassification classification) {
-        return entityGuid + "|" + classification.getTypeName();
+        return classification.getEntityGuid() + "|" + classification.getTypeName();
     }
 
     private static void bucket(String op, Map<String, List<AtlasClassification>> operationListMap, List<AtlasClassification> results) {
@@ -313,5 +356,18 @@ public final class AtlasEntityUtils {
         }
 
         operationListMap.put(op, results);
+    }
+
+    private static Map<String, AtlasClassification> getMapWithTagKeys(String entityGuid, List<AtlasClassification> tags) {
+        Map<String, AtlasClassification> tagsWithKey = new HashMap<>();
+
+        Optional.ofNullable(tags).orElse(Collections.emptyList()).forEach(x -> {
+            if (StringUtils.isEmpty(x.getEntityGuid())) {
+                x.setEntityGuid(entityGuid);
+            }
+            tagsWithKey.put(generateClassificationComparisonKey(x), x);
+        });
+
+        return tagsWithKey;
     }
 }

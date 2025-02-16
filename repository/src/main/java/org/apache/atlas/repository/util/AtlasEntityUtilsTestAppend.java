@@ -32,12 +32,12 @@ import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociato
 import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_NOOP;
 import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_UPDATE;
 
-public final class AtlasEntityUtilsTest {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityUtilsTest.class);
+public final class AtlasEntityUtilsTestAppend {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasEntityUtilsTestAppend.class);
 
 
     public static void main(String[] args) {
-        bothEmpty();
+        allEmpty();
 
         addNewOnly();
         removeAll();
@@ -50,18 +50,21 @@ public final class AtlasEntityUtilsTest {
         oneUpdateOneAddOneRemoveOneNOOP();
 
         currentOneAddNew();
+        currentOneAddNewDedup();
         addDup();
         updateDup();
         NOOPDup();
     }
 
-    private static void bothEmpty() {
+    private static void allEmpty() {
         List<AtlasClassification> currentTags = new ArrayList<>();
         List<AtlasClassification> newTags = new ArrayList<>();
+        List<AtlasClassification> removeTags = new ArrayList<>();
 
         Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123",
                 newTags,
-                currentTags);
+                currentTags,
+                removeTags);
         assert MapUtils.isEmpty(diff);
     }
 
@@ -71,9 +74,12 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("alpha"));
         newTags.add(getTag("beta"));
 
+        List<AtlasClassification> removeTags = new ArrayList<>();
+
         Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123",
                 newTags,
-                new ArrayList<>());
+                new ArrayList<>(),
+                removeTags);
         assert MapUtils.isNotEmpty(diff);
 
         assert diff.containsKey(PROCESS_ADD);
@@ -83,6 +89,8 @@ public final class AtlasEntityUtilsTest {
 
         List<AtlasClassification> resultAdd = diff.get(PROCESS_ADD);
         assert resultAdd.size() == 2;
+
+        assert getFinalList(diff).size() == 2;
     }
 
     private static void removeAll() {
@@ -92,7 +100,11 @@ public final class AtlasEntityUtilsTest {
 
         List<AtlasClassification> newTags = new ArrayList<>();
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        List<AtlasClassification> removeTags = new ArrayList<>();
+        removeTags.add(getTag("alpha"));
+        removeTags.add(getTag("beta"));
+
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags, removeTags);
 
         assert diff.containsKey(PROCESS_DELETE);
         assert !diff.containsKey(PROCESS_ADD);
@@ -100,6 +112,8 @@ public final class AtlasEntityUtilsTest {
         assert !diff.containsKey(PROCESS_NOOP);
 
         assert diff.get(PROCESS_DELETE).size() == 2;
+
+        assert getFinalList(diff).size() == 0;
     }
 
     private static void updateAll() {
@@ -111,7 +125,9 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("alpha", true));
         newTags.add(getTag("beta", true));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        List<AtlasClassification> removeTags = new ArrayList<>();
+
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags, removeTags);
 
         assert diff.containsKey(PROCESS_UPDATE);
         assert !diff.containsKey(PROCESS_DELETE);
@@ -119,6 +135,8 @@ public final class AtlasEntityUtilsTest {
         assert !diff.containsKey(PROCESS_NOOP);
 
         assert diff.get(PROCESS_UPDATE).size() == 2;
+
+        assert getFinalList(diff).size() == 2;
     }
 
     private static void noUpdate() {
@@ -130,7 +148,9 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("alpha", true));
         newTags.add(getTag("beta", true));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        List<AtlasClassification> removeTags = new ArrayList<>();
+
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags,removeTags);
 
         assert diff.containsKey(PROCESS_NOOP);
         assert !diff.containsKey(PROCESS_UPDATE);
@@ -138,6 +158,7 @@ public final class AtlasEntityUtilsTest {
         assert !diff.containsKey(PROCESS_ADD);
 
         assert diff.get(PROCESS_NOOP).size() == 2;
+        assert getFinalList(diff).size() == 2;
     }
 
     private static void oneUpdateOneNOOP() {
@@ -149,7 +170,9 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("alpha", true));
         newTags.add(getTag("beta", false));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        List<AtlasClassification> removeTags = new ArrayList<>();
+
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags, removeTags);
 
         assert diff.containsKey(PROCESS_NOOP);
         assert diff.containsKey(PROCESS_UPDATE);
@@ -161,6 +184,8 @@ public final class AtlasEntityUtilsTest {
 
         assert diff.get(PROCESS_UPDATE).size() == 1;
         assert diff.get(PROCESS_UPDATE).get(0).getTypeName().equals("beta");
+
+        assert getFinalList(diff).size() == 2;
     }
 
     private static void oneUpdateOneAddOneNOOP() {
@@ -173,7 +198,9 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("beta", false));
         newTags.add(getTag("gamma", false));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        List<AtlasClassification> removeTags = new ArrayList<>();
+
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags, removeTags);
 
         assert diff.containsKey(PROCESS_NOOP);
         assert diff.containsKey(PROCESS_UPDATE);
@@ -188,6 +215,8 @@ public final class AtlasEntityUtilsTest {
 
         assert diff.get(PROCESS_ADD).size() == 1;
         assert diff.get(PROCESS_ADD).get(0).getTypeName().equals("gamma");
+
+        assert getFinalList(diff).size() == 3;
     }
 
     private static void oneUpdateOneAddOneRemoveOneNOOP() {
@@ -201,8 +230,10 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("beta", false));
         newTags.add(getTag("x-ray", "123", true));
 
+        List<AtlasClassification> removeTags = new ArrayList<>();
+        removeTags.add(getTag("gamma", "123", true));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags, removeTags);
 
         assert diff.containsKey(PROCESS_NOOP);
         assert diff.containsKey(PROCESS_UPDATE);
@@ -220,9 +251,34 @@ public final class AtlasEntityUtilsTest {
 
         assert diff.get(PROCESS_DELETE).size() == 1;
         assert diff.get(PROCESS_DELETE).get(0).getTypeName().equals("gamma");
+
+        assert getFinalList(diff).size() == 3;
     }
 
     private static void currentOneAddNew() {
+        List<AtlasClassification> currentTags = new ArrayList<>();
+        currentTags.add(getTag("alpha", "123"));
+        currentTags.add(getTag("beta", "123"));
+
+        List<AtlasClassification> newTags = new ArrayList<>();
+        newTags.add(getTag("gamma"));
+
+        List<AtlasClassification> removeTags = new ArrayList<>();
+
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags, removeTags);
+
+        assert diff.containsKey(PROCESS_ADD);
+        assert diff.containsKey(PROCESS_NOOP);
+        assert !diff.containsKey(PROCESS_DELETE);
+        assert !diff.containsKey(PROCESS_UPDATE);
+
+        assert diff.get(PROCESS_ADD).size() == 1;
+        assert diff.get(PROCESS_NOOP).size() == 2;
+
+        assert getFinalList(diff).size() == 3;
+    }
+
+    private static void currentOneAddNewDedup() {
         List<AtlasClassification> currentTags = new ArrayList<>();
         currentTags.add(getTag("alpha", "123"));
         currentTags.add(getTag("beta", "123"));
@@ -232,7 +288,9 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("beta"));
         newTags.add(getTag("gamma"));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        List<AtlasClassification> removeTags = new ArrayList<>();
+
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags, removeTags);
 
         assert diff.containsKey(PROCESS_ADD);
         assert diff.containsKey(PROCESS_NOOP);
@@ -241,6 +299,8 @@ public final class AtlasEntityUtilsTest {
 
         assert diff.get(PROCESS_ADD).size() == 1;
         assert diff.get(PROCESS_NOOP).size() == 2;
+
+        assert getFinalList(diff).size() == 3;
     }
 
     private static void addDup() {
@@ -250,7 +310,9 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("alpha"));
         newTags.add(getTag("alpha"));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        List<AtlasClassification> removeTags = new ArrayList<>();
+
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags, removeTags);
 
         assert diff.containsKey(PROCESS_ADD);
         assert !diff.containsKey(PROCESS_NOOP);
@@ -258,6 +320,7 @@ public final class AtlasEntityUtilsTest {
         assert !diff.containsKey(PROCESS_UPDATE);
 
         assert diff.get(PROCESS_ADD).size() == 1;
+        assert getFinalList(diff).size() == 1;
     }
 
     private static void updateDup() {
@@ -268,7 +331,9 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("alpha", true));
         newTags.add(getTag("alpha", true));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        List<AtlasClassification> removeTags = new ArrayList<>();
+
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags, removeTags);
 
         assert !diff.containsKey(PROCESS_ADD);
         assert !diff.containsKey(PROCESS_NOOP);
@@ -276,6 +341,7 @@ public final class AtlasEntityUtilsTest {
         assert diff.containsKey(PROCESS_UPDATE);
 
         assert diff.get(PROCESS_UPDATE).size() == 1;
+        assert getFinalList(diff).size() == 1;
     }
 
     private static void NOOPDup() {
@@ -286,7 +352,9 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("alpha", false));
         newTags.add(getTag("alpha", false));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        List<AtlasClassification> removeTags = new ArrayList<>();
+
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags, removeTags);
 
         assert !diff.containsKey(PROCESS_ADD);
         assert diff.containsKey(PROCESS_NOOP);
@@ -294,6 +362,7 @@ public final class AtlasEntityUtilsTest {
         assert !diff.containsKey(PROCESS_UPDATE);
 
         assert diff.get(PROCESS_NOOP).size() == 1;
+        assert getFinalList(diff).size() == 1;
     }
 
 
@@ -316,5 +385,23 @@ public final class AtlasEntityUtilsTest {
         tag.setPropagate(propagate);
 
         return tag;
+    }
+
+    private static List<AtlasClassification> getFinalList(Map<String, List<AtlasClassification>> diff) {
+        List<AtlasClassification> finalTags = new ArrayList<>(0);
+
+        if (diff.containsKey(PROCESS_UPDATE)) {
+            finalTags.addAll(diff.get(PROCESS_UPDATE));
+        }
+
+        if (diff.containsKey(PROCESS_ADD)) {
+            finalTags.addAll(diff.get(PROCESS_ADD));
+        }
+
+        if (diff.containsKey(PROCESS_NOOP)) {
+            finalTags.addAll(diff.get("NOOP"));
+        }
+
+        return finalTags;
     }
 }
