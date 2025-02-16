@@ -32,7 +32,6 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -86,47 +85,10 @@ public final class AtlasEntityUtils {
         return map;
     }
 
-/*    public static Map<String, List<AtlasClassification>> validateAndGetTagsDiff(String entityGuid,
-                                                                                List<AtlasClassification> newTags,
-                                                                                List<AtlasClassification> currentTags) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("validateAndGetTagsDiffReplace");
-
-        try {
-            Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
-
-            if (CollectionUtils.isEmpty(newTags)) {
-                if (!CollectionUtils.isEmpty(currentTags)) {
-                    // Remove all existing tags
-                    bucket(PROCESS_DELETE, operationListMap, currentTags);
-                }
-                return operationListMap;
-            }
-
-            List<AtlasClassification> toUpdate = new ArrayList<>();
-
-            Predicate<AtlasClassification> existsInCurrent = newCar -> currentTags.stream().anyMatch(currentCar -> currentCar.checkForUpdate(newCar));
-            Predicate<AtlasClassification> existsInNew = currentCar -> newTags.stream().anyMatch(newCar -> newCar.checkForUpdate(currentCar));
-
-
-            List<AtlasClassification> toPreserve = newTags.stream().filter(existsInCurrent).collect(Collectors.toList());
-            List<AtlasClassification> toAdd = newTags.stream().filter(existsInCurrent.negate()).collect(Collectors.toList());
-            List<AtlasClassification> toRemove = currentTags.stream().filter(existsInNew.negate()).collect(Collectors.toList());
-
-            bucket(PROCESS_DELETE, operationListMap, toRemove);
-            bucket(PROCESS_UPDATE, operationListMap, toUpdate);
-            bucket(PROCESS_ADD, operationListMap, toAdd);
-            bucket("NOOP", operationListMap, toPreserve);
-
-            return operationListMap;
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-    }*/
-
-    public static Map<String, List<AtlasClassification>> validateAndGetTagsDiff(String entityGuid,
-                                                                                List<AtlasClassification> newTags,
-                                                                                List<AtlasClassification> currentTags) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("validateAndGetTagsDiffReplace");
+    public static Map<String, List<AtlasClassification>> getTagsDiffForReplace(String entityGuid,
+                                                                               List<AtlasClassification> newTags,
+                                                                               List<AtlasClassification> currentTags) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagsDiffForReplace");
 
         try {
             Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
@@ -172,31 +134,16 @@ public final class AtlasEntityUtils {
         }
     }
 
-    public static Map<String, List<AtlasClassification>> validateAndGetTagsDiff(String entityGuid,
-                                                                                List<AtlasClassification> newTags,
-                                                                                List<AtlasClassification> currentTags,
-                                                                                List<AtlasClassification> tagsToRemove) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("validateAndGetTagsDiffAppend");
+    public static Map<String, List<AtlasClassification>> getTagsDiffForAppend(String entityGuid,
+                                                                               List<AtlasClassification> newTags,
+                                                                               List<AtlasClassification> currentTags,
+                                                                               List<AtlasClassification> tagsToRemove) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagsDiffForAppend");
 
         try {
-            Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
-
-            /*if (CollectionUtils.isEmpty(currentTags)) {
-                if (!CollectionUtils.isEmpty(newTags)) {
-                    // Remove all existing tags
-                    bucket(PROCESS_ADD, operationListMap, newTags);
-                }
-                return operationListMap;
-            }*/
-
             Map<String, AtlasClassification> currentTagWithKeys = getMapWithTagKeys(entityGuid, currentTags);
             Map<String, AtlasClassification> newTagWithKeys = getMapWithTagKeys(entityGuid, newTags);
             Map<String, AtlasClassification> removeTagWithKeys = getMapWithTagKeys(entityGuid, tagsToRemove);
-
-            /*if (CollectionUtils.subtract(currentTagWithKeys.keySet(), removeTagWithKeys.keySet()).isEmpty()) {
-                bucket(PROCESS_DELETE, operationListMap, tagsToRemove);
-                return operationListMap;
-            }*/
 
             List<AtlasClassification> toAdd = new ArrayList<>();
             List<AtlasClassification> toUpdate = new ArrayList<>();
@@ -226,6 +173,7 @@ public final class AtlasEntityUtils {
                 }
             }
 
+            Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
             bucket(PROCESS_DELETE, operationListMap, toRemove);
             bucket(PROCESS_UPDATE, operationListMap, toUpdate);
             bucket(PROCESS_ADD, operationListMap, toAdd);
@@ -236,115 +184,6 @@ public final class AtlasEntityUtils {
             RequestContext.get().endMetricRecord(recorder);
         }
     }
-
-    /*public static Map<String, List<AtlasClassification>> validateAndGetTagsDiff(String entityGuid,
-                                                                                List<AtlasClassification> newTags,
-                                                                                List<AtlasClassification> currentTags,
-                                                                                List<AtlasClassification> tagsToRemove) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("validateAndGetTagsDiffAppend");
-
-        try {
-            Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
-
-            List<AtlasClassification> toAdd = new ArrayList<>();
-            List<AtlasClassification> toUpdate = new ArrayList<>();
-            List<AtlasClassification> toRemove = new ArrayList<>();
-            List<AtlasClassification> toPreserve = new ArrayList<>();
-
-            Map<String, AtlasClassification> currentTagWithKeys = getMapWithTagKeys(entityGuid, currentTags);
-            Map<String, AtlasClassification> newTagWithKeys = getMapWithTagKeys(entityGuid, newTags);
-            Map<String, AtlasClassification> removeTagWithKeys = getMapWithTagKeys(entityGuid, tagsToRemove);
-
-            removeTagWithKeys.keySet().forEach(key -> {
-                if (currentTagWithKeys.containsKey(key)) {
-                    toRemove.add(removeTagWithKeys.get(key));
-                    newTagWithKeys.remove(key); // performs dedup across addOrUpdate & remove tags list
-                } else {
-                    //ignoring the tag as it was not already present on the asset
-                }
-            });
-
-            for (String newTagKey: newTagWithKeys.keySet()) {
-                AtlasClassification newTag = newTagWithKeys.get(newTagKey);
-
-                if (StringUtils.isEmpty(newTag.getEntityGuid())) {
-                    newTag.setEntityGuid(entityGuid);
-                }
-
-                if (currentTagWithKeys.containsKey(newTagKey)) {
-                    boolean hasDiff = !newTag.checkForUpdate(currentTagWithKeys.get(newTagKey));
-                    if (hasDiff) {
-                        toUpdate.add(newTag);
-                    } else {
-                        toPreserve.add(newTag);
-                    }
-                } else {
-                    toAdd.add(newTag);
-                }
-            }
-
-            bucket(PROCESS_DELETE, operationListMap, toRemove);
-            bucket(PROCESS_UPDATE, operationListMap, toUpdate);
-            bucket(PROCESS_ADD, operationListMap, toAdd);
-            bucket(PROCESS_NOOP, operationListMap, toPreserve);
-
-            return operationListMap;
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-    }*/
-
-    /*public static Map<String, List<AtlasClassification>> validateAndGetTagsDiff(String entityGuid,
-                                                                                List<AtlasClassification> newTags,
-                                                                                List<AtlasClassification> currentTags,
-                                                                                List<AtlasClassification> tagsToRemove) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("validateAndGetTagsDiff");
-
-        try {
-            Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
-            Set<String> preExistingClassificationKeys = new HashSet<>();
-            List<AtlasClassification> filteredRemoveClassifications = new ArrayList<>();
-
-            ClassificationAssociator.ListOps<AtlasClassification> listOps = new ClassificationAssociator.ListOps<>();
-
-            for (AtlasClassification classification : Optional.ofNullable(currentTags).orElse(Collections.emptyList())) {
-                if (entityGuid.equals(classification.getEntityGuid())) {
-                    String key = generateClassificationComparisonKey(classification);
-                    preExistingClassificationKeys.add(key);  // Track pre-existing keys
-                }
-            }
-
-            for (AtlasClassification classification : Optional.ofNullable(tagsToRemove).orElse(Collections.emptyList())) {
-                if (entityGuid.equals(classification.getEntityGuid())) {
-                    String key = generateClassificationComparisonKey(classification);
-                    // If the classification doesn't exist in pre-existing keys, log it
-                    if (!preExistingClassificationKeys.contains(key)) {
-                        String typeName = key.split("\\|")[1];
-                        LOG.info("Classification {} is not associated with entity {}", typeName, entityGuid);
-                    } else {
-                        filteredRemoveClassifications.add(classification);
-                    }
-                }
-            }
-
-            List<AtlasClassification> filteredClassifications = Optional.ofNullable(newTags)
-                    .orElse(Collections.emptyList())
-                    .stream()
-                    .filter(classification -> classification.getEntityGuid().equals(entityGuid))
-                    .collect(Collectors.toList());
-
-            List<AtlasClassification> incomingClassifications = listOps.filter(entityGuid, filteredClassifications);
-            List<AtlasClassification> entityClassifications = listOps.filter(entityGuid, currentTags);
-
-            bucket(PROCESS_DELETE, operationListMap, filteredRemoveClassifications);
-            bucket(PROCESS_UPDATE, operationListMap, listOps.intersect(incomingClassifications, entityClassifications));
-            bucket(PROCESS_ADD, operationListMap, listOps.subtract(incomingClassifications, entityClassifications));
-
-            return operationListMap;
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-    }*/
 
     private static String generateClassificationComparisonKey(AtlasClassification classification) {
         return classification.getEntityGuid() + "|" + classification.getTypeName();

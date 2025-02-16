@@ -59,7 +59,7 @@ public final class AtlasEntityUtilsTest {
         List<AtlasClassification> currentTags = new ArrayList<>();
         List<AtlasClassification> newTags = new ArrayList<>();
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123",
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.getTagsDiffForReplace("123",
                 newTags,
                 currentTags);
         assert MapUtils.isEmpty(diff);
@@ -71,7 +71,7 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("alpha"));
         newTags.add(getTag("beta"));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123",
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.getTagsDiffForReplace("123",
                 newTags,
                 new ArrayList<>());
         assert MapUtils.isNotEmpty(diff);
@@ -92,7 +92,7 @@ public final class AtlasEntityUtilsTest {
 
         List<AtlasClassification> newTags = new ArrayList<>();
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.getTagsDiffForReplace("123", newTags, currentTags);
 
         assert diff.containsKey(PROCESS_DELETE);
         assert !diff.containsKey(PROCESS_ADD);
@@ -111,7 +111,7 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("alpha", true));
         newTags.add(getTag("beta", true));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.getTagsDiffForReplace("123", newTags, currentTags);
 
         assert diff.containsKey(PROCESS_UPDATE);
         assert !diff.containsKey(PROCESS_DELETE);
@@ -130,7 +130,7 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("alpha", true));
         newTags.add(getTag("beta", true));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.getTagsDiffForReplace("123", newTags, currentTags);
 
         assert diff.containsKey(PROCESS_NOOP);
         assert !diff.containsKey(PROCESS_UPDATE);
@@ -149,7 +149,7 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("alpha", true));
         newTags.add(getTag("beta", false));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.getTagsDiffForReplace("123", newTags, currentTags);
 
         assert diff.containsKey(PROCESS_NOOP);
         assert diff.containsKey(PROCESS_UPDATE);
@@ -173,7 +173,7 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("beta", false));
         newTags.add(getTag("gamma", false));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.getTagsDiffForReplace("123", newTags, currentTags);
 
         assert diff.containsKey(PROCESS_NOOP);
         assert diff.containsKey(PROCESS_UPDATE);
@@ -202,7 +202,7 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("x-ray", "123", true));
 
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.getTagsDiffForReplace("123", newTags, currentTags);
 
         assert diff.containsKey(PROCESS_NOOP);
         assert diff.containsKey(PROCESS_UPDATE);
@@ -232,7 +232,7 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("beta"));
         newTags.add(getTag("gamma"));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.getTagsDiffForReplace("123", newTags, currentTags);
 
         assert diff.containsKey(PROCESS_ADD);
         assert diff.containsKey(PROCESS_NOOP);
@@ -250,7 +250,7 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("alpha"));
         newTags.add(getTag("alpha"));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.getTagsDiffForReplace("123", newTags, currentTags);
 
         assert diff.containsKey(PROCESS_ADD);
         assert !diff.containsKey(PROCESS_NOOP);
@@ -268,7 +268,7 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("alpha", true));
         newTags.add(getTag("alpha", true));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.getTagsDiffForReplace("123", newTags, currentTags);
 
         assert !diff.containsKey(PROCESS_ADD);
         assert !diff.containsKey(PROCESS_NOOP);
@@ -286,7 +286,7 @@ public final class AtlasEntityUtilsTest {
         newTags.add(getTag("alpha", false));
         newTags.add(getTag("alpha", false));
 
-        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.validateAndGetTagsDiff("123", newTags, currentTags);
+        Map<String, List<AtlasClassification>> diff = AtlasEntityUtils.getTagsDiffForReplace("123", newTags, currentTags);
 
         assert !diff.containsKey(PROCESS_ADD);
         assert diff.containsKey(PROCESS_NOOP);

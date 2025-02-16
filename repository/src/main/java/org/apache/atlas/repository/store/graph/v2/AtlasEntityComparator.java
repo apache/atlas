@@ -171,11 +171,11 @@ public class AtlasEntityComparator {
                 Map<String, List<AtlasClassification>> diff;
 
                 if (context.isReplaceTags()) {
-                    diff = AtlasEntityUtils.validateAndGetTagsDiff(updatedEntity.getGuid(),
+                    diff = AtlasEntityUtils.getTagsDiffForReplace(updatedEntity.getGuid(),
                             updatedEntity.getClassifications(),
                             currVal);
                 } else {
-                    diff = AtlasEntityUtils.validateAndGetTagsDiff(updatedEntity.getGuid(),
+                    diff = AtlasEntityUtils.getTagsDiffForAppend(updatedEntity.getGuid(),
                             updatedEntity.getAddOrUpdateClassifications(),
                             currVal,
                             updatedEntity.getRemoveClassifications());
@@ -183,7 +183,6 @@ public class AtlasEntityComparator {
 
                 if (MapUtils.isNotEmpty(diff)) {
                     sectionsWithDiff++;
-                    diffEntity.setClassifications(newVal);
                     RequestContext.get().addTagsDiff(updatedEntity.getGuid(), diff);
 
                     if (findOnlyFirstDiff) {

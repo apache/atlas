@@ -120,7 +120,6 @@ public class RequestContext {
 
     Map<String, Object> tagsDiff = new HashMap<>();
 
-
     private RequestContext() {
     }
 

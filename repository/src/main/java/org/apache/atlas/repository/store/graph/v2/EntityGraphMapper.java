@@ -450,7 +450,7 @@ public class EntityGraphMapper {
                             }
 
                             if (diff.containsKey(PROCESS_NOOP)) {
-                                finalTags.addAll(diff.get("NOOP"));
+                                finalTags.addAll(diff.get(PROCESS_NOOP));
                             }
 
                             RequestContext.get().getDifferentialEntity(guid).setClassifications(finalTags);  // For notifications
