@@ -118,6 +118,13 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "DataProduct can only be moved to another Domain.");
         }
 
+        if(entity.getAttribute(DAAP_LINEAGE_STATUS_ATTR) != null && entity.getAttribute(DAAP_LINEAGE_STATUS_ATTR).equals(DAAP_LINEAGE_STATUS_COMPLETED)){
+            if (vertex.getProperty(DAAP_LINEAGE_STATUS_ATTR, String.class).equals(DAAP_LINEAGE_STATUS_IN_PROGRESS)){
+                vertex.setProperty(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_COMPLETED);
+                entity.removeAttribute(DAAP_LINEAGE_STATUS_ATTR);
+            }
+        }
+
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
         AtlasEntity storedProduct = entityRetriever.toAtlasEntity(vertex);
