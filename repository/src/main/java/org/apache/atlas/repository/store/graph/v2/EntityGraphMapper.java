@@ -367,10 +367,17 @@ public class EntityGraphMapper {
                     resp.addEntity(CREATE, constructHeader(createdEntity, vertex, entityType.getAllAttributes()));
 
                     if (bulkRequestContext.isAppendClassifications()) {
-                        addClassifications(context, guid, createdEntity.getAddOrUpdateClassifications());
-                    } else {
-                        addClassifications(context, guid, createdEntity.getClassifications());
+                        if (CollectionUtils.isNotEmpty(createdEntity.getAddOrUpdateClassifications())) {
+                            createdEntity.setClassifications(createdEntity.getAddOrUpdateClassifications());
+                            createdEntity.setAddOrUpdateClassifications(null);
+                        }
+
+                        if (CollectionUtils.isNotEmpty(createdEntity.getRemoveClassifications())) {
+                            createdEntity.setRemoveClassifications(null);
+                        }
                     }
+
+                    addClassifications(context, guid, createdEntity.getClassifications());
 
                     if (MapUtils.isNotEmpty(createdEntity.getBusinessAttributes())) {
                         addOrUpdateBusinessAttributes(vertex, entityType, createdEntity.getBusinessAttributes());
