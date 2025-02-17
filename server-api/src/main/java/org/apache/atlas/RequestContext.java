@@ -44,9 +44,9 @@ import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 public class RequestContext {
     private static final Logger METRICS = LoggerFactory.getLogger("METRICS");
 
-    private static final ThreadLocal<RequestContext> CURRENT_CONTEXT  = new ThreadLocal<>();
-    private static final Set<RequestContext>         ACTIVE_REQUESTS  = new HashSet<>();
-    private static final boolean                     isMetricsEnabled = METRICS.isDebugEnabled();
+    private static final ThreadLocal<RequestContext> CURRENT_CONTEXT    = new ThreadLocal<>();
+    private static final Set<RequestContext>         ACTIVE_REQUESTS    = new HashSet<>();
+    private static final boolean                     IS_METRICS_ENABLED = METRICS.isDebugEnabled();
 
     private final long                                   requestTime          = System.currentTimeMillis();
     private final Map<String, AtlasEntityHeader>         updatedEntities      = new HashMap<>();
@@ -56,7 +56,7 @@ public class RequestContext {
     private final Map<String, AtlasEntity>               diffEntityCache      = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations    = new HashMap<>();
     private final Map<String, List<AtlasClassification>> removedPropagations  = new HashMap<>();
-    private final AtlasPerfMetrics                       metrics              = isMetricsEnabled ? new AtlasPerfMetrics() : null;
+    private final AtlasPerfMetrics                       metrics              = IS_METRICS_ENABLED ? new AtlasPerfMetrics() : null;
     private       List<EntityGuidPair>                   entityGuidInRequest;
     private final Set<String>                            entitiesToSkipUpdate = new HashSet<>();
     private final Set<String>                            onlyCAUpdateEntities = new HashSet<>();
@@ -482,7 +482,7 @@ public class RequestContext {
         return this.queuedTasks;
     }
 
-    public class EntityGuidPair {
+    public static class EntityGuidPair {
         private final Object entity;
         private final String guid;
 
