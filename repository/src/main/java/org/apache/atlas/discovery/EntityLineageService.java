@@ -219,6 +219,10 @@ public class EntityLineageService implements AtlasLineageService {
         if (!isProcess) {
             boolean isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
             if (!isDataSet) {
+                LOG.info("dhanyavg:2 Retrieved entity type: {}. All super types: {}", typeName,
+                        entityType != null ? entityType.getTypeAndAllSuperTypes() : "null entityType");
+
+                LOG.info("dhanyavg:2 Entity type : {}", AtlasEntityType.toJson(entityType));
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, typeName);
             }
         }
