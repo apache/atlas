@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -43,26 +43,30 @@ public class AtlasServerIdSelectorTest {
     @Test
     public void testShouldSelectRightServerAddress() throws AtlasException {
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1", "id2"});
-        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:31000");
-        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id2")).thenReturn("127.0.0.1:21000");
+        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX + "id1")).thenReturn("127.0.0.1:31000");
+        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX + "id2")).thenReturn("127.0.0.1:21000");
 
         String atlasServerId = AtlasServerIdSelector.selectServerId(configuration);
+
         assertEquals(atlasServerId, "id2");
     }
 
     @Test(expectedExceptions = AtlasException.class)
     public void testShouldFailIfNoIDsConfiguration() throws AtlasException {
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {});
+
         AtlasServerIdSelector.selectServerId(configuration);
+
         fail("Should not return any server id if IDs not found in configuration");
     }
 
     @Test(expectedExceptions = AtlasException.class)
     public void testShouldFailIfNoMatchingAddressForID() throws AtlasException {
         when(configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS)).thenReturn(new String[] {"id1", "id2"});
-        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +"id1")).thenReturn("127.0.0.1:31000");
+        when(configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX + "id1")).thenReturn("127.0.0.1:31000");
 
         AtlasServerIdSelector.selectServerId(configuration);
+
         fail("Should not return any server id if no matching address found for any ID");
     }
 }
