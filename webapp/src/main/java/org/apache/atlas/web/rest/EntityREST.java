@@ -23,13 +23,7 @@ import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
-import org.apache.atlas.authorize.AtlasAccessorRequest;
-import org.apache.atlas.authorize.AtlasAccessorResponse;
-import org.apache.atlas.authorize.AtlasAdminAccessRequest;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
-import org.apache.atlas.authorize.AtlasEntityAccessRequest;
-import org.apache.atlas.authorize.AtlasPrivilege;
-import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
+import org.apache.atlas.authorize.*;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
@@ -38,18 +32,9 @@ import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
-import org.apache.atlas.model.instance.AtlasClassification;
-import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
-import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.model.instance.AtlasEntityHeaders;
-import org.apache.atlas.model.instance.AtlasEvaluatePolicyRequest;
-import org.apache.atlas.model.instance.AtlasEvaluatePolicyResponse;
-import org.apache.atlas.model.instance.AtlasHasLineageRequests;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.ClassificationAssociateRequest;
-import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
@@ -59,7 +44,6 @@ import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
-import org.apache.atlas.tools.RepairIndex;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
@@ -74,21 +58,12 @@ import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.apache.atlas.tools.RepairIndex;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -96,18 +71,11 @@ import javax.ws.rs.core.StreamingOutput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
-import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_READ;
+import static org.apache.atlas.authorize.AtlasPrivilege.*;
 import static org.apache.atlas.repository.Constants.ATTR_CONTRACT;
 import static org.apache.atlas.repository.Constants.ATTR_CONTRACT_JSON;
 
@@ -123,6 +91,7 @@ import static org.apache.atlas.repository.Constants.ATTR_CONTRACT_JSON;
 public class EntityREST {
     private static final Logger LOG      = LoggerFactory.getLogger(EntityREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.EntityREST");
+
     public static final String PREFIX_ATTR  = "attr:";
     public static final String PREFIX_ATTR_ = "attr_";
     public static final String QUALIFIED_NAME  = "qualifiedName";
@@ -418,7 +387,8 @@ public class EntityREST {
 
             AtlasEntityType entityType = ensureEntityType(typeName);
 
-            return entitiesStore.deleteByUniqueAttributes(entityType, attributes);
+            return entitiesStore.
+                    deleteByUniqueAttributes(entityType, attributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -846,7 +816,6 @@ public class EntityREST {
         RequestContext.get().setEnableCache(false);
         RequestContext.get().setSkipProcessEdgeRestoration(skipProcessEdgeRestoration);
         try {
-
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" +
                         (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size()) + ")");
@@ -915,8 +884,9 @@ public class EntityREST {
     @DELETE
     @Path("/bulk/uniqueAttribute")
     @Timed
-    public EntityMutationResponse bulkDeleteByUniqueAttribute(List<AtlasObjectId> objectIds) throws AtlasBaseException {
+    public EntityMutationResponse bulkDeleteByUniqueAttribute(List<AtlasObjectId> objectIds, @QueryParam("skipHasLineageCalculation") @DefaultValue("false") boolean skipHasLineageCalculation) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
+        RequestContext.get().setSkipHasLineageCalculation(skipHasLineageCalculation);
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.bulkDeleteByUniqueAttribute(" + objectIds.size() + ")");
@@ -1173,7 +1143,7 @@ public class EntityREST {
                             event.setDetail(null);
                         }
                     } catch (AtlasBaseException abe) {
-                            throw abe;
+                        throw abe;
                     }
                 }
             }
@@ -1812,7 +1782,7 @@ public class EntityREST {
             RepairIndex repairIndex = new RepairIndex();
             repairIndex.setupGraph();
 
-           repairIndex.restoreSelective(guid, referredEntities);
+            repairIndex.restoreSelective(guid, referredEntities);
         } catch (Exception e) {
             LOG.error("Exception while repairEntityIndex ", e);
             throw new AtlasBaseException(e);
@@ -1915,18 +1885,18 @@ public class EntityREST {
         AtlasPerfTracer perf = null;
 
 
-       try {
-           if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-               perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairAccessControlAlias");
-           }
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairAccessControlAlias");
+            }
 
-           entitiesStore.repairAccesscontrolAlias(guid);
+            entitiesStore.repairAccesscontrolAlias(guid);
 
-           LOG.info("Repaired access control alias for entity with guid {}", guid);
+            LOG.info("Repaired access control alias for entity with guid {}", guid);
 
-       } finally {
-              AtlasPerfTracer.log(perf);
-       }
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
 
 
     }

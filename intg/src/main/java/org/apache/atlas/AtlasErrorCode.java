@@ -296,6 +296,7 @@ public enum AtlasErrorCode {
 
     PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED(400, "ATLAS-400-00-113", "Exceeded limit of maximum allowed assets across policies for a Persona: Limit: {0}, assets: {1}"),
     ADMIN_LIST_SHOULD_NOT_BE_EMPTY(400, "ATLAS-400-00-114", "Admin list should not be empty for type {0}");
+
     private String errorCode;
     private String errorMessage;
     private Response.Status httpCode;

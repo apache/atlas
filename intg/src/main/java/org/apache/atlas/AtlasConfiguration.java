@@ -130,6 +130,8 @@ public enum AtlasConfiguration {
     OTEL_SERVICE_NAME(" OTEL_SERVICE_NAME", "atlas"),
     OTEL_EXPORTER_OTLP_ENDPOINT("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317");
 
+
+
     private static final Configuration APPLICATION_PROPERTIES;
 
     static {
