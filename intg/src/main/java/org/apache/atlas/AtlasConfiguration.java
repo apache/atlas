@@ -129,7 +129,8 @@ public enum AtlasConfiguration {
      */
     OTEL_RESOURCE_ATTRIBUTES("OTEL_RESOURCE_ATTRIBUTES", "service.name=atlas"),
     OTEL_SERVICE_NAME(" OTEL_SERVICE_NAME", "atlas"),
-    OTEL_EXPORTER_OTLP_ENDPOINT("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317");
+    OTEL_EXPORTER_OTLP_ENDPOINT("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"),
+    MAX_ENTITIES_ALLOWED_IN_BULK("atlas.bulk.max.entities.allowed", 20);
 
 
 

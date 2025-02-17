@@ -31,6 +31,7 @@ import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.NotImplementedException;
@@ -118,6 +119,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("pushInES");
         try {
             if (events != null && events.size() > 0) {
 
@@ -172,6 +174,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             }
         } catch (Exception e) {
             throw new AtlasBaseException("Unable to push entity audits to ES", e);
+        }finally {
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
