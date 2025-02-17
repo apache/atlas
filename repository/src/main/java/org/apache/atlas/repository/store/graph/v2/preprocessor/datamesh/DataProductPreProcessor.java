@@ -99,7 +99,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             entity.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
         }
 
-        entity.setAttribute(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_PENDING);
+        vertex.setProperty(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_PENDING);
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
 
@@ -129,6 +129,10 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                 vertex.setProperty(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_COMPLETED);
                 entity.removeAttribute(DAAP_LINEAGE_STATUS_ATTR);
             }
+        }
+
+        if(entity.hasAttribute(DAAP_ASSET_DSL_ATTR)) {
+            vertex.setProperty(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_PENDING);
         }
 
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
