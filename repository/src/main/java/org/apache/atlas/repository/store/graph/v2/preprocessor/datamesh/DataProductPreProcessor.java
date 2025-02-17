@@ -99,6 +99,8 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             entity.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
         }
 
+        entity.setAttribute(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_PENDING);
+
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
 
         productExists(productName, parentDomainQualifiedName, null);
@@ -119,6 +121,10 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         }
 
         if(entity.getAttribute(DAAP_LINEAGE_STATUS_ATTR) != null && entity.getAttribute(DAAP_LINEAGE_STATUS_ATTR).equals(DAAP_LINEAGE_STATUS_COMPLETED)){
+            if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Lineage Status Update");
+            }
+
             if (vertex.getProperty(DAAP_LINEAGE_STATUS_ATTR, String.class).equals(DAAP_LINEAGE_STATUS_IN_PROGRESS)){
                 vertex.setProperty(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_COMPLETED);
                 entity.removeAttribute(DAAP_LINEAGE_STATUS_ATTR);
