@@ -37,6 +37,10 @@ import java.util.Map;
 import java.util.Objects;
 
 import static org.apache.atlas.repository.graph.GraphHelper.getCustomAttributes;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_ADD;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_DELETE;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_NOOP;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_UPDATE;
 
 public class AtlasEntityComparator {
     private final AtlasTypeRegistry    typeRegistry;
@@ -181,7 +185,7 @@ public class AtlasEntityComparator {
                             updatedEntity.getRemoveClassifications());
                 }
 
-                if (MapUtils.isNotEmpty(diff)) {
+                if (MapUtils.isNotEmpty(diff) && (diff.containsKey(PROCESS_DELETE) || diff.containsKey(PROCESS_UPDATE) || diff.containsKey(PROCESS_ADD))) {
                     sectionsWithDiff++;
                     RequestContext.get().addTagsDiff(updatedEntity.getGuid(), diff);
 
