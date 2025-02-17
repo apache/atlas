@@ -92,7 +92,7 @@ public class BulkRequestContext {
         }
 
         public Builder setAppendClassifications(boolean appendClassifications) {
-            this.appendClassifications = true;
+            this.appendClassifications = appendClassifications;
 
             if (appendClassifications) {
                 this.replaceTags = false;
