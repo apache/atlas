@@ -44,8 +44,8 @@ import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 public class RequestContext {
     private static final Logger METRICS = LoggerFactory.getLogger("METRICS");
 
-    private static final ThreadLocal<RequestContext> CURRENT_CONTEXT = new ThreadLocal<>();
-    private static final Set<RequestContext>         ACTIVE_REQUESTS = new HashSet<>();
+    private static final ThreadLocal<RequestContext> CURRENT_CONTEXT  = new ThreadLocal<>();
+    private static final Set<RequestContext>         ACTIVE_REQUESTS  = new HashSet<>();
     private static final boolean                     isMetricsEnabled = METRICS.isDebugEnabled();
 
     private final long                                   requestTime          = System.currentTimeMillis();
@@ -74,10 +74,10 @@ public class RequestContext {
     private boolean      isInNotificationProcessing;
     private boolean      isInTypePatching;
     private boolean      createShellEntityForNonExistingReference;
-    private DeleteType   deleteType                               = DeleteType.DEFAULT;
-    private String       currentTypePatchAction                   = "";
-    private int          maxAttempts                              = 1;
-    private int          attemptCount                             = 1;
+    private DeleteType   deleteType             = DeleteType.DEFAULT;
+    private String       currentTypePatchAction = "";
+    private int          maxAttempts            = 1;
+    private int          attemptCount           = 1;
 
     private RequestContext() {
     }
@@ -89,6 +89,7 @@ public class RequestContext {
 
         if (ret == null) {
             ret = new RequestContext();
+
             CURRENT_CONTEXT.set(ret);
 
             synchronized (ACTIVE_REQUESTS) {
@@ -139,20 +140,24 @@ public class RequestContext {
 
     public static String getCurrentUser() {
         RequestContext context = CURRENT_CONTEXT.get();
-        String ret = context != null ? context.getUser() : null;
+        String         ret     = context != null ? context.getUser() : null;
+
         if (StringUtils.isBlank(ret)) {
             try {
                 ret = UserGroupInformation.getLoginUser().getShortUserName();
             } catch (Exception e) {
                 ret = null;
             }
+
             if (StringUtils.isBlank(ret)) {
                 ret = System.getProperty("user.name");
+
                 if (StringUtils.isBlank(ret)) {
                     ret = "atlas";
                 }
             }
         }
+
         return ret;
     }
 
