@@ -29,8 +29,11 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 
 public class AtlasServerIdSelector {
-
     private static final Logger LOG = LoggerFactory.getLogger(AtlasServerIdSelector.class);
+
+    private AtlasServerIdSelector() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    }
 
     /**
      * Return the ID corresponding to this Atlas instance.
@@ -46,37 +49,42 @@ public class AtlasServerIdSelector {
      */
     public static String selectServerId(Configuration configuration) throws AtlasException {
         // ids are already trimmed by this method
-        String[] ids = configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS);
-        String matchingServerId = null;
-        int appPort = Integer.parseInt(System.getProperty(AtlasConstants.SYSTEM_PROPERTY_APP_PORT));
+        String[] ids              = configuration.getStringArray(HAConfiguration.ATLAS_SERVER_IDS);
+        String   matchingServerId = null;
+        int      appPort          = Integer.parseInt(System.getProperty(AtlasConstants.SYSTEM_PROPERTY_APP_PORT));
+
         for (String id : ids) {
-            String hostPort = configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +id);
+            String hostPort = configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX + id);
+
             if (!StringUtils.isEmpty(hostPort)) {
                 InetSocketAddress socketAddress;
+
                 try {
                     socketAddress = NetUtils.createSocketAddr(hostPort);
                 } catch (Exception e) {
                     LOG.warn("Exception while trying to get socket address for {}", hostPort, e);
+
                     continue;
                 }
-                if (!socketAddress.isUnresolved()
-                        && NetUtils.isLocalAddress(socketAddress.getAddress())
-                        && appPort == socketAddress.getPort()) {
+
+                if (!socketAddress.isUnresolved() && NetUtils.isLocalAddress(socketAddress.getAddress()) && appPort == socketAddress.getPort()) {
                     LOG.info("Found matched server id {} with host port: {}", id, hostPort);
+
                     matchingServerId = id;
+
                     break;
                 }
             } else {
                 LOG.info("Could not find matching address entry for id: {}", id);
             }
         }
+
         if (matchingServerId == null) {
-            String msg = String.format("Could not find server id for this instance. " +
-                            "Unable to find IDs matching any local host and port binding among %s",
-                    StringUtils.join(ids, ","));
+            String msg = String.format("Could not find server id for this instance. Unable to find IDs matching any local host and port binding among %s", StringUtils.join(ids, ","));
+
             throw new AtlasException(msg);
         }
+
         return matchingServerId;
     }
-
 }

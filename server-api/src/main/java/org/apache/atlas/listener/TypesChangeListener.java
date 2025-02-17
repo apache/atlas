@@ -27,7 +27,6 @@ import java.util.Collection;
  * Types change notification listener.
  */
 public interface TypesChangeListener {
-
     /**
      * This is upon adding new type(s) to Store.
      *
@@ -44,6 +43,6 @@ public interface TypesChangeListener {
      */
     // void onRemove(String typeName) throws MetadataException;
 
-     //This is upon updating an existing type to the store
-     void onChange(Collection<? extends AtlasType> dataTypes) throws AtlasException;
+    //This is upon updating an existing type to the store
+    void onChange(Collection<? extends AtlasType> dataTypes) throws AtlasException;
 }
