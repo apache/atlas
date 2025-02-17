@@ -29,8 +29,11 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 
 public class AtlasServerIdSelector {
-
     private static final Logger LOG = LoggerFactory.getLogger(AtlasServerIdSelector.class);
+
+    private AtlasServerIdSelector() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    }
 
     /**
      * Return the ID corresponding to this Atlas instance.
@@ -50,7 +53,7 @@ public class AtlasServerIdSelector {
         String matchingServerId = null;
         int appPort = Integer.parseInt(System.getProperty(AtlasConstants.SYSTEM_PROPERTY_APP_PORT));
         for (String id : ids) {
-            String hostPort = configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX +id);
+            String hostPort = configuration.getString(HAConfiguration.ATLAS_SERVER_ADDRESS_PREFIX + id);
             if (!StringUtils.isEmpty(hostPort)) {
                 InetSocketAddress socketAddress;
                 try {
@@ -78,5 +81,4 @@ public class AtlasServerIdSelector {
         }
         return matchingServerId;
     }
-
 }
