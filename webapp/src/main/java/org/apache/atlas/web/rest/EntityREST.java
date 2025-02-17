@@ -1143,7 +1143,7 @@ public class EntityREST {
                             event.setDetail(null);
                         }
                     } catch (AtlasBaseException abe) {
-                            throw abe;
+                        throw abe;
                     }
                 }
             }
@@ -1782,7 +1782,7 @@ public class EntityREST {
             RepairIndex repairIndex = new RepairIndex();
             repairIndex.setupGraph();
 
-           repairIndex.restoreSelective(guid, referredEntities);
+            repairIndex.restoreSelective(guid, referredEntities);
         } catch (Exception e) {
             LOG.error("Exception while repairEntityIndex ", e);
             throw new AtlasBaseException(e);
@@ -1885,18 +1885,18 @@ public class EntityREST {
         AtlasPerfTracer perf = null;
 
 
-       try {
-           if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-               perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairAccessControlAlias");
-           }
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairAccessControlAlias");
+            }
 
-           entitiesStore.repairAccesscontrolAlias(guid);
+            entitiesStore.repairAccesscontrolAlias(guid);
 
-           LOG.info("Repaired access control alias for entity with guid {}", guid);
+            LOG.info("Repaired access control alias for entity with guid {}", guid);
 
-       } finally {
-              AtlasPerfTracer.log(perf);
-       }
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
 
 
     }
