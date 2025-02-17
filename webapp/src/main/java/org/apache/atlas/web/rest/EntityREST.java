@@ -847,10 +847,9 @@ public class EntityREST {
         RequestContext.get().setSkipProcessEdgeRestoration(skipProcessEdgeRestoration);
         try {
 
-            int totalEntities = entities.getEntities().size();
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" +
-                        (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : totalEntities) + ")");
+                        (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size()) + ")");
             }
 
             validateAttributeLength(entities.getEntities());
