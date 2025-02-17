@@ -38,19 +38,19 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class LocalSolrRunner {
-
-    private   static final String   TARGET_DIRECTORY   = System.getProperty("embedded.solr.directory");
-    private   static final String   COLLECTIONS_FILE   = "collections.txt";
-    private   static final String   SOLR_XML           = "solr.xml";
-    private   static final String   TEMPLATE_DIRECTORY = "core-template";
-    protected static final String[] COLLECTIONS        = readCollections();
-
-    // from org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase
-    public static final String SOLR_ZOOKEEPER_URL = "atlas.graph.index.search.solr.zookeeper-url";
-
     private static final Logger LOG = LoggerFactory.getLogger(LocalSolrRunner.class);
 
+    // from org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase
+    public  static final String SOLR_ZOOKEEPER_URL = "atlas.graph.index.search.solr.zookeeper-url";
+    protected static final String[] COLLECTIONS        = readCollections();
+    private static final   String   TARGET_DIRECTORY   = System.getProperty("embedded.solr.directory");
+    private static final   String   COLLECTIONS_FILE   = "collections.txt";
+    private static final   String   SOLR_XML           = "solr.xml";
+    private static final   String   TEMPLATE_DIRECTORY = "core-template";
+
     private static MiniSolrCloudCluster miniSolrCloudCluster;
+
+    private LocalSolrRunner() {}
 
     public static void start() throws Exception {
         if (isLocalSolrRunning()) {
@@ -60,7 +60,7 @@ public class LocalSolrRunner {
         LOG.info("==> LocalSolrRunner.start()");
 
         File templateDirectory = new File(TARGET_DIRECTORY + File.separator + "solr" + File.separator + TEMPLATE_DIRECTORY);
-        File temp = new File(TARGET_DIRECTORY + File.separator + "data" + File.separator + "index" + File.separator + getRandomString());
+        File temp              = new File(TARGET_DIRECTORY + File.separator + "data" + File.separator + "index" + File.separator + getRandomString());
 
         temp.mkdirs();
         temp.deleteOnExit();
@@ -119,14 +119,36 @@ public class LocalSolrRunner {
         return ret;
     }
 
+    public static void main(String[] args) {
+        if (ArrayUtils.isEmpty(args)) {
+            System.out.println("No argument!");
+        } else if (args[0].equals("start")) {
+            try {
+                start();
+                System.out.println("Started Local Solr Server: " + getZookeeperUrls());
+            } catch (Exception e) {
+                System.out.println("Error starting Local Solr Server: " + e);
+            }
+        } else if (args[0].equals("stop")) {
+            try {
+                System.out.println("Stopping Local Solr Server.");
+                stop();
+            } catch (Exception e) {
+                System.out.println("Error stopping Local Solr Server: " + e);
+            }
+        } else {
+            System.out.println("Bad first argument: " + Arrays.toString(args));
+        }
+    }
+
     private static String[] readCollections() {
         // For the classloader you need the following path: "/solr/collections.txt";
         // Use explicit '/' separators (not File.separator) because even on Windows you want '/'
         String resName = "/solr/" + COLLECTIONS_FILE;
         try {
-            InputStream inputStream = LocalSolrRunner.class.getResourceAsStream(resName);
-            InputStreamReader isr = new InputStreamReader(inputStream);
-            BufferedReader buffer = new BufferedReader(isr);
+            InputStream       inputStream = LocalSolrRunner.class.getResourceAsStream(resName);
+            InputStreamReader isr         = new InputStreamReader(inputStream);
+            BufferedReader    buffer      = new BufferedReader(isr);
             return Pattern.compile("\\s+").split(buffer.lines().collect(Collectors.joining("\n")));
         } catch (Exception e) {
             throw new RuntimeException("Unable to read collections file", e);
@@ -150,28 +172,5 @@ public class LocalSolrRunner {
 
     private static String getRandomString() {
         return UUID.randomUUID().toString();
-    }
-
-    public static void main(String[] args) {
-        if (ArrayUtils.isEmpty(args)) {
-            System.out.println("No argument!");
-        } else if (args[0].equals("start")) {
-            try {
-                start();
-                System.out.println("Started Local Solr Server: "+ getZookeeperUrls());
-
-            } catch (Exception e) {
-                System.out.println("Error starting Local Solr Server: " + e);
-            }
-        } else if (args[0].equals("stop")) {
-            try {
-                System.out.println("Stopping Local Solr Server.");
-                stop();
-            } catch (Exception e) {
-                System.out.println("Error stopping Local Solr Server: " + e);
-            }
-        } else {
-            System.out.println("Bad first argument: " + Arrays.toString(args));
-        }
     }
 }
