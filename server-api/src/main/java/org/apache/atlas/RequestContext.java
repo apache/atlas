@@ -113,6 +113,8 @@ public class RequestContext {
     private boolean cacheEnabled;
 
     private boolean delayTagNotifications = false;
+    private boolean skipHasLineageCalculation = false;
+    private boolean isInvokedByIndexSearch = false;
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
     private Map<AtlasClassification, Collection<Object>> addedClassificationAndVertices = new HashMap<>();
 
@@ -785,6 +787,21 @@ public class RequestContext {
 
     public void setSkipProcessEdgeRestoration(boolean skipProcessEdgeRestoration) {
         this.skipProcessEdgeRestoration = skipProcessEdgeRestoration;
+    }
+
+    public boolean skipHasLineageCalculation() {
+        return skipHasLineageCalculation;
+    }
+    public void setSkipHasLineageCalculation(boolean skipHasLineageCalculation) {
+        this.skipHasLineageCalculation = skipHasLineageCalculation;
+    }
+
+    public void setIsInvokedByIndexSearch(boolean isInvokedByIndexSearch) {
+        this.isInvokedByIndexSearch = isInvokedByIndexSearch;
+    }
+
+    public boolean isInvokedByIndexSearch() {
+        return isInvokedByIndexSearch;
     }
 
     public class EntityGuidPair {

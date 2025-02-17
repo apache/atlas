@@ -1035,7 +1035,7 @@ public class EntityGraphRetriever {
                         // validate if prefetched property is multi-valued
                         boolean isMultiValuedProperty = (property instanceof CacheVertexProperty && ((CacheVertexProperty) property).propertyKey().cardinality().equals(Cardinality.SET));
 
-                        if (typeCategory == TypeCategory.ARRAY && elementTypeCategory == TypeCategory.PRIMITIVE) {
+                        if (typeCategory == TypeCategory.ARRAY && (elementTypeCategory == TypeCategory.PRIMITIVE|| elementTypeCategory == TypeCategory.ENUM)) {
                             updateAttrValue(propertiesMap, property);
                         } else if (attribute == null && isMultiValuedProperty) {
                             updateAttrValue(propertiesMap, property);
@@ -1137,7 +1137,8 @@ public class EntityGraphRetriever {
     }
 
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
-        boolean shouldPrefetch = !isPolicyAttribute(attributes)
+        boolean shouldPrefetch = RequestContext.get().isInvokedByIndexSearch()
+                && !isPolicyAttribute(attributes)
                 && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION.getBoolean();
 
         if (shouldPrefetch) {
