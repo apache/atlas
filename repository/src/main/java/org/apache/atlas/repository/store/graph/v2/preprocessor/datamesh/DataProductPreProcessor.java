@@ -99,7 +99,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             entity.setAttribute(SUPER_DOMAIN_QN_ATTR, superDomainQualifiedName);
         }
 
-        vertex.setProperty(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_PENDING);
+        entity.setAttribute(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_PENDING);
 
         entity.setAttribute(QUALIFIED_NAME, createQualifiedName(parentDomainQualifiedName));
 
@@ -126,13 +126,12 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             }
 
             if (vertex.getProperty(DAAP_LINEAGE_STATUS_ATTR, String.class).equals(DAAP_LINEAGE_STATUS_IN_PROGRESS)){
-                vertex.setProperty(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_COMPLETED);
-                entity.removeAttribute(DAAP_LINEAGE_STATUS_ATTR);
+                entity.setAttribute(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_COMPLETED);
             }
         }
 
         if(entity.hasAttribute(DAAP_ASSET_DSL_ATTR)) {
-            vertex.setProperty(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_PENDING);
+            entity.setAttribute(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_PENDING);
         }
 
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
