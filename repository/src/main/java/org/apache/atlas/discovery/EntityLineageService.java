@@ -125,7 +125,7 @@ public class EntityLineageService implements AtlasLineageService {
     @Override
     @GraphTransaction
     public AtlasLineageInfo getAtlasLineageInfo(AtlasLineageRequest lineageRequest) throws AtlasBaseException {
-        LOG.info("Entering getAtlasLineageInfo with guid: {} \\(hideProcess: {}\\), depth: {}",
+        LOG.info("dhanyavg: Entering getAtlasLineageInfo with guid: {} \\(hideProcess: {}\\), depth: {}",
                 lineageRequest.getGuid(), lineageRequest.isHideProcess(), lineageRequest.getDepth());
 
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("getAtlasLineageInfo");
@@ -138,44 +138,44 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
 
         AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(entity.getTypeName());
-        LOG.info("Retrieved entity type: {}. All super types: {}", entity.getTypeName(),
+        LOG.info("dhanyavg: Retrieved entity type: {}. All super types: {}", entity.getTypeName(),
                 entityType != null ? entityType.getTypeAndAllSuperTypes() : "null entityType");
 
         if (entityType == null) {
-            LOG.error("Entity type not found for: {}", entity.getTypeName());
+            LOG.error("dhanyavg: Entity type not found for: {}", entity.getTypeName());
             throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, entity.getTypeName());
         }
 
         boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
-        LOG.debug("Is entity a process? {}", isProcess);
+        LOG.debug("dhanyavg: Is entity a process? {}", isProcess);
 
         if (isProcess) {
             if (lineageRequest.isHideProcess()) {
-                LOG.warn("Cannot hide process for a process entity. Throwing exception.");
+                LOG.warn("dhanyavg: Cannot hide process for a process entity. Throwing exception.");
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE_HIDE_PROCESS, guid, entity.getTypeName());
             }
             lineageRequestContext.setProcess(true);
         }else {
             boolean isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
-            LOG.debug("Is entity a dataset? {}", isDataSet);
+            LOG.debug("dhanyavg: Is entity a dataset? {}", isDataSet);
             if (!isDataSet) {
-                LOG.error("Invalid lineage entity type for guid: {}, type: {}", guid, entity.getTypeName());
+                LOG.error("dhanyavg: Invalid lineage entity type for guid: {}, type: {}", guid, entity.getTypeName());
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, entity.getTypeName());
             }
             lineageRequestContext.setDataset(true);
         }
 
         if (LINEAGE_USING_GREMLIN) {
-            LOG.debug("Using Gremlin-based lineage.");
+            LOG.debug("dhanyavg: Using Gremlin-based lineage.");
             ret = getLineageInfoV1(lineageRequestContext);
         } else {
-            LOG.debug("Using native lineage (v2).");
+            LOG.debug("dhanyavg: Using native lineage (v2).");
             ret = getLineageInfoV2(lineageRequestContext);
         }
 
         scrubLineageEntities(ret.getGuidEntityMap().values());
         RequestContext.get().endMetricRecord(metric);
-        LOG.info("Exiting getAtlasLineageInfo with guid: {}", lineageRequest.getGuid());
+        LOG.info("dhanyavg: Exiting getAtlasLineageInfo with guid: {}", lineageRequest.getGuid());
         return ret;
     }
 
