@@ -68,7 +68,6 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
 import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.AtlasErrorCode.INSTANCE_LINEAGE_QUERY_FAILED;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
@@ -149,11 +148,6 @@ public class EntityLineageService implements AtlasLineageService {
         }else {
             boolean isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
             if (!isDataSet) {
-                LOG.info("dhanyavg: Retrieved entity type: {}. All super types: {}", entity.getTypeName(),
-                        entityType != null ? entityType.getTypeAndAllSuperTypes() : "null entityType");
-
-                LOG.info("dhanyavg: Entity type : {}", AtlasEntityType.toJson(entityType));
-
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, entity.getTypeName());
             }
             lineageRequestContext.setDataset(true);
@@ -219,10 +213,6 @@ public class EntityLineageService implements AtlasLineageService {
         if (!isProcess) {
             boolean isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
             if (!isDataSet) {
-                LOG.info("dhanyavg:2 Retrieved entity type: {}. All super types: {}", typeName,
-                        entityType != null ? entityType.getTypeAndAllSuperTypes() : "null entityType");
-
-                LOG.info("dhanyavg:2 Entity type : {}", AtlasEntityType.toJson(entityType));
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, typeName);
             }
         }
