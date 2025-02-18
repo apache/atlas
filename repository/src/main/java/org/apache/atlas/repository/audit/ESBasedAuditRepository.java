@@ -77,6 +77,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final Logger LOG = LoggerFactory.getLogger(ESBasedAuditRepository.class);
     public static final String INDEX_BACKEND_CONF = "atlas.graph.index.search.hostname";
     private static final String TOTAL_FIELD_LIMIT = "atlas.index.audit.elasticsearch.total_field_limit";
+    private static  final String INDEX_REFRESH_INTERVAL= "atlas.index.audit.elasticsearch.refresh_interval";
     public static final String INDEX_NAME = "entity_audits";
     private static final String ENTITYID = "entityId";
     private static final String TYPE_NAME = "typeName";
@@ -344,7 +345,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 LOG.info("Updating ES total field limit");
                 updateFieldLimit();
             }
-            updateMappingsIfChanged();
+            updateMappingsAndRefreshIntervalIfChanged();
         } catch (IOException e) {
             LOG.error("error", e);
             throw new AtlasException(e);
@@ -413,7 +414,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         }
     }
 
-    private void updateMappingsIfChanged() throws IOException, AtlasException {
+    private void updateMappingsAndRefreshIntervalIfChanged() throws IOException, AtlasException {
         LOG.info("ESBasedAuditRepo - updateMappings!");
         ObjectMapper mapper = new ObjectMapper();
         JsonNode activeIndexInformation = getActiveIndexInfoAsJson(mapper);
@@ -427,7 +428,37 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 throw new AtlasException(copyToString(response.getEntity().getContent(), Charset.defaultCharset()));
             }
         }
+
+        validateAndUpdateRefreshInterval(activeIndexInformation);
     }
+
+    private void validateAndUpdateRefreshInterval(JsonNode activeIndexInformation) throws IOException {
+        String refreshInterval = configuration.getString(INDEX_REFRESH_INTERVAL);
+        if (refreshInterval == null || !refreshInterval.matches("\\d+s") || activeIndexInformation.get("entity_audits").get("settings").get("index").get("refresh_interval").asText("1s").equals(refreshInterval)) {
+            return;
+        }
+        updateRefreshInterval();
+    }
+
+    private void updateRefreshInterval() {
+        LOG.info("ESBasedAuditRepo - updateRefreshInterval!");
+        Request request = new Request("PUT", INDEX_NAME + "/_settings");
+        String requestBody = String.format("{\"index.refresh_interval\": \"%s\"}", configuration.getString(INDEX_REFRESH_INTERVAL));
+        HttpEntity entity = new NStringEntity(requestBody, ContentType.APPLICATION_JSON);
+        request.setEntity(entity);
+        Response response;
+        try {
+            response = lowLevelClient.performRequest(request);
+            if (response.getStatusLine().getStatusCode() != 200) {
+                LOG.error("Error while updating the Elasticsearch refresh interval! Error: " + copyToString(response.getEntity().getContent(), defaultCharset()));
+            } else {
+                LOG.info("ES refresh interval has been updated");
+            }
+        } catch (IOException e) {
+            LOG.error("Error while updating the refresh interval", e);
+        }
+    }
+
 
     private JsonNode getActiveIndexInfoAsJson(ObjectMapper mapper) throws IOException {
         Request request = new Request("GET", INDEX_NAME);
