@@ -71,17 +71,14 @@ public interface EntityChangeListener {
 
     /**
      * This is upon updating a trait from a typed instance.
-     *
      * @param entity    the entity
      * @param traits    trait that needs to be added to entity
-     *
      * @throws AtlasException if the listener notification fails
      */
     void onTraitsUpdated(Referenceable entity, Collection<? extends Struct> traits) throws AtlasException;
-    
+
     /**
      * This is upon deleting entities from the repository.
-     *
      * @param entities the deleted entities
      * @param isImport
      * @throws AtlasException
@@ -90,7 +87,6 @@ public interface EntityChangeListener {
 
     /**
      * This is upon adding a new term to a list of typed instance.
-     *
      * @param entities entity list
      * @param term  term that needs to be added to entity
      * @throws AtlasException if the listener notification fails
@@ -99,7 +95,6 @@ public interface EntityChangeListener {
 
     /**
      * This is upon adding a new trait to a typed instance.
-     *
      * @param entities entity list
      * @param term  term that needs to be added to entity
      * @throws AtlasException if the listener notification fails

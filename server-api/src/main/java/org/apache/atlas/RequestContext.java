@@ -41,13 +41,12 @@ import java.util.Set;
 
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 
-
 public class RequestContext {
     private static final Logger METRICS = LoggerFactory.getLogger("METRICS");
 
-    private static final ThreadLocal<RequestContext> CURRENT_CONTEXT = new ThreadLocal<>();
-    private static final Set<RequestContext>         ACTIVE_REQUESTS = new HashSet<>();
-    private static final boolean                     isMetricsEnabled = METRICS.isDebugEnabled();
+    private static final ThreadLocal<RequestContext> CURRENT_CONTEXT    = new ThreadLocal<>();
+    private static final Set<RequestContext>         ACTIVE_REQUESTS    = new HashSet<>();
+    private static final boolean                     IS_METRICS_ENABLED = METRICS.isDebugEnabled();
 
     private final long                                   requestTime          = System.currentTimeMillis();
     private final Map<String, AtlasEntityHeader>         updatedEntities      = new HashMap<>();
@@ -57,29 +56,28 @@ public class RequestContext {
     private final Map<String, AtlasEntity>               diffEntityCache      = new HashMap<>();
     private final Map<String, List<AtlasClassification>> addedPropagations    = new HashMap<>();
     private final Map<String, List<AtlasClassification>> removedPropagations  = new HashMap<>();
-    private final AtlasPerfMetrics                       metrics              = isMetricsEnabled ? new AtlasPerfMetrics() : null;
-    private       List<EntityGuidPair>                   entityGuidInRequest  = null;
+    private final AtlasPerfMetrics                       metrics              = IS_METRICS_ENABLED ? new AtlasPerfMetrics() : null;
+    private       List<EntityGuidPair>                   entityGuidInRequest;
     private final Set<String>                            entitiesToSkipUpdate = new HashSet<>();
     private final Set<String>                            onlyCAUpdateEntities = new HashSet<>();
     private final Set<String>                            onlyBAUpdateEntities = new HashSet<>();
     private final List<AtlasTask>                        queuedTasks          = new ArrayList<>();
 
-
     private String       user;
     private Set<String>  userGroups;
     private String       clientIPAddress;
     private List<String> forwardedAddresses;
-    private DeleteType   deleteType   = DeleteType.DEFAULT;
-    private boolean     isPurgeRequested = false;
-    private int         maxAttempts  = 1;
-    private int         attemptCount = 1;
-    private boolean     isImportInProgress = false;
-    private boolean     isMigrationInProgress = false;
-    private boolean     isInNotificationProcessing = false;
-    private boolean     isInTypePatching           = false;
-    private boolean     createShellEntityForNonExistingReference = false;
-    private boolean     skipFailedEntities = false;
-    private String      currentTypePatchAction = "";
+    private boolean      isPurgeRequested;
+    private boolean      skipFailedEntities;
+    private boolean      isImportInProgress;
+    private boolean      isMigrationInProgress;
+    private boolean      isInNotificationProcessing;
+    private boolean      isInTypePatching;
+    private boolean      createShellEntityForNonExistingReference;
+    private DeleteType   deleteType             = DeleteType.DEFAULT;
+    private String       currentTypePatchAction = "";
+    private int          maxAttempts            = 1;
+    private int          attemptCount           = 1;
 
     private RequestContext() {
     }
@@ -91,6 +89,7 @@ public class RequestContext {
 
         if (ret == null) {
             ret = new RequestContext();
+
             CURRENT_CONTEXT.set(ret);
 
             synchronized (ACTIVE_REQUESTS) {
@@ -141,20 +140,24 @@ public class RequestContext {
 
     public static String getCurrentUser() {
         RequestContext context = CURRENT_CONTEXT.get();
-        String ret = context != null ? context.getUser() : null;
+        String         ret     = context != null ? context.getUser() : null;
+
         if (StringUtils.isBlank(ret)) {
             try {
                 ret = UserGroupInformation.getLoginUser().getShortUserName();
             } catch (Exception e) {
                 ret = null;
             }
-            if (StringUtils.isBlank(ret)){
+
+            if (StringUtils.isBlank(ret)) {
                 ret = System.getProperty("user.name");
+
                 if (StringUtils.isBlank(ret)) {
                     ret = "atlas";
                 }
             }
         }
+
         return ret;
     }
 
@@ -171,9 +174,13 @@ public class RequestContext {
         this.userGroups = userGroups;
     }
 
-    public DeleteType getDeleteType() { return deleteType; }
+    public DeleteType getDeleteType() {
+        return deleteType;
+    }
 
-    public void setDeleteType(DeleteType deleteType) { this.deleteType = (deleteType == null) ? DeleteType.DEFAULT : deleteType; }
+    public void setDeleteType(DeleteType deleteType) {
+        this.deleteType = (deleteType == null) ? DeleteType.DEFAULT : deleteType;
+    }
 
     public String getClientIPAddress() {
         return clientIPAddress;
@@ -215,9 +222,13 @@ public class RequestContext {
         isImportInProgress = importInProgress;
     }
 
-    public boolean isPurgeRequested() { return isPurgeRequested; }
+    public boolean isPurgeRequested() {
+        return isPurgeRequested;
+    }
 
-    public void setPurgeRequested(boolean isPurgeRequested) { this.isPurgeRequested = isPurgeRequested; }
+    public void setPurgeRequested(boolean isPurgeRequested) {
+        this.isPurgeRequested = isPurgeRequested;
+    }
 
     public boolean isInNotificationProcessing() {
         return isInNotificationProcessing;
@@ -260,25 +271,25 @@ public class RequestContext {
     }
 
     public void recordEntityUpdate(AtlasEntityHeader entity) {
-        if (entity != null && entity.getGuid() != null && ! entitiesToSkipUpdate.contains(entity.getGuid())) {
+        if (entity != null && entity.getGuid() != null && !entitiesToSkipUpdate.contains(entity.getGuid())) {
             updatedEntities.put(entity.getGuid(), entity);
         }
     }
 
     public void recordEntityToSkip(String guid) {
-        if(! StringUtils.isEmpty(guid)) {
+        if (!StringUtils.isEmpty(guid)) {
             entitiesToSkipUpdate.add(guid);
         }
     }
 
     public void recordEntityWithCustomAttributeUpdate(String guid) {
-        if(! StringUtils.isEmpty(guid)) {
+        if (!StringUtils.isEmpty(guid)) {
             onlyCAUpdateEntities.add(guid);
         }
     }
 
     public void recordEntityWithBusinessAttributeUpdate(String guid) {
-        if(! StringUtils.isEmpty(guid)) {
+        if (!StringUtils.isEmpty(guid)) {
             onlyBAUpdateEntities.add(guid);
         }
     }
@@ -378,7 +389,9 @@ public class RequestContext {
         return diffEntityCache.get(guid);
     }
 
-    public Collection<AtlasEntity> getDifferentialEntities() { return diffEntityCache.values(); }
+    public Collection<AtlasEntity> getDifferentialEntities() {
+        return diffEntityCache.values();
+    }
 
     public Collection<AtlasEntityHeader> getUpdatedEntities() {
         return updatedEntities.values();
@@ -423,7 +436,9 @@ public class RequestContext {
         return deletedEntities.containsKey(guid);
     }
 
-    public MetricRecorder startMetricRecord(String name) { return metrics != null ? metrics.getMetricRecorder(name) : null; }
+    public MetricRecorder startMetricRecord(String name) {
+        return metrics != null ? metrics.getMetricRecorder(name) : null;
+    }
 
     public void endMetricRecord(MetricRecorder recorder) {
         if (metrics != null && recorder != null) {
@@ -467,7 +482,7 @@ public class RequestContext {
         return this.queuedTasks;
     }
 
-    public class EntityGuidPair {
+    public static class EntityGuidPair {
         private final Object entity;
         private final String guid;
 

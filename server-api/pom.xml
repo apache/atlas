@@ -31,8 +31,12 @@
     <name>Apache Atlas Server API</name>
     <description>Apache Atlas Server related APIs</description>
 
-    <dependencies>
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
 
+    <dependencies>
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-client-v1</artifactId>
