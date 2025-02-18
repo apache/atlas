@@ -811,8 +811,6 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
             
             RangerAccessResult result = plugin.isAccessAllowed(request, auditHandler);
 
-            LOG.info("from RangerAtlasAuthorization checkAccess(" + request + "): " + result.getIsAllowed());
-
             ret = result != null && result.getIsAllowed();
         
         } else {
