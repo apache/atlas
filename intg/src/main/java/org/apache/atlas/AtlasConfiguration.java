@@ -40,6 +40,7 @@ public enum AtlasConfiguration {
     NOTIFICATION_HOOK_TOPIC_NAME("atlas.notification.hook.topic.name", "ATLAS_HOOK"),
     NOTIFICATION_ENTITIES_TOPIC_NAME("atlas.notification.entities.topic.name", "ATLAS_ENTITIES"),
     NOTIFICATION_RELATIONSHIPS_TOPIC_NAME("atlas.notification.relationships.topic.name", "ATLAS_RELATIONSHIPS"),
+    NOTIFICATION_ATLAS_DISTRIBUTED_TASKS_TOPIC_NAME("atlas.notification.atlas.tasks.topic.name", "ATLAS_TASKS"),
 
     NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES("atlas.notification.hook.consumer.topic.names", "ATLAS_HOOK"), //  a comma separated list of topic names
     NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES("atlas.notification.entities.consumer.topic.names", "ATLAS_ENTITIES"), //  a comma separated list of topic names
@@ -83,6 +84,7 @@ public enum AtlasConfiguration {
     DSL_CACHED_TRANSLATOR("atlas.dsl.cached.translator", true),
     DEBUG_METRICS_ENABLED("atlas.debug.metrics.enabled", false),
     TASKS_USE_ENABLED("atlas.tasks.enabled", true),
+    ATLAS_DISTRIBUTED_TASK_ENABLED("atlas.distributed.task.enabled", false),
     TASKS_REQUEUE_GRAPH_QUERY("atlas.tasks.requeue.graph.query", false),
     TASKS_IN_PROGRESS_GRAPH_QUERY("atlas.tasks.inprogress.graph.query", false),
     TASKS_REQUEUE_POLL_INTERVAL("atlas.tasks.requeue.poll.interval.millis", 60000),
