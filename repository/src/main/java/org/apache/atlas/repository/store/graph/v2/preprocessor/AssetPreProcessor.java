@@ -88,7 +88,7 @@ public class AssetPreProcessor implements PreProcessor {
     private void processDomainLinkAttribute(AtlasEntity entity, AtlasVertex vertex, EntityMutations.EntityOperation operation) throws AtlasBaseException {
         if(entity.hasAttribute(DOMAIN_GUIDS)){
             validateDomainAssetLinks(entity);
-            isAuthorized(vertex, operation);
+            isAuthorized(vertex, operation, entity);
         }
     }
 
@@ -127,28 +127,20 @@ public class AssetPreProcessor implements PreProcessor {
         }
     }
 
-    private void isAuthorized(AtlasVertex vertex, EntityMutations.EntityOperation operation) throws AtlasBaseException {
-        AtlasEntityHeader sourceEntity = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(vertex);
+    private void isAuthorized(AtlasVertex vertex, EntityMutations.EntityOperation operation, AtlasEntity entity) throws AtlasBaseException {
+        AtlasEntityHeader sourceEntity;
 
-        switch (operation) {
-            case CREATE:
-                // source -> CREATE + READ
-                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, sourceEntity),
-                        "create on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
-
-                break;
-
-            case UPDATE:
-                // source -> UPDATE + READ
-                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceEntity),
-                        "update on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
-
-                AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, sourceEntity),
-                        "read on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
-                break;
+        if (operation == EntityMutations.EntityOperation.CREATE) {
+            sourceEntity = new AtlasEntityHeader(entity);
+        } else {
+            sourceEntity = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(vertex);
         }
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, sourceEntity),
+                "update on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_READ, sourceEntity),
+                "read on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
     }
 
 }
-
-
