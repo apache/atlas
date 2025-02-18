@@ -1708,7 +1708,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private void checkAndCreateAtlasRelationshipCleanupTaskNotification(AtlasEntityType entityType, AtlasVertex vertex) {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("checkAndCreateAtlasDistributedTaskNotification");
         try{
-            if (entityType.getSuperTypes().contains(PROCESS_ENTITY_TYPE)) {
+            if (entityType.getTypeAndAllSuperTypes().contains(PROCESS_ENTITY_TYPE)) {
                 AtlasDistributedTaskNotification notification =  taskNotificationSender.createRelationshipCleanTask(vertex.getIdForDisplay(), Arrays.asList(PROCESS_EDGE_LABELS));
                 taskNotificationSender.send(notification);
             }
@@ -1744,10 +1744,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
                 AtlasVertex vertex = getResolvedEntityVertex(discoveryContext, entity);
 
-                if(ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
-                    checkAndCreateAtlasRelationshipCleanupTaskNotification(entityType, vertex);
-                }
-
                 autoUpdateStarredDetailsAttributes(entity, vertex);
 
                 try {
@@ -1766,6 +1762,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         }
 
                         String guidVertex = AtlasGraphUtilsV2.getIdFromVertex(vertex);
+
+                        if(ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
+                            checkAndCreateAtlasRelationshipCleanupTaskNotification(entityType, vertex);
+                        }
 
                         if (!StringUtils.equals(guidVertex, guid)) { // if entity was found by unique attribute
                             entity.setGuid(guidVertex);
