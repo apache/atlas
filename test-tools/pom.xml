@@ -30,6 +30,11 @@
 
     <name>Apache Atlas Test Utility Tools</name>
 
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
+
     <dependencies>
 
         <dependency>
