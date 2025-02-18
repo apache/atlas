@@ -91,21 +91,11 @@ public final class AtlasEntityUtils {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagsDiffForReplace");
 
         try {
-            Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
+            List<AtlasClassification> toAdd = new ArrayList<>(0);
+            List<AtlasClassification> toUpdate = new ArrayList<>(0);
+            List<AtlasClassification> toRemove = new ArrayList<>(0);
 
-            if (CollectionUtils.isEmpty(newTags)) {
-                if (!CollectionUtils.isEmpty(currentTags)) {
-                    // Remove all existing tags
-                    bucket(PROCESS_DELETE, operationListMap, currentTags);
-                }
-                return operationListMap;
-            }
-
-            List<AtlasClassification> toAdd = new ArrayList<>();
-            List<AtlasClassification> toUpdate = new ArrayList<>();
-            List<AtlasClassification> toRemove = new ArrayList<>();
-            List<AtlasClassification> toPreserve = new ArrayList<>();
-
+            Map<String, AtlasClassification> preserveTagWithKeys = pruneAndGetPropagatedTags(entityGuid, currentTags);
             Map<String, AtlasClassification> currentTagWithKeys = getMapWithTagKeys(entityGuid, currentTags);
             Map<String, AtlasClassification> newTagWithKeys = getMapWithTagKeys(entityGuid, newTags);
 
@@ -120,13 +110,14 @@ public final class AtlasEntityUtils {
             keysToAdd.forEach(key -> toAdd.add(newTagWithKeys.get(key)));
             keysToRemove.forEach(key -> toRemove.add(currentTagWithKeys.get(key)));
             keysToUpdate.forEach(key -> toUpdate.add(newTagWithKeys.get(key)));
-            keysUnChanged.forEach(key -> toPreserve.add(currentTagWithKeys.get(key)));
+            keysUnChanged.forEach(key -> preserveTagWithKeys.put(key, currentTagWithKeys.get(key)));
 
 
+            Map<String, List<AtlasClassification>> operationListMap = new HashMap<>(0);
             bucket(PROCESS_DELETE, operationListMap, toRemove);
             bucket(PROCESS_UPDATE, operationListMap, toUpdate);
             bucket(PROCESS_ADD, operationListMap, toAdd);
-            bucket(PROCESS_NOOP, operationListMap, toPreserve);
+            bucket(PROCESS_NOOP, operationListMap, new ArrayList<>(preserveTagWithKeys.values()));
 
             return operationListMap;
         } finally {
@@ -141,13 +132,14 @@ public final class AtlasEntityUtils {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagsDiffForAppend");
 
         try {
+            Map<String, AtlasClassification> preserveTagWithKeys = pruneAndGetPropagatedTags(entityGuid, currentTags);
             Map<String, AtlasClassification> currentTagWithKeys = getMapWithTagKeys(entityGuid, currentTags);
             Map<String, AtlasClassification> newTagWithKeys = getMapWithTagKeys(entityGuid, newTags);
             Map<String, AtlasClassification> removeTagWithKeys = getMapWithTagKeys(entityGuid, tagsToRemove);
 
-            List<AtlasClassification> toAdd = new ArrayList<>();
-            List<AtlasClassification> toUpdate = new ArrayList<>();
-            List<AtlasClassification> toRemove = new ArrayList<>();
+            List<AtlasClassification> toAdd = new ArrayList<>(0);
+            List<AtlasClassification> toUpdate = new ArrayList<>(0);
+            List<AtlasClassification> toRemove = new ArrayList<>(0);
 
             removeTagWithKeys.keySet().forEach(key -> {
                 if (currentTagWithKeys.containsKey(key)) {
@@ -173,11 +165,13 @@ public final class AtlasEntityUtils {
                 }
             }
 
-            Map<String, List<AtlasClassification>> operationListMap = new HashMap<>();
+            preserveTagWithKeys.putAll(currentTagWithKeys);
+
+            Map<String, List<AtlasClassification>> operationListMap = new HashMap<>(0);
             bucket(PROCESS_DELETE, operationListMap, toRemove);
             bucket(PROCESS_UPDATE, operationListMap, toUpdate);
             bucket(PROCESS_ADD, operationListMap, toAdd);
-            bucket(PROCESS_NOOP, operationListMap, new ArrayList<>(currentTagWithKeys.values()));
+            bucket(PROCESS_NOOP, operationListMap, new ArrayList<>(preserveTagWithKeys.values()));
 
             return operationListMap;
         } finally {
@@ -197,14 +191,32 @@ public final class AtlasEntityUtils {
         operationListMap.put(op, results);
     }
 
+    private static Map<String, AtlasClassification> pruneAndGetPropagatedTags(String entityGuid, List<AtlasClassification> tags) {
+        Map<String, AtlasClassification> tagsWithKey = new HashMap<>(0);
+
+        if (CollectionUtils.isEmpty(tags)) {
+            return tagsWithKey;
+        }
+
+        List<AtlasClassification> copyOfTags = new ArrayList<>(tags);
+        copyOfTags.forEach(tag -> {
+            if (StringUtils.isNotEmpty(tag.getEntityGuid()) && !entityGuid.equals(tag.getEntityGuid())) {
+                tags.remove(tag);
+                tagsWithKey.put(generateClassificationComparisonKey(tag), tag);
+            }
+        });
+
+        return tagsWithKey;
+    }
+
     private static Map<String, AtlasClassification> getMapWithTagKeys(String entityGuid, List<AtlasClassification> tags) {
-        Map<String, AtlasClassification> tagsWithKey = new HashMap<>();
+        Map<String, AtlasClassification> tagsWithKey = new HashMap<>(0);
 
         Optional.ofNullable(tags).orElse(Collections.emptyList()).forEach(x -> {
-            if (StringUtils.isEmpty(x.getEntityGuid())) {
+            if (StringUtils.isEmpty(x.getEntityGuid()) || entityGuid.equals(x.getEntityGuid())) {
                 x.setEntityGuid(entityGuid);
+                tagsWithKey.put(generateClassificationComparisonKey(x), x);
             }
-            tagsWithKey.put(generateClassificationComparisonKey(x), x);
         });
 
         return tagsWithKey;
