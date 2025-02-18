@@ -816,14 +816,14 @@ public class EntityREST {
     public EntityMutationResponse createOrUpdate(AtlasEntitiesWithExtInfo entities,
                                                  @QueryParam("replaceClassifications") @DefaultValue("false") boolean replaceClassifications,
                                                  @QueryParam("replaceTags") @DefaultValue("false") boolean replaceTags,
-                                                 @QueryParam("appendClassifications") @DefaultValue("false") boolean appendClassifications,
+                                                 @QueryParam("appendTags") @DefaultValue("false") boolean appendTags,
                                                  @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
                                                  @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes,
                                                  @QueryParam("skipProcessEdgeRestoration") @DefaultValue("false") boolean skipProcessEdgeRestoration
     ) throws AtlasBaseException {
 
-        if ((replaceClassifications ? 1 : 0) + (replaceTags ? 1 : 0) + (appendClassifications ? 1 : 0) > 1) {
-            throw new AtlasBaseException(BAD_REQUEST, "Only one of [replaceClassifications, replaceTags, appendClassifications] can be true");
+        if ((replaceClassifications ? 1 : 0) + (replaceTags ? 1 : 0) + (appendTags ? 1 : 0) > 1) {
+            throw new AtlasBaseException(BAD_REQUEST, "Only one of [replaceClassifications, replaceTags, appendTags] can be true");
         }
 
         AtlasPerfTracer perf = null;
@@ -846,7 +846,7 @@ public class EntityREST {
             BulkRequestContext context = new BulkRequestContext.Builder()
                     .setReplaceClassifications(replaceClassifications)
                     .setReplaceTags(replaceTags)
-                    .setAppendClassifications(appendClassifications)
+                    .setAppendTags(appendTags)
                     .setReplaceBusinessAttributes(replaceBusinessAttributes)
                     .setOverwriteBusinessAttributes(isOverwriteBusinessAttributes)
                     .build();

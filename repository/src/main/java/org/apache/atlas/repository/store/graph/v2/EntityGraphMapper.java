@@ -366,7 +366,7 @@ public class EntityGraphMapper {
                     setSystemAttributesToEntity(vertex, createdEntity);
                     resp.addEntity(CREATE, constructHeader(createdEntity, vertex, entityType.getAllAttributes()));
 
-                    if (bulkRequestContext.isAppendClassifications()) {
+                    if (bulkRequestContext.isAppendTags()) {
                         if (CollectionUtils.isNotEmpty(createdEntity.getAddOrUpdateClassifications())) {
                             createdEntity.setClassifications(createdEntity.getAddOrUpdateClassifications());
                             createdEntity.setAddOrUpdateClassifications(null);

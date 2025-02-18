@@ -156,7 +156,7 @@ public class AtlasEntityComparator {
             }
         }
 
-        if (context.isReplaceClassifications() || context.isReplaceTags() || context.isAppendClassifications()) {
+        if (context.isReplaceClassifications() || context.isReplaceTags() || context.isAppendTags()) {
             List<AtlasClassification> newVal  = updatedEntity.getClassifications();
             List<AtlasClassification> currVal = (storedEntity != null) ? storedEntity.getClassifications() : entityRetriever.getAllClassifications(storedVertex);
 
