@@ -20,7 +20,7 @@ package org.apache.atlas.repository.store.graph.v2;
 public class BulkRequestContext {
     private boolean replaceClassifications;
     private boolean replaceTags;
-    private boolean appendClassifications;
+    private boolean appendTags;
 
     private boolean replaceBusinessAttributes;
     private boolean isOverwriteBusinessAttributes;
@@ -33,8 +33,8 @@ public class BulkRequestContext {
         return replaceTags;
     }
 
-    public boolean isAppendClassifications() {
-        return appendClassifications;
+    public boolean isAppendTags() {
+        return appendTags;
     }
 
     public boolean isReplaceBusinessAttributes() {
@@ -48,7 +48,7 @@ public class BulkRequestContext {
     public BulkRequestContext() {
         this.replaceClassifications = false;
         this.replaceTags = false;
-        this.appendClassifications = false;
+        this.appendTags = false;
 
         this.replaceBusinessAttributes = false;
         this.isOverwriteBusinessAttributes = false;
@@ -57,7 +57,7 @@ public class BulkRequestContext {
     private BulkRequestContext(Builder builder) {
         this.replaceClassifications = builder.replaceClassifications;
         this.replaceTags = builder.replaceTags;
-        this.appendClassifications = builder.appendClassifications;
+        this.appendTags = builder.appendTags;
 
         this.replaceBusinessAttributes = builder.replaceBusinessAttributes;
         this.isOverwriteBusinessAttributes = builder.isOverwriteBusinessAttributes;
@@ -66,7 +66,7 @@ public class BulkRequestContext {
     public static class Builder {
         private boolean replaceClassifications = false;
         private boolean replaceTags = false;
-        private boolean appendClassifications = false;
+        private boolean appendTags = false;
 
         private boolean replaceBusinessAttributes = false;
         private boolean isOverwriteBusinessAttributes = false;
@@ -76,7 +76,7 @@ public class BulkRequestContext {
 
             if (replaceClassifications) {
                 this.replaceTags = false;
-                this.appendClassifications = false;
+                this.appendTags = false;
             }
             return this;
         }
@@ -86,15 +86,15 @@ public class BulkRequestContext {
 
             if (replaceTags) {
                 this.replaceClassifications = false;
-                this.appendClassifications = false;
+                this.appendTags = false;
             }
             return this;
         }
 
-        public Builder setAppendClassifications(boolean appendClassifications) {
-            this.appendClassifications = appendClassifications;
+        public Builder setAppendTags(boolean appendTags) {
+            this.appendTags = appendTags;
 
-            if (appendClassifications) {
+            if (appendTags) {
                 this.replaceTags = false;
                 this.replaceClassifications = false;
             }
