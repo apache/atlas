@@ -434,7 +434,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     private void validateAndUpdateRefreshInterval(JsonNode activeIndexInformation) throws IOException {
         String refreshInterval = configuration.getString(INDEX_REFRESH_INTERVAL);
-        if (refreshInterval == null || !refreshInterval.matches("\\d+s") || activeIndexInformation.get("entity_audits").get("settings").get("index").get("refresh_interval").asText("1s").equals(refreshInterval)) {
+        JsonNode definedInterval = activeIndexInformation.get("entity_audits").get("settings").get("index").get("refresh_interval");
+        if (refreshInterval == null || !refreshInterval.matches("\\d+s") || definedInterval != null && definedInterval.asText("1s").equals(refreshInterval)) {
             return;
         }
         updateRefreshInterval();
