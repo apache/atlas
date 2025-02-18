@@ -20,7 +20,6 @@ package org.apache.atlas.web.rest;
 import com.google.common.collect.Lists;
 import com.sun.jersey.core.header.FormDataContentDisposition;
 import com.sun.jersey.multipart.FormDataParam;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
@@ -93,7 +92,7 @@ import static org.apache.atlas.repository.Constants.ATTR_CONTRACT_JSON;
 public class EntityREST {
     private static final Logger LOG      = LoggerFactory.getLogger(EntityREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.EntityREST");
-    static final int MAX_ENTITIES_ALLOWED_IN_BULK = AtlasConfiguration.MAX_ENTITIES_ALLOWED_IN_BULK.getInt();
+
     public static final String PREFIX_ATTR  = "attr:";
     public static final String PREFIX_ATTR_ = "attr_";
     public static final String QUALIFIED_NAME  = "qualifiedName";
@@ -829,16 +828,11 @@ public class EntityREST {
         AtlasPerfTracer perf = null;
         RequestContext.get().setSkipProcessEdgeRestoration(skipProcessEdgeRestoration);
         try {
-
-            int totalEntities = entities.getEntities().size();
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" +
-                        (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : totalEntities) + ")");
+                        (CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size()) + ")");
             }
 
-            if (totalEntities > MAX_ENTITIES_ALLOWED_IN_BULK) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_ENTITIES_SIZE_IN_BULK, String.valueOf(MAX_ENTITIES_ALLOWED_IN_BULK));
-            }
             validateAttributeLength(entities.getEntities());
 
             EntityStream entityStream = new AtlasEntityStream(entities);
@@ -1168,7 +1162,7 @@ public class EntityREST {
                             event.setDetail(null);
                         }
                     } catch (AtlasBaseException abe) {
-                            throw abe;
+                        throw abe;
                     }
                 }
             }
@@ -1807,7 +1801,7 @@ public class EntityREST {
             RepairIndex repairIndex = new RepairIndex();
             repairIndex.setupGraph();
 
-           repairIndex.restoreSelective(guid, referredEntities);
+            repairIndex.restoreSelective(guid, referredEntities);
         } catch (Exception e) {
             LOG.error("Exception while repairEntityIndex ", e);
             throw new AtlasBaseException(e);
@@ -1910,18 +1904,18 @@ public class EntityREST {
         AtlasPerfTracer perf = null;
 
 
-       try {
-           if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-               perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairAccessControlAlias");
-           }
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairAccessControlAlias");
+            }
 
-           entitiesStore.repairAccesscontrolAlias(guid);
+            entitiesStore.repairAccesscontrolAlias(guid);
 
-           LOG.info("Repaired access control alias for entity with guid {}", guid);
+            LOG.info("Repaired access control alias for entity with guid {}", guid);
 
-       } finally {
-              AtlasPerfTracer.log(perf);
-       }
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
 
 
     }
