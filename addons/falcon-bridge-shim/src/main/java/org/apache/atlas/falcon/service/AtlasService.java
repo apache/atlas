@@ -46,9 +46,7 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
 
     @Override
     public String getName() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasService.getName()");
-        }
+        LOG.debug("==> AtlasService.getName()");
 
         String ret = null;
 
@@ -59,18 +57,14 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasService.getName()");
-        }
+        LOG.debug("<== AtlasService.getName()");
 
         return ret;
     }
 
     @Override
     public void init() throws FalconException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasService.init()");
-        }
+        LOG.debug("==> AtlasService.init()");
 
         try {
             activatePluginClassLoader();
@@ -82,16 +76,12 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasService.init()");
-        }
+        LOG.debug("<== AtlasService.init()");
     }
 
     @Override
     public void destroy() throws FalconException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasService.destroy()");
-        }
+        LOG.debug("==> AtlasService.destroy()");
 
         try {
             activatePluginClassLoader();
@@ -103,16 +93,12 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasService.destroy()");
-        }
+        LOG.debug("<== AtlasService.destroy()");
     }
 
     @Override
     public void onAdd(Entity entity) throws FalconException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasService.onAdd({})", entity);
-        }
+        LOG.debug("==> AtlasService.onAdd({})", entity);
 
         try {
             activatePluginClassLoader();
@@ -121,16 +107,12 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasService.onAdd({})", entity);
-        }
+        LOG.debug("<== AtlasService.onAdd({})", entity);
     }
 
     @Override
     public void onRemove(Entity entity) throws FalconException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasService.onRemove({})", entity);
-        }
+        LOG.debug("==> AtlasService.onRemove({})", entity);
 
         try {
             activatePluginClassLoader();
@@ -139,16 +121,12 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasService.onRemove({})", entity);
-        }
+        LOG.debug("<== AtlasService.onRemove({})", entity);
     }
 
     @Override
     public void onChange(Entity entity, Entity entity1) throws FalconException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasService.onChange({}, {})", entity, entity1);
-        }
+        LOG.debug("==> AtlasService.onChange({}, {})", entity, entity1);
 
         try {
             activatePluginClassLoader();
@@ -157,16 +135,12 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasService.onChange({}, {})", entity, entity1);
-        }
+        LOG.debug("<== AtlasService.onChange({}, {})", entity, entity1);
     }
 
     @Override
     public void onReload(Entity entity) throws FalconException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasService.onReload({})", entity);
-        }
+        LOG.debug("==> AtlasService.onReload({})", entity);
 
         try {
             activatePluginClassLoader();
@@ -175,15 +149,11 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasService.onReload({})", entity);
-        }
+        LOG.debug("<== AtlasService.onReload({})", entity);
     }
 
     private void initialize() {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasService.initialize()");
-        }
+        LOG.debug("==> AtlasService.initialize()");
 
         try {
             atlasPluginClassLoader = AtlasPluginClassLoader.getInstance(ATLAS_PLUGIN_TYPE, this.getClass());
@@ -202,9 +172,7 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
             deactivatePluginClassLoader();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasService.initialize()");
-        }
+        LOG.debug("<== AtlasService.initialize()");
     }
 
     private void activatePluginClassLoader() {
