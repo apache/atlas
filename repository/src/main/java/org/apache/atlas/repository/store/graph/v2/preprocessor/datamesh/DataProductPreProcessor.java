@@ -134,6 +134,10 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             entity.setAttribute(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_PENDING);
         }
 
+        if(entity.hasAttribute(STATE_PROPERTY_KEY)){
+            entity.setAttribute(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_PENDING);
+        }
+
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
 
         AtlasEntity storedProduct = entityRetriever.toAtlasEntity(vertex);
