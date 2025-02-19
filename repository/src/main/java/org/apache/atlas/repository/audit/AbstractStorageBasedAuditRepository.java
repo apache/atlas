@@ -17,18 +17,16 @@
  */
 package org.apache.atlas.repository.audit;
 
-import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
+import org.apache.atlas.model.EntityAuditEvent;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.service.Service;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.configuration.Configuration;
-import org.apache.hadoop.hbase.util.Bytes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,14 +36,13 @@ import java.util.*;
  * This abstract base class should be used when adding support for an audit storage backend.
  */
 public abstract class AbstractStorageBasedAuditRepository implements Service, EntityAuditRepository, ActiveStateChangeHandler {
-  private static final Logger LOG = LoggerFactory.getLogger(HBaseBasedAuditRepository.class);
+  private static final Logger LOG = LoggerFactory.getLogger(AbstractStorageBasedAuditRepository.class);
 
   private   static final String AUDIT_REPOSITORY_MAX_SIZE_PROPERTY = "atlas.hbase.client.keyvalue.maxsize";
   private   static final String AUDIT_EXCLUDE_ATTRIBUTE_PROPERTY   = "atlas.audit.hbase.entity";
   private   static final long   ATLAS_HBASE_KEYVALUE_DEFAULT_SIZE  = 1024 * 1024;
   public    static final String CONFIG_PREFIX                      = "atlas.audit";
   public    static final String CONFIG_PERSIST_ENTITY_DEFINITION   = CONFIG_PREFIX + ".persistEntityDefinition";
-  protected static final String FIELD_SEPARATOR                    = ":";
 
   protected static Configuration      APPLICATION_PROPERTIES       = null;
   protected Map<String, List<String>> auditExcludedAttributesCache = new HashMap<>();
@@ -141,23 +138,6 @@ public abstract class AbstractStorageBasedAuditRepository implements Service, En
         // ignore
       }
     }
-  }
-
-  /**
-   * Only should be used to initialize Application properties for testing.
-   *
-   * @param config
-   */
-  @VisibleForTesting
-  protected void setApplicationProperties(Configuration config) {
-    APPLICATION_PROPERTIES = config;
-  }
-
-  protected byte[] getKey(String id, Long ts, int index) {
-    assert id != null  : "entity id can't be null";
-    assert ts != null  : "timestamp can't be null";
-    String keyStr = id + FIELD_SEPARATOR + ts + FIELD_SEPARATOR + index + FIELD_SEPARATOR + System.currentTimeMillis();
-    return Bytes.toBytes(keyStr);
   }
 
   public abstract EntityAuditSearchResult searchEvents(String queryString) throws AtlasBaseException;

@@ -19,8 +19,8 @@
 
 package org.apache.atlas.audit.model;
 
-import com.google.gson.annotations.SerializedName;
-import org.apache.commons.lang.StringUtils;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import org.apache.commons.lang3.StringUtils;
 
 import java.util.Date;
 import java.util.HashSet;
@@ -32,96 +32,96 @@ public class AuthzAuditEvent extends AuditEventBase {
 	protected static final int MAX_ACTION_FIELD_SIZE = 1800;
 	protected static final int MAX_REQUEST_DATA_FIELD_SIZE = 1800;
 
-	@SerializedName("repoType")
+	@JsonProperty("repoType")
 	protected int repositoryType = 0;
 
-	@SerializedName("repo")
+	@JsonProperty("repo")
 	protected String repositoryName = null;
 
-	@SerializedName("reqUser")
+	@JsonProperty("reqUser")
 	protected String user = null;
 
-	@SerializedName("reqEntityGuid")
+	@JsonProperty("reqEntityGuid")
 	protected String entityGuid = null;
 
-	@SerializedName("evtTime")
+	@JsonProperty("evtTime")
 	protected Date eventTime = new Date();
 
-	@SerializedName("access")
+	@JsonProperty("access")
 	protected String accessType = null;
 
-	@SerializedName("resource")
+	@JsonProperty("resource")
 	protected String resourcePath = null;
 
-	@SerializedName("resType")
+	@JsonProperty("resType")
 	protected String resourceType = null;
 
-	@SerializedName("action")
+	@JsonProperty("action")
 	protected String action = null;
 
-	@SerializedName("result")
+	@JsonProperty("result")
 	protected short accessResult = 0; // 0 - DENIED; 1 - ALLOWED; HTTP return
 	// code
 
-	@SerializedName("agent")
+	@JsonProperty("agent")
 	protected String agentId = null;
 
-	@SerializedName("policyId")
+	@JsonProperty("policyId")
 	protected String policyId = "-1";
 
-	@SerializedName("reason")
+	@JsonProperty("reason")
 	protected String resultReason = null;
 
-	@SerializedName("enforcer")
+	@JsonProperty("enforcer")
 	protected String aclEnforcer = null;
 
-	@SerializedName("sess")
+	@JsonProperty("sess")
 	protected String sessionId = null;
 
-	@SerializedName("cliType")
+	@JsonProperty("cliType")
 	protected String clientType = null;
 
-	@SerializedName("cliIP")
+	@JsonProperty("cliIP")
 	protected String clientIP = null;
 
-	@SerializedName("reqData")
+	@JsonProperty("reqData")
 	protected String requestData = null;
 
-	@SerializedName("agentHost")
+	@JsonProperty("agentHost")
 	protected String agentHostname = null;
 
-	@SerializedName("logType")
+	@JsonProperty("logType")
 	protected String logType = null;
 
-	@SerializedName("id")
+	@JsonProperty("id")
 	protected String eventId = null;
 
 	/**
 	 * This to ensure order within a session. Order not guaranteed across
 	 * processes and hosts
 	 */
-	@SerializedName("seq_num")
+	@JsonProperty("seq_num")
 	protected long seqNum = 0;
 
-	@SerializedName("event_count")
+	@JsonProperty("event_count")
 	protected long eventCount = 1;
 
-	@SerializedName("event_dur_ms")
+	@JsonProperty("event_dur_ms")
 	protected long eventDurationMS = 0;
 
-	@SerializedName("tags")
+	@JsonProperty("tags")
 	protected Set<String> tags = new HashSet<>();
 
-	@SerializedName("additional_info")
+	@JsonProperty("additional_info")
 	protected String additionalInfo;
 
-	@SerializedName("cluster_name")
+	@JsonProperty("cluster_name")
 	protected String clusterName;
 
-	@SerializedName("zone_name")
+	@JsonProperty("zone_name")
 	protected String zoneName;
 
-	@SerializedName("policy_version")
+	@JsonProperty("policy_version")
 	protected Long policyVersion;
 
 	public AuthzAuditEvent() {

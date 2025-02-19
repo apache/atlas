@@ -19,7 +19,7 @@
 package org.apache.atlas.repository.audit;
 
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.EntityAuditEvent;
+import org.apache.atlas.model.EntityAuditEvent;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;

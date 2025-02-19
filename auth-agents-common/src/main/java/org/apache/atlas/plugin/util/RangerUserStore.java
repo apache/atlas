@@ -22,7 +22,7 @@ package org.apache.atlas.plugin.util;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.htrace.shaded.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.plugin.model.GroupInfo;
 import org.apache.atlas.plugin.model.UserInfo;
 

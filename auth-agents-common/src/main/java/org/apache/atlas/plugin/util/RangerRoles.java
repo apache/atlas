@@ -19,7 +19,7 @@
 
 package org.apache.atlas.plugin.util;
 
-import org.apache.htrace.shaded.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.plugin.model.RangerRole;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -29,7 +29,7 @@ import java.io.Serializable;
 import java.util.Date;
 import java.util.Set;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 public class RangerRoles implements Serializable {

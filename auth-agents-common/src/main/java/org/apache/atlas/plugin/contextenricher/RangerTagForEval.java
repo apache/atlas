@@ -19,11 +19,11 @@
 
 package org.apache.atlas.plugin.contextenricher;
 
+import org.apache.atlas.authorization.utils.RangerUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.atlas.authorization.utils.JsonUtils;
 import org.apache.atlas.plugin.model.RangerTag;
 import org.apache.atlas.plugin.model.RangerValiditySchedule;
 import org.apache.atlas.plugin.policyevaluator.RangerValidityScheduleEvaluator;
@@ -101,7 +101,7 @@ public class RangerTagForEval implements Serializable {
             Object value = getOption(RangerTag.OPTION_TAG_VALIDITY_PERIODS);
 
             if (value != null && value instanceof String) {
-                this.validityPeriods = JsonUtils.jsonToRangerValiditySchedule((String) value);
+                this.validityPeriods = RangerUtil.jsonToRangerValiditySchedule((String) value);
 
                 validityPeriodEvaluators = createValidityPeriodEvaluators();
             } else {

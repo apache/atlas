@@ -63,9 +63,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.apache.atlas.authorization.atlas.authorizer.RangerAtlasAuthorizerUtil.*;
-import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserGroups;
-import static org.apache.atlas.authorize.AtlasAuthorizationUtils.getCurrentUserName;
-import static org.apache.atlas.services.atlas.RangerServiceAtlas.*;
+import static org.apache.atlas.authorization.utils.RangerAtlasConstants.*;
 
 
 public class RangerAtlasAuthorizer implements AtlasAuthorizer {
