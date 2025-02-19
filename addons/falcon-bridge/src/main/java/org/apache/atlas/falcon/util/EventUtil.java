@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.falcon.Util;
+package org.apache.atlas.falcon.util;
 
 import org.apache.commons.lang3.StringUtils;
 import org.apache.falcon.FalconException;
@@ -29,9 +29,7 @@ import java.util.Map;
  * Falcon event util
  */
 public final class EventUtil {
-
     private EventUtil() {}
-
 
     public static Map<String, String> convertKeyValueStringToMap(final String keyValueString) {
         if (StringUtils.isBlank(keyValueString)) {
@@ -42,8 +40,8 @@ public final class EventUtil {
 
         String[] tags = keyValueString.split(",");
         for (String tag : tags) {
-            int index = tag.indexOf("=");
-            String tagKey = tag.substring(0, index).trim();
+            int    index    = tag.indexOf("=");
+            String tagKey   = tag.substring(0, index).trim();
             String tagValue = tag.substring(index + 1, tag.length()).trim();
             keyValueMap.put(tagKey, tagValue);
         }

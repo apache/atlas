@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -17,7 +17,6 @@
  */
 
 package org.apache.atlas.falcon.service;
-
 
 import org.apache.atlas.plugin.classloader.AtlasPluginClassLoader;
 import org.apache.falcon.FalconException;
@@ -34,12 +33,12 @@ import org.slf4j.LoggerFactory;
 public class AtlasService implements FalconService, ConfigurationChangeListener {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasService.class);
 
-    private static final String ATLAS_PLUGIN_TYPE = "falcon";
+    private static final String ATLAS_PLUGIN_TYPE                = "falcon";
     private static final String ATLAS_FALCON_HOOK_IMPL_CLASSNAME = "org.apache.atlas.falcon.service.AtlasService";
 
-    private AtlasPluginClassLoader atlasPluginClassLoader = null;
-    private FalconService falconServiceImpl = null;
-    private ConfigurationChangeListener configChangeListenerImpl = null;
+    private AtlasPluginClassLoader      atlasPluginClassLoader;
+    private FalconService               falconServiceImpl;
+    private ConfigurationChangeListener configChangeListenerImpl;
 
     public AtlasService() {
         this.initialize();
@@ -195,7 +194,7 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
 
             Object atlasService = cls.newInstance();
 
-            falconServiceImpl = (FalconService) atlasService;
+            falconServiceImpl        = (FalconService) atlasService;
             configChangeListenerImpl = (ConfigurationChangeListener) atlasService;
         } catch (Exception excp) {
             LOG.error("Error instantiating Atlas hook implementation", excp);
