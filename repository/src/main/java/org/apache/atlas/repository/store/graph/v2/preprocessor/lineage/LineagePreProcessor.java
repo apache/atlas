@@ -124,7 +124,8 @@ public class LineagePreProcessor implements PreProcessor {
     private Set<String> getConnectionQualifiedNames(ArrayList<AtlasObjectId> assets) throws AtlasBaseException {
         Set<String> connectionQNs = new HashSet<>();
         for (AtlasObjectId asset : assets) {
-            AtlasEntity assetEntity = entityRetriever.toAtlasEntity(asset.getGuid());
+
+            AtlasEntity assetEntity = entityRetriever.toAtlasEntity(asset);
             String connectionQN = getStringAttribute(assetEntity, "connectionQualifiedName");
             if (connectionQN != null) {
                 connectionQNs.add(connectionQN);
