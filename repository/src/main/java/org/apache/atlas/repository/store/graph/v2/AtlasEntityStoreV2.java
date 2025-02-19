@@ -592,6 +592,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
 
+            if (AtlasConfiguration.NOTIFICATION_ATLAS_DISTRIBUTED_TASKS_TOPIC_NAME.getBoolean()) {
+                checkAndCreateAtlasRelationshipCleanupTaskNotification(typeRegistry.getEntityTypeByName(entityHeader.getTypeName()), vertex);
+            }
+
             deletionCandidates.add(vertex);
         } else {
             if (LOG.isDebugEnabled()) {
@@ -637,6 +641,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
             AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
+
+            if (AtlasConfiguration.NOTIFICATION_ATLAS_DISTRIBUTED_TASKS_TOPIC_NAME.getBoolean()) {
+                checkAndCreateAtlasRelationshipCleanupTaskNotification(typeRegistry.getEntityTypeByName(entityHeader.getTypeName()), vertex);
+            }
 
             deletionCandidates.add(vertex);
         }
@@ -747,6 +755,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader,
                     "delete entity: typeName=" + entityType.getTypeName() + ", uniqueAttributes=" + uniqAttributes);
+
+            if (AtlasConfiguration.NOTIFICATION_ATLAS_DISTRIBUTED_TASKS_TOPIC_NAME.getBoolean()) {
+                checkAndCreateAtlasRelationshipCleanupTaskNotification(typeRegistry.getEntityTypeByName(entityHeader.getTypeName()), vertex);
+            }
 
             deletionCandidates.add(vertex);
         } else {
