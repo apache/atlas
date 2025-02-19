@@ -2090,6 +2090,7 @@ public final class GraphHelper {
                     .edges()
                     .iterator();
         } catch (Exception e) {
+            LOG.error("Error while getting active edges of vertex", e);
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
         }
         finally {
