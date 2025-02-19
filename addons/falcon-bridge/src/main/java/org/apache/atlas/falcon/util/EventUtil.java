@@ -37,14 +37,16 @@ public final class EventUtil {
         }
 
         Map<String, String> keyValueMap = new HashMap<>();
+        String[]            tags        = keyValueString.split(",");
 
-        String[] tags = keyValueString.split(",");
         for (String tag : tags) {
             int    index    = tag.indexOf("=");
             String tagKey   = tag.substring(0, index).trim();
             String tagValue = tag.substring(index + 1, tag.length()).trim();
+
             keyValueMap.put(tagKey, tagValue);
         }
+
         return keyValueMap;
     }
 
@@ -54,6 +56,7 @@ public final class EventUtil {
         } catch (Exception ioe) {
             //Ignore is failed to get user, uses login user
         }
+
         return null;
     }
 }
