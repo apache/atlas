@@ -267,31 +267,18 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
 
             if (operation == BusinessLineageRequest.OperationType.ADD) {
                 if (!inputPortGuidsAttr.contains(assetGuid)) {
-                    inputPortGuidsAttr.add(assetGuid);
+                    AtlasGraphUtilsV2.addEncodedProperty(productVertex, INPUT_PORT_GUIDS_ATTR , assetGuid);
                 }
             }
 
             if (operation == BusinessLineageRequest.OperationType.REMOVE) {
                 if (inputPortGuidsAttr.contains(assetGuid)) {
-                    inputPortGuidsAttr.remove(assetGuid);
+                    AtlasGraphUtilsV2.removeItemFromListPropertyValue(productVertex, INPUT_PORT_GUIDS_ATTR, assetGuid);
                 }
             }
 
-            addInternalAttr(productVertex, INPUT_PORT_GUIDS_ATTR, inputPortGuidsAttr);
-        } catch (AtlasBaseException e){
-            LOG.error("Error while updating internal attribute", e);
-            throw e;
-        }
-    }
-
-    private void addInternalAttr(AtlasVertex productVertex, String internalAttr, List<String> currentGuids)  throws AtlasBaseException{
-        try{
-            productVertex.removeProperty(internalAttr);
-            if (CollectionUtils.isNotEmpty(currentGuids)) {
-                currentGuids.forEach(guid -> AtlasGraphUtilsV2.addEncodedProperty(productVertex, internalAttr , guid));
-            }
         } catch (Exception e){
-            LOG.error("Error while adding internal attribute", e);
+            LOG.error("Error while updating internal attribute", e);
             throw e;
         }
     }
