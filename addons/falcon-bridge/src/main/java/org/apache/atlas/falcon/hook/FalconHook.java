@@ -54,6 +54,7 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
     @Override
     public void publish(final Data data) {
         final FalconEvent event = data.getEvent();
+
         try {
             fireAndForget(event);
         } catch (Throwable t) {
@@ -63,16 +64,19 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
 
     private void fireAndForget(FalconEvent event) throws FalconException, URISyntaxException {
         LOG.info("Entered Atlas hook for Falcon hook operation {}", event.getOperation());
-        List<HookNotification> messages = new ArrayList<>();
 
-        Operation op   = getOperation(event.getOperation());
-        String    user = getUser(event.getUser());
+        List<HookNotification> messages = new ArrayList<>();
+        Operation              op       = getOperation(event.getOperation());
+        String                 user     = getUser(event.getUser());
+
         LOG.info("fireAndForget user:{}", user);
+
         switch (op) {
             case ADD:
                 messages.add(new EntityCreateRequest(user, createEntities(event, user)));
                 break;
         }
+
         notifyEntities(messages, null);
     }
 
@@ -81,8 +85,7 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
 
         switch (event.getOperation()) {
             case ADD_CLUSTER:
-                entities.add(FalconBridge
-                        .createClusterEntity((org.apache.falcon.entity.v0.cluster.Cluster) event.getEntity()));
+                entities.add(FalconBridge.createClusterEntity((org.apache.falcon.entity.v0.cluster.Cluster) event.getEntity()));
                 break;
 
             case ADD_PROCESS:
