@@ -118,11 +118,11 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                 if (StringUtils.isEmpty(edgeLabel)) {
                     AtlasVertex updatedVertex = processProductAssetLink(assetGuid, productGuid, operation);
                     updatedVertices.add(updatedVertex);
-                    handleEntityMutation(updatedVertices);
                 } else {
                     processProductAssetInputRelation(assetGuid, productGuid, operation, edgeLabel);
                 }
             }
+            handleEntityMutation(updatedVertices);
             commitChanges();
         } catch (AtlasBaseException | RepositoryException e){
             LOG.error("Error while creating lineage", e);
