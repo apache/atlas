@@ -34,12 +34,14 @@ import org.slf4j.LoggerFactory;
  * Atlas service to publish Falcon events
  */
 public class AtlasService implements FalconService, ConfigurationChangeListener {
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasService.class);
+
     /**
      * Constant for the service name.
      */
-    public static final  String               SERVICE_NAME = AtlasService.class.getSimpleName();
-    private static final Logger               LOG          = LoggerFactory.getLogger(AtlasService.class);
-    private              FalconEventPublisher publisher;
+    public static final String SERVICE_NAME = AtlasService.class.getSimpleName();
+
+    private FalconEventPublisher publisher;
 
     @Override
     public String getName() {
@@ -121,9 +123,9 @@ public class AtlasService implements FalconService, ConfigurationChangeListener 
         LOG.info("Adding {} entity to Atlas: {}", entity.getEntityType().name(), entity.getName());
 
         try {
-            FalconEvent event =
-                    new FalconEvent(EventUtil.getUser(), operation, entity);
-            FalconEventPublisher.Data data = new FalconEventPublisher.Data(event);
+            FalconEvent               event = new FalconEvent(EventUtil.getUser(), operation, entity);
+            FalconEventPublisher.Data data  = new FalconEventPublisher.Data(event);
+
             publisher.publish(data);
         } catch (Exception ex) {
             throw new FalconException("Unable to publish data to publisher " + ex.getMessage(), ex);
