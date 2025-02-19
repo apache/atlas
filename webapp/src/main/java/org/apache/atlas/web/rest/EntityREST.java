@@ -821,7 +821,7 @@ public class EntityREST {
                                                  @QueryParam("skipProcessEdgeRestoration") @DefaultValue("false") boolean skipProcessEdgeRestoration
     ) throws AtlasBaseException {
 
-        if ((replaceClassifications ? 1 : 0) + (replaceTags ? 1 : 0) + (appendTags ? 1 : 0) > 1) {
+    Stream.of(replaceClassifications, replaceTags, appendTags).filter(flag -> flag).count() > 1
             throw new AtlasBaseException(BAD_REQUEST, "Only one of [replaceClassifications, replaceTags, appendTags] can be true");
         }
 
