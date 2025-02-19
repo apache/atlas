@@ -818,7 +818,11 @@ public class EntityREST {
         RequestContext.get().setEnableCache(false);
         RequestContext.get().setSkipProcessEdgeRestoration(skipProcessEdgeRestoration);
         try {
-            int entitiesCount = CollectionUtils.isEmpty(entities.getEntities()) ? 0 : entities.getEntities().size();
+
+            if (CollectionUtils.isEmpty(entities.getEntities())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
+            }
+            int entitiesCount = entities.getEntities().size();
 
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" + entitiesCount+ ")");
