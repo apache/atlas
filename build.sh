@@ -16,9 +16,6 @@
 # limitations under the License.
 #
 
-java -version
-
-
 mkdir -p ~/.m2/repository/org/keycloak
 
 wget  https://atlan-public.s3.eu-west-1.amazonaws.com/artifact/keycloak-15.0.2.1.zip
@@ -26,11 +23,7 @@ unzip -o keycloak-15.0.2.1.zip -d ~/.m2/repository/org
 
 echo "Maven Building"
 
-if [ "$1" == "build_without_dashboard" ]; then
-  mvn  -pl '!test-tools,!dashboardv2,!dashboardv3' -Dmaven.test.skip -DskipTests -Drat.skip=true -DskipOverlay -DskipEnunciate=true package -Pdist
-else
-  mvn  -pl '!test-tools' -Dmaven.test.skip -DskipTests -Drat.skip=true -DskipEnunciate=true package -Pdist
-fi
+mvn -Dmaven.test.skip -DskipTests -Drat.skip=true -DskipOverlay -DskipEnunciate=true package -Pdist
 
 echo "[DEBUG listing distro/target"
 ls distro/target

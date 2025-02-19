@@ -51,11 +51,6 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-client-v1</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-graphdb-api</artifactId>
         </dependency>
 
