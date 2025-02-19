@@ -47,6 +47,7 @@ import java.util.*;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.INPUT_PORT_GUIDS_ATTR;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.OUTPUT_PORT_GUIDS_ATTR;
 
 @Service
 public class BusinessLineageService implements AtlasBusinessLineageService {
@@ -229,9 +230,9 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
     public void addInputRelation(AtlasVertex assetVertex, AtlasVertex productVertex, String edgeLabel, String assetGuid, BusinessLineageRequest.OperationType operation) throws AtlasBaseException, RepositoryException{
         try{
             if(StringUtils.equals(INPUT_PORT_PRODUCT_EDGE_LABEL, edgeLabel)) {
-                AtlasEdge outputPortEdge = graphHelper.getEdge(assetVertex, productVertex, OUTPUT_PORT_PRODUCT_EDGE_LABEL);
-                AtlasEdge existingInputPortEdge = graphHelper.getEdge(assetVertex, productVertex, INPUT_PORT_PRODUCT_EDGE_LABEL);
-                if(outputPortEdge == null && existingInputPortEdge == null){
+                List<String> daapOutputPortGuids = productVertex.getMultiValuedProperty(OUTPUT_PORT_GUIDS_ATTR, String.class);
+                List<String> daapInputPortGuids = productVertex.getMultiValuedProperty(INPUT_PORT_GUIDS_ATTR, String.class);
+                if(!daapOutputPortGuids.contains(assetGuid) && !daapInputPortGuids.contains(assetGuid)){
                     AtlasRelationship relationship = new AtlasRelationship();
                     relationship.setTypeName(REL_DATA_PRODUCT_TO_INPUT_PORTS);
                     AtlasEdge newInputPortEdge = relationshipStoreV2.getOrCreate(assetVertex, productVertex, relationship, true);
@@ -239,7 +240,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                 }
                 updateInternalAttr(productVertex, assetGuid, operation);
             }
-        } catch (AtlasBaseException | RepositoryException e){
+        } catch (AtlasBaseException e){
             LOG.error("Error while adding input relation", e);
             throw e;
         }
