@@ -20,7 +20,7 @@
     Primary cluster configuration for demo vm
   -->
 <cluster colo="west-coast" description="Primary Cluster" name="testcluster"
-         xmlns="uri:falcon:cluster:0.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+         xmlns="uri:falcon:cluster:0.1">
 
     <interfaces>
         <interface type="readonly" endpoint="hftp://localhost:10070" version="1.1.1" />

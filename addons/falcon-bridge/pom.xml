@@ -32,6 +32,11 @@
     <name>Apache Atlas Falcon Bridge</name>
     <description>Apache Atlas Falcon Bridge Module</description>
 
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.atlas</groupId>
