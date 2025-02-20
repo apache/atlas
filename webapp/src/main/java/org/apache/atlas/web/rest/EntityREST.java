@@ -841,6 +841,7 @@ public class EntityREST {
             }
 
             if( entitiesCount > ENTITIES_ALLOWED_IN_BULK) {
+                RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("requestThrottledDueToBulkEntityOperation"));
                 throw new AtlasBaseException(AtlasErrorCode.EXCEEDED_MAX_ENTITIES_ALLOWED, String.valueOf(ENTITIES_ALLOWED_IN_BULK));
             }
 
