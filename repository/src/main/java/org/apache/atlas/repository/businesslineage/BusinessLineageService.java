@@ -118,7 +118,9 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
 
                 if (StringUtils.isEmpty(edgeLabel)) {
                     AtlasVertex updatedVertex = processProductAssetLink(assetGuid, productGuid, operation);
-                    updatedVertices.add(updatedVertex);
+                    if (!updatedVertices.contains(updatedVertex)) {
+                        updatedVertices.add(updatedVertex);
+                    }
                 } else {
                     processProductAssetInputRelation(assetGuid, productGuid, operation, edgeLabel);
                 }
