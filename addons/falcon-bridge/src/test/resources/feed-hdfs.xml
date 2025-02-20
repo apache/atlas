@@ -21,19 +21,19 @@
 
     <frequency>hours(1)</frequency>
     <timezone>UTC</timezone>
-    <late-arrival cut-off="hours(3)"/>
+    <late-arrival cut-off="hours(3)" />
 
     <clusters>
         <cluster name="testcluster" type="source">
-            <validity start="2010-01-01T00:00Z" end="2012-04-21T00:00Z"/>
-            <retention limit="hours(24)" action="delete"/>
+            <validity start="2010-01-01T00:00Z" end="2012-04-21T00:00Z" />
+            <retention limit="hours(24)" action="delete" />
         </cluster>
     </clusters>
 
     <locations>
-        <location type="data" path="/tmp/input/${YEAR}-${MONTH}-${DAY}-${HOUR}"/>
+        <location type="data" path="/tmp/input/${YEAR}-${MONTH}-${DAY}-${HOUR}" />
     </locations>
 
-    <ACL owner="testuser" group="group" permission="0x755"/>
-    <schema location="hcat" provider="hcat"/>
+    <ACL owner="testuser" group="group" permission="0x755" />
+    <schema location="hcat" provider="hcat" />
 </feed>

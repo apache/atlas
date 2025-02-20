@@ -32,6 +32,10 @@
     <name>Apache Atlas Falcon Bridge Shim</name>
     <description>Apache Atlas Falcon Bridge Shim Module</description>
 
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
     <dependencies>
         <!-- Logging -->
         <dependency>

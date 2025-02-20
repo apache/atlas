@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
+
 import static org.apache.atlas.repository.Constants.FALCON_SOURCE;
 
 /**
@@ -43,31 +44,17 @@ import static org.apache.atlas.repository.Constants.FALCON_SOURCE;
 public class FalconHook extends AtlasHook implements FalconEventPublisher {
     private static final Logger LOG = LoggerFactory.getLogger(FalconHook.class);
 
-    private static ConfigurationStore STORE;
+    private static ConfigurationStore store;
 
     @Override
     public String getMessageSource() {
         return FALCON_SOURCE;
     }
 
-    private enum Operation {
-        ADD,
-        UPDATE
-    }
-
-    static {
-        try {
-            STORE = ConfigurationStore.get();
-        } catch (Exception e) {
-            LOG.error("Caught exception initializing the falcon hook.", e);
-        }
-
-        LOG.info("Created Atlas Hook for Falcon");
-    }
-
     @Override
     public void publish(final Data data) {
         final FalconEvent event = data.getEvent();
+
         try {
             fireAndForget(event);
         } catch (Throwable t) {
@@ -77,17 +64,19 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
 
     private void fireAndForget(FalconEvent event) throws FalconException, URISyntaxException {
         LOG.info("Entered Atlas hook for Falcon hook operation {}", event.getOperation());
+
         List<HookNotification> messages = new ArrayList<>();
+        Operation              op       = getOperation(event.getOperation());
+        String                 user     = getUser(event.getUser());
 
-        Operation op = getOperation(event.getOperation());
-        String user = getUser(event.getUser());
         LOG.info("fireAndForget user:{}", user);
-        switch (op) {
-        case ADD:
-            messages.add(new EntityCreateRequest(user, createEntities(event, user)));
-            break;
 
+        switch (op) {
+            case ADD:
+                messages.add(new EntityCreateRequest(user, createEntities(event, user)));
+                break;
         }
+
         notifyEntities(messages, null);
     }
 
@@ -95,24 +84,23 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
         List<Referenceable> entities = new ArrayList<>();
 
         switch (event.getOperation()) {
-        case ADD_CLUSTER:
-            entities.add(FalconBridge
-                    .createClusterEntity((org.apache.falcon.entity.v0.cluster.Cluster) event.getEntity()));
-            break;
+            case ADD_CLUSTER:
+                entities.add(FalconBridge.createClusterEntity((org.apache.falcon.entity.v0.cluster.Cluster) event.getEntity()));
+                break;
 
-        case ADD_PROCESS:
-            entities.addAll(FalconBridge.createProcessEntity((Process) event.getEntity(), STORE));
-            break;
+            case ADD_PROCESS:
+                entities.addAll(FalconBridge.createProcessEntity((Process) event.getEntity(), store));
+                break;
 
-        case ADD_FEED:
-            entities.addAll(FalconBridge.createFeedCreationEntity((Feed) event.getEntity(), STORE));
-            break;
+            case ADD_FEED:
+                entities.addAll(FalconBridge.createFeedCreationEntity((Feed) event.getEntity(), store));
+                break;
 
-        case UPDATE_CLUSTER:
-        case UPDATE_FEED:
-        case UPDATE_PROCESS:
-        default:
-            LOG.info("Falcon operation {} is not valid or supported", event.getOperation());
+            case UPDATE_CLUSTER:
+            case UPDATE_FEED:
+            case UPDATE_PROCESS:
+            default:
+                LOG.info("Falcon operation {} is not valid or supported", event.getOperation());
         }
 
         return entities;
@@ -120,19 +108,33 @@ public class FalconHook extends AtlasHook implements FalconEventPublisher {
 
     private static Operation getOperation(final FalconEvent.OPERATION op) throws FalconException {
         switch (op) {
-        case ADD_CLUSTER:
-        case ADD_FEED:
-        case ADD_PROCESS:
-            return Operation.ADD;
+            case ADD_CLUSTER:
+            case ADD_FEED:
+            case ADD_PROCESS:
+                return Operation.ADD;
 
-        case UPDATE_CLUSTER:
-        case UPDATE_FEED:
-        case UPDATE_PROCESS:
-            return Operation.UPDATE;
+            case UPDATE_CLUSTER:
+            case UPDATE_FEED:
+            case UPDATE_PROCESS:
+                return Operation.UPDATE;
 
-        default:
-            throw new FalconException("Falcon operation " + op + " is not valid or supported");
+            default:
+                throw new FalconException("Falcon operation " + op + " is not valid or supported");
         }
     }
-}
 
+    private enum Operation {
+        ADD,
+        UPDATE
+    }
+
+    static {
+        try {
+            store = ConfigurationStore.get();
+        } catch (Exception e) {
+            LOG.error("Caught exception initializing the falcon hook.", e);
+        }
+
+        LOG.info("Created Atlas Hook for Falcon");
+    }
+}
