@@ -118,6 +118,10 @@ import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedEdges;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEntityGuid;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_ADD;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_DELETE;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_NOOP;
+import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_UPDATE;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.INPUT_PORT_GUIDS_ATTR;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.OUTPUT_PORT_GUIDS_ATTR;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.*;
@@ -330,9 +334,7 @@ public class EntityGraphMapper {
 
     public EntityMutationResponse mapAttributesAndClassifications(EntityMutationContext context,
                                                                   final boolean isPartialUpdate,
-                                                                  final boolean replaceClassifications,
-                                                                  boolean replaceBusinessAttributes,
-                                                                  boolean isOverwriteBusinessAttribute) throws AtlasBaseException {
+                                                                  BulkRequestContext bulkRequestContext) throws AtlasBaseException {
 
         MetricRecorder metric = RequestContext.get().startMetricRecord("mapAttributesAndClassifications");
 
@@ -363,6 +365,18 @@ public class EntityGraphMapper {
                     setCustomAttributes(vertex, createdEntity);
                     setSystemAttributesToEntity(vertex, createdEntity);
                     resp.addEntity(CREATE, constructHeader(createdEntity, vertex, entityType.getAllAttributes()));
+
+                    if (bulkRequestContext.isAppendTags()) {
+                        if (CollectionUtils.isNotEmpty(createdEntity.getAddOrUpdateClassifications())) {
+                            createdEntity.setClassifications(createdEntity.getAddOrUpdateClassifications());
+                            createdEntity.setAddOrUpdateClassifications(null);
+                        }
+
+                        if (CollectionUtils.isNotEmpty(createdEntity.getRemoveClassifications())) {
+                            createdEntity.setRemoveClassifications(null);
+                        }
+                    }
+
                     addClassifications(context, guid, createdEntity.getClassifications());
 
                     if (MapUtils.isNotEmpty(createdEntity.getBusinessAttributes())) {
@@ -417,19 +431,47 @@ public class EntityGraphMapper {
 
                     setCustomAttributes(vertex, updatedEntity);
 
-                    if (replaceClassifications) {
+                    if (bulkRequestContext.isReplaceClassifications()) {
                         deleteClassifications(guid);
                         addClassifications(context, guid, updatedEntity.getClassifications());
+
+                    } else {
+                        Map<String, List<AtlasClassification>> diff = RequestContext.get().getAndRemoveTagsDiff(guid);
+
+                        if (MapUtils.isNotEmpty(diff)) {
+                            List<AtlasClassification> finalTags = new ArrayList<>();
+                            if (diff.containsKey(PROCESS_DELETE)) {
+                                for (AtlasClassification tag : diff.get(PROCESS_DELETE)) {
+                                    deleteClassification(updatedEntity.getGuid(), tag.getTypeName());
+                                }
+                            }
+
+                            if (diff.containsKey(PROCESS_UPDATE)) {
+                                finalTags.addAll(diff.get(PROCESS_UPDATE));
+                                updateClassifications(context, updatedEntity.getGuid(), diff.get(PROCESS_UPDATE));
+                            }
+
+                            if (diff.containsKey(PROCESS_ADD)) {
+                                finalTags.addAll(diff.get(PROCESS_ADD));
+                                addClassifications(context, updatedEntity.getGuid(), diff.get(PROCESS_ADD));
+                            }
+
+                            if (diff.containsKey(PROCESS_NOOP)) {
+                                finalTags.addAll(diff.get(PROCESS_NOOP));
+                            }
+
+                            RequestContext.get().getDifferentialEntity(guid).setClassifications(finalTags);  // For notifications
+                        }
                     }
 
-                    if (replaceBusinessAttributes) {
-                        if (MapUtils.isEmpty(updatedEntity.getBusinessAttributes()) && isOverwriteBusinessAttribute) {
+                    if (bulkRequestContext.isReplaceBusinessAttributes()) {
+                        if (MapUtils.isEmpty(updatedEntity.getBusinessAttributes()) && bulkRequestContext.isOverwriteBusinessAttributes()) {
                             Map<String, Map<String, Object>> businessMetadata = entityRetriever.getBusinessMetadata(vertex);
                             if (MapUtils.isNotEmpty(businessMetadata)) {
                                 removeBusinessAttributes(vertex, entityType, businessMetadata);
                             }
                         } else {
-                            addOrUpdateBusinessAttributes(guid, updatedEntity.getBusinessAttributes(), isOverwriteBusinessAttribute);
+                            addOrUpdateBusinessAttributes(guid, updatedEntity.getBusinessAttributes(), bulkRequestContext.isOverwriteBusinessAttributes());
                         }
                     }
 
