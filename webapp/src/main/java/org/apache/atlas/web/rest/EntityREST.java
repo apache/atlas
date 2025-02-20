@@ -74,6 +74,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
@@ -823,7 +824,7 @@ public class EntityREST {
                                                  @QueryParam("skipProcessEdgeRestoration") @DefaultValue("false") boolean skipProcessEdgeRestoration
     ) throws AtlasBaseException {
 
-    Stream.of(replaceClassifications, replaceTags, appendTags).filter(flag -> flag).count() > 1
+        if (Stream.of(replaceClassifications, replaceTags, appendTags).filter(flag -> flag).count() > 1) {
             throw new AtlasBaseException(BAD_REQUEST, "Only one of [replaceClassifications, replaceTags, appendTags] can be true");
         }
 
