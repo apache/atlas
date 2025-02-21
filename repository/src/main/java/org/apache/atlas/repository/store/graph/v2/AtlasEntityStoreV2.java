@@ -592,7 +592,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
 
             if (AtlasConfiguration.NOTIFICATION_ATLAS_DISTRIBUTED_TASKS_TOPIC_NAME.getBoolean()) {
-                checkAndCreateAtlasRelationshipCleanupTaskNotification(typeRegistry.getEntityTypeByName(entityHeader.getTypeName()), vertex);
+                checkAndCreateProcessRelationshipsCleanupTaskNotification(typeRegistry.getEntityTypeByName(entityHeader.getTypeName()), vertex);
             }
 
             deletionCandidates.add(vertex);
@@ -642,7 +642,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
 
             if (AtlasConfiguration.NOTIFICATION_ATLAS_DISTRIBUTED_TASKS_TOPIC_NAME.getBoolean()) {
-                checkAndCreateAtlasRelationshipCleanupTaskNotification(typeRegistry.getEntityTypeByName(entityHeader.getTypeName()), vertex);
+                checkAndCreateProcessRelationshipsCleanupTaskNotification(typeRegistry.getEntityTypeByName(entityHeader.getTypeName()), vertex);
             }
 
             deletionCandidates.add(vertex);
@@ -756,7 +756,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     "delete entity: typeName=" + entityType.getTypeName() + ", uniqueAttributes=" + uniqAttributes);
 
             if (AtlasConfiguration.NOTIFICATION_ATLAS_DISTRIBUTED_TASKS_TOPIC_NAME.getBoolean()) {
-                checkAndCreateAtlasRelationshipCleanupTaskNotification(typeRegistry.getEntityTypeByName(entityHeader.getTypeName()), vertex);
+                checkAndCreateProcessRelationshipsCleanupTaskNotification(typeRegistry.getEntityTypeByName(entityHeader.getTypeName()), vertex);
             }
 
             deletionCandidates.add(vertex);
@@ -1716,7 +1716,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
     }
 
-    private void checkAndCreateAtlasRelationshipCleanupTaskNotification(AtlasEntityType entityType, AtlasVertex vertex) {
+    private void checkAndCreateProcessRelationshipsCleanupTaskNotification(AtlasEntityType entityType, AtlasVertex vertex) {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("checkAndCreateAtlasDistributedTaskNotification");
         try{
             if (entityType.getTypeAndAllSuperTypes().contains(PROCESS_ENTITY_TYPE)) {
@@ -1775,7 +1775,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                         String guidVertex = AtlasGraphUtilsV2.getIdFromVertex(vertex);
 
                         if(ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
-                            checkAndCreateAtlasRelationshipCleanupTaskNotification(entityType, vertex);
+                            checkAndCreateProcessRelationshipsCleanupTaskNotification(entityType, vertex);
                         }
 
                         if (!StringUtils.equals(guidVertex, guid)) { // if entity was found by unique attribute
