@@ -37,7 +37,7 @@ import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.notification.AtlasDistributedTaskNotification;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
-import org.apache.atlas.notification.AtlasTaskNotificationSender;
+import org.apache.atlas.notification.task.AtlasDistributedTaskNotificationSender;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.GraphHelper;
@@ -143,13 +143,13 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private final ESAliasStore esAliasStore;
     private final IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier;
-    private final AtlasTaskNotificationSender taskNotificationSender;
+    private final AtlasDistributedTaskNotificationSender taskNotificationSender;
 
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
                               AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore,
-                              IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier, AtlasTaskNotificationSender taskNotificationSender) {
+                              IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier, AtlasDistributedTaskNotificationSender taskNotificationSender) {
 
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
@@ -591,10 +591,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
 
-            if (AtlasConfiguration.NOTIFICATION_ATLAS_DISTRIBUTED_TASKS_TOPIC_NAME.getBoolean()) {
-                checkAndCreateProcessRelationshipsCleanupTaskNotification(typeRegistry.getEntityTypeByName(entityHeader.getTypeName()), vertex);
-            }
-
             deletionCandidates.add(vertex);
         } else {
             if (LOG.isDebugEnabled()) {
@@ -640,10 +636,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
 
             AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader, "delete entity: guid=" + guid);
-
-            if (AtlasConfiguration.NOTIFICATION_ATLAS_DISTRIBUTED_TASKS_TOPIC_NAME.getBoolean()) {
-                checkAndCreateProcessRelationshipsCleanupTaskNotification(typeRegistry.getEntityTypeByName(entityHeader.getTypeName()), vertex);
-            }
 
             deletionCandidates.add(vertex);
         }
@@ -754,10 +746,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             AtlasAuthorizationUtils.verifyDeleteEntityAccess(typeRegistry, entityHeader,
                     "delete entity: typeName=" + entityType.getTypeName() + ", uniqueAttributes=" + uniqAttributes);
-
-            if (AtlasConfiguration.NOTIFICATION_ATLAS_DISTRIBUTED_TASKS_TOPIC_NAME.getBoolean()) {
-                checkAndCreateProcessRelationshipsCleanupTaskNotification(typeRegistry.getEntityTypeByName(entityHeader.getTypeName()), vertex);
-            }
 
             deletionCandidates.add(vertex);
         } else {
@@ -1744,7 +1732,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
             if (entity != null) { // entity would be null if guid is not in the stream but referenced by an entity in the stream
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
-                // If typeName is Process or ColumnProcess we send task notification
 
                 if (entityType == null) {
                     throw new AtlasBaseException(element.getValue(), AtlasErrorCode.TYPE_NAME_INVALID, TypeCategory.ENTITY.name(), entity.getTypeName());
@@ -2124,6 +2111,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 updateModificationMetadata(vertex);
 
                 String typeName = getTypeName(vertex);
+
+                if(ATLAS_DISTRIBUTED_TASK_ENABLED.getBoolean()) {
+                    checkAndCreateProcessRelationshipsCleanupTaskNotification(typeRegistry.getEntityTypeByName(typeName), vertex);
+                }
 
                 List<PreProcessor> preProcessors = getPreProcessor(typeName);
                 for(PreProcessor processor : preProcessors){

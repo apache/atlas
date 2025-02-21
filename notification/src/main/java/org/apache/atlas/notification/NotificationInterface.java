@@ -52,7 +52,7 @@ public interface NotificationInterface {
 
         RELATIONSHIPS(new EntityMessageDeserializer()),
 
-        ATLAS_TASKS(new AtlasDistributedTaskMessageDeserializer());
+        ATLAS_DISTRIBUTED_TASKS(new AtlasDistributedTaskMessageDeserializer());
 
         private final AtlasNotificationMessageDeserializer deserializer;
 
