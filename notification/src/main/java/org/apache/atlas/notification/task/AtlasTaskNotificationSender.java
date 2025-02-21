@@ -6,7 +6,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -17,14 +16,14 @@ public class AtlasTaskNotificationSender {
 
     private final NotificationInterface notificationInterface;
 
-    private final static Long batchSize = 10000L;
+    private final static Long batchSize = 40000L;
 
     @Autowired
     public AtlasTaskNotificationSender(NotificationInterface notificationInterface) {
         this.notificationInterface = notificationInterface;
     }
 
-    public AtlasDistributedTaskNotification createRelationshipCleanTask(String vertexId, List<String> edgeLabels) {
+    public AtlasDistributedTaskNotification createRelationshipCleanUpTask(String vertexId, List<String> edgeLabels) {
         Map<String, Object> taskParams = new HashMap<>();
         taskParams.put("vertexId", vertexId);
         taskParams.put("edgeLabels", edgeLabels);

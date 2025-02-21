@@ -62,7 +62,7 @@ public class AtlasDistributedTaskNotification {
             sb = new StringBuilder();
         }
 
-        sb.append("AtlasTaskNotification{");
+        sb.append("AtlasDistributedTaskNotification{");
         sb.append("taskType=").append(taskType);
         sb.append(", parameters=").append(parameters);
         sb.append('}');

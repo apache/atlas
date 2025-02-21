@@ -94,7 +94,6 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.io.InputStream;
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static java.lang.Boolean.FALSE;
@@ -1721,7 +1720,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("checkAndCreateAtlasDistributedTaskNotification");
         try{
             if (entityType.getTypeAndAllSuperTypes().contains(PROCESS_ENTITY_TYPE)) {
-                AtlasDistributedTaskNotification notification =  taskNotificationSender.createRelationshipCleanTask(vertex.getIdForDisplay(), Arrays.asList(PROCESS_EDGE_LABELS));
+                AtlasDistributedTaskNotification notification =  taskNotificationSender.createRelationshipCleanUpTask(vertex.getIdForDisplay(), Arrays.asList(PROCESS_EDGE_LABELS));
                 taskNotificationSender.send(notification);
             }
         } finally {
