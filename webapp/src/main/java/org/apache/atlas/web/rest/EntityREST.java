@@ -41,6 +41,7 @@ import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v2.BulkRequestContext;
 import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
@@ -73,6 +74,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
 import static org.apache.atlas.AtlasErrorCode.DEPRECATED_API;
@@ -417,7 +419,12 @@ public class EntityREST {
             }
             validateAttributeLength(Lists.newArrayList(entity.getEntity()));
 
-            return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
+            BulkRequestContext context = new BulkRequestContext.Builder()
+                    .setReplaceClassifications(replaceClassifications)
+                    .setReplaceBusinessAttributes(replaceBusinessAttributes)
+                    .setOverwriteBusinessAttributes(isOverwriteBusinessAttributes)
+                    .build();
+            return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), context);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -810,10 +817,17 @@ public class EntityREST {
     @Timed
     public EntityMutationResponse createOrUpdate(AtlasEntitiesWithExtInfo entities,
                                                  @QueryParam("replaceClassifications") @DefaultValue("false") boolean replaceClassifications,
+                                                 @QueryParam("replaceTags") @DefaultValue("false") boolean replaceTags,
+                                                 @QueryParam("appendTags") @DefaultValue("false") boolean appendTags,
                                                  @QueryParam("replaceBusinessAttributes") @DefaultValue("false") boolean replaceBusinessAttributes,
                                                  @QueryParam("overwriteBusinessAttributes") @DefaultValue("false") boolean isOverwriteBusinessAttributes,
                                                  @QueryParam("skipProcessEdgeRestoration") @DefaultValue("false") boolean skipProcessEdgeRestoration
     ) throws AtlasBaseException {
+
+        if (Stream.of(replaceClassifications, replaceTags, appendTags).filter(flag -> flag).count() > 1) {
+            throw new AtlasBaseException(BAD_REQUEST, "Only one of [replaceClassifications, replaceTags, appendTags] can be true");
+        }
+
         AtlasPerfTracer perf = null;
         RequestContext.get().setEnableCache(false);
         RequestContext.get().setSkipProcessEdgeRestoration(skipProcessEdgeRestoration);
@@ -829,6 +843,7 @@ public class EntityREST {
             }
 
             if( entitiesCount > ENTITIES_ALLOWED_IN_BULK) {
+                RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("requestThrottledDueToBulkEntityOperation"));
                 throw new AtlasBaseException(AtlasErrorCode.EXCEEDED_MAX_ENTITIES_ALLOWED, String.valueOf(ENTITIES_ALLOWED_IN_BULK));
             }
 
@@ -836,7 +851,14 @@ public class EntityREST {
 
             EntityStream entityStream = new AtlasEntityStream(entities);
 
-            return entitiesStore.createOrUpdate(entityStream, replaceClassifications, replaceBusinessAttributes, isOverwriteBusinessAttributes);
+            BulkRequestContext context = new BulkRequestContext.Builder()
+                    .setReplaceClassifications(replaceClassifications)
+                    .setReplaceTags(replaceTags)
+                    .setAppendTags(appendTags)
+                    .setReplaceBusinessAttributes(replaceBusinessAttributes)
+                    .setOverwriteBusinessAttributes(isOverwriteBusinessAttributes)
+                    .build();
+            return entitiesStore.createOrUpdate(entityStream, context);
         } finally {
             AtlasPerfTracer.log(perf);
         }
