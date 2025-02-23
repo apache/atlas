@@ -44,8 +44,8 @@ Docker files in this folder create docker images and run them to build Apache At
 
 6. Build and deploy Apache Atlas in containers using docker-compose
 
-   6.1. Execute following command to build Apache Atlas:
-
+   6.1. Ensure that the `${HOME}/.m2` directory exists and Execute following command to build Apache Atlas:
+        mkdir -p ${HOME}/.m2
         docker-compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
 
    Time taken to complete the build might vary (upto an hour), depending on status of ${HOME}/.m2 directory cache.
