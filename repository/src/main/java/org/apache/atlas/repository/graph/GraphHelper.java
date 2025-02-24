@@ -44,7 +44,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.AtlasVertexQuery;
-import org.apache.atlas.repository.graphdb.janus.AtlasJanusEdge;
+import org.apache.atlas.repository.graphdb.janus.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -60,20 +60,12 @@ import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.*;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.RELATIONSHIP_CREATE_INVALID_PARAMS;
@@ -2089,6 +2081,39 @@ public final class GraphHelper {
                     .iterator();
         } catch (Exception e) {
             LOG.error("Error while getting active edges of vertex", e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        }
+        finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
+    public Set<AbstractMap.SimpleEntry<String,String>> retrieveEdgeLabelsAndTypeName(AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.retrieveEdgeLabelsAndTypeName");
+
+        try {
+            return ((AtlasJanusGraph) graph).getGraph().traversal()
+                    .V(vertex.getId())
+                    .bothE()
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                    .project(LABEL_PROPERTY_KEY, TYPE_NAME_PROPERTY_KEY)
+                    .by(T.label)
+                    .by(TYPE_NAME_PROPERTY_KEY)
+                    .toStream()
+                    .map(m -> {
+                        Object label = m.get(LABEL_PROPERTY_KEY);
+                        Object typeName = m.get(TYPE_NAME_PROPERTY_KEY);
+                        String labelStr = (label != null) ? label.toString() : "";
+                        String typeNameStr = (typeName != null) ? typeName.toString() : "";
+
+                        return new AbstractMap.SimpleEntry<>(labelStr, typeNameStr);
+                    })
+                    .filter(entry -> !entry.getKey().isEmpty() && !entry.getValue().isEmpty())
+                    .distinct()
+                    .collect(Collectors.toSet());
+
+        } catch (Exception e) {
+            LOG.error("Error while getting labels of active edges", e);
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
         }
         finally {
