@@ -2098,14 +2098,12 @@ public final class GraphHelper {
                     .bothE()
                     .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
                     .project(LABEL_PROPERTY_KEY,  TYPE_NAME_PROPERTY_KEY)
-                    .by(T.label)                // Get label property for "label" key
-                    .by(TYPE_NAME_PROPERTY_KEY)          // Get typeName property for "__typeName" key
+                    .by(T.label)
+                    .by(TYPE_NAME_PROPERTY_KEY)
                     .toStream()
                     .map(m -> {
                         Object label = m.get(LABEL_PROPERTY_KEY);
                         Object typeName = m.get( TYPE_NAME_PROPERTY_KEY);
-
-                        // Check if either value is null and use empty string or default value if so
                         String labelStr = (label != null) ? label.toString() : "";
                         String typeNameStr = (typeName != null) ? typeName.toString() : "";
 
