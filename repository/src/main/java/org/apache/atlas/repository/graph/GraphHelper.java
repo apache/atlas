@@ -60,6 +60,7 @@ import org.apache.atlas.v1.model.instance.Referenceable;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.*;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -2086,6 +2087,22 @@ public final class GraphHelper {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
+
+    public static Iterable<AtlasEdge> getEdges(AtlasVertex vertex, AtlasEdgeDirection direction, String[] edgeTypesToExclude) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.getEdgesWithExclusion");
+
+        try {
+            AtlasVertexQuery query = vertex.query()
+                    .direction(direction);
+            if (ArrayUtils.isNotEmpty(edgeTypesToExclude)) {
+                for (String edgeTypeToExclude : edgeTypesToExclude) {
+                    query = query.hasNot("__typeName", edgeTypeToExclude);
+                }
+            }
+            return query.edges();
+        }  finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
 
     public Set<AbstractMap.SimpleEntry<String,String>> retrieveEdgeLabelsAndTypeName(AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.retrieveEdgeLabelsAndTypeName");
