@@ -2093,23 +2093,23 @@ public final class GraphHelper {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.retrieveEdgeLabelsAndTypeName");
 
         try {
-             return ((AtlasJanusGraph)graph).getGraph().traversal()
+            return ((AtlasJanusGraph) graph).getGraph().traversal()
                     .V(vertex.getId())
                     .bothE()
                     .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
-                    .project(LABEL_PROPERTY_KEY,  TYPE_NAME_PROPERTY_KEY)
+                    .project(LABEL_PROPERTY_KEY, TYPE_NAME_PROPERTY_KEY)
                     .by(T.label)
                     .by(TYPE_NAME_PROPERTY_KEY)
                     .toStream()
                     .map(m -> {
                         Object label = m.get(LABEL_PROPERTY_KEY);
-                        Object typeName = m.get( TYPE_NAME_PROPERTY_KEY);
+                        Object typeName = m.get(TYPE_NAME_PROPERTY_KEY);
                         String labelStr = (label != null) ? label.toString() : "";
                         String typeNameStr = (typeName != null) ? typeName.toString() : "";
 
                         return new AbstractMap.SimpleEntry<>(labelStr, typeNameStr);
                     })
-                    .filter(entry -> !entry.getKey().isEmpty() && !entry.getValue().isEmpty()) // Optional: filter out entries with empty values
+                    .filter(entry -> !entry.getKey().isEmpty() && !entry.getValue().isEmpty())
                     .distinct()
                     .collect(Collectors.toSet());
 
