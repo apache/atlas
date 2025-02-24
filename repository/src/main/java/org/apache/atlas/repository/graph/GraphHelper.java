@@ -61,6 +61,7 @@ import org.apache.atlas.util.IndexedInstance;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.structure.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -2092,13 +2093,12 @@ public final class GraphHelper {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.retrieveEdgeLabelsAndTypeName");
 
         try {
-
             return  ((AtlasJanusGraph)graph).getGraph().traversal()
                     .V(vertex.getId())
                     .bothE()
                     .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
                     .project("label", "__typeName")
-                    .by("label")                // Get label property for "label" key
+                    .by(T.label)                // Get label property for "label" key
                     .by("__typeName")          // Get typeName property for "__typeName" key
                     .toStream()
                     .map(m -> new AbstractMap.SimpleEntry<>(
