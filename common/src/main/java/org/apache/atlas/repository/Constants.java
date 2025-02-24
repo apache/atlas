@@ -283,6 +283,8 @@ public final class Constants {
     public static final String CONNECTION_QUALIFIED_NAME               = "connectionQualifiedName";
     public static final String UNIQUE_QUALIFIED_NAME                   = UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX + QUALIFIED_NAME;
     public static final String TYPE_NAME_PROPERTY_KEY                  = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
+
+    public static final String LABEL_PROPERTY_KEY                      = "label";
     public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE        = "atlas.graph.index.search.max-result-set-size";
     public static final String INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH = "atlas.graph.index.search.types.max-query-str-length";
     public static final String INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH  = "atlas.graph.index.search.tags.max-query-str-length";
