@@ -2088,22 +2088,6 @@ public final class GraphHelper {
         }
     }
 
-    public static Iterable<AtlasEdge> getEdges(AtlasVertex vertex, AtlasEdgeDirection direction, String[] edgeTypesToExclude) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.getEdgesWithExclusion");
-
-        try {
-            AtlasVertexQuery query = vertex.query()
-                    .direction(direction);
-            if (ArrayUtils.isNotEmpty(edgeTypesToExclude)) {
-                for (String edgeTypeToExclude : edgeTypesToExclude) {
-                    query = query.hasNot("__typeName", edgeTypeToExclude);
-                }
-            }
-            return query.edges();
-        }  finally {
-            RequestContext.get().endMetricRecord(metricRecorder);
-        }
-
     public Set<AbstractMap.SimpleEntry<String,String>> retrieveEdgeLabelsAndTypeName(AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.retrieveEdgeLabelsAndTypeName");
 
