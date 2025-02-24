@@ -1706,9 +1706,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private void checkAndCreateProcessRelationshipsCleanupTaskNotification(AtlasEntityType entityType, AtlasVertex vertex) {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("checkAndCreateAtlasDistributedTaskNotification");
-        try{
-            if (entityType.getTypeAndAllSuperTypes().contains(PROCESS_ENTITY_TYPE)) {
-                AtlasDistributedTaskNotification notification =  taskNotificationSender.createRelationshipCleanUpTask(vertex.getIdForDisplay(), Arrays.asList(PROCESS_EDGE_LABELS));
+        try {
+            String[] supportedTypes = AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_ASSET_TYPES.getStringArray();
+            if (entityType.getTypeAndAllSuperTypes().stream().anyMatch(type -> Arrays.asList(supportedTypes).contains(type))) {
+                AtlasDistributedTaskNotification notification =  taskNotificationSender.createRelationshipCleanUpTask(vertex.getIdForDisplay(), Arrays.asList(AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_RELATIONSHIP_LABELS.getStringArray()));
                 taskNotificationSender.send(notification);
             }
         } finally {
