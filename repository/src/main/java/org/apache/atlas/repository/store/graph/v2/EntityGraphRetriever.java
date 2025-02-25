@@ -1139,6 +1139,7 @@ public class EntityGraphRetriever {
     private AtlasEntityHeader mapVertexToAtlasEntityHeader(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
         boolean shouldPrefetch = RequestContext.get().isInvokedByIndexSearch()
                 && !isPolicyAttribute(attributes)
+                && !entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class).equals("S3Bucket")
                 && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION.getBoolean();
 
         if (shouldPrefetch) {
