@@ -144,6 +144,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final ESAliasStore esAliasStore;
     private final IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier;
     private final AtlasDistributedTaskNotificationSender taskNotificationSender;
+    private static final String[] RELATIONSHIP_CLEANUP_SUPPORTED_TYPES = AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_ASSET_TYPES.getStringArray();
+    private static final String[] RELATIONSHIP_CLEANUP_RELATIONSHIP_LABELS = AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_RELATIONSHIP_LABELS.getStringArray();
 
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
@@ -1707,9 +1709,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private void checkAndCreateProcessRelationshipsCleanupTaskNotification(AtlasEntityType entityType, AtlasVertex vertex) {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("checkAndCreateAtlasDistributedTaskNotification");
         try {
-            String[] supportedTypes = AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_ASSET_TYPES.getStringArray();
-            if (entityType.getTypeAndAllSuperTypes().stream().anyMatch(type -> Arrays.asList(supportedTypes).contains(type))) {
-                AtlasDistributedTaskNotification notification =  taskNotificationSender.createRelationshipCleanUpTask(vertex.getIdForDisplay(), Arrays.asList(AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_RELATIONSHIP_LABELS.getStringArray()));
+            if (Arrays.asList(RELATIONSHIP_CLEANUP_SUPPORTED_TYPES).stream().anyMatch(type -> entityType.getTypeAndAllSuperTypes().contains(type))) {
+                AtlasDistributedTaskNotification notification = taskNotificationSender.createRelationshipCleanUpTask(vertex.getIdForDisplay(), Arrays.asList(RELATIONSHIP_CLEANUP_RELATIONSHIP_LABELS));
                 taskNotificationSender.send(notification);
             }
         } finally {
