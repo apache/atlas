@@ -2005,7 +2005,7 @@ public class EntityGraphMapper {
 
             Object newEntry = null;
             try {
-                mapCollectionElementsToVertex(arrCtx, context);
+                newEntry = mapCollectionElementsToVertex(arrCtx, context);
             } catch (AtlasBaseException abe) {
                 if (abe.getAtlasErrorCode() == INTERNAL_ENTITY_ID_NOT_FOUND) {
                     corruptedCurrentElements.add(existingEdge);
