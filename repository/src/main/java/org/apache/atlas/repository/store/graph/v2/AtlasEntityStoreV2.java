@@ -123,11 +123,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     static final boolean DEFERRED_ACTION_ENABLED = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
-    static final String PROCESS_ENTITY_TYPE = "Process";
-
     private static final String ATTR_MEANINGS = "meanings";
-
-    private static final String PROCESS_TYPE_NAME = "Process";
 
     private final AtlasGraph                graph;
     private final DeleteHandlerDelegate     deleteDelegate;
