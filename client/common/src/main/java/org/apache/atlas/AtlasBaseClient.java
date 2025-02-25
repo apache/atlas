@@ -501,7 +501,7 @@ public abstract class AtlasBaseClient {
                     clientResponse.getStatus() != ClientResponse.Status.INTERNAL_SERVER_ERROR.getStatusCode()) {
                 break;
             } else {
-                LOG.error("Got a service unavailable when calling: {}, will retry..", resource);
+                LOG.error("attempt #{}: error {} when calling: {}, will retry..", (i + 1), clientResponse.getStatus(), resource);
 
                 sleepBetweenRetries();
             }
