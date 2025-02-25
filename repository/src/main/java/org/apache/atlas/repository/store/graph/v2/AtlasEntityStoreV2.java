@@ -1681,9 +1681,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             ret.setGuidAssignments(context.getGuidAssignments());
 
             for (AtlasEntity entity: context.getCreatedEntities()) {
-                if(PROCESS_TYPE_NAME.equals(entity.getTypeName()) || typeRegistry.getEntityTypeByName(entity.getTypeName()).isSubTypeOf(PROCESS_TYPE_NAME)) {
-                    RequestContext.get().cacheDifferentialEntity(entity);
-                }
+                RequestContext.get().cacheDifferentialEntity(entity);
             }
             // Notify the change listeners
             entityChangeNotifier.onEntitiesMutated(ret, RequestContext.get().isImportInProgress());
