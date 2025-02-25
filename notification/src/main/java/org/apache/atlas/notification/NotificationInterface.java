@@ -20,6 +20,7 @@ package org.apache.atlas.notification;
 import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.notification.entity.EntityMessageDeserializer;
 import org.apache.atlas.notification.hook.HookMessageDeserializer;
+import org.apache.atlas.notification.task.AtlasDistributedTaskMessageDeserializer;
 
 import java.util.List;
 
@@ -49,7 +50,9 @@ public interface NotificationInterface {
         // Notifications to entity change consumers.
         ENTITIES(new EntityMessageDeserializer()),
 
-        RELATIONSHIPS(new EntityMessageDeserializer());
+        RELATIONSHIPS(new EntityMessageDeserializer()),
+
+        ATLAS_DISTRIBUTED_TASKS(new AtlasDistributedTaskMessageDeserializer());
 
         private final AtlasNotificationMessageDeserializer deserializer;
 

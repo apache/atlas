@@ -20,6 +20,7 @@ public class EntityNotifierImpl implements IAtlasMinimalChangeNotifier {
 
     private final Set<EntityChangeListenerV2> entityChangeListenersV2;
 
+
     @Inject
     public EntityNotifierImpl(Set<EntityChangeListenerV2> entityChangeListenersV2) {
         this.entityChangeListenersV2 = entityChangeListenersV2;
