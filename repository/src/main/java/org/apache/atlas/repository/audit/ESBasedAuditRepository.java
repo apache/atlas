@@ -90,7 +90,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String ENTITY = "entity";
     private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
     private static final Set<String> ALLOWED_LINKED_ATTRIBUTES = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
-    public static final String ENTITY_AUDITS_INDEX = "entity_audits";
+    private static final String ENTITY_AUDITS_INDEX = "entity_audits";
 
     /*
     *    created   → event creation time
