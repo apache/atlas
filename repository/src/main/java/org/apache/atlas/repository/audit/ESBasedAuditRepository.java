@@ -433,7 +433,18 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         Request request = new Request("GET", INDEX_NAME);
         Response response = lowLevelClient.performRequest(request);
         String responseString = copyToString(response.getEntity().getContent(), Charset.defaultCharset());
-        return mapper.readTree(responseString);
+
+        JsonNode rootNode = mapper.readTree(responseString);
+
+        // Iterate over the index names and find one that starts with "entity_audits-"
+        for (Iterator<String> it = rootNode.fieldNames(); it.hasNext(); ) {
+            String indexName = it.next();
+            if (indexName.startsWith("entity_audits-")) {
+                return rootNode.get(indexName).get("mappings");
+            }
+        }
+
+        return null; // Return null if no matching index is found
     }
 
     private boolean areConfigurationsSame(JsonNode activeIndexInformation, JsonNode indexInformationFromConfigurationFile) {
