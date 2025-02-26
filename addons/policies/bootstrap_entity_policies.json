@@ -3596,9 +3596,9 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "CRUD_RESPONSES",
-                "qualifiedName": "CRUD_RESPONSE_ENTITIES",
-                "description": "Allows user to perform crud operation on Response assets.",
+                "name": "CR_RESPONSES",
+                "qualifiedName": "CR_RESPONSE_ENTITIES",
+                "description": "Allows all users to perform cr operation on Response assets.",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
@@ -3626,9 +3626,43 @@
                 "policyActions":
                 [
                     "entity-create",
-                    "entity-update",
-                    "entity-delete",
                     "entity-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "UD_RESPONSES",
+                "qualifiedName": "UD_RESPONSE_ENTITIES",
+                "description": "Allows admins and api tokens to perform ud operation on Response assets.",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources":
+                [
+                    "entity-type:Response",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-update",
+                    "entity-delete"
                 ]
             }
         }
