@@ -448,7 +448,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     }
 
     private boolean areConfigurationsSame(JsonNode activeIndexInformation, JsonNode indexInformationFromConfigurationFile) {
-        return indexInformationFromConfigurationFile.get("mappings").equals(activeIndexInformation.get("mappings"));
+        return indexInformationFromConfigurationFile.get("mappings").equals(activeIndexInformation);
     }
 
     private Response updateMappings(JsonNode indexInformationFromConfigurationFile) throws IOException {
