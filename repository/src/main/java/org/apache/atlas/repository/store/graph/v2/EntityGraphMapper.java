@@ -84,6 +84,7 @@ import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.LABEL_MAX_LENGTH;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
+import static org.apache.atlas.AtlasErrorCode.INTERNAL_ENTITY_ID_NOT_FOUND;
 import static org.apache.atlas.model.TypeCategory.ARRAY;
 import static org.apache.atlas.model.TypeCategory.CLASSIFICATION;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
@@ -1992,15 +1993,25 @@ public class EntityGraphMapper {
             newElements = (List) newElements.stream().distinct().collect(Collectors.toList());
         }
 
+        List<AtlasEdge> corruptedCurrentElements = new ArrayList<>(0);
         for (int index = 0; index < newElements.size(); index++) {
             AtlasEdge               existingEdge = (isSoftReference) ? null : getEdgeAt(currentElements, index, elementType);
             AttributeMutationContext arrCtx      = new AttributeMutationContext(ctx.getOp(), ctx.getReferringVertex(), ctx.getAttribute(), newElements.get(index),
                                                                                  ctx.getVertexProperty(), elementType, existingEdge);
+
             if (deleteExistingRelations) {
                 removeExistingRelationWithOtherVertex(arrCtx, ctx, context);
             }
 
-            Object newEntry = mapCollectionElementsToVertex(arrCtx, context);
+            Object newEntry = null;
+            try {
+                newEntry = mapCollectionElementsToVertex(arrCtx, context);
+            } catch (AtlasBaseException abe) {
+                if (abe.getAtlasErrorCode() == INTERNAL_ENTITY_ID_NOT_FOUND) {
+                    corruptedCurrentElements.add(existingEdge);
+                }
+            }
+
             if (isReference && newEntry != null && newEntry instanceof AtlasEdge && inverseRefAttribute != null) {
                 // Update the inverse reference value.
                 AtlasEdge newEdge = (AtlasEdge) newEntry;
@@ -2013,6 +2024,8 @@ public class EntityGraphMapper {
                 newElementsCreated.add(newEntry);
             }
         }
+
+        currentElements.removeAll(corruptedCurrentElements);
 
         if (isReference && !isSoftReference ) {
             boolean isAppendOnPartialUpdate = !isStructType ? getAppendOptionForRelationship(ctx.getReferringVertex(), attribute.getName()) : false;
@@ -2986,6 +2999,10 @@ public class EntityGraphMapper {
             currentEntityId = getIdFromInVertex(currentEdge);
         } else {
             currentEntityId = getIdFromBothVertex(currentEdge, parentEntityVertex);
+        }
+        
+        if (StringUtils.isEmpty(currentEntityId)) {
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ENTITY_ID_NOT_FOUND);
         }
 
         String    newEntityId = getIdFromVertex(newEntityVertex);
