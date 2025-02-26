@@ -27,7 +27,6 @@ on:
       - development
       - master
       - lineageondemand
-      - makerlogic
 
 jobs:
   build:
