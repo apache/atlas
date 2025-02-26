@@ -27,8 +27,6 @@ on:
       - development
       - master
       - lineageondemand
-      - makerlogic
-      - initesrepo_with_split_index
 
 jobs:
   build:
