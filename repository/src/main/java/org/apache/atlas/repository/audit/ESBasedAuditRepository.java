@@ -423,9 +423,9 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             if (!areConfigurationsSame(activeIndexMappings.get(activeAuditIndex), indexInformationFromConfigurationFile)) {
                 Response response = updateMappings(indexInformationFromConfigurationFile);
                 if (isSuccess(response)) {
-                    LOG.info("ESBasedAuditRepo - Elasticsearch mappings have been updated!");
+                    LOG.info("ESBasedAuditRepo - Elasticsearch mappings have been updated for index: {}", activeAuditIndex);
                 } else {
-                    LOG.error("Error while updating the Elasticsearch indexes!");
+                    LOG.error("Error while updating the Elasticsearch indexes for index: {}", activeAuditIndex);
                     throw new AtlasException(copyToString(response.getEntity().getContent(), Charset.defaultCharset()));
                 }
             }
