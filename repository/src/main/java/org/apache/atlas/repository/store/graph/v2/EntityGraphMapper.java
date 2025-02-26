@@ -3000,6 +3000,10 @@ public class EntityGraphMapper {
         } else {
             currentEntityId = getIdFromBothVertex(currentEdge, parentEntityVertex);
         }
+        
+        if (StringUtils.isEmpty(currentEntityId)) {
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ENTITY_ID_NOT_FOUND);
+        }
 
         if (StringUtils.isEmpty(currentEntityId)) {
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ENTITY_ID_NOT_FOUND);
