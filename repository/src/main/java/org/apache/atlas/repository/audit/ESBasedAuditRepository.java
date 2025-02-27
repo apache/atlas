@@ -90,6 +90,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String ENTITY = "entity";
     private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
     private static final Set<String> ALLOWED_LINKED_ATTRIBUTES = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
+    private static final String ENTITY_AUDITS_INDEX = "entity_audits";
 
     /*
     *    created   → event creation time
@@ -416,28 +417,40 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private void updateMappingsIfChanged() throws IOException, AtlasException {
         LOG.info("ESBasedAuditRepo - updateMappings!");
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode activeIndexInformation = getActiveIndexInfoAsJson(mapper);
+        Map<String, JsonNode> activeIndexMappings = getActiveIndexMappings(mapper);
         JsonNode indexInformationFromConfigurationFile = mapper.readTree(getAuditIndexMappings());
-        if (!areConfigurationsSame(activeIndexInformation, indexInformationFromConfigurationFile)) {
-            Response response = updateMappings(indexInformationFromConfigurationFile);
-            if (isSuccess(response)) {
-                LOG.info("ESBasedAuditRepo - Elasticsearch mappings have been updated!");
-            } else {
-                LOG.error("Error while updating the Elasticsearch indexes!");
-                throw new AtlasException(copyToString(response.getEntity().getContent(), Charset.defaultCharset()));
+        for (String activeAuditIndex : activeIndexMappings.keySet()) {
+            if (!areConfigurationsSame(activeIndexMappings.get(activeAuditIndex), indexInformationFromConfigurationFile)) {
+                Response response = updateMappings(indexInformationFromConfigurationFile);
+                if (isSuccess(response)) {
+                    LOG.info("ESBasedAuditRepo - Elasticsearch mappings have been updated for index: {}", activeAuditIndex);
+                } else {
+                    LOG.error("Error while updating the Elasticsearch indexes for index: {}", activeAuditIndex);
+                    throw new AtlasException(copyToString(response.getEntity().getContent(), Charset.defaultCharset()));
+                }
             }
         }
     }
 
-    private JsonNode getActiveIndexInfoAsJson(ObjectMapper mapper) throws IOException {
+    private Map<String, JsonNode> getActiveIndexMappings(ObjectMapper mapper) throws IOException {
         Request request = new Request("GET", INDEX_NAME);
         Response response = lowLevelClient.performRequest(request);
         String responseString = copyToString(response.getEntity().getContent(), Charset.defaultCharset());
-        return mapper.readTree(responseString);
+        Map<String, JsonNode> indexMappings = new TreeMap<>();
+        JsonNode rootNode = mapper.readTree(responseString);
+
+        // Iterate over the index names and get the mappings
+        for (Iterator<String> it = rootNode.fieldNames(); it.hasNext(); ) {
+            String indexName = it.next();
+            if (indexName.startsWith(ENTITY_AUDITS_INDEX)) {
+                indexMappings.put(indexName, rootNode.get(indexName).get("mappings"));
+            }
+        }
+        return indexMappings;
     }
 
     private boolean areConfigurationsSame(JsonNode activeIndexInformation, JsonNode indexInformationFromConfigurationFile) {
-        return indexInformationFromConfigurationFile.get("mappings").equals(activeIndexInformation.get("entity_audits").get("mappings"));
+        return indexInformationFromConfigurationFile.get("mappings").equals(activeIndexInformation);
     }
 
     private Response updateMappings(JsonNode indexInformationFromConfigurationFile) throws IOException {
