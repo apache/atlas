@@ -2070,7 +2070,7 @@ public final class GraphHelper {
      * @param vertex entity vertex
      * @return Iterator of children edges
      */
-    public static Iterator<AtlasJanusEdge> getOnlyActiveEdges(AtlasVertex vertex, AtlasEdgeDirection direction) throws AtlasBaseException {
+    public Iterator<AtlasJanusEdge> getOnlyActiveEdges(AtlasVertex vertex, AtlasEdgeDirection direction) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.getOnlyActiveEdges");
 
         try {
@@ -2108,7 +2108,7 @@ public final class GraphHelper {
 
                         return new AbstractMap.SimpleEntry<>(labelStr, typeNameStr);
                     })
-                    .filter(entry -> !entry.getKey().isEmpty() && !entry.getValue().isEmpty())
+                    .filter(entry -> !entry.getKey().isEmpty())
                     .distinct()
                     .collect(Collectors.toSet());
 
