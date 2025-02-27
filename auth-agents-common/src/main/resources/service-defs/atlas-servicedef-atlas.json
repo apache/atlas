@@ -510,6 +510,13 @@
 			"name": "excludeRoles",
 			"evaluator": "org.apache.atlas.plugin.conditionevaluator.AtlanHasAnyRole",
 			"description": "Roles to exclude for given policy"
+		},
+		{
+			"itemId": 2,
+			"name": "excludeDQRules",
+			"evaluator": "org.apache.atlas.plugin.conditionevaluator.AtlanDQAllowExceptionCondition",
+			"description": "Roles to exclude for given policy"
 		}
+
 	]
 }
