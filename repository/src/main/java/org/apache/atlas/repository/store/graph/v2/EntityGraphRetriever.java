@@ -1069,7 +1069,7 @@ public class EntityGraphRetriever {
     private void retrieveEdgeLabels(AtlasVertex entityVertex, AtlasEdgeDirection edgeDirection, Set<String> attributes, Map<String, Set<String>> relationshipsLookup,Map<String, Object> propertiesMap) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("retrieveEdgeLabels");
         try {
-            Iterator<AtlasJanusEdge> edges = GraphHelper.getOnlyActiveEdges(entityVertex, edgeDirection);
+            Iterator<AtlasJanusEdge> edges = graphHelper.getOnlyActiveEdges(entityVertex, edgeDirection);
 
             List<String> edgeLabelsDebug = new ArrayList<>();
             Map<String, String> edgesTypeName = new HashMap();
