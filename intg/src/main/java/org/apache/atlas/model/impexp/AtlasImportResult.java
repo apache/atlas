@@ -170,6 +170,7 @@ public class AtlasImportResult implements Serializable {
         sb.append(", processedEntities=[");
         AtlasBaseTypeDef.dumpObjects(processedEntities, sb);
         sb.append("]");
+        sb.append(", exportResult={").append(exportResultWithoutData).append("}");
         sb.append("}");
 
         return sb;

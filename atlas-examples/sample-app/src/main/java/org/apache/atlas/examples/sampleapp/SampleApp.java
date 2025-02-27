@@ -75,6 +75,17 @@ public class SampleApp {
             sampleApp.glossaryExample();
 
             entityExample.deleteEntities();
+
+            //Async Import Examples
+            AsyncImportApiExample asyncImportApiExample = new AsyncImportApiExample(sampleApp.getClient());
+
+            asyncImportApiExample.testImportAsyncWithZip();
+
+            asyncImportApiExample.testGetAsyncImportStatus();
+
+            String testImportId = "24cbff65a7ed60e02d099ce78cb06efd";
+            asyncImportApiExample.testGetAsyncImportStatusById(testImportId);
+            asyncImportApiExample.testDeleteAsyncImportById(testImportId);
         } finally {
             if (sampleApp != null && sampleApp.getClient() != null) {
                 sampleApp.getClient().close();
