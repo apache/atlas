@@ -3517,6 +3517,154 @@
                     "entity-update-business-metadata"
                 ]
             }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "READ_FORMS",
+                "qualifiedName": "READ_FORM_ENTITIES",
+                "description": "Allows user to perform read operation on Form assets.",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$member",
+                    "$guest",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources":
+                [
+                    "entity-type:Form",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "CUD_FORMS",
+                "qualifiedName": "CUD_FORM_ENTITIES",
+                "description": "Allows user to perform cud operation on Form assets.",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources":
+                [
+                    "entity-type:Form",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "CR_RESPONSES",
+                "qualifiedName": "CR_RESPONSE_ENTITIES",
+                "description": "Allows all users to perform cr operation on Response assets.",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$member",
+                    "$guest",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources":
+                [
+                    "entity-type:Response",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-create",
+                    "entity-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "UD_RESPONSES",
+                "qualifiedName": "UD_RESPONSE_ENTITIES",
+                "description": "Allows admins and api tokens to perform ud operation on Response assets.",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "isPolicyEnabled": true,
+                "policyResources":
+                [
+                    "entity-type:Response",
+                    "entity-classification:*",
+                    "entity:*"
+                ],
+                "policyActions":
+                [
+                    "entity-update",
+                    "entity-delete"
+                ]
+            }
         }
     ]
 }

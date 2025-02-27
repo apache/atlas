@@ -27,8 +27,6 @@ on:
       - development
       - master
       - lineageondemand
-      - makerlogic
-      - java17squash
       - mlh40java17
 
 jobs:
