@@ -497,10 +497,11 @@ public abstract class AtlasBaseClient {
                 } catch (ClientHandlerException e) {
                     throw new AtlasServiceException(api, e);
                 }
-            } else if (clientResponse.getStatus() != ClientResponse.Status.SERVICE_UNAVAILABLE.getStatusCode()) {
+            } else if (clientResponse.getStatus() != ClientResponse.Status.SERVICE_UNAVAILABLE.getStatusCode() &&
+                    clientResponse.getStatus() != ClientResponse.Status.INTERNAL_SERVER_ERROR.getStatusCode()) {
                 break;
             } else {
-                LOG.error("Got a service unavailable when calling: {}, will retry..", resource);
+                LOG.error("attempt #{}: error {} when calling: {}, will retry..", (i + 1), clientResponse.getStatus(), resource);
 
                 sleepBetweenRetries();
             }
