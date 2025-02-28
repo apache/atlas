@@ -3522,6 +3522,41 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
+                "name": "READ_STAKEHOLDER_ENTITIES",
+                "qualifiedName": "READ_STAKEHOLDER_ENTITIES",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$guest",
+                    "$member",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources":
+                [
+                    "entity:*",
+                    "entity-type:Stakeholder",
+                    "entity-classification:*"
+                ],
+                "policyActions":
+                [
+                    "entity-read"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
                 "name": "READ_FORMS",
                 "qualifiedName": "READ_FORM_ENTITIES",
                 "description": "Allows user to perform read operation on Form assets.",
@@ -3663,41 +3698,6 @@
                 [
                     "entity-update",
                     "entity-delete"
-                ]
-            }
-        },
-        {
-            "typeName": "AuthPolicy",
-            "attributes":
-            {
-                "name": "READ_STAKEHOLDER_ENTITIES",
-                "qualifiedName": "READ_STAKEHOLDER_ENTITIES",
-                "policyCategory": "bootstrap",
-                "policySubCategory": "default",
-                "policyServiceName": "atlas",
-                "policyType": "allow",
-                "policyPriority": 0,
-                "policyUsers":
-                [],
-                "policyGroups":
-                [],
-                "policyRoles":
-                [
-                    "$admin",
-                    "$guest",
-                    "$member",
-                    "$api-token-default-access"
-                ],
-                "policyResourceCategory": "ENTITY",
-                "policyResources":
-                [
-                    "entity:*",
-                    "entity-type:Stakeholder",
-                    "entity-classification:*"
-                ],
-                "policyActions":
-                [
-                    "entity-read"
                 ]
             }
         }
