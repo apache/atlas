@@ -122,7 +122,7 @@
 	<!-- ElasticSearch audit provider configuration -->
 	<property>
 		<name>xasecure.audit.destination.elasticsearch</name>
-		<value>true</value>
+		<value>false</value>
 	</property>
 	<property>
 		<name>xasecure.audit.elasticsearch.is.enabled</name>
