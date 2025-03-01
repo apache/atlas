@@ -54,6 +54,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -144,8 +146,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         } catch (IOException e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
 
-            if (e.getMessage() != null &&
-                    (e.getMessage().contains("Connection reset by peer") || e.getMessage().contains("Network error"))) {
+            if (e instanceof SocketTimeoutException ||
+                    e instanceof UnknownHostException ||
+                    (e.getMessage() != null &&
+                            (e.getMessage().contains("Connection reset by peer") ||
+                                    e.getMessage().contains("Network error")))) {
                 throw new AtlasBaseException(AtlasErrorCode.SERVICE_UNAVAILABLE, e.getMessage());
             }
 
@@ -177,8 +182,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         } catch (IOException e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
 
-            if (e.getMessage() != null &&
-                    (e.getMessage().contains("Connection reset by peer") || e.getMessage().contains("Network error"))) {
+            if (e instanceof SocketTimeoutException ||
+                    e instanceof UnknownHostException ||
+                    (e.getMessage() != null &&
+                            (e.getMessage().contains("Connection reset by peer") ||
+                                    e.getMessage().contains("Network error")))) {
                 throw new AtlasBaseException(AtlasErrorCode.SERVICE_UNAVAILABLE, e.getMessage());
             }
 
@@ -196,8 +204,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         } catch (IOException e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
 
-            if (e.getMessage() != null &&
-                    (e.getMessage().contains("Connection reset by peer") || e.getMessage().contains("Network error"))) {
+            if (e instanceof SocketTimeoutException ||
+                    e instanceof UnknownHostException ||
+                    (e.getMessage() != null &&
+                            (e.getMessage().contains("Connection reset by peer") ||
+                                    e.getMessage().contains("Network error")))) {
                 throw new AtlasBaseException(AtlasErrorCode.SERVICE_UNAVAILABLE, e.getMessage());
             }
 
@@ -253,8 +264,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }catch (Exception e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
 
-            if (e.getMessage() != null &&
-                    (e.getMessage().contains("Connection reset by peer") || e.getMessage().contains("Network error"))) {
+            if (e instanceof SocketTimeoutException ||
+                    e instanceof UnknownHostException ||
+                    (e.getMessage() != null &&
+                            (e.getMessage().contains("Connection reset by peer") ||
+                                    e.getMessage().contains("Network error")))) {
                 throw new AtlasBaseException(AtlasErrorCode.SERVICE_UNAVAILABLE, e.getMessage());
             }
 
