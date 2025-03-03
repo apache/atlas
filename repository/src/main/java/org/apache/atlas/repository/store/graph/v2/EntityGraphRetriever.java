@@ -1132,12 +1132,24 @@ public class EntityGraphRetriever {
                 && typeName.equals("S3Bucket");
 
         boolean shouldPrefetch = RequestContext.get().isInvokedByIndexSearch()
-                && !isPolicyAttribute(attributes)
                 && !isS3Bucket
                 && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION.getBoolean();
 
+        // remove isPolicyAttribute from shouldPrefetch check
+        // prefetch properties for policies
+        // if there is some exception in fetching properties,
+        // then we will fetch properties again without prefetch
+
         if (shouldPrefetch) {
-            return mapVertexToAtlasEntityHeaderWithPrefetch(entityVertex, attributes);
+            try {
+                return mapVertexToAtlasEntityHeaderWithPrefetch(entityVertex, attributes);
+            } catch (AtlasBaseException e) {
+                if (isPolicyAttribute(attributes)) {
+                    LOG.error("Error fetching properties for entity vertex: {}. Retrying without prefetch", entityVertex.getId(), e);
+                    return mapVertexToAtlasEntityHeaderWithoutPrefetch(entityVertex, attributes);
+                }
+                throw e;
+            }
         } else {
             return mapVertexToAtlasEntityHeaderWithoutPrefetch(entityVertex, attributes);
         }
