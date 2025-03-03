@@ -265,15 +265,15 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         return result;
     }
 
-    /*
-     * Checks if the exception is a network-related issue and throws a SERVICE_UNAVAILABLE error.
-     */
-    private void handleNetworkErrors(Exception e) throws AtlasBaseException {
-        List<String> NETWORK_ERROR_MESSAGES = Arrays.asList(
+    private static final List<String> NETWORK_ERROR_MESSAGES = Arrays.asList(
                 "Connection reset by peer",
                 "Network error",
                 "Connection refused"
         );
+    /*
+     * Checks if the exception is a network-related issue and throws a SERVICE_UNAVAILABLE error.
+     */
+    private void handleNetworkErrors(Exception e) throws AtlasBaseException {
         if (e instanceof SocketTimeoutException || e instanceof UnknownHostException ||
                 (e.getMessage() != null && NETWORK_ERROR_MESSAGES.stream().anyMatch(e.getMessage()::contains))) {
             throw new AtlasBaseException(AtlasErrorCode.SERVICE_UNAVAILABLE,
