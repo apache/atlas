@@ -1240,7 +1240,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         )));
         mustClauses.add(mustClause);
 
-        List<Map<String, Object>>filterClauses = new ArrayList<>();
+        List<Map<String, Object>> filterClauses = new ArrayList<>();
         filterClauses.add(getMap("terms", getMap("_index", Collections.singletonList(VERTEX_INDEX_NAME))));
 
         Map<String, Object> boolQuery = new HashMap<>();
@@ -1248,6 +1248,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         boolQuery.put("filter", filterClauses);
 
         return getMap("bool", boolQuery);
+    }
 
     private void addPreFiltersToSearchQuery(SearchParams searchParams) {
         try {

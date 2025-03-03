@@ -35,11 +35,6 @@ public class IndexSearchParams extends SearchParams {
         return queryString;
     }
 
-    @Override
-    public void setQuery(String query) {
-        this.queryString = query;
-    }
-
     public Map getDsl() {
         return dsl;
     }
