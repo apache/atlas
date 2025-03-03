@@ -273,7 +273,8 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 e instanceof UnknownHostException ||
                 (e.getMessage() != null &&
                         (e.getMessage().contains("Connection reset by peer") ||
-                                e.getMessage().contains("Network error")))) {
+                                e.getMessage().contains("Network error") ||
+                                e.getMessage().contains("Connection refused")))) {
             throw new AtlasBaseException(AtlasErrorCode.SERVICE_UNAVAILABLE,
                     "Service is unavailable or a network error occurred: Elasticsearch - " + e.getMessage());
         }
