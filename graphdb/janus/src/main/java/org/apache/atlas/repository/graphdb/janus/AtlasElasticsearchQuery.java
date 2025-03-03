@@ -146,13 +146,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         } catch (IOException e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
 
-            if (e instanceof SocketTimeoutException ||
-                    e instanceof UnknownHostException ||
-                    (e.getMessage() != null &&
-                            (e.getMessage().contains("Connection reset by peer") ||
-                                    e.getMessage().contains("Network error")))) {
-                throw new AtlasBaseException(AtlasErrorCode.SERVICE_UNAVAILABLE, e.getMessage());
-            }
+            handleNetworkErrors(e);
 
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
         }
@@ -182,13 +176,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         } catch (IOException e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
 
-            if (e instanceof SocketTimeoutException ||
-                    e instanceof UnknownHostException ||
-                    (e.getMessage() != null &&
-                            (e.getMessage().contains("Connection reset by peer") ||
-                                    e.getMessage().contains("Network error")))) {
-                throw new AtlasBaseException(AtlasErrorCode.SERVICE_UNAVAILABLE, e.getMessage());
-            }
+            handleNetworkErrors(e);
 
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
         }
@@ -204,13 +192,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         } catch (IOException e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
 
-            if (e instanceof SocketTimeoutException ||
-                    e instanceof UnknownHostException ||
-                    (e.getMessage() != null &&
-                            (e.getMessage().contains("Connection reset by peer") ||
-                                    e.getMessage().contains("Network error")))) {
-                throw new AtlasBaseException(AtlasErrorCode.SERVICE_UNAVAILABLE, e.getMessage());
-            }
+            handleNetworkErrors(e);
 
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
         }
@@ -264,12 +246,8 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }catch (Exception e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
 
-            if (e instanceof SocketTimeoutException ||
-                    e instanceof UnknownHostException ||
-                    (e.getMessage() != null &&
-                            (e.getMessage().contains("Connection reset by peer") ||
-                                    e.getMessage().contains("Network error")))) {
-                throw new AtlasBaseException(AtlasErrorCode.SERVICE_UNAVAILABLE, e.getMessage());
+            if (e instanceof IOException) {
+                handleNetworkErrors((IOException) e);
             }
 
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
@@ -285,6 +263,20 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             RequestContext.get().endMetricRecord(metric);
         }
         return result;
+    }
+
+    /*
+     * Checks if the exception is a network-related issue and throws a SERVICE_UNAVAILABLE error.
+     */
+    private void handleNetworkErrors(IOException e) throws AtlasBaseException {
+        if (e instanceof SocketTimeoutException ||
+                e instanceof UnknownHostException ||
+                (e.getMessage() != null &&
+                        (e.getMessage().contains("Connection reset by peer") ||
+                                e.getMessage().contains("Network error")))) {
+            throw new AtlasBaseException(AtlasErrorCode.SERVICE_UNAVAILABLE,
+                    "Service is unavailable or a network error occurred: Elasticsearch - " + e.getMessage());
+        }
     }
 
     /*
