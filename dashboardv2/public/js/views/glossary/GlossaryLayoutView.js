@@ -244,6 +244,7 @@ define(['require',
             },
             getGlossary: function() {
                 this.changeLoaderState(true);
+                this.glossaryCollection.url = UrlLinks.glossaryApiUrl() + '?skipFailedEntities=true';
                 this.glossaryCollection.fetch({ reset: true });
             },
             generateCategoryData: function(options) {
