@@ -8,6 +8,9 @@ on:
       - master
       - staging
       - beta
+      - mlh41-integration-tests
+      - mlh41tests
+      - mlh40java17
     types:
       - completed
 

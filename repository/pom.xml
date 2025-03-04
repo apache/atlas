@@ -122,7 +122,7 @@
                     <artifactId>metrics-core</artifactId>
                 </exclusion>
             </exclusions>
-            <version>3.11.12</version>
+            <version>3.11.18</version>
         </dependency>
 
 
@@ -331,6 +331,10 @@
             <groupId>com.fasterxml.jackson.dataformat</groupId>
             <artifactId>jackson-dataformat-yaml</artifactId>
             <version>2.12.7</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.atlas</groupId>
+            <artifactId>atlas-notification</artifactId>
         </dependency>
 
     </dependencies>

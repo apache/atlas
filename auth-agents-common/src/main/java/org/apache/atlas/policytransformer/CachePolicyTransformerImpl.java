@@ -174,6 +174,8 @@ public class CachePolicyTransformerImpl {
 
                 ArrayList<String> policyGuids = new ArrayList<>(policyChanges.keySet());
                 List<AtlasEntityHeader> allAtlasPolicies = getAtlasPolicies(serviceName, POLICY_BATCH_SIZE, policyGuids);
+                Date latestUpdateTime = allAtlasPolicies.stream().map(AtlasEntityHeader::getUpdateTime).max(Date::compareTo).orElse(null);
+                servicePolicies.setPolicyUpdateTime(latestUpdateTime);
 
                 List<AtlasEntityHeader> atlasServicePolicies = allAtlasPolicies.stream().filter(x -> serviceName.equals(x.getAttribute(ATTR_POLICY_SERVICE_NAME))).collect(Collectors.toList());
                 List<RangerPolicyDelta> policiesDelta = getRangerPolicyDelta(service, policyChanges, atlasServicePolicies);

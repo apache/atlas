@@ -18,6 +18,16 @@
 
 package org.apache.atlas;
 
+import io.opentelemetry.api.OpenTelemetry;
+import io.opentelemetry.exporter.otlp.logs.OtlpGrpcLogRecordExporter;
+import io.opentelemetry.sdk.OpenTelemetrySdk;
+import io.opentelemetry.sdk.logs.SdkLoggerProvider;
+import io.opentelemetry.sdk.logs.export.BatchLogRecordProcessor;
+import io.opentelemetry.sdk.resources.Resource;
+import io.opentelemetry.sdk.resources.ResourceBuilder;
+import io.opentelemetry.sdk.trace.SdkTracerProvider;
+import io.opentelemetry.sdk.trace.samplers.Sampler;
+import io.opentelemetry.semconv.ResourceAttributes;
 import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase;
 import org.apache.atlas.security.SecurityProperties;
 import org.apache.atlas.util.AccessAuditLogsIndexCreator;
@@ -48,7 +58,9 @@ import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Iterator;
+import java.util.List;
 
 import static org.apache.atlas.repository.Constants.INDEX_PREFIX;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
@@ -112,6 +124,13 @@ public final class Atlas {
     }
 
     public static void main(String[] args) throws Exception {
+
+        // Initialize OpenTelemetry as early as possible
+        OpenTelemetry openTelemetry = initializeOpenTelemetry();
+        // Install OpenTelemetry in logback appender
+        io.opentelemetry.instrumentation.logback.appender.v1_0.OpenTelemetryAppender.install(
+                openTelemetry);
+
         CommandLine cmd = parseArgs(args);
         PropertiesConfiguration buildConfiguration = new PropertiesConfiguration("atlas-buildinfo.properties");
         String appPath = "webapp/target/atlas-webapp-" + getProjectVersion(buildConfiguration);
@@ -164,6 +183,61 @@ public final class Atlas {
         if (System.getProperty(ATLAS_LOG_DIR) == null) {
             System.setProperty(ATLAS_LOG_DIR, "target/logs");
         }
+    }
+
+    private static OpenTelemetry initializeOpenTelemetry() {
+
+        String otelResourceAttributes = System.getenv("OTEL_RESOURCE_ATTRIBUTES");
+
+        List<String> customResourceAttr = null;
+
+        if (otelResourceAttributes != null) {
+            // Split the environment variable by commas
+            String[] values = otelResourceAttributes.split(",");
+            customResourceAttr = Arrays.asList(values);
+        } else {
+            customResourceAttr = Arrays.asList(AtlasConfiguration.OTEL_RESOURCE_ATTRIBUTES.getStringArray());
+        }
+
+        String serviceName = System.getenv("OTEL_SERVICE_NAME") != null ? System.getenv("OTEL_SERVICE_NAME") : AtlasConfiguration.OTEL_SERVICE_NAME.getString();
+        String otelEndpoint = System.getenv("OTEL_EXPORTER_OTLP_ENDPOINT") != null ? System.getenv("OTEL_EXPORTER_OTLP_ENDPOINT") : AtlasConfiguration.OTEL_EXPORTER_OTLP_ENDPOINT.getString();
+
+        ResourceBuilder resourceBuilder = Resource.getDefault().toBuilder()
+                .put(ResourceAttributes.SERVICE_NAME, serviceName);
+
+        // Iterate through the ArrayList and add each attribute
+        for (String attribute : customResourceAttr) {
+            String[] keyValue = attribute.split("=");
+            if (keyValue.length == 2) {
+                String key = keyValue[0].trim();
+                String value = keyValue[1].trim();
+                resourceBuilder.put(key, value);
+            }
+        }
+
+        OpenTelemetrySdk sdk = OpenTelemetrySdk.builder()
+                .setTracerProvider(SdkTracerProvider.builder()
+                        .setSampler(Sampler.alwaysOn())
+                        .build())
+                .setLoggerProvider(
+                        SdkLoggerProvider.builder()
+                                .setResource(resourceBuilder.build())
+                                .addLogRecordProcessor(
+                                        BatchLogRecordProcessor.builder(
+                                                        OtlpGrpcLogRecordExporter.builder()
+                                                                .setEndpoint(otelEndpoint)
+                                                                .build()
+                                                )
+                                                .build()
+                                )
+                                .build()
+                )
+                .build();
+
+        // Add hook to close SDK, which flushes logs
+        Runtime.getRuntime().addShutdownHook(new Thread(sdk::close));
+
+        return sdk;
     }
 
     public static String getProjectVersion(PropertiesConfiguration buildConfiguration) {

@@ -186,7 +186,7 @@ public class SetupSteps {
                     LOG.warn("Running setup per configuration {}.", ATLAS_SERVER_RUN_SETUP_KEY);
                     return true;
                 } else {
-                    LOG.info("Not running setup per configuration {}.", ATLAS_SERVER_RUN_SETUP_KEY);
+                    LOG.debug("Not running setup per configuration {}.", ATLAS_SERVER_RUN_SETUP_KEY);
                 }
             } catch (AtlasException e) {
                 LOG.error("Unable to read config to determine if setup is needed. Not running setup.");

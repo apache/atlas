@@ -29,7 +29,9 @@ import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.NotImplementedException;
@@ -47,6 +49,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -60,6 +63,7 @@ import java.text.MessageFormat;
 import java.util.*;
 
 import static java.nio.charset.Charset.defaultCharset;
+import static org.apache.atlas.repository.Constants.DOMAIN_GUIDS;
 import static org.springframework.util.StreamUtils.copyToString;
 
 /**
@@ -85,6 +89,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private static final String DETAIL = "detail";
     private static final String ENTITY = "entity";
     private static final String bulkMetadata = String.format("{ \"index\" : { \"_index\" : \"%s\" } }%n", INDEX_NAME);
+    private static final Set<String> ALLOWED_LINKED_ATTRIBUTES = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
+    private static final String ENTITY_AUDITS_INDEX = "entity_audits";
 
     /*
     *    created   → event creation time
@@ -94,12 +100,13 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     private RestClient lowLevelClient;
     private final Configuration configuration;
+    private EntityGraphRetriever entityGraphRetriever;
 
     @Inject
-    public ESBasedAuditRepository(Configuration configuration) {
+    public ESBasedAuditRepository(Configuration configuration, EntityGraphRetriever entityGraphRetriever) {
         this.configuration = configuration;
+        this.entityGraphRetriever = entityGraphRetriever;
     }
-
 
     @Override
     public void putEventsV1(List<EntityAuditEvent> events) throws AtlasException {
@@ -113,6 +120,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     @Override
     public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("pushInES");
         try {
             if (events != null && events.size() > 0) {
 
@@ -167,6 +175,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             }
         } catch (Exception e) {
             throw new AtlasBaseException("Unable to push entity audits to ES", e);
+        }finally {
+            RequestContext.get().endMetricRecord(metric);
         }
     }
 
@@ -220,6 +230,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
         Map<String, Object> hits_0 = (Map<String, Object>) responseMap.get("hits");
         List<LinkedHashMap> hits_1 = (List<LinkedHashMap>) hits_0.get("hits");
+        Map<String, AtlasEntityHeader> existingLinkedEntities = searchResult.getLinkedEntities();
+
         for (LinkedHashMap hit : hits_1) {
             Map source = (Map) hit.get("_source");
             String entityGuid = (String) source.get(ENTITYID);
@@ -243,6 +255,32 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 eventKey = event.getEntityId() + ":" + event.getTimestamp();
             }
 
+            Map<String, Object> detail = event.getDetail();
+            if (detail != null && detail.containsKey("attributes")) {
+                Map<String, Object> attributes = (Map<String, Object>) detail.get("attributes");
+
+                for (Map.Entry<String, Object> entry: attributes.entrySet()) {
+                    if (ALLOWED_LINKED_ATTRIBUTES.contains(entry.getKey())) {
+                        List<String> guids = (List<String>) entry.getValue();
+
+                        if (guids != null && !guids.isEmpty()){
+                            for (String guid: guids){
+                                if(!existingLinkedEntities.containsKey(guid)){
+                                    try {
+                                        AtlasEntityHeader entityHeader = fetchAtlasEntityHeader(guid);
+                                        if (entityHeader != null) {
+                                            existingLinkedEntities.put(guid, entityHeader);
+                                        }
+                                    } catch (AtlasBaseException e) {
+                                        LOG.error("Error while fetching entity header for guid: {}", guid, e);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             event.setHeaders((Map<String, String>) source.get("headers"));
 
             event.setEventKey(eventKey);
@@ -252,10 +290,20 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
         Map<String, Object> countObject = (Map<String, Object>) hits_0.get("total");
         int totalCount = (int) countObject.get("value");
         searchResult.setEntityAudits(entityAudits);
+        searchResult.setLinkedEntities(existingLinkedEntities);
         searchResult.setAggregations(aggregationsMap);
         searchResult.setTotalCount(totalCount);
         searchResult.setCount(entityAudits.size());
         return searchResult;
+    }
+
+    private AtlasEntityHeader fetchAtlasEntityHeader(String domainGUID) throws AtlasBaseException {
+        try {
+            AtlasEntityHeader entityHeader = entityGraphRetriever.toAtlasEntityHeader(domainGUID);
+            return entityHeader;
+        } catch (AtlasBaseException e) {
+            throw new AtlasBaseException(e);
+        }
     }
 
     private String performSearchOnIndex(String queryString) throws IOException {
@@ -369,28 +417,40 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     private void updateMappingsIfChanged() throws IOException, AtlasException {
         LOG.info("ESBasedAuditRepo - updateMappings!");
         ObjectMapper mapper = new ObjectMapper();
-        JsonNode activeIndexInformation = getActiveIndexInfoAsJson(mapper);
+        Map<String, JsonNode> activeIndexMappings = getActiveIndexMappings(mapper);
         JsonNode indexInformationFromConfigurationFile = mapper.readTree(getAuditIndexMappings());
-        if (!areConfigurationsSame(activeIndexInformation, indexInformationFromConfigurationFile)) {
-            Response response = updateMappings(indexInformationFromConfigurationFile);
-            if (isSuccess(response)) {
-                LOG.info("ESBasedAuditRepo - Elasticsearch mappings have been updated!");
-            } else {
-                LOG.error("Error while updating the Elasticsearch indexes!");
-                throw new AtlasException(copyToString(response.getEntity().getContent(), Charset.defaultCharset()));
+        for (String activeAuditIndex : activeIndexMappings.keySet()) {
+            if (!areConfigurationsSame(activeIndexMappings.get(activeAuditIndex), indexInformationFromConfigurationFile)) {
+                Response response = updateMappings(indexInformationFromConfigurationFile);
+                if (isSuccess(response)) {
+                    LOG.info("ESBasedAuditRepo - Elasticsearch mappings have been updated for index: {}", activeAuditIndex);
+                } else {
+                    LOG.error("Error while updating the Elasticsearch indexes for index: {}", activeAuditIndex);
+                    throw new AtlasException(copyToString(response.getEntity().getContent(), Charset.defaultCharset()));
+                }
             }
         }
     }
 
-    private JsonNode getActiveIndexInfoAsJson(ObjectMapper mapper) throws IOException {
+    private Map<String, JsonNode> getActiveIndexMappings(ObjectMapper mapper) throws IOException {
         Request request = new Request("GET", INDEX_NAME);
         Response response = lowLevelClient.performRequest(request);
         String responseString = copyToString(response.getEntity().getContent(), Charset.defaultCharset());
-        return mapper.readTree(responseString);
+        Map<String, JsonNode> indexMappings = new TreeMap<>();
+        JsonNode rootNode = mapper.readTree(responseString);
+
+        // Iterate over the index names and get the mappings
+        for (Iterator<String> it = rootNode.fieldNames(); it.hasNext(); ) {
+            String indexName = it.next();
+            if (indexName.startsWith(ENTITY_AUDITS_INDEX)) {
+                indexMappings.put(indexName, rootNode.get(indexName).get("mappings"));
+            }
+        }
+        return indexMappings;
     }
 
     private boolean areConfigurationsSame(JsonNode activeIndexInformation, JsonNode indexInformationFromConfigurationFile) {
-        return indexInformationFromConfigurationFile.get("mappings").equals(activeIndexInformation.get("entity_audits").get("mappings"));
+        return indexInformationFromConfigurationFile.get("mappings").equals(activeIndexInformation);
     }
 
     private Response updateMappings(JsonNode indexInformationFromConfigurationFile) throws IOException {

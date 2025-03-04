@@ -272,6 +272,8 @@ public final class Constants {
     public static final String QUALIFIED_NAME                          = "qualifiedName";
     public static final String UNIQUE_QUALIFIED_NAME                   = UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX + QUALIFIED_NAME;
     public static final String TYPE_NAME_PROPERTY_KEY                  = INTERNAL_PROPERTY_KEY_PREFIX + "typeName";
+
+    public static final String LABEL_PROPERTY_KEY                      = "label";
     public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE        = "atlas.graph.index.search.max-result-set-size";
     public static final String INDEX_SEARCH_TYPES_MAX_QUERY_STR_LENGTH = "atlas.graph.index.search.types.max-query-str-length";
     public static final String INDEX_SEARCH_TAGS_MAX_QUERY_STR_LENGTH  = "atlas.graph.index.search.tags.max-query-str-length";
@@ -316,6 +318,11 @@ public final class Constants {
     public static final String VERTEX_ID_IN_IMPORT_KEY = "__vIdInImport";
     public static final String EDGE_ID_IN_IMPORT_KEY   = "__eIdInImport";
 
+    /*
+     * Edge labels for data product relations which are hard deleted
+     */
+
+    public static final Set<String> EDGE_LABELS_FOR_HARD_DELETION = new HashSet<>(Arrays.asList( OUTPUT_PORT_PRODUCT_EDGE_LABEL, INPUT_PORT_PRODUCT_EDGE_LABEL, TERM_ASSIGNMENT_LABEL ));
     /*
      * elasticsearch attributes
      */

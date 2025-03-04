@@ -269,6 +269,7 @@ public enum AtlasErrorCode {
     INDEX_SEARCH_FAILED(400, "ATLAS-400-00-102", "Error occurred while running direct index query on ES: {0}"),
 
     INDEX_SEARCH_FAILED_DUE_TO_TIMEOUT(429, "ATLAS-400-00-502", "ES query exceeded timeout: {0}"),
+    INDEX_SEARCH_GATEWAY_TIMEOUT(504, "ATLAS-504-00-001", "ES query gateway timeout: {0}"),
     DEPRECATED_API(400, "ATLAS-400-00-103", "Deprecated API. Use {0} instead"),
     DISABLED_API(400, "ATLAS-400-00-104", "API temporarily disabled. Reason: {0}"),
     HAS_LINEAGE_GET_EDGE_FAILED(500, "ATLAS-500-00-019", "Error occurred while getting edge between vertices for hasLineage migration: {0}"),
@@ -294,7 +295,8 @@ public enum AtlasErrorCode {
     TASK_TYPE_NOT_SUPPORTED(400, "ATLAS-400-00-112", "Task type {0} is not supported"),
 
     PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED(400, "ATLAS-400-00-113", "Exceeded limit of maximum allowed assets across policies for a Persona: Limit: {0}, assets: {1}"),
-    ADMIN_LIST_SHOULD_NOT_BE_EMPTY(400, "ATLAS-400-00-114", "Admin list should not be empty for type {0}");
+    ADMIN_LIST_SHOULD_NOT_BE_EMPTY(400, "ATLAS-400-00-114", "Admin list should not be empty for type {0}"),
+    EXCEEDED_MAX_ENTITIES_ALLOWED(400, "ATLAS-400-00-212", "Request Error - Entities should be less than or equal to: {0}");
 
     private String errorCode;
     private String errorMessage;

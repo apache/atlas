@@ -4,12 +4,14 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.Clearable;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import java.io.Serializable;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -30,6 +32,7 @@ public class EntityAuditSearchResult implements Serializable, Clearable  {
     private Map<String, Object> aggregations;
     private int count;
     private int totalCount;
+    private Map<String, AtlasEntityHeader> linkedEntities = new HashMap<>(0);
 
     public List<EntityAuditEventV2> getEntityAudits() {
         return entityAudits;
@@ -63,6 +66,10 @@ public class EntityAuditSearchResult implements Serializable, Clearable  {
         this.totalCount = totalCount;
     }
 
+    public Map<String, AtlasEntityHeader> getLinkedEntities() { return linkedEntities; }
+
+    public void setLinkedEntities(Map<String, AtlasEntityHeader> linkedEntities) { this.linkedEntities = linkedEntities != null ? linkedEntities : new HashMap<>(0); }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) { return true; }
@@ -72,12 +79,13 @@ public class EntityAuditSearchResult implements Serializable, Clearable  {
         return Objects.equals(entityAudits, that.entityAudits) &&
                 Objects.equals(aggregations, that.aggregations) &&
                 Objects.equals(count, that.count) &&
-                Objects.equals(totalCount, that.totalCount);
+                Objects.equals(totalCount, that.totalCount) &&
+                Objects.equals(linkedEntities, that.linkedEntities);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(entityAudits, aggregations, count, totalCount);
+        return Objects.hash(entityAudits, aggregations, count, totalCount, linkedEntities);
     }
 
     @Override
@@ -85,6 +93,7 @@ public class EntityAuditSearchResult implements Serializable, Clearable  {
         final StringBuilder sb = new StringBuilder("EntityAuditSearchResult{");
         sb.append("entityAudits='").append(entityAudits).append('\'');
         sb.append(", aggregations='").append(aggregations).append('\'');
+        sb.append(", linkedEntities='").append(linkedEntities).append('\'');
         sb.append(", count=").append(count);
         sb.append(", totalCount=").append(totalCount);
         sb.append('}');

@@ -28,6 +28,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasHasLineageRequests;
 import org.apache.atlas.model.instance.EntityMutationResponse;
+import org.apache.atlas.repository.store.graph.v2.BulkRequestContext;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.bulkimport.BulkImportResponse;
@@ -167,13 +168,12 @@ public interface AtlasEntityStore {
     /**
      * Create or update  entities in the stream
      * @param entityStream AtlasEntityStream
+     * @param bulkRequestContext BulkRequestContext Contains flags regarding tags/CM update behaviour
      * @return EntityMutationResponse Entity mutations operations with the corresponding set of entities on which these operations were performed
      * @throws AtlasBaseException
      */
     EntityMutationResponse createOrUpdate(EntityStream entityStream,
-                                          boolean replaceClassifications,
-                                          boolean replaceBusinessAttributes,
-                                          boolean isOverwriteBusinessAttributes) throws AtlasBaseException;
+                                          BulkRequestContext bulkRequestContext) throws AtlasBaseException;
 
 
     /**
@@ -369,9 +369,18 @@ public interface AtlasEntityStore {
 
     void unlinkMeshEntityFromAssets(String meshEntityId, Set<String> unlinkGuids) throws AtlasBaseException;
 
-    void linkBusinessPolicy(String policyId, Set<String> linkGuids) throws AtlasBaseException;
+    void linkBusinessPolicy(List<BusinessPolicyRequest.AssetComplianceInfo> data) throws AtlasBaseException;
 
     void unlinkBusinessPolicy(String policyId, Set<String> unlinkGuids) throws AtlasBaseException;
 
     void moveBusinessPolicies(Set<String> policyId, String assetId, String type) throws AtlasBaseException;
+
+    /**
+     *
+     * @param entities
+     * @throws AtlasBaseException
+     *
+     *  For evaluations of policies
+     */
+    List<AtlasEvaluatePolicyResponse> evaluatePolicies(List<AtlasEvaluatePolicyRequest> entities) throws AtlasBaseException;
 }

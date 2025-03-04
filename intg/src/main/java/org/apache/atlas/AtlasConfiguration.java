@@ -40,6 +40,7 @@ public enum AtlasConfiguration {
     NOTIFICATION_HOOK_TOPIC_NAME("atlas.notification.hook.topic.name", "ATLAS_HOOK"),
     NOTIFICATION_ENTITIES_TOPIC_NAME("atlas.notification.entities.topic.name", "ATLAS_ENTITIES"),
     NOTIFICATION_RELATIONSHIPS_TOPIC_NAME("atlas.notification.relationships.topic.name", "ATLAS_RELATIONSHIPS"),
+    NOTIFICATION_ATLAS_DISTRIBUTED_TASKS_TOPIC_NAME("atlas.notification.distributed.tasks.topic.name", "ATLAS_DISTRIBUTED_TASKS"),
 
     NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES("atlas.notification.hook.consumer.topic.names", "ATLAS_HOOK"), //  a comma separated list of topic names
     NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES("atlas.notification.entities.consumer.topic.names", "ATLAS_ENTITIES"), //  a comma separated list of topic names
@@ -83,6 +84,7 @@ public enum AtlasConfiguration {
     DSL_CACHED_TRANSLATOR("atlas.dsl.cached.translator", true),
     DEBUG_METRICS_ENABLED("atlas.debug.metrics.enabled", false),
     TASKS_USE_ENABLED("atlas.tasks.enabled", true),
+    ATLAS_DISTRIBUTED_TASK_ENABLED("atlas.distributed.task.enabled", false),
     TASKS_REQUEUE_GRAPH_QUERY("atlas.tasks.requeue.graph.query", false),
     TASKS_IN_PROGRESS_GRAPH_QUERY("atlas.tasks.inprogress.graph.query", false),
     TASKS_REQUEUE_POLL_INTERVAL("atlas.tasks.requeue.poll.interval.millis", 60000),
@@ -97,6 +99,8 @@ public enum AtlasConfiguration {
     LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 100),
 
     SUPPORTED_RELATIONSHIP_EVENTS("atlas.notification.relationships.filter", "asset_readme,asset_links"),
+    ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_ASSET_TYPES("atlas.relationship.cleanup.supported.asset.types", "Process,AirflowTask"),
+    ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_RELATIONSHIP_LABELS("atlas.relationship.cleanup.supported.relationship.labels", "__Process.inputs,__Process.outputs,__AirflowTask.inputs,__AirflowTask.outputs"),
 
     REST_API_XSS_FILTER_MASK_STRING("atlas.rest.xss.filter.mask.string", "map<[a-zA-Z _,:<>0-9\\x60]*>|struct<[a-zA-Z _,:<>0-9\\x60]*>|array<[a-zA-Z _,:<>0-9\\x60]*>|\\{\\{[a-zA-Z _,-:0-9\\x60\\{\\}]*\\}\\}"),
     REST_API_XSS_FILTER_EXLUDE_SERVER_NAME("atlas.rest.xss.filter.exclude.server.name", "atlas-service-atlas.atlas.svc.cluster.local"),
@@ -122,10 +126,18 @@ public enum AtlasConfiguration {
     ATLAS_INDEXSEARCH_ENABLE_API_LIMIT("atlas.indexsearch.enable.api.limit", false),
     ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION("atlas.indexsearch.enable.janus.optimization", false),
     ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false),
-
     DELTA_BASED_REFRESH_ENABLED("atlas.authorizer.enable.delta_based_refresh", false),
 
-    ATLAS_UD_RELATIONSHIPS_MAX_COUNT("atlas.ud.relationship.max.count", 100);
+    ATLAS_UD_RELATIONSHIPS_MAX_COUNT("atlas.ud.relationship.max.count", 100),
+
+    /***
+     * OTEL Configuration
+     */
+    OTEL_RESOURCE_ATTRIBUTES("OTEL_RESOURCE_ATTRIBUTES", "service.name=atlas"),
+    OTEL_SERVICE_NAME(" OTEL_SERVICE_NAME", "atlas"),
+    OTEL_EXPORTER_OTLP_ENDPOINT("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"),
+    ATLAS_BULK_API_MAX_ENTITIES_ALLOWED("atlas.bulk.api.max.entities.allowed", 10000);
+
 
 
     private static final Configuration APPLICATION_PROPERTIES;

@@ -295,7 +295,7 @@ public class PolicyRefresher extends Thread {
 				lastUpdatedTimeInMillis = -1;
 			}
 		} catch (Exception excp) {
-			LOG.error("Encountered unexpected exception!!!!!!!!!!!", excp);
+			LOG.error("Encountered unexpected exception!!!!!!!!!!! Message:" + excp.getMessage() + "Stacktrace: " + excp.getStackTrace().toString(), excp);
 		}
 
 		RangerPerfTracer.log(perf);
@@ -332,6 +332,7 @@ public class PolicyRefresher extends Thread {
 						lastUpdatedTimeInMillis);
 			} else {
 				LOG.info("PolicyRefresher(serviceName=" + serviceName + "): loading delta policies from last known version=" + lastKnownVersion + ", lastUpdatedTime=" + lastUpdatedTimeInMillis);
+
 				svcPolicies = atlasAuthAdminClient.getServicePoliciesIfUpdated(lastUpdatedTimeInMillis, this.enableDeltaBasedRefresh);
 			}
 

@@ -27,7 +27,7 @@ ATLAS_LOG_OPTS="-Datlas.log.dir=%s -Datlas.log.file=atlas-migration-exporter.log
 ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_HEAP_OPTS="-Xmx4096m -XX:MaxPermSize=512m"
-DEFAULT_JVM_OPTS="-Dlog4j.configuration=atlas-log4j.xml -Djava.net.preferIPv4Stack=true -server"
+DEFAULT_JVM_OPTS="-Dlogback.configurationFile=atlas-logback.xml -Djava.net.preferIPv4Stack=true -server"
 
 def main():
     is_setup = (len(sys.argv)>1) and sys.argv[1] is not None and sys.argv[1] == '-setup'

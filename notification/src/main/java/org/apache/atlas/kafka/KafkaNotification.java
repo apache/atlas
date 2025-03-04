@@ -61,6 +61,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public    static final String ATLAS_HOOK_TOPIC           = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
     public    static final String ATLAS_ENTITIES_TOPIC       = AtlasConfiguration.NOTIFICATION_ENTITIES_TOPIC_NAME.getString();
     public    static final String ATLAS_RELATIONSHIPS_TOPIC       = AtlasConfiguration.NOTIFICATION_RELATIONSHIPS_TOPIC_NAME.getString();
+    public    static final String ATLAS_DISTRIBUTED_TASKS_TOPIC = AtlasConfiguration.NOTIFICATION_ATLAS_DISTRIBUTED_TASKS_TOPIC_NAME.getString();
     protected static final String CONSUMER_GROUP_ID_PROPERTY = "group.id";
 
     private   static final String[] ATLAS_HOOK_CONSUMER_TOPICS     = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_HOOK_TOPIC);
@@ -74,6 +75,8 @@ public class KafkaNotification extends AbstractNotification implements Service {
             put(NotificationType.HOOK, ATLAS_HOOK_TOPIC);
             put(NotificationType.ENTITIES, ATLAS_ENTITIES_TOPIC);
             put(NotificationType.RELATIONSHIPS, ATLAS_RELATIONSHIPS_TOPIC);
+            put(NotificationType.ATLAS_DISTRIBUTED_TASKS, ATLAS_DISTRIBUTED_TASKS_TOPIC);
+
         }
     };
 
@@ -104,7 +107,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public KafkaNotification(Configuration applicationProperties) throws AtlasException {
         super(applicationProperties);
 
-        LOG.info("==> KafkaNotification()");
+        LOG.debug("==> KafkaNotification()");
 
         Configuration kafkaConf = ApplicationProperties.getSubsetConfiguration(applicationProperties, PROPERTY_PREFIX);
 
@@ -138,7 +141,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
         KafkaUtils.setKafkaJAASProperties(applicationProperties, properties);
 
-        LOG.info("<== KafkaNotification()");
+        LOG.debug("<== KafkaNotification()");
     }
 
     @VisibleForTesting

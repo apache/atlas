@@ -74,7 +74,7 @@ public class LoginProcessor {
                         getServerPrincipal(configuration.getString(AUTHENTICATION_PRINCIPAL), bindAddress),
                         configuration.getString(AUTHENTICATION_KEYTAB));
             }
-            LOG.info("Logged in user {}", UserGroupInformation.getLoginUser());
+            LOG.debug("Logged in user {}", UserGroupInformation.getLoginUser());
         } catch (IOException e) {
             throw new IllegalStateException(String.format("Unable to perform %s login.", authenticationMethod), e);
         }
@@ -99,7 +99,7 @@ public class LoginProcessor {
         String kerberosAuthNEnabled = configuration != null ? configuration.getString(AUTHENTICATION_KERBEROS_METHOD) : null;
         // getString may return null, and would like to log the nature of the default setting
         if (kerberosAuthNEnabled == null || kerberosAuthNEnabled.equalsIgnoreCase("false")) {
-            LOG.info("No authentication method configured.  Defaulting to simple authentication");
+            LOG.debug("No authentication method configured.  Defaulting to simple authentication");
             authMethod = "simple";
         } else if (kerberosAuthNEnabled.equalsIgnoreCase("true")) {
             authMethod = "kerberos";

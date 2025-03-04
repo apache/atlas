@@ -63,6 +63,9 @@ public abstract class AtlasHook {
     public static final String CONF_METADATA_NAMESPACE                            = "atlas.metadata.namespace";
     public static final String CLUSTER_NAME_KEY                                   = "atlas.cluster.name";
     public static final String DEFAULT_CLUSTER_NAME                               = "primary";
+    public static final String CONF_ATLAS_HOOK_MESSAGES_SORT_ENABLED              = "atlas.hook.messages.sort.enabled";
+    public static final String ATLAS_HOOK_ENTITY_IGNORE_PATTERN                   = "atlas.hook.entity.ignore.pattern";
+    public static final String ATTRIBUTE_QUALIFIED_NAME                           = "qualifiedName";
 
     protected static Configuration         atlasProperties;
     protected static NotificationInterface notificationInterface;
@@ -84,17 +87,16 @@ public abstract class AtlasHook {
             LOG.info("Failed to load application properties", e);
         }
 
-        String failedMessageFile = atlasProperties.getString(ATLAS_NOTIFICATION_FAILED_MESSAGES_FILENAME_KEY, ATLAS_HOOK_FAILED_MESSAGES_LOG_DEFAULT_NAME);
-
         logFailedMessages = atlasProperties.getBoolean(ATLAS_NOTIFICATION_LOG_FAILED_MESSAGES_ENABLED_KEY, true);
 
         if (logFailedMessages) {
-            failedMessagesLogger = new FailedMessagesLogger(failedMessageFile);
-            failedMessagesLogger.init();
+            failedMessagesLogger = new FailedMessagesLogger();
         } else {
             failedMessagesLogger = null;
         }
 
+//        isRESTNotificationEnabled = AtlasConfiguration.NOTIFICATION_HOOK_REST_ENABLED.getBoolean();
+//        isHookMsgsSortEnabled     = atlasProperties.getBoolean(CONF_ATLAS_HOOK_MESSAGES_SORT_ENABLED, isRESTNotificationEnabled);
         metadataNamespace         = getMetadataNamespace(atlasProperties);
         notificationMaxRetries    = atlasProperties.getInt(ATLAS_NOTIFICATION_MAX_RETRIES, 3);
         notificationRetryInterval = atlasProperties.getInt(ATLAS_NOTIFICATION_RETRY_INTERVAL, 1000);
