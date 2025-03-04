@@ -540,7 +540,8 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
     public void setIsDenyAllElse(Boolean isDenyAllElse) {
         this.isDenyAllElse = isDenyAllElse == null ? Boolean.FALSE : isDenyAllElse;
     }
-    
+
+    @JsonIgnore
     public String getAtlasGuid() {
         return getGuid().length() > 36 ? getGuid().substring(0, 36) : getGuid();
 	}

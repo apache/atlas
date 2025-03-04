@@ -273,8 +273,8 @@ public class RangerBasePlugin {
 
 		if (policies != null) {
 			List<RangerPolicy> resourcePolicies = policies.getPolicies();
-			List<RangerPolicy> tagPolicies = policies.getTagPolicies().getPolicies();
-			List<RangerPolicy> abacPolicies = policies.getAbacPolicies().getPolicies();
+			List<RangerPolicy> tagPolicies = policies.getTagPolicies() != null ? policies.getTagPolicies().getPolicies() : new ArrayList<>();
+			List<RangerPolicy> abacPolicies = policies.getAbacPolicies() != null ? policies.getAbacPolicies().getPolicies() : new ArrayList<>();
 
 			PoliciesStore.setResourcePolicies(resourcePolicies);
 			PoliciesStore.setTagPolicies(tagPolicies);
