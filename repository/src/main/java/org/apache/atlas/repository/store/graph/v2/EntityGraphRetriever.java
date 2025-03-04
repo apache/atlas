@@ -285,7 +285,7 @@ public class EntityGraphRetriever {
         AtlasObjectId   ret        = null;
         String          typeName   = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
-        boolean enableJanusOptimisation = AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION.getBoolean();
+        boolean enableJanusOptimisation = AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_RELATIONS.getBoolean();
 
         if (entityType != null) {
             Map<String, Object> uniqueAttributes = new HashMap<>();
@@ -301,19 +301,19 @@ public class EntityGraphRetriever {
             Map<String, Object> attributes = new HashMap<>();
             Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
             if (CollectionUtils.isNotEmpty(relationAttributes)) {
-                Map<String, Object> referenceVertexProperties= null;
-                if (enableJanusOptimisation){
-                    referenceVertexProperties =   preloadProperties(entityVertex, entityType, relationAttributes);
+                Map<String, Object> referenceVertexProperties = null;
+                if (enableJanusOptimisation) {
+                    referenceVertexProperties = preloadProperties(entityVertex, entityType, relationAttributes);
                 }
                 for (String attributeName : relationAttributes) {
                     AtlasAttribute attribute = entityType.getAttribute(attributeName);
                     if (attribute != null
                             && !uniqueAttributes.containsKey(attributeName)) {
-                        Object attrValue= null;
+                        Object attrValue = null;
                         if (enableJanusOptimisation) {
-attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, referenceVertexProperties);
-                        }else {
-                             attrValue = getVertexAttribute(entityVertex, attribute);
+                            attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, referenceVertexProperties);
+                        } else {
+                            attrValue = getVertexAttribute(entityVertex, attribute);
                         }
 
                         if (attrValue != null) {
@@ -1156,6 +1156,7 @@ attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, referenceVe
                 return mapVertexToAtlasEntityHeaderWithPrefetch(entityVertex, attributes);
             } catch (AtlasBaseException e) {
                 if (isPolicyAttribute(attributes)) {
+                    RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("policiesPrefetchFailed"));
                     LOG.error("Error fetching properties for entity vertex: {}. Retrying without prefetch", entityVertex.getId(), e);
                     return mapVertexToAtlasEntityHeaderWithoutPrefetch(entityVertex, attributes);
                 }
