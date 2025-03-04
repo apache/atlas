@@ -66,12 +66,7 @@ import static org.apache.atlas.AtlasErrorCode.INDEX_NOT_FOUND;
 
 public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasElasticsearchQuery.class);
-    private static final Set<String> NETWORK_ERROR_MESSAGES =
-            Collections.unmodifiableSet(new HashSet<>(Arrays.asList(
-                    "Connection reset by peer",
-                    "Network error",
-                    "Connection refused"
-            )));
+
     private AtlasJanusGraph graph;
     private RestHighLevelClient esClient;
     private RestClient lowLevelRestClient;
@@ -275,7 +270,10 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
      */
     private void handleNetworkErrors(Exception e) throws AtlasBaseException {
         if (e instanceof SocketTimeoutException || e instanceof UnknownHostException ||
-                (e.getMessage() != null && NETWORK_ERROR_MESSAGES.stream().anyMatch(e.getMessage()::contains))) {
+                (e.getMessage() != null &&
+                        (e.getMessage().contains("Connection reset by peer") ||
+                                e.getMessage().contains("Network error") ||
+                                e.getMessage().contains("Connection refused")))) {
             throw new AtlasBaseException(AtlasErrorCode.SERVICE_UNAVAILABLE,
                     "Service is unavailable or a network error occurred: Elasticsearch - " + e.getMessage());
         }
