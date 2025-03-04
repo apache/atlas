@@ -37,8 +37,8 @@ public class AtlasElasticsearchDatabase {
     private static volatile RestHighLevelClient searchClient;
     private static volatile RestClient lowLevelClient;
 
-    private static volatile RestClient esProductClusterClient;
-    private static volatile RestClient esNonProductClusterClient;
+    private static volatile RestClient esUiClusterClient;
+    private static volatile RestClient esNonUiClusterClient;
     public static final String INDEX_BACKEND_CONF = "atlas.graph.index.search.hostname";
 
     public static List<HttpHost> getHttpHosts() throws AtlasException {
@@ -105,25 +105,25 @@ public class AtlasElasticsearchDatabase {
         return lowLevelClient;
     }
 
-    public static RestClient getProductClusterClient() {
+    public static RestClient getUiClusterClient() {
         if (!AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_REQUEST_ISOLATION.getBoolean()) {
             return null;
         }
 
-        if (esProductClusterClient == null) {
+        if (esUiClusterClient == null) {
             synchronized (AtlasElasticsearchDatabase.class) {
-                if (esProductClusterClient == null) {
+                if (esUiClusterClient == null) {
                     try {
-                        HttpHost productHost = HttpHost.create(AtlasConfiguration.ATLAS_ELASTICSEARCH_PRODUCT_SEARCH_CLUSTER_URL.getString());
+                        HttpHost UiHost = HttpHost.create(AtlasConfiguration.ATLAS_ELASTICSEARCH_UI_SEARCH_CLUSTER_URL.getString());
 
-                        RestClientBuilder builder = RestClient.builder(productHost);
+                        RestClientBuilder builder = RestClient.builder(UiHost);
                         builder.setHttpClientConfigCallback(httpAsyncClientBuilder ->
                                 httpAsyncClientBuilder.setKeepAliveStrategy(((httpResponse, httpContext) -> 3600000)));
                         builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
                                 .setConnectTimeout(AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
                                 .setSocketTimeout(AtlasConfiguration.INDEX_CLIENT_SOCKET_TIMEOUT.getInt()));
 
-                        esProductClusterClient = builder.build();
+                        esUiClusterClient = builder.build();
                     } catch (Exception e) {
                         LOG.error("Failed to initialize product cluster client", e);
                         return null;
@@ -131,28 +131,28 @@ public class AtlasElasticsearchDatabase {
                 }
             }
         }
-        return esProductClusterClient;
+        return esUiClusterClient;
     }
 
-    public static RestClient getNonProductSearchClusterClient() {
+    public static RestClient getNonUiClusterClient() {
         if (!AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_REQUEST_ISOLATION.getBoolean()) {
             return null;
         }
 
-        if (esNonProductClusterClient == null) {
+        if (esNonUiClusterClient == null) {
             synchronized (AtlasElasticsearchDatabase.class) {
-                if (esNonProductClusterClient == null) {
+                if (esNonUiClusterClient == null) {
                     try {
-                        HttpHost nonProductHost = HttpHost.create(AtlasConfiguration.ATLAS_ELASTICSEARCH_NON_PRODUCT_SEARCH_CLUSTER_URL.getString());
+                        HttpHost nonUiHost = HttpHost.create(AtlasConfiguration.ATLAS_ELASTICSEARCH_NON_UI_SEARCH_CLUSTER_URL.getString());
 
-                        RestClientBuilder builder = RestClient.builder(nonProductHost);
+                        RestClientBuilder builder = RestClient.builder(nonUiHost);
                         builder.setHttpClientConfigCallback(httpAsyncClientBuilder ->
                                 httpAsyncClientBuilder.setKeepAliveStrategy(((httpResponse, httpContext) -> 3600000)));
                         builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
                                 .setConnectTimeout(AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
                                 .setSocketTimeout(AtlasConfiguration.INDEX_CLIENT_SOCKET_TIMEOUT.getInt()));
 
-                        esNonProductClusterClient = builder.build();
+                        esNonUiClusterClient = builder.build();
                     } catch (Exception e) {
                         LOG.error("Failed to initialize Non-product cluster client", e);
                         return null;
@@ -160,7 +160,7 @@ public class AtlasElasticsearchDatabase {
                 }
             }
         }
-        return esNonProductClusterClient;
+        return esNonUiClusterClient;
     }
 
 
