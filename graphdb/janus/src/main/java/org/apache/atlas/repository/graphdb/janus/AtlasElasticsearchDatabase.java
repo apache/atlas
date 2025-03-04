@@ -36,6 +36,9 @@ public class AtlasElasticsearchDatabase {
 
     private static volatile RestHighLevelClient searchClient;
     private static volatile RestClient lowLevelClient;
+
+    private static volatile RestClient esUiClusterClient;
+    private static volatile RestClient esNonUiClusterClient;
     public static final String INDEX_BACKEND_CONF = "atlas.graph.index.search.hostname";
 
     public static List<HttpHost> getHttpHosts() throws AtlasException {
@@ -101,4 +104,64 @@ public class AtlasElasticsearchDatabase {
         }
         return lowLevelClient;
     }
+
+    public static RestClient getUiClusterClient() {
+        if (!AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_REQUEST_ISOLATION.getBoolean()) {
+            return null;
+        }
+
+        if (esUiClusterClient == null) {
+            synchronized (AtlasElasticsearchDatabase.class) {
+                if (esUiClusterClient == null) {
+                    try {
+                        HttpHost UiHost = HttpHost.create(AtlasConfiguration.ATLAS_ELASTICSEARCH_UI_SEARCH_CLUSTER_URL.getString());
+
+                        RestClientBuilder builder = RestClient.builder(UiHost);
+                        builder.setHttpClientConfigCallback(httpAsyncClientBuilder ->
+                                httpAsyncClientBuilder.setKeepAliveStrategy(((httpResponse, httpContext) -> 3600000)));
+                        builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
+                                .setConnectTimeout(AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
+                                .setSocketTimeout(AtlasConfiguration.INDEX_CLIENT_SOCKET_TIMEOUT.getInt()));
+
+                        esUiClusterClient = builder.build();
+                    } catch (Exception e) {
+                        LOG.error("Failed to initialize UI cluster client", e);
+                        return null;
+                    }
+                }
+            }
+        }
+        return esUiClusterClient;
+    }
+
+    public static RestClient getNonUiClusterClient() {
+        if (!AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_REQUEST_ISOLATION.getBoolean()) {
+            return null;
+        }
+
+        if (esNonUiClusterClient == null) {
+            synchronized (AtlasElasticsearchDatabase.class) {
+                if (esNonUiClusterClient == null) {
+                    try {
+                        HttpHost nonUiHost = HttpHost.create(AtlasConfiguration.ATLAS_ELASTICSEARCH_NON_UI_SEARCH_CLUSTER_URL.getString());
+
+                        RestClientBuilder builder = RestClient.builder(nonUiHost);
+                        builder.setHttpClientConfigCallback(httpAsyncClientBuilder ->
+                                httpAsyncClientBuilder.setKeepAliveStrategy(((httpResponse, httpContext) -> 3600000)));
+                        builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
+                                .setConnectTimeout(AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
+                                .setSocketTimeout(AtlasConfiguration.INDEX_CLIENT_SOCKET_TIMEOUT.getInt()));
+
+                        esNonUiClusterClient = builder.build();
+                    } catch (Exception e) {
+                        LOG.error("Failed to initialize Non-Ui cluster client", e);
+                        return null;
+                    }
+                }
+            }
+        }
+        return esNonUiClusterClient;
+    }
+
+
 }
