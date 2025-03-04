@@ -3013,7 +3013,8 @@ public class EntityGraphMapper {
         String    newEntityId = getIdFromVertex(newEntityVertex);
         AtlasEdge ret         = currentEdge;
 
-        if (!currentEntityId.equals(newEntityId)) {
+        if (StringUtils.isEmpty(currentEntityId) || !currentEntityId.equals(newEntityId)) {
+            // Checking if currentEntityId is null or empty as corrupted vertex on the other side of the edge should result into creation of new edge
             // create a new relationship edge to the new attribute vertex from the instance
             String relationshipName = AtlasGraphUtilsV2.getTypeName(currentEdge);
 
@@ -3090,11 +3091,15 @@ public class EntityGraphMapper {
                             continue;
                         }
 
-                        boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
-                                true, attribute.getRelationshipEdgeDirection(), entityVertex);
+                        try {
+                            boolean deleted = deleteDelegate.getHandler().deleteEdgeReference(edge, entryType.getTypeCategory(), attribute.isOwnedRef(),
+                                    true, attribute.getRelationshipEdgeDirection(), entityVertex);
 
-                        if (!deleted) {
-                            additionalElements.add(edge);
+                            if (!deleted) {
+                                additionalElements.add(edge);
+                            }
+                        } catch (NullPointerException npe) {
+                            LOG.warn("Ignoring deleting edge with corrupted vertex: {}", edge.getId());
                         }
                     }
 
