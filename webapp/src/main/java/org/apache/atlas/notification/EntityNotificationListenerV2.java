@@ -49,6 +49,7 @@ import javax.inject.Inject;
 import java.util.*;
 
 import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.*;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.isInternalType;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.CREATE_TIME;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.DESCRIPTION;
@@ -152,6 +153,9 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
         Map<String,AtlasEntity> differentialEntities  = RequestContext.get().getDifferentialEntitiesMap();
         Map<String, String>     requestContextHeaders = RequestContext.get().getRequestContextHeaders();
 
+        List<String> addedOutputPorts = RequestContext.get().getAddedOutputPorts();
+        List<String> removedOutputPorts = RequestContext.get().getRemovedOutputPorts();
+
         List<EntityNotificationV2> messages = new ArrayList<>();
 
         for (AtlasEntity entity : entities) {
@@ -162,6 +166,10 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
              if(differentialEntities != null){
                  if (differentialEntities.containsKey(entityGuid)) {
+                     if (differentialEntities.get(entityGuid).hasRelationshipAttribute(OUTPUT_PORTS)) {
+                         differentialEntities.get(entityGuid).setAddedRelationshipAttribute(OUTPUT_PORTS, addedOutputPorts);
+                         differentialEntities.get(entityGuid).setRemovedRelationshipAttribute(OUTPUT_PORTS, removedOutputPorts);
+                     }
                      messages.add(new EntityNotificationV2(toNotificationHeader(entity), differentialEntities.get(entityGuid),
                              operationType, RequestContext.get().getRequestTime(), requestContextHeaders));
                  }else {
