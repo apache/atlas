@@ -27,7 +27,7 @@ on:
       - development
       - master
       - lineageondemand
-      - hotfixindexsearch
+      - cassandrapoliciesoptimisation
 
 jobs:
   build:
