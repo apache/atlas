@@ -125,8 +125,8 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                     processProductAssetInputRelation(assetGuid, productGuid, operation, edgeLabel);
                 }
             }
-            commitChanges();
             handleEntityMutation(updatedVertices);
+            commitChanges();
         } catch (AtlasBaseException | RepositoryException e){
             LOG.error("Error while creating lineage", e);
             throw e;
