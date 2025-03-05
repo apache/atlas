@@ -52,7 +52,7 @@ public class BusinessLineageREST {
         // Set request context parameters
         RequestContext.get().setIncludeClassifications(true);
         RequestContext.get().setIncludeMeanings(false);
-        RequestContext.get().getRequestContextHeaders().put("route", "business-lineage-rest");
+        RequestContext.get().getRequestContextHeaders().put("x-atlan-route", "business-lineage-rest");
 
         AtlasPerfTracer perf = null;
         try {
