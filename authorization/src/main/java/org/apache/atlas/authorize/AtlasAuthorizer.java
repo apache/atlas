@@ -19,10 +19,12 @@
 package org.apache.atlas.authorize;
 
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 
 import java.util.Set;
 
@@ -126,6 +128,7 @@ public interface AtlasAuthorizer {
     }
 
     default void scrubEntityHeader(AtlasEntityHeader entity, AtlasTypeRegistry typeRegistry) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("scrubEntityHeader");
 
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
         boolean isScrubbed = false;
@@ -142,7 +145,7 @@ public interface AtlasAuthorizer {
         }
 
         entity.setScrubbed(isScrubbed);
-
+        RequestContext.get().endMetricRecord(recorder);
     }
 
 
