@@ -117,18 +117,17 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     /**
      * Returns the appropriate Elasticsearch RestClient based on client origin and configuration settings if isolation is enabled.
      *
-     * @return RestClient configured for either product or SDK cluster, falling back to low-level client
+     * @return RestClient configured for either UI or Non-UI cluster, falling back to low-level client
      */
     private RestClient getESClient() {
-        RestClient client = lowLevelRestClient;
         if (!AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_REQUEST_ISOLATION.getBoolean()) {
-            return client;
+            return lowLevelRestClient;
         }
 
         try {
             String clientOrigin = RequestContext.get().getClientOrigin();
             if (clientOrigin == null) {
-                return client;
+                return lowLevelRestClient;
             }
             if (CLIENT_ORIGIN_PRODUCT.equals(clientOrigin)) {
                 return Optional.ofNullable(esUiClusterClient)

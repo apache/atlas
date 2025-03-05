@@ -125,7 +125,7 @@ public class AtlasElasticsearchDatabase {
 
                         esUiClusterClient = builder.build();
                     } catch (Exception e) {
-                        LOG.error("Failed to initialize product cluster client", e);
+                        LOG.error("Failed to initialize UI cluster client", e);
                         return null;
                     }
                 }
@@ -154,7 +154,7 @@ public class AtlasElasticsearchDatabase {
 
                         esNonUiClusterClient = builder.build();
                     } catch (Exception e) {
-                        LOG.error("Failed to initialize Non-product cluster client", e);
+                        LOG.error("Failed to initialize Non-Ui cluster client", e);
                         return null;
                     }
                 }
