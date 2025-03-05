@@ -51,7 +51,19 @@
         window.ui = ui;
 
         atlasLogo = gatewayUrl + "/img/atlas_logo.svg";
-        $('#swagger-ui img').attr("src", atlasLogo);
+        setTimeout(() => {
+            const logoAnchor = document.querySelector(".swagger-ui .topbar a");
+            
+            if (logoAnchor) {
+              const svgLogo = logoAnchor.querySelector("svg");
+              if (svgLogo) svgLogo.remove();
+              const img = document.createElement("img");
+              img.src = atlasLogo;
+              img.alt = "Atlas Logo";
+              img.style.height = "40px";
+              logoAnchor.appendChild(img);
+            }
+        }, 500);
 
         fetchCsrfHeader();
     }
