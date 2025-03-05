@@ -286,10 +286,13 @@ public class EntityGraphRetriever {
         String          typeName   = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
         boolean enableJanusOptimisation = AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_RELATIONS.getBoolean();
-
+        Map<String, Object> referenceVertexProperties  = null;
         if (entityType != null) {
             Map<String, Object> uniqueAttributes = new HashMap<>();
-
+            Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
+            if (enableJanusOptimisation) {
+                referenceVertexProperties  = preloadProperties(entityVertex, entityType, relationAttributes);
+            }
             for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
                 Object attrValue = getVertexAttribute(entityVertex, attribute);
 
@@ -299,12 +302,7 @@ public class EntityGraphRetriever {
             }
 
             Map<String, Object> attributes = new HashMap<>();
-            Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
             if (CollectionUtils.isNotEmpty(relationAttributes)) {
-                Map<String, Object> referenceVertexProperties = null;
-                if (enableJanusOptimisation) {
-                    referenceVertexProperties = preloadProperties(entityVertex, entityType, relationAttributes);
-                }
                 for (String attributeName : relationAttributes) {
                     AtlasAttribute attribute = entityType.getAttribute(attributeName);
                     if (attribute != null
