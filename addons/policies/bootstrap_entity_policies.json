@@ -2999,7 +2999,7 @@
                     "$api-token-default-access"
                 ],
                 "policyResourceCategory": "ENTITY",
-                "isPolicyEnabled": true,
+                "isPolicyEnabled": false,
                 "policyResources":
                 [
                     "entity-type:DataProduct",
@@ -3557,8 +3557,8 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "DATA_DOMAIN_BUSINESS_UPDATE_METADATA",
-                "qualifiedName": "DATA_DOMAIN_BUSINESS_UPDATE_METADATA",
+                "name": "DATA_DOMAIN_AND_PRODUCT_BUSINESS_UPDATE_METADATA",
+                "qualifiedName": "DATA_DOMAIN_AND_PRODUCT_BUSINESS_UPDATE_METADATA",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
@@ -3578,6 +3578,7 @@
                 [
                     "entity:*",
                     "entity-type:DataDomain",
+                    "entity-type:DataProduct",
                     "entity-classification:*",
                     "entity-business-metadata:*"
                 ],
@@ -3597,6 +3598,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "isPolicyEnabled": false,
                 "policyPriority": 1,
                 "policyUsers":
                 [],
@@ -3625,9 +3627,9 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "READ_DATA_PRODUCT_ENTITY",
-                "qualifiedName": "READ_DATA_PRODUCT_ENTITY",
-                "description": "Allows user to perform read operation on data products asset",
+                "name": "CRUD_DATA_PRODUCT_ENTITY",
+                "qualifiedName": "CRUD_DATA_PRODUCT_ENTITY",
+                "description": "Allows user to perform CRUD operation on data products asset",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
@@ -3651,7 +3653,10 @@
                 ],
                 "policyActions":
                 [
-                    "entity-read"
+                    "entity-read",
+                    "entity-create",
+                    "entity-update",
+                    "entity-delete"
                 ]
             }
         },
