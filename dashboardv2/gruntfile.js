@@ -247,7 +247,7 @@ module.exports = function(grunt) {
                 files: [{
                     expand: true,
                     cwd: distPath + '/js',
-                    src: ['**/*.js', '!libs/**', '!external_lib/**/purify.min.js', '!external_lib/**'],
+                    src: ['**/*.js', '!libs/**', '!external_lib/**'],
                     dest: distPath + '/js'
                 }]
             }
