@@ -957,47 +957,8 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "LINK_MESH_DATA_DOMAIN_TO_STAKE_HOLDER",
-                "qualifiedName": "LINK_MESH_DATA_DOMAIN_TO_STAKE_HOLDER",
-                "policyCategory": "bootstrap",
-                "policySubCategory": "default",
-                "policyServiceName": "atlas",
-                "policyType": "allow",
-                "policyPriority": 1,
-                "policyUsers":
-                [],
-                "policyGroups":
-                [],
-                "policyRoles":
-                [
-                    "$admin",
-                    "$api-token-default-access"
-                ],
-                "policyResourceCategory": "RELATIONSHIP",
-                "policyResources":
-                [
-                    "relationship-type:*",
-                    "end-one-entity-type:DataDomain",
-                    "end-one-entity-classification:*",
-                    "end-one-entity:*",
-                    "end-two-entity-type:Stakeholder",
-                    "end-two-entity-classification:*",
-                    "end-two-entity:*"
-                ],
-                "policyActions":
-                [
-                    "add-relationship",
-                    "update-relationship",
-                    "remove-relationship"
-                ]
-            }
-        },
-        {
-            "typeName": "AuthPolicy",
-            "attributes":
-            {
-                "name": "LINK_STAKEHOLDER_TITLE_TO_DATA_DOMAIN_STAKEHOLDER",
-                "qualifiedName": "LINK_STAKEHOLDER_TITLE_TO_DATA_DOMAIN_STAKEHOLDER",
+                "name": "LINK_MESH_DATA_DOMAIN_AND_STAKEHOLDER_TITLE_TO_STAKE_HOLDER",
+                "qualifiedName": "LINK_MESH_DATA_DOMAIN_AND_STAKEHOLDER_TITLE_TO_STAKE_HOLDER",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
@@ -1017,6 +978,7 @@
                 [
                     "relationship-type:*",
                     "end-one-entity-type:StakeholderTitle",
+                    "end-one-entity-type:DataDomain",
                     "end-one-entity-classification:*",
                     "end-one-entity:*",
                     "end-two-entity-type:Stakeholder",
@@ -1059,45 +1021,6 @@
                     "end-one-entity-classification:*",
                     "end-one-entity:*",
                     "end-two-entity-type:DataProduct",
-                    "end-two-entity-classification:*",
-                    "end-two-entity:*"
-                ],
-                "policyActions":
-                [
-                    "add-relationship",
-                    "update-relationship",
-                    "remove-relationship"
-                ]
-            }
-        },
-        {
-            "typeName": "AuthPolicy",
-            "attributes":
-            {
-                "name": "LINK_MESH_DATA_PRODUCT_TO_ASSET",
-                "qualifiedName": "LINK_MESH_DATA_PRODUCT_TO_ASSET",
-                "policyCategory": "bootstrap",
-                "policySubCategory": "default",
-                "policyServiceName": "atlas",
-                "policyType": "allow",
-                "policyPriority": 1,
-                "policyUsers":
-                [],
-                "policyGroups":
-                [],
-                "policyRoles":
-                [
-                    "$admin",
-                    "$api-token-default-access"
-                ],
-                "policyResourceCategory": "RELATIONSHIP",
-                "policyResources":
-                [
-                    "relationship-type:*",
-                    "end-one-entity-type:DataProduct",
-                    "end-one-entity-classification:*",
-                    "end-one-entity:*",
-                    "end-two-entity-type:Asset",
                     "end-two-entity-classification:*",
                     "end-two-entity:*"
                 ],
