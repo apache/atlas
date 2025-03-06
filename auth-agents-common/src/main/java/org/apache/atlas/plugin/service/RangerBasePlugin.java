@@ -279,6 +279,7 @@ public class RangerBasePlugin {
 			PoliciesStore.setResourcePolicies(resourcePolicies);
 			PoliciesStore.setTagPolicies(tagPolicies);
 			PoliciesStore.setAbacPolicies(abacPolicies);
+			LOG.info("PolicyRefresher: abac policies set: " + abacPolicies.size());
 		}
 
 		// guard against catastrophic failure during policy engine Initialization or
