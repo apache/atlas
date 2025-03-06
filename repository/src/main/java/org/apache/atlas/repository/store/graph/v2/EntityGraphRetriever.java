@@ -1024,14 +1024,12 @@ public class EntityGraphRetriever {
             // Execute the traversal to fetch properties
             Iterator<VertexProperty<Object>> traversal = ((AtlasJanusVertex)entityVertex).getWrappedElement().properties();
 
-            //  retrieve all the valid relationships for this entityType
-            Map<String, Set<String>> relationshipsLookup = fetchEdgeNames(entityType);
-
             // Fetch edges in both directions
-
             // if the vertex in scope is root then call below otherwise skip
             // we don't support relation attributes of a relation
             if (fetchEdgeLabels) {
+                //  retrieve all the valid relationships for this entityType
+                Map<String, Set<String>> relationshipsLookup = fetchEdgeNames(entityType);
                 retrieveEdgeLabels(entityVertex, attributes, relationshipsLookup, propertiesMap);
             }
 
