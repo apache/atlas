@@ -34,6 +34,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.AtlasTestBase;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -96,6 +97,8 @@ public class ImportServiceTest extends AtlasTestBase {
     private EntityDiscoveryService discoveryService;
     @Inject
     private ExportImportAuditService auditService;
+    @Inject
+    private AtlasAuditService atlasAuditService;
 
     @Inject
     public ImportServiceTest(ImportService importService) {
@@ -398,7 +401,7 @@ public class ImportServiceTest extends AtlasTestBase {
 
     @Test
     public void importServiceProcessesIOException() {
-        ImportService      importService = new ImportService(typeDefStore, typeRegistry, null, null, null, null);
+        ImportService      importService = new ImportService(typeDefStore, typeRegistry, null, null, null, null, null, null, atlasAuditService);
         AtlasImportRequest req           = mock(AtlasImportRequest.class);
 
         Answer<Map> answer = invocationOnMock -> {

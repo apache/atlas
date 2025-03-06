@@ -201,6 +201,11 @@ public class ZipSourceDirect implements EntityImportStream {
         }
     }
 
+    @Override
+    public String getMd5Hash() {
+        return null;
+    }
+
     private void applyTransformers(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
         if (entityWithExtInfo == null) {
             return;

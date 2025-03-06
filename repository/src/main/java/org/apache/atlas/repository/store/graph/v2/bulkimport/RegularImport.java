@@ -41,8 +41,10 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityImportStream;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang.exception.ExceptionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +61,7 @@ public class RegularImport extends ImportStrategy {
     private static final Logger LOG = LoggerFactory.getLogger(RegularImport.class);
 
     private static final int MAX_ATTEMPTS = 3;
+    private static final String EXCEPTION_CLASS_NAME_PERMANENT_LOCKING_EXCEPTION = "PermanentLockingException";
 
     private final AtlasGraph           graph;
     private final AtlasEntityStore     entityStore;
@@ -95,9 +98,7 @@ public class RegularImport extends ImportStrategy {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
         }
 
-        EntityMutationResponse ret = new EntityMutationResponse();
-
-        ret.setGuidAssignments(new HashMap<>());
+        EntityMutationResponse ret = null;
 
         Set<String>  processedGuids = new HashSet<>();
         float        currentPercent = 0f;
@@ -107,59 +108,105 @@ public class RegularImport extends ImportStrategy {
 
         while (entityImportStreamWithResidualList.hasNext()) {
             AtlasEntityWithExtInfo entityWithExtInfo = entityImportStreamWithResidualList.getNextEntityWithExtInfo();
-            AtlasEntity            entity            = entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
-
-            if (entity == null) {
-                continue;
-            }
-
-            for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
-                try {
-                    AtlasEntityStreamForImport oneEntityStream = new AtlasEntityStreamForImport(entityWithExtInfo, null);
-                    EntityMutationResponse     resp            = entityStore.createOrUpdateForImport(oneEntityStream);
-
-                    if (resp.getGuidAssignments() != null) {
-                        ret.getGuidAssignments().putAll(resp.getGuidAssignments());
-                    }
-
-                    currentPercent = updateImportMetrics(entityWithExtInfo, resp, importResult, processedGuids, entityStream.getPosition(), entityImportStreamWithResidualList.getStreamSize(), currentPercent);
-
-                    entityStream.onImportComplete(entity.getGuid());
-                    break;
-                } catch (AtlasBaseException e) {
-                    if (!updateResidualList(e, residualList, entityWithExtInfo.getEntity().getGuid())) {
-                        throw e;
-                    }
-                    break;
-                } catch (AtlasSchemaViolationException e) {
-                    LOG.debug("Entity: {}", entity.getGuid(), e);
-
-                    if (attempt == 0) {
-                        updateVertexGuid(entityWithExtInfo);
-                    } else {
-                        LOG.error("Guid update failed: {}", entityWithExtInfo.getEntity().getGuid());
-                        throw e;
-                    }
-                } catch (Throwable e) {
-                    AtlasBaseException abe = new AtlasBaseException(e);
-
-                    if (!updateResidualList(abe, residualList, entityWithExtInfo.getEntity().getGuid())) {
-                        throw abe;
-                    }
-
-                    LOG.warn("Exception: {}", entity.getGuid(), e);
-                    break;
-                } finally {
-                    RequestContext.get().clearCache();
-                }
-            }
+            TypesUtil.Pair<EntityMutationResponse, Float> result = run(entityWithExtInfo, ret, importResult, processedGuids, entityStream.getPosition(), entityImportStreamWithResidualList.getStreamSize(), currentPercent, entityImportStreamWithResidualList.residualList);
+            ret = result.left;
+            currentPercent = result.right;
         }
 
         importResult.getProcessedEntities().addAll(processedGuids);
-
         LOG.info("bulkImport(): done. Total number of entities (including referred entities) imported: {}", processedGuids.size());
 
         return ret;
+    }
+
+    @Override
+    public TypesUtil.Pair<EntityMutationResponse, Float> run(AtlasEntityWithExtInfo entityWithExtInfo,
+                                                             EntityMutationResponse ret,
+                                                             AtlasImportResult importResult,
+                                                             Set<String> processedGuids,
+                                                             int entityStreamPosition,
+                                                             int streamSize,
+                                                             float currentPercent,
+                                                             List<String> residualList) throws AtlasBaseException {
+        if (ret == null) {
+            ret = new EntityMutationResponse();
+            ret.setGuidAssignments(new HashMap<>());
+        }
+
+        if (processedGuids == null) {
+            processedGuids = new HashSet<>();
+        }
+
+        if (residualList == null) {
+            residualList = new ArrayList<>();
+        }
+
+        AtlasEntity entity = entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
+
+        if (entity == null) {
+            return TypesUtil.Pair.of(ret, currentPercent);
+        }
+
+        boolean isVertexGuidUpdated = false;
+
+        for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+            try {
+                AtlasEntityStreamForImport oneEntityStream = new AtlasEntityStreamForImport(entityWithExtInfo, null);
+                EntityMutationResponse resp = entityStore.createOrUpdateForImport(oneEntityStream);
+
+                if (resp.getGuidAssignments() != null) {
+                    ret.getGuidAssignments().putAll(resp.getGuidAssignments());
+                }
+
+                currentPercent = updateImportMetrics(entityWithExtInfo, resp, importResult, processedGuids, entityStreamPosition, streamSize, currentPercent);
+
+                break;
+            } catch (AtlasBaseException e) {
+                if (!updateResidualList(e, residualList, entityWithExtInfo.getEntity().getGuid())) {
+                    throw e;
+                }
+                break;
+            } catch (AtlasSchemaViolationException e) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Entity: {}", entity.getGuid(), e);
+                }
+
+                if (!isVertexGuidUpdated) {
+                    updateVertexGuid(entityWithExtInfo);
+                    isVertexGuidUpdated = true;
+                } else {
+                    LOG.error("Guid update failed: {}", entityWithExtInfo.getEntity().getGuid());
+                    throw e;
+                }
+            } catch (Throwable e) {
+                List<Throwable> throwableList = ExceptionUtils.getThrowableList(e);
+
+                if (!throwableList.isEmpty() && containsException(throwableList, EXCEPTION_CLASS_NAME_PERMANENT_LOCKING_EXCEPTION)) {
+                    if (attempt < MAX_ATTEMPTS - 1) {
+                        LOG.error("Caught {} , Retrying the transaction, attempt count is:{}", EXCEPTION_CLASS_NAME_PERMANENT_LOCKING_EXCEPTION, attempt);
+                        continue;
+                    } else {
+                        throw e;
+                    }
+                }
+
+                AtlasBaseException abe = new AtlasBaseException(e);
+                if (!updateResidualList(abe, residualList, entityWithExtInfo.getEntity().getGuid())) {
+                    throw abe;
+                }
+
+                LOG.warn("Exception: {}", entity.getGuid(), e);
+                break;
+            }  finally {
+                RequestContext.get().clearCache();
+            }
+        }
+
+        return TypesUtil.Pair.of(ret, currentPercent);
+    }
+
+    private boolean containsException(final List<Throwable> exceptions, final String exceptionName) {
+        return exceptions.stream().filter(o -> o.getClass().getSimpleName().equals(exceptionName)).findFirst().isPresent();
     }
 
     @GraphTransaction

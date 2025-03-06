@@ -161,6 +161,10 @@ public class AtlasFileSpoolTest extends BaseTest {
         }
 
         @Override
+        public void sendInternal(String topic, List<String> messages) throws NotificationException {
+        }
+
+        @Override
         public void setCurrentUser(String user) {
         }
 

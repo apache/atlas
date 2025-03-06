@@ -29,6 +29,7 @@ import org.apache.atlas.utils.KafkaUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationConverter;
 import org.apache.commons.lang.StringUtils;
+import org.apache.kafka.clients.admin.AdminClient;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
@@ -44,12 +45,14 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Future;
+import java.util.stream.Stream;
 
 import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
@@ -77,8 +80,10 @@ public class KafkaNotification extends AbstractNotification implements Service {
     private static final String[] ATLAS_ENTITIES_CONSUMER_TOPICS        = AtlasConfiguration.NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_ENTITIES_TOPIC);
     private static final String   DEFAULT_CONSUMER_CLOSED_ERROR_MESSAGE = "This consumer has already been closed.";
 
+    private static final boolean SORT_NOT_NEEDED = false;
+
     private static final Map<NotificationType, String> PRODUCER_TOPIC_MAP    = new HashMap<>();
-    private static final Map<NotificationType, String[]> CONSUMER_TOPICS_MAP = new HashMap<>();
+    private static Map<NotificationType, String[]> CONSUMER_TOPICS_MAP = new HashMap<>();
 
     private final Properties                                 properties;
     private final Long                                       pollTimeOutMs;
@@ -183,7 +188,11 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
     @Override
     public <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType, int numConsumers) {
-        return createConsumers(notificationType, numConsumers, Boolean.parseBoolean(properties.getProperty("enable.auto.commit", properties.getProperty("auto.commit.enable", "false"))));
+        boolean enableAutoCommit = Boolean.parseBoolean(properties.getProperty("enable.auto.commit", properties.getProperty("auto.commit.enable", "false")));
+        if (notificationType.equals(NotificationType.ASYNC_IMPORT)) {
+            enableAutoCommit = true;
+        }
+        return createConsumers(notificationType, numConsumers, enableAutoCommit);
     }
 
     @Override
@@ -203,6 +212,16 @@ public class KafkaNotification extends AbstractNotification implements Service {
         producers.clear();
 
         LOG.info("<== KafkaNotification.close()");
+    }
+
+    @Override
+    public void closeConsumer(NotificationType notificationType) {
+        List<KafkaConsumer> notificationConsumers = this.consumers.get(notificationType);
+        for (final KafkaConsumer consumer : notificationConsumers) {
+            consumer.unsubscribe();
+            consumer.close();
+        }
+        this.consumers.remove(notificationType);
     }
 
     // ----- NotificationInterface -------------------------------------------
@@ -281,9 +300,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     }
 
     public void sendInternal(String topic, List<String> messages) throws NotificationException {
-        KafkaProducer producer = getOrCreateProducer(topic);
-
-        sendInternalToProducer(producer, topic, messages);
+        sendInternal(topic, messages, SORT_NOT_NEEDED);
     }
 
     // ----- AbstractNotification --------------------------------------------
@@ -301,7 +318,11 @@ public class KafkaNotification extends AbstractNotification implements Service {
         String groupId = properties.getProperty(notificationType.toString().toLowerCase() + "." + CONSUMER_GROUP_ID_PROPERTY);
 
         if (StringUtils.isEmpty(groupId)) {
-            groupId = "atlas";
+            if (!notificationType.equals(NotificationType.ASYNC_IMPORT)) {
+                groupId = "atlas";
+            } else {
+                groupId = "atlas-import";
+            }
         }
 
         if (StringUtils.isEmpty(groupId)) {
@@ -427,6 +448,43 @@ public class KafkaNotification extends AbstractNotification implements Service {
         LOG.debug("<== KafkaNotification.getOrCreateProducerByCriteria()");
 
         return ret;
+    }
+
+    @Override
+    public void addTopicToNotificationType(NotificationType notificationType, String topic) {
+        String[] topics = CONSUMER_TOPICS_MAP.get(notificationType);
+        String[] updatedTopics;
+        if (topics == null) {
+            updatedTopics = new String[] {topic};
+        } else {
+            updatedTopics = Stream.concat(Arrays.stream(topics), Stream.of(topic)).toArray(String[]::new);
+        }
+        CONSUMER_TOPICS_MAP.put(notificationType, updatedTopics);
+    }
+
+    @Override
+    public void closeProducer(NotificationType notificationType, String topic) {
+        KafkaProducer producerToClose = producersByTopic.get(topic);
+        if (producerToClose != null) {
+            producersByTopic.remove(topic);
+            producerToClose.close();
+        }
+        PRODUCER_TOPIC_MAP.remove(notificationType, topic);
+    }
+
+    @Override
+    public void deleteTopics(NotificationType notificationType, String topicName) {
+        try (AdminClient adminClient = AdminClient.create(this.properties)) {
+            adminClient.deleteTopics(Collections.singleton(topicName));
+        }
+        String[] topics = CONSUMER_TOPICS_MAP.get(notificationType);
+        String[] updatedTopics;
+        if (topics == null) {
+            updatedTopics = new String[] {};
+        } else {
+            updatedTopics = Arrays.stream(topics).filter(topic -> !topic.equals(topicName)).toArray(String[]::new);
+        }
+        CONSUMER_TOPICS_MAP.put(notificationType, updatedTopics);
     }
 
     // kafka-client doesn't have method to check if consumer is open, hence checking list topics and catching exception

@@ -85,6 +85,10 @@ public class RestNotification extends AbstractNotification {
     }
 
     @Override
+    public void sendInternal(String topic, List<String> messages) throws NotificationException {
+    }
+
+    @Override
     public <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType, int numConsumers) {
         return null;
     }

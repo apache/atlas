@@ -102,6 +102,45 @@ public interface NotificationInterface {
     boolean isReady(NotificationType type);
 
     /**
+     * Abstract notification wiring for async import messages
+     * @param topic async import topic to publish
+     * @param messages messages to send
+     * @param source source of the message
+     */
+    default <T> void send(String topic, List<T> messages, MessageSource source) throws NotificationException {}
+
+    /**
+     * Associates the specified topic with the given notification type.
+     *
+     * @param notificationType The type of notification to which the topic should be added.
+     * @param topic The name of the topic to be associated with the notification type.
+     */
+    default void addTopicToNotificationType(NotificationType notificationType, String topic) {}
+
+    /**
+     * Closes the producer associated with the specified notification type and topic.
+     *
+     * @param notificationType The type of notification for which the producer is to be closed.
+     * @param topic The name of the topic associated with the producer.
+     */
+    default void closeProducer(NotificationType notificationType, String topic) {}
+
+    /**
+     * Deletes the specified topic associated with the given notification type.
+     *
+     * @param notificationType The type of notification related to the topic.
+     * @param topicName The name of the topic to be deleted.
+     */
+    default void deleteTopics(NotificationType notificationType, String topicName) {}
+
+    /**
+     * Closes the consumer associated with the specified notification type.
+     *
+     * @param notificationType The type of notification for which the consumer is to be closed.
+     */
+    default void closeConsumer(NotificationType notificationType) {}
+
+    /**
      * Atlas notification types.
      */
     enum NotificationType {
@@ -110,6 +149,9 @@ public interface NotificationInterface {
 
         // Notifications from the Atlas integration hooks - unsorted.
         HOOK_UNSORTED(new HookMessageDeserializer()),
+
+        // Notifications from Atlas async importer
+        ASYNC_IMPORT(new HookMessageDeserializer()),
 
         // Notifications to entity change consumers.
         ENTITIES(new EntityMessageDeserializer());

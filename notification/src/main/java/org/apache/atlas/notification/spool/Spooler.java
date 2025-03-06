@@ -22,6 +22,7 @@ import org.apache.atlas.hook.FailedMessagesLogger;
 import org.apache.atlas.model.notification.AtlasNotificationMessage;
 import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.notification.NotificationConsumer;
+import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.type.AtlasType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,6 +80,10 @@ public class Spooler extends AbstractNotification {
         if (failedMessagesLogger != null && !ret) {
             writeToFailedMessages(messages);
         }
+    }
+
+    @Override
+    public void sendInternal(String topic, List<String> messages) throws NotificationException {
     }
 
     @VisibleForTesting

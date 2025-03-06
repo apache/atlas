@@ -38,6 +38,8 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -62,6 +64,7 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
     private ArrayList<String>       creationOrder = new ArrayList<>();
     private int                     currentPosition;
     private int                     numberOfEntries;
+    private String                  md5Hash;
 
     public ZipSourceWithBackingDirectory(InputStream inputStream) throws IOException, AtlasBaseException {
         this(inputStream, null);
@@ -291,19 +294,30 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
         ZipInputStream zis = new ZipInputStream(inputStream);
 
         try {
+            MessageDigest md5Digest = MessageDigest.getInstance("MD5");
             ZipEntry zipEntry = zis.getNextEntry();
 
             while (zipEntry != null) {
                 String entryName = zipEntry.getName();
 
-                writeJsonToFile(entryName, getJsonPayloadFromZipEntryStream(zis));
+                writeJsonToFile(entryName, getJsonPayloadFromZipEntryStream(zis, md5Digest));
 
                 numberOfEntries++;
 
                 zipEntry = zis.getNextEntry();
             }
 
+            // Compute the final MD5 hash after processing the entire ZIP file
+            byte[] hashBytes = md5Digest.digest();
+            StringBuilder md5Hash = new StringBuilder();
+            for (byte b : hashBytes) {
+                md5Hash.append(String.format("%02x", b));
+            }
+            setMd5Hash(md5Hash.toString());
+
             numberOfEntries -= ZipExportFileNames.values().length;
+        } catch (NoSuchAlgorithmException e) {
+            throw new IOException(e);
         } finally {
             zis.close();
             inputStream.close();
@@ -354,13 +368,14 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
         reset();
     }
 
-    private byte[] getJsonPayloadFromZipEntryStream(ZipInputStream zipInputStream) {
+    private byte[] getJsonPayloadFromZipEntryStream(ZipInputStream zipInputStream, MessageDigest md5Digest) {
         try {
             byte[]                buf = new byte[1024];
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             int                   n;
 
             while ((n = zipInputStream.read(buf, 0, 1024)) > -1) {
+                md5Digest.update(buf, 0, n);
                 bos.write(buf, 0, n);
             }
 
@@ -424,5 +439,14 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
         }
 
         return null;
+    }
+
+    public void setMd5Hash(String md5Hash) {
+        this.md5Hash = md5Hash;
+    }
+
+    @Override
+    public String getMd5Hash() {
+        return this.md5Hash;
     }
 }
