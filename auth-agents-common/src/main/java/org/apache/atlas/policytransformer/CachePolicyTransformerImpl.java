@@ -269,7 +269,6 @@ public class CachePolicyTransformerImpl {
 
                 if (StringUtils.isNotEmpty(abacServiceName)) {
                     AtlasEntityHeader abacService = getServiceEntity(abacServiceName);
-
                     if (abacService != null) {
                         allPolicies.addAll(getServicePolicies(abacService, 0));
                         ServicePolicies.AbacPolicies abacPolicies = new ServicePolicies.AbacPolicies();
@@ -305,7 +304,10 @@ public class CachePolicyTransformerImpl {
 
                 RequestContext.get().endMetricRecord(recorderFilterPolicies);
 
-                LOG.info("Found {} policies", servicePolicies.getPolicies().size());
+                LOG.info("Found {} policies ({}) and {} ({}) and {} ({}) policies",
+                        servicePolicies.getPolicies().size(), serviceName,
+                        servicePolicies.getTagPolicies().getPolicies().size(), tagServiceName,
+                        servicePolicies.getAbacPolicies().getPolicies().size(), abacServiceName);
             }
 
         } catch (Exception e) {
@@ -660,7 +662,6 @@ public class CachePolicyTransformerImpl {
 
             List<Map<String, Object>> mustClauseList = new ArrayList<>();
 
-            mustClauseList.add(getMap("term", getMap(ATTR_POLICY_SERVICE_NAME, serviceName)));
             mustClauseList.add(getMap("term", getMap(ATTR_POLICY_IS_ENABLED, true)));
             mustClauseList.add(getMap("match", getMap("__state", Id.EntityState.ACTIVE)));
 
