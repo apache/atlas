@@ -285,12 +285,17 @@ public class EntityGraphRetriever {
         AtlasObjectId   ret        = null;
         String          typeName   = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
-
+        boolean enableJanusOptimisation = AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_RELATIONS.getBoolean();
+        Map<String, Object> referenceVertexProperties  = null;
         if (entityType != null) {
             Map<String, Object> uniqueAttributes = new HashMap<>();
-
+            Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
+            if (enableJanusOptimisation) {
+                //don't fetch edge labels for a relation attribute
+                referenceVertexProperties  = preloadProperties(entityVertex, entityType, relationAttributes, false);
+            }
             for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
-                Object attrValue = getVertexAttribute(entityVertex, attribute);
+                Object attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, referenceVertexProperties);
 
                 if (attrValue != null) {
                     uniqueAttributes.put(attribute.getName(), attrValue);
@@ -298,13 +303,18 @@ public class EntityGraphRetriever {
             }
 
             Map<String, Object> attributes = new HashMap<>();
-            Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
             if (CollectionUtils.isNotEmpty(relationAttributes)) {
                 for (String attributeName : relationAttributes) {
                     AtlasAttribute attribute = entityType.getAttribute(attributeName);
                     if (attribute != null
                             && !uniqueAttributes.containsKey(attributeName)) {
-                        Object attrValue = getVertexAttribute(entityVertex, attribute);
+                        Object attrValue = null;
+                        if (enableJanusOptimisation) {
+                            attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, referenceVertexProperties);
+                        } else {
+                            attrValue = getVertexAttribute(entityVertex, attribute);
+                        }
+
                         if (attrValue != null) {
                             attributes.put(attribute.getName(), attrValue);
                         }
@@ -1002,7 +1012,7 @@ public class EntityGraphRetriever {
         return mapVertexToAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }
 
-    private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set<String> attributes) throws AtlasBaseException {
+    private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set<String> attributes, boolean fetchEdgeLabels) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("preloadProperties");
 
         try {
@@ -1014,11 +1024,14 @@ public class EntityGraphRetriever {
             // Execute the traversal to fetch properties
             Iterator<VertexProperty<Object>> traversal = ((AtlasJanusVertex)entityVertex).getWrappedElement().properties();
 
-            //  retrieve all the valid relationships for this entityType
-            Map<String, Set<String>> relationshipsLookup = fetchEdgeNames(entityType);
-
             // Fetch edges in both directions
-            retrieveEdgeLabels(entityVertex, attributes, relationshipsLookup, propertiesMap);
+            // if the vertex in scope is root then call below otherwise skip
+            // we don't support relation attributes of a relation
+            if (fetchEdgeLabels) {
+                //  retrieve all the valid relationships for this entityType
+                Map<String, Set<String>> relationshipsLookup = fetchEdgeNames(entityType);
+                retrieveEdgeLabels(entityVertex, attributes, relationshipsLookup, propertiesMap);
+            }
 
             // Iterate through the resulting VertexProperty objects
             while (traversal.hasNext()) {
@@ -1132,12 +1145,25 @@ public class EntityGraphRetriever {
                 && typeName.equals("S3Bucket");
 
         boolean shouldPrefetch = RequestContext.get().isInvokedByIndexSearch()
-                && !isPolicyAttribute(attributes)
                 && !isS3Bucket
                 && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION.getBoolean();
 
+        // remove isPolicyAttribute from shouldPrefetch check
+        // prefetch properties for policies
+        // if there is some exception in fetching properties,
+        // then we will fetch properties again without prefetch
+
         if (shouldPrefetch) {
-            return mapVertexToAtlasEntityHeaderWithPrefetch(entityVertex, attributes);
+            try {
+                return mapVertexToAtlasEntityHeaderWithPrefetch(entityVertex, attributes);
+            } catch (AtlasBaseException e) {
+                if (isPolicyAttribute(attributes)) {
+                    RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("policiesPrefetchFailed"));
+                    LOG.error("Error fetching properties for entity vertex: {}. Retrying without prefetch", entityVertex.getId(), e);
+                    return mapVertexToAtlasEntityHeaderWithoutPrefetch(entityVertex, attributes);
+                }
+                throw e;
+            }
         } else {
             return mapVertexToAtlasEntityHeaderWithoutPrefetch(entityVertex, attributes);
         }
@@ -1235,7 +1261,7 @@ public class EntityGraphRetriever {
             //pre-fetching the properties
             String typeName = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class); //properties.get returns null
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName); // this is not costly
-            Map<String, Object> properties = preloadProperties(entityVertex, entityType, attributes);
+            Map<String, Object> properties = preloadProperties(entityVertex, entityType, attributes, true);
 
             String guid = (String) properties.get(Constants.GUID_PROPERTY_KEY);
 
