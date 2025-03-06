@@ -295,7 +295,7 @@ public class EntityGraphRetriever {
                 referenceVertexProperties  = preloadProperties(entityVertex, entityType, relationAttributes, false);
             }
             for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
-                Object attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, referenceVertexProperties);
+                Object attrValue = getVertexAttribute(entityVertex, attribute);
 
                 if (attrValue != null) {
                     uniqueAttributes.put(attribute.getName(), attrValue);
