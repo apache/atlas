@@ -291,10 +291,11 @@ public class EntityGraphRetriever {
             Map<String, Object> uniqueAttributes = new HashMap<>();
             Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
             if (enableJanusOptimisation) {
-                referenceVertexProperties  = preloadProperties(entityVertex, entityType, relationAttributes);
+                //don't fetch edge labels for a relation attribute
+                referenceVertexProperties  = preloadProperties(entityVertex, entityType, relationAttributes, false);
             }
             for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
-                Object attrValue = getVertexAttribute(entityVertex, attribute);
+                Object attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, referenceVertexProperties);
 
                 if (attrValue != null) {
                     uniqueAttributes.put(attribute.getName(), attrValue);
@@ -1011,7 +1012,7 @@ public class EntityGraphRetriever {
         return mapVertexToAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }
 
-    private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set<String> attributes) throws AtlasBaseException {
+    private Map<String, Object> preloadProperties(AtlasVertex entityVertex, AtlasEntityType entityType, Set<String> attributes, boolean fetchEdgeLabels) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("preloadProperties");
 
         try {
@@ -1027,7 +1028,12 @@ public class EntityGraphRetriever {
             Map<String, Set<String>> relationshipsLookup = fetchEdgeNames(entityType);
 
             // Fetch edges in both directions
-            retrieveEdgeLabels(entityVertex, attributes, relationshipsLookup, propertiesMap);
+
+            // if the vertex in scope is root then call below otherwise skip
+            // we don't support relation attributes of a relation
+            if (fetchEdgeLabels) {
+                retrieveEdgeLabels(entityVertex, attributes, relationshipsLookup, propertiesMap);
+            }
 
             // Iterate through the resulting VertexProperty objects
             while (traversal.hasNext()) {
@@ -1257,7 +1263,7 @@ public class EntityGraphRetriever {
             //pre-fetching the properties
             String typeName = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class); //properties.get returns null
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName); // this is not costly
-            Map<String, Object> properties = preloadProperties(entityVertex, entityType, attributes);
+            Map<String, Object> properties = preloadProperties(entityVertex, entityType, attributes, true);
 
             String guid = (String) properties.get(Constants.GUID_PROPERTY_KEY);
 
