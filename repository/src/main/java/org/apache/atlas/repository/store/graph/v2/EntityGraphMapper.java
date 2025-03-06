@@ -2353,8 +2353,11 @@ public class EntityGraphMapper {
                         .filter(guid -> !currentElementGuids.contains(guid))
                         .collect(Collectors.toList());
             }
-            RequestContext.get().setAddedOutputPorts(addedGuids);
-            RequestContext.get().setRemovedOutputPorts(removedGuids);
+
+            String productGuid = toVertex.getProperty("__guid", String.class);
+            AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(productGuid);
+            diffEntity.setAddedRelationshipAttribute(OUTPUT_PORTS, addedGuids);
+            diffEntity.setRemovedRelationshipAttribute(OUTPUT_PORTS, removedGuids);
         }
     }
 
