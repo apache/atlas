@@ -963,7 +963,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -997,53 +997,13 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "LINK_STAKEHOLDER_TITLE_TO_DATA_DOMAIN_STAKEHOLDER",
-                "qualifiedName": "LINK_STAKEHOLDER_TITLE_TO_DATA_DOMAIN_STAKEHOLDER",
-                "policyCategory": "bootstrap",
-                "policySubCategory": "default",
-                "policyServiceName": "atlas",
-                "policyType": "allow",
-                "isPolicyEnabled": false,
-                "policyPriority": 1,
-                "policyUsers":
-                [],
-                "policyGroups":
-                [],
-                "policyRoles":
-                [
-                    "$admin",
-                    "$api-token-default-access"
-                ],
-                "policyResourceCategory": "RELATIONSHIP",
-                "policyResources":
-                [
-                    "relationship-type:*",
-                    "end-one-entity-type:StakeholderTitle",
-                    "end-one-entity-classification:*",
-                    "end-one-entity:*",
-                    "end-two-entity-type:Stakeholder",
-                    "end-two-entity-classification:*",
-                    "end-two-entity:*"
-                ],
-                "policyActions":
-                [
-                    "add-relationship",
-                    "update-relationship",
-                    "remove-relationship"
-                ]
-            }
-        },
-        {
-            "typeName": "AuthPolicy",
-            "attributes":
-            {
                 "name": "LINK_ASSET_TO_MESH_DATA_PRODUCT",
                 "qualifiedName": "LINK_ASSET_TO_MESH_DATA_PRODUCT",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -1061,46 +1021,6 @@
                     "end-one-entity-classification:*",
                     "end-one-entity:*",
                     "end-two-entity-type:DataProduct",
-                    "end-two-entity-classification:*",
-                    "end-two-entity:*"
-                ],
-                "policyActions":
-                [
-                    "add-relationship",
-                    "update-relationship",
-                    "remove-relationship"
-                ]
-            }
-        },
-        {
-            "typeName": "AuthPolicy",
-            "attributes":
-            {
-                "name": "LINK_MESH_DATA_PRODUCT_TO_ASSET",
-                "qualifiedName": "LINK_MESH_DATA_PRODUCT_TO_ASSET",
-                "policyCategory": "bootstrap",
-                "policySubCategory": "default",
-                "policyServiceName": "atlas",
-                "policyType": "allow",
-                "isPolicyEnabled": false,
-                "policyPriority": 1,
-                "policyUsers":
-                [],
-                "policyGroups":
-                [],
-                "policyRoles":
-                [
-                    "$admin",
-                    "$api-token-default-access"
-                ],
-                "policyResourceCategory": "RELATIONSHIP",
-                "policyResources":
-                [
-                    "relationship-type:*",
-                    "end-one-entity-type:DataProduct",
-                    "end-one-entity-classification:*",
-                    "end-one-entity:*",
-                    "end-two-entity-type:Asset",
                     "end-two-entity-classification:*",
                     "end-two-entity:*"
                 ],

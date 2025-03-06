@@ -3558,13 +3558,13 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "DATA_DOMAIN_AND_PRODUCT_BUSINESS_UPDATE_METADATA",
-                "qualifiedName": "DATA_DOMAIN_AND_PRODUCT_BUSINESS_UPDATE_METADATA",
+                "name": "ENTITY_BUSINESS_UPDATE_METADATA_BOOT",
+                "qualifiedName": "ENTITY_BUSINESS_UPDATE_METADATA_BOOT",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -3593,49 +3593,14 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "DATA_PRODUCT_BUSINESS_UPDATE_METADATA",
-                "qualifiedName": "DATA_PRODUCT_BUSINESS_UPDATE_METADATA",
+                "name": "CRUD_ENTITY_BOOT",
+                "qualifiedName": "CRUD_ENTITY_BOOT",
+                "description": "Allows user to perform CRUD operation on entities",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "isPolicyEnabled": false,
-                "policyPriority": 1,
-                "policyUsers":
-                [],
-                "policyGroups":
-                [],
-                "policyRoles":
-                [
-                    "$admin",
-                    "$api-token-default-access"
-                ],
-                "policyResourceCategory": "ENTITY",
-                "policyResources":
-                [
-                    "entity:*/product/*",
-                    "entity-type:DataProduct",
-                    "entity-classification:*",
-                    "entity-business-metadata:*"
-                ],
-                "policyActions":
-                [
-                    "entity-update-business-metadata"
-                ]
-            }
-        },
-        {
-            "typeName": "AuthPolicy",
-            "attributes":
-            {
-                "name": "CRUD_DATA_PRODUCT_ENTITY",
-                "qualifiedName": "CRUD_DATA_PRODUCT_ENTITY",
-                "description": "Allows user to perform CRUD operation on data products asset",
-                "policyCategory": "bootstrap",
-                "policySubCategory": "default",
-                "policyServiceName": "atlas",
-                "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
