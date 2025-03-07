@@ -285,7 +285,9 @@ public class EntityGraphRetriever {
         AtlasObjectId   ret        = null;
         String          typeName   = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
-        boolean enableJanusOptimisation = AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_RELATIONS.getBoolean();
+        boolean enableJanusOptimisation =
+                AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_RELATIONS.getBoolean()
+                         && RequestContext.get().isInvokedByIndexSearch();
         Map<String, Object> referenceVertexProperties  = null;
         if (entityType != null) {
             Map<String, Object> uniqueAttributes = new HashMap<>();

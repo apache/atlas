@@ -28,6 +28,7 @@ on:
       - master
       - lineageondemand
       - cassandrapoliciesoptimisation
+      - ixop
 
 jobs:
   build:
