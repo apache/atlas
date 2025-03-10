@@ -410,7 +410,7 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
         AtlasEdge ret = getRelationship(end1Vertex, end2Vertex, relationship);
 
         if (ret == null) {
-            ret = createRelationship(end1Vertex, end2Vertex, relationship, false, false);
+            ret = createRelationship(end1Vertex, end2Vertex, relationship, false, skipAuth);
             recordRelationshipMutation(RelationshipMutation.RELATIONSHIP_CREATE, ret, entityRetriever);
         }
 
