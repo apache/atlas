@@ -2893,6 +2893,7 @@
                 "policyResources":
                 [
                     "entity-type:DataDomain",
+                    "entity-type:DataProduct",
                     "entity-classification:*",
                     "entity:*"
                 ],
@@ -3706,13 +3707,13 @@
             "typeName": "AuthPolicy",
             "attributes":
             {
-                "name": "DATA_DOMAIN_AND_PRODUCT_BUSINESS_UPDATE_METADATA",
-                "qualifiedName": "DATA_DOMAIN_AND_PRODUCT_BUSINESS_UPDATE_METADATA",
+                "name": "ENTITY_BUSINESS_UPDATE_METADATA_BOOT",
+                "qualifiedName": "ENTITY_BUSINESS_UPDATE_METADATA_BOOT",
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
-                "policyPriority": 1,
+                "policyPriority": 0,
                 "policyUsers":
                 [],
                 "policyGroups":
@@ -3734,43 +3735,6 @@
                 "policyActions":
                 [
                     "entity-update-business-metadata"
-                ]
-            }
-        },
-        {
-            "typeName": "AuthPolicy",
-            "attributes":
-            {
-                "name": "CRUD_DATA_PRODUCT_ENTITY",
-                "qualifiedName": "CRUD_DATA_PRODUCT_ENTITY",
-                "description": "Allows user to perform CRUD operation on data products asset",
-                "policyCategory": "bootstrap",
-                "policySubCategory": "default",
-                "policyServiceName": "atlas",
-                "policyType": "allow",
-                "policyPriority": 1,
-                "policyUsers":
-                [],
-                "policyGroups":
-                [],
-                "policyRoles":
-                [
-                    "$admin",
-                    "$api-token-default-access"
-                ],
-                "policyResourceCategory": "ENTITY",
-                "policyResources":
-                [
-                    "entity-type:DataProduct",
-                    "entity-classification:*",
-                    "entity:*"
-                ],
-                "policyActions":
-                [
-                    "entity-read",
-                    "entity-create",
-                    "entity-update",
-                    "entity-delete"
                 ]
             }
         }
