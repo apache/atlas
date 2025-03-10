@@ -28,6 +28,8 @@ on:
       - master
       - lineageondemand
       - mlh40java17
+      - cassandrapoliciesoptimisation
+      - ixop
 
 jobs:
   build:

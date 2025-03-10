@@ -2065,30 +2065,6 @@ public final class GraphHelper {
 
         return ret;
     }
-
-    /**
-     * Get all the active edges
-     * @param vertex entity vertex
-     * @return Iterator of children edges
-     */
-    public static Iterator<AtlasJanusEdge> getOnlyActiveEdges(AtlasVertex vertex, AtlasEdgeDirection direction) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.getOnlyActiveEdges");
-
-        try {
-            return vertex.query()
-                    .direction(direction)
-                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
-                    .edges()
-                    .iterator();
-        } catch (Exception e) {
-            LOG.error("Error while getting active edges of vertex", e);
-            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
-        }
-        finally {
-            RequestContext.get().endMetricRecord(metricRecorder);
-        }
-    }
-
     public Set<AbstractMap.SimpleEntry<String,String>> retrieveEdgeLabelsAndTypeName(AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.retrieveEdgeLabelsAndTypeName");
 
@@ -2109,7 +2085,7 @@ public final class GraphHelper {
 
                         return new AbstractMap.SimpleEntry<>(labelStr, typeNameStr);
                     })
-                    .filter(entry -> !entry.getKey().isEmpty() && !entry.getValue().isEmpty())
+                    .filter(entry -> !entry.getKey().isEmpty())
                     .distinct()
                     .collect(Collectors.toSet());
 
