@@ -61,9 +61,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
     private static final String TYPE_DOMAIN = "DataDomain";
 
     private final AtlasGraph graph;
-    private final AtlasGremlinQueryProvider gremlinQueryProvider;
     private final EntityGraphRetriever entityRetriever;
-    private final AtlasTypeRegistry atlasTypeRegistry;
     private final TransactionInterceptHelper   transactionInterceptHelper;
     private final GraphHelper graphHelper;
     private final AtlasRelationshipStoreV2 relationshipStoreV2;
@@ -75,9 +73,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
     @Inject
     BusinessLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, TransactionInterceptHelper transactionInterceptHelper, AtlasRelationshipStoreV2 relationshipStoreV2, IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier) {
         this.graph = atlasGraph;
-        this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
         this.entityRetriever = new EntityGraphRetriever(atlasGraph, typeRegistry);
-        this.atlasTypeRegistry = typeRegistry;
         this.transactionInterceptHelper = transactionInterceptHelper;
         this.graphHelper = new GraphHelper(atlasGraph);
         this.relationshipStoreV2 = relationshipStoreV2;
@@ -237,7 +233,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                 if(!daapOutputPortGuids.contains(assetGuid) && !daapInputPortGuids.contains(assetGuid)){
                     AtlasRelationship relationship = new AtlasRelationship();
                     relationship.setTypeName(REL_DATA_PRODUCT_TO_INPUT_PORTS);
-                    AtlasEdge newInputPortEdge = relationshipStoreV2.getOrCreate(assetVertex, productVertex, relationship, true);
+                    relationshipStoreV2.getOrCreate(assetVertex, productVertex, relationship, true);
                     LOG.info("Added input relation between asset and product");
                 }
                 updateInternalAttr(productVertex, assetGuid, operation);
