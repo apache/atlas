@@ -2357,6 +2357,7 @@ public class EntityGraphMapper {
             String productGuid = toVertex.getProperty("__guid", String.class);
             AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(productGuid);
             if (diffEntity != null){
+                // make change to not add following attributes to diff entity if they are empty
                 diffEntity.setAddedRelationshipAttribute(OUTPUT_PORTS, addedGuids);
                 diffEntity.setRemovedRelationshipAttribute(OUTPUT_PORTS, removedGuids);
             }
