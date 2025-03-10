@@ -127,10 +127,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
             if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
                 throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Can not update Lineage Status to Completed");
             }
-
-            if (vertex.getProperty(DAAP_LINEAGE_STATUS_ATTR, String.class).equals(DAAP_LINEAGE_STATUS_IN_PROGRESS)){
-                entity.setAttribute(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_COMPLETED);
-            }
+            entity.setAttribute(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_COMPLETED);
         }
 
         if(entity.hasAttribute(DAAP_ASSET_DSL_ATTR) && diffEntity.hasAttribute(DAAP_ASSET_DSL_ATTR)){
