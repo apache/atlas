@@ -14,6 +14,9 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.model.lineage.LineageListRequest.LINEAGE_TYPE_DATASET_PROCESS_LINEAGE;
+
+
 public class AtlasLineageOnDemandContext {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasLineageContext.class);
 
@@ -24,6 +27,9 @@ public class AtlasLineageOnDemandContext {
     private Set<String>                             relationAttributes;
     private LineageOnDemandBaseParams               defaultParams;
 
+
+    private String                                  lineageType = LINEAGE_TYPE_DATASET_PROCESS_LINEAGE;
+
     public AtlasLineageOnDemandContext(LineageOnDemandRequest lineageOnDemandRequest, AtlasTypeRegistry typeRegistry) {
         this.constraints        = lineageOnDemandRequest.getConstraints();
         this.attributes         = lineageOnDemandRequest.getAttributes();
@@ -31,6 +37,7 @@ public class AtlasLineageOnDemandContext {
         this.defaultParams      = lineageOnDemandRequest.getDefaultParams();
         this.vertexPredicate    = constructInMemoryPredicate(typeRegistry, lineageOnDemandRequest.getEntityTraversalFilters());
         this.edgePredicate      = constructInMemoryPredicate(typeRegistry, lineageOnDemandRequest.getRelationshipTraversalFilters());
+        this.lineageType        = lineageOnDemandRequest.getLineageType();
     }
 
     public Map<String, LineageOnDemandConstraints> getConstraints() {
@@ -55,6 +62,13 @@ public class AtlasLineageOnDemandContext {
 
     public void setEdgePredicate(Predicate edgePredicate) {
         this.edgePredicate = edgePredicate;
+    }
+    public String getLineageType() {
+        return lineageType;
+    }
+
+    public void setLineageType(String lineageType) {
+        this.lineageType = lineageType;
     }
 
     public Set<String> getAttributes() {

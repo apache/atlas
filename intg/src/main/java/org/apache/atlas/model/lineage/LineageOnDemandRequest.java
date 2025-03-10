@@ -11,6 +11,7 @@ import java.util.Set;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static org.apache.atlas.model.lineage.LineageListRequest.LINEAGE_TYPE_DATASET_PROCESS_LINEAGE;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
@@ -22,6 +23,7 @@ public class LineageOnDemandRequest {
     private Set<String>                             attributes;
     private Set<String>                             relationAttributes;
     private LineageOnDemandBaseParams               defaultParams;
+    private String                                  lineageType = LINEAGE_TYPE_DATASET_PROCESS_LINEAGE;
 
     public LineageOnDemandRequest() {
         this.attributes = new HashSet<>();
@@ -64,6 +66,13 @@ public class LineageOnDemandRequest {
         this.relationshipTraversalFilters = relationshipTraversalFilters;
     }
 
+    public String getLineageType() {
+        return lineageType;
+    }
+
+    public void setLineageType(String lineageType) {
+        this.lineageType = lineageType;
+    }
     public Set<String> getAttributes() {
         return attributes;
     }
