@@ -1,0 +1,60 @@
+name: Cancel
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  cancel-older-runs:
+    runs-on: ubuntu-latest
+
+    # Allow the GITHUB_TOKEN to cancel other workflow runs.
+    permissions:
+      actions: write
+
+    steps:
+      - name: Cancel older runs from the same PR
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const currentPrNumber = context.payload.pull_request.number;
+            const newCommitSha = context.payload.pull_request.head.sha;
+
+            // The exact "name:" from the second workflow below.
+            const targetWorkflowName = "Integration-Tests-for-Metastore";
+
+            // We'll look for runs in these statuses
+            const statusesToCheck = ["queued", "in_progress"];
+
+            for (const status of statusesToCheck) {
+              const runsResponse = await github.rest.actions.listWorkflowRunsForRepo({
+                owner,
+                repo,
+                event: "pull_request",
+                status,
+                per_page: 100,
+              });
+              const allRuns = runsResponse.data.workflow_runs;
+
+              for (const run of allRuns) {
+                // Skip runs from a different workflow:
+                if (run.name !== targetWorkflowName) continue;
+
+                // Skip if this run is for a different PR:
+                const prNumbers = run.pull_requests.map(pr => pr.number);
+                if (!prNumbers.includes(currentPrNumber)) continue;
+
+                // If run.head_sha == newCommitSha, it's the *new* commit => keep it
+                if (run.head_sha === newCommitSha) continue;
+
+                // Otherwise, it's an older commit on the same PR => cancel
+                await github.rest.actions.cancelWorkflowRun({
+                  owner,
+                  repo,
+                  run_id: run.id,
+                });
+                console.log(`Canceled older run ${run.id} for PR #${currentPrNumber} (SHA=${run.head_sha})`);
+              }
+            }
+            console.log("Done checking for older runs to cancel.");
