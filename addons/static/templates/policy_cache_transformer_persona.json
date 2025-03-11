@@ -12,9 +12,9 @@
       "actions": ["entity-read"],
       "policyConditions": [
         {
-          "policyConditionType": "excludeDQRules",
+          "policyConditionType": "excludeEntityTypes",
           "policyConditionValues": [
-            "entity-read"
+            "alpha_DQRule"
           ]
         }
       ]
@@ -33,9 +33,9 @@
       "actions": ["entity-update"],
       "policyConditions": [
         {
-          "policyConditionType": "excludeDQRules",
+          "policyConditionType": "excludeEntityTypes",
           "policyConditionValues": [
-            "entity-update"
+            "alpha_DQRule"
           ]
         }
       ]
@@ -62,9 +62,9 @@
       "actions": ["add-relationship", "remove-relationship"],
       "policyConditions": [
         {
-          "policyConditionType": "excludeDQRules",
+          "policyConditionType": "excludeEntityTypes",
           "policyConditionValues": [
-            "add-relationship", "remove-relationship"
+            "alpha_DQRule"
           ]
         }
       ]
@@ -91,9 +91,9 @@
       "actions": ["add-relationship", "remove-relationship"],
       "policyConditions": [
         {
-          "policyConditionType": "excludeDQRules",
+          "policyConditionType": "excludeEntityTypes",
           "policyConditionValues": [
-            "add-relationship", "remove-relationship"
+            "alpha_DQRule"
           ]
         }
       ]
@@ -112,9 +112,9 @@
       "actions": ["entity-create"],
       "policyConditions": [
         {
-          "policyConditionType": "excludeDQRules",
+          "policyConditionType": "excludeEntityTypes",
           "policyConditionValues": [
-            "entity-create"
+            "alpha_DQRule"
           ]
         }
       ]
@@ -133,9 +133,9 @@
       "actions": ["entity-delete"],
       "policyConditions": [
         {
-          "policyConditionType": "excludeDQRules",
+          "policyConditionType": "excludeEntityTypes",
           "policyConditionValues": [
-            "entity-delete"
+            "alpha_DQRule"
           ]
         }
       ]
