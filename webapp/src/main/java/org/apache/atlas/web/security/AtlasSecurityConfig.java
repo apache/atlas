@@ -201,7 +201,6 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .servletApi()
                 .and()
-                .csrf().disable()
                 .sessionManagement()
                 .enableSessionUrlRewriting(false)
                 .sessionCreationPolicy(SessionCreationPolicy.ALWAYS)
