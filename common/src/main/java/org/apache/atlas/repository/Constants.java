@@ -158,6 +158,10 @@ public final class Constants {
     public static final String INPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.inputPortDataProducts";
     public static final String OUTPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.outputPortDataProducts";
 
+    public static final String OUTPUT_PORTS = "outputPorts";
+    public static final String ADDED_OUTPUT_PORTS = "addedOutputPorts";
+    public static final String REMOVED_OUTPUT_PORTS = "removedOutputPorts";
+
     public static final String UD_RELATIONSHIP_EDGE_LABEL = "__Referenceable.userDefRelationshipTo";
     public static final String UD_RELATIONSHIP_END_NAME_FROM = "userDefRelationshipFrom";
     public static final String UD_RELATIONSHIP_END_NAME_TO = "userDefRelationshipTo";
