@@ -107,6 +107,7 @@ public class ImpalaLineageHook extends AtlasHook {
                     case CREATETABLE_AS_SELECT:
                     case ALTERVIEW_AS:
                     case QUERY:
+                    case QUERY_WITH_CLAUSE:
                         event = new CreateImpalaProcess(context);
                         break;
                 default:
