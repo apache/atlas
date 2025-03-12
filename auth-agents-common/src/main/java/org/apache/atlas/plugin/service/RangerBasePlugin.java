@@ -271,17 +271,6 @@ public class RangerBasePlugin {
 			LOG.debug("==> setPolicies(" + policies + ")");
 		}
 
-		if (policies != null) {
-			List<RangerPolicy> resourcePolicies = policies.getPolicies();
-			List<RangerPolicy> tagPolicies = policies.getTagPolicies() != null ? policies.getTagPolicies().getPolicies() : new ArrayList<>();
-			List<RangerPolicy> abacPolicies = policies.getAbacPolicies() != null ? policies.getAbacPolicies().getPolicies() : new ArrayList<>();
-
-			PoliciesStore.setResourcePolicies(resourcePolicies);
-			PoliciesStore.setTagPolicies(tagPolicies);
-			PoliciesStore.setAbacPolicies(abacPolicies);
-			LOG.info("PolicyRefresher: abac policies set: " + abacPolicies.size());
-		}
-
 		// guard against catastrophic failure during policy engine Initialization or
 		try {
 			RangerPolicyEngine oldPolicyEngine = this.policyEngine;
@@ -407,6 +396,15 @@ public class RangerBasePlugin {
 						this.refresher.saveToCache(usePolicyDeltas ? servicePolicies : policies);
 					}
 					LOG.info("New RangerPolicyEngine created with policy count:"+ (usePolicyDeltas? servicePolicies.getPolicies().size() : policies.getPolicies().size()));
+
+					List<RangerPolicy> abacPolicies = policies.getAbacPolicies() != null ? policies.getAbacPolicies().getPolicies() : new ArrayList<>();
+					if (usePolicyDeltas) {
+						abacPolicies = servicePolicies.getAbacPolicies() != null ? servicePolicies.getAbacPolicies().getPolicies() : new ArrayList<>();
+					}
+					PoliciesStore.setAbacPolicies(abacPolicies);
+					PoliciesStore.setResourcePolicies(this.policyEngine.getResourcePolicies());
+					PoliciesStore.setTagPolicies(this.policyEngine.getTagPolicies());
+					LOG.info("PolicyRefresher: abac policies set: " + abacPolicies.size());
 				}
 
 			} else {

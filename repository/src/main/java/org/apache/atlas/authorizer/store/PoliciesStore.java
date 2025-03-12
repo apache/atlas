@@ -46,7 +46,7 @@ public class PoliciesStore {
         PoliciesStore.abacPolicies = abacPolicies;
     }
 
-    private static List<RangerPolicy> getAbacPolicies() {
+    public static List<RangerPolicy> getAbacPolicies() {
         return abacPolicies;
     }
 
