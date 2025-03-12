@@ -10,12 +10,12 @@
 
 > Fix [#1]() 
 
-## ⚠️ **Helm Config Changes**
-###  Does this PR require Helm config changes to be included in the tests?
-
-- [ ] **No, this PR does not require Helm config changes.** _(You can proceed with the PR.) ✅_
-- [ ] **Yes, I have manually updated the config-values on `enpla9up36` before submitting this PR._** _(You can proceed with the PR.) ✅_
-- [ ] **Yes, but I have NOT updated the config-values.** _(Please update them before proceeding; otherwise, the tests will run with default values.)⚠️_
+## **Helm Config Changes for Running Tests (Staging PR)**  
+### Does this PR require Helm config changes for testing?  
+- [x] **Tests are NOT required for this commit.** _(You can proceed with the PR.) ✅_  
+- [ ] No, Helm config changes are not needed. _(You can proceed with the PR.) ✅_  
+- [ ] Yes, I have already updated the config-values on `enpla9up36`. _(You can proceed with the PR.) ✅_  
+- [ ] Yes, but I have NOT updated the config-values. _(Please update them before proceeding; or, tests will run with default values.)⚠️_  
 
 ## Checklists
 
