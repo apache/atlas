@@ -19,7 +19,13 @@
 
 package org.apache.atlas.plugin.util;
 
+<<<<<<< HEAD
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+=======
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.apache.atlas.authorizer.store.PoliciesStore;
+>>>>>>> baeb19057 (Save abac policies to cache file as well)
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -33,7 +39,7 @@ import org.apache.atlas.plugin.policyengine.RangerPolicyEngineImpl;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlRootElement;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
@@ -360,7 +366,7 @@ public class ServicePolicies implements java.io.Serializable {
 		}
 
 		public List<RangerPolicy> getPolicies() {
-			return policies;
+			return policies == null ? new ArrayList<>() : policies;
 		}
 
 		public void setPolicies(List<RangerPolicy> policies) {
@@ -476,6 +482,28 @@ public class ServicePolicies implements java.io.Serializable {
 			ret.setTagPolicies(tagPolicies);
 		}
 
+		if (source.getAbacPolicies() != null) {
+			AbacPolicies abacPolicies = copyHeader(source.getAbacPolicies(), null);
+			ret.setAbacPolicies(abacPolicies);
+		}
+
+		return ret;
+	}
+
+	static public AbacPolicies copyHeader(AbacPolicies source, String componentServiceName) {
+		AbacPolicies ret = new AbacPolicies();
+
+		ret.setServiceName(source.getServiceName());
+		ret.setServiceId(source.getServiceId());
+		ret.setPolicyVersion(source.getPolicyVersion());
+		ret.setAuditMode(source.getAuditMode());
+		ret.setPolicyUpdateTime(source.getPolicyUpdateTime());
+		ret.setPolicies(Collections.emptyList());
+
+		if (componentServiceName != null) {
+			ret.setServiceDef(ServiceDefUtil.normalizeAccessTypeDefs(source.getServiceDef(), componentServiceName));
+		}
+
 		return ret;
 	}
 
@@ -516,7 +544,6 @@ public class ServicePolicies implements java.io.Serializable {
 				RangerPolicyDeltaUtil.applyDeltas(resourcePoliciesAfterDelete, servicePolicies.getPolicyDeltas(), servicePolicies.getServiceDef().getName(), servicePolicies.getServiceName());
 
 		ret.setPolicies(newResourcePolicies);
-		ret.setAbacPolicies(servicePolicies.getAbacPolicies());
 
 		List<RangerPolicy> newTagPolicies;
 		if (servicePolicies.getTagPolicies() != null) {
@@ -539,6 +566,15 @@ public class ServicePolicies implements java.io.Serializable {
 
 		if (ret.getTagPolicies() != null) {
 			ret.getTagPolicies().setPolicies(newTagPolicies);
+		}
+
+		if (servicePolicies.getAbacPolicies() != null ) {
+			List<RangerPolicy> oldAbacPolicies = PoliciesStore.getAbacPolicies() != null ? PoliciesStore.getAbacPolicies() : new ArrayList<>();;
+			List<RangerPolicy> abacPoliciesAfterDelete =
+				RangerPolicyDeltaUtil.deletePoliciesByDelta(oldAbacPolicies, deletedDeltaMap);
+			List<RangerPolicy> newAbacPolicies =
+					RangerPolicyDeltaUtil.applyDeltas(abacPoliciesAfterDelete, servicePolicies.getPolicyDeltas(), servicePolicies.getAbacPolicies().getServiceName(), servicePolicies.getAbacPolicies().getServiceName());
+			ret.getAbacPolicies().setPolicies(newAbacPolicies);
 		}
 
 		return ret;

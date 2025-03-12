@@ -129,6 +129,7 @@ public class CachePolicyTransformerImpl {
 
     private AtlasEntityHeader service;
     private Map<String, AtlasEntityHeader> services;
+    private Map<String, RangerServiceDef> serviceDefs;
 
     private final Map<EntityAuditActionV2, Integer> auditEventToDeltaChangeType;
 
@@ -154,6 +155,7 @@ public class CachePolicyTransformerImpl {
         this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_PURGE, RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE);
 
         this.services = new HashMap<>();
+        this.serviceDefs = new HashMap<>();
     }
 
     public AtlasEntityHeader getService() {
@@ -219,17 +221,22 @@ public class CachePolicyTransformerImpl {
                         services.put(abacServiceName, abacService);
                         LOG.info("PolicyDelta: {}: fetched abac service type={}", serviceName, abacService != null ? abacService.getTypeName() : null);
                     }
+                    RangerServiceDef abacServiceDef = serviceDefs.get(abacServiceName);
+                    if (abacServiceDef == null) {
+                        String abacServiceDefName = String.format(RESOURCE_SERVICE_DEF_PATTERN, abacService.getAttribute(NAME));
+                        abacServiceDef = getResourceAsObject(abacServiceDefName, RangerServiceDef.class);
+                        serviceDefs.put(abacServiceName, abacServiceDef);
+                    }
 
                     // filter and set abac policies
                     if (abacService != null) {
-//                        ServicePolicies.AbacPolicies abacPolicies = new ServicePolicies.AbacPolicies();
-//                        abacPolicies.setServiceName(abacServiceName);
-//                        abacPolicies.setPolicyUpdateTime(new Date());
-//                        abacPolicies.setServiceId(abacService.getGuid());
-//                        abacPolicies.setPolicyVersion(-1L);
-//                        String abacServiceDefName = String.format(RESOURCE_SERVICE_DEF_PATTERN, abacService.getAttribute(NAME));
-//                        abacPolicies.setServiceDef(getResourceAsObject(abacServiceDefName, RangerServiceDef.class));
-//                        servicePolicies.setAbacPolicies(abacPolicies);q
+                        ServicePolicies.AbacPolicies abacPolicies = new ServicePolicies.AbacPolicies();
+                        abacPolicies.setServiceName(abacServiceName);
+                        abacPolicies.setPolicyUpdateTime(new Date());
+                        abacPolicies.setServiceId(abacService.getGuid());
+                        abacPolicies.setPolicyVersion(-1L);
+                        abacPolicies.setServiceDef(abacServiceDef);
+                        servicePolicies.setAbacPolicies(abacPolicies); // this only sets the service name for abac policies, the actual policies will be added to main delta.policies itself
 
                         List<AtlasEntityHeader> abacServicePolicies = allAtlasPolicies.stream().filter(x -> abacServiceName.equals(x.getAttribute(ATTR_POLICY_SERVICE_NAME))).collect(Collectors.toList());
                         List<RangerPolicyDelta> abacPoliciesDelta = getRangerPolicyDelta(abacService, policyChanges, abacServicePolicies);
