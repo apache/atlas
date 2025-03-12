@@ -311,8 +311,8 @@ public class PolicyRefresher extends Thread {
 		try {
 
 
-			if (true) {
-//			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null && lastUpdatedTimeInMillis == -1) {
+//			if (true) {
+			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null && lastUpdatedTimeInMillis == -1) {
 				LOG.info("PolicyRefresher(serviceName=" + serviceName + "): loading all policies for first time");
 				RangerRESTUtils restUtils = new RangerRESTUtils();
 				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry());

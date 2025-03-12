@@ -516,6 +516,7 @@ public class ServicePolicies implements java.io.Serializable {
 				RangerPolicyDeltaUtil.applyDeltas(resourcePoliciesAfterDelete, servicePolicies.getPolicyDeltas(), servicePolicies.getServiceDef().getName(), servicePolicies.getServiceName());
 
 		ret.setPolicies(newResourcePolicies);
+		ret.setAbacPolicies(servicePolicies.getAbacPolicies());
 
 		List<RangerPolicy> newTagPolicies;
 		if (servicePolicies.getTagPolicies() != null) {
