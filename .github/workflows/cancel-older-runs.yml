@@ -1,4 +1,4 @@
-name: Cancel
+name: Cancel-older-runs-from-same-PR
 
 on:
   pull_request:
