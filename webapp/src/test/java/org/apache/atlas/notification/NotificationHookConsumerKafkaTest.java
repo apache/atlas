@@ -29,6 +29,8 @@ import org.apache.atlas.kafka.KafkaNotification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.notification.HookNotification;
+import org.apache.atlas.model.notification.ImportNotification;
+import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.impexp.AsyncImporter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
@@ -50,9 +52,11 @@ import org.testng.annotations.AfterTest;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.Test;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
 
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyBoolean;
 import static org.mockito.Matchers.anyString;
@@ -113,9 +117,9 @@ public class NotificationHookConsumerKafkaTest {
 
     @Test
     public void testConsumerConsumesNewMessageWithAutoCommitDisabled() throws AtlasException, InterruptedException, AtlasBaseException {
-        produceMessage(new HookNotificationV1.EntityCreateRequest("test_user1", createEntity()));
+        produceMessage(null, NotificationInterface.NotificationType.HOOK, new HookNotificationV1.EntityCreateRequest("test_user1", createEntity()));
 
-        NotificationConsumer<HookNotification> consumer                 = createNewConsumer(kafkaNotification, false);
+        NotificationConsumer<HookNotification> consumer                 = createNewConsumer(NotificationInterface.NotificationType.HOOK, kafkaNotification, false);
         NotificationHookConsumer               notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
         NotificationHookConsumer.HookConsumer  hookConsumer             = notificationHookConsumer.new HookConsumer(consumer);
 
@@ -124,7 +128,7 @@ public class NotificationHookConsumerKafkaTest {
         verify(atlasEntityStore).createOrUpdate(any(EntityStream.class), anyBoolean());
 
         // produce another message, and make sure it moves ahead. If commit succeeded, this would work.
-        produceMessage(new HookNotificationV1.EntityCreateRequest("test_user2", createEntity()));
+        produceMessage(null, NotificationInterface.NotificationType.HOOK, new HookNotificationV1.EntityCreateRequest("test_user2", createEntity()));
         consumeOneMessage(consumer, hookConsumer);
 
         verify(atlasEntityStore, times(2)).createOrUpdate(any(EntityStream.class), anyBoolean());
@@ -134,13 +138,13 @@ public class NotificationHookConsumerKafkaTest {
     @Test(enabled = false)
     public void consumerConsumesNewMessageButCommitThrowsAnException_MessageOffsetIsRecorded() throws AtlasException, InterruptedException, AtlasBaseException {
         ExceptionThrowingCommitConsumer       consumer                 = createNewConsumerThatThrowsExceptionInCommit(kafkaNotification, true);
-        NotificationHookConsumer              notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        NotificationHookConsumer               notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
         NotificationHookConsumer.HookConsumer hookConsumer             = notificationHookConsumer.new HookConsumer(consumer);
 
-        produceMessage(new HookNotificationV1.EntityCreateRequest("test_user2", createEntity()));
+        produceMessage(null, NotificationInterface.NotificationType.HOOK, new HookNotificationV1.EntityCreateRequest("test_user2", createEntity()));
 
         try {
-            produceMessage(new HookNotificationV1.EntityCreateRequest("test_user1", createEntity()));
+            produceMessage(null, NotificationInterface.NotificationType.HOOK, new HookNotificationV1.EntityCreateRequest("test_user2", createEntity()));
             consumeOneMessage(consumer, hookConsumer);
             consumeOneMessage(consumer, hookConsumer);
         } catch (KafkaException ex) {
@@ -149,7 +153,7 @@ public class NotificationHookConsumerKafkaTest {
 
         consumer.disableCommitExpcetion();
 
-        produceMessage(new HookNotificationV1.EntityCreateRequest("test_user1", createEntity()));
+        produceMessage(null, NotificationInterface.NotificationType.HOOK, new HookNotificationV1.EntityCreateRequest("test_user1", createEntity()));
         consumeOneMessage(consumer, hookConsumer);
         consumeOneMessage(consumer, hookConsumer);
 
@@ -158,9 +162,9 @@ public class NotificationHookConsumerKafkaTest {
 
     @Test(dependsOnMethods = "testConsumerConsumesNewMessageWithAutoCommitDisabled")
     public void testConsumerRemainsAtSameMessageWithAutoCommitEnabled() throws Exception {
-        produceMessage(new HookNotificationV1.EntityCreateRequest("test_user3", createEntity()));
+        produceMessage(null, NotificationInterface.NotificationType.HOOK, new HookNotificationV1.EntityCreateRequest("test_user3", createEntity()));
 
-        NotificationConsumer<HookNotification> consumer = createNewConsumer(kafkaNotification, true);
+        NotificationConsumer<HookNotification> consumer = createNewConsumer(NotificationInterface.NotificationType.HOOK, kafkaNotification, true);
 
         assertNotNull(consumer);
 
@@ -171,18 +175,48 @@ public class NotificationHookConsumerKafkaTest {
         verify(atlasEntityStore).createOrUpdate(any(EntityStream.class), anyBoolean());
 
         // produce another message, but this will not be consumed, as commit code is not executed in hook consumer.
-        produceMessage(new HookNotificationV1.EntityCreateRequest("test_user4", createEntity()));
+        produceMessage(null, NotificationInterface.NotificationType.HOOK, new HookNotificationV1.EntityCreateRequest("test_user4", createEntity()));
 
         consumeOneMessage(consumer, hookConsumer);
         verify(atlasEntityStore, times(2)).createOrUpdate(any(EntityStream.class), anyBoolean());
+    }
+
+    @Test
+    public void testImportMessagesArePublishedToDynamicTopicAndConsumedAndProcessed() throws AtlasException, InterruptedException, AtlasBaseException {
+        final String importId = "1b198cf8b55fed2e7829efea11f77795";
+        final String topic = "ATLAS_IMPORT_1b198cf8b55fed2e7829efea11f77795";
+        produceMessage(topic, NotificationInterface.NotificationType.ASYNC_IMPORT,
+                new ImportNotification.AtlasEntityImportNotification(importId, "test_user1", new AtlasEntity.AtlasEntityWithExtInfo(createV2Entity()), 1));
+
+        // adding dynamic topic created for the notification type and creating consumer for the same
+        addTopicToNotification(NotificationInterface.NotificationType.ASYNC_IMPORT, kafkaNotification, topic);
+        NotificationConsumer<HookNotification> consumer                 = createNewConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, kafkaNotification, false);
+        NotificationHookConsumer               notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        NotificationHookConsumer.HookConsumer  hookConsumer             = notificationHookConsumer.new HookConsumer(consumer);
+
+        consumeOneMessage(consumer, hookConsumer);
+
+        verify(asyncImporter).onImportEntity(any(AtlasEntity.AtlasEntityWithExtInfo.class), anyString(), anyInt());
+
+        // produce another message, and make sure it moves ahead. If commit succeeded, this would work.
+        produceMessage(topic, NotificationInterface.NotificationType.ASYNC_IMPORT,
+                new ImportNotification.AtlasEntityImportNotification(importId, "test_user1", new AtlasEntity.AtlasEntityWithExtInfo(createV2Entity()), 2));
+        consumeOneMessage(consumer, hookConsumer);
+
+        verify(asyncImporter, times(2)).onImportEntity(any(AtlasEntity.AtlasEntityWithExtInfo.class), anyString(), anyInt());
+        reset(asyncImporter);
     }
 
     protected String randomString() {
         return RandomStringUtils.randomAlphanumeric(10);
     }
 
-    AtlasKafkaConsumer<HookNotification> createNewConsumer(KafkaNotification kafkaNotification, boolean autoCommitEnabled) {
-        return (AtlasKafkaConsumer) kafkaNotification.createConsumers(NotificationInterface.NotificationType.HOOK, 1, autoCommitEnabled).get(0);
+    AtlasKafkaConsumer<HookNotification> createNewConsumer(NotificationInterface.NotificationType notificationType, KafkaNotification kafkaNotification, boolean autoCommitEnabled) {
+        return (AtlasKafkaConsumer) kafkaNotification.createConsumers(notificationType, 1, autoCommitEnabled).get(0);
+    }
+
+    void addTopicToNotification(NotificationInterface.NotificationType notificationType, KafkaNotification kafkaNotification, String topic) {
+        kafkaNotification.addTopicToNotificationType(notificationType, topic);
     }
 
     ExceptionThrowingCommitConsumer createNewConsumerThatThrowsExceptionInCommit(KafkaNotification kafkaNotification, boolean autoCommitEnabled) {
@@ -282,8 +316,12 @@ public class NotificationHookConsumerKafkaTest {
         }
     }
 
-    private void produceMessage(HookNotification message) throws NotificationException {
-        kafkaNotification.send(NotificationInterface.NotificationType.HOOK, message);
+    private void produceMessage(String topic, NotificationInterface.NotificationType notificationType, HookNotification message) throws NotificationException {
+        if (notificationType == NotificationInterface.NotificationType.HOOK) {
+            kafkaNotification.send(NotificationInterface.NotificationType.HOOK, message);
+        } else {
+            kafkaNotification.send(topic, Collections.singletonList(message), new MessageSource());
+        }
     }
 
     private static class ExceptionThrowingCommitConsumer extends AtlasKafkaConsumer {
