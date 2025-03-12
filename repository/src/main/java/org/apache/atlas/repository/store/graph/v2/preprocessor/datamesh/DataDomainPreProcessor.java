@@ -159,11 +159,6 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         }
 
         if (!newParentDomainQualifiedName.equals(currentParentDomainQualifiedName) && entity.hasRelationshipAttribute(PARENT_DOMAIN_REL_TYPE)) {
-            if(storedDomain.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE) == null &&
-                    StringUtils.isEmpty( (String) storedDomain.getAttribute(PARENT_DOMAIN_QN_ATTR))){
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot move Super Domain inside another domain");
-            }
-
             //Auth check
             isAuthorizedToMove(DATA_DOMAIN_ENTITY_TYPE, currentParentDomainHeader, newParentDomainHeader);
 
