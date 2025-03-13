@@ -235,8 +235,8 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                     relationship.setTypeName(REL_DATA_PRODUCT_TO_INPUT_PORTS);
                     relationshipStoreV2.getOrCreate(assetVertex, productVertex, relationship, true);
                     LOG.info("Added input relation between asset and product");
+                    updateInternalAttr(productVertex, assetGuid, operation);
                 }
-                updateInternalAttr(productVertex, assetGuid, operation);
             }
         } catch (AtlasBaseException e){
             LOG.error("Error while adding input relation", e);
@@ -251,8 +251,8 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                 AtlasEdge inputPortEdge = graphHelper.getEdge(assetVertex, productVertex, INPUT_PORT_PRODUCT_EDGE_LABEL);
                 if(inputPortEdge != null){
                     graph.removeEdge(inputPortEdge);
+                    updateInternalAttr(productVertex, assetGuid, operation);
                 }
-                updateInternalAttr(productVertex, assetGuid, operation);
             }
         } catch (AtlasBaseException | RepositoryException e){
             LOG.error("Error while removing input relation", e);
