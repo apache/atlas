@@ -48,6 +48,7 @@ define(['require',
             signOut: "[data-id='signOut']",
             administrator: "[data-id='administrator']",
             showDebug: "[data-id='showDebug']",
+            reactUISwitch: "[data-id='reactUISwitch']",
             uiSwitch: "[data-id='uiSwitch']",
             glossaryImport: "[data-id='glossaryImport']",
             businessMetadataImport: "[data-id='businessMetadataImport']",
@@ -75,6 +76,13 @@ define(['require',
                 Utils.localStorage.setValue("last_ui_load", "v1");
                 var path = Utils.getBaseUrl(window.location.pathname);
                 window.location = path + "/logout.html";
+            };
+            events["click " + this.ui.reactUISwitch] = function() {
+                var path = Utils.getBaseUrl(window.location.pathname) + "/n3/index.html";
+                if (window.location.hash.length > 2) {
+                    path += window.location.hash;
+                }
+                window.location.href = path;
             };
             events["click " + this.ui.uiSwitch] = function() {
                 var path = Utils.getBaseUrl(window.location.pathname) + "/n/index.html";
