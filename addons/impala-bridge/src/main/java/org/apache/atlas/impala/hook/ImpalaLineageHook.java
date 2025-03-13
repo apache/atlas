@@ -109,6 +109,9 @@ public class ImpalaLineageHook extends AtlasHook {
                     case QUERY:
                         event = new CreateImpalaProcess(context);
                         break;
+                    case QUERY_WITH_CLAUSE:
+                        event = new CreateImpalaProcess(context);
+                        break;
                 default:
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("HiveHook.run({}): operation ignored", lineageQuery.getQueryText());

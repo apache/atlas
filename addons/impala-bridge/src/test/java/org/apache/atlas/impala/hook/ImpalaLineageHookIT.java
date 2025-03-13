@@ -173,4 +173,44 @@ public class ImpalaLineageHookIT extends ImpalaLineageITBase {
             assertFalse(true);
         }
     }
+
+    @Test
+    public void testWithClauseQuery() throws Exception {
+
+        ImpalaQuery queryObj = new ImpalaQuery();
+        int loopCount = 2;
+
+        for (int i = 0; i < loopCount; i++) {
+            String tableName1 = tableName();
+            String tableName2 = tableName();
+
+            String createTableQuery1 = "CREATE TABLE IF NOT EXISTS " + tableName1 +
+                    " (id INT, name STRING, amount DOUBLE) STORED AS PARQUET";
+            String insertDataQuery1 = "INSERT INTO " + tableName1 +
+                    " (id, name, amount) VALUES (1, 'Alice', 150.0), (2, 'Bob', 90.0), (3, 'Charlie', 200.0)";
+            String createTableQuery2 = "CREATE TABLE IF NOT EXISTS " + tableName2 +
+                    " (id INT, name STRING, amount DOUBLE) STORED AS PARQUET";
+            String withQuery =
+                    "WITH filtered_data AS (SELECT id, name, amount FROM " + tableName1 +
+                            " WHERE amount > 100) " +
+                            "INSERT INTO " + tableName2 + " SELECT id, name, amount FROM filtered_data";
+
+            runQuery(queryObj, createTableQuery1, insertDataQuery1, createTableQuery2, withQuery);
+        }
+    }
+
+    private void runQuery(ImpalaQuery queryObj, String... queries) {
+        for (String query : queries) {
+            queryObj.setQueryText(query);
+            try {
+                impalaHook.process(queryObj);
+            } catch (Exception e) {
+                LOG.error("Error processing query: ", e);
+            }
+        }
+    }
+
+    protected String tableName() {
+        return "table_" + random();
+    }
 }
