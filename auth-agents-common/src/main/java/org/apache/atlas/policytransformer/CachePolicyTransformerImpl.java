@@ -217,7 +217,7 @@ public class CachePolicyTransformerImpl {
                     if (abacService == null) {
                         abacService = getServiceEntity(abacServiceName);
                         services.put(abacServiceName, abacService);
-                        LOG.info("PolicyDelta: {}: fetched abac service type={}", serviceName, abacService != null ? abacService.getTypeName() : null);
+                        LOG.info("PolicyDelta: {}: ABAC_AUTH: fetched abac service type={}", serviceName, abacService != null ? abacService.getTypeName() : null);
                     }
 
                     // filter and set abac policies
@@ -232,18 +232,18 @@ public class CachePolicyTransformerImpl {
                         List<AtlasEntityHeader> abacServicePolicies = allAtlasPolicies.stream().filter(x -> abacServiceName.equals(x.getAttribute(ATTR_POLICY_SERVICE_NAME))).collect(Collectors.toList());
                         List<RangerPolicyDelta> abacPoliciesDelta = getRangerPolicyDelta(abacService, policyChanges, abacServicePolicies);
                         policiesDelta.addAll(abacPoliciesDelta);
-                        LOG.info("PolicyDelta: {}: abac policies found={} delta created={}", serviceName, abacServicePolicies.size(), abacPoliciesDelta.size());
+                        LOG.info("PolicyDelta: {}: ABAC_AUTH: abac policies found={} delta created={}", serviceName, abacServicePolicies.size(), abacPoliciesDelta.size());
                     } else {
-                        LOG.error("PolicyDelta: {}: abac policy service not found", serviceName);
+                        LOG.error("PolicyDelta: {}: ABAC_AUTH: abac policy service not found", serviceName);
                     }
                 }
 
                 servicePolicies.setPolicyDeltas(policiesDelta);
-                LOG.info("PolicyDelta: {}: Found total delta={}", serviceName, policiesDelta.size());
+                LOG.info("PolicyDelta: {}: ABAC_AUTH: Found total delta={}", serviceName, policiesDelta.size());
             }
 
         } catch (Exception e) {
-            LOG.error("PolicyDelta: {}: ERROR in getPoliciesDelta {}: {}", serviceName, e.getMessage(), e);
+            LOG.error("PolicyDelta: {}: ABAC_AUTH: ERROR in getPoliciesDelta {}: {}", serviceName, e.getMessage(), e);
             return null;
         }
 

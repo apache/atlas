@@ -404,7 +404,7 @@ public class RangerBasePlugin {
 					PoliciesStore.setAbacPolicies(abacPolicies);
 					PoliciesStore.setResourcePolicies(this.policyEngine.getResourcePolicies());
 					PoliciesStore.setTagPolicies(this.policyEngine.getTagPolicies());
-					LOG.info("PolicyRefresher: abac policies set: " + abacPolicies.size());
+					LOG.info("PolicyRefresher: ABAC_AUTH: abac policies set: " + abacPolicies.size());
 				}
 
 			} else {
