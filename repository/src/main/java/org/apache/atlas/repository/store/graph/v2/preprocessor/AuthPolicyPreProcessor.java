@@ -122,7 +122,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
         if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
             String policySubCategory = getPolicySubCategory(policy);
 
-            if (!POLICY_SUB_CATEGORY_DOMAIN.equals(policySubCategory)) {
+            if (!POLICY_SUB_CATEGORY_DOMAIN.equals(policySubCategory) && !POLICY_SUB_CATEGORY_AI.equals(policySubCategory)) {
                 validator.validate(policy, null, parentEntity, CREATE);
                 validateConnectionAdmin(policy);
             } else {
@@ -201,7 +201,7 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
             String policySubCategory = getPolicySubCategory(policy);
 
-            if (!POLICY_SUB_CATEGORY_DOMAIN.equals(policySubCategory)) {
+            if (!POLICY_SUB_CATEGORY_DOMAIN.equals(policySubCategory) && !POLICY_SUB_CATEGORY_AI.equals(policySubCategory)) {
                 validator.validate(policy, existingPolicy, parentEntity, UPDATE);
                 validateConnectionAdmin(policy);
             } else {
@@ -246,6 +246,8 @@ public class AuthPolicyPreProcessor implements PreProcessor {
             parent.addReferredEntity(policy);
 
         } else if (POLICY_CATEGORY_DATAMESH.equals(policyCategory)) {
+            validator.validate(policy, existingPolicy, null, UPDATE);
+        } else if (POLICY_CATEGORY_AI.equals(policyCategory)) {
             validator.validate(policy, existingPolicy, null, UPDATE);
         } else {
             validator.validate(policy, null, null, UPDATE);

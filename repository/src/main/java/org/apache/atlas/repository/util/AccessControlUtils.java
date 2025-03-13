@@ -93,10 +93,13 @@ public final class AccessControlUtils {
     public static final String ACCESS_READ_PERSONA_DOMAIN = "persona-domain-read";
     public static final String ACCESS_READ_PERSONA_SUB_DOMAIN = "persona-domain-sub-domain-read";
     public static final String ACCESS_READ_PERSONA_PRODUCT = "persona-domain-product-read";
+    public static final String ACCESS_READ_PERSONA_AI_ASSET = "persona-aiasset-read";
+
 
     public static final String POLICY_CATEGORY_PERSONA  = "persona";
     public static final String POLICY_CATEGORY_PURPOSE  = "purpose";
     public static final String POLICY_CATEGORY_DATAMESH = "datamesh";
+    public static final String POLICY_CATEGORY_AI = "ai";
     public static final String POLICY_CATEGORY_BOOTSTRAP  = "bootstrap";
 
     public static final String POLICY_SUB_CATEGORY_COLLECTION = "collection";
@@ -110,6 +113,7 @@ public final class AccessControlUtils {
     public static final String POLICY_SUB_CATEGORY_DOMAIN  = "domain";
     public static final String POLICY_SUB_CATEGORY_DATA  = "data";
     public static final String POLICY_SUB_CATEGORY_PRODUCT  = "dataProduct";
+    public static final String POLICY_SUB_CATEGORY_AI = "ai";
 
     public static final String RESOURCES_ENTITY = "entity:";
     public static final String RESOURCES_ENTITY_TYPE = "entity-type:";
