@@ -247,8 +247,6 @@ public class AuthPolicyPreProcessor implements PreProcessor {
 
         } else if (POLICY_CATEGORY_DATAMESH.equals(policyCategory)) {
             validator.validate(policy, existingPolicy, null, UPDATE);
-        } else if (POLICY_CATEGORY_AI.equals(policyCategory)) {
-            validator.validate(policy, existingPolicy, null, UPDATE);
         } else {
             validator.validate(policy, null, null, UPDATE);
         }
