@@ -52,10 +52,13 @@ public class ABACAuthorizerUtils {
             ABACAuthorizerEnabled = ApplicationProperties.get().getBoolean("atlas.authorizer.enable.abac", false);
 
             if (ABACAuthorizerEnabled) {
-                LOG.info("ABAC authorizer enabled!");
+                LOG.info("ABAC_AUTH: ABAC authorizer enabled!");
+            } else {
+                LOG.info("ABAC_AUTH: ABAC authorizer disabled");
             }
+
         } catch (AtlasException e) {
-            LOG.warn("Failed to read conf `atlas.authorizer.enable.abac`, ABAC authorizer is disabled by default");
+            LOG.warn("ABAC_AUTH: Failed to read conf `atlas.authorizer.enable.abac`, ABAC authorizer is disabled by default");
         }
     }
 

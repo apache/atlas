@@ -33,6 +33,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/*
+RangerPolicy and other model and util in this package are extracted out from auth-agents-common module
+to avoid the circular dependency when ABAC authorizer was implemented.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @XmlRootElement
