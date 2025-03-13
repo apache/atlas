@@ -1,0 +1,456 @@
+name: Integration-Tests-for-Metastore
+
+on:
+  pull_request:
+    branches:
+      - staging
+jobs:
+  waiting-in-queue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for my turn in queue
+        uses: actions/github-script@v6
+        with:
+          script: |
+            /*
+              We'll wait until *no older runs* of this same workflow are
+              still in 'queued' or 'in_progress' status. That effectively
+              enforces a FIFO sequence for all runs of "Integration-Tests-for-Metastore"
+            */
+            const { owner, repo } = context.repo;
+            const currentRunId = context.runId;
+
+            // 1) Get info about *this* run, including its creation time.
+            const currentRunResponse = await github.rest.actions.getWorkflowRun({
+              owner,
+              repo,
+              run_id: currentRunId
+            });
+            const creationTime = new Date(currentRunResponse.data.created_at).getTime();
+
+            // 2) Repeatedly poll for older runs that haven't finished yet.
+            while(true) {
+              let blockingFound = false;
+              console.log("The below is one of the pending workflows");
+              // Check 'queued' runs for this same workflow
+              let response = await github.rest.actions.listWorkflowRunsForRepo({
+                owner,
+                repo,
+                workflow_id: "Integration-Tests-for-Metastore", // or use the numeric ID instead of name
+                status: "queued",
+                per_page: 100
+              });
+              for(const run of response.data.workflow_runs) {
+                if(run.id !== currentRunId) {
+                  const otherCreated = new Date(run.created_at).getTime();
+                  // If that run was created before us, we must wait.
+                  if(otherCreated < creationTime) {
+                    console.log(run.id);
+                    blockingFound = true;
+                    break;
+                  }
+                }
+              }
+
+              // Also check 'in_progress'
+              if(!blockingFound) {
+                response = await github.rest.actions.listWorkflowRunsForRepo({
+                  owner,
+                  repo,
+                  workflow_id: "Integration-Tests-for-Metastore",
+                  status: "in_progress",
+                  per_page: 100
+                });
+                for(const run of response.data.workflow_runs) {
+                  if(run.id !== currentRunId) {
+                    const otherCreated = new Date(run.created_at).getTime();
+                    if(otherCreated < creationTime) {
+                      console.log(run.id);
+                      blockingFound = true;
+                      break;
+                    }
+                  }
+                }
+              }
+
+              // If we didn't find any older queued or in-progress runs, proceed.
+              if(!blockingFound) {
+                console.log("No older runs are blocking me. Proceeding!");
+                break;
+              }
+
+              // Otherwise wait 30 seconds and check again.
+              console.log("An older run is still queued or in progress. Waiting 15s...");
+              await new Promise(res => setTimeout(res, 15_000));
+            }
+
+            console.log("It's my turn now!");
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v1
+        with:
+          java-version: 17
+
+      - name: Cache Maven packages
+        uses: actions/cache@v3
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/build.sh') }}
+          restore-keys: ${{ runner.os }}-m2
+
+      - name: Get branch name
+        run: |
+          echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+          echo BRANCH_NAME=${GITHUB_REF#refs/heads/}
+
+      - name: Create Maven Settings
+        uses: s4u/maven-settings-action@v2.8.0
+        with:
+          servers: |
+            [{
+                "id": "github",
+                "username": "atlan-ci",
+                "password": "${{ secrets.ORG_PAT_GITHUB }}"
+            }]
+
+      - name: Build with Maven
+        run: |
+          echo "build without dashboard"
+          chmod +x ./build.sh && ./build.sh
+
+      - name: Get Repository Name
+        run: echo "REPOSITORY_NAME=`echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//"`" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Get version tag
+        # run: echo "##[set-output name=version;]$(echo `git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ env.BRANCH_NAME }} | awk '{ print $1}' | cut -c1-7`)abcd"
+        run: |
+          echo "VERSION=$(git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ env.BRANCH_NAME }} | awk '{ print $1}' | cut -c1-7 | head -n 1)abcd"
+          echo "VERSION=$(git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ env.BRANCH_NAME }} | awk '{ print $1}' | cut -c1-7 | tr -d '[:space:]')abcd"
+          echo "VERSION=$(git ls-remote https://${{ secrets.ORG_PAT_GITHUB }}@github.com/atlanhq/${REPOSITORY_NAME}.git ${{ env.BRANCH_NAME }} | awk '{ print $1}' | cut -c1-7 | tr -d '[:space:]')abcd" >> $GITHUB_ENV
+
+      - name: Get commit ID
+        run: echo "COMMIT_ID=$(echo ${GITHUB_SHA} | cut -c1-7)abcd" >> $GITHUB_ENV
+
+      - name: Set up Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Login to GitHub Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: $GITHUB_ACTOR
+          password: ${{ secrets.ORG_PAT_GITHUB }}
+
+      - name: Build and push
+        id: docker_build
+        uses: docker/build-push-action@v3
+        with:
+          context: .
+          file: ./Dockerfile
+          no-cache: true
+          sbom: true
+          provenance: true
+          push: true
+          tags: |
+            ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ env.BRANCH_NAME }}:latest
+            ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ env.BRANCH_NAME }}:${{ env.COMMIT_ID }}
+
+      - name: Scan Image
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ubuntu:18.04'
+          vuln-type: 'os,library'
+          format: 'sarif'
+          output: 'trivy-image-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v2.1.33
+        with:
+          sarif_file: 'trivy-image-results.sarif'
+
+
+  set-image-tag:
+    runs-on: metastore-sh-runner
+    needs:
+      - build
+      - waiting-in-queue
+    steps:
+      - name: Get commit ID
+        run: echo "COMMIT_ID=$(echo ${GITHUB_SHA} | cut -c1-7)abcd" >> $GITHUB_ENV
+
+      - name: Get Repository Name
+        run: echo "REPOSITORY_NAME=`echo "$GITHUB_REPOSITORY" | awk -F / '{print $2}' | sed -e "s/:refs//"`" >> $GITHUB_ENV
+        shell: bash
+
+      - name: Get branch name
+        run: |
+          echo "BRANCH_NAME=${GITHUB_REF#refs/heads/}" >> $GITHUB_ENV
+          echo BRANCH_NAME=${GITHUB_REF#refs/heads/}
+
+      - name: Set Image Tag
+        run: |
+          IMAGE_TAG="ghcr.io/atlanhq/${{ github.event.repository.name }}-${{ env.BRANCH_NAME }}:${{ env.COMMIT_ID }}"
+
+          echo "Image Tag: ${IMAGE_TAG}"  # Print out the image tag
+          echo "IMAGE_TAG=${IMAGE_TAG}" >> $GITHUB_ENV  # Store in GITHUB_ENV
+
+      - name: Verify kubectl Installation
+        run: |
+          if ! command -v kubectl &> /dev/null; then
+            echo "kubectl is not installed! Installing..."
+            curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+            chmod +x kubectl
+            sudo mv kubectl /usr/local/bin/
+          else
+            echo "kubectl is installed!"
+          fi
+          kubectl version --client
+
+      - name: Verify Kubernetes Connection
+        run: |
+          echo "Checking if kubectl can connect to the cluster..."
+          kubectl get namespaces
+      - name: Set atlas image
+        run: |
+          echo "Updating StatefulSet 'atlas' with image: ${{ env.IMAGE_TAG }}"
+          kubectl set image statefulset/atlas -n atlas atlas-main=${{ env.IMAGE_TAG }}
+
+  wait-for-deployment:
+    needs: set-image-tag
+    runs-on: ubuntu-latest
+    steps:
+      - name: Get commit ID
+        run: echo "COMMIT_ID=$(echo ${GITHUB_SHA} | cut -c1-7)" >> $GITHUB_ENV
+
+      - name: Wait for Matching Revision
+        run: |
+          MAX_RETRIES=15  # Set maximum number of retries
+          SLEEP_TIME=60  # Time in seconds between retries
+
+          for i in $(seq 1 $MAX_RETRIES); do
+              echo "Attempt $i: Checking API for matching commit ID..."
+
+              REVISION=$(curl --silent --location 'https://gcpotel.atlan.com/api/meta/admin/version' \
+                --header "Authorization: Bearer $(curl --silent --location 'https://gcpotel.atlan.com/auth/realms/default/protocol/openid-connect/token' \
+                  --header 'Content-Type: application/x-www-form-urlencoded' \
+                  --data-urlencode 'client_id=atlan-argo' \
+                  --data-urlencode 'grant_type=client_credentials' \
+                  --data-urlencode "client_secret=${{ secrets.ATLAN_ARGO_CLIENT_SECRET }}" | jq -r '.access_token')" | jq -r '.Revision' | cut -c1-7)
+
+              echo "Fetched Revision: $REVISION"
+              echo "Expected Commit ID: ${{ env.COMMIT_ID }}"
+              if [[ "$REVISION" == "${{ env.COMMIT_ID }}" ]]; then
+                  echo "✅ Revision matches commit ID! Proceeding to the next step..."
+                  exit 0
+              fi
+              echo "🔄 No match yet. Retrying in $SLEEP_TIME seconds..."
+              sleep $SLEEP_TIME
+          done
+          echo "❌ ERROR: Max retries reached. Commit ID did not match the revision."
+          exit 1
+  setup-java-sdk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Java SDK Repo
+        uses: actions/checkout@v4
+        with:
+          repository: atlanhq/atlan-java
+          ref: main
+
+      - name: Set up JDK for SDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Compile
+        uses: burrunan/gradle-cache-action@v1
+        with:
+          arguments: assemble shadowJar test
+
+  list-integration-tests:
+    runs-on: ubuntu-latest
+    outputs:
+      tests: ${{ steps.test-files.outputs.tests }}
+      test_count: ${{ steps.test-files.outputs.test_count }}  # <-- new output
+    steps:
+      - name: Checkout Java SDK Repo
+        uses: actions/checkout@v4
+        with:
+          repository: atlanhq/atlan-java
+          ref: main
+
+      - name: List integration tests
+        id: test-files
+        run: |
+          SKIP_PATTERN="SearchTest.java|RequestsTest.java|SSOTest.java|PersonaTest.java|AdminTest.java|DataMeshTest.java|InsightsTest.java|PurposeTest.java"
+
+          # List all *Test.java files, exclude the ones that match SKIP_PATTERN
+          tests=$(ls integration-tests/src/test/java/com/atlan/java/sdk/*Test.java \
+            | grep -vE "${SKIP_PATTERN}" \
+            | sed -E 's|.*/src/test/java/com/atlan/java/sdk/||; s|/|.|g; s|\.java$||' \
+            | tr '\n' ' ')
+
+          # Print the final list of tests for visibility
+          echo "Proceeding with the following tests:"
+          echo "$tests"
+          
+          # Convert the space-separated test list into JSON array
+          json_tests=$(echo "$tests[@]}" | jq -R -c 'split(" ")[:-1]')
+
+          # Output for use in later jobs
+          echo "tests=$json_tests" >> $GITHUB_OUTPUT
+
+          # Count how many test classes we found
+          test_count=$(echo "$tests" | wc -w)
+          echo "test_count=$test_count" >> $GITHUB_OUTPUT
+          
+          # Print for debugging
+          echo "Tests: $test_count"
+  integration-test:
+    needs:
+      - wait-for-deployment
+      - setup-java-sdk
+      - list-integration-tests
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        tests: ${{ fromJson(needs.list-integration-tests.outputs.tests) }}
+    concurrency:
+      group: ${{ matrix.tests }}
+    name: "Integration"
+    steps:
+      - name: Checkout Java SDK Repo
+        uses: actions/checkout@v4
+        with:
+          repository: atlanhq/atlan-java
+          ref: main
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: temurin
+
+      - name: Run integration test for ${{ matrix.tests }}
+        run: |
+          # Run ONLY the test class for this matrix entry
+          ./gradlew -PintegrationTests integration-tests:test \
+            --tests "com.atlan.java.sdk.${{ matrix.tests }}" \
+            --rerun-tasks
+        env:
+          ATLAN_BASE_URL: "https://gcpotel.atlan.com/"
+          ATLAN_API_KEY: ${{ secrets.TENANT_API_KEY }}
+
+      - name: Move JUnit XML results
+        if: success() || failure()
+        run: |
+          mkdir -p integration-tests/build/test-results/${{ matrix.tests }}
+          mv integration-tests/build/test-results/test/* integration-tests/build/test-results/${{ matrix.tests }} || true
+      - name: Upload JUnit test results
+        if: success() || failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.tests }}-junit-results
+          path: integration-tests/build/test-results/${{ matrix.tests }}
+
+
+  report-test-results:
+    needs:
+      - integration-test
+      - list-integration-tests  # ✅ Now it has direct access to the outputs
+    if: always()  # Run this even if tests fail
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Test Results
+        uses: actions/download-artifact@v4
+        with:
+          # This will download all artifacts, including each test's folder
+          path: test-results
+
+      - name: Summarize JUnit XML
+        id: summary
+        run: |
+          # 1) Pull the expected test file count
+          initial_count=${{ needs.list-integration-tests.outputs.test_count }}
+
+          echo "### Integration Test Results" > test-summary.md
+          echo "" >> test-summary.md
+
+          all_passed=true
+          total_failures=0
+          real_count=0  # track how many XML files we actually parse
+          
+          # Check if the test-results directory exists
+          if [ ! -d "test-results" ]; then
+            echo "⚠️ Test results directory not found. Tests were not run properly." >> test-summary.md
+          else
+            # Find all JUnit XML files under test-results/
+            while IFS= read -r -d '' xmlfile; do
+              real_count=$(( real_count + 1 ))
+          
+              # 1. Get the base filename 
+              basefile=$(basename "$xmlfile")
+          
+              # 2. Remove the "TEST-" prefix and the ".xml" suffix
+              no_prefix=$(echo "$basefile" | sed -E 's/^TEST-//; s/\.xml$//')
+          
+              # 3. Remove the package prefix if present (com.atlan.java.sdk.)
+              test_name=$(echo "$no_prefix" | sed -E 's/^com\.atlan\.java\.sdk\.//')
+          
+              # 4. Parse the number of failures
+              file_failures=$(grep -Po 'failures="\K\d+' "$xmlfile" | paste -sd+ - | bc)
+              [[ -z "$file_failures" ]] && file_failures=0
+          
+              # 5. Print a concise summary line
+              if [ "$file_failures" -gt 0 ]; then
+                echo "❌ Failures found in: $test_name ($file_failures failures)" >> test-summary.md
+                all_passed=false
+                total_failures=$(( total_failures + file_failures ))
+              else
+                echo "✅ No failures in: $test_name" >> test-summary.md
+              fi
+            done < <(find test-results -name '*.xml' -print0)
+          fi
+          
+          # Print the real count vs. the initial expected count
+          echo "📝 Test files found: $real_count out of expected: $initial_count"
+          
+          # 2) Compare the actual number of files we found vs. initial_count
+          if [ "$real_count" -lt 27 ]; then
+            echo "" >> test-summary.md
+            echo "⚠️ **Some test results are missing**." >> test-summary.md
+            all_passed=false
+          fi
+
+          # 3) Overall pass/fail summary
+          if [ "$all_passed" = true ]; then
+            echo "" >> test-summary.md
+            echo "✅ **All integration tests passed!** Ready to merge. 🚀" >> test-summary.md
+            echo "ALL_TESTS_PASSED=true" >> $GITHUB_ENV
+          else
+            echo "" >> test-summary.md
+            echo "❌ **Some tests failed or results were missing.** Total failures: $total_failures" >> test-summary.md
+            echo "ALL_TESTS_PASSED=false" >> $GITHUB_ENV
+          fi
+
+      - name: Output Test Summary to Logs
+        run: |
+          echo "--------------------------------------------------"
+          echo "✅ Printing the test summary before posting to PR"
+          echo "--------------------------------------------------"
+          cat test-summary.md
+
+      - name: Post Comment on PR
+        uses: mshick/add-pr-comment@v2
+        if: github.event_name == 'pull_request'
+        with:
+          message-path: test-summary.md
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
