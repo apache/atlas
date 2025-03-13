@@ -27,9 +27,6 @@ on:
       - development
       - master
       - lineageondemand
-      - mlh-170-create-diff
-      - cassandrapoliciesoptimisation
-      - ixop
 
 jobs:
   build:
