@@ -128,11 +128,6 @@
             <directory>../addons/policies</directory>
             <outputDirectory>policies</outputDirectory>
         </fileSet>
-
-        <fileSet>
-            <directory>../addons/override-policies</directory>
-            <outputDirectory>override-policies</outputDirectory>
-        </fileSet>
     </fileSets>
 
     <files>

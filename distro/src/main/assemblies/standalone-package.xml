@@ -141,11 +141,6 @@
             <outputDirectory>policies</outputDirectory>
         </fileSet>
 
-        <fileSet>
-            <directory>../addons/override-policies</directory>
-            <outputDirectory>override-policies</outputDirectory>
-        </fileSet>
-
         <!-- addons/hive -->
         <fileSet>
             <directory>../addons/hive-bridge/src/bin</directory>
