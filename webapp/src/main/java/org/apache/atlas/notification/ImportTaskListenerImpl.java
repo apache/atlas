@@ -176,7 +176,7 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     private void startImportConsumer(AtlasAsyncImportRequest importRequest) {
         try {
             LOG.info("==> startImportConsumer(atlasAsyncImportRequest={})", importRequest);
-            notificationHookConsumer.startImportNotificationConsumer(ASYNC_IMPORT, importRequest.getImportId(), importRequest.getTopicName());
+            notificationHookConsumer.startAsyncImportConsumer(ASYNC_IMPORT, importRequest.getImportId(), importRequest.getTopicName());
             importRequest.setStatus(AtlasAsyncImportRequest.ImportStatus.PROCESSING);
             importRequest.setStartedProcessingAt(System.currentTimeMillis());
         } catch (Exception e) {

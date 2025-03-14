@@ -61,20 +61,12 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
 
     @Override
     public Set<TopicPartition> getTopicPartition() {
-        Set<TopicPartition> ret = null;
-        if (kafkaConsumer != null) {
-            ret = kafkaConsumer.assignment();
-        }
-        return ret;
+        return kafkaConsumer != null ? kafkaConsumer.assignment() : null;
     }
 
     @Override
     public Set<String> subscription() {
-        Set<String> ret = null;
-        if (kafkaConsumer != null) {
-            ret = kafkaConsumer.subscription();
-        }
-        return ret;
+        return kafkaConsumer != null ? kafkaConsumer.subscription() : null;
     }
 
     @Override

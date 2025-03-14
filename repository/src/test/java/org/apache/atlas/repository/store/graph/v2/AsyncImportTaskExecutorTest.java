@@ -482,13 +482,13 @@ public class AsyncImportTaskExecutorTest {
 
         when(mockImportRequest.getTopicName()).thenReturn("ATLAS_IMPORT_12344");
         when(importService.abortImport(any(String.class))).thenReturn(mockImportRequest);
-        doNothing().when(notificationInterface).deleteTopics(any(NotificationInterface.NotificationType.class), any(String.class));
+        doNothing().when(notificationInterface).deleteTopic(any(NotificationInterface.NotificationType.class), any(String.class));
 
         // Act
         asyncImportTaskExecutor.abortImport("12344");
 
         // Assert
         verify(importService, times(1)).abortImport("12344");
-        verify(notificationInterface, times(1)).deleteTopics(NotificationInterface.NotificationType.ASYNC_IMPORT, "ATLAS_IMPORT_12344");
+        verify(notificationInterface, times(1)).deleteTopic(NotificationInterface.NotificationType.ASYNC_IMPORT, "ATLAS_IMPORT_12344");
     }
 }

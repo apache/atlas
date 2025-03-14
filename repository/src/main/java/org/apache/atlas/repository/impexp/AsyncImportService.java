@@ -71,8 +71,9 @@ public class AsyncImportService {
     public void saveImportRequest(AtlasAsyncImportRequest importRequest) throws AtlasBaseException {
         try {
             dataAccess.save(importRequest);
-            LOG.debug("Save request ID: {} request: {}", importRequest.getImportId(), importRequest.toString());
+            LOG.debug("Save request ID: {} request: {}", importRequest.getImportId(), importRequest);
         } catch (AtlasBaseException e) {
+            LOG.error("Failed to save import: {} with request: {}", importRequest.getImportId(), importRequest, e);
             throw e;
         }
     }
@@ -81,7 +82,7 @@ public class AsyncImportService {
         try {
             saveImportRequest(importRequest);
         } catch (AtlasBaseException abe) {
-            LOG.error("Failed to update import: {} with request: {}", importRequest.getImportId(), importRequest.toString());
+            LOG.error("Failed to update import: {} with request: {}", importRequest.getImportId(), importRequest, abe);
         }
     }
 
@@ -97,18 +98,17 @@ public class AsyncImportService {
         Iterable<AtlasAsyncImportRequest> allRequests = null;
         try {
             allRequests = dataAccess.load(importsToLoad);
-        } catch (AtlasBaseException e) {
-            LOG.error("Could not get in progress import requests.", e);
-        }
-
-        if (allRequests != null) {
-            for (AtlasAsyncImportRequest request : allRequests) {
-                if (request != null) {
-                    if (ObjectUtils.equals(request.getStatus(), PROCESSING)) {
-                        inProgressImportIds.add(request.getImportId());
+            if (allRequests != null) {
+                for (AtlasAsyncImportRequest request : allRequests) {
+                    if (request != null) {
+                        if (ObjectUtils.equals(request.getStatus(), PROCESSING)) {
+                            inProgressImportIds.add(request.getImportId());
+                        }
                     }
                 }
             }
+        } catch (AtlasBaseException e) {
+            LOG.error("Could not get in progress import requests.", e);
         }
 
         return inProgressImportIds;
@@ -160,10 +160,10 @@ public class AsyncImportService {
             if (importRequestToKill.getStatus().equals(WAITING)) {
                 importRequestToKill.setStatus(ABORTED);
                 saveImportRequest(importRequestToKill);
-                LOG.info("Successfully stopped import request: {}", importId);
+                LOG.info("Successfully aborted import request: {}", importId);
             } else {
-                LOG.error("Cannot abort import request {}: request already is in status: {}", importId, importRequestToKill.getStatus());
-                throw new AtlasBaseException(AtlasErrorCode.IMPORT_ALREADY_IN_PROGRESS, importId);
+                LOG.error("Cannot abort import request {}: request is in status: {}", importId, importRequestToKill.getStatus());
+                throw new AtlasBaseException(AtlasErrorCode.ABORT_IMPORT, importId, importRequestToKill.getStatus().getStatus());
             }
         } catch (AtlasBaseException e) {
             LOG.error("Failed to abort import request: {}", importId, e);

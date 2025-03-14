@@ -248,7 +248,7 @@ public class ImportTaskListenerImplTest {
 
         importTaskListener.onReceiveImportRequest(importRequest);
 
-        verify(notificationHookConsumer, never()).startImportNotificationConsumer(any(), anyString(), anyString());
+        verify(notificationHookConsumer, never()).startAsyncImportConsumer(any(), anyString(), anyString());
     }
 
     @Test
@@ -267,7 +267,7 @@ public class ImportTaskListenerImplTest {
         Thread.sleep(500);
 
         verify(notificationHookConsumer, atLeastOnce())
-                .startImportNotificationConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, "import123", "topic1");
+                .startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, "import123", "topic1");
 
         realExecutor.shutdownNow();
     }
@@ -278,7 +278,7 @@ public class ImportTaskListenerImplTest {
         when(importRequest.getTopicName()).thenReturn("topic1");
         doThrow(new RuntimeException("Consumer failed"))
                 .when(notificationHookConsumer)
-                .startImportNotificationConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, "import123", "topic1");
+                .startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, "import123", "topic1");
 
         doAnswer(invocation -> {
             Object newStatus = invocation.getArgument(0);

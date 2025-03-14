@@ -21,8 +21,6 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.model.AtlasBaseModelObject;
 import org.apache.atlas.utils.AtlasEntityUtil;
 
@@ -42,7 +40,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
-@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Serializable {
     private static final long serialVersionUID = 1L;
@@ -77,34 +75,19 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
 
     @JsonIgnore
     private String requestId;
-
-    @JsonProperty("importId")
-    private String importId;
-
-    @JsonProperty("status")
-    private ImportStatus status;
-
     @JsonIgnore
     private int skipTo;
 
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    @JsonProperty("atlasImportResult")
-    private AtlasImportResult atlasImportResult;
-
-    @JsonProperty("importDetails")
+    private String importId;
+    private ImportStatus status;
     private ImportDetails importDetails = new ImportDetails();
-
-    @JsonProperty("receivedAt")
     private long receivedAt;
-
-    @JsonProperty("stagedAt")
     private long stagedAt;
-
-    @JsonProperty("startedProcessingAt")
     private long startedProcessingAt;
-
-    @JsonProperty("completedAt")
     private long completedAt;
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private AtlasImportResult atlasImportResult;
 
     public AtlasAsyncImportRequest() {}
 

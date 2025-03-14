@@ -212,7 +212,7 @@ public class AsyncImportTaskExecutor {
         LOG.info("==> abortImport(importId={})", importId);
         try {
             AtlasAsyncImportRequest importRequest = importService.abortImport(importId);
-            notificationInterface.deleteTopics(ASYNC_IMPORT, importRequest.getTopicName());
+            notificationInterface.deleteTopic(ASYNC_IMPORT, importRequest.getTopicName());
         } catch (AtlasBaseException abe) {
             throw new AtlasBaseException(AtlasErrorCode.ABORT_IMPORT_FAILED, abe, importId);
         }

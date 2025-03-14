@@ -45,14 +45,12 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Future;
-import java.util.stream.Stream;
 
 import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
 import static org.apache.atlas.security.SecurityProperties.TRUSTSTORE_PASSWORD_KEY;
@@ -83,7 +81,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     private static final boolean SORT_NOT_NEEDED = false;
 
     private static final Map<NotificationType, String> PRODUCER_TOPIC_MAP    = new HashMap<>();
-    private static Map<NotificationType, String[]> CONSUMER_TOPICS_MAP = new HashMap<>();
+    private static final Map<NotificationType, List<String>> CONSUMER_TOPICS_MAP = new HashMap<>();
 
     private final Properties                                 properties;
     private final Long                                       pollTimeOutMs;
@@ -154,7 +152,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
         LOG.info("<== KafkaNotification()");
     }
 
-    public static String[] trimAndPurge(String[] strings) {
+    public static List<String> trimAndPurge(String[] strings) {
         List<String> ret = new ArrayList<>();
 
         if (strings != null) {
@@ -167,7 +165,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
             }
         }
 
-        return ret.toArray(new String[ret.size()]);
+        return ret;
     }
 
     @Override
@@ -188,10 +186,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
     @Override
     public <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType, int numConsumers) {
-        boolean enableAutoCommit = Boolean.parseBoolean(properties.getProperty("enable.auto.commit", properties.getProperty("auto.commit.enable", "false")));
-        if (notificationType.equals(NotificationType.ASYNC_IMPORT)) {
-            enableAutoCommit = true;
-        }
+        boolean enableAutoCommit = notificationType.equals(NotificationType.ASYNC_IMPORT) || Boolean.parseBoolean(properties.getProperty("enable.auto.commit", properties.getProperty("auto.commit.enable", "false")));
         return createConsumers(notificationType, numConsumers, enableAutoCommit);
     }
 
@@ -215,13 +210,18 @@ public class KafkaNotification extends AbstractNotification implements Service {
     }
 
     @Override
-    public void closeConsumer(NotificationType notificationType) {
-        List<KafkaConsumer> notificationConsumers = this.consumers.get(notificationType);
-        for (final KafkaConsumer consumer : notificationConsumers) {
-            consumer.unsubscribe();
-            consumer.close();
-        }
-        this.consumers.remove(notificationType);
+    public void closeConsumer(NotificationType notificationTypeToClose, String topic) {
+        this.consumers.computeIfPresent(notificationTypeToClose, (notificationType, notificationConsumers) -> {
+            notificationConsumers.removeIf(consumer -> {
+                if (consumer.subscription().contains(topic)) {
+                    consumer.unsubscribe();
+                    consumer.close();
+                    return true;
+                }
+                return false;
+            });
+            return notificationConsumers.isEmpty() ? null : notificationConsumers;
+        });
     }
 
     // ----- NotificationInterface -------------------------------------------
@@ -243,16 +243,16 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType, int numConsumers, boolean autoCommitEnabled) {
         LOG.info("==> KafkaNotification.createConsumers(notificationType={}, numConsumers={}, autoCommitEnabled={})", notificationType, numConsumers, autoCommitEnabled);
 
-        String[] topics = CONSUMER_TOPICS_MAP.get(notificationType);
+        List<String> topics = CONSUMER_TOPICS_MAP.get(notificationType);
 
-        if (numConsumers < topics.length) {
-            LOG.warn("consumers count {} is fewer than number of topics {}. Creating {} consumers, so that consumer count is equal to number of topics.", numConsumers, topics.length, topics.length);
+        if (numConsumers < topics.size()) {
+            LOG.warn("consumers count {} is fewer than number of topics {}. Creating {} consumers, so that consumer count is equal to number of topics.", numConsumers, topics.size(), topics.size());
 
-            numConsumers = topics.length;
-        } else if (numConsumers > topics.length) {
-            LOG.warn("consumers count {} is higher than number of topics {}. Creating {} consumers, so that consumer count is equal to number of topics", numConsumers, topics.length, topics.length);
+            numConsumers = topics.size();
+        } else if (numConsumers > topics.size()) {
+            LOG.warn("consumers count {} is higher than number of topics {}. Creating {} consumers, so that consumer count is equal to number of topics", numConsumers, topics.size(), topics.size());
 
-            numConsumers = topics.length;
+            numConsumers = topics.size();
         }
 
         List<KafkaConsumer> notificationConsumers = this.consumers.get(notificationType);
@@ -318,11 +318,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
         String groupId = properties.getProperty(notificationType.toString().toLowerCase() + "." + CONSUMER_GROUP_ID_PROPERTY);
 
         if (StringUtils.isEmpty(groupId)) {
-            if (!notificationType.equals(NotificationType.ASYNC_IMPORT)) {
-                groupId = "atlas";
-            } else {
-                groupId = "atlas-import";
-            }
+            groupId = notificationType.equals(NotificationType.ASYNC_IMPORT) ? "atlas-import" : "atlas";
         }
 
         if (StringUtils.isEmpty(groupId)) {
@@ -343,8 +339,8 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
         try {
             if (ret == null || !isKafkaConsumerOpen(ret)) {
-                String[] topics = CONSUMER_TOPICS_MAP.get(notificationType);
-                String   topic  = topics[idxConsumer % topics.length];
+                List<String> topics = CONSUMER_TOPICS_MAP.get(notificationType);
+                String   topic  = topics.get(idxConsumer % topics.size());
 
                 LOG.debug("Creating new KafkaConsumer for topic : {}, index : {}", topic, idxConsumer);
 
@@ -452,39 +448,29 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
     @Override
     public void addTopicToNotificationType(NotificationType notificationType, String topic) {
-        String[] topics = CONSUMER_TOPICS_MAP.get(notificationType);
-        String[] updatedTopics;
-        if (topics == null) {
-            updatedTopics = new String[] {topic};
-        } else {
-            updatedTopics = Stream.concat(Arrays.stream(topics), Stream.of(topic)).toArray(String[]::new);
-        }
-        CONSUMER_TOPICS_MAP.put(notificationType, updatedTopics);
+        CONSUMER_TOPICS_MAP.computeIfAbsent(notificationType, k -> new ArrayList<>()).add(topic);
     }
 
     @Override
     public void closeProducer(NotificationType notificationType, String topic) {
-        KafkaProducer producerToClose = producersByTopic.get(topic);
-        if (producerToClose != null) {
-            producersByTopic.remove(topic);
-            producerToClose.close();
-        }
+        producersByTopic.computeIfPresent(topic, (key, producer) -> {
+            // Close the KafkaProducer before removal
+            producer.close();
+            // Returning null removes the key from the map
+            return null;
+        });
         PRODUCER_TOPIC_MAP.remove(notificationType, topic);
     }
 
     @Override
-    public void deleteTopics(NotificationType notificationType, String topicName) {
+    public void deleteTopic(NotificationType notificationType, String topicName) {
         try (AdminClient adminClient = AdminClient.create(this.properties)) {
             adminClient.deleteTopics(Collections.singleton(topicName));
         }
-        String[] topics = CONSUMER_TOPICS_MAP.get(notificationType);
-        String[] updatedTopics;
-        if (topics == null) {
-            updatedTopics = new String[] {};
-        } else {
-            updatedTopics = Arrays.stream(topics).filter(topic -> !topic.equals(topicName)).toArray(String[]::new);
-        }
-        CONSUMER_TOPICS_MAP.put(notificationType, updatedTopics);
+        CONSUMER_TOPICS_MAP.computeIfPresent(notificationType, (key, topics) -> {
+            topics.remove(topicName);
+            return topics.isEmpty() ? null : topics;
+        });
     }
 
     // kafka-client doesn't have method to check if consumer is open, hence checking list topics and catching exception

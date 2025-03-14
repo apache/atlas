@@ -237,8 +237,8 @@ public abstract class AbstractNotification implements NotificationInterface {
     @Override
     public <T> void send(String topic, List<T> messages, MessageSource source) throws NotificationException {
         List<String> strMessages = new ArrayList<>(messages.size());
-        for (int index = 0; index < messages.size(); index++) {
-            createNotificationMessages(messages.get(index), strMessages, source);
+        for (T message : messages) {
+            createNotificationMessages(message, strMessages, source);
         }
         sendInternal(topic, strMessages);
     }

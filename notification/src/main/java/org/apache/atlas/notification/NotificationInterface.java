@@ -131,14 +131,16 @@ public interface NotificationInterface {
      * @param notificationType The type of notification related to the topic.
      * @param topicName The name of the topic to be deleted.
      */
-    default void deleteTopics(NotificationType notificationType, String topicName) {}
+    default void deleteTopic(NotificationType notificationType, String topicName) {}
 
     /**
      * Closes the consumer associated with the specified notification type.
      *
      * @param notificationType The type of notification for which the consumer is to be closed.
+     * @param topic The consumer to close with assignment.
+     *
      */
-    default void closeConsumer(NotificationType notificationType) {}
+    default void closeConsumer(NotificationType notificationType, String topic) {}
 
     /**
      * Atlas notification types.
@@ -150,11 +152,11 @@ public interface NotificationInterface {
         // Notifications from the Atlas integration hooks - unsorted.
         HOOK_UNSORTED(new HookMessageDeserializer()),
 
-        // Notifications from Atlas async importer
-        ASYNC_IMPORT(new HookMessageDeserializer()),
-
         // Notifications to entity change consumers.
-        ENTITIES(new EntityMessageDeserializer());
+        ENTITIES(new EntityMessageDeserializer()),
+
+        // Notifications from Atlas async importer
+        ASYNC_IMPORT(new HookMessageDeserializer());
 
         private final AtlasNotificationMessageDeserializer deserializer;
 

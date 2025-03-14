@@ -353,10 +353,10 @@ public class NotificationHookConsumerTest {
 
         doNothing().when(notificationInterface).addTopicToNotificationType(ASYNC_IMPORT, topic);
         when(notificationInterface.createConsumers(ASYNC_IMPORT, 1)).thenReturn(consumers);
-        doNothing().when(notificationInterface).deleteTopics(ASYNC_IMPORT, AtlasAsyncImportRequest.ASYNC_IMPORT_TOPIC_PREFIX + importId);
+        doNothing().when(notificationInterface).deleteTopic(ASYNC_IMPORT, AtlasAsyncImportRequest.ASYNC_IMPORT_TOPIC_PREFIX + importId);
 
         NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
-        notificationHookConsumer.startImportNotificationConsumer(ASYNC_IMPORT, importId, "ATLAS_IMPORT_" + importId);
+        notificationHookConsumer.startAsyncImportConsumer(ASYNC_IMPORT, importId, "ATLAS_IMPORT_" + importId);
 
         // consumer created
         assertTrue(notificationHookConsumer.consumers.stream().anyMatch(consumer -> consumer.getName().contains(importId)));
@@ -365,7 +365,7 @@ public class NotificationHookConsumerTest {
 
         // consumer deleted / shutdown and topic deleted
         assertTrue(notificationHookConsumer.consumers.stream().noneMatch(consumer -> consumer.getName().contains(importId)));
-        verify(notificationInterface).deleteTopics(ASYNC_IMPORT, AtlasAsyncImportRequest.ASYNC_IMPORT_TOPIC_PREFIX + importId);
+        verify(notificationInterface).deleteTopic(ASYNC_IMPORT, AtlasAsyncImportRequest.ASYNC_IMPORT_TOPIC_PREFIX + importId);
     }
 
     private NotificationHookConsumer setupNotificationHookConsumer() throws AtlasException {

@@ -119,7 +119,6 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -682,16 +681,14 @@ public class AdminResource {
     }
 
     @POST
-    @Path("/asyncImport")
+    @Path("/async/import")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(MediaType.MULTIPART_FORM_DATA)
     public AtlasAsyncImportRequest importAsync(@DefaultValue("{}") @FormDataParam("request") String jsonData,
                                                @FormDataParam("data") InputStream inputStream) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AdminResource.importAsync(jsonData={}, inputStream={})", jsonData, (inputStream != null));
-        }
+        LOG.info("==> AdminResource.importAsync(jsonData={}, inputStream={})", jsonData, (inputStream != null));
         AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "asyncImportData");
-        AtlasAsyncImportRequest asyncImportRequest = null;
+        AtlasAsyncImportRequest asyncImportRequest;
         boolean preventMultipleRequests = true;
         try {
             AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
@@ -708,18 +705,18 @@ public class AdminResource {
                 LOG.info(excp.getMessage());
                 return new AtlasAsyncImportRequest();
             } else {
-                LOG.error("importData(binary) failed", excp);
+                LOG.error("importAsync(binary) failed", excp);
                 throw excp;
             }
         } catch (Exception excp) {
-            LOG.error("importData(binary) failed", excp);
+            LOG.error("importAsync(binary) failed", excp);
             throw new AtlasBaseException(excp);
         } finally {
             if (preventMultipleRequests) {
                 releaseExportImportLock();
             }
             if (LOG.isDebugEnabled()) {
-                LOG.debug("<== AdminResource.asyncImportData(binary)");
+                LOG.debug("<== AdminResource.importAsync(binary)");
             }
         }
 
@@ -727,7 +724,7 @@ public class AdminResource {
     }
 
     @DELETE
-    @Path("/asyncImport/{importId}")
+    @Path("/async/import/{importId}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(MediaType.APPLICATION_JSON)
     public void deleteAsyncImportById(@PathParam("importId") String importId) throws AtlasBaseException {
@@ -735,7 +732,7 @@ public class AdminResource {
     }
 
     @GET
-    @Path("/asyncImport/status")
+    @Path("/async/import/status")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public List<Map<String, Object>> getAsyncImportStatus() throws AtlasBaseException {
         AtlasPerfTracer perf = null;
@@ -744,21 +741,14 @@ public class AdminResource {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAsyncImportStatus()");
             }
-
-            List<Map<String, Object>> importRequests = importService.getAllAsyncImports();
-
-            if (importRequests.isEmpty()) {
-                return Collections.emptyList();
-            }
-
-            return importRequests;
+            return importService.getAllAsyncImports();
         } finally {
             AtlasPerfTracer.log(perf);
         }
     }
 
     @GET
-    @Path("/asyncImport/status/{importId}")
+    @Path("/async/import/status/{importId}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     public AtlasAsyncImportRequest getAsyncImportStatusById(@PathParam("importId") String importId) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
@@ -767,14 +757,7 @@ public class AdminResource {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAsyncImportStatusById(importId=" + importId + ")");
             }
-
-            AtlasAsyncImportRequest importRequest = importService.getAsyncImportStatus(importId);
-
-            if (importRequest == null) {
-                throw new AtlasBaseException("Import request not found for ID: " + importId);
-            }
-
-            return importRequest;
+            return importService.getAsyncImportStatus(importId);
         } finally {
             AtlasPerfTracer.log(perf);
         }
