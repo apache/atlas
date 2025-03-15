@@ -45,6 +45,7 @@ public class AuthPolicyValidator {
         add(POLICY_SUB_CATEGORY_METADATA);
         add(POLICY_SUB_CATEGORY_DATA);
         add(POLICY_SUB_CATEGORY_GLOSSARY);
+        add(POLICY_SUB_CATEGORY_AI);
     }};
 
     private static final Set<String> PURPOSE_POLICY_VALID_SUB_CATEGORIES = new HashSet<String>(){{
@@ -54,10 +55,6 @@ public class AuthPolicyValidator {
 
     private static final Set<String> DATAMESH_POLICY_VALID_SUB_CATEGORIES = new HashSet<String>(){{
         add(POLICY_SUB_CATEGORY_PRODUCT);
-    }};
-
-    private static final Set<String> AI_POLICY_VALID_SUB_CATEGORIES = new HashSet<String>(){{
-        add(POLICY_SUB_CATEGORY_AI);
     }};
 
     private static final Set<String> PERSONA_METADATA_POLICY_ACTIONS = new HashSet<String>(){{
@@ -88,10 +85,25 @@ public class AuthPolicyValidator {
         add("persona-glossary-delete-classifications");
     }};
 
+    private static final Set<String> AI_POLICY_ACTIONS = new HashSet<String>(){{
+        add("persona-aiasset-read");
+        add("persona-aiasset-create");
+        add("persona-aiasset-update");
+        add("persona-aiasset-delete");
+        add("persona-aiasset-business-update-metadata");
+        add("persona-aiasset-add-terms");
+        add("persona-aiasset-update-terms");
+        add("persona-aiasset-remove-terms");
+        add("persona-aiasset-add-classification");
+        add("persona-aiasset-update-classification");
+        add("persona-aiasset-remove-classification"); 
+    }};
+
     private static final Map<String, Set<String>> PERSONA_POLICY_VALID_ACTIONS = new HashMap<String, Set<String>>(){{
         put(POLICY_SUB_CATEGORY_METADATA, PERSONA_METADATA_POLICY_ACTIONS);
         put(POLICY_SUB_CATEGORY_DATA, DATA_POLICY_ACTIONS);
         put(POLICY_SUB_CATEGORY_GLOSSARY, PERSONA_GLOSSARY_POLICY_ACTIONS);
+        put(POLICY_SUB_CATEGORY_AI, AI_POLICY_ACTIONS);
     }};
 
     private static final Set<String> PURPOSE_METADATA_POLICY_ACTIONS = new HashSet<String>(){{
@@ -115,21 +127,6 @@ public class AuthPolicyValidator {
 
     private static final Set<String> DATAMESH_POLICY_ACTIONS = new HashSet<String>(){{
         add(ENTITY_READ.getType());
-    }};
-
-    private static final Set<String> AI_POLICY_ACTIONS = new HashSet<String>(){{
-        add(ENTITY_READ.getType());
-        add("persona-aiasset-read");
-        add("persona-aiasset-create");
-        add("persona-aiasset-update");
-        add("persona-aiasset-delete");
-        add("persona-aiasset-business-update-metadata");
-        add("persona-aiasset-add-terms");
-        add("persona-aiasset-update-terms");
-        add("persona-aiasset-remove-terms");
-        add("persona-aiasset-add-classification");
-        add("persona-aiasset-update-classification");
-        add("persona-aiasset-remove-classification"); 
     }};
 
     private static final Map<String, Set<String>> DATAMESH_POLICY_VALID_ACTIONS = new HashMap<String, Set<String>>(){{
