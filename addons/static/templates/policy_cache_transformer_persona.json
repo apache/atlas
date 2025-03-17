@@ -882,7 +882,6 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
-        "entity:{entity}/*",
         "entity-type:AIApplication",
         "entity-type:AIModel",
         "entity-classification:*"
@@ -895,8 +894,7 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:*",
         "entity-type:AIApplication",
         "entity-type:AIModel",
         "entity-classification:*"
@@ -909,8 +907,7 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:*",
         "entity-type:AIApplication",
         "entity-type:AIModel",
         "entity-classification:*"
@@ -959,7 +956,6 @@
       "policyType": "ACCESS",
       "resources": [
         "entity:{entity}",
-        "entity:{entity}/*",
         "entity-type:AIApplication",
         "entity-type:AIModel",
         "entity-classification:*"
@@ -973,7 +969,6 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}",
-        "entity:{entity}/*",
         "entity-type:AIApplication",
         "entity-type:AIModel",
         "entity-classification:*",
@@ -1049,7 +1044,6 @@
       "policyType": "ACCESS",
       "resources": [
         "entity:{entity}",
-        "entity:{entity}/*",
         "entity-type:AIApplication",
         "entity-type:AIModel",
         "entity-classification:*",
@@ -1067,7 +1061,6 @@
       "policyType": "ACCESS",
       "resources": [
         "entity:{entity}",
-        "entity:{entity}/*",
         "entity-type:AIApplication",
         "entity-type:AIModel",
         "entity-classification:*",
@@ -1084,7 +1077,6 @@
       "policyType": "ACCESS",
       "resources": [
         "entity:{entity}",
-        "entity:{entity}/*",
         "entity-type:AIApplication",
         "entity-type:AIModel",
         "entity-classification:*",
