@@ -163,7 +163,7 @@ public class AsyncImportService {
                 LOG.info("Successfully aborted import request: {}", importId);
             } else {
                 LOG.error("Cannot abort import request {}: request is in status: {}", importId, importRequestToKill.getStatus());
-                throw new AtlasBaseException(AtlasErrorCode.ABORT_IMPORT, importId, importRequestToKill.getStatus().getStatus());
+                throw new AtlasBaseException(AtlasErrorCode.IMPORT_ABORT_NOT_ALLOWED, importId, importRequestToKill.getStatus().getStatus());
             }
         } catch (AtlasBaseException e) {
             LOG.error("Failed to abort import request: {}", importId, e);

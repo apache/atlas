@@ -107,7 +107,7 @@ public class AsyncImportTaskExecutor {
     public void publishTypeDefNotification(AtlasAsyncImportRequest importRequest, AtlasTypesDef atlasTypesDef) throws AtlasBaseException {
         LOG.info("==> publishTypeDefNotification(importRequest={}, atlasTypesDef={})", importRequest, atlasTypesDef);
         try {
-            HookNotification typeDefImportNotification = new ImportNotification.AtlasTypeDefImportNotification(importRequest.getImportId(), importRequest.getAtlasImportResult().getUserName(), atlasTypesDef);
+            HookNotification typeDefImportNotification = new ImportNotification.AtlasTypeDefImportNotification(importRequest.getImportId(), importRequest.getImportResult().getUserName(), atlasTypesDef);
             sendToTopic(importRequest.getTopicName(), typeDefImportNotification);
         } catch (AtlasBaseException abe) {
             throw abe;
@@ -129,7 +129,7 @@ public class AsyncImportTaskExecutor {
                 if (entity == null) {
                     continue;
                 }
-                HookNotification entityImportNotification = new ImportNotification.AtlasEntityImportNotification(importRequest.getImportId(), importRequest.getAtlasImportResult().getUserName(), entityWithExtInfo, entityImportStream.getPosition());
+                HookNotification entityImportNotification = new ImportNotification.AtlasEntityImportNotification(importRequest.getImportId(), importRequest.getImportResult().getUserName(), entityWithExtInfo, entityImportStream.getPosition());
                 sendToTopic(importRequest.getTopicName(), entityImportNotification);
                 entityImportStream.onImportComplete(entity.getGuid());
                 publishedEntityCounter += 1;

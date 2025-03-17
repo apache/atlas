@@ -618,7 +618,7 @@
           "isIndexable": false
         },
         {
-          "name": "atlasImportResult",
+          "name": "importResult",
           "typeName": "string",
           "isOptional": false,
           "cardinality": "SINGLE",

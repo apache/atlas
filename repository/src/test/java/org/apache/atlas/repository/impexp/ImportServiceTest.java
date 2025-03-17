@@ -532,7 +532,7 @@ public class ImportServiceTest extends AtlasTestBase {
         importDetails.setPublishedEntityCount(10);
 
         importResult.setProcessedEntities(new ArrayList<>());
-        importRequest.setAtlasImportResult(importResult);
+        importRequest.setImportResult(importResult);
         importRequest.setImportDetails(importDetails);
         importRequest.setStatus(PROCESSING);
 
@@ -589,7 +589,7 @@ public class ImportServiceTest extends AtlasTestBase {
 
         importResult.setProcessedEntities(new ArrayList<>());
         importRequest.setImportId(importId);
-        importRequest.setAtlasImportResult(importResult);
+        importRequest.setImportResult(importResult);
         importRequest.setImportDetails(importDetails);
         importRequest.setStatus(PROCESSING);
 
@@ -650,7 +650,7 @@ public class ImportServiceTest extends AtlasTestBase {
 
         importResult.setProcessedEntities(new ArrayList<>());
         importRequest.setImportId(importId);
-        importRequest.setAtlasImportResult(importResult);
+        importRequest.setImportResult(importResult);
         importRequest.setImportDetails(importDetails);
         importRequest.setStatus(PROCESSING);
 
@@ -684,7 +684,7 @@ public class ImportServiceTest extends AtlasTestBase {
         assertEquals(importRequest.getImportDetails().getImportedEntitiesCount(), 6);
         assertEquals(importRequest.getImportDetails().getFailedEntitiesCount(), 4);
         assertEquals(importRequest.getStatus(), PARTIAL_SUCCESS);
-        assertEquals(importRequest.getAtlasImportResult().getOperationStatus(), AtlasImportResult.OperationStatus.PARTIAL_SUCCESS);
+        assertEquals(importRequest.getImportResult().getOperationStatus(), AtlasImportResult.OperationStatus.PARTIAL_SUCCESS);
 
         verify(spyImportService, times(1)).processReplicationDeletion(any(), any());
         verify(spyImportService, times(1)).addToImportOperationAudits(any());
@@ -723,7 +723,7 @@ public class ImportServiceTest extends AtlasTestBase {
 
         importResult.setProcessedEntities(new ArrayList<>());
         importRequest.setImportId(importId);
-        importRequest.setAtlasImportResult(importResult);
+        importRequest.setImportResult(importResult);
         importRequest.setImportDetails(importDetails);
         importRequest.setStatus(PROCESSING);
 

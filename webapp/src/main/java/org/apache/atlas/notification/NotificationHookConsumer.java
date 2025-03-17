@@ -1403,7 +1403,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             case IMPORT_ENTITY: {
                                 final ImportNotification.AtlasEntityImportNotification entityImportNotification = (ImportNotification.AtlasEntityImportNotification) message;
                                 final String importId = entityImportNotification.getImportId();
-                                final AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityImportNotification.getEntities();
+                                final AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityImportNotification.getEntity();
                                 final int position = entityImportNotification.getPosition();
                                 boolean completeImport = false;
                                 try {

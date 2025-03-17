@@ -224,7 +224,7 @@ public enum AtlasErrorCode {
     GLOSSARY_IMPORT_FAILED(409, "ATLAS-409-00-011", "Glossary import failed"),
     METRICSSTAT_ALREADY_EXISTS(409, "ATLAS-409-00-012", "Metric Statistics already collected at {0}"),
     PENDING_TASKS_ALREADY_IN_PROGRESS(409, "ATLAS-409-00-013", "There are already {0} pending tasks in queue"),
-    ABORT_IMPORT(409, "ATLAS-409-00-016", "Import id={0} is currently in state {1}, cannot be aborted"),
+    IMPORT_ABORT_NOT_ALLOWED(409, "ATLAS-409-00-016", "Import id={0} is currently in state {1}, cannot be aborted"),
 
     // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),

@@ -44,16 +44,19 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class ImportNotification extends HookNotification implements Serializable {
     private static final long serialVersionUID = 1L;
 
-    public ImportNotification() {
+    @JsonProperty
+    private String importId;
+
+    protected ImportNotification() {
     }
 
-    public ImportNotification(HookNotificationType type, String user) {
+    protected ImportNotification(HookNotificationType type, String user, String importId) {
         super(type, user);
+        this.importId = importId;
     }
 
-    @Override
-    public String toString() {
-        return toString(new StringBuilder()).toString();
+    public String getImportId() {
+        return importId;
     }
 
     public StringBuilder toString(StringBuilder sb) {
@@ -62,8 +65,10 @@ public class ImportNotification extends HookNotification implements Serializable
         }
 
         sb.append("ImportNotification{");
+        super.toString(sb);
         sb.append("type=").append(type);
         sb.append(", user=").append(user);
+        sb.append(", importId=").append(importId);
         sb.append("}");
 
         return sb;
@@ -77,11 +82,8 @@ public class ImportNotification extends HookNotification implements Serializable
     @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
-    public static class AtlasTypeDefImportNotification extends HookNotification implements Serializable {
+    public static class AtlasTypeDefImportNotification extends ImportNotification implements Serializable {
         private static final long serialVersionUID = 1L;
-
-        @JsonProperty
-        private String importId;
 
         @JsonProperty
         private AtlasTypesDef typeDefinitionMap;
@@ -90,22 +92,26 @@ public class ImportNotification extends HookNotification implements Serializable
         }
 
         public AtlasTypeDefImportNotification(String importId, String user, AtlasTypesDef typeDefinitionMap) {
-            super(HookNotificationType.IMPORT_TYPE_DEF, user);
+            super(HookNotificationType.IMPORT_TYPE_DEF, user, importId);
             this.typeDefinitionMap = typeDefinitionMap;
-            this.importId = importId;
         }
 
         public AtlasTypesDef getTypeDefinitionMap() {
             return typeDefinitionMap;
         }
 
-        public String getImportId() {
-            return importId;
-        }
-
         @Override
-        public String toString() {
-            return "importId=" + importId + (typeDefinitionMap == null ? "null" : typeDefinitionMap.toString());
+        public StringBuilder toString(StringBuilder sb) {
+            if (sb == null) {
+                sb = new StringBuilder();
+            }
+
+            sb.append("AtlasTypeDefImportNotification{");
+            super.toString(sb);
+            sb.append(", typeDefinitionMap=").append(typeDefinitionMap == null ? "null" : typeDefinitionMap.toString());
+            sb.append("}");
+
+            return sb;
         }
     }
 
@@ -117,14 +123,11 @@ public class ImportNotification extends HookNotification implements Serializable
     @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
-    public static class AtlasEntityImportNotification extends HookNotification implements Serializable {
+    public static class AtlasEntityImportNotification extends ImportNotification implements Serializable {
         private static final long serialVersionUID = 1L;
 
         @JsonProperty
-        private String importId;
-
-        @JsonProperty
-        private AtlasEntityWithExtInfo entities;
+        private AtlasEntityWithExtInfo entity;
 
         @JsonProperty
         private int position;
@@ -132,28 +135,33 @@ public class ImportNotification extends HookNotification implements Serializable
         public AtlasEntityImportNotification() {
         }
 
-        public AtlasEntityImportNotification(String importId, String user, AtlasEntityWithExtInfo entities, int position) {
-            super(HookNotificationType.IMPORT_ENTITY, user);
-            this.entities = entities;
+        public AtlasEntityImportNotification(String importId, String user, AtlasEntityWithExtInfo entity, int position) {
+            super(HookNotificationType.IMPORT_ENTITY, user, importId);
+            this.entity = entity;
             this.position = position;
-            this.importId = importId;
         }
 
-        public AtlasEntityWithExtInfo getEntities() {
-            return entities;
+        public AtlasEntityWithExtInfo getEntity() {
+            return entity;
         }
 
         public int getPosition() {
             return position;
         }
 
-        public String getImportId() {
-            return importId;
-        }
-
         @Override
-        public String toString() {
-            return "importId=" + importId + " position=" + position + "; entities=" + entities.toString();
+        public StringBuilder toString(StringBuilder sb) {
+            if (sb == null) {
+                sb = new StringBuilder();
+            }
+
+            sb.append("AtlasEntityImportNotification{");
+            super.toString(sb);
+            sb.append(", position=").append(position);
+            sb.append(", entities=").append(entity == null ? "null" : entity.toString());
+            sb.append("}");
+
+            return sb;
         }
     }
 }

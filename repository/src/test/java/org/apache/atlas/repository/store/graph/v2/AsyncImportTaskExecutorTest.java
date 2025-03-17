@@ -186,7 +186,7 @@ public class AsyncImportTaskExecutorTest {
         when(mockImportRequest.getTopicName()).thenReturn("test-topic");
         when(mockImportRequest.getImportId()).thenReturn("import-md5");
         when(mockImportRequest.getImportDetails()).thenReturn(new AtlasAsyncImportRequest.ImportDetails());
-        when(mockImportRequest.getAtlasImportResult()).thenReturn(mockResult);
+        when(mockImportRequest.getImportResult()).thenReturn(mockResult);
         when(mockResult.getUserName()).thenReturn("test-user-1");
         when(mockEntityImportStream.getTypesDef()).thenReturn(null);
 
@@ -207,7 +207,7 @@ public class AsyncImportTaskExecutorTest {
         EntityImportStream mockEntityImportStream = mock(EntityImportStream.class);
         when(mockImportRequest.getTopicName()).thenReturn("test-topic");
         when(mockImportRequest.getImportId()).thenReturn("import-md5");
-        when(mockImportRequest.getAtlasImportResult()).thenReturn(mockResult);
+        when(mockImportRequest.getImportResult()).thenReturn(mockResult);
         when(mockResult.getUserName()).thenReturn("test-user-1");
         when(mockEntityImportStream.getTypesDef()).thenReturn(null);
 
@@ -238,7 +238,7 @@ public class AsyncImportTaskExecutorTest {
         when(mockImportRequest.getTopicName()).thenReturn("test-topic");
         when(mockImportRequest.getImportId()).thenReturn("import-id");
         when(mockImportRequest.getImportDetails()).thenReturn(new AtlasAsyncImportRequest.ImportDetails());
-        when(mockImportRequest.getAtlasImportResult()).thenReturn(mockResult);
+        when(mockImportRequest.getImportResult()).thenReturn(mockResult);
         when(mockResult.getUserName()).thenReturn("test-user-1");
         when(mockEntityImportStream.hasNext()).thenReturn(true, false); // One entity in the stream
         when(mockEntityImportStream.getNextEntityWithExtInfo()).thenReturn(mockEntityWithExtInfo);
@@ -291,7 +291,7 @@ public class AsyncImportTaskExecutorTest {
         when(mockImportRequest.getTopicName()).thenReturn("test-topic");
         when(mockImportRequest.getImportId()).thenReturn("import-id");
         when(mockImportRequest.getImportDetails()).thenReturn(new AtlasAsyncImportRequest.ImportDetails());
-        when(mockImportRequest.getAtlasImportResult()).thenReturn(mockResult);
+        when(mockImportRequest.getImportResult()).thenReturn(mockResult);
         when(mockResult.getUserName()).thenReturn("test-user-1");
         when(mockEntityImportStream.getPosition()).thenReturn(1);
         when(mockEntityImportStream.hasNext()).thenReturn(true, false);
@@ -326,7 +326,7 @@ public class AsyncImportTaskExecutorTest {
         when(mockImportRequest.getTopicName()).thenReturn("test-topic");
         when(mockImportRequest.getImportId()).thenReturn("import-id");
         when(mockImportRequest.getImportDetails()).thenReturn(new AtlasAsyncImportRequest.ImportDetails());
-        when(mockImportRequest.getAtlasImportResult()).thenReturn(mockResult);
+        when(mockImportRequest.getImportResult()).thenReturn(mockResult);
         when(mockResult.getUserName()).thenReturn("test-user-1");
         when(mockEntityImportStream.getPosition()).thenReturn(1, 2);
         when(mockEntityImportStream.hasNext()).thenReturn(true, true, false); // Two entities

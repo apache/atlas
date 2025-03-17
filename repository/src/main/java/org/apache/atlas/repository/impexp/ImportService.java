@@ -244,7 +244,7 @@ public class ImportService implements AsyncImporter {
         if (importRequest == null) {
             throw new AtlasBaseException(AtlasErrorCode.IMPORT_NOT_FOUND, importId);
         }
-        AtlasImportResult result = importRequest.getAtlasImportResult();
+        AtlasImportResult result = importRequest.getImportResult();
         try {
             processTypes(typesDef, result);
         } catch (AtlasBaseException abe) {
@@ -252,9 +252,9 @@ public class ImportService implements AsyncImporter {
             throw abe;
         } finally {
             RequestContext.get().setImportInProgress(false);
-            importRequest.setAtlasImportResult(result);
+            importRequest.setImportResult(result);
             asyncImportService.updateImportRequest(importRequest);
-            LOG.info("<== onImportTypeDef(typesDef={}, importResult={})", typesDef, importRequest.getAtlasImportResult());
+            LOG.info("<== onImportTypeDef(typesDef={}, importResult={})", typesDef, importRequest.getImportResult());
         }
     }
 
@@ -265,7 +265,7 @@ public class ImportService implements AsyncImporter {
         if (importRequest == null) {
             throw new AtlasBaseException(AtlasErrorCode.IMPORT_NOT_FOUND, importId);
         }
-        AtlasImportResult result = importRequest.getAtlasImportResult();
+        AtlasImportResult result = importRequest.getImportResult();
         float importProgress = importRequest.getImportDetails().getImportProgress();
         int importedEntitiesCounter = importRequest.getImportDetails().getImportedEntitiesCount();
         int failedEntitiesCounter = importRequest.getImportDetails().getFailedEntitiesCount();
@@ -292,7 +292,7 @@ public class ImportService implements AsyncImporter {
         } finally {
             RequestContext.get().setImportInProgress(false);
             result.incrementMeticsCounter("duration", getDuration(this.endTimestamp, this.startTimestamp));
-            importRequest.setAtlasImportResult(result);
+            importRequest.setImportResult(result);
             importRequest.setCompletedAt(System.currentTimeMillis());
             asyncImportService.updateImportRequest(importRequest);
 
@@ -312,15 +312,15 @@ public class ImportService implements AsyncImporter {
             }
             if (importRequest.getImportDetails().getTotalEntitiesCount() == importRequest.getImportDetails().getImportedEntitiesCount()) {
                 importRequest.setStatus(AtlasAsyncImportRequest.ImportStatus.SUCCESSFUL);
-                importRequest.getAtlasImportResult().setOperationStatus(SUCCESS);
+                importRequest.getImportResult().setOperationStatus(SUCCESS);
             } else if (importRequest.getImportDetails().getImportedEntitiesCount() > 0) {
                 importRequest.setStatus(AtlasAsyncImportRequest.ImportStatus.PARTIAL_SUCCESS);
-                importRequest.getAtlasImportResult().setOperationStatus(AtlasImportResult.OperationStatus.PARTIAL_SUCCESS);
+                importRequest.getImportResult().setOperationStatus(AtlasImportResult.OperationStatus.PARTIAL_SUCCESS);
             } else {
                 importRequest.setStatus(FAILED);
             }
             asyncImportService.updateImportRequest(importRequest);
-            AtlasImportResult result = importRequest.getAtlasImportResult();
+            AtlasImportResult result = importRequest.getImportResult();
             processReplicationDeletion(result.getExportResult().getRequest(), result.getRequest());
             auditsWriter.write(result.getUserName(), result, startTimestamp, endTimestamp, importRequest.getImportDetails().getCreationOrder());
             addToImportOperationAudits(result);

@@ -22,6 +22,7 @@ import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.NotImplementedException;
 import org.apache.commons.lang3.RandomUtils;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.Test;
@@ -35,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.atlas.notification.NotificationInterface.NotificationType.HOOK;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertThrows;
 import static org.testng.Assert.assertTrue;
 
 public class AtlasFileSpoolTest extends BaseTest {
@@ -139,6 +141,17 @@ public class AtlasFileSpoolTest extends BaseTest {
         }
     }
 
+    @Test
+    public void notImplementedSendInternalTest()  throws IOException, AtlasException {
+        SpoolConfiguration cfg             = getSpoolConfigurationTest();
+        IndexManagement    indexManagement = new IndexManagement(cfg);
+
+        indexManagement.init();
+        Spooler spooler = new Spooler(cfg, indexManagement);
+
+        assertThrows(UnsupportedOperationException.class, () -> spooler.sendInternal("topic", Collections.emptyList()));
+    }
+
     @AfterClass
     public void tearDown() {
         FileUtils.deleteQuietly(new File(spoolDirTest));
@@ -162,6 +175,7 @@ public class AtlasFileSpoolTest extends BaseTest {
 
         @Override
         public void sendInternal(String topic, List<String> messages) throws NotificationException {
+            throw new NotImplementedException("sendInternal method is not implemented.");
         }
 
         @Override

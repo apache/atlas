@@ -50,7 +50,7 @@ import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.REQUEST_ID_P
 public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<AtlasAsyncImportRequest> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAsyncImportRequestDTO.class);
 
-    public static final String ATLAS_IMPORT_RESULT_PROPERTY                  = "atlasImportResult";
+    public static final String IMPORT_RESULT_PROPERTY                        = "importResult";
     public static final String REQUEST_ID_PROPERTY                           = "requestId";
     public static final String IMPORT_ID_PROPERTY                            = "importId";
     public static final String SKIP_TO_PROPERTY                              = "skipTo";
@@ -76,7 +76,7 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
         ImportDetails importDetails = null;
 
         String requestId                   = (String) entity.getAttribute(REQUEST_ID_PROPERTY);
-        String jsonAtlasImportResult       = (String) entity.getAttribute(ATLAS_IMPORT_RESULT_PROPERTY);
+        String jsonImportResult       = (String) entity.getAttribute(IMPORT_RESULT_PROPERTY);
         String importId                    = (String) entity.getAttribute(IMPORT_ID_PROPERTY);
         String status                      = (String) entity.getAttribute(STATUS_PROPERTY);
         int skipTo                         = Integer.parseInt((String) entity.getAttribute(SKIP_TO_PROPERTY));
@@ -86,8 +86,8 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
         long startedProcessingAt          = objectToLong(entity.getAttribute(STARTED_PROCESSING_AT));
         long completedAt                  = objectToLong(entity.getAttribute(COMPLETED_AT));
 
-        if (StringUtils.isNotEmpty(jsonAtlasImportResult)) {
-            asyncImportRequest = new AtlasAsyncImportRequest(AtlasType.fromJson(jsonAtlasImportResult, AtlasImportResult.class));
+        if (StringUtils.isNotEmpty(jsonImportResult)) {
+            asyncImportRequest = new AtlasAsyncImportRequest(AtlasType.fromJson(jsonImportResult, AtlasImportResult.class));
         }
 
         if (StringUtils.isNotEmpty(jsonImportDetails)) {
@@ -139,8 +139,8 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
         AtlasEntity entity = getDefaultAtlasEntity(obj);
 
         entity.setAttribute(REQUEST_ID_PROPERTY, getUniqueValue(obj));
-        if (obj.getAtlasImportResult() != null) {
-            entity.setAttribute(ATLAS_IMPORT_RESULT_PROPERTY, AtlasType.toJson(obj.getAtlasImportResult()));
+        if (obj.getImportResult() != null) {
+            entity.setAttribute(IMPORT_RESULT_PROPERTY, AtlasType.toJson(obj.getImportResult()));
         }
         entity.setAttribute(IMPORT_ID_PROPERTY, obj.getImportId());
         entity.setAttribute(STATUS_PROPERTY, obj.getStatus());

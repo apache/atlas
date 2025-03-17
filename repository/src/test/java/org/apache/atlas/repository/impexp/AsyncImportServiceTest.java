@@ -192,7 +192,7 @@ public class AsyncImportServiceTest {
 
         AtlasImportResult mockImportResult = mock(AtlasImportResult.class);
         doReturn("admin").when(mockImportResult).getUserName();
-        request1.setAtlasImportResult(mockImportResult);
+        request1.setImportResult(mockImportResult);
 
         Map<String, Object> mockMinInfo = new HashMap<>();
         mockMinInfo.put("importId", "24cbff65a7ed60e02d099ce78cb06efd");

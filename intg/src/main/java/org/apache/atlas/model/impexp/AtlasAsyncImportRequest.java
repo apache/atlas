@@ -34,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TimeZone;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -87,7 +86,7 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
     private long completedAt;
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private AtlasImportResult atlasImportResult;
+    private AtlasImportResult importResult;
 
     public AtlasAsyncImportRequest() {}
 
@@ -96,7 +95,7 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
     }
 
     public AtlasAsyncImportRequest(AtlasImportResult result) {
-        this.atlasImportResult           = result;
+        this.importResult = result;
         this.status                      = ImportStatus.STAGING;
         this.skipTo                      = 0;
         this.receivedAt                  = 0L;
@@ -153,12 +152,12 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         this.skipTo = skipTo;
     }
 
-    public AtlasImportResult getAtlasImportResult() {
-        return atlasImportResult;
+    public AtlasImportResult getImportResult() {
+        return importResult;
     }
 
-    public void setAtlasImportResult(AtlasImportResult atlasImportResult) {
-        this.atlasImportResult = atlasImportResult;
+    public void setImportResult(AtlasImportResult importResult) {
+        this.importResult = importResult;
     }
 
     public long getReceivedAt() {
@@ -204,7 +203,7 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         minInfoResponse.put("importId", importId);
         minInfoResponse.put("status", status);
         minInfoResponse.put("importRequestReceivedAt", isoDate);
-        minInfoResponse.put("importRequestReceivedBy", atlasImportResult.getUserName());
+        minInfoResponse.put("importRequestReceivedBy", importResult.getUserName());
 
         return minInfoResponse;
     }
@@ -233,7 +232,7 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
             return false;
         }
         AtlasAsyncImportRequest that = (AtlasAsyncImportRequest) o;
-        return Objects.equals(atlasImportResult, that.atlasImportResult) &&
+        return Objects.equals(importResult, that.importResult) &&
                 Objects.equals(importId, that.importId) &&
                 Objects.equals(status, that.status) &&
                 Objects.equals(importDetails, that.importDetails) &&
@@ -246,17 +245,17 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), requestId, atlasImportResult,
+        return Objects.hash(super.hashCode(), requestId, importResult,
                 importId, status, importDetails, receivedAt, stagedAt, startedProcessingAt, completedAt);
     }
 
     @Override
     protected StringBuilder toString(StringBuilder sb) {
         sb.append(", atlasImportResult=");
-        if (atlasImportResult == null) {
+        if (importResult == null) {
             sb.append("null");
         } else {
-            sb.append(atlasImportResult);
+            sb.append(importResult);
         }
         sb.append(", requestId=").append(requestId);
         sb.append(", importId=").append(importId);
@@ -272,15 +271,23 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class ImportDetails {
+        private static final long serialVersionUID = 1L;
+
         private int publishedEntityCount;
         private int totalEntitiesCount;
         private int importedEntitiesCount;
         private int failedEntitiesCount;
-        private List<String> failedEntities = new ArrayList<>();
+        private List<String> failedEntities;
         private float importProgress;
-        private final Map<String, String> failures = new ConcurrentHashMap<>();
+        private Map<String, String> failures;
+
         @JsonIgnore
         private List<String> creationOrder = new ArrayList<>();
+
+        public ImportDetails() {
+            this.failedEntities = new ArrayList<>();
+            this.failures = new HashMap<>();
+        }
 
         public int getPublishedEntityCount() {
             return publishedEntityCount;

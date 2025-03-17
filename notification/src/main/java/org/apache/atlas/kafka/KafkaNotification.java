@@ -78,8 +78,6 @@ public class KafkaNotification extends AbstractNotification implements Service {
     private static final String[] ATLAS_ENTITIES_CONSUMER_TOPICS        = AtlasConfiguration.NOTIFICATION_ENTITIES_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_ENTITIES_TOPIC);
     private static final String   DEFAULT_CONSUMER_CLOSED_ERROR_MESSAGE = "This consumer has already been closed.";
 
-    private static final boolean SORT_NOT_NEEDED = false;
-
     private static final Map<NotificationType, String> PRODUCER_TOPIC_MAP    = new HashMap<>();
     private static final Map<NotificationType, List<String>> CONSUMER_TOPICS_MAP = new HashMap<>();
 
@@ -300,7 +298,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
     }
 
     public void sendInternal(String topic, List<String> messages) throws NotificationException {
-        sendInternal(topic, messages, SORT_NOT_NEEDED);
+        sendInternal(topic, messages, false);
     }
 
     // ----- AbstractNotification --------------------------------------------
