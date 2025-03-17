@@ -899,7 +899,7 @@
         "entity-type:AIModel",
         "entity-classification:*"
       ],
-      "actions": ["entity-create"]
+      "actions": ["entity-create", "entity-update"]
     }
   ],
   "persona-aiasset-update": [
@@ -907,7 +907,7 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:*",
+        "entity:{entity}",
         "entity-type:AIApplication",
         "entity-type:AIModel",
         "entity-classification:*"
