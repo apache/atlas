@@ -27,9 +27,10 @@ on:
       - development
       - master
       - lineageondemand
-      - mlh40java17
+      - mlh-170-create-diff
       - cassandrapoliciesoptimisation
       - ixop
+      - mlh40java17
 
 jobs:
   build:
