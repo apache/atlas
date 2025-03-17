@@ -1000,11 +1000,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             String indexName = getIndexName(params);
 
             indexQuery = graph.elasticsearchQuery(indexName);
-            //TODO : remove fullrestrict
-            if (searchParams.getEnableFullRestriction()) {
-                addPreFiltersToSearchQuery(searchParams);
-            }
-            //LOG.info(searchParams.getQuery());
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
             if (indexQueryResult == null) {
@@ -1151,10 +1146,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         } catch (Exception e) {
                 throw e;
         }
-
-        if (!searchParams.getEnableFullRestriction()) {
-            scrubSearchResults(ret, searchParams.getSuppressLogs());
-        }
+        scrubSearchResults(ret, searchParams.getSuppressLogs());
     }
 
     private Map<String, Object> getMap(String key, Object value) {
@@ -1248,42 +1240,5 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         boolQuery.put("filter", filterClauses);
 
         return getMap("bool", boolQuery);
-    }
-
-    private void addPreFiltersToSearchQuery(SearchParams searchParams) {
-        try {
-            String persona = ((IndexSearchParams) searchParams).getPersona();
-            String purpose = ((IndexSearchParams) searchParams).getPurpose();
-
-            AtlasPerfMetrics.MetricRecorder addPreFiltersToSearchQueryMetric = RequestContext.get().startMetricRecord("addPreFiltersToSearchQuery");
-            ObjectMapper mapper = new ObjectMapper();
-            List<Map<String, Object>> mustClauseList = new ArrayList<>();
-
-            List<String> actions = new ArrayList<>();
-            actions.add("entity-read");
-
-            Map<String, Object> allPreFiltersBoolClause = ABACAuthorizerUtils.getPreFilterDsl(persona, purpose, actions);
-            mustClauseList.add(allPreFiltersBoolClause);
-
-            String dslString = searchParams.getQuery();
-            JsonNode node = mapper.readTree(dslString);
-            JsonNode userQueryNode = node.get("query");
-            if (userQueryNode != null) {
-
-                String userQueryString = userQueryNode.toString();
-
-                String userQueryBase64 = Base64.getEncoder().encodeToString(userQueryString.getBytes());
-                mustClauseList.add(getMap("wrapper", getMap("query", userQueryBase64)));
-            }
-
-            JsonNode updateQueryNode = mapper.valueToTree(getMap("bool", getMap("must", mustClauseList)));
-
-            ((ObjectNode) node).set("query", updateQueryNode);
-            searchParams.setQuery(node.toString());
-            RequestContext.get().endMetricRecord(addPreFiltersToSearchQueryMetric);
-
-        } catch (Exception e) {
-            LOG.error("Error -> addPreFiltersToSearchQuery!", e);
-        }
     }
 }
