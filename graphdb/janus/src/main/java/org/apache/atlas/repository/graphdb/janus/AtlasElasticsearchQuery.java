@@ -54,6 +54,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Future;
@@ -65,9 +67,14 @@ import static org.apache.atlas.AtlasErrorCode.INDEX_NOT_FOUND;
 public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasElasticsearchQuery.class);
 
+    private static final String CLIENT_ORIGIN_PRODUCT = "product_webapp";
+
     private AtlasJanusGraph graph;
     private RestHighLevelClient esClient;
     private RestClient lowLevelRestClient;
+
+    private RestClient esUiClusterClient;
+    private RestClient esNonUiClusterClient;
     private String index;
     private SearchSourceBuilder sourceBuilder;
     private SearchResponse searchResponse;
@@ -80,9 +87,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         this.sourceBuilder = sourceBuilder;
     }
 
-    public AtlasElasticsearchQuery(AtlasJanusGraph graph, RestClient restClient, String index, SearchParams searchParams) {
+    public AtlasElasticsearchQuery(AtlasJanusGraph graph, RestClient restClient, String index, SearchParams searchParams, RestClient esUiClusterClient, RestClient esNonUiClusterClient) {
         this(graph, index);
         this.lowLevelRestClient = restClient;
+        this.esUiClusterClient = esUiClusterClient;
+        this.esNonUiClusterClient = esNonUiClusterClient;
         this.searchParams = searchParams;
     }
 
@@ -92,8 +101,8 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         searchResponse = null;
     }
 
-    public AtlasElasticsearchQuery(AtlasJanusGraph graph, String index, RestClient restClient) {
-        this(graph, restClient, index, null);
+    public AtlasElasticsearchQuery(AtlasJanusGraph graph, String index, RestClient restClient, RestClient esUiClusterClient, RestClient esNonUiClusterClient) {
+        this(graph, restClient, index, null, esUiClusterClient, esNonUiClusterClient);
     }
 
     public AtlasElasticsearchQuery(String index, RestClient restClient) {
@@ -105,6 +114,35 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         SearchRequest searchRequest = new SearchRequest(index);
         searchRequest.source(sourceBuilder);
         return searchRequest;
+    }
+
+    /**
+     * Returns the appropriate Elasticsearch RestClient based on client origin and configuration settings if isolation is enabled.
+     *
+     * @return RestClient configured for either UI or Non-UI cluster, falling back to low-level client
+     */
+    private RestClient getESClient() {
+        if (!AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_REQUEST_ISOLATION.getBoolean()) {
+            return lowLevelRestClient;
+        }
+
+        try {
+            String clientOrigin = RequestContext.get().getClientOrigin();
+            if (clientOrigin == null) {
+                return lowLevelRestClient;
+            }
+            if (CLIENT_ORIGIN_PRODUCT.equals(clientOrigin)) {
+                return Optional.ofNullable(esUiClusterClient)
+                        .orElse(lowLevelRestClient);
+            } else {
+                return Optional.ofNullable(esNonUiClusterClient)
+                        .orElse(lowLevelRestClient);
+            }
+
+        } catch (Exception e) {
+            LOG.error("Error determining ES client, falling back to low-level client", e);
+            return lowLevelRestClient;
+        }
     }
 
     private Iterator<Result<AtlasJanusVertex, AtlasJanusEdge>> runQuery(SearchRequest searchRequest) {
@@ -134,7 +172,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         try {
             if(searchParams.isCallAsync() || AtlasConfiguration.ENABLE_ASYNC_INDEXSEARCH.getBoolean()) {
                 return performAsyncDirectIndexQuery(searchParams);
-            } else{
+            } else {
                 String responseString =  performDirectIndexQuery(searchParams.getQuery(), false);
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("runQueryWithLowLevelClient.response : {}", responseString);
@@ -143,6 +181,9 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             }
         } catch (IOException e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+
+            handleNetworkErrors(e);
+
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
         }
     }
@@ -170,6 +211,9 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         } catch (IOException e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+
+            handleNetworkErrors(e);
+
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
         }
     }
@@ -183,6 +227,9 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         } catch (IOException e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+
+            handleNetworkErrors(e);
+
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
         }
     }
@@ -234,6 +281,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             }
         }catch (Exception e) {
             LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+
+            if (e instanceof IOException) {
+                handleNetworkErrors((IOException) e);
+            }
+
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
         } finally {
             if (contextIdExists) {
@@ -247,6 +299,20 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             RequestContext.get().endMetricRecord(metric);
         }
         return result;
+    }
+
+    /*
+     * Checks if the exception is a network-related issue and throws a SERVICE_UNAVAILABLE error.
+     */
+    private void handleNetworkErrors(Exception e) throws AtlasBaseException {
+        if (e instanceof SocketTimeoutException || e instanceof UnknownHostException ||
+                (e.getMessage() != null &&
+                        (e.getMessage().contains("Connection reset by peer") ||
+                                e.getMessage().contains("Network error") ||
+                                e.getMessage().contains("Connection refused")))) {
+            throw new AtlasBaseException(AtlasErrorCode.SERVICE_UNAVAILABLE,
+                    "Service is unavailable or a network error occurred: Elasticsearch - " + e.getMessage());
+        }
     }
 
     /*
@@ -350,7 +416,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             }
         };
 
-        lowLevelRestClient.performRequestAsync(request, responseListener);
+        getESClient().performRequestAsync(request, responseListener);
 
         return future;
     }
@@ -372,7 +438,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 }
             }
         };
-        lowLevelRestClient.performRequestAsync(request, responseListener);
+        getESClient().performRequestAsync(request, responseListener);
     }
 
     private Future<AsyncQueryResult> submitAsyncSearch(SearchParams searchParams, String KeepAliveTime, boolean source) {
@@ -424,7 +490,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
             }
         };
 
-        lowLevelRestClient.performRequestAsync(request, responseListener);
+        getESClient().performRequestAsync(request, responseListener);
 
         return future;
     }
@@ -444,7 +510,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
 
         Response response;
         try {
-            response = lowLevelRestClient.performRequest(request);
+            response = getESClient().performRequest(request);
         } catch (ResponseException rex) {
             if (rex.getResponse().getStatusLine().getStatusCode() == 404) {
                 LOG.warn(String.format("ES index with name %s not found", index));
