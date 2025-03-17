@@ -305,14 +305,24 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
      * Checks if the exception is a network-related issue and throws a SERVICE_UNAVAILABLE error.
      */
     private void handleNetworkErrors(Exception e) throws AtlasBaseException {
-        if (e instanceof SocketTimeoutException || e instanceof UnknownHostException ||
-                (e.getMessage() != null &&
-                        (e.getMessage().contains("Connection reset by peer") ||
-                                e.getMessage().contains("Network error") ||
-                                e.getMessage().contains("Connection refused")))) {
+        if (e instanceof SocketTimeoutException ||
+                e instanceof UnknownHostException ||
+                containsMessage(e, "connection reset by peer", "network error", "connection refused")) {
+
             throw new AtlasBaseException(AtlasErrorCode.SERVICE_UNAVAILABLE,
                     "Service is unavailable or a network error occurred: Elasticsearch - " + e.getMessage());
         }
+
+        if (containsMessage(e, "gateway timeout")) {
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_GATEWAY_TIMEOUT, e.getMessage());
+        }
+    }
+
+    private boolean containsMessage(Exception e, String... keywords) {
+        if (e.getMessage() == null) return false;
+
+        String message = e.getMessage().toLowerCase();
+        return Arrays.stream(keywords).anyMatch(message::contains);
     }
 
     /*
