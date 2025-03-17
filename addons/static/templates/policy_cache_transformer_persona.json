@@ -951,9 +951,7 @@
         "entity-type:AIModel",
         "entity-classification:*"
       ],
-      "actions": [
-        "entity-read"
-      ]
+      "actions": ["entity-read"]
     }
   ],
   "persona-aiasset-create": [
@@ -967,9 +965,7 @@
         "entity-type:AIModel",
         "entity-classification:*"
       ],
-      "actions": [
-        "entity-create"
-      ]
+      "actions": ["entity-create"]
     }
   ],
   "persona-aiasset-update": [
@@ -983,9 +979,7 @@
         "entity-type:AIModel",
         "entity-classification:*"
       ],
-      "actions": [
-        "entity-update"
-      ]
+      "actions": ["entity-update"]
     },
     {
       "policyResourceCategory": "RELATIONSHIP",
@@ -996,16 +990,13 @@
         "end-one-entity-type:AIApplication",
         "end-one-entity-classification:*",
         "end-one-entity:*",
+
         "end-two-entity-type:AIModel",
         "end-two-entity-classification:*",
         "end-two-entity:{entity}",
         "end-two-entity:{entity}/*"
       ],
-      "actions": [
-        "add-relationship",
-        "update-relationship",
-        "remove-relationship"
-      ]
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     },
     {
       "policyResourceCategory": "RELATIONSHIP",
@@ -1013,19 +1004,17 @@
       "description": "Link/unlink resource to AI assets",
       "resources": [
         "relationship-type:*",
+
         "end-one-entity-type:AIApplication",
         "end-one-entity-type:AIModel",
         "end-one-entity-classification:*",
         "end-one-entity:{entity}",
+
         "end-two-entity-type:Resource",
         "end-two-entity-classification:*",
         "end-two-entity:*"
       ],
-      "actions": [
-        "add-relationship",
-        "update-relationship",
-        "remove-relationship"
-      ]
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
   ],
   "persona-aiasset-delete": [
@@ -1039,9 +1028,7 @@
         "entity-type:AIModel",
         "entity-classification:*"
       ],
-      "actions": [
-        "entity-delete"
-      ]
+      "actions": ["entity-delete"]
     }
   ],
   "persona-aiasset-business-update-metadata": [
@@ -1056,9 +1043,7 @@
         "entity-classification:*",
         "entity-business-metadata:*"
       ],
-      "actions": [
-        "entity-update-business-metadata"
-      ]
+      "actions": ["entity-update-business-metadata"]
     }
   ],
   "persona-aiasset-add-terms": [
@@ -1068,19 +1053,18 @@
       "description": "Link term to this AI asset",
       "resources": [
         "relationship-type:*",
+
         "end-one-entity-type:AtlasGlossaryTerm",
         "entity-type:AtlasGlossaryTerm",
         "end-one-entity-classification:*",
         "end-one-entity:*",
+
         "end-two-entity-type:AIApplication",
         "end-two-entity-type:AIModel",
         "end-two-entity-classification:*",
         "end-two-entity:{entity}"
       ],
-      "actions": [
-        "add-relationship",
-        "entity-read"
-      ]
+      "actions": ["add-relationship", "entity-read"]
     }
   ],
   "persona-aiasset-update-terms": [
@@ -1090,17 +1074,17 @@
       "description": "Unlink term to this AI asset",
       "resources": [
         "relationship-type:*",
+
         "end-one-entity-type:AtlasGlossaryTerm",
         "end-one-entity-classification:*",
         "end-one-entity:*",
+
         "end-two-entity-type:AIApplication",
         "end-two-entity-type:AIModel",
         "end-two-entity-classification:*",
         "end-two-entity:{entity}"
       ],
-      "actions": [
-        "update-relationship"
-      ]
+      "actions": ["update-relationship"]
     }
   ],
   "persona-aiasset-remove-terms": [
@@ -1110,17 +1094,17 @@
       "description": "Link/unlink term to this AI asset",
       "resources": [
         "relationship-type:*",
+
         "end-one-entity-type:AtlasGlossaryTerm",
         "end-one-entity-classification:*",
         "end-one-entity:*",
+
         "end-two-entity-type:AIApplication",
         "end-two-entity-type:AIModel",
         "end-two-entity-classification:*",
         "end-two-entity:{entity}"
       ],
-      "actions": [
-        "remove-relationship"
-      ]
+      "actions": ["remove-relationship"]
     }
   ],
   "persona-aiasset-add-classification": [
