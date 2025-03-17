@@ -197,6 +197,8 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
             domainExists(domainName, targetDomainQualifiedName, domain.getGuid());
 
+            isParentDomainMovedToChild(targetDomainQualifiedName, currentDomainQualifiedName);
+
             if(targetDomainQualifiedName.isEmpty()){
                 //Moving subDomain to make it Super Domain
                 targetDomainQualifiedName = "default";
@@ -404,6 +406,12 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
     private void validateStakeholderRelationship(AtlasEntity entity) throws AtlasBaseException {
         if(entity.hasRelationshipAttribute(STAKEHOLDER_REL_TYPE)){
             throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Managing Stakeholders while creating/updating a domain");
+        }
+    }
+
+    private void isParentDomainMovedToChild(String targetDomainQualifiedName, String currentDomainQualifiedName) throws AtlasBaseException {
+        if(targetDomainQualifiedName.contains(currentDomainQualifiedName)){
+            throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Cannot move a domain to its child domain");
         }
     }
 
