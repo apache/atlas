@@ -49,7 +49,6 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.graphdb.janus.AtlasJanusEdge;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusVertex;
 import org.apache.atlas.repository.graphdb.janus.GraphDbObjectFactory;
@@ -72,7 +71,6 @@ import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.tinkerpop.gremlin.structure.T;
 import org.apache.tinkerpop.gremlin.structure.VertexProperty;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.graphdb.relations.CacheVertexProperty;
@@ -89,7 +87,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import static org.apache.atlas.AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
@@ -1471,7 +1468,7 @@ public class EntityGraphRetriever {
                         .filter(Objects::nonNull) // Remove null classifications
                         .collect(Collectors.toList()); // Collect as a list
             } else {
-                List<AtlasClassification> ret = new ArrayList<>();
+                List<AtlasClassification> classifications = new ArrayList<>();
                 Iterable edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
 
                 if (edges != null) {
@@ -1483,13 +1480,11 @@ public class EntityGraphRetriever {
                         AtlasClassification classification = toAtlasClassification(classificationVertex);
 
                         if (classification != null) {
-                            ret.add(classification);
+                            classifications.add(classification);
                         }
                     }
                 }
-
-                RequestContext.get().endMetricRecord(metricRecorder);
-                return ret;
+                return classifications;
             }
         } catch (Exception e) {
             LOG.error("Error while getting all classifications", e);
