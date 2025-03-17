@@ -18,7 +18,6 @@ public class SearchParams {
     boolean suppressLogs;
     boolean excludeMeanings;
     boolean excludeClassifications;
-    boolean enableFullRestriction;
 
     boolean includeClassificationNames = false;
 
@@ -31,10 +30,6 @@ public class SearchParams {
 
     public String getQuery() {
         return getQuery();
-    }
-
-    public boolean getEnableFullRestriction() {
-        return enableFullRestriction;
     }
 
     public Set<String> getAttributes() {

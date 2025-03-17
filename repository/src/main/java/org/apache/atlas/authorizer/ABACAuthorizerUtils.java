@@ -10,7 +10,6 @@ import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.authorizer.authorizers.EntityAuthorizer;
-import org.apache.atlas.authorizer.authorizers.ListAuthorizer;
 import org.apache.atlas.authorizer.authorizers.RelationshipAuthorizer;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -19,7 +18,6 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -29,9 +27,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
-
-import static org.apache.atlas.authorize.AtlasPrivilege.ENTITY_CREATE;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 
 @Component
 public class ABACAuthorizerUtils {
@@ -68,7 +63,7 @@ public class ABACAuthorizerUtils {
 
     @Inject
     public ABACAuthorizerUtils(AtlasGraph graph, AtlasTypeRegistry typeRegistry) throws IOException {
-        this.typeRegistry = typeRegistry;
+        ABACAuthorizerUtils.typeRegistry = typeRegistry;
 
         SERVICE_DEF_ATLAS = getResourceAsObject("/service-defs/atlas-servicedef-atlas.json", RangerServiceDef.class);
     }
@@ -148,10 +143,6 @@ public class ABACAuthorizerUtils {
         }
 
         return null;
-    }
-
-    public static Map<String, Object> getPreFilterDsl(String persona, String purpose, List<String> actions) {
-        return ListAuthorizer.getElasticsearchDSL(persona, purpose, actions);
     }
 
     private <T> T getResourceAsObject(String resourceName, Class<T> clazz) throws IOException {
