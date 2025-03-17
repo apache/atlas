@@ -895,6 +895,8 @@
       "policyType": "ACCESS",
       "resources": [
         "entity:*",
+        "entity:default/ai/aiapplication/*",
+        "entity:default/ai/aimodel/*",
         "entity-type:AIApplication",
         "entity-type:AIModel",
         "entity-classification:*"
@@ -908,6 +910,8 @@
       "policyType": "ACCESS",
       "resources": [
         "entity:{entity}",
+        "entity:default/ai/aiapplication/*",
+        "entity:default/ai/aimodel/*",
         "entity-type:AIApplication",
         "entity-type:AIModel",
         "entity-classification:*"
