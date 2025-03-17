@@ -200,8 +200,10 @@ public class ESAliasStore implements IndexAliasStore {
                 if (!getIsAllowPolicy(policy)) {
                     continue;
                 }
+
+                List<String> policyActions = getPolicyActions(policy);
                 
-                if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_METADATA)) {
+                if (policyActions.contains(ACCESS_READ_PERSONA_METADATA)) {
 
                     String connectionQName = getPolicyConnectionQN(policy);
                     if (StringUtils.isEmpty(connectionQName)) {
@@ -237,12 +239,12 @@ public class ESAliasStore implements IndexAliasStore {
 
                     terms.add(connectionQName);
 
-                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_GLOSSARY)) {
+                } else if (policyActions.contains(ACCESS_READ_PERSONA_GLOSSARY)) {
                     if (CollectionUtils.isNotEmpty(assets)) {
                         terms.addAll(assets);
                         glossaryQualifiedNames.addAll(assets);
                     }
-                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_DOMAIN)) {
+                } else if (policyActions.contains(ACCESS_READ_PERSONA_DOMAIN)) {
                     for (String asset : assets) {
                         if(!isAllDomain(asset)) {
                             terms.add(asset);
@@ -252,7 +254,7 @@ public class ESAliasStore implements IndexAliasStore {
                         allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "*")));
                     }
 
-                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_SUB_DOMAIN)) {
+                } else if (policyActions.contains(ACCESS_READ_PERSONA_SUB_DOMAIN)) {
                     for (String asset : assets) {
                         //terms.add(asset);
                         List<Map<String, Object>> mustMap = new ArrayList<>();
@@ -261,7 +263,7 @@ public class ESAliasStore implements IndexAliasStore {
                         allowClauseList.add(mapOf("bool", mapOf("must", mustMap)));
                     }
 
-                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_PRODUCT)) {
+                } else if (policyActions.contains(ACCESS_READ_PERSONA_PRODUCT)) {
                     for (String asset : assets) {
                         //terms.add(asset);
                         List<Map<String, Object>> mustMap = new ArrayList<>();
@@ -269,10 +271,10 @@ public class ESAliasStore implements IndexAliasStore {
                         mustMap.add(mapOf("term", mapOf("__typeName.keyword", "DataProduct")));
                         allowClauseList.add(mapOf("bool", mapOf("must", mustMap)));
                     }
-                } else if (getPolicyActions(policy).contains(ACCESS_READ_PERSONA_AI_ASSET)) {
+                } else if (policyActions.contains(ACCESS_READ_PERSONA_AI_ASSET)) {
                     List<String> resources = getPolicyResources(policy);
                     List<String> typeResources = getFilteredPolicyResources(resources, RESOURCES_ENTITY_TYPE);
-                    if (typeResources.size() > 0) {
+                    if (CollectionUtils.isNotEmpty(typeResources)) {
                         List<String> typeTerms = new ArrayList<>();
                         List<Map<String, Object>> mustMap = new ArrayList<>();
                         if (typeResources.contains(AI_APPLICATION)) {
@@ -281,14 +283,14 @@ public class ESAliasStore implements IndexAliasStore {
                         if (typeResources.contains(AI_MODEL)) {
                             typeTerms.add(AI_MODEL);
                         }
-                        if (typeTerms.size() > 0) {
+                        if (CollectionUtils.isNotEmpty(typeTerms)) {
                             mustMap.add(mapOf("terms", mapOf("__typeName.keyword", typeTerms)));
                             allowClauseList.add(mapOf("bool", mapOf("must", mustMap)));
                         }
                     }
                     
                     for (String asset : assets) {
-                        if (asset.length() > 0) {
+                        if (StringUtils.isNotEmpty(asset)) {
                             List<Map<String, Object>> mustMap = new ArrayList<>();
                             mustMap.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset)));
                             mustMap.add(mapOf("terms", mapOf("__typeName.keyword", Arrays.asList(AI_APPLICATION, AI_MODEL))));
