@@ -2055,7 +2055,7 @@ public final class GraphHelper {
         }
     }
 
-    private static Set<String> parseLabelsString(String labels) {
+    public static Set<String> parseLabelsString(String labels) {
         Set<String> ret = new HashSet<>();
 
         if (StringUtils.isNotEmpty(labels)) {
