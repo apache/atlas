@@ -1066,7 +1066,6 @@ public class EntityGraphRetriever {
                         // If the attribute is not known (null)
                         // validate if prefetched property is multi-valued
                         boolean isMultiValuedProperty = (property instanceof CacheVertexProperty && ((CacheVertexProperty) property).propertyKey().cardinality().equals(Cardinality.SET));
-
                         if (typeCategory == TypeCategory.ARRAY && (elementTypeCategory == TypeCategory.PRIMITIVE|| elementTypeCategory == TypeCategory.ENUM)) {
                             updateAttrValue(propertiesMap, property);
                         } else if (attribute == null && isMultiValuedProperty) {
@@ -1390,10 +1389,12 @@ public class EntityGraphRetriever {
             LOG.debug("Mapping system attributes for type {}", entity.getTypeName());
         }
 
+        boolean enableJanusOptimization = AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_EXTENDED.getBoolean() && RequestContext.get().isInvokedByIndexSearch();
+
         try {
 
             if (entityVertex != null) {
-                if (AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_EXTENDED.getBoolean() && RequestContext.get().isInvokedByIndexSearch()) {
+                if (enableJanusOptimization) {
                     String typeName = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
                     AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
                     Map<String, Object> properties = preloadProperties(entityVertex,  entityType, Collections.emptySet(), false);
@@ -1420,9 +1421,15 @@ public class EntityGraphRetriever {
                     entity.setIsIncomplete(isIncomplete);
 
                     entity.setProvenanceType(properties.get(PROVENANCE_TYPE_KEY) != null ? (int) properties.get(PROVENANCE_TYPE_KEY) : 0);
-                    entity.setCustomAttributes(getCustomAttributes(entityVertex));
-                    entity.setLabels(getLabels(entityVertex));
-                    entity.setPendingTasks(getPendingTasks(entityVertex));
+                    String customAttrsString = (String) properties.get(CUSTOM_ATTRIBUTES_PROPERTY_KEY);
+                    entity.setCustomAttributes(StringUtils.isNotEmpty(customAttrsString) ?  AtlasType.fromJson(customAttrsString, Map.class) : null);
+
+                    String labels = (String) properties.get(LABELS_PROPERTY_KEY);
+                    entity.setLabels(GraphHelper.parseLabelsString(labels));
+                    Object pendingTasks =  properties.get(PENDING_TASKS_PROPERTY_KEY);
+                    if (pendingTasks instanceof List) {
+                        entity.setPendingTasks(new HashSet<>( (List<String>) pendingTasks));
+                    }
 
                 } else {
                     entity.setGuid(getGuid(entityVertex));
