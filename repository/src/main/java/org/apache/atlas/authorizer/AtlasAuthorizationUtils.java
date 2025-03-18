@@ -184,6 +184,7 @@ public class AtlasAuthorizationUtils {
 
                 RequestContext.get().endMetricRecord(metric);
 
+                // if priority is override, then it's an explicity deny as implicit deny won't have priority set to override
                 if (!atlasPoliciesResult.isAllowed() && atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
                     // 1
                     return false;

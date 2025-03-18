@@ -188,7 +188,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
     }
 
-    public Map<String, Object> runQueryWithLowLevelClient(String query) throws AtlasBaseException {
+    private Map<String, Object> runQueryWithLowLevelClient(String query) throws AtlasBaseException {
         Map<String, Object> ret = new HashMap<>();
         try {
             String responseString = performDirectIndexQuery(query, true);
