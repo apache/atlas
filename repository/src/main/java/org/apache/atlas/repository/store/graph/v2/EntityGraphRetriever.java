@@ -1565,8 +1565,10 @@ public class EntityGraphRetriever {
             String typeName = edge.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class); //properties.get returns null
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
             Map<String, Object> referenceProperties = preloadProperties(termVertex, entityType, Collections.emptySet(), false);
-            String relationGuid = referenceProperties.get(Constants.RELATIONSHIP_GUID_PROPERTY_KEY) != null ? (String) referenceProperties.get(Constants.RELATIONSHIP_GUID_PROPERTY_KEY) : null;
-            if (StringUtils.isNotEmpty(relationGuid)) {
+
+            //relationshipGuid is not retrieved via referenceProperties
+            String relationGuid = edge.getProperty(Constants.RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
+            if (relationGuid != null) {
                 ret.setRelationGuid(relationGuid);
             }
 
