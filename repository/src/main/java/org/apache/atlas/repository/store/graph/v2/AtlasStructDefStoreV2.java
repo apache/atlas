@@ -129,6 +129,12 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
                 currAttrNames.removeAll(removedAttributes);
 
                 vertex.setListProperty(encodedStructDefPropertyKey, currAttrNames);
+
+                for (String removedAttribute : removedAttributes) {
+                    String propertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef, removedAttribute);
+
+                    vertex.removeProperty(propertyKey);
+                }
             }
         }
 
