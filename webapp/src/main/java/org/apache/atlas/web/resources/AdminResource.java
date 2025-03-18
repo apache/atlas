@@ -36,6 +36,7 @@ import org.apache.atlas.model.audit.AuditReductionCriteria;
 import org.apache.atlas.model.audit.AuditSearchParameters;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
+import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
@@ -677,6 +678,89 @@ public class AdminResource {
         addToImportOperationAudits(result);
 
         return result;
+    }
+
+    @POST
+    @Path("/async/import")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public AtlasAsyncImportRequest importAsync(@DefaultValue("{}") @FormDataParam("request") String jsonData,
+                                               @FormDataParam("data") InputStream inputStream) throws AtlasBaseException {
+        LOG.info("==> AdminResource.importAsync(jsonData={}, inputStream={})", jsonData, (inputStream != null));
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "asyncImportData");
+        AtlasAsyncImportRequest asyncImportRequest;
+        boolean preventMultipleRequests = true;
+        try {
+            AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
+            preventMultipleRequests = request != null && request.getOptions() != null
+                    && !request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM);
+
+            if (preventMultipleRequests) {
+                acquireExportImportLock("import");
+            }
+            asyncImportRequest = importService.run(request, inputStream, Servlets.getUserName(httpServletRequest),
+                    Servlets.getHostName(httpServletRequest), AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
+        } catch (AtlasBaseException excp) {
+            if (excp.getAtlasErrorCode().equals(AtlasErrorCode.IMPORT_ATTEMPTING_EMPTY_ZIP)) {
+                LOG.info(excp.getMessage());
+                return new AtlasAsyncImportRequest();
+            } else {
+                LOG.error("importAsync(binary) failed", excp);
+                throw excp;
+            }
+        } catch (Exception excp) {
+            LOG.error("importAsync(binary) failed", excp);
+            throw new AtlasBaseException(excp);
+        } finally {
+            if (preventMultipleRequests) {
+                releaseExportImportLock();
+            }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== AdminResource.importAsync(binary)");
+            }
+        }
+
+        return asyncImportRequest;
+    }
+
+    @DELETE
+    @Path("/async/import/{importId}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public void deleteAsyncImportById(@PathParam("importId") String importId) throws AtlasBaseException {
+        importService.abortAsyncImport(importId);
+    }
+
+    @GET
+    @Path("/async/import/status")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public List<Map<String, Object>> getAsyncImportStatus() throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAsyncImportStatus()");
+            }
+            return importService.getAllAsyncImports();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @GET
+    @Path("/async/import/status/{importId}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasAsyncImportRequest getAsyncImportStatusById(@PathParam("importId") String importId) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAsyncImportStatusById(importId=" + importId + ")");
+            }
+            return importService.getAsyncImportStatus(importId);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @PUT
