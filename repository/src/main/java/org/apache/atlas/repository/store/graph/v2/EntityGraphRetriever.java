@@ -393,7 +393,7 @@ public class EntityGraphRetriever {
                 ret.setRemovePropagationsOnEntityDelete(referenceProperties.get(CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY) != null ? (Boolean) referenceProperties.get(CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY) : true);
                 ret.setRestrictPropagationThroughLineage(referenceProperties.get(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE) != null ? (Boolean) referenceProperties.get(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE) : false);
                 ret.setRestrictPropagationThroughHierarchy(referenceProperties.get(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY) != null ? (Boolean) referenceProperties.get(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY) : false);
-                strValidityPeriods = (String) referenceProperties.get(CLASSIFICATION_VALIDITY_PERIODS_KEY);
+                strValidityPeriods = referenceProperties.get(CLASSIFICATION_VALIDITY_PERIODS_KEY)!=null ? (String) referenceProperties.get(CLASSIFICATION_VALIDITY_PERIODS_KEY) : null;
             } else {
                 ret.setEntityGuid(AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class));
                 ret.setEntityStatus(getClassificationEntityStatus(classificationVertex));
@@ -1397,11 +1397,11 @@ public class EntityGraphRetriever {
                 if (enableJanusOptimization) {
                     String typeName = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
                     AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
-                    Map<String, Object> properties = preloadProperties(entityVertex,  entityType, Collections.emptySet(), false);
+                    Map<String, Object> properties = preloadProperties(entityVertex, entityType, Collections.emptySet(), false);
 
                     entity.setGuid((String) properties.get(GUID_PROPERTY_KEY));
                     entity.setTypeName(typeName);
-                    String state = (String)properties.get(Constants.STATE_PROPERTY_KEY);
+                    String state = (String) properties.get(Constants.STATE_PROPERTY_KEY);
                     Id.EntityState entityState = state == null ? null : Id.EntityState.valueOf(state);
                     entity.setStatus((entityState == Id.EntityState.DELETED) ? AtlasEntity.Status.DELETED : AtlasEntity.Status.ACTIVE);
                     entity.setVersion(properties.get(VERSION_PROPERTY_KEY) != null ? (Long) properties.get(VERSION_PROPERTY_KEY) : 0);
@@ -1409,26 +1409,26 @@ public class EntityGraphRetriever {
                     entity.setCreatedBy(properties.get(CREATED_BY_KEY) != null ? (String) properties.get(CREATED_BY_KEY) : null);
                     entity.setUpdatedBy(properties.get(MODIFIED_BY_KEY) != null ? (String) properties.get(MODIFIED_BY_KEY) : null);
 
-                    entity.setCreateTime(properties.get(TIMESTAMP_PROPERTY_KEY) != null ? new Date((Long)properties.get(TIMESTAMP_PROPERTY_KEY)) : null);
-                    entity.setUpdateTime(properties.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY) != null ? new Date((Long)properties.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY)) : null);
+                    entity.setCreateTime(properties.get(TIMESTAMP_PROPERTY_KEY) != null ? new Date((Long) properties.get(TIMESTAMP_PROPERTY_KEY)) : null);
+                    entity.setUpdateTime(properties.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY) != null ? new Date((Long) properties.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY)) : null);
 
 
                     entity.setHomeId(properties.get(HOME_ID_KEY) != null ? (String) properties.get(HOME_ID_KEY) : null);
 
                     entity.setIsProxy(properties.get(IS_PROXY_KEY) != null ? (Boolean) properties.get(IS_PROXY_KEY) : false);
-                    Integer value = (Integer)properties.get(Constants.IS_INCOMPLETE_PROPERTY_KEY);
-                    Boolean isIncomplete = value != null && value.equals(INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
+                    Integer value = properties.get(Constants.IS_INCOMPLETE_PROPERTY_KEY) != null ? (Integer) properties.get(Constants.IS_INCOMPLETE_PROPERTY_KEY) : 0;
+                    Boolean isIncomplete = value.equals(INCOMPLETE_ENTITY_VALUE) ? Boolean.TRUE : Boolean.FALSE;
                     entity.setIsIncomplete(isIncomplete);
 
                     entity.setProvenanceType(properties.get(PROVENANCE_TYPE_KEY) != null ? (int) properties.get(PROVENANCE_TYPE_KEY) : 0);
-                    String customAttrsString = (String) properties.get(CUSTOM_ATTRIBUTES_PROPERTY_KEY);
-                    entity.setCustomAttributes(StringUtils.isNotEmpty(customAttrsString) ?  AtlasType.fromJson(customAttrsString, Map.class) : null);
+                    String customAttrsString = properties.get(CUSTOM_ATTRIBUTES_PROPERTY_KEY) != null ? (String) properties.get(CUSTOM_ATTRIBUTES_PROPERTY_KEY) : null;
+                    entity.setCustomAttributes(StringUtils.isNotEmpty(customAttrsString) ? AtlasType.fromJson(customAttrsString, Map.class) : null);
 
-                    String labels = (String) properties.get(LABELS_PROPERTY_KEY);
+                    String labels = properties.get(LABELS_PROPERTY_KEY) != null ? (String) properties.get(LABELS_PROPERTY_KEY) : null;
                     entity.setLabels(GraphHelper.parseLabelsString(labels));
-                    Object pendingTasks =  properties.get(PENDING_TASKS_PROPERTY_KEY);
+                    Object pendingTasks = properties.get(PENDING_TASKS_PROPERTY_KEY);
                     if (pendingTasks instanceof List) {
-                        entity.setPendingTasks(new HashSet<>( (List<String>) pendingTasks));
+                        entity.setPendingTasks(new HashSet<>((List<String>) pendingTasks));
                     }
 
                 } else {
@@ -1565,43 +1565,43 @@ public class EntityGraphRetriever {
             String typeName = edge.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class); //properties.get returns null
             AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
             Map<String, Object> referenceProperties = preloadProperties(termVertex, entityType, Collections.emptySet(), false);
-            String relationGuid = (String) referenceProperties.get(Constants.RELATIONSHIP_GUID_PROPERTY_KEY);
+            String relationGuid = referenceProperties.get(Constants.RELATIONSHIP_GUID_PROPERTY_KEY) != null ? (String) referenceProperties.get(Constants.RELATIONSHIP_GUID_PROPERTY_KEY) : null;
             if (StringUtils.isNotEmpty(relationGuid)) {
                 ret.setRelationGuid(relationGuid);
             }
 
-            String description = (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_DESCRIPTION);
+            String description = referenceProperties.get(TERM_ASSIGNMENT_ATTR_DESCRIPTION) != null ? (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_DESCRIPTION) : null;
             if (StringUtils.isNotEmpty(description)) {
                 ret.setDescription(description);
             }
 
-            String expression = (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_EXPRESSION);
+            String expression = referenceProperties.get(TERM_ASSIGNMENT_ATTR_EXPRESSION) != null ? (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_EXPRESSION) : null;
             if (StringUtils.isNotEmpty(expression)) {
                 ret.setExpression(expression);
             }
 
-            String status = (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_STATUS);
+            String status = referenceProperties.get(TERM_ASSIGNMENT_ATTR_STATUS) != null ? (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_STATUS) : null;
             if (StringUtils.isNotEmpty(status)) {
                 AtlasTermAssignmentStatus assignmentStatus = AtlasTermAssignmentStatus.valueOf(status);
                 ret.setStatus(assignmentStatus);
             }
 
-            Integer confidence = (Integer) referenceProperties.get(TERM_ASSIGNMENT_ATTR_CONFIDENCE);
+            Integer confidence = referenceProperties.get(TERM_ASSIGNMENT_ATTR_CONFIDENCE) != null ? (Integer) referenceProperties.get(TERM_ASSIGNMENT_ATTR_CONFIDENCE) : null;
             if (Objects.nonNull(confidence)) {
                 ret.setConfidence(confidence);
             }
 
-            String createdBy = (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_CREATED_BY);
+            String createdBy = referenceProperties.get(TERM_ASSIGNMENT_ATTR_CREATED_BY) != null ? (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_CREATED_BY) : null;
             if (StringUtils.isNotEmpty(createdBy)) {
                 ret.setCreatedBy(createdBy);
             }
 
-            String steward = (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_STEWARD);
+            String steward = referenceProperties.get(TERM_ASSIGNMENT_ATTR_STEWARD) != null ? (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_STEWARD) : null;
             if (StringUtils.isNotEmpty(steward)) {
                 ret.setSteward(steward);
             }
 
-            String source = (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_SOURCE);
+            String source = referenceProperties.get(TERM_ASSIGNMENT_ATTR_SOURCE) != null ? (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_SOURCE) : null;
             if (StringUtils.isNotEmpty(source)) {
                 ret.setSource(source);
             }
