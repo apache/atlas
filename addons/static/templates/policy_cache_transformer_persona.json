@@ -940,7 +940,10 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
+        "entity:*",
         "entity:{entity}",
+        "entity:default/ai/aiapplication/*",
+        "entity:default/ai/aimodel/*",
         "entity-type:AIApplication",
         "entity-type:AIModel",
         "entity-classification:*"
