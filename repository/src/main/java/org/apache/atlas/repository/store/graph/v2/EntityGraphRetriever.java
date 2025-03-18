@@ -49,8 +49,9 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-import org.apache.atlas.repository.graphdb.janus.AtlasJanusEdge;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusVertex;
+import org.apache.atlas.repository.graphdb.janus.GraphDbObjectFactory;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
@@ -87,6 +88,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CREATED_BY;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_DESCRIPTION;
@@ -1436,29 +1438,60 @@ public class EntityGraphRetriever {
 
     public List<AtlasClassification> getAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getAllClassifications");
-
-        if(LOG.isDebugEnabled()){
-            LOG.debug("Performing getAllClassifications");
-        }
-        List<AtlasClassification> ret   = new ArrayList<>();
-        Iterable                  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
-
-        if (edges != null) {
-            Iterator<AtlasEdge> iterator = edges.iterator();
-
-            while (iterator.hasNext()) {
-                AtlasEdge           classificationEdge   = iterator.next();
-                AtlasVertex         classificationVertex = classificationEdge != null ? classificationEdge.getInVertex() : null;
-                AtlasClassification classification       = toAtlasClassification(classificationVertex);
-
-                if (classification != null) {
-                    ret.add(classification);
-                }
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Performing getAllClassifications");
             }
-        }
 
-        RequestContext.get().endMetricRecord(metricRecorder);
-        return ret;
+            // use optimised path only for indexsearch and when flag is enabled!
+            if (ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS.getBoolean() && RequestContext.get().isInvokedByIndexSearch()) {
+                // Fetch classification vertices directly
+                List<AtlasVertex> classificationVertices = ((AtlasJanusGraph) graph).getGraph().traversal()
+                        .V(entityVertex.getId())  // Start from the entity vertex
+                        .outE(CLASSIFICATION_LABEL) // Get outgoing classification edges
+                        .inV() // Move to classification vertex
+                        .dedup() // Remove duplicate classification vertices
+                        .toList() // Convert to List<Vertex>
+                        .stream()
+                        .map(m -> GraphDbObjectFactory.createVertex(((AtlasJanusGraph) graph), m)) // Convert Vertex to AtlasVertex
+                        .collect(Collectors.toList());
+
+                return classificationVertices.stream()
+                        .map(m -> {
+                            try {
+                                return toAtlasClassification(m);
+                            } catch (AtlasBaseException e) {
+                                LOG.error("Error while getting all classifications", e);
+                                return null;
+                            }
+                        }) // Convert to AtlasClassification
+                        .filter(Objects::nonNull) // Remove null classifications
+                        .collect(Collectors.toList()); // Collect as a list
+            } else {
+                List<AtlasClassification> classifications = new ArrayList<>();
+                Iterable edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
+
+                if (edges != null) {
+                    Iterator<AtlasEdge> iterator = edges.iterator();
+
+                    while (iterator.hasNext()) {
+                        AtlasEdge classificationEdge = iterator.next();
+                        AtlasVertex classificationVertex = classificationEdge != null ? classificationEdge.getInVertex() : null;
+                        AtlasClassification classification = toAtlasClassification(classificationVertex);
+
+                        if (classification != null) {
+                            classifications.add(classification);
+                        }
+                    }
+                }
+                return classifications;
+            }
+        } catch (Exception e) {
+            LOG.error("Error while getting all classifications", e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
     }
 
     public List<AtlasTermAssignmentHeader> mapAssignedTerms(AtlasVertex entityVertex) {
