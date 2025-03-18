@@ -40,8 +40,11 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.ogm.DataAccess;
+import org.apache.atlas.repository.ogm.glossary.AtlasGlossaryDTO;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -50,6 +53,10 @@ import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.TestLoadModelUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.SkipException;
@@ -71,6 +78,14 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
@@ -79,13 +94,11 @@ import static org.testng.Assert.fail;
 
 @Guice(modules = TestModules.TestOnlyModule.class)
 public class GlossaryServiceTest {
-    private static final Logger LOG = LoggerFactory.getLogger(GlossaryServiceTest.class);
-
-    public static final String CSV_FILES   = "/csvFiles/";
-    public static final String EXCEL_FILES = "/excelFiles/";
-
+    public static final  String          CSV_FILES   = "/csvFiles/";
+    public static final  String          EXCEL_FILES = "/excelFiles/";
+    private static final Logger          LOG         = LoggerFactory.getLogger(GlossaryServiceTest.class);
     @Inject
-    private GlossaryService   glossaryService;
+    private              GlossaryService glossaryService;
 
     @Inject
     private AtlasTypeDefStore typeDefStore;
@@ -94,10 +107,22 @@ public class GlossaryServiceTest {
     private AtlasTypeRegistry typeRegistry;
 
     @Inject
-    private AtlasEntityStore  entityStore;
+    private AtlasEntityStore entityStore;
 
     @Inject
     private AtlasDiscoveryService discoveryService;
+
+    @Mock
+    private GlossaryService mockedGlossaryService; // Mocked GlossaryService
+
+    @Mock
+    private DataAccess mockedDataAccess; // Mocked DataAccess layer
+
+    @Mock
+    private AtlasEntityStore mockedEntityStore; // Mocked Entity Store
+
+    @Mock
+    private AtlasGlossaryDTO mockedGlossaryDTO; // Mocked DTO for entity conversion
 
     private AtlasGlossary         bankGlossary;
     private AtlasGlossary         creditUnionGlossary;
@@ -242,6 +267,11 @@ public class GlossaryServiceTest {
         currentAccount.setAbbreviation("CURR");
         currentAccount.setExamples(Arrays.asList("Personal", "Joint"));
         currentAccount.setUsage("N/A");
+
+        // Create a real instance of GlossaryService with mocked dependencies
+        mockedDataAccess      = mock(DataAccess.class);
+        mockedGlossaryDTO     = mock(AtlasGlossaryDTO.class);
+        mockedGlossaryService = new GlossaryService(mockedDataAccess, null, null, null, mockedGlossaryDTO);
     }
 
     @Test(groups = "Glossary.CREATE")
@@ -1267,6 +1297,89 @@ public class GlossaryServiceTest {
             assertEquals(bulkImportResponse.getFailedImportInfoList().size(), 1);
         } catch (AtlasBaseException e) {
             fail("The incorrect file exception should have handled " + e);
+        }
+    }
+
+    @DataProvider(name = "getAllGlossaryForPaginationDataProvider")
+    public Object[][] getAllGlossaryForPaginationDataProvider() {
+
+        List<String> listAllGuids = Arrays.asList("guid-1", "guid-2", "guid-3", "guid-4", "guid-5",
+                "guid-6", "guid-7", "guid-8", "guid-9", "guid-10");
+
+        return new Object[][] {
+                // limit, offset, sortOrder, expected glossaries guids, skipped glossaries guids, expected page-count
+                {-1, 0, SortOrder.ASCENDING, 10, listAllGuids, null, 1},
+                {15, 0, SortOrder.ASCENDING, 10, listAllGuids, null, 1},
+                {10, 0, SortOrder.ASCENDING, 10, listAllGuids, null, 1},
+                {10, 2, SortOrder.ASCENDING, 8, listAllGuids, null, 1},
+                {10, 6, SortOrder.ASCENDING, 4, listAllGuids, null, 1},
+                {5, 0, SortOrder.ASCENDING, 5, listAllGuids, null, 1},
+                {5, 5, SortOrder.ASCENDING, 5, listAllGuids, null, 1},
+                {5, 2, SortOrder.ASCENDING, 5, listAllGuids, null, 1},
+                {10, 0, SortOrder.ASCENDING, 9, listAllGuids, Collections.singletonList("guid-3"), 1},
+                {5, 2, SortOrder.ASCENDING, 5, listAllGuids, Arrays.asList("guid-3", "guid-7"), 2}
+        };
+    }
+
+    @Test(dataProvider = "getAllGlossaryForPaginationDataProvider")
+    void testGetGlossaries_WithPaginationHandlingSkippedGlossaries(int limit, int offset, SortOrder sortOrder, int expectedSize,
+            List<String> allGlossaryGuids, List<String> guidsToSkip, int expectedPageCount) throws Exception {
+
+        mockedEntityStore = mock(AtlasEntityStore.class);
+        when(mockedDataAccess.getAtlasEntityStore()).thenReturn(mockedEntityStore);
+
+        List<String> finalGuidsToSkip = (guidsToSkip == null) ? Collections.emptyList() : guidsToSkip;
+
+        try (MockedStatic<AtlasGraphUtilsV2> mockedGraphUtilsClass = Mockito.mockStatic(AtlasGraphUtilsV2.class)) {
+
+            // Mocking the retrieval of glossary GUIDs from the system
+            mockedGraphUtilsClass.when(() -> AtlasGraphUtilsV2.findEntityGUIDsByType(anyString(), any()))
+                    .thenReturn(allGlossaryGuids);
+
+            //Mocking getByIds() so it removes skipped glossaries before returning results.
+            when(mockedEntityStore.getByIds(anyList(), anyBoolean(), anyBoolean()))
+                    .thenAnswer(invocation -> {
+                        List<String>      requestedGuids   = invocation.getArgument(0); // Get first argument (List<String>)
+                        List<AtlasEntity> filteredEntities = new ArrayList<>();
+
+                        // Filter out guids to be skipped
+                        for (String guid : requestedGuids) {
+                            if (!finalGuidsToSkip.contains(guid)) {
+                                AtlasEntity entity = new AtlasEntity();
+                                entity.setGuid(guid);
+                                filteredEntities.add(entity);
+
+                                AtlasGlossary glossaryToReturn = new AtlasGlossary();
+                                glossaryToReturn.setGuid(guid);
+                                when(mockedGlossaryDTO.from(entity)).thenReturn(glossaryToReturn);
+                            }
+                        }
+                        return new AtlasEntity.AtlasEntitiesWithExtInfo(filteredEntities);
+                    });
+
+            List<AtlasGlossary> fetchedGlossaries = mockedGlossaryService.getGlossaries(limit, offset, sortOrder);
+
+            assertNotNull(fetchedGlossaries);
+
+            int actualFetchedResults = fetchedGlossaries.size();
+            assertEquals(actualFetchedResults, expectedSize, "Expected to fetch " + expectedSize + " glossaries but got " + actualFetchedResults);
+
+            for (AtlasGlossary fetchedGlossary : fetchedGlossaries) {
+                assertNotNull(fetchedGlossary);
+            }
+
+            // Capture method calls to count pages
+            ArgumentCaptor<List<String>> guidsCaptor = ArgumentCaptor.forClass(List.class);
+            verify(mockedEntityStore, atLeast(1)).getByIds(guidsCaptor.capture(), anyBoolean(), anyBoolean());
+
+            // Number of pages that were needed is the number of times `getByIds()` was called
+            int actualPageCount = guidsCaptor.getAllValues().size();
+
+            //Verify that the number of pages fetched matches expectation
+            assertEquals(actualPageCount, expectedPageCount,
+                    "Expected " + expectedPageCount + " pages but got " + actualPageCount);
+        } catch (Exception e) {
+            fail("Test failed due to exception: " + e.getMessage());
         }
     }
 
