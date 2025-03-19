@@ -159,11 +159,6 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         }
 
         if (!newParentDomainQualifiedName.equals(currentParentDomainQualifiedName) && entity.hasRelationshipAttribute(PARENT_DOMAIN_REL_TYPE)) {
-            if(storedDomain.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE) == null &&
-                    StringUtils.isEmpty( (String) storedDomain.getAttribute(PARENT_DOMAIN_QN_ATTR))){
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot move Super Domain inside another domain");
-            }
-
             //Auth check
             isAuthorizedToMove(DATA_DOMAIN_ENTITY_TYPE, currentParentDomainHeader, newParentDomainHeader);
 
@@ -201,6 +196,8 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
             LOG.info("Moving subdomain {} to Domain {}", domainName, targetDomainQualifiedName);
 
             domainExists(domainName, targetDomainQualifiedName, domain.getGuid());
+
+            isParentDomainMovedToChild(targetDomainQualifiedName, currentDomainQualifiedName);
 
             if(targetDomainQualifiedName.isEmpty()){
                 //Moving subDomain to make it Super Domain
@@ -422,6 +419,12 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
         if (hasLinkedAssets(domainGuid)) {
             throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Domain cannot be deleted because some assets are linked to this domain");
+        }
+    }
+
+    private void isParentDomainMovedToChild(String targetDomainQualifiedName, String currentDomainQualifiedName) throws AtlasBaseException {
+        if(targetDomainQualifiedName.startsWith(currentDomainQualifiedName)){
+            throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Cannot move a domain to its child domain");
         }
     }
 }
