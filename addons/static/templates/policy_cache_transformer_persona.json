@@ -1058,7 +1058,6 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:*",
         "entity:default/ai/aiapplication/*",
         "entity-type:AIApplication",
         "entity-classification:*"
@@ -1100,9 +1099,7 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:*",
         "entity:{entity}",
-        "entity:default/ai/aiapplication/*",
         "entity-type:AIApplication",
         "entity-classification:*"
       ],
@@ -1209,7 +1206,6 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:*",
         "entity:default/ai/aimodel/*",
         "entity-type:AIModel",
         "entity-classification:*"
@@ -1237,11 +1233,11 @@
         "relationship-type:*",
         "end-one-entity-type:AIModel",
         "end-one-entity-classification:*",
-        "end-one-entity:*",
+        "end-one-entity:{entity}",
 
         "end-two-entity-type:AIApplication",
         "end-two-entity-classification:*",
-        "end-two-entity:{entity}"
+        "end-two-entity:*"
       ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
@@ -1251,9 +1247,7 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:*",
         "entity:{entity}",
-        "entity:default/ai/aimodel/*",
         "entity-type:AIModel",
         "entity-classification:*"
       ],
