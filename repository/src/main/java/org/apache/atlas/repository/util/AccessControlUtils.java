@@ -93,7 +93,8 @@ public final class AccessControlUtils {
     public static final String ACCESS_READ_PERSONA_DOMAIN = "persona-domain-read";
     public static final String ACCESS_READ_PERSONA_SUB_DOMAIN = "persona-domain-sub-domain-read";
     public static final String ACCESS_READ_PERSONA_PRODUCT = "persona-domain-product-read";
-    public static final String ACCESS_READ_PERSONA_AI_ASSET = "persona-aiasset-read";
+    public static final String ACCESS_READ_PERSONA_AI_APP = "persona-ai-application-read";
+    public static final String ACCESS_READ_PERSONA_AI_MODEL = "persona-ai-model-read";
 
 
     public static final String POLICY_CATEGORY_PERSONA  = "persona";

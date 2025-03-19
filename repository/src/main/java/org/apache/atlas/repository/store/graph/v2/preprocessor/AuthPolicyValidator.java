@@ -86,17 +86,29 @@ public class AuthPolicyValidator {
     }};
 
     private static final Set<String> AI_POLICY_ACTIONS = new HashSet<String>(){{
-        add("persona-aiasset-read");
-        add("persona-aiasset-create");
-        add("persona-aiasset-update");
-        add("persona-aiasset-delete");
-        add("persona-aiasset-business-update-metadata");
-        add("persona-aiasset-add-terms");
-        add("persona-aiasset-update-terms");
-        add("persona-aiasset-remove-terms");
-        add("persona-aiasset-add-classification");
-        add("persona-aiasset-update-classification");
-        add("persona-aiasset-remove-classification"); 
+        add("persona-ai-application-read");
+        add("persona-ai-application-create");
+        add("persona-ai-application-update");
+        add("persona-ai-application-delete");
+        add("persona-ai-application-business-update-metadata");
+        add("persona-ai-application-add-terms");
+        add("persona-ai-application-update-terms");
+        add("persona-ai-application-remove-terms");
+        add("persona-ai-application-add-classification");
+        add("persona-ai-application-update-classification");
+        add("persona-ai-application-remove-classification"); 
+
+        add("persona-ai-model-read");
+        add("persona-ai-model-create");
+        add("persona-ai-model-update");
+        add("persona-ai-model-delete");
+        add("persona-ai-model-business-update-metadata");
+        add("persona-ai-model-add-terms");
+        add("persona-ai-model-update-terms");
+        add("persona-ai-model-remove-terms");
+        add("persona-ai-model-add-classification");
+        add("persona-ai-model-update-classification");
+        add("persona-ai-model-remove-classification"); 
     }};
 
     private static final Map<String, Set<String>> PERSONA_POLICY_VALID_ACTIONS = new HashMap<String, Set<String>>(){{

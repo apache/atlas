@@ -56,7 +56,8 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PE
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_GLOSSARY;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_PRODUCT;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_SUB_DOMAIN;
-import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_AI_ASSET;
+import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_AI_APP;
+import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_AI_MODEL;
 import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionQualifiedNameFromPolicyAssets;
 import static org.apache.atlas.repository.util.AccessControlUtils.getESAliasName;
@@ -271,7 +272,7 @@ public class ESAliasStore implements IndexAliasStore {
                         mustMap.add(mapOf("term", mapOf("__typeName.keyword", "DataProduct")));
                         allowClauseList.add(mapOf("bool", mapOf("must", mustMap)));
                     }
-                } else if (policyActions.contains(ACCESS_READ_PERSONA_AI_ASSET)) {
+                } else if (policyActions.contains(ACCESS_READ_PERSONA_AI_APP) || policyActions.contains(ACCESS_READ_PERSONA_AI_MODEL)) {
                     List<String> resources = getPolicyResources(policy);
                     List<String> typeResources = getFilteredPolicyResources(resources, RESOURCES_ENTITY_TYPE);
                     if (CollectionUtils.isNotEmpty(typeResources)) {
