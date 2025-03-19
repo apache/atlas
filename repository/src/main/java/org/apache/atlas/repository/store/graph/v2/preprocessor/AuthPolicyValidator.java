@@ -92,10 +92,8 @@ public class AuthPolicyValidator {
         add("persona-ai-application-delete");
         add("persona-ai-application-business-update-metadata");
         add("persona-ai-application-add-terms");
-        add("persona-ai-application-update-terms");
         add("persona-ai-application-remove-terms");
         add("persona-ai-application-add-classification");
-        add("persona-ai-application-update-classification");
         add("persona-ai-application-remove-classification"); 
 
         add("persona-ai-model-read");
@@ -104,10 +102,8 @@ public class AuthPolicyValidator {
         add("persona-ai-model-delete");
         add("persona-ai-model-business-update-metadata");
         add("persona-ai-model-add-terms");
-        add("persona-ai-model-update-terms");
         add("persona-ai-model-remove-terms");
         add("persona-ai-model-add-classification");
-        add("persona-ai-model-update-classification");
         add("persona-ai-model-remove-classification"); 
     }};
 
