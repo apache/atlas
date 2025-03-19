@@ -143,6 +143,9 @@ public final class Constants {
     public static final String DATA_DOMAIN_ENTITY_TYPE     = "DataDomain";
     public static final String DATA_PRODUCT_ENTITY_TYPE    = "DataProduct";
 
+    public static final String AI_APPLICATION       = "AIApplication";
+    public static final String AI_MODEL             = "AIModel";
+    
     public static final String STAKEHOLDER_ENTITY_TYPE       = "Stakeholder";
     public static final String STAKEHOLDER_TITLE_ENTITY_TYPE = "StakeholderTitle";
 
