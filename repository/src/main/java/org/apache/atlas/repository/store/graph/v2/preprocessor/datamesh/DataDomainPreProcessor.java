@@ -409,12 +409,6 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
         }
     }
 
-    private void isParentDomainMovedToChild(String targetDomainQualifiedName, String currentDomainQualifiedName) throws AtlasBaseException {
-        if(targetDomainQualifiedName.contains(currentDomainQualifiedName)){
-            throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Cannot move a domain to its child domain");
-        }
-    }
-
     @Override
     public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
         String domainGuid = GraphHelper.getGuid(vertex);
@@ -425,6 +419,12 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
 
         if (hasLinkedAssets(domainGuid)) {
             throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Domain cannot be deleted because some assets are linked to this domain");
+        }
+    }
+
+    private void isParentDomainMovedToChild(String targetDomainQualifiedName, String currentDomainQualifiedName) throws AtlasBaseException {
+        if(targetDomainQualifiedName.startsWith(currentDomainQualifiedName)){
+            throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Cannot move a domain to its child domain");
         }
     }
 }
