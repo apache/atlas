@@ -132,10 +132,12 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         if(entity.hasAttribute(DAAP_ASSET_DSL_ATTR) && diffEntity.hasAttribute(DAAP_ASSET_DSL_ATTR)){
             entity.setAttribute(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_PENDING);
+            diffEntity.setAttribute(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_PENDING);
         }
 
         if(entity.hasAttribute(STATE_PROPERTY_KEY) && !state.equals(entity.getAttribute(STATE_PROPERTY_KEY))){
             entity.setAttribute(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_PENDING);
+            diffEntity.setAttribute(DAAP_LINEAGE_STATUS_ATTR, DAAP_LINEAGE_STATUS_PENDING);
         }
 
         String vertexQnName = vertex.getProperty(QUALIFIED_NAME, String.class);
