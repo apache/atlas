@@ -54,6 +54,7 @@ import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
+import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasRelationshipType;
@@ -1044,6 +1045,14 @@ public class EntityGraphRetriever {
                 //  retrieve all the valid relationships for this entityType
                 Map<String, Set<String>> relationshipsLookup = fetchEdgeNames((AtlasEntityType) structType);
                 retrieveEdgeLabels(entityVertex, attributes, relationshipsLookup, propertiesMap);
+            }
+
+            // Fetch relation properties for classification
+            // attributes are passed by BE to load complex attributes
+            if (structType instanceof AtlasClassificationType) {
+                attributes.forEach(attribute -> {
+                    propertiesMap.putIfAbsent(attribute, StringUtils.SPACE);
+                });
             }
 
             // Iterate through the resulting VertexProperty objects
