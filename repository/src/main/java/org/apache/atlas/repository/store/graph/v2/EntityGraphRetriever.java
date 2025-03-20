@@ -1049,7 +1049,7 @@ public class EntityGraphRetriever {
             // Iterate through the resulting VertexProperty objects
             while (traversal.hasNext()) {
                 try {
-                    Property<Object> property = traversal.next();
+                    VertexProperty<Object> property = traversal.next();
 
                     AtlasAttribute attribute = structType.getAttribute(property.key()) != null ? structType.getAttribute(property.key()) : null;
                     TypeCategory typeCategory = attribute != null ? attribute.getAttributeType().getTypeCategory() : null;
@@ -1117,7 +1117,7 @@ public class EntityGraphRetriever {
         }
 
     }
-    private void updateAttrValue( Map<String, Object> propertiesMap, Property<Object> property){
+    private void updateAttrValue( Map<String, Object> propertiesMap, VertexProperty<Object> property){
         Object value = propertiesMap.get(property.key());
         if (value instanceof List) {
             ((List) value).add(property.value());
