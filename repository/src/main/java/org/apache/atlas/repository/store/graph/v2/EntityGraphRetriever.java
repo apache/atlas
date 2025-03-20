@@ -386,7 +386,7 @@ public class EntityGraphRetriever {
             String strValidityPeriods;
 
             if (enableJanusOptimisation) {
-                referenceProperties = preloadProperties(classificationVertex, typeRegistry.getEntityTypeByName(classificationName), Collections.emptySet(), false);
+                referenceProperties = preloadProperties(classificationVertex, typeRegistry.getClassificationTypeByName(classificationName), Collections.emptySet(), false);
                 ret.setEntityGuid((String) referenceProperties.get(Constants.CLASSIFICATION_ENTITY_GUID));
                 ret.setEntityStatus(referenceProperties.get(Constants.CLASSIFICATION_ENTITY_STATUS) != null ?
                         AtlasEntity.Status.valueOf((String) referenceProperties.get(Constants.CLASSIFICATION_ENTITY_STATUS)) : null);
@@ -1026,39 +1026,33 @@ public class EntityGraphRetriever {
         return mapVertexToAtlasEntityHeader(entityVertex, Collections.<String>emptySet());
     }
 
-    private Map<String, Object> preloadProperties(AtlasElement atlasElement,  AtlasEntityType entityType, Set<String> attributes, boolean fetchEdgeLabels) throws AtlasBaseException {
+    private Map<String, Object> preloadProperties(AtlasVertex entityVertex,  AtlasStructType structType, Set<String> attributes, boolean fetchEdgeLabels) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("preloadProperties");
 
         try {
-            if (entityType == null) {
+            if (structType == null) {
                 return new HashMap<>();
             }
 
-            Iterator<? extends Property<Object>> traversal = null;
-
+            // Execute the traversal to fetch properties
+            Iterator<VertexProperty<Object>> traversal = ((AtlasJanusVertex)entityVertex).getWrappedElement().properties();
             Map<String, Object> propertiesMap = new HashMap<>();
-            if (atlasElement instanceof AtlasJanusVertex) {
-                traversal = ((AtlasJanusVertex) atlasElement).getWrappedElement().properties();
-            } else {
-                traversal = ((AtlasJanusEdge) atlasElement).getWrappedElement().properties();
-            }
-
 
             // Fetch edges in both directions
             // if the vertex in scope is root then call below otherwise skip
             // we don't support relation attributes of a relation
-            if (fetchEdgeLabels) {
+            if (fetchEdgeLabels && structType instanceof AtlasEntityType) {
                 //  retrieve all the valid relationships for this entityType
-                Map<String, Set<String>> relationshipsLookup = fetchEdgeNames(entityType);
-                retrieveEdgeLabels( (AtlasVertex) atlasElement, attributes, relationshipsLookup, propertiesMap);
+                Map<String, Set<String>> relationshipsLookup = fetchEdgeNames((AtlasEntityType) structType);
+                retrieveEdgeLabels(entityVertex, attributes, relationshipsLookup, propertiesMap);
             }
 
             // Iterate through the resulting VertexProperty objects
             while (traversal.hasNext()) {
                 try {
-                    Property<Object> property = traversal.next();
+                    VertexProperty<Object> property = traversal.next();
 
-                    AtlasAttribute attribute = entityType.getAttribute(property.key()) != null ? entityType.getAttribute(property.key()) : null;
+                    AtlasAttribute attribute = structType.getAttribute(property.key()) != null ? structType.getAttribute(property.key()) : null;
                     TypeCategory typeCategory = attribute != null ? attribute.getAttributeType().getTypeCategory() : null;
                     TypeCategory elementTypeCategory = attribute != null && attribute.getAttributeType().getTypeCategory() == TypeCategory.ARRAY ? ((AtlasArrayType) attribute.getAttributeType()).getElementType().getTypeCategory() : null;
 
@@ -1076,7 +1070,7 @@ public class EntityGraphRetriever {
                         }
                     }
                 } catch (RuntimeException e) {
-                    LOG.error("Error preloading properties for janus element: {}", atlasElement.getId(), e);
+                    LOG.error("Error preloading properties for entityVertex: {}", entityVertex.getId(), e);
                     throw e; // Re-throw the exception after logging it
                 }
             }
@@ -1124,7 +1118,7 @@ public class EntityGraphRetriever {
         }
 
     }
-    private void updateAttrValue( Map<String, Object> propertiesMap, Property<Object> property){
+    private void updateAttrValue( Map<String, Object> propertiesMap, VertexProperty<Object> property){
         Object value = propertiesMap.get(property.key());
         if (value instanceof List) {
             ((List) value).add(property.value());
@@ -1481,12 +1475,10 @@ public class EntityGraphRetriever {
 
         AtlasStructType structType = (AtlasStructType) objType;
         Map<String,Object> referenceProperties = Collections.emptyMap();
-        boolean enableJanusOptimisation = AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION.getBoolean() && RequestContext.get().isInvokedByIndexSearch();
+        boolean enableJanusOptimisation = AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_EXTENDED.getBoolean() && RequestContext.get().isInvokedByIndexSearch();
 
         if (enableJanusOptimisation){
-            String typeName = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class); //properties.get returns null
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
-            referenceProperties = preloadProperties(entityVertex, entityType, structType.getAllAttributes().keySet(), false);
+            referenceProperties = preloadProperties(entityVertex, structType, structType.getAllAttributes().keySet(), false);
         }
 
         for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
@@ -1579,8 +1571,7 @@ public class EntityGraphRetriever {
 
         return ret;
     }
-
-    private AtlasTermAssignmentHeader toTermAssignmentHeader(final AtlasEdge edge) throws AtlasBaseException {
+    private AtlasTermAssignmentHeader toTermAssignmentHeader(final AtlasEdge edge) {
         AtlasTermAssignmentHeader ret = new AtlasTermAssignmentHeader();
 
         AtlasVertex termVertex = edge.getOutVertex();
@@ -1590,100 +1581,50 @@ public class EntityGraphRetriever {
             ret.setTermGuid(guid);
         }
 
-        boolean enableJanusOptimisation = AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_EXTENDED.getBoolean()
-                && RequestContext.get().isInvokedByIndexSearch();
-
-        if (enableJanusOptimisation) {
-            String typeName = edge.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class); //properties.get returns null
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
-            Map<String, Object> referenceProperties = preloadProperties(termVertex, entityType, Collections.emptySet(), false);
-
-            //relationshipGuid is not retrieved via referenceProperties
-            String relationGuid = edge.getProperty(Constants.RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
-            if (relationGuid != null) {
-                ret.setRelationGuid(relationGuid);
-            }
-
-            String description = referenceProperties.get(TERM_ASSIGNMENT_ATTR_DESCRIPTION) != null ? (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_DESCRIPTION) : null;
-            if (StringUtils.isNotEmpty(description)) {
-                ret.setDescription(description);
-            }
-
-            String expression = referenceProperties.get(TERM_ASSIGNMENT_ATTR_EXPRESSION) != null ? (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_EXPRESSION) : null;
-            if (StringUtils.isNotEmpty(expression)) {
-                ret.setExpression(expression);
-            }
-
-            String status = referenceProperties.get(TERM_ASSIGNMENT_ATTR_STATUS) != null ? (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_STATUS) : null;
-            if (StringUtils.isNotEmpty(status)) {
-                AtlasTermAssignmentStatus assignmentStatus = AtlasTermAssignmentStatus.valueOf(status);
-                ret.setStatus(assignmentStatus);
-            }
-
-            Integer confidence = referenceProperties.get(TERM_ASSIGNMENT_ATTR_CONFIDENCE) != null ? (Integer) referenceProperties.get(TERM_ASSIGNMENT_ATTR_CONFIDENCE) : null;
-            if (Objects.nonNull(confidence)) {
-                ret.setConfidence(confidence);
-            }
-
-            String createdBy = referenceProperties.get(TERM_ASSIGNMENT_ATTR_CREATED_BY) != null ? (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_CREATED_BY) : null;
-            if (StringUtils.isNotEmpty(createdBy)) {
-                ret.setCreatedBy(createdBy);
-            }
-
-            String steward = referenceProperties.get(TERM_ASSIGNMENT_ATTR_STEWARD) != null ? (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_STEWARD) : null;
-            if (StringUtils.isNotEmpty(steward)) {
-                ret.setSteward(steward);
-            }
-
-            String source = referenceProperties.get(TERM_ASSIGNMENT_ATTR_SOURCE) != null ? (String) referenceProperties.get(TERM_ASSIGNMENT_ATTR_SOURCE) : null;
-            if (StringUtils.isNotEmpty(source)) {
-                ret.setSource(source);
-            }
-        }else {
-            String relationGuid = edge.getProperty(Constants.RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
-            if (relationGuid != null) {
-                ret.setRelationGuid(relationGuid);
-            }
-            String description = edge.getProperty(TERM_ASSIGNMENT_ATTR_DESCRIPTION, String.class);
-            if (description != null) {
-                ret.setDescription(description);
-            }
-
-            String expression    = edge.getProperty(TERM_ASSIGNMENT_ATTR_EXPRESSION, String.class);
-            if (expression != null) {
-                ret.setExpression(expression);
-            }
-
-            String status = edge.getProperty(TERM_ASSIGNMENT_ATTR_STATUS, String.class);
-            if (status != null) {
-                AtlasTermAssignmentStatus assignmentStatus = AtlasTermAssignmentStatus.valueOf(status);
-                ret.setStatus(assignmentStatus);
-            }
-
-            Integer confidence = edge.getProperty(TERM_ASSIGNMENT_ATTR_CONFIDENCE, Integer.class);
-            if (confidence != null) {
-                ret.setConfidence(confidence);
-            }
-
-            String createdBy = edge.getProperty(TERM_ASSIGNMENT_ATTR_CREATED_BY, String.class);
-            if (createdBy != null) {
-                ret.setCreatedBy(createdBy);
-            }
-
-            String steward = edge.getProperty(TERM_ASSIGNMENT_ATTR_STEWARD, String.class);
-            if (steward != null) {
-                ret.setSteward(steward);
-            }
-
-            String source = edge.getProperty(TERM_ASSIGNMENT_ATTR_SOURCE, String.class);
-            if (source != null) {
-                ret.setSource(source);
-            }
+        String relationGuid = edge.getProperty(Constants.RELATIONSHIP_GUID_PROPERTY_KEY, String.class);
+        if (relationGuid != null) {
+            ret.setRelationGuid(relationGuid);
         }
 
         Object displayName = AtlasGraphUtilsV2.getEncodedProperty(termVertex, GLOSSARY_TERM_DISPLAY_NAME_ATTR, Object.class);
         if (displayName instanceof String) {
             ret.setDisplayText((String) displayName);
+        }
+
+        String description = edge.getProperty(TERM_ASSIGNMENT_ATTR_DESCRIPTION, String.class);
+        if (description != null) {
+            ret.setDescription(description);
+        }
+
+        String expression    = edge.getProperty(TERM_ASSIGNMENT_ATTR_EXPRESSION, String.class);
+        if (expression != null) {
+            ret.setExpression(expression);
+        }
+
+        String status = edge.getProperty(TERM_ASSIGNMENT_ATTR_STATUS, String.class);
+        if (status != null) {
+            AtlasTermAssignmentStatus assignmentStatus = AtlasTermAssignmentStatus.valueOf(status);
+            ret.setStatus(assignmentStatus);
+        }
+
+        Integer confidence = edge.getProperty(TERM_ASSIGNMENT_ATTR_CONFIDENCE, Integer.class);
+        if (confidence != null) {
+            ret.setConfidence(confidence);
+        }
+
+        String createdBy = edge.getProperty(TERM_ASSIGNMENT_ATTR_CREATED_BY, String.class);
+        if (createdBy != null) {
+            ret.setCreatedBy(createdBy);
+        }
+
+        String steward = edge.getProperty(TERM_ASSIGNMENT_ATTR_STEWARD, String.class);
+        if (steward != null) {
+            ret.setSteward(steward);
+        }
+
+        String source = edge.getProperty(TERM_ASSIGNMENT_ATTR_SOURCE, String.class);
+        if (source != null) {
+            ret.setSource(source);
         }
 
         return ret;
