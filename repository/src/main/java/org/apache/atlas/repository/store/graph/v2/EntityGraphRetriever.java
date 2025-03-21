@@ -1048,9 +1048,10 @@ public class EntityGraphRetriever {
                 retrieveEdgeLabels(entityVertex, attributes, relationshipsLookup, propertiesMap);
             }
 
-            // Fetch relation properties for classification
-            // attributes are passed by BE to load complex attributes
-            if (structType instanceof AtlasClassificationType) {
+            // don't fetch relation properties for non entityType
+            // rather directly put a marker for passed attribute
+            // as attributes are passed by BE to load complex attributes
+            if (!(structType instanceof AtlasEntityType)) {
                 attributes.forEach(attribute -> {
                     propertiesMap.putIfAbsent(attribute, StringUtils.SPACE);
                 });
