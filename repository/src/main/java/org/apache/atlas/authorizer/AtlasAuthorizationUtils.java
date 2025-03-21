@@ -34,6 +34,7 @@ import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
+import org.apache.atlas.authorizer.authorizers.EntityAuthorizer;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.plugin.model.RangerPolicy;
@@ -56,6 +57,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.authorizer.ABACAuthorizerUtils.SERVICE_DEF_ATLAS;
+import static org.apache.atlas.authorizer.ABACAuthorizerUtils.isABACAuthorizerEnabled;
 import static org.apache.atlas.repository.Constants.SKIP_DELETE_AUTH_CHECK_TYPES;
 import static org.apache.atlas.repository.Constants.SKIP_UPDATE_AUTH_CHECK_TYPES;
 
@@ -183,39 +186,67 @@ public class AtlasAuthorizationUtils {
                 AtlasAccessResult atlasPoliciesResult = authorizer.isAccessAllowed(request);
 
                 RequestContext.get().endMetricRecord(metric);
+                if (!isABACAuthorizerEnabled()) {
+                    return atlasPoliciesResult.isAllowed();
+                }
 
-                // if priority is override, then it's an explicity deny as implicit deny won't have priority set to override
+
+                // if priority is override, then it's an explicit deny as implicit deny won't have priority set to override
                 if (!atlasPoliciesResult.isAllowed() && atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
                     // 1
                     return false;
                 }
 
+                AtlasAccessResult finalResult = null;
                 metric = RequestContext.get().startMetricRecord("isAccessAllowed.abac");
                 AtlasAccessResult abacPoliciesResult = ABACAuthorizerUtils.isAccessAllowed(request.getEntity(), request.getAction());
 
                 // reference - https://docs.google.com/spreadsheets/d/1npyX1cpm8-a8LwzmObgf8U1hZh6bO7FF8cpXjHMMQ08/edit?usp=sharing
                 try {
-                    if (!atlasPoliciesResult.isAllowed()) {
+                    if (!atlasPoliciesResult.isAllowed()) { // atlas deny
                         // 2
                         if (atlasPoliciesResult.isExplicitDeny()) {
-                            return abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE;
+                            if (abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+                                finalResult = abacPoliciesResult;
+                            } else {
+                                finalResult = atlasPoliciesResult;
+                            }
                         } else {
-                            return abacPoliciesResult.isAllowed();
+                            finalResult = abacPoliciesResult;
                         }
-                    } else {
+                    } else { // atlas allow
                         if (atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
                             //3
-                            return !(!abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE);
-                            // abacPoliciesResult.isAllowed() || abacPoliciesResult.getPolicyPriority() != RangerPolicy.POLICY_PRIORITY_OVERRIDE;
+                            if (abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE && !abacPoliciesResult.isAllowed()) {
+                                finalResult = abacPoliciesResult;
+                            } else {
+                                finalResult = atlasPoliciesResult;
+                            }
                         } else {
                             //4
                             if (abacPoliciesResult.isExplicitDeny()) {
-                                return abacPoliciesResult.isAllowed();
+                                finalResult = abacPoliciesResult;
+                            } else if (abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+                                finalResult = abacPoliciesResult;
                             } else {
-                                return atlasPoliciesResult.isAllowed();
+                                finalResult = atlasPoliciesResult;
                             }
                         }
                     }
+
+                    // log final result audit
+                    NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
+                    try {
+                        auditHandler.processResult(finalResult, request);
+                    } finally {
+                        auditHandler.flushAudit();
+                    }
+
+                    LOG.info("ABAC_AUTH: authorizer results final={} atlas={} policy={} abac={} policy={}",
+                            finalResult.isAllowed(), atlasPoliciesResult.isAllowed(), atlasPoliciesResult.getPolicyId(),
+                            abacPoliciesResult.isAllowed(), abacPoliciesResult.getPolicyId());
+
+                    return finalResult.isAllowed();
                 } finally {
                     RequestContext.get().endMetricRecord(metric);
                 }
@@ -227,6 +258,7 @@ public class AtlasAuthorizationUtils {
             return true;
         }
 
+        LOG.warn("ABAC_AUTH: authorizer returning false by default, no case matched");
         return false;
     }
 
