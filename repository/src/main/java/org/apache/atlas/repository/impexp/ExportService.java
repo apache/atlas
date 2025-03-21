@@ -34,12 +34,15 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.util.UniqueList;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -56,6 +59,8 @@ import java.util.Set;
 import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_CONNECTED;
 import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_FULL;
 import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_INCREMENTAL;
+import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 
 @Component
 public class ExportService {
@@ -112,27 +117,51 @@ public class ExportService {
         return context.result;
     }
 
-    public void processEntity(AtlasEntityWithExtInfo entityWithExtInfo, ExportContext context) throws AtlasBaseException {
-        exportTypeProcessor.addTypes(entityWithExtInfo.getEntity(), context);
-
+    public void processEntity(ExportContext context, AtlasVertex vertex, String guid) throws AtlasBaseException {
         if (MapUtils.isNotEmpty(context.termsGlossary)) {
             addGlossaryEntities(context);
         }
 
-        addEntity(entityWithExtInfo, context);
+        addEntity(vertex, guid, context);
 
-        context.guidsProcessed.add(entityWithExtInfo.getEntity().getGuid());
+        context.guidsProcessed.add(guid);
 
-        entitiesExtractor.get(entityWithExtInfo.getEntity(), context);
+        extractFullEntities(vertex, context);
+    }
 
-        if (entityWithExtInfo.getReferredEntities() != null) {
-            for (AtlasEntity e : entityWithExtInfo.getReferredEntities().values()) {
-                exportTypeProcessor.addTypes(e, context);
-                entitiesExtractor.get(e, context);
+    public void extractFullEntities(AtlasVertex vertex, ExportContext context) {
+        List<AtlasVertex> relationshipEntities = entityGraphRetriever.findAllRelationshipVertices(vertex);
+        if (CollectionUtils.isNotEmpty(relationshipEntities)) {
+            for (AtlasVertex e : relationshipEntities) {
+                String relGuid = AtlasGraphUtilsV2.getEncodedProperty(e, GUID_PROPERTY_KEY, String.class);
+                if (StringUtils.isNotEmpty(relGuid)) {
+                    context.guidsToProcess.add(relGuid);
+                }
+            }
+        }
+    }
+
+    private void addEntity(AtlasVertex entity, String guid, ExportContext context) throws AtlasBaseException {
+        if (context.sink.hasEntity(guid)) {
+            return;
+        }
+
+        LOG.info("export: Guid in process: {}", guid);
+        if (context.doesTimestampQualify(entity)) {
+            AtlasEntityWithExtInfo entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
+            exportTypeProcessor.addTypes(entityWithExtInfo.getEntity(), context);
+            context.addToSink(entityWithExtInfo);
+
+            context.result.incrementMeticsCounter(String.format("entity:%s", entityWithExtInfo.getEntity().getTypeName()));
+            if (entityWithExtInfo.getReferredEntities() != null) {
+                for (AtlasEntity e : entityWithExtInfo.getReferredEntities().values()) {
+                    context.result.incrementMeticsCounter(String.format("entity:%s", e.getTypeName()));
+                }
             }
 
-            context.guidsProcessed.addAll(entityWithExtInfo.getReferredEntities().keySet());
+            context.result.incrementMeticsCounter("entity:withExtInfo");
         }
+        context.reportProgress();
     }
 
     @VisibleForTesting
@@ -283,9 +312,9 @@ public class ExportService {
             return;
         }
 
-        AtlasEntityWithExtInfo entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
+        AtlasVertex entity = AtlasGraphUtilsV2.findByGuid(guid);
 
-        processEntity(entityWithExtInfo, context);
+        processEntity(context, entity, guid);
 
         LOG.debug("<== processEntityGuid({})", guid);
     }
@@ -468,6 +497,15 @@ public class ExportService {
             }
 
             return changeMarker <= entity.getUpdateTime().getTime();
+        }
+
+        public boolean doesTimestampQualify(AtlasVertex entity) {
+            if (fetchType != ExportFetchType.INCREMENTAL) {
+                return true;
+            }
+
+            Long updatedTime = AtlasGraphUtilsV2.getEncodedProperty(entity, MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+            return changeMarker <= updatedTime;
         }
 
         public boolean getSkipLineage() {
