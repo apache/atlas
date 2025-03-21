@@ -23,6 +23,7 @@ public enum ImpalaOperationType{
     CREATETABLE_AS_SELECT ("CREATETABLE_AS_SELECT"),
     ALTERVIEW_AS ("ALTERVIEW_AS"),
     QUERY ("QUERY"),
+    QUERY_WITH_CLAUSE ("QUERY_WITH_CLAUSE"),
 
     // sub operation type, which is associated with output
     INSERT ("INSERT"),
