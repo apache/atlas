@@ -39,7 +39,7 @@ public class ABACAuthorizerUtils {
     public static final String DENY_POLICY_NAME_SUFFIX = "_deny";
 
     private static AtlasTypeRegistry typeRegistry;
-    private static RangerServiceDef SERVICE_DEF_ATLAS = null;
+    public static RangerServiceDef SERVICE_DEF_ATLAS = null;
 
     private static boolean ABACAuthorizerEnabled = false;
     static {
