@@ -27,46 +27,37 @@ import org.apache.commons.logging.LogFactory;
 import java.util.*;
 
 
-public class AtlanDQAllowExceptionCondition extends RangerAbstractConditionEvaluator {
+public class AtlanExcludeResourceByType extends RangerAbstractConditionEvaluator {
     private static final Log LOG = LogFactory.getLog(AtlanHasAnyRole.class);
-    protected Set<String> excludedActions = new HashSet<>();
+    protected Set<String> excludeEntityTypes = new HashSet<>();
     public static final String RESOURCE_ENTITY_TYPE                   = "entity-type";
-    public static final String RESOURCE_ENTITY_CLASSIFICATION         = "entity-classification";
-    public static final String RESOURCE_CLASSIFICATION                = "classification";
-    public static final String RESOURCE_ENTITY_ID                     = "entity";
-    public static final String RESOURCE_ENTITY_LABEL                  = "entity-label";
-    public static final String RESOURCE_ENTITY_BUSINESS_METADATA      = "entity-business-metadata";
-    public static final String RESOURCE_ENTITY_OWNER                  = "owner";
-    public static final String RESOURCE_RELATIONSHIP_TYPE             = "relationship-type";
     public static final String RESOURCE_END_ONE_ENTITY_TYPE           = "end-one-entity-type";
-    public static final String RESOURCE_END_ONE_ENTITY_CLASSIFICATION = "end-one-entity-classification";
-    public static final String RESOURCE_END_ONE_ENTITY_ID             = "end-one-entity";
     public static final String RESOURCE_END_TWO_ENTITY_TYPE           =  "end-two-entity-type";
 
 
     @Override
     public void init() {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlanDQAllowExceptionCondition.init(" + condition + ")");
+            LOG.debug("==> AtlanExcludeResourceByType.init(" + condition + ")");
         }
 
         super.init();
 
         if (condition != null ) {
             for (String value : condition.getValues()) {
-                excludedActions.add(value.trim());
+                excludeEntityTypes.add(value.trim());
             }
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlanDQAllowExceptionCondition.init(" + condition + ")");
+            LOG.debug("<== AtlanExcludeResourceByType.init(" + condition + ")");
         }
     }
 
     @Override
     public boolean isMatched(RangerAccessRequest request) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlanDQAllowExceptionCondition.isMatched(" + condition + ")");
+            LOG.debug("==> AtlanExcludeResourceByType.isMatched(" + condition + ")");
         }
 
         boolean ret = true;
@@ -84,12 +75,11 @@ public class AtlanDQAllowExceptionCondition extends RangerAbstractConditionEvalu
                 .findFirst()
                 .orElseGet(ArrayList::new);
 
-        if (entityTypes.isEmpty() || !entityTypes.contains("alpha_DQRule")) {
-            return ret;
+        if (CollectionUtils.isNotEmpty(entityTypes)) {
+            ret = !excludeEntityTypes.stream().anyMatch(entityType -> entityTypes.stream().anyMatch(x -> Objects.equals(x, entityType)));
+
         }
-        else {
-            return !excludedActions.contains(readOnlyRequest.getAction());
-        }
+        return ret;
 
     }
 

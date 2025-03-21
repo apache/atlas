@@ -513,8 +513,8 @@
 		},
 		{
 			"itemId": 2,
-			"name": "excludeDQRules",
-			"evaluator": "org.apache.atlas.plugin.conditionevaluator.AtlanDQAllowExceptionCondition",
+			"name": "excludeEntityTypes",
+			"evaluator": "org.apache.atlas.plugin.conditionevaluator.AtlanExcludeResourceByType",
 			"description": "Roles to exclude for given policy"
 		}
 
