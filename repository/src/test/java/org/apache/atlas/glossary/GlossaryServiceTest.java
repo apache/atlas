@@ -1302,7 +1302,6 @@ public class GlossaryServiceTest {
 
     @DataProvider(name = "getAllGlossaryForPaginationDataProvider")
     public Object[][] getAllGlossaryForPaginationDataProvider() {
-
         List<String> listAllGuids = Arrays.asList("guid-1", "guid-2", "guid-3", "guid-4", "guid-5",
                 "guid-6", "guid-7", "guid-8", "guid-9", "guid-10");
 
@@ -1324,14 +1323,12 @@ public class GlossaryServiceTest {
     @Test(dataProvider = "getAllGlossaryForPaginationDataProvider")
     void testGetGlossaries_WithPaginationHandlingSkippedGlossaries(int limit, int offset, SortOrder sortOrder, int expectedSize,
             List<String> allGlossaryGuids, List<String> guidsToSkip, int expectedPageCount) throws Exception {
-
         mockedEntityStore = mock(AtlasEntityStore.class);
         when(mockedDataAccess.getAtlasEntityStore()).thenReturn(mockedEntityStore);
 
         List<String> finalGuidsToSkip = (guidsToSkip == null) ? Collections.emptyList() : guidsToSkip;
 
         try (MockedStatic<AtlasGraphUtilsV2> mockedGraphUtilsClass = Mockito.mockStatic(AtlasGraphUtilsV2.class)) {
-
             // Mocking the retrieval of glossary GUIDs from the system
             mockedGraphUtilsClass.when(() -> AtlasGraphUtilsV2.findEntityGUIDsByType(anyString(), any()))
                     .thenReturn(allGlossaryGuids);
