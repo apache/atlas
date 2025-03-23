@@ -29,6 +29,7 @@ import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.repository.impexp.AsyncImportService;
 import org.apache.atlas.repository.store.graph.v2.asyncimport.ImportTaskListener;
 import org.apache.atlas.service.Service;
+import org.apache.atlas.utils.AtlasAsyncImportTestUtil;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ObjectUtils;
 import org.slf4j.Logger;
@@ -137,6 +138,8 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     public void onCompleteImportRequest(String importId) {
         LOG.info("==> onCompleteImportRequest(importId={})", importId);
         try {
+            AtlasAsyncImportRequest importRequest = asyncImportService.fetchImportRequestByImportId(importId);
+            AtlasAsyncImportTestUtil.intercept(importRequest);
             notificationHookConsumer.closeImportConsumer(importId, ASYNC_IMPORT_TOPIC_PREFIX + importId);
         } finally {
             releaseAsyncImportSemaphore();

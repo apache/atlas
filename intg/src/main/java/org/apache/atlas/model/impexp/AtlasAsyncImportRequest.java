@@ -251,7 +251,7 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
 
     @Override
     protected StringBuilder toString(StringBuilder sb) {
-        sb.append(", atlasImportResult=");
+        sb.append(", importResult=");
         if (importResult == null) {
             sb.append("null");
         } else {
