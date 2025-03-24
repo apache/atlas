@@ -80,7 +80,7 @@ public class PoliciesStore {
 
             if (!ignoreUser) {
                 String user = AuthorizerCommon.getCurrentUserName();
-                LOG.info("ABAC_AUTH: Getting relevant policies for user: {}", user);
+                LOG.info("ABAC_AUTH: Getting relevant policies for user: {}, service={}, policyType={}", user, serviceName, policyType);
 
                 RangerUserStore userStore = UsersStore.getUserStore();
                 List<String> groups = UsersStore.getGroupsForUser(user, userStore);

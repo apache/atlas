@@ -80,6 +80,7 @@ public class EntityAuthorizer {
                 matched = validateEntityFilterCriteria(entityFilterCriteriaNode, entity, vertex);
             }
             if (matched) {
+                // result here only means that a matching policy is found, allow and deny needs to be handled by caller
                 result = new AtlasAccessResult(true, policy.getGuid(), policy.getPolicyPriority());
                 if (policy.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
                     return result;
