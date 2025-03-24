@@ -35,6 +35,7 @@ import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
 import org.apache.atlas.authorizer.authorizers.EntityAuthorizer;
+import org.apache.atlas.authorizer.authorizers.ListAuthorizer;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.plugin.model.RangerPolicy;
@@ -501,5 +502,9 @@ public class AtlasAuthorizationUtils {
         request.setClientIPAddress(RequestContext.get().getClientIPAddress());
         request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
         request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
+    }
+
+    public static Map<String, Object> getPreFilterDsl(String persona, String purpose, List<String> actions) {
+        return ListAuthorizer.getElasticsearchDSL(persona, purpose, actions);
     }
 }

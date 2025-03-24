@@ -103,6 +103,7 @@ public class IndexSearchParams extends SearchParams {
                 ", accessControlExclusive=" + accessControlExclusive +
                 ", includeRelationshipAttributes=" + includeRelationshipAttributes +
                 ", utmTags="+ getUtmTags() +
+                ", enableFullRestriction="+ enableFullRestriction +
                 '}';
     }
 
