@@ -1057,6 +1057,25 @@
         "end-two-entity:{entity}"
       ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink resource to this AIApplication",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AIApplication",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}",
+
+        "end-two-entity-type:Resource",
+        "end-two-entity-classification:*",
+        "end-two-entity-type:Readme",
+        "end-two-entity-type:Link",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
   ],
   "persona-ai-application-delete": [
@@ -1202,6 +1221,25 @@
 
         "end-two-entity-type:AIApplication",
         "end-two-entity-classification:*",
+        "end-two-entity:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink resource to this AIModel",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity-type:AIModel",
+        "end-one-entity-classification:*",
+        "end-one-entity:{entity}",
+
+        "end-two-entity-type:Resource",
+        "end-two-entity-classification:*",
+        "end-two-entity-type:Readme",
+        "end-two-entity-type:Link",
         "end-two-entity:*"
       ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
