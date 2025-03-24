@@ -30,6 +30,7 @@ import com.sun.jersey.multipart.FormDataMultiPart;
 import com.sun.jersey.multipart.MultiPart;
 import com.sun.jersey.multipart.file.StreamDataBodyPart;
 import org.apache.atlas.bulkimport.BulkImportResponse;
+import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
 import org.apache.atlas.model.audit.AuditReductionCriteria;
@@ -45,6 +46,7 @@ import org.apache.atlas.model.glossary.AtlasGlossaryCategory;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedCategoryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
+import org.apache.atlas.model.impexp.AsyncImportStatus;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -145,10 +147,10 @@ public class AtlasClientV2 extends AtlasBaseClient {
     private static final String INDEX_RECOVERY_URI = BASE_URI + "v2/indexrecovery";
 
     // Async Import APIs
-    private static final String ASYNC_IMPORT_URI = BASE_URI + "admin/asyncImport";
-    private static final String ASYNC_IMPORT_STATUS_URI = BASE_URI + "admin/asyncImport/status";
-    private static final String ASYNC_IMPORT_STATUS_BY_ID_URI = BASE_URI + "admin/asyncImport/status/";
-    private static final String ASYNC_IMPORT_BY_ID_URI = BASE_URI + "admin/asyncImport/";
+    private static final String ASYNC_IMPORT_URI = BASE_URI + "admin/async/import";
+    private static final String ASYNC_IMPORT_STATUS_URI = BASE_URI + "admin/async/import/status";
+    private static final String ASYNC_IMPORT_STATUS_BY_ID_URI = BASE_URI + "admin/async/import/status/";
+    private static final String ASYNC_IMPORT_BY_ID_URI = BASE_URI + "admin/async/import/";
 
     private static final String IMPORT_REQUEST_PARAMTER = "request";
     private static final String IMPORT_DATA_PARAMETER = "data";
@@ -1052,27 +1054,15 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return formatPathParameters(api, params);
     }
 
-    private FormDataBodyPart getImportRequestBodyPart(AtlasImportRequest request) {
-        return new FormDataBodyPart(IMPORT_REQUEST_PARAMTER, AtlasType.toJson(request), MediaType.APPLICATION_JSON_TYPE);
-    }
-
     public AtlasAsyncImportRequest importAsync(AtlasImportRequest request, InputStream stream) throws AtlasServiceException {
         return performAsyncImport(getImportRequestBodyPart(request),
                 new StreamDataBodyPart(IMPORT_DATA_PARAMETER, stream));
     }
 
-    private AtlasAsyncImportRequest performAsyncImport(BodyPart requestPart, BodyPart filePart) throws AtlasServiceException {
-        MultiPart multipartEntity = new FormDataMultiPart()
-                .bodyPart(requestPart)
-                .bodyPart(filePart);
-
-        return callAPI(API_V2.ASYNC_IMPORT, AtlasAsyncImportRequest.class, multipartEntity);
-    }
-
-    public List<Map<String, Object>> getAsyncImportStatus() throws AtlasServiceException {
+    public PList<AsyncImportStatus> getAsyncImportStatus() throws AtlasServiceException {
         return callAPI(
                 API_V2.ASYNC_IMPORT_STATUS_ALL,
-                new GenericType<List<Map<String, Object>>>() {},
+                new GenericType<PList<AsyncImportStatus>>() {},
                 null);
     }
 
@@ -1198,6 +1188,18 @@ public class AtlasClientV2 extends AtlasBaseClient {
         API    api         = new API(String.format(GET_BY_GUID_TEMPLATE, pathForType, guid), HttpMethod.GET, Response.Status.OK);
 
         return callAPI(api, typeDefClass, null);
+    }
+
+    private FormDataBodyPart getImportRequestBodyPart(AtlasImportRequest request) {
+        return new FormDataBodyPart(IMPORT_REQUEST_PARAMTER, AtlasType.toJson(request), MediaType.APPLICATION_JSON_TYPE);
+    }
+
+    private AtlasAsyncImportRequest performAsyncImport(BodyPart requestPart, BodyPart filePart) throws AtlasServiceException {
+        MultiPart multipartEntity = new FormDataMultiPart()
+                .bodyPart(requestPart)
+                .bodyPart(filePart);
+
+        return callAPI(API_V2.ASYNC_IMPORT, AtlasAsyncImportRequest.class, multipartEntity);
     }
 
     public static class API_V2 extends API {

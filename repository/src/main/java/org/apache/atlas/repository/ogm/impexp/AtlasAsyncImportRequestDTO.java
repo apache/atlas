@@ -98,9 +98,9 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
             LOG.error("AtlasAsyncImportRequest cannot be created without atlas import request and result. Null has been returned");
         } else {
             asyncImportRequest.setGuid(entity.getGuid());
-            asyncImportRequest.setRequestId(requestId);
+            asyncImportRequest.getImportTrackingInfo().setRequestId(requestId);
             asyncImportRequest.setImportId(importId);
-            asyncImportRequest.setSkipTo(skipTo);
+            asyncImportRequest.getImportTrackingInfo().setSkipTo(skipTo);
             asyncImportRequest.setStatus(ImportStatus.valueOf(status));
             asyncImportRequest.setImportDetails(importDetails);
             asyncImportRequest.setReceivedAt(receivedAt);
@@ -145,7 +145,7 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
         entity.setAttribute(IMPORT_ID_PROPERTY, obj.getImportId());
         entity.setAttribute(STATUS_PROPERTY, obj.getStatus());
         entity.setAttribute(IMPORT_DETAILS_PROPERTY, AtlasType.toJson(obj.getImportDetails()));
-        entity.setAttribute(SKIP_TO_PROPERTY, String.valueOf(obj.getSkipTo()));
+        entity.setAttribute(SKIP_TO_PROPERTY, String.valueOf(obj.getImportTrackingInfo().getSkipTo()));
 
         entity.setAttribute(RECEIVED_AT_PROPERTY, String.valueOf(obj.getReceivedAt()));
         entity.setAttribute(STAGED_AT_PROPERTY, String.valueOf(obj.getStagedAt()));
@@ -191,7 +191,6 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
     }
 
     public static String convertToValidJson(String mapString) {
-        // Remove enclosing braces
         String trimmed = mapString.trim();
         if (trimmed.startsWith("{")) {
             trimmed = trimmed.substring(1);
@@ -200,8 +199,7 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
             trimmed = trimmed.substring(0, trimmed.length() - 1);
         }
 
-        // Split into key-value pairs
-        String[] keyValuePairs = trimmed.split(",\\s*(?![^\\[\\]]*\\])"); // Avoid splitting inside arrays
+        String[] keyValuePairs = trimmed.split(",\\s*(?![^\\[\\]]*\\])");
 
         StringBuilder jsonBuilder = new StringBuilder();
         jsonBuilder.append("{");
@@ -211,18 +209,13 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
             String key = keyValue[0].trim();
             String value = keyValue[1].trim();
 
-            // Add quotes around keys
             jsonBuilder.append("\"").append(key).append("\":");
 
-            // Handle array values
             if (value.startsWith("[") && value.endsWith("]")) {
-                // Process array elements
-                String arrayContent = value.substring(1, value.length() - 1).trim(); // Remove brackets
+                String arrayContent = value.substring(1, value.length() - 1).trim();
                 if (arrayContent.isEmpty()) {
-                    // Empty array
                     jsonBuilder.append("[]");
                 } else {
-                    // Non-empty array
                     String[] arrayElements = arrayContent.split(",\\s*");
                     jsonBuilder.append("[");
                     for (int j = 0; j < arrayElements.length; j++) {
@@ -239,14 +232,11 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
                     jsonBuilder.append("]");
                 }
             } else if (isNumeric(value)) {
-                // Add numeric values directly
                 jsonBuilder.append(value);
             } else {
-                // Add quotes around other values
                 jsonBuilder.append("\"").append(value).append("\"");
             }
 
-            // Add comma if not the last pair
             if (i < keyValuePairs.length - 1) {
                 jsonBuilder.append(",");
             }
@@ -259,9 +249,9 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
     private static boolean isNumeric(String value) {
         try {
             Double.parseDouble(value);
-            return true; // If parsing is successful, it's numeric
+            return true;
         } catch (NumberFormatException e) {
-            return false; // Otherwise, it's not numeric
+            return false;
         }
     }
 

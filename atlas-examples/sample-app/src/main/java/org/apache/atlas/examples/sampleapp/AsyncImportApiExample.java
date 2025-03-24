@@ -19,6 +19,8 @@ package org.apache.atlas.examples.sampleapp;
 
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasServiceException;
+import org.apache.atlas.model.PList;
+import org.apache.atlas.model.impexp.AsyncImportStatus;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 
@@ -27,8 +29,6 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
-import java.util.List;
-import java.util.Map;
 
 public class AsyncImportApiExample {
     private final AtlasClientV2 client;
@@ -37,12 +37,12 @@ public class AsyncImportApiExample {
         this.client = client;
     }
 
-    public void testImportAsyncWithZip() throws Exception {
+    public AtlasAsyncImportRequest testImportAsyncWithZip() throws Exception {
         URL url = AsyncImportApiExample.class.getClassLoader().getResource("importFile.zip");
 
         if (url == null) {
             System.err.println("importFile.zip not found in classpath.");
-            return;
+            return null;
         }
 
         File zipFile = new File(url.toURI());
@@ -54,6 +54,7 @@ public class AsyncImportApiExample {
             try {
                 AtlasAsyncImportRequest asyncRequest = client.importAsync(request, zipStream);
                 System.out.println("Import Data Async Request Created: " + asyncRequest);
+                return asyncRequest;
             } catch (AtlasServiceException e) {
                 System.err.println("Failed to execute importDataAsync with ZIP file: " + e.getMessage());
                 throw e;
@@ -67,7 +68,7 @@ public class AsyncImportApiExample {
     public void testGetAsyncImportStatus() throws Exception {
         System.out.println("Testing getAllAsyncImportStatus...");
         try {
-            List<Map<String, Object>> statuses = client.getAsyncImportStatus();
+            PList<AsyncImportStatus> statuses = client.getAsyncImportStatus();
             System.out.println("All Async Import Statuses: " + statuses);
         } catch (AtlasServiceException e) {
             System.err.println("Failed to fetch all async import statuses: " + e.getMessage());

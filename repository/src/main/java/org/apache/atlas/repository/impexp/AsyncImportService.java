@@ -22,21 +22,21 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.PList;
+import org.apache.atlas.model.SearchFilter.SortType;
+import org.apache.atlas.model.impexp.AsyncImportStatus;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.commons.lang.ObjectUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
@@ -44,6 +44,8 @@ import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ASYNC_IMPORT
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.ABORTED;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.PROCESSING;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.WAITING;
+import static org.apache.atlas.repository.Constants.PROPERTY_KEY_ASYNC_IMPORT_ID;
+import static org.apache.atlas.repository.Constants.PROPERTY_KEY_ASYNC_IMPORT_STATUS;
 
 @Service
 public class AsyncImportService {
@@ -56,7 +58,7 @@ public class AsyncImportService {
         this.dataAccess = dataAccess;
     }
 
-    public synchronized AtlasAsyncImportRequest fetchImportRequestByImportId(String importId) {
+    public AtlasAsyncImportRequest fetchImportRequestByImportId(String importId) {
         try {
             AtlasAsyncImportRequest request = new AtlasAsyncImportRequest();
             request.setImportId(importId);
@@ -86,61 +88,18 @@ public class AsyncImportService {
         }
     }
 
-    public synchronized List<String> fetchInProgressImportIds() {
-        List<String> guids = AtlasGraphUtilsV2.findEntityGUIDsByType(ASYNC_IMPORT_TYPE_NAME, SortOrder.ASCENDING);
-
-        List<String> inProgressImportIds = new ArrayList<>();
-
-        List<AtlasAsyncImportRequest> importsToLoad = guids.stream()
-                .map(AtlasAsyncImportRequest::new)
-                .collect(Collectors.toList());
-
-        Iterable<AtlasAsyncImportRequest> allRequests = null;
-        try {
-            allRequests = dataAccess.load(importsToLoad);
-            if (allRequests != null) {
-                for (AtlasAsyncImportRequest request : allRequests) {
-                    if (request != null) {
-                        if (ObjectUtils.equals(request.getStatus(), PROCESSING)) {
-                            inProgressImportIds.add(request.getImportId());
-                        }
-                    }
-                }
-            }
-        } catch (AtlasBaseException e) {
-            LOG.error("Could not get in progress import requests.", e);
-        }
-
-        return inProgressImportIds;
+    public List<String> fetchInProgressImportIds() {
+        return AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndPropertyName(
+                ASYNC_IMPORT_TYPE_NAME,
+                Collections.singletonMap(PROPERTY_KEY_ASYNC_IMPORT_STATUS, PROCESSING),
+                PROPERTY_KEY_ASYNC_IMPORT_ID);
     }
 
-    public synchronized List<String> fetchQueuedImportRequests() {
-        List<String> guids = AtlasGraphUtilsV2.findEntityGUIDsByType(ASYNC_IMPORT_TYPE_NAME, SortOrder.ASCENDING);
-
-        List<String> queuedImportIds = new ArrayList<>();
-
-        List<AtlasAsyncImportRequest> importsToLoad = guids.stream()
-                .map(AtlasAsyncImportRequest::new)
-                .collect(Collectors.toList());
-
-        Iterable<AtlasAsyncImportRequest> allRequests = null;
-        try {
-            allRequests = dataAccess.load(importsToLoad);
-        } catch (AtlasBaseException e) {
-            LOG.error("Could not get all import request to be queued.", e);
-        }
-
-        if (allRequests != null) {
-            for (AtlasAsyncImportRequest request : allRequests) {
-                if (request != null) {
-                    if (ObjectUtils.equals(request.getStatus(), WAITING)) {
-                        queuedImportIds.add(request.getImportId());
-                    }
-                }
-            }
-        }
-
-        return queuedImportIds;
+    public List<String> fetchQueuedImportRequests() {
+        return AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndPropertyName(
+                ASYNC_IMPORT_TYPE_NAME,
+                Collections.singletonMap(PROPERTY_KEY_ASYNC_IMPORT_STATUS, WAITING),
+                PROPERTY_KEY_ASYNC_IMPORT_ID);
     }
 
     public void deleteRequests() {
@@ -173,24 +132,30 @@ public class AsyncImportService {
     }
 
     @GraphTransaction
-    public List<Map<String, Object>> getAllImports() throws AtlasBaseException {
+    public PList<AsyncImportStatus> getAllImports(int offset, int limit) throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AsyncImportService.getAllImports()");
         }
 
-        List<Map<String, Object>> importRequests;
-
         List<String> guids = AtlasGraphUtilsV2.findEntityGUIDsByType(ASYNC_IMPORT_TYPE_NAME, SortOrder.ASCENDING);
 
+        int totalCount = guids.size();
+        List<AsyncImportStatus> importRequests;
+
         if (CollectionUtils.isNotEmpty(guids)) {
-            List<AtlasAsyncImportRequest> importsToLoad = guids.stream()
+            List<String> paginatedGuids = guids.stream()
+                    .skip(offset)
+                    .limit(limit)
+                    .collect(Collectors.toList());
+
+            List<AtlasAsyncImportRequest> importsToLoad = paginatedGuids.stream()
                     .map(AtlasAsyncImportRequest::new)
                     .collect(Collectors.toList());
 
             Iterable<AtlasAsyncImportRequest> loadedImports = dataAccess.load(importsToLoad);
 
             importRequests = StreamSupport.stream(loadedImports.spliterator(), false)
-                    .map(AtlasAsyncImportRequest::getImportMinInfo)
+                    .map(AtlasAsyncImportRequest::toImportMinInfo)
                     .collect(Collectors.toList());
         } else {
             importRequests = Collections.emptyList();
@@ -200,7 +165,7 @@ public class AsyncImportService {
             LOG.debug("<== AsyncImportService.getAllImports() : {}", importRequests);
         }
 
-        return importRequests;
+        return new PList<>(importRequests, offset, limit, totalCount, SortType.NONE, null);
     }
 
     @GraphTransaction

@@ -140,7 +140,7 @@ public class AsyncImportTaskExecutor {
                 importRequest.getImportDetails().setFailedEntitiesCount(failedEntityCounter);
                 importRequest.getImportDetails().getFailures().put(entity.getGuid(), abe.getMessage());
             } finally {
-                importRequest.setSkipTo(position);
+                importRequest.getImportTrackingInfo().setSkipTo(position);
                 importRequest.getImportDetails().setPublishedEntityCount(publishedEntityCounter);
                 importService.updateImportRequest(importRequest);
                 LOG.info("<== publishEntityNotification(atlasAsyncImportRequest={})", importRequest);
@@ -151,7 +151,7 @@ public class AsyncImportTaskExecutor {
     @VisibleForTesting
     void skipToPosition(AtlasAsyncImportRequest importRequest, EntityImportStream entityImportStream) {
         LOG.info("==> skipToPosition(atlasAsyncImportRequest={})", importRequest);
-        int skipTo = importRequest.getSkipTo();
+        int skipTo = importRequest.getImportTrackingInfo().getSkipTo();
         while (entityImportStream.hasNext() && skipTo > entityImportStream.getPosition()) {
             entityImportStream.next();
         }

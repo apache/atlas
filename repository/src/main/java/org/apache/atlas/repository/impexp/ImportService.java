@@ -24,7 +24,9 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.entitytransform.BaseEntityHandler;
 import org.apache.atlas.entitytransform.TransformerContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.PList;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
+import org.apache.atlas.model.impexp.AsyncImportStatus;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
@@ -178,8 +180,8 @@ public class ImportService implements AsyncImporter {
         }
     }
 
-    public List<Map<String, Object>> getAllAsyncImports() throws AtlasBaseException {
-        return asyncImportService.getAllImports();
+    public PList<AsyncImportStatus> getAllAsyncImports(int offset, int limit) throws AtlasBaseException {
+        return asyncImportService.getAllImports(offset, limit);
     }
 
     public AtlasAsyncImportRequest getAsyncImportStatus(String importId) throws AtlasBaseException {

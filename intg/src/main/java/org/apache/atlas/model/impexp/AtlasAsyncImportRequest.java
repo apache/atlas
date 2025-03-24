@@ -72,11 +72,6 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         }
     }
 
-    @JsonIgnore
-    private String requestId;
-    @JsonIgnore
-    private int skipTo;
-
     private String importId;
     private ImportStatus status;
     private ImportDetails importDetails = new ImportDetails();
@@ -88,6 +83,17 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private AtlasImportResult importResult;
 
+    @JsonIgnore
+    private ImportTrackingInfo importTrackingInfo;
+
+    public ImportTrackingInfo getImportTrackingInfo() {
+        return importTrackingInfo;
+    }
+
+    public void setImportTrackingInfo(ImportTrackingInfo importTrackingInfo) {
+        this.importTrackingInfo = importTrackingInfo;
+    }
+
     public AtlasAsyncImportRequest() {}
 
     public AtlasAsyncImportRequest(String guid) {
@@ -97,21 +103,13 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
     public AtlasAsyncImportRequest(AtlasImportResult result) {
         this.importResult = result;
         this.status                      = ImportStatus.STAGING;
-        this.skipTo                      = 0;
         this.receivedAt                  = 0L;
         this.stagedAt                    = 0L;
         this.startedProcessingAt         = 0L;
         this.completedAt                 = 0L;
         this.importDetails               = new ImportDetails();
+        this.importTrackingInfo          = new ImportTrackingInfo(null, 0);
         setGuid(getGuid());
-    }
-
-    public String getRequestId() {
-        return requestId;
-    }
-
-    public void setRequestId(String requestId) {
-        this.requestId = requestId;
     }
 
     public String getImportId() {
@@ -120,7 +118,9 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
 
     public void setImportId(String importId) {
         this.importId = importId;
-        setRequestId(REQUEST_ID_PREFIX_PROPERTY + importId + "@" + AtlasEntityUtil.getMetadataNamespace());
+        if (importTrackingInfo != null) {
+            importTrackingInfo.setRequestId(REQUEST_ID_PREFIX_PROPERTY + importId + "@" + AtlasEntityUtil.getMetadataNamespace());
+        }
     }
 
     public ImportStatus getStatus() {
@@ -142,14 +142,6 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
     @JsonIgnore
     public String getTopicName() {
         return ASYNC_IMPORT_TOPIC_PREFIX + importId;
-    }
-
-    public int getSkipTo() {
-        return skipTo;
-    }
-
-    public void setSkipTo(int skipTo) {
-        this.skipTo = skipTo;
     }
 
     public AtlasImportResult getImportResult() {
@@ -193,19 +185,13 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
     }
 
     @JsonIgnore
-    public Map<String, Object> getImportMinInfo() {
-        Map<String, Object> minInfoResponse = new HashMap<>();
-
-        String importId = this.getImportId();
-        long timestamp = this.receivedAt;
-        String isoDate = toIsoDate(new Date(timestamp));
-
-        minInfoResponse.put("importId", importId);
-        minInfoResponse.put("status", status);
-        minInfoResponse.put("importRequestReceivedAt", isoDate);
-        minInfoResponse.put("importRequestReceivedBy", importResult.getUserName());
-
-        return minInfoResponse;
+    public AsyncImportStatus toImportMinInfo() {
+        AsyncImportStatus asyncImportStatus = new AsyncImportStatus(
+                this.getImportId(),
+                status,
+                toIsoDate(new Date(this.receivedAt)),
+                importResult.getUserName());
+        return asyncImportStatus;
     }
 
     private String toIsoDate(Date value) {
@@ -236,7 +222,7 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
                 Objects.equals(importId, that.importId) &&
                 Objects.equals(status, that.status) &&
                 Objects.equals(importDetails, that.importDetails) &&
-                Objects.equals(requestId, that.requestId) &&
+                Objects.equals(importTrackingInfo.getRequestId(), that.importTrackingInfo.getRequestId()) &&
                 Objects.equals(receivedAt, that.receivedAt) &&
                 Objects.equals(stagedAt, that.stagedAt) &&
                 Objects.equals(startedProcessingAt, that.startedProcessingAt) &&
@@ -245,7 +231,7 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), requestId, importResult,
+        return Objects.hash(super.hashCode(), importTrackingInfo.getRequestId(), importResult,
                 importId, status, importDetails, receivedAt, stagedAt, startedProcessingAt, completedAt);
     }
 
@@ -257,7 +243,7 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         } else {
             sb.append(importResult);
         }
-        sb.append(", requestId=").append(requestId);
+        sb.append(", requestId=").append(importTrackingInfo.getRequestId());
         sb.append(", importId=").append(importId);
         sb.append(", status=").append(status);
         sb.append(", receivedAt=").append(receivedAt);
@@ -385,6 +371,43 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         @Override
         public int hashCode() {
             return Objects.hash(publishedEntityCount, totalEntitiesCount, importedEntitiesCount, failedEntitiesCount, importProgress, failures);
+        }
+    }
+
+    public static class ImportTrackingInfo {
+        private String requestId;
+        private int skipTo;
+
+        public ImportTrackingInfo() {
+        }
+
+        public ImportTrackingInfo(String requestId, int skipTo) {
+            this.requestId = requestId;
+            this.skipTo = skipTo;
+        }
+
+        public String getRequestId() {
+            return requestId;
+        }
+
+        public void setRequestId(String requestId) {
+            this.requestId = requestId;
+        }
+
+        public int getSkipTo() {
+            return skipTo;
+        }
+
+        public void setSkipTo(int skipTo) {
+            this.skipTo = skipTo;
+        }
+
+        @Override
+        public String toString() {
+            return "ImportTrackingInfo{" +
+                    "requestId='" + requestId + '\'' +
+                    ", skipTo=" + skipTo +
+                    '}';
         }
     }
 }

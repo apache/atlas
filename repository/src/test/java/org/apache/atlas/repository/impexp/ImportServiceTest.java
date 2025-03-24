@@ -423,7 +423,6 @@ public class ImportServiceTest extends AtlasTestBase {
 
     @Test(dataProvider = "provideOnImportTypeDefScenarios")
     public void testOnImportTypeDef(AtlasAsyncImportRequest importRequest, boolean shouldThrowException, boolean shouldFailProcessing) throws AtlasBaseException {
-        // Mock dependencies
         AtlasTypeDefStore typeDefStore = mock(AtlasTypeDefStore.class);
         AtlasTypeRegistry typeRegistry = mock(AtlasTypeRegistry.class);
         BulkImporter bulkImporter = mock(BulkImporter.class);
@@ -440,7 +439,6 @@ public class ImportServiceTest extends AtlasTestBase {
 
         ImportService spyImportService = spy(importService);
 
-        // Test inputs
         String importId = "test-import-id";
         AtlasTypesDef typesDef = new AtlasTypesDef();
 
@@ -456,7 +454,6 @@ public class ImportServiceTest extends AtlasTestBase {
                     .when(spyImportService).processTypes(any(), any());
         }
 
-        // Execute and verify
         if (shouldThrowException) {
             assertThrows(AtlasBaseException.class, () -> spyImportService.onImportTypeDef(typesDef, importId));
             if (importRequest != null) {
@@ -486,12 +483,10 @@ public class ImportServiceTest extends AtlasTestBase {
 
     @Test
     public void testOnImportEntityWhenImportRequestIsNullShouldThrowException() throws AtlasBaseException {
-        // Arrange
         String importId = "test-import-id";
         int position = 1;
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = mock(AtlasEntity.AtlasEntityWithExtInfo.class);
 
-        // Mock dependencies
         AsyncImportService asyncImportService = mock(AsyncImportService.class);
         when(asyncImportService.fetchImportRequestByImportId(importId)).thenReturn(null);
 
@@ -506,13 +501,11 @@ public class ImportServiceTest extends AtlasTestBase {
                 asyncImportService,
                 mock(AtlasAuditService.class));
 
-        // Act & Assert
         assertThrows(AtlasBaseException.class, () -> importService.onImportEntity(entityWithExtInfo, importId, position));
     }
 
     @Test
     public void testOnImportEntityWhenProcessingFailsAndDidNotReachEndShouldReturnFalse() throws AtlasBaseException {
-        // Arrange
         String importId = "test-import-id";
         int position = 1;
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = mock(AtlasEntity.AtlasEntityWithExtInfo.class);
@@ -550,10 +543,8 @@ public class ImportServiceTest extends AtlasTestBase {
                 mock(AsyncImportTaskExecutor.class),
                 asyncImportService,
                 mock(AtlasAuditService.class));
-        // Act
         boolean result = importService.onImportEntity(entityWithExtInfo, importId, position);
 
-        // Assert
         assertFalse(result);
         assertEquals(importRequest.getStatus(), PROCESSING);
         assertEquals(importRequest.getImportDetails().getImportedEntitiesCount(), 3);
@@ -564,7 +555,6 @@ public class ImportServiceTest extends AtlasTestBase {
 
     @Test
     public void testOnImportEntityWhenProcessingSucceedsButDidNotReachEndShouldReturnFalse() throws AtlasBaseException {
-        // Arrange
         String importId = "test-import-id";
         int position = 1;
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = mock(AtlasEntity.AtlasEntityWithExtInfo.class);
@@ -608,10 +598,8 @@ public class ImportServiceTest extends AtlasTestBase {
                 asyncImportService,
                 mock(AtlasAuditService.class));
 
-        // Act
         boolean result = importService.onImportEntity(entityWithExtInfo, importId, position);
 
-        // Assert
         assertFalse(result);
         assertEquals(importRequest.getImportDetails().getImportedEntitiesCount(), 4);
         assertEquals(importRequest.getImportDetails().getFailedEntitiesCount(), 5);
@@ -620,7 +608,6 @@ public class ImportServiceTest extends AtlasTestBase {
 
     @Test
     public void testOnImportEntityWhenProcessingReachesEndStatusIsPartialSuccessIfFailedEntityCountIsGreaterThanZero() throws AtlasBaseException {
-        // Arrange
         String importId = "test-import-id";
         int position = 1;
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = mock(AtlasEntity.AtlasEntityWithExtInfo.class);
@@ -672,14 +659,12 @@ public class ImportServiceTest extends AtlasTestBase {
         doNothing().when(auditsWriter).write(anyString(), any(AtlasImportResult.class), anyLong(), anyLong(), any());
         doNothing().when(spyImportService).addToImportOperationAudits(any());
 
-        // Act
         boolean result = spyImportService.onImportEntity(entityWithExtInfo, importId, position);
 
         if (result) {
             spyImportService.onImportComplete(importId);
         }
 
-        // Assert
         assertTrue(result);
         assertEquals(importRequest.getImportDetails().getImportedEntitiesCount(), 6);
         assertEquals(importRequest.getImportDetails().getFailedEntitiesCount(), 4);
@@ -692,7 +677,6 @@ public class ImportServiceTest extends AtlasTestBase {
 
     @Test
     public void testOnImportEntityWhenProcessingReachesEndStatusIsFailureIfImportedEntityCountIsZero() throws AtlasBaseException {
-        // Arrange
         String importId = "test-import-id";
         int position = 1;
         AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = mock(AtlasEntity.AtlasEntityWithExtInfo.class);
@@ -745,14 +729,12 @@ public class ImportServiceTest extends AtlasTestBase {
         doNothing().when(auditsWriter).write(anyString(), any(AtlasImportResult.class), anyLong(), anyLong(), any());
         doNothing().when(spyImportService).addToImportOperationAudits(any());
 
-        // Act
         boolean result = spyImportService.onImportEntity(entityWithExtInfo, importId, position);
 
         if (result) {
             spyImportService.onImportComplete(importId);
         }
 
-        // Assert
         assertTrue(result);
         assertEquals(importRequest.getImportDetails().getImportedEntitiesCount(), 0);
         assertEquals(importRequest.getImportDetails().getFailedEntitiesCount(), 10);

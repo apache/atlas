@@ -19,6 +19,8 @@ package org.apache.atlas.repository.impexp;
 
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.PList;
+import org.apache.atlas.model.impexp.AsyncImportStatus;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.repository.ogm.DataAccess;
@@ -33,9 +35,7 @@ import org.testng.annotations.Test;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
@@ -189,28 +189,26 @@ public class AsyncImportServiceTest {
         AtlasAsyncImportRequest request1 = spy(new AtlasAsyncImportRequest());
         request1.setImportId("guid1");
         request1.setStatus(AtlasAsyncImportRequest.ImportStatus.PROCESSING);
+        request1.setReceivedAt(System.currentTimeMillis());
 
         AtlasImportResult mockImportResult = mock(AtlasImportResult.class);
         doReturn("admin").when(mockImportResult).getUserName();
         request1.setImportResult(mockImportResult);
 
-        Map<String, Object> mockMinInfo = new HashMap<>();
-        mockMinInfo.put("importId", "24cbff65a7ed60e02d099ce78cb06efd");
-        mockMinInfo.put("importRequestReceivedBy", "admin");
-        mockMinInfo.put("status", "SUCCESSFUL");
-        mockMinInfo.put("importRequestReceivedAt", "2025-01-23T00:37:08.634Z");
-
-        doReturn(mockMinInfo).when(request1).getImportMinInfo();
+        int offset = 0;
+        int limit = 10;
 
         try (MockedStatic<AtlasGraphUtilsV2> mockStatic = mockStatic(AtlasGraphUtilsV2.class)) {
             mockStatic.when(() -> AtlasGraphUtilsV2.findEntityGUIDsByType(anyString(), any()))
                     .thenReturn(guids);
             when(dataAccess.load(anyList())).thenReturn(Collections.singletonList(request1));
 
-            List<Map<String, Object>> result = asyncImportService.getAllImports();
+            PList<AsyncImportStatus> result = asyncImportService.getAllImports(offset, limit);
 
-            assertEquals(result.size(), 1);
-            assertTrue(result.get(0).containsKey("importId"));
+            assertEquals(result.getList().size(), 1);
+            assertEquals(result.getList().get(0).getImportId(), "guid1");
+            assertEquals(result.getList().get(0).getImportRequestReceivedBy(), "admin");
+
             verify(dataAccess, times(1)).load(anyList());
         }
     }
