@@ -1200,6 +1200,7 @@
       "policyType": "ACCESS",
       "resources": [
         "entity:default/ai/aimodel/*",
+        "entity:default/ai/aiapplication/*",
         "entity-type:AIModel",
         "entity-classification:*"
       ],
@@ -1214,6 +1215,7 @@
         "entity:{entity}",
         "entity:{entity}/*",
         "entity:default/ai/aimodel/*",
+        "entity:default/ai/aiapplication/*",
         "entity-type:AIModel",
         "entity-classification:*"
       ],
