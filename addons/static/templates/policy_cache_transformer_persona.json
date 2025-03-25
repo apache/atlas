@@ -1244,8 +1244,7 @@
       "policyResourceCategory": "ENTITY",
       "policyType": "ACCESS",
       "resources": [
-        "entity:{entity}",
-        "entity:{entity}/*",
+        "entity:*",
         "entity-type:AIModel",
         "entity-classification:*"
       ],
