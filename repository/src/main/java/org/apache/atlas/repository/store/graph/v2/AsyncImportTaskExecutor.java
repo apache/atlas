@@ -23,6 +23,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
+import org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -68,23 +69,26 @@ public class AsyncImportTaskExecutor {
 
     public AtlasAsyncImportRequest run(AtlasImportResult result, EntityImportStream entityImportStream) throws AtlasBaseException {
         try {
-            String importId = entityImportStream.getMd5Hash();
+            String                  importId      = entityImportStream.getMd5Hash();
             AtlasAsyncImportRequest importRequest = registerRequest(result, importId, entityImportStream.size(), entityImportStream.getCreationOrder());
-            if (ObjectUtils.equals(importRequest.getStatus(), AtlasAsyncImportRequest.ImportStatus.WAITING) ||
-                    ObjectUtils.equals(importRequest.getStatus(), AtlasAsyncImportRequest.ImportStatus.PROCESSING)) {
-                LOG.warn("Duplicate import request received");
+
+            if (ObjectUtils.equals(importRequest.getStatus(), ImportStatus.WAITING) || ObjectUtils.equals(importRequest.getStatus(), ImportStatus.PROCESSING)) {
+                LOG.warn("AsyncImportTaskExecutor.run(): Import request with id={} is already in state={}", importId, importRequest.getStatus());
+
                 return importRequest;
             }
+
             // skip to the most recent published position
-            if (ObjectUtils.equals(importRequest.getStatus(), AtlasAsyncImportRequest.ImportStatus.STAGING)) {
+            if (ObjectUtils.equals(importRequest.getStatus(), ImportStatus.STAGING)) {
                 skipToPosition(importRequest, entityImportStream);
             }
+
             publishImportRequest(importRequest, entityImportStream);
+
             return importRequest;
         } catch (AtlasBaseException abe) {
             throw new AtlasBaseException(AtlasErrorCode.IMPORT_FAILED, abe);
-        }
-        finally {
+        } finally {
             entityImportStream.close();
         }
     }
@@ -93,24 +97,29 @@ public class AsyncImportTaskExecutor {
     void publishImportRequest(AtlasAsyncImportRequest importRequest, EntityImportStream entityImportStream) throws AtlasBaseException {
         try {
             LOG.info("==> publishImportRequest(atlasAsyncImportRequest={})", importRequest);
+
             publishTypeDefNotification(importRequest, entityImportStream.getTypesDef());
             publishEntityNotification(importRequest, entityImportStream);
+
             importRequest.setStagedAt(System.currentTimeMillis());
+
             importService.updateImportRequest(importRequest);
+
             importTaskListener.onReceiveImportRequest(importRequest);
         } finally {
             notificationInterface.closeProducer(ASYNC_IMPORT, importRequest.getTopicName());
+
             LOG.info("<== publishImportRequest(atlasAsyncImportRequest={})", importRequest);
         }
     }
 
     public void publishTypeDefNotification(AtlasAsyncImportRequest importRequest, AtlasTypesDef atlasTypesDef) throws AtlasBaseException {
         LOG.info("==> publishTypeDefNotification(importRequest={}, atlasTypesDef={})", importRequest, atlasTypesDef);
+
         try {
             HookNotification typeDefImportNotification = new ImportNotification.AtlasTypeDefImportNotification(importRequest.getImportId(), importRequest.getImportResult().getUserName(), atlasTypesDef);
+
             sendToTopic(importRequest.getTopicName(), typeDefImportNotification);
-        } catch (AtlasBaseException abe) {
-            throw abe;
         } finally {
             LOG.info("<== publishTypeDefNotification(atlasAsyncImportRequest={})", importRequest);
         }
@@ -119,30 +128,41 @@ public class AsyncImportTaskExecutor {
     @VisibleForTesting
     void publishEntityNotification(AtlasAsyncImportRequest importRequest, EntityImportStream entityImportStream) {
         LOG.info("==> publishEntityNotification(atlasAsyncImportRequest={})", importRequest);
+
         int publishedEntityCounter =  importRequest.getImportDetails().getPublishedEntityCount();
-        int failedEntityCounter = importRequest.getImportDetails().getFailedEntitiesCount();
+        int failedEntityCounter    = importRequest.getImportDetails().getFailedEntitiesCount();
+
         while (entityImportStream.hasNext()) {
             AtlasEntityWithExtInfo entityWithExtInfo = entityImportStream.getNextEntityWithExtInfo();
-            AtlasEntity entity = entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
-            int position = entityImportStream.getPosition();
+            AtlasEntity            entity            = entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
+            int                    position          = entityImportStream.getPosition();
+
             try {
                 if (entity == null) {
                     continue;
                 }
+
                 HookNotification entityImportNotification = new ImportNotification.AtlasEntityImportNotification(importRequest.getImportId(), importRequest.getImportResult().getUserName(), entityWithExtInfo, entityImportStream.getPosition());
+
                 sendToTopic(importRequest.getTopicName(), entityImportNotification);
+
                 entityImportStream.onImportComplete(entity.getGuid());
+
                 publishedEntityCounter += 1;
             } catch (AtlasBaseException abe) {
                 failedEntityCounter += 1;
-                LOG.warn("Failed to publish entity: {}", entity.getGuid(), abe);
+
+                LOG.warn("AsyncImport(id={}): failed to publish entity guid={}", importRequest.getImportId(), entity.getGuid(), abe);
+
                 importRequest.getImportDetails().getFailedEntities().add(entity.getGuid());
                 importRequest.getImportDetails().setFailedEntitiesCount(failedEntityCounter);
                 importRequest.getImportDetails().getFailures().put(entity.getGuid(), abe.getMessage());
             } finally {
                 importRequest.getImportTrackingInfo().setSkipTo(position);
                 importRequest.getImportDetails().setPublishedEntityCount(publishedEntityCounter);
+
                 importService.updateImportRequest(importRequest);
+
                 LOG.info("<== publishEntityNotification(atlasAsyncImportRequest={})", importRequest);
             }
         }
@@ -150,45 +170,56 @@ public class AsyncImportTaskExecutor {
 
     @VisibleForTesting
     void skipToPosition(AtlasAsyncImportRequest importRequest, EntityImportStream entityImportStream) {
-        LOG.info("==> skipToPosition(atlasAsyncImportRequest={})", importRequest);
         int skipTo = importRequest.getImportTrackingInfo().getSkipTo();
+
+        LOG.info("==> skipToPosition(atlasAsyncImportRequest={}): position={}", importRequest, skipTo);
+
         while (entityImportStream.hasNext() && skipTo > entityImportStream.getPosition()) {
             entityImportStream.next();
         }
-        LOG.info("<== skipToPosition(atlasAsyncImportRequest={})", importRequest);
+
+        LOG.info("<== skipToPosition(atlasAsyncImportRequest={}): position={}", importRequest, skipTo);
     }
 
     @VisibleForTesting
     AtlasAsyncImportRequest registerRequest(AtlasImportResult result, String importId, int totalEntities, List<String> creationOrder) throws AtlasBaseException {
         LOG.info("==> registerRequest(importId={})", importId);
+
         try {
             AtlasAsyncImportRequest existingImportRequest = importService.fetchImportRequestByImportId(importId);
+
             // handle new , successful and failed request from scratch
             if (existingImportRequest == null
-                    || ObjectUtils.equals(existingImportRequest.getStatus(), AtlasAsyncImportRequest.ImportStatus.SUCCESSFUL)
-                    || ObjectUtils.equals(existingImportRequest.getStatus(), AtlasAsyncImportRequest.ImportStatus.PARTIAL_SUCCESS)
-                    || ObjectUtils.equals(existingImportRequest.getStatus(), AtlasAsyncImportRequest.ImportStatus.FAILED)
-                    || ObjectUtils.equals(existingImportRequest.getStatus(), AtlasAsyncImportRequest.ImportStatus.ABORTED)) {
+                    || ObjectUtils.equals(existingImportRequest.getStatus(), ImportStatus.SUCCESSFUL)
+                    || ObjectUtils.equals(existingImportRequest.getStatus(), ImportStatus.PARTIAL_SUCCESS)
+                    || ObjectUtils.equals(existingImportRequest.getStatus(), ImportStatus.FAILED)
+                    || ObjectUtils.equals(existingImportRequest.getStatus(), ImportStatus.ABORTED)) {
                 AtlasAsyncImportRequest newImportRequest = new AtlasAsyncImportRequest(result);
+
                 newImportRequest.setImportId(importId);
                 newImportRequest.setReceivedAt(System.currentTimeMillis());
                 newImportRequest.getImportDetails().setTotalEntitiesCount(totalEntities);
                 newImportRequest.getImportDetails().setCreationOrder(creationOrder);
+
                 importService.saveImportRequest(newImportRequest);
-                LOG.info("atlasAsyncImportRequest : {}, registered as a new request", newImportRequest);
+
+                LOG.info("registerRequest(importId={}): registered new request {}", importId, newImportRequest);
+
                 return newImportRequest;
-            }
-            // if we are resuming staging, we need to update the latest request received at
-            if (ObjectUtils.equals(existingImportRequest.getStatus(), AtlasAsyncImportRequest.ImportStatus.STAGING)) {
+            } else if (ObjectUtils.equals(existingImportRequest.getStatus(), ImportStatus.STAGING)) {
+                // if we are resuming staging, we need to update the latest request received at
                 existingImportRequest.setReceivedAt(System.currentTimeMillis());
+
                 importService.updateImportRequest(existingImportRequest);
             }
 
             // handle request in STAGING / WAITING / PROCESSING status as resume
-            LOG.info("atlasAsyncImportRequest: {}, is not new hence, resuming", existingImportRequest);
+            LOG.info("registerRequest(importId={}): not a new request, resuming {}", importId, existingImportRequest);
+
             return existingImportRequest;
         } catch (AtlasBaseException abe) {
-            LOG.error("Failed to register import request", abe);
+            LOG.error("Failed to register import request id={}", importId, abe);
+
             throw new AtlasBaseException(AtlasErrorCode.IMPORT_REGISTRATION_FAILED, abe);
         } finally {
             LOG.info("<== registerRequest(importId={})", importId);
@@ -208,7 +239,7 @@ public class AsyncImportTaskExecutor {
         importTaskListener.onCompleteImportRequest(importId);
     }
 
-    public void abortImport(String importId) throws AtlasBaseException {
+    public void abortAsyncImportRequest(String importId) throws AtlasBaseException {
         LOG.info("==> abortImport(importId={})", importId);
         try {
             AtlasAsyncImportRequest importRequest = importService.abortImport(importId);

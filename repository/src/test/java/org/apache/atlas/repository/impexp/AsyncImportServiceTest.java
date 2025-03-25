@@ -183,7 +183,7 @@ public class AsyncImportServiceTest {
     }
 
     @Test
-    public void testGetAllImports() throws AtlasBaseException {
+    public void testGetAsyncImportsStatus() throws AtlasBaseException {
         List<String> guids = Arrays.asList("guid1", "guid2");
 
         AtlasAsyncImportRequest request1 = spy(new AtlasAsyncImportRequest());
@@ -203,7 +203,7 @@ public class AsyncImportServiceTest {
                     .thenReturn(guids);
             when(dataAccess.load(anyList())).thenReturn(Collections.singletonList(request1));
 
-            PList<AsyncImportStatus> result = asyncImportService.getAllImports(offset, limit);
+            PList<AsyncImportStatus> result = asyncImportService.getAsyncImportsStatus(offset, limit);
 
             assertEquals(result.getList().size(), 1);
             assertEquals(result.getList().get(0).getImportId(), "guid1");
@@ -221,7 +221,7 @@ public class AsyncImportServiceTest {
 
         when(dataAccess.load(any(AtlasAsyncImportRequest.class))).thenReturn(request);
 
-        AtlasAsyncImportRequest result = asyncImportService.getImportStatusById(importId);
+        AtlasAsyncImportRequest result = asyncImportService.getAsyncImportRequest(importId);
 
         assertNotNull(result);
         assertEquals(result.getImportId(), importId);

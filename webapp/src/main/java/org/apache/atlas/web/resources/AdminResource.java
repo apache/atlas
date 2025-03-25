@@ -745,7 +745,7 @@ public class AdminResource {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAsyncImportStatus()");
             }
-            return importService.getAllAsyncImports(offset, limit);
+            return importService.getAsyncImportsStatus(offset, limit);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -761,7 +761,7 @@ public class AdminResource {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAsyncImportStatusById(importId=" + importId + ")");
             }
-            return importService.getAsyncImportStatus(importId);
+            return importService.getAsyncImportRequest(importId);
         } finally {
             AtlasPerfTracer.log(perf);
         }

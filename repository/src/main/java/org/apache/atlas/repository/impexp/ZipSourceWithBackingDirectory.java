@@ -295,7 +295,7 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
 
         try {
             MessageDigest md5Digest = MessageDigest.getInstance("MD5");
-            ZipEntry zipEntry = zis.getNextEntry();
+            ZipEntry      zipEntry  = zis.getNextEntry();
 
             while (zipEntry != null) {
                 String entryName = zipEntry.getName();
@@ -308,11 +308,13 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
             }
 
             // Compute the final MD5 hash after processing the entire ZIP file
-            byte[] hashBytes = md5Digest.digest();
-            StringBuilder md5Hash = new StringBuilder();
+            byte[]        hashBytes = md5Digest.digest();
+            StringBuilder md5Hash   = new StringBuilder();
+
             for (byte b : hashBytes) {
                 md5Hash.append(String.format("%02x", b));
             }
+
             setMd5Hash(md5Hash.toString());
 
             numberOfEntries -= ZipExportFileNames.values().length;

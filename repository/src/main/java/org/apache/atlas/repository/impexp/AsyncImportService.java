@@ -140,7 +140,7 @@ public class AsyncImportService {
     }
 
     @GraphTransaction
-    public PList<AsyncImportStatus> getAllImports(int offset, int limit) throws AtlasBaseException {
+    public PList<AsyncImportStatus> getAsyncImportsStatus(int offset, int limit) throws AtlasBaseException {
         LOG.debug("==> AsyncImportService.getAllImports()");
 
         List<String> allImportGuids = AtlasGraphUtilsV2.findEntityGUIDsByType(ASYNC_IMPORT_TYPE_NAME, SortOrder.ASCENDING);
@@ -164,7 +164,7 @@ public class AsyncImportService {
     }
 
     @GraphTransaction
-    public AtlasAsyncImportRequest getImportStatusById(String importId) throws AtlasBaseException {
+    public AtlasAsyncImportRequest getAsyncImportRequest(String importId) throws AtlasBaseException {
         LOG.debug("==> AsyncImportService.getImportStatusById(importId={})", importId);
 
         AtlasAsyncImportRequest atlasAsyncImportRequest = new AtlasAsyncImportRequest();

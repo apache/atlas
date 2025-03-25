@@ -250,7 +250,7 @@ public class ZipSource implements EntityImportStream {
     private void updateGuidZipEntryMap() throws IOException {
         try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
             MessageDigest md5Digest = MessageDigest.getInstance("MD5");
-            ZipEntry       zipEntry       = zipInputStream.getNextEntry();
+            ZipEntry      zipEntry  = zipInputStream.getNextEntry();
 
             while (zipEntry != null) {
                 String entryName = zipEntry.getName().replace(".json", "");
@@ -274,11 +274,13 @@ public class ZipSource implements EntityImportStream {
             }
 
             // Compute the final MD5 hash after processing the entire ZIP file
-            byte[] hashBytes = md5Digest.digest();
-            StringBuilder md5Hash = new StringBuilder();
+            byte[]        hashBytes = md5Digest.digest();
+            StringBuilder md5Hash   = new StringBuilder();
+
             for (byte b : hashBytes) {
                 md5Hash.append(String.format("%02x", b));
             }
+
             setMd5Hash(md5Hash.toString());
         } catch (NoSuchAlgorithmException e) {
             throw new IOException(e);

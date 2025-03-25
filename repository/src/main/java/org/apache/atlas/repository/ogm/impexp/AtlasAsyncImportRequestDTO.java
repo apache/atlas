@@ -68,108 +68,87 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
 
     @Override
     public AtlasAsyncImportRequest from(AtlasEntity entity) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasAsyncImportRequestDTO.from({})", entity);
-        }
+        LOG.debug("==> AtlasAsyncImportRequestDTO.from({})", entity);
 
         AtlasAsyncImportRequest asyncImportRequest = null;
-        ImportDetails importDetails = null;
+        String                  jsonImportResult   = (String) entity.getAttribute(IMPORT_RESULT_PROPERTY);
 
-        String requestId                   = (String) entity.getAttribute(REQUEST_ID_PROPERTY);
-        String jsonImportResult       = (String) entity.getAttribute(IMPORT_RESULT_PROPERTY);
-        String importId                    = (String) entity.getAttribute(IMPORT_ID_PROPERTY);
-        String status                      = (String) entity.getAttribute(STATUS_PROPERTY);
-        int skipTo                         = Integer.parseInt((String) entity.getAttribute(SKIP_TO_PROPERTY));
-        String jsonImportDetails           = (String) entity.getAttribute(IMPORT_DETAILS_PROPERTY);
-        long receivedAt                    = objectToLong(entity.getAttribute(RECEIVED_AT_PROPERTY));
-        long stagedAt                     = objectToLong(entity.getAttribute(STAGED_AT_PROPERTY));
-        long startedProcessingAt          = objectToLong(entity.getAttribute(STARTED_PROCESSING_AT));
-        long completedAt                  = objectToLong(entity.getAttribute(COMPLETED_AT));
-
-        if (StringUtils.isNotEmpty(jsonImportResult)) {
-            asyncImportRequest = new AtlasAsyncImportRequest(AtlasType.fromJson(jsonImportResult, AtlasImportResult.class));
-        }
-
-        if (StringUtils.isNotEmpty(jsonImportDetails)) {
-            importDetails = AtlasType.fromJson(jsonImportDetails, ImportDetails.class);
-        }
-
-        if (asyncImportRequest == null) {
-            LOG.error("AtlasAsyncImportRequest cannot be created without atlas import request and result. Null has been returned");
+        if (StringUtils.isEmpty(jsonImportResult)) {
+            LOG.error("AtlasAsyncImportRequest.from(entity={}): empty/null value in attribute {}", entity, IMPORT_RESULT_PROPERTY);
         } else {
+            String requestId           = (String) entity.getAttribute(REQUEST_ID_PROPERTY);
+            String importId            = (String) entity.getAttribute(IMPORT_ID_PROPERTY);
+            String status              = (String) entity.getAttribute(STATUS_PROPERTY);
+            int    skipTo              = Integer.parseInt((String) entity.getAttribute(SKIP_TO_PROPERTY));
+            String jsonImportDetails   = (String) entity.getAttribute(IMPORT_DETAILS_PROPERTY);
+            long   receivedAt          = objectToLong(entity.getAttribute(RECEIVED_AT_PROPERTY));
+            long   stagedAt            = objectToLong(entity.getAttribute(STAGED_AT_PROPERTY));
+            long   startedProcessingAt = objectToLong(entity.getAttribute(STARTED_PROCESSING_AT));
+            long   completedAt         = objectToLong(entity.getAttribute(COMPLETED_AT));
+
+            asyncImportRequest = new AtlasAsyncImportRequest(AtlasType.fromJson(jsonImportResult, AtlasImportResult.class));
+
             asyncImportRequest.setGuid(entity.getGuid());
             asyncImportRequest.getImportTrackingInfo().setRequestId(requestId);
             asyncImportRequest.setImportId(importId);
             asyncImportRequest.getImportTrackingInfo().setSkipTo(skipTo);
             asyncImportRequest.setStatus(ImportStatus.valueOf(status));
-            asyncImportRequest.setImportDetails(importDetails);
+            asyncImportRequest.setImportDetails(StringUtils.isNotEmpty(jsonImportDetails) ? AtlasType.fromJson(jsonImportDetails, ImportDetails.class) : null);
             asyncImportRequest.setReceivedAt(receivedAt);
             asyncImportRequest.setStagedAt(stagedAt);
             asyncImportRequest.setStartedProcessingAt(startedProcessingAt);
             asyncImportRequest.setCompletedAt(completedAt);
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasAsyncImportRequestDTO.from() : {}", asyncImportRequest);
-        }
+        LOG.debug("<== AtlasAsyncImportRequestDTO.from(entity={}): ret={}", entity, asyncImportRequest);
 
         return asyncImportRequest;
     }
 
     @Override
     public AtlasAsyncImportRequest from(AtlasEntityWithExtInfo entityWithExtInfo) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasAsyncImportRequestDTO.from({})", entityWithExtInfo);
-        }
+        LOG.debug("==> AtlasAsyncImportRequestDTO.from(entity={})", entityWithExtInfo);
 
         AtlasAsyncImportRequest request = from(entityWithExtInfo.getEntity());
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasAsyncImportRequestDTO.from() : {}", request);
-        }
+        LOG.debug("<== AtlasAsyncImportRequestDTO.from(entity={}): ret={}", entityWithExtInfo, request);
+
         return request;
     }
 
     @Override
     public AtlasEntity toEntity(AtlasAsyncImportRequest obj) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasAsyncImportRequestDTO.toEntity({})", obj);
-        }
+        LOG.debug("==> AtlasAsyncImportRequestDTO.toEntity(obj={})", obj);
 
         AtlasEntity entity = getDefaultAtlasEntity(obj);
 
         entity.setAttribute(REQUEST_ID_PROPERTY, getUniqueValue(obj));
+
         if (obj.getImportResult() != null) {
             entity.setAttribute(IMPORT_RESULT_PROPERTY, AtlasType.toJson(obj.getImportResult()));
         }
+
         entity.setAttribute(IMPORT_ID_PROPERTY, obj.getImportId());
         entity.setAttribute(STATUS_PROPERTY, obj.getStatus());
         entity.setAttribute(IMPORT_DETAILS_PROPERTY, AtlasType.toJson(obj.getImportDetails()));
         entity.setAttribute(SKIP_TO_PROPERTY, String.valueOf(obj.getImportTrackingInfo().getSkipTo()));
-
         entity.setAttribute(RECEIVED_AT_PROPERTY, String.valueOf(obj.getReceivedAt()));
         entity.setAttribute(STAGED_AT_PROPERTY, String.valueOf(obj.getStagedAt()));
         entity.setAttribute(STARTED_PROCESSING_AT, String.valueOf(obj.getStartedProcessingAt()));
         entity.setAttribute(COMPLETED_AT, String.valueOf(obj.getCompletedAt()));
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasAsyncImportRequestDTO.toEntity() : {}", entity);
-        }
+        LOG.debug("<== AtlasAsyncImportRequestDTO.toEntity(obj={}): ret={}", obj, entity);
 
         return entity;
     }
 
     @Override
     public AtlasEntityWithExtInfo toEntityWithExtInfo(AtlasAsyncImportRequest obj) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AtlasAsyncImportRequestDTO.toEntityWithExtInfo({})", obj);
-        }
+        LOG.debug("==> AtlasAsyncImportRequestDTO.toEntityWithExtInfo(obj={})", obj);
 
         AtlasEntityWithExtInfo ret = new AtlasEntityWithExtInfo(toEntity(obj));
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AtlasAsyncImportRequestDTO.toEntityWithExtInfo() : {}", ret);
-        }
+        LOG.debug("<== AtlasAsyncImportRequestDTO.toEntityWithExtInfo(obj={}): ret={}", obj, ret);
 
         return ret;
     }
@@ -177,9 +156,11 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
     @Override
     public Map<String, Object> getUniqueAttributes(AtlasAsyncImportRequest obj) {
         Map<String, Object> ret = new HashMap<>();
+
         if (obj.getImportId() != null) {
             ret.put(REQUEST_ID_PROPERTY, getUniqueValue(obj));
         }
+
         return ret;
     }
 
@@ -192,43 +173,51 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
 
     public static String convertToValidJson(String mapString) {
         String trimmed = mapString.trim();
+
         if (trimmed.startsWith("{")) {
             trimmed = trimmed.substring(1);
         }
+
         if (trimmed.endsWith("}")) {
             trimmed = trimmed.substring(0, trimmed.length() - 1);
         }
 
-        String[] keyValuePairs = trimmed.split(",\\s*(?![^\\[\\]]*\\])");
+        String[]      keyValuePairs = trimmed.split(",\\s*(?![^\\[\\]]*\\])");
+        StringBuilder jsonBuilder   = new StringBuilder();
 
-        StringBuilder jsonBuilder = new StringBuilder();
         jsonBuilder.append("{");
 
         for (int i = 0; i < keyValuePairs.length; i++) {
             String[] keyValue = keyValuePairs[i].split("=", 2);
-            String key = keyValue[0].trim();
-            String value = keyValue[1].trim();
+            String   key      = keyValue[0].trim();
+            String   value    = keyValue[1].trim();
 
             jsonBuilder.append("\"").append(key).append("\":");
 
             if (value.startsWith("[") && value.endsWith("]")) {
                 String arrayContent = value.substring(1, value.length() - 1).trim();
+
                 if (arrayContent.isEmpty()) {
                     jsonBuilder.append("[]");
                 } else {
                     String[] arrayElements = arrayContent.split(",\\s*");
+
                     jsonBuilder.append("[");
+
                     for (int j = 0; j < arrayElements.length; j++) {
                         String element = arrayElements[j].trim();
+
                         if (isNumeric(element)) {
                             jsonBuilder.append(element);
                         } else {
                             jsonBuilder.append("\"").append(element).append("\"");
                         }
+
                         if (j < arrayElements.length - 1) {
                             jsonBuilder.append(",");
                         }
                     }
+
                     jsonBuilder.append("]");
                 }
             } else if (isNumeric(value)) {
@@ -243,6 +232,7 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
         }
 
         jsonBuilder.append("}");
+
         return jsonBuilder.toString();
     }
 

@@ -429,14 +429,14 @@ public class AsyncImportTaskExecutorTest {
     }
 
     @Test
-    public void testAbortImport() throws AtlasBaseException {
+    public void testAbortAsyncImportRequest() throws AtlasBaseException {
         AtlasAsyncImportRequest mockImportRequest = mock(AtlasAsyncImportRequest.class);
 
         when(mockImportRequest.getTopicName()).thenReturn("ATLAS_IMPORT_12344");
         when(importService.abortImport(any(String.class))).thenReturn(mockImportRequest);
         doNothing().when(notificationInterface).deleteTopic(any(NotificationInterface.NotificationType.class), any(String.class));
 
-        asyncImportTaskExecutor.abortImport("12344");
+        asyncImportTaskExecutor.abortAsyncImportRequest("12344");
 
         verify(importService, times(1)).abortImport("12344");
         verify(notificationInterface, times(1)).deleteTopic(NotificationInterface.NotificationType.ASYNC_IMPORT, "ATLAS_IMPORT_12344");
