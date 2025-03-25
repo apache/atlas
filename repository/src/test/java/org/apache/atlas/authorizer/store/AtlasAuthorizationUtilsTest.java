@@ -1,9 +1,9 @@
 package org.apache.atlas.authorizer.store;
 
 
-import com.datastax.oss.driver.shaded.fasterxml.jackson.core.JsonProcessingException;
-import com.datastax.oss.driver.shaded.fasterxml.jackson.databind.JsonNode;
-import com.datastax.oss.driver.shaded.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.authorize.AtlasAuthorizer;
 import org.apache.atlas.authorize.AtlasAuthorizerFactory;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
