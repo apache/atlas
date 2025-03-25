@@ -505,6 +505,8 @@ public class AtlasAuthorizationUtils {
     }
 
     public static Map<String, Object> getPreFilterDsl(String persona, String purpose, List<String> actions) {
-        return ListAuthorizer.getElasticsearchDSL(persona, purpose, actions);
+        Map<String, Object> filterDsl = ListAuthorizer.getElasticsearchDSL(persona, purpose, actions);
+        LOG.info("ABAC_AUTH: FULL_RESTRICTION: indexsearch query prefilter={}", filterDsl);
+        return filterDsl;
     }
 }
