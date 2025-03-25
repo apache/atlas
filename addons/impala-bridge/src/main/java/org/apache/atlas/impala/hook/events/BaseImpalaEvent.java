@@ -208,8 +208,8 @@ public abstract class BaseImpalaEvent {
             }
         }
 
-        if (operation != ImpalaOperationType.QUERY) {
-            String errorMessage = String.format("Expect operation to be QUERY, but get unexpected operation type {}", operation.name());
+        if (operation != ImpalaOperationType.QUERY && operation != ImpalaOperationType.QUERY_WITH_CLAUSE) {
+            String errorMessage = String.format("Expect operation to be QUERY or QUERY_WITH_CLAUSE, but get unexpected operation type {}", operation.name());
             LOG.error(errorMessage);
             throw new IllegalArgumentException(errorMessage);
         }
