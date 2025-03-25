@@ -116,7 +116,7 @@ public class NotificationHookConsumerKafkaTest {
     }
 
     @Test
-    public void testConsumerConsumesNewMessageWithAutoCommitDisabled() throws AtlasException, InterruptedException, AtlasBaseException {
+    public void testConsumerConsumesNewMessageWithAutoCommitDisabled() throws AtlasException, AtlasBaseException {
         produceMessage(null, NotificationInterface.NotificationType.HOOK, new HookNotificationV1.EntityCreateRequest("test_user1", createEntity()));
 
         NotificationConsumer<HookNotification> consumer                 = createNewConsumer(NotificationInterface.NotificationType.HOOK, kafkaNotification, false);
@@ -136,9 +136,9 @@ public class NotificationHookConsumerKafkaTest {
     }
 
     @Test(enabled = false)
-    public void consumerConsumesNewMessageButCommitThrowsAnException_MessageOffsetIsRecorded() throws AtlasException, InterruptedException, AtlasBaseException {
+    public void consumerConsumesNewMessageButCommitThrowsAnException_MessageOffsetIsRecorded() throws AtlasException {
         ExceptionThrowingCommitConsumer       consumer                 = createNewConsumerThatThrowsExceptionInCommit(kafkaNotification, true);
-        NotificationHookConsumer               notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        NotificationHookConsumer              notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
         NotificationHookConsumer.HookConsumer hookConsumer             = notificationHookConsumer.new HookConsumer(consumer);
 
         produceMessage(null, NotificationInterface.NotificationType.HOOK, new HookNotificationV1.EntityCreateRequest("test_user2", createEntity()));
@@ -182,14 +182,15 @@ public class NotificationHookConsumerKafkaTest {
     }
 
     @Test
-    public void testImportMessagesArePublishedToDynamicTopicAndConsumedAndProcessed() throws AtlasException, InterruptedException, AtlasBaseException {
+    public void testImportMessagesArePublishedToDynamicTopicAndConsumedAndProcessed() throws AtlasException, AtlasBaseException {
         final String importId = "1b198cf8b55fed2e7829efea11f77795";
-        final String topic = "ATLAS_IMPORT_1b198cf8b55fed2e7829efea11f77795";
-        produceMessage(topic, NotificationInterface.NotificationType.ASYNC_IMPORT,
-                new ImportNotification.AtlasEntityImportNotification(importId, "test_user1", new AtlasEntity.AtlasEntityWithExtInfo(createV2Entity()), 1));
+        final String topic    = "ATLAS_IMPORT_1b198cf8b55fed2e7829efea11f77795";
+
+        produceMessage(topic, NotificationInterface.NotificationType.ASYNC_IMPORT, new ImportNotification.AtlasEntityImportNotification(importId, "test_user1", new AtlasEntity.AtlasEntityWithExtInfo(createV2Entity()), 1));
 
         // adding dynamic topic created for the notification type and creating consumer for the same
         addTopicToNotification(NotificationInterface.NotificationType.ASYNC_IMPORT, kafkaNotification, topic);
+
         NotificationConsumer<HookNotification> consumer                 = createNewConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, kafkaNotification, false);
         NotificationHookConsumer               notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
         NotificationHookConsumer.HookConsumer  hookConsumer             = notificationHookConsumer.new HookConsumer(consumer);
@@ -199,8 +200,7 @@ public class NotificationHookConsumerKafkaTest {
         verify(asyncImporter).onImportEntity(any(AtlasEntity.AtlasEntityWithExtInfo.class), anyString(), anyInt());
 
         // produce another message, and make sure it moves ahead. If commit succeeded, this would work.
-        produceMessage(topic, NotificationInterface.NotificationType.ASYNC_IMPORT,
-                new ImportNotification.AtlasEntityImportNotification(importId, "test_user1", new AtlasEntity.AtlasEntityWithExtInfo(createV2Entity()), 2));
+        produceMessage(topic, NotificationInterface.NotificationType.ASYNC_IMPORT, new ImportNotification.AtlasEntityImportNotification(importId, "test_user1", new AtlasEntity.AtlasEntityWithExtInfo(createV2Entity()), 2));
         consumeOneMessage(consumer, hookConsumer);
 
         verify(asyncImporter, times(2)).onImportEntity(any(AtlasEntity.AtlasEntityWithExtInfo.class), anyString(), anyInt());
@@ -225,11 +225,11 @@ public class NotificationHookConsumerKafkaTest {
         prop.put("enable.auto.commit", autoCommitEnabled);
 
         KafkaConsumer consumer = kafkaNotification.getOrCreateKafkaConsumer(null, prop, NotificationInterface.NotificationType.HOOK, 0);
+
         return new ExceptionThrowingCommitConsumer(NotificationInterface.NotificationType.HOOK, consumer, autoCommitEnabled, 1000);
     }
 
-    void consumeOneMessage(NotificationConsumer<HookNotification> consumer,
-            NotificationHookConsumer.HookConsumer hookConsumer) {
+    void consumeOneMessage(NotificationConsumer<HookNotification> consumer, NotificationHookConsumer.HookConsumer hookConsumer) {
         long startTime = System.currentTimeMillis(); //fetch starting time
 
         while ((System.currentTimeMillis() - startTime) < 10000) {
@@ -239,7 +239,7 @@ public class NotificationHookConsumerKafkaTest {
                 hookConsumer.handleMessage(msg);
             }
 
-            if (messages.size() > 0) {
+            if (!messages.isEmpty()) {
                 break;
             }
         }
@@ -327,9 +327,9 @@ public class NotificationHookConsumerKafkaTest {
     private static class ExceptionThrowingCommitConsumer extends AtlasKafkaConsumer {
         private boolean exceptionThrowingEnabled;
 
-        public ExceptionThrowingCommitConsumer(NotificationInterface.NotificationType notificationType,
-                KafkaConsumer kafkaConsumer, boolean autoCommitEnabled, long pollTimeoutMilliSeconds) {
+        public ExceptionThrowingCommitConsumer(NotificationInterface.NotificationType notificationType, KafkaConsumer kafkaConsumer, boolean autoCommitEnabled, long pollTimeoutMilliSeconds) {
             super(notificationType, kafkaConsumer, autoCommitEnabled, pollTimeoutMilliSeconds);
+
             exceptionThrowingEnabled = true;
         }
 

@@ -340,11 +340,12 @@ public class NotificationHookConsumerTest {
 
     @Test
     public void onCloseImportConsumerShutdownConsumerAndDeletesTopic() throws Exception {
-        String importId = "1b198cf8b55fed2e7829efea11f77795";
-        String topic = AtlasConfiguration.ASYNC_IMPORT_TOPIC_PREFIX.getString() + importId;
-        List<NotificationConsumer<Object>> consumers = new ArrayList();
+        String                             importId  = "1b198cf8b55fed2e7829efea11f77795";
+        String                             topic     = AtlasConfiguration.ASYNC_IMPORT_TOPIC_PREFIX.getString() + importId;
+        List<NotificationConsumer<Object>> consumers = new ArrayList<>();
 
         NotificationConsumer notificationHookImportConsumerMock = mock(NotificationConsumer.class);
+
         when(notificationHookImportConsumerMock.subscription()).thenReturn(Collections.emptySet());
         when(notificationHookImportConsumerMock.getTopicPartition()).thenReturn(Collections.emptySet());
         doNothing().when(notificationHookImportConsumerMock).close();
@@ -356,6 +357,7 @@ public class NotificationHookConsumerTest {
         doNothing().when(notificationInterface).deleteTopic(ASYNC_IMPORT, AtlasConfiguration.ASYNC_IMPORT_TOPIC_PREFIX.getString() + importId);
 
         NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+
         notificationHookConsumer.startAsyncImportConsumer(ASYNC_IMPORT, importId, "ATLAS_IMPORT_" + importId);
 
         // consumer created
@@ -369,7 +371,7 @@ public class NotificationHookConsumerTest {
     }
 
     private NotificationHookConsumer setupNotificationHookConsumer() throws AtlasException {
-        List<NotificationConsumer<Object>> consumers                = new ArrayList();
+        List<NotificationConsumer<Object>> consumers                = new ArrayList<>();
         NotificationConsumer               notificationConsumerMock = mock(NotificationConsumer.class);
 
         consumers.add(notificationConsumerMock);
@@ -379,6 +381,7 @@ public class NotificationHookConsumerTest {
         when(configuration.getInt(NotificationHookConsumer.CONSUMER_THREADS_PROPERTY, 1)).thenReturn(1);
         when(notificationConsumerMock.receive()).thenThrow(new IllegalStateException());
         when(notificationInterface.createConsumers(NotificationType.HOOK, 1)).thenReturn(consumers);
+
         return new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
     }
 }

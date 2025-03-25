@@ -62,6 +62,9 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.fail;
 
 public class ImportTaskListenerImplTest {
+    private static final String VALID_IMPORT_ID   = "valid-id";
+    private static final String INVALID_IMPORT_ID = "invalid-id";
+
     @Mock
     private AsyncImportService asyncImportService;
 
@@ -76,28 +79,28 @@ public class ImportTaskListenerImplTest {
 
     private AtlasAsyncImportRequest importRequest;
 
-    private static final String VALID_IMPORT_ID = "valid-id";
-    private static final String INVALID_IMPORT_ID = "invalid-id";
-
     @BeforeTest
     public void setup() throws Exception {
         MockitoAnnotations.openMocks(this);
 
         importRequest = mock(AtlasAsyncImportRequest.class);
+
         when(importRequest.getImportId()).thenReturn("import123");
         when(importRequest.getTopicName()).thenReturn("topic1");
 
-        requestQueue = mock(BlockingDeque.class);
+        requestQueue       = mock(BlockingDeque.class);
         asyncImportService = mock(AsyncImportService.class);
-        when(asyncImportService.fetchImportRequestByImportId("import123")).thenReturn(importRequest);
-        notificationHookConsumer = mock(NotificationHookConsumer.class);
 
-        importTaskListener = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
+        when(asyncImportService.fetchImportRequestByImportId("import123")).thenReturn(importRequest);
+
+        notificationHookConsumer = mock(NotificationHookConsumer.class);
+        importTaskListener       = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
     }
 
     @BeforeMethod
     public void resetMocks() throws AtlasException {
         reset(asyncImportService, notificationHookConsumer, requestQueue, importRequest);
+
         MockitoAnnotations.openMocks(this);
 
         when(importRequest.getImportId()).thenReturn("import123");
@@ -110,6 +113,7 @@ public class ImportTaskListenerImplTest {
     @Test
     public void testOnReceiveImportRequestAddsRequestToQueue() throws InterruptedException, AtlasBaseException {
         importTaskListener.onReceiveImportRequest(importRequest);
+
         Thread.sleep(500);
 
         verify(requestQueue, times(1)).put("import123");
@@ -123,6 +127,7 @@ public class ImportTaskListenerImplTest {
         when(requestQueue.poll(10, TimeUnit.SECONDS)).thenReturn("import123");
 
         importTaskListener.onReceiveImportRequest(importRequest);
+
         Thread.sleep(500);
 
         verify(asyncImportService, atLeastOnce()).fetchImportRequestByImportId("import123");
@@ -131,6 +136,7 @@ public class ImportTaskListenerImplTest {
     @Test(expectedExceptions = AtlasBaseException.class)
     public void testOnReceiveImportRequestHandlesQueueException() throws InterruptedException, AtlasBaseException {
         doThrow(new InterruptedException()).when(requestQueue).put(any(String.class));
+
         try {
             importTaskListener.onReceiveImportRequest(importRequest);
         } finally {
@@ -150,9 +156,11 @@ public class ImportTaskListenerImplTest {
     @Test
     public void testPopulateRequestQueueFillsQueueWithRequests() throws InterruptedException {
         List<String> imports = new ArrayList<>();
+
         imports.add("import1");
         imports.add("import2");
         imports.add("import3");
+
         when(asyncImportService.fetchQueuedImportRequests()).thenReturn(imports);
 
         importTaskListener.populateRequestQueue();
@@ -166,23 +174,31 @@ public class ImportTaskListenerImplTest {
     @Test
     public void testPopulateRequestQueueHandlesInterruptedException() throws InterruptedException {
         List<String> imports = new ArrayList<>();
+
         imports.add("import1");
+
         when(asyncImportService.fetchQueuedImportRequests()).thenReturn(imports);
 
         try {
             doThrow(new InterruptedException()).when(requestQueue)
                     .offer(any(String.class), eq(5L), eq(TimeUnit.SECONDS));
         } catch (InterruptedException e) {
+            // ignored
         }
+
         importTaskListener.populateRequestQueue();
+
         verify(requestQueue, times(1)).offer("import1", 5, TimeUnit.SECONDS);
     }
 
     @Test
     public void testStopImport_GracefulShutdown() throws Exception {
         ExecutorService mockExecutorService = mock(ExecutorService.class);
+
         when(mockExecutorService.awaitTermination(30, TimeUnit.SECONDS)).thenReturn(true);
+
         Field executorServiceField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+
         executorServiceField.setAccessible(true);
         executorServiceField.set(importTaskListener, mockExecutorService);
 
@@ -196,9 +212,12 @@ public class ImportTaskListenerImplTest {
     @Test
     public void testStopImport_ForcedShutdown() throws Exception {
         ExecutorService mockExecutorService = mock(ExecutorService.class);
+
         when(mockExecutorService.awaitTermination(30, TimeUnit.SECONDS)).thenReturn(false);
         when(mockExecutorService.awaitTermination(10, TimeUnit.SECONDS)).thenReturn(false);
+
         Field executorServiceField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+
         executorServiceField.setAccessible(true);
         executorServiceField.set(importTaskListener, mockExecutorService);
 
@@ -210,7 +229,7 @@ public class ImportTaskListenerImplTest {
     }
 
     @Test
-    public void testInstanceIsActive() throws AtlasException {
+    public void testInstanceIsActive() {
         importTaskListener.instanceIsActive();
 
         verify(asyncImportService, atLeast(0)).fetchQueuedImportRequests();
@@ -218,10 +237,13 @@ public class ImportTaskListenerImplTest {
     }
 
     @Test
-    public void testInstanceIsPassive() throws AtlasException, InterruptedException, NoSuchFieldException, IllegalAccessException {
+    public void testInstanceIsPassive() throws InterruptedException, NoSuchFieldException, IllegalAccessException {
         ExecutorService mockExecutorService = mock(ExecutorService.class);
+
         when(mockExecutorService.awaitTermination(anyLong(), any(TimeUnit.class))).thenReturn(true);
+
         Field executorServiceField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+
         executorServiceField.setAccessible(true);
         executorServiceField.set(importTaskListener, mockExecutorService);
 
@@ -230,15 +252,19 @@ public class ImportTaskListenerImplTest {
         verify(mockExecutorService, times(1)).shutdown();
 
         Field semaphoreField = ImportTaskListenerImpl.class.getDeclaredField("asyncImportSemaphore");
+
         semaphoreField.setAccessible(true);
+
         Semaphore semaphore = (Semaphore) semaphoreField.get(importTaskListener);
-        assertEquals(1, semaphore.availablePermits());
+
+        assertEquals(semaphore.availablePermits(), 1);
     }
 
     @Test
     public void testGetHandlerOrder() {
         int order = importTaskListener.getHandlerOrder();
-        assertEquals(8, order);
+
+        assertEquals(order, 8);
     }
 
     @Test
@@ -256,8 +282,9 @@ public class ImportTaskListenerImplTest {
         when(importRequest.getStatus()).thenReturn(WAITING);
         when(importRequest.getTopicName()).thenReturn("topic1");
 
-        ExecutorService realExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
-        Field executorField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+        ExecutorService realExecutor  = java.util.concurrent.Executors.newSingleThreadExecutor();
+        Field           executorField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+
         executorField.setAccessible(true);
         executorField.set(importTaskListener, realExecutor);
         when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
@@ -276,6 +303,7 @@ public class ImportTaskListenerImplTest {
     public void testStartImportConsumer_Failure() throws Exception {
         when(importRequest.getStatus()).thenReturn(WAITING);
         when(importRequest.getTopicName()).thenReturn("topic1");
+
         doThrow(new RuntimeException("Consumer failed"))
                 .when(notificationHookConsumer)
                 .startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, "import123", "topic1");
@@ -286,10 +314,12 @@ public class ImportTaskListenerImplTest {
             return null;
         }).when(importRequest).setStatus(any());
 
-        ExecutorService realExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
-        Field executorField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+        ExecutorService realExecutor  = java.util.concurrent.Executors.newSingleThreadExecutor();
+        Field           executorField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+
         executorField.setAccessible(true);
         executorField.set(importTaskListener, realExecutor);
+
         when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
 
         importTaskListener.onReceiveImportRequest(importRequest);
@@ -303,11 +333,10 @@ public class ImportTaskListenerImplTest {
     }
 
     @Test(dataProvider = "importQueueScenarios")
-    public void testGetImportIdFromQueue(String[] pollResults, AtlasAsyncImportRequest[] fetchResults, String expectedImportId, int expectedPollCount) throws InterruptedException, AtlasException {
+    public void testGetImportIdFromQueue(String[] pollResults, AtlasAsyncImportRequest[] fetchResults, String expectedImportId, int expectedPollCount) throws InterruptedException {
         //configure mock queue behaviour
         if (pollResults.length > 0) {
-            when(requestQueue.poll(anyLong(), any())).thenReturn(pollResults[0],
-                    (String[]) java.util.Arrays.copyOfRange(pollResults, 1, pollResults.length));
+            when(requestQueue.poll(anyLong(), any())).thenReturn(pollResults[0], java.util.Arrays.copyOfRange(pollResults, 1, pollResults.length));
         }
 
         // Configure fetch service behavior
@@ -331,8 +360,8 @@ public class ImportTaskListenerImplTest {
     }
 
     @DataProvider(name = "importQueueScenarios")
-    public Object[][] provideImportQueueScenarios() throws InterruptedException {
-        AtlasAsyncImportRequest validRequest = new AtlasAsyncImportRequest();
+    public Object[][] provideImportQueueScenarios() {
+        AtlasAsyncImportRequest validRequest   = new AtlasAsyncImportRequest();
         AtlasAsyncImportRequest invalidRequest = new AtlasAsyncImportRequest();
 
         validRequest.setImportId(VALID_IMPORT_ID);
@@ -352,10 +381,9 @@ public class ImportTaskListenerImplTest {
 
     @Test
     public void testStartAsyncImportIfAvailable_SemaphoreUnavailable() throws AtlasException {
-        Semaphore mockSemaphore = mock(Semaphore.class);
-        ExecutorService mockExecutor = mock(ExecutorService.class);
-
-        ImportTaskListenerImpl sut = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
+        Semaphore              mockSemaphore = mock(Semaphore.class);
+        ExecutorService        mockExecutor  = mock(ExecutorService.class);
+        ImportTaskListenerImpl sut           = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
 
         setExecutorServiceAndSemaphore(sut, mockExecutor, mockSemaphore);
 
@@ -371,13 +399,14 @@ public class ImportTaskListenerImplTest {
 
     @Test
     public void testStartAsyncImportIfAvailable_ValidImportIdProvided() throws AtlasException {
-        Semaphore asyncImportSemaphore = mock(Semaphore.class);
-        ExecutorService executorService = mock(ExecutorService.class);
+        Semaphore              asyncImportSemaphore = mock(Semaphore.class);
+        ExecutorService        executorService      = mock(ExecutorService.class);
+        ImportTaskListenerImpl sut                  = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
 
-        ImportTaskListenerImpl sut = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
         setExecutorServiceAndSemaphore(sut, executorService, asyncImportSemaphore);
 
         AtlasAsyncImportRequest validRequest = new AtlasAsyncImportRequest();
+
         validRequest.setImportId(VALID_IMPORT_ID);
         validRequest.setStatus(WAITING);
 
@@ -393,13 +422,14 @@ public class ImportTaskListenerImplTest {
 
     @Test
     public void testStartAsyncImportIfAvailable_InvalidImportIdProvided() throws AtlasException {
-        Semaphore asyncImportSemaphore = mock(Semaphore.class);
-        ExecutorService executorService = mock(ExecutorService.class);
+        Semaphore              asyncImportSemaphore = mock(Semaphore.class);
+        ExecutorService        executorService      = mock(ExecutorService.class);
+        ImportTaskListenerImpl sut                  = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
 
-        ImportTaskListenerImpl sut = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
         setExecutorServiceAndSemaphore(sut, executorService, asyncImportSemaphore);
 
         AtlasAsyncImportRequest invalidRequest = new AtlasAsyncImportRequest();
+
         invalidRequest.setImportId(INVALID_IMPORT_ID);
         invalidRequest.setStatus(ABORTED);
 
@@ -415,13 +445,14 @@ public class ImportTaskListenerImplTest {
 
     @Test
     public void testStartAsyncImportIfAvailable_NullImportId_ValidRequestFromQueue() throws AtlasException, InterruptedException {
-        Semaphore asyncImportSemaphore = mock(Semaphore.class);
-        ExecutorService executorService = mock(ExecutorService.class);
+        Semaphore              asyncImportSemaphore = mock(Semaphore.class);
+        ExecutorService        executorService      = mock(ExecutorService.class);
+        ImportTaskListenerImpl sut                  = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
 
-        ImportTaskListenerImpl sut = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
         setExecutorServiceAndSemaphore(sut, executorService, asyncImportSemaphore);
 
         AtlasAsyncImportRequest validRequest = new AtlasAsyncImportRequest();
+
         validRequest.setImportId(VALID_IMPORT_ID);
         validRequest.setStatus(WAITING);
 
@@ -438,13 +469,14 @@ public class ImportTaskListenerImplTest {
 
     @Test
     public void testStartAsyncImportIfAvailable_NullImportId_InvalidRequestFromQueue() throws AtlasException, InterruptedException {
-        Semaphore asyncImportSemaphore = mock(Semaphore.class);
-        ExecutorService executorService = mock(ExecutorService.class);
+        Semaphore              asyncImportSemaphore = mock(Semaphore.class);
+        ExecutorService        executorService      = mock(ExecutorService.class);
+        ImportTaskListenerImpl sut                  = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
 
-        ImportTaskListenerImpl sut = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
         setExecutorServiceAndSemaphore(sut, executorService, asyncImportSemaphore);
 
         AtlasAsyncImportRequest invalidRequest = new AtlasAsyncImportRequest();
+
         invalidRequest.setImportId(INVALID_IMPORT_ID);
         invalidRequest.setStatus(ABORTED);
 
@@ -462,10 +494,10 @@ public class ImportTaskListenerImplTest {
 
     @Test
     public void testStartAsyncImportIfAvailable_ExceptionDuringExecution() throws AtlasException {
-        Semaphore asyncImportSemaphore = mock(Semaphore.class);
-        ExecutorService executorService = mock(ExecutorService.class);
+        Semaphore              asyncImportSemaphore = mock(Semaphore.class);
+        ExecutorService        executorService      = mock(ExecutorService.class);
+        ImportTaskListenerImpl sut                  = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
 
-        ImportTaskListenerImpl sut = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
         setExecutorServiceAndSemaphore(sut, executorService, asyncImportSemaphore);
 
         when(asyncImportSemaphore.tryAcquire()).thenReturn(true);
@@ -483,10 +515,12 @@ public class ImportTaskListenerImplTest {
     private void setExecutorServiceAndSemaphore(ImportTaskListenerImpl importTaskListener, ExecutorService mockExecutor, Semaphore mockSemaphore) {
         try {
             Field executorField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+
             executorField.setAccessible(true);
             executorField.set(importTaskListener, mockExecutor);
 
             Field semaphoreField = ImportTaskListenerImpl.class.getDeclaredField("asyncImportSemaphore");
+
             semaphoreField.setAccessible(true);
             semaphoreField.set(importTaskListener, mockSemaphore);
         } catch (Exception e) {

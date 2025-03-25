@@ -181,9 +181,6 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private static final String ATLAS_IMPORT_CONSUMER_THREAD_PREFIX             = "atlas-import-consumer-thread-";
     private static final String THREADNAME_PREFIX                               = NotificationHookConsumer.class.getSimpleName();
 
-    @VisibleForTesting
-    final int consumerRetryInterval;
-
     private final AtlasEntityStore              atlasEntityStore;
     private final ServiceState                  serviceState;
     private final AtlasInstanceConverter        instanceConverter;
@@ -222,11 +219,14 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final int                           consumerMsgBufferingBatchSize;
     private final AsyncImporter                 asyncImporter;
 
-    @VisibleForTesting
-    List<HookConsumer> consumers;
-
     private ExecutorService executors;
     private Instant         nextStatsLogTime = AtlasMetricsCounter.getNextHourStartTime(Instant.now());
+
+    @VisibleForTesting
+    final int consumerRetryInterval;
+
+    @VisibleForTesting
+    List<HookConsumer> consumers;
 
     @Inject
     public NotificationHookConsumer(NotificationInterface notificationInterface, AtlasEntityStore atlasEntityStore, ServiceState serviceState, AtlasInstanceConverter instanceConverter, AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil, EntityCorrelationStore entityCorrelationStore, @Lazy AsyncImporter asyncImporter) throws AtlasException {
@@ -492,6 +492,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         if (!HAConfiguration.isHAEnabled(configuration)) {
             LOG.info("HA is disabled, starting consumers inline.");
+
             startHookConsumers(executorService);
         }
     }
@@ -544,6 +545,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
             hookConsumers.add(hookConsumer);
         }
+
         startConsumers(executorService, hookConsumers);
     }
 

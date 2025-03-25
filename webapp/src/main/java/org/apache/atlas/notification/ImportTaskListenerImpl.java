@@ -65,12 +65,8 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     private static final String THREADNAME_PREFIX    = ImportTaskListener.class.getSimpleName();
     private static final int    ASYNC_IMPORT_PERMITS = 1; // Only one asynchronous import task is permitted
 
-    // Blocking queue for requests
-    private BlockingQueue<String> requestQueue = new LinkedBlockingQueue<>();
-
-    // Single-thread executor for sequential processing
-    private final ExecutorService executorService;
-
+    private final BlockingQueue<String>    requestQueue;    // Blocking queue for requests
+    private final ExecutorService          executorService; // Single-thread executor for sequential processing
     private final AsyncImportService       asyncImportService;
     private final NotificationHookConsumer notificationHookConsumer;
     private final Semaphore                asyncImportSemaphore;
@@ -78,18 +74,17 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
 
     @Inject
     public ImportTaskListenerImpl(AsyncImportService asyncImportService, NotificationHookConsumer notificationHookConsumer) throws AtlasException {
+        this(asyncImportService, notificationHookConsumer, new LinkedBlockingQueue<>());
+    }
+
+    public ImportTaskListenerImpl(AsyncImportService asyncImportService, NotificationHookConsumer notificationHookConsumer, BlockingQueue<String> requestQueue) throws AtlasException {
         this.asyncImportService       = asyncImportService;
         this.notificationHookConsumer = notificationHookConsumer;
+        this.requestQueue             = requestQueue;
         this.asyncImportSemaphore     = new Semaphore(ASYNC_IMPORT_PERMITS);
         this.applicationProperties    = ApplicationProperties.get();
         this.executorService          = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d")
                 .setUncaughtExceptionHandler((thread, throwable) -> LOG.error("Uncaught exception in thread {}: {}", thread.getName(), throwable.getMessage(), throwable)).build());
-    }
-
-    public ImportTaskListenerImpl(AsyncImportService asyncImportService, NotificationHookConsumer notificationHookConsumer, BlockingDeque<String> requestQueue) throws AtlasException {
-        this(asyncImportService, notificationHookConsumer);
-
-        this.requestQueue = requestQueue;
     }
 
     @Override
