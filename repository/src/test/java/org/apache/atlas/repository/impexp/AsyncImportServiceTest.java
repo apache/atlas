@@ -17,13 +17,13 @@
  */
 package org.apache.atlas.repository.impexp;
 
-import org.apache.atlas.SortOrder;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.PList;
 import org.apache.atlas.model.impexp.AsyncImportStatus;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.repository.ogm.DataAccess;
+import org.apache.atlas.repository.ogm.impexp.AtlasAsyncImportRequestDTO;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -36,11 +36,15 @@ import org.testng.annotations.Test;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.PROCESSING;
+import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.SUCCESSFUL;
+import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.WAITING;
+import static org.apache.atlas.repository.ogm.impexp.AtlasAsyncImportRequestDTO.ASYNC_IMPORT_TYPE_NAME;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyList;
-import static org.mockito.Mockito.anyListOf;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -55,22 +59,25 @@ import static org.testng.Assert.assertNull;
 import static org.testng.Assert.assertTrue;
 
 public class AsyncImportServiceTest {
-    private DataAccess dataAccess;
+    private DataAccess         dataAccess;
     private AsyncImportService asyncImportService;
+
     @Mock
     private AtlasGraphUtilsV2 atlasGraphUtilsV2;
 
     @BeforeMethod
     public void setup() {
         MockitoAnnotations.openMocks(this);
-        dataAccess = mock(DataAccess.class);
+
+        dataAccess         = mock(DataAccess.class);
         asyncImportService = new AsyncImportService(dataAccess);
     }
 
     @Test
     public void testFetchImportRequestByImportId() throws Exception {
-        String importId = "import123";
+        String                  importId    = "import123";
         AtlasAsyncImportRequest mockRequest = new AtlasAsyncImportRequest();
+
         mockRequest.setImportId(importId);
 
         when(dataAccess.load(any(AtlasAsyncImportRequest.class))).thenReturn(mockRequest);
@@ -97,6 +104,7 @@ public class AsyncImportServiceTest {
     @Test
     public void testSaveImportRequest() throws AtlasBaseException {
         AtlasAsyncImportRequest importRequest = new AtlasAsyncImportRequest();
+
         importRequest.setImportId("import123");
 
         asyncImportService.saveImportRequest(importRequest);
@@ -107,6 +115,7 @@ public class AsyncImportServiceTest {
     @Test
     public void testUpdateImportRequest() throws AtlasBaseException {
         AtlasAsyncImportRequest importRequest = new AtlasAsyncImportRequest();
+
         importRequest.setImportId("import123");
 
         doThrow(new AtlasBaseException("Save failed")).when(dataAccess).save(importRequest);
@@ -118,53 +127,57 @@ public class AsyncImportServiceTest {
 
     @Test
     public void testFetchInProgressImportIds() throws AtlasBaseException {
-        List<String> guids = Arrays.asList("guid1", "guid2");
         AtlasAsyncImportRequest request1 = new AtlasAsyncImportRequest();
-        request1.setImportId("guid1");
-        request1.setStatus(AtlasAsyncImportRequest.ImportStatus.PROCESSING);
-
         AtlasAsyncImportRequest request2 = new AtlasAsyncImportRequest();
+
+        request1.setImportId("guid1");
+        request1.setStatus(PROCESSING);
+
         request2.setImportId("guid2");
-        request2.setStatus(AtlasAsyncImportRequest.ImportStatus.SUCCESSFUL);
+        request2.setStatus(SUCCESSFUL);
 
         try (MockedStatic<AtlasGraphUtilsV2> mockedStatic = mockStatic(AtlasGraphUtilsV2.class)) {
-            mockedStatic.when(() -> AtlasGraphUtilsV2.findEntityGUIDsByType(anyString(), any(SortOrder.class)))
-                    .thenReturn(guids);
+            mockedStatic.when(() -> AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(ASYNC_IMPORT_TYPE_NAME,
+                    Collections.singletonMap(AtlasAsyncImportRequestDTO.STATUS_PROPERTY, PROCESSING),
+                    AtlasAsyncImportRequestDTO.IMPORT_ID_PROPERTY)).thenReturn(Collections.singletonList("guid1"));
 
-            when(dataAccess.load(anyListOf(AtlasAsyncImportRequest.class))).thenReturn(Arrays.asList(request1, request2));
+            mockedStatic.when(() -> AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(ASYNC_IMPORT_TYPE_NAME,
+                    Collections.singletonMap(AtlasAsyncImportRequestDTO.STATUS_PROPERTY, SUCCESSFUL),
+                    AtlasAsyncImportRequestDTO.IMPORT_ID_PROPERTY)).thenReturn(Collections.singletonList("guid2"));
 
             List<String> result = asyncImportService.fetchInProgressImportIds();
 
             assertEquals(result.size(), 1);
             assertTrue(result.contains("guid1"));
 
-            mockedStatic.verify(() -> AtlasGraphUtilsV2.findEntityGUIDsByType(anyString(), any(SortOrder.class)));
-            verify(dataAccess, times(1)).load(anyListOf(AtlasAsyncImportRequest.class));
+            mockedStatic.verify(() -> AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(anyString(), any(Map.class), anyString()));
         }
     }
 
     @Test
     public void testFetchQueuedImportRequests() throws AtlasBaseException {
-        List<String> guids = Arrays.asList("guid1", "guid2");
         AtlasAsyncImportRequest request1 = new AtlasAsyncImportRequest();
-        request1.setImportId("guid1");
-        request1.setStatus(AtlasAsyncImportRequest.ImportStatus.WAITING);
-
         AtlasAsyncImportRequest request2 = new AtlasAsyncImportRequest();
+
+        request1.setImportId("guid1");
+        request1.setStatus(WAITING);
+
         request2.setImportId("guid2");
-        request2.setStatus(AtlasAsyncImportRequest.ImportStatus.PROCESSING);
+        request2.setStatus(PROCESSING);
 
         try (MockedStatic<AtlasGraphUtilsV2> mockStatic = mockStatic(AtlasGraphUtilsV2.class)) {
-            mockStatic.when(() -> AtlasGraphUtilsV2.findEntityGUIDsByType(anyString(), any(SortOrder.class)))
-                    .thenReturn(guids);
+            mockStatic.when(() -> AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(ASYNC_IMPORT_TYPE_NAME,
+                    Collections.singletonMap(AtlasAsyncImportRequestDTO.STATUS_PROPERTY, WAITING),
+                    AtlasAsyncImportRequestDTO.IMPORT_ID_PROPERTY)).thenReturn(Collections.singletonList("guid1"));
 
-            when(dataAccess.load(anyList())).thenReturn(Arrays.asList(request1, request2));
+            mockStatic.when(() -> AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(ASYNC_IMPORT_TYPE_NAME,
+                    Collections.singletonMap(AtlasAsyncImportRequestDTO.STATUS_PROPERTY, PROCESSING),
+                    AtlasAsyncImportRequestDTO.IMPORT_ID_PROPERTY)).thenReturn(Collections.singletonList("guid2"));
 
             List<String> result = asyncImportService.fetchQueuedImportRequests();
 
             assertEquals(result.size(), 1);
             assertTrue(result.contains("guid1"));
-            verify(dataAccess, times(1)).load(anyList());
         }
     }
 
@@ -173,8 +186,7 @@ public class AsyncImportServiceTest {
         List<String> guids = Arrays.asList("guid1", "guid2");
 
         try (MockedStatic<AtlasGraphUtilsV2> mockStatic = mockStatic(AtlasGraphUtilsV2.class)) {
-            mockStatic.when(() -> AtlasGraphUtilsV2.findEntityGUIDsByType(anyString(), any()))
-                    .thenReturn(guids);
+            mockStatic.when(() -> AtlasGraphUtilsV2.findEntityGUIDsByType(anyString(), any())).thenReturn(guids);
 
             asyncImportService.deleteRequests();
 
@@ -184,14 +196,14 @@ public class AsyncImportServiceTest {
 
     @Test
     public void testGetAsyncImportsStatus() throws AtlasBaseException {
-        List<String> guids = Arrays.asList("guid1", "guid2");
+        List<String>            guids            = Arrays.asList("guid1", "guid2");
+        AtlasAsyncImportRequest request1         = spy(new AtlasAsyncImportRequest());
+        AtlasImportResult       mockImportResult = mock(AtlasImportResult.class);
 
-        AtlasAsyncImportRequest request1 = spy(new AtlasAsyncImportRequest());
         request1.setImportId("guid1");
         request1.setStatus(AtlasAsyncImportRequest.ImportStatus.PROCESSING);
         request1.setReceivedAt(System.currentTimeMillis());
 
-        AtlasImportResult mockImportResult = mock(AtlasImportResult.class);
         doReturn("admin").when(mockImportResult).getUserName();
         request1.setImportResult(mockImportResult);
 
@@ -199,8 +211,7 @@ public class AsyncImportServiceTest {
         int limit = 10;
 
         try (MockedStatic<AtlasGraphUtilsV2> mockStatic = mockStatic(AtlasGraphUtilsV2.class)) {
-            mockStatic.when(() -> AtlasGraphUtilsV2.findEntityGUIDsByType(anyString(), any()))
-                    .thenReturn(guids);
+            mockStatic.when(() -> AtlasGraphUtilsV2.findEntityGUIDsByType(anyString(), any())).thenReturn(guids);
             when(dataAccess.load(anyList())).thenReturn(Collections.singletonList(request1));
 
             PList<AsyncImportStatus> result = asyncImportService.getAsyncImportsStatus(offset, limit);
@@ -215,8 +226,9 @@ public class AsyncImportServiceTest {
 
     @Test
     public void testGetImportStatusById() throws AtlasBaseException {
-        String importId = "import123";
-        AtlasAsyncImportRequest request = new AtlasAsyncImportRequest();
+        String                  importId = "import123";
+        AtlasAsyncImportRequest request  = new AtlasAsyncImportRequest();
+
         request.setImportId(importId);
 
         when(dataAccess.load(any(AtlasAsyncImportRequest.class))).thenReturn(request);

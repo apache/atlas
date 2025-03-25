@@ -152,7 +152,7 @@ public class AsyncImportTaskExecutor {
     void publishEntityNotification(AtlasAsyncImportRequest importRequest, EntityImportStream entityImportStream) {
         LOG.info("==> publishEntityNotification(atlasAsyncImportRequest={})", importRequest);
 
-        int publishedEntityCounter =  importRequest.getImportDetails().getPublishedEntityCount();
+        int publishedEntityCounter = importRequest.getImportDetails().getPublishedEntityCount();
         int failedEntityCounter    = importRequest.getImportDetails().getFailedEntitiesCount();
 
         while (entityImportStream.hasNext()) {

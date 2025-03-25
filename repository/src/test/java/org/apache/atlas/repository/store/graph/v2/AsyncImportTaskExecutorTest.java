@@ -24,6 +24,7 @@ import org.apache.atlas.kafka.NotificationProvider;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
@@ -72,7 +73,7 @@ public class AsyncImportTaskExecutorTest {
     private AsyncImportTaskExecutor asyncImportTaskExecutor;
 
     @BeforeMethod
-    public void setup() throws AtlasBaseException {
+    public void setup() {
         MockitoAnnotations.openMocks(this);
 
         try (MockedStatic<NotificationProvider> mockedStatic = Mockito.mockStatic(NotificationProvider.class)) {
@@ -86,8 +87,9 @@ public class AsyncImportTaskExecutorTest {
 
     @Test
     void testRunSuccess() throws AtlasBaseException {
-        AtlasImportResult mockResult = mock(AtlasImportResult.class);
+        AtlasImportResult  mockResult             = mock(AtlasImportResult.class);
         EntityImportStream mockEntityImportStream = mock(EntityImportStream.class);
+
         when(mockEntityImportStream.getMd5Hash()).thenReturn("import-md5-hash");
         when(mockEntityImportStream.size()).thenReturn(5);
         when(mockEntityImportStream.getCreationOrder()).thenReturn(Collections.emptyList());
@@ -106,8 +108,9 @@ public class AsyncImportTaskExecutorTest {
 
     @Test
     void testRunDuplicateRequestInWaitingStatus() throws AtlasBaseException {
-        AtlasImportResult mockResult = mock(AtlasImportResult.class);
+        AtlasImportResult  mockResult             = mock(AtlasImportResult.class);
         EntityImportStream mockEntityImportStream = mock(EntityImportStream.class);
+
         when(mockEntityImportStream.getMd5Hash()).thenReturn("import-md5");
         when(mockEntityImportStream.size()).thenReturn(10);
         when(mockEntityImportStream.getCreationOrder()).thenReturn(Collections.emptyList());
@@ -128,6 +131,7 @@ public class AsyncImportTaskExecutorTest {
 
         // Verify that skipToPosition and publishImportRequest are NOT called
         AsyncImportTaskExecutor spyPublisher = spy(asyncImportTaskExecutor);
+
         doNothing().when(spyPublisher).skipToPosition(any(), any());
         doNothing().when(spyPublisher).publishImportRequest(any(), any());
 
@@ -137,13 +141,15 @@ public class AsyncImportTaskExecutorTest {
 
     @Test
     void testRunDuplicateRequestInProcessingStatus() throws AtlasBaseException {
-        AtlasImportResult mockResult = mock(AtlasImportResult.class);
+        AtlasImportResult  mockResult             = mock(AtlasImportResult.class);
         EntityImportStream mockEntityImportStream = mock(EntityImportStream.class);
+
         when(mockEntityImportStream.getMd5Hash()).thenReturn("import-md5");
         when(mockEntityImportStream.size()).thenReturn(10);
         when(mockEntityImportStream.getCreationOrder()).thenReturn(Collections.emptyList());
 
         AtlasAsyncImportRequest mockRequest = mock(AtlasAsyncImportRequest.class);
+
         when(mockRequest.getStatus()).thenReturn(AtlasAsyncImportRequest.ImportStatus.PROCESSING);
         when(importService.fetchImportRequestByImportId("import-md5")).thenReturn(mockRequest);
 
@@ -159,6 +165,7 @@ public class AsyncImportTaskExecutorTest {
 
         // Verify that skipToPosition and publishImportRequest are NOT called
         AsyncImportTaskExecutor spyPublisher = spy(asyncImportTaskExecutor);
+
         doNothing().when(spyPublisher).skipToPosition(any(), any());
         doNothing().when(spyPublisher).publishImportRequest(any(), any());
 
@@ -168,9 +175,10 @@ public class AsyncImportTaskExecutorTest {
 
     @Test
     void testPublishImportRequestHappyPath() throws AtlasBaseException {
-        AtlasAsyncImportRequest mockImportRequest = mock(AtlasAsyncImportRequest.class);
-        AtlasImportResult mockResult = mock(AtlasImportResult.class);
-        EntityImportStream mockEntityImportStream = mock(EntityImportStream.class);
+        AtlasAsyncImportRequest mockImportRequest      = mock(AtlasAsyncImportRequest.class);
+        AtlasImportResult       mockResult             = mock(AtlasImportResult.class);
+        EntityImportStream      mockEntityImportStream = mock(EntityImportStream.class);
+
         when(mockImportRequest.getTopicName()).thenReturn("test-topic");
         when(mockImportRequest.getImportId()).thenReturn("import-md5");
         when(mockImportRequest.getImportDetails()).thenReturn(new AtlasAsyncImportRequest.ImportDetails());
@@ -187,9 +195,10 @@ public class AsyncImportTaskExecutorTest {
 
     @Test
     void testPublishImportRequestTypeDefNotificationException() throws AtlasBaseException, NotificationException {
-        AtlasAsyncImportRequest mockImportRequest = mock(AtlasAsyncImportRequest.class);
-        AtlasImportResult mockResult = mock(AtlasImportResult.class);
-        EntityImportStream mockEntityImportStream = mock(EntityImportStream.class);
+        AtlasAsyncImportRequest mockImportRequest      = mock(AtlasAsyncImportRequest.class);
+        AtlasImportResult       mockResult             = mock(AtlasImportResult.class);
+        EntityImportStream      mockEntityImportStream = mock(EntityImportStream.class);
+
         when(mockImportRequest.getTopicName()).thenReturn("test-topic");
         when(mockImportRequest.getImportId()).thenReturn("import-md5");
         when(mockImportRequest.getImportResult()).thenReturn(mockResult);
@@ -211,15 +220,16 @@ public class AsyncImportTaskExecutorTest {
     }
 
     @Test
-    void testPublishEntityNotificationHappyPath() throws AtlasBaseException, NotificationException {
-        AtlasAsyncImportRequest mockImportRequest = mock(AtlasAsyncImportRequest.class);
-        AtlasImportResult mockResult = mock(AtlasImportResult.class);
-        EntityImportStream mockEntityImportStream = mock(EntityImportStream.class);
-        AtlasEntity.AtlasEntityWithExtInfo mockEntityWithExtInfo = mock(AtlasEntity.AtlasEntityWithExtInfo.class);
+    void testPublishEntityNotificationHappyPath() throws NotificationException {
+        AtlasAsyncImportRequest mockImportRequest      = mock(AtlasAsyncImportRequest.class);
+        AtlasImportResult       mockResult             = mock(AtlasImportResult.class);
+        EntityImportStream      mockEntityImportStream = mock(EntityImportStream.class);
+        AtlasEntityWithExtInfo  mockEntityWithExtInfo  = mock(AtlasEntityWithExtInfo.class);
 
         when(mockImportRequest.getTopicName()).thenReturn("test-topic");
         when(mockImportRequest.getImportId()).thenReturn("import-id");
         when(mockImportRequest.getImportDetails()).thenReturn(new AtlasAsyncImportRequest.ImportDetails());
+        when(mockImportRequest.getImportTrackingInfo()).thenReturn(new AtlasAsyncImportRequest.ImportTrackingInfo());
         when(mockImportRequest.getImportResult()).thenReturn(mockResult);
         when(mockResult.getUserName()).thenReturn("test-user-1");
         when(mockEntityImportStream.hasNext()).thenReturn(true, false); // One entity in the stream
@@ -227,6 +237,7 @@ public class AsyncImportTaskExecutorTest {
         when(mockEntityImportStream.getPosition()).thenReturn(1);
 
         AtlasEntity mockEntity = mock(AtlasEntity.class);
+
         when(mockEntityWithExtInfo.getEntity()).thenReturn(mockEntity);
         when(mockEntity.getGuid()).thenReturn("entity-guid");
 
@@ -235,15 +246,17 @@ public class AsyncImportTaskExecutorTest {
         verify(notificationInterface).send(eq("test-topic"), anyList(), any());
         verify(mockEntityImportStream).onImportComplete("entity-guid");
         verify(importService).updateImportRequest(mockImportRequest);
-        verify(mockImportRequest).getImportTrackingInfo().setSkipTo(1);
-        assertEquals(1, mockImportRequest.getImportDetails().getPublishedEntityCount());
+        assertEquals(mockImportRequest.getImportTrackingInfo().getSkipTo(), 1);
+        assertEquals(mockImportRequest.getImportDetails().getPublishedEntityCount(), 1);
     }
 
     @Test
     void testPublishEntityNotificationNullEntity() throws NotificationException {
-        AtlasAsyncImportRequest mockImportRequest = mock(AtlasAsyncImportRequest.class);
-        EntityImportStream mockEntityImportStream = mock(EntityImportStream.class);
+        AtlasAsyncImportRequest mockImportRequest      = mock(AtlasAsyncImportRequest.class);
+        EntityImportStream      mockEntityImportStream = mock(EntityImportStream.class);
+
         when(mockImportRequest.getImportDetails()).thenReturn(new AtlasAsyncImportRequest.ImportDetails());
+        when(mockImportRequest.getImportTrackingInfo()).thenReturn(new AtlasAsyncImportRequest.ImportTrackingInfo());
         when(mockEntityImportStream.hasNext()).thenReturn(true, false); // One entity in the stream
         when(mockEntityImportStream.getNextEntityWithExtInfo()).thenReturn(null);
         when(mockEntityImportStream.getPosition()).thenReturn(1);
@@ -253,20 +266,22 @@ public class AsyncImportTaskExecutorTest {
         verify(notificationInterface, never()).send(anyString(), anyList(), any());
         verify(mockEntityImportStream, never()).onImportComplete(anyString());
         verify(importService).updateImportRequest(mockImportRequest);
-        verify(mockImportRequest).getImportTrackingInfo().setSkipTo(1);
-        assertEquals(0, mockImportRequest.getImportDetails().getPublishedEntityCount());
+        assertEquals(mockImportRequest.getImportTrackingInfo().getSkipTo(), 1);
+        assertEquals(mockImportRequest.getImportDetails().getPublishedEntityCount(), 0);
     }
 
     @Test
-    void testPublishEntityNotificationExceptionInSendToTopic() throws AtlasBaseException, NotificationException {
-        AtlasAsyncImportRequest mockImportRequest = mock(AtlasAsyncImportRequest.class);
-        AtlasImportResult mockResult = mock(AtlasImportResult.class);
-        EntityImportStream mockEntityImportStream = mock(EntityImportStream.class);
-        AtlasEntity.AtlasEntityWithExtInfo mockEntityWithExtInfo = mock(AtlasEntity.AtlasEntityWithExtInfo.class);
-        AtlasEntity mockEntity = mock(AtlasEntity.class);
+    void testPublishEntityNotificationExceptionInSendToTopic() throws NotificationException {
+        AtlasAsyncImportRequest mockImportRequest      = mock(AtlasAsyncImportRequest.class);
+        AtlasImportResult       mockResult             = mock(AtlasImportResult.class);
+        EntityImportStream      mockEntityImportStream = mock(EntityImportStream.class);
+        AtlasEntityWithExtInfo  mockEntityWithExtInfo  = mock(AtlasEntityWithExtInfo.class);
+        AtlasEntity             mockEntity             = mock(AtlasEntity.class);
+
         when(mockImportRequest.getTopicName()).thenReturn("test-topic");
         when(mockImportRequest.getImportId()).thenReturn("import-id");
         when(mockImportRequest.getImportDetails()).thenReturn(new AtlasAsyncImportRequest.ImportDetails());
+        when(mockImportRequest.getImportTrackingInfo()).thenReturn(new AtlasAsyncImportRequest.ImportTrackingInfo());
         when(mockImportRequest.getImportResult()).thenReturn(mockResult);
         when(mockResult.getUserName()).thenReturn("test-user-1");
         when(mockEntityImportStream.getPosition()).thenReturn(1);
@@ -284,21 +299,23 @@ public class AsyncImportTaskExecutorTest {
         verify(notificationInterface).send(eq("test-topic"), anyList(), any());
         verify(mockEntityImportStream, never()).onImportComplete("entity-guid");
         verify(importService).updateImportRequest(mockImportRequest);
-        verify(mockImportRequest).getImportTrackingInfo().setSkipTo(1);
-        assertEquals(1, mockImportRequest.getImportDetails().getFailedEntitiesCount());
-        assertEquals(0, mockImportRequest.getImportDetails().getPublishedEntityCount());
+        assertEquals(mockImportRequest.getImportTrackingInfo().getSkipTo(), 1);
+        assertEquals(mockImportRequest.getImportDetails().getFailedEntitiesCount(), 1);
+        assertEquals(mockImportRequest.getImportDetails().getPublishedEntityCount(), 0);
     }
 
     @Test
-    void testPublishEntityNotificationIgnoreFailedEntityAndProcessNext() throws AtlasBaseException, NotificationException {
-        AtlasAsyncImportRequest mockImportRequest = mock(AtlasAsyncImportRequest.class);
-        AtlasImportResult mockResult = mock(AtlasImportResult.class);
-        EntityImportStream mockEntityImportStream = mock(EntityImportStream.class);
-        AtlasEntity.AtlasEntityWithExtInfo mockEntityWithExtInfo = mock(AtlasEntity.AtlasEntityWithExtInfo.class);
-        AtlasEntity mockEntity = mock(AtlasEntity.class);
+    void testPublishEntityNotificationIgnoreFailedEntityAndProcessNext() throws NotificationException {
+        AtlasAsyncImportRequest mockImportRequest      = mock(AtlasAsyncImportRequest.class);
+        AtlasImportResult       mockResult             = mock(AtlasImportResult.class);
+        EntityImportStream      mockEntityImportStream = mock(EntityImportStream.class);
+        AtlasEntityWithExtInfo  mockEntityWithExtInfo  = mock(AtlasEntityWithExtInfo.class);
+        AtlasEntity             mockEntity             = mock(AtlasEntity.class);
+
         when(mockImportRequest.getTopicName()).thenReturn("test-topic");
         when(mockImportRequest.getImportId()).thenReturn("import-id");
         when(mockImportRequest.getImportDetails()).thenReturn(new AtlasAsyncImportRequest.ImportDetails());
+        when(mockImportRequest.getImportTrackingInfo()).thenReturn(new AtlasAsyncImportRequest.ImportTrackingInfo());
         when(mockImportRequest.getImportResult()).thenReturn(mockResult);
         when(mockResult.getUserName()).thenReturn("test-user-1");
         when(mockEntityImportStream.getPosition()).thenReturn(1, 2);
@@ -317,15 +334,16 @@ public class AsyncImportTaskExecutorTest {
         verify(notificationInterface, times(2)).send(eq("test-topic"), anyList(), any());
         verify(mockEntityImportStream, times(1)).onImportComplete("entity-guid");
         verify(importService, times(2)).updateImportRequest(mockImportRequest);
-        assertEquals(1, mockImportRequest.getImportDetails().getPublishedEntityCount());
-        assertEquals(1, mockImportRequest.getImportDetails().getFailedEntitiesCount());
+        assertEquals(mockImportRequest.getImportDetails().getPublishedEntityCount(), 1);
+        assertEquals(mockImportRequest.getImportDetails().getFailedEntitiesCount(), 1);
     }
 
     @Test
     void testSkipToPositionHappyPath() {
-        AtlasAsyncImportRequest mockImportRequest = mock(AtlasAsyncImportRequest.class);
-        EntityImportStream mockEntityImportStream = mock(EntityImportStream.class);
-        when(mockImportRequest.getImportTrackingInfo().getSkipTo()).thenReturn(3); // Skip to position 3
+        AtlasAsyncImportRequest mockImportRequest      = mock(AtlasAsyncImportRequest.class);
+        EntityImportStream      mockEntityImportStream = mock(EntityImportStream.class);
+
+        when(mockImportRequest.getImportTrackingInfo()).thenReturn(new AtlasAsyncImportRequest.ImportTrackingInfo("", 3));  // Skip to position 3
         when(mockEntityImportStream.hasNext()).thenReturn(true, true, true, true, false); // 4 entities in total
         when(mockEntityImportStream.getPosition()).thenReturn(0, 1, 2, 3);
 
@@ -336,9 +354,10 @@ public class AsyncImportTaskExecutorTest {
 
     @Test
     void testSkipToPositionSkipToGreaterThanTotalEntities() {
-        AtlasAsyncImportRequest mockImportRequest = mock(AtlasAsyncImportRequest.class);
-        EntityImportStream mockEntityImportStream = mock(EntityImportStream.class);
-        when(mockImportRequest.getImportTrackingInfo().getSkipTo()).thenReturn(10); // Skip to position 10
+        AtlasAsyncImportRequest mockImportRequest      = mock(AtlasAsyncImportRequest.class);
+        EntityImportStream      mockEntityImportStream = mock(EntityImportStream.class);
+
+        when(mockImportRequest.getImportTrackingInfo()).thenReturn(new AtlasAsyncImportRequest.ImportTrackingInfo("", 10)); // Skip to position 10
         when(mockEntityImportStream.hasNext()).thenReturn(true, true, true, false); // 3 entities in total
         when(mockEntityImportStream.getPosition()).thenReturn(0, 1, 2);
 
@@ -349,9 +368,10 @@ public class AsyncImportTaskExecutorTest {
 
     @Test
     void testSkipToPositionNoEntitiesInStream() {
-        AtlasAsyncImportRequest mockImportRequest = mock(AtlasAsyncImportRequest.class);
-        EntityImportStream mockEntityImportStream = mock(EntityImportStream.class);
-        when(mockImportRequest.getImportTrackingInfo().getSkipTo()).thenReturn(3); // Skip to position 3
+        AtlasAsyncImportRequest mockImportRequest      = mock(AtlasAsyncImportRequest.class);
+        EntityImportStream      mockEntityImportStream = mock(EntityImportStream.class);
+
+        when(mockImportRequest.getImportTrackingInfo()).thenReturn(new AtlasAsyncImportRequest.ImportTrackingInfo("", 3)); // Skip to position 3
         when(mockEntityImportStream.hasNext()).thenReturn(false); // No entities in the stream
 
         asyncImportTaskExecutor.skipToPosition(mockImportRequest, mockEntityImportStream);
@@ -361,9 +381,10 @@ public class AsyncImportTaskExecutorTest {
 
     @Test
     void testSkipToPositionSkipToEqualsCurrentPosition() {
-        AtlasAsyncImportRequest mockImportRequest = mock(AtlasAsyncImportRequest.class);
-        EntityImportStream mockEntityImportStream = mock(EntityImportStream.class);
-        when(mockImportRequest.getImportTrackingInfo().getSkipTo()).thenReturn(2); // Skip to position 2
+        AtlasAsyncImportRequest mockImportRequest      = mock(AtlasAsyncImportRequest.class);
+        EntityImportStream      mockEntityImportStream = mock(EntityImportStream.class);
+
+        when(mockImportRequest.getImportTrackingInfo()).thenReturn(new AtlasAsyncImportRequest.ImportTrackingInfo("", 2)); // Skip to position 2
         when(mockEntityImportStream.hasNext()).thenReturn(true); // At least one entity in the stream
         when(mockEntityImportStream.getPosition()).thenReturn(2); // Already at position 2
 
@@ -387,11 +408,12 @@ public class AsyncImportTaskExecutorTest {
 
     @Test(dataProvider = "registerRequestScenarios")
     public void testRegisterRequest(String existingStatus, String expectedOutcome) throws AtlasBaseException {
-        AtlasImportResult mockResult = mock(AtlasImportResult.class);
+        AtlasImportResult       mockResult      = mock(AtlasImportResult.class);
         AtlasAsyncImportRequest existingRequest = null;
 
         if (!"null".equals(existingStatus)) {
             existingRequest = mock(AtlasAsyncImportRequest.class);
+
             when(existingRequest.getStatus()).thenReturn(AtlasAsyncImportRequest.ImportStatus.valueOf(existingStatus));
             when(existingRequest.getImportDetails()).thenReturn(new AtlasAsyncImportRequest.ImportDetails());
         }
@@ -415,7 +437,7 @@ public class AsyncImportTaskExecutorTest {
 
     @Test
     public void testRegisterRequestThrowsException() throws AtlasBaseException {
-        AtlasImportResult mockResult = mock(AtlasImportResult.class);
+        AtlasImportResult       mockResult        = mock(AtlasImportResult.class);
         AtlasAsyncImportRequest mockImportRequest = mock(AtlasAsyncImportRequest.class);
 
         when(mockImportRequest.getStatus()).thenReturn(AtlasAsyncImportRequest.ImportStatus.SUCCESSFUL);
