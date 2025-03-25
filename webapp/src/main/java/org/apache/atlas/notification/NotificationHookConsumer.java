@@ -200,9 +200,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final int                           largeMessageProcessingTimeThresholdMs;
     private final boolean                       consumerDisabled;
     private final List<Pattern>                 entityTypesToIgnore = new ArrayList<>();
-    private final List<Pattern>                 entitiesToIgnore = new ArrayList<>();
-    private final List<Pattern>                 hiveTablesToIgnore = new ArrayList<>();
-    private final List<Pattern>                 hiveTablesToPrune = new ArrayList<>();
+    private final List<Pattern>                 entitiesToIgnore    = new ArrayList<>();
+    private final List<Pattern>                 hiveTablesToIgnore  = new ArrayList<>();
+    private final List<Pattern>                 hiveTablesToPrune   = new ArrayList<>();
     private final List<String>                  hiveDummyDatabasesToIgnore;
     private final List<String>                  hiveDummyTablesToIgnore;
     private final List<String>                  hiveTablePrefixesToIgnore;
@@ -459,15 +459,19 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     public void closeImportConsumer(String importId, String topic) {
         try {
             LOG.info("==> closeImportConsumer(importId={}, topic={})", importId, topic);
-            String consumerName = ATLAS_IMPORT_CONSUMER_THREAD_PREFIX + importId;
+
+            String                     consumerName      = ATLAS_IMPORT_CONSUMER_THREAD_PREFIX + importId;
             ListIterator<HookConsumer> consumersIterator = consumers.listIterator();
+
             while (consumersIterator.hasNext()) {
                 HookConsumer consumer = consumersIterator.next();
+
                 if (consumer.getName().startsWith(consumerName)) {
                     consumer.shutdown();
                     consumersIterator.remove();
                 }
             }
+
             notificationInterface.closeConsumer(ASYNC_IMPORT, topic);
             notificationInterface.deleteTopic(ASYNC_IMPORT, topic);
         } catch (Exception e) {
@@ -496,23 +500,29 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         if (topic != null) {
             notificationInterface.addTopicToNotificationType(notificationType, topic);
         }
+
         List<NotificationConsumer<HookNotification>> notificationConsumers = notificationInterface.createConsumers(notificationType, 1);
-        List<HookConsumer> hookConsumers = new ArrayList<>();
+        List<HookConsumer>                           hookConsumers         = new ArrayList<>();
+
         for (final NotificationConsumer<HookNotification> consumer : notificationConsumers) {
-            String hookConsumerName = ATLAS_IMPORT_CONSUMER_THREAD_PREFIX + importId;
-            HookConsumer hookConsumer = new HookConsumer(hookConsumerName, consumer);
+            String       hookConsumerName = ATLAS_IMPORT_CONSUMER_THREAD_PREFIX + importId;
+            HookConsumer hookConsumer     = new HookConsumer(hookConsumerName, consumer);
+
             hookConsumers.add(hookConsumer);
         }
+
         startConsumers(executors, hookConsumers);
     }
 
     private void startHookConsumers(ExecutorService executorService) {
-        int numThreads = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
+        int                                                           numThreads                  = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
         Map<NotificationConsumer<HookNotification>, NotificationType> notificationConsumersByType = new HashMap<>();
-        List<NotificationConsumer<HookNotification>> notificationConsumers = notificationInterface.createConsumers(NotificationType.HOOK, numThreads);
+        List<NotificationConsumer<HookNotification>>                  notificationConsumers       = notificationInterface.createConsumers(NotificationType.HOOK, numThreads);
+
         for (NotificationConsumer<HookNotification> notificationConsumer : notificationConsumers) {
             notificationConsumersByType.put(notificationConsumer, NotificationType.HOOK);
         }
+
         if (AtlasHook.isHookMsgsSortEnabled) {
             List<NotificationConsumer<HookNotification>> unsortedNotificationConsumers = notificationInterface.createConsumers(NotificationType.HOOK_UNSORTED, numThreads);
 
@@ -520,13 +530,18 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 notificationConsumersByType.put(unsortedNotificationConsumer, NotificationType.HOOK_UNSORTED);
             }
         }
+
         List<HookConsumer> hookConsumers = new ArrayList<>();
+
         for (final NotificationConsumer<HookNotification> consumer : notificationConsumersByType.keySet()) {
             String hookConsumerName = ATLAS_HOOK_CONSUMER_THREAD_NAME;
+
             if (notificationConsumersByType.get(consumer).equals(NotificationType.HOOK_UNSORTED)) {
                 hookConsumerName = ATLAS_HOOK_UNSORTED_CONSUMER_THREAD_NAME;
             }
+
             HookConsumer hookConsumer = new HookConsumer(hookConsumerName, consumer);
+
             hookConsumers.add(hookConsumer);
         }
         startConsumers(executorService, hookConsumers);
@@ -544,6 +559,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                     60L, TimeUnit.SECONDS, // Idle thread timeout
                     new SynchronousQueue<>(), // Direct handoff queue
                     new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d").build());
+
             executors = executorService;
         }
 
@@ -555,12 +571,15 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
     private void stopConsumerThreads() {
         LOG.info("==> stopConsumerThreads()");
+
         if (consumers != null) {
             for (HookConsumer consumer : consumers) {
                 stopConsumerThread(consumer);
             }
+
             consumers.clear();
         }
+
         LOG.info("<== stopConsumerThreads()");
     }
 
@@ -591,8 +610,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
     private void preprocessEntities(PreprocessorContext context) {
         GenericEntityPreprocessor genericEntityPreprocessor = new GenericEntityPreprocessor(this.entityTypesToIgnore, this.entitiesToIgnore);
-
-        List<AtlasEntity> entities = context.getEntities();
+        List<AtlasEntity>        entities                   = context.getEntities();
 
         if (entities != null) {
             for (int i = 0; i < entities.size(); i++) {
@@ -890,7 +908,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                 if (MapUtils.isNotEmpty(entity.getAttributes())) {
                     for (Map.Entry<String, Object> entry : entity.getAttributes().entrySet()) {
-                        String attrName = entry.getKey();
+                        String attrName  = entry.getKey();
                         Object attrValue = entry.getValue();
 
                         if (attrValue == null) {
@@ -1592,10 +1610,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                     updateProcessedEntityReferences(entitiesBatch, context.getGuidAssignments());
 
-                    AtlasEntitiesWithExtInfo batch = new AtlasEntitiesWithExtInfo(entitiesBatch);
-                    AtlasEntityStream batchStream = new AtlasEntityStream(batch, entityStream);
-
-                    EntityMutationResponse response = atlasEntityStore.createOrUpdate(batchStream, isPartialUpdate);
+                    AtlasEntitiesWithExtInfo batch       = new AtlasEntitiesWithExtInfo(entitiesBatch);
+                    AtlasEntityStream        batchStream = new AtlasEntityStream(batch, entityStream);
+                    EntityMutationResponse   response    = atlasEntityStore.createOrUpdate(batchStream, isPartialUpdate);
 
                     recordProcessedEntities(response, stats, context);
 
