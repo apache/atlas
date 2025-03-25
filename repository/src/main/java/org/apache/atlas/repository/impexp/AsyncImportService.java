@@ -27,7 +27,6 @@ import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.impexp.AsyncImportStatus;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.repository.ogm.DataAccess;
-import org.apache.atlas.repository.ogm.impexp.AtlasAsyncImportRequestDTO;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
@@ -44,6 +43,8 @@ import java.util.stream.StreamSupport;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.ABORTED;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.PROCESSING;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.WAITING;
+import static org.apache.atlas.repository.Constants.PROPERTY_KEY_ASYNC_IMPORT_ID;
+import static org.apache.atlas.repository.Constants.PROPERTY_KEY_ASYNC_IMPORT_STATUS;
 import static org.apache.atlas.repository.ogm.impexp.AtlasAsyncImportRequestDTO.ASYNC_IMPORT_TYPE_NAME;
 
 @Service
@@ -93,14 +94,14 @@ public class AsyncImportService {
 
     public List<String> fetchInProgressImportIds() {
         return AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(ASYNC_IMPORT_TYPE_NAME,
-                Collections.singletonMap(AtlasAsyncImportRequestDTO.STATUS_PROPERTY, PROCESSING),
-                AtlasAsyncImportRequestDTO.IMPORT_ID_PROPERTY);
+                Collections.singletonMap(PROPERTY_KEY_ASYNC_IMPORT_STATUS, PROCESSING),
+                PROPERTY_KEY_ASYNC_IMPORT_ID);
     }
 
     public List<String> fetchQueuedImportRequests() {
         return AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(ASYNC_IMPORT_TYPE_NAME,
-                Collections.singletonMap(AtlasAsyncImportRequestDTO.STATUS_PROPERTY, WAITING),
-                AtlasAsyncImportRequestDTO.IMPORT_ID_PROPERTY);
+                Collections.singletonMap(PROPERTY_KEY_ASYNC_IMPORT_STATUS, WAITING),
+                PROPERTY_KEY_ASYNC_IMPORT_ID);
     }
 
     public void deleteRequests() {
