@@ -22,7 +22,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
-import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.converters.AtlasFormatConverters;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
@@ -42,6 +42,7 @@ import org.apache.atlas.repository.store.graph.v2.bulkimport.pc.EntityCreationMa
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasStringUtil;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
+import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,10 +99,10 @@ public class MigrationImport extends ImportStrategy {
     }
 
     @Override
-    public TypesUtil.Pair<EntityMutationResponse, Float> run(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, EntityMutationResponse ret,
+    public TypesUtil.Pair<EntityMutationResponse, Float> run(AtlasEntityWithExtInfo entityWithExtInfo, EntityMutationResponse ret,
                                                              AtlasImportResult importResult, Set<String> processedGuids, int entityStreamPosition,
                                                              int streamSize, float currentPercent, List<String> residualList) throws AtlasBaseException {
-        return null;
+        throw new NotImplementedException("MigrationImport: entity import not implemented");
     }
 
     private DataMigrationStatusService createMigrationStatusService(AtlasImportResult importResult) {

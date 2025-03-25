@@ -43,7 +43,8 @@ import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV
 import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV2;
 import org.apache.atlas.model.notification.HookNotification.EntityPartialUpdateRequestV2;
 import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
-import org.apache.atlas.model.notification.ImportNotification;
+import org.apache.atlas.model.notification.ImportNotification.AtlasEntityImportNotification;
+import org.apache.atlas.model.notification.ImportNotification.AtlasTypeDefImportNotification;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.notification.preprocessor.EntityPreprocessor;
@@ -129,141 +130,142 @@ import static org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.
 @Order(5)
 @DependsOn(value = {"atlasTypeDefStoreInitializer", "atlasTypeDefGraphStoreV2"})
 public class NotificationHookConsumer implements Service, ActiveStateChangeHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(NotificationHookConsumer.class);
-    private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger(NotificationHookConsumer.class);
-    private static final Logger FAILED_LOG = LoggerFactory.getLogger("FAILED");
+    private static final Logger LOG                = LoggerFactory.getLogger(NotificationHookConsumer.class);
+    private static final Logger PERF_LOG           = AtlasPerfTracer.getPerfLogger(NotificationHookConsumer.class);
+    private static final Logger FAILED_LOG         = LoggerFactory.getLogger("FAILED");
     private static final Logger LARGE_MESSAGES_LOG = LoggerFactory.getLogger("LARGE_MESSAGES");
 
     // from org.apache.hadoop.hive.ql.parse.SemanticAnalyzer
-    public static final String DUMMY_DATABASE = "_dummy_database";
-    public static final String DUMMY_TABLE = "_dummy_table";
-    public static final String VALUES_TMP_TABLE_NAME_PREFIX = "Values__Tmp__Table__";
-    public static final String CONSUMER_THREADS_PROPERTY = "atlas.notification.hook.numthreads";
-    public static final String CONSUMER_RETRIES_PROPERTY = "atlas.notification.hook.maxretries";
-    public static final String CONSUMER_FAILEDCACHESIZE_PROPERTY = "atlas.notification.hook.failedcachesize";
-    public static final String CONSUMER_RETRY_INTERVAL = "atlas.notification.consumer.retry.interval";
-    public static final String CONSUMER_MIN_RETRY_INTERVAL = "atlas.notification.consumer.min.retry.interval";
-    public static final String CONSUMER_MAX_RETRY_INTERVAL = "atlas.notification.consumer.max.retry.interval";
-    public static final String CONSUMER_COMMIT_BATCH_SIZE = "atlas.notification.consumer.commit.batch.size";
-    public static final String CONSUMER_DISABLED = "atlas.notification.consumer.disabled";
-    public static final String CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633 = "atlas.notification.consumer.skip.hive_column_lineage.hive-20633";
+    public static final String DUMMY_DATABASE                                                = "_dummy_database";
+    public static final String DUMMY_TABLE                                                   = "_dummy_table";
+    public static final String VALUES_TMP_TABLE_NAME_PREFIX                                  = "Values__Tmp__Table__";
+    public static final String CONSUMER_THREADS_PROPERTY                                     = "atlas.notification.hook.numthreads";
+    public static final String CONSUMER_RETRIES_PROPERTY                                     = "atlas.notification.hook.maxretries";
+    public static final String CONSUMER_FAILEDCACHESIZE_PROPERTY                             = "atlas.notification.hook.failedcachesize";
+    public static final String CONSUMER_RETRY_INTERVAL                                       = "atlas.notification.consumer.retry.interval";
+    public static final String CONSUMER_MIN_RETRY_INTERVAL                                   = "atlas.notification.consumer.min.retry.interval";
+    public static final String CONSUMER_MAX_RETRY_INTERVAL                                   = "atlas.notification.consumer.max.retry.interval";
+    public static final String CONSUMER_COMMIT_BATCH_SIZE                                    = "atlas.notification.consumer.commit.batch.size";
+    public static final String CONSUMER_DISABLED                                             = "atlas.notification.consumer.disabled";
+    public static final String CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633                  = "atlas.notification.consumer.skip.hive_column_lineage.hive-20633";
     public static final String CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD = "atlas.notification.consumer.skip.hive_column_lineage.hive-20633.inputs.threshold";
-    public static final String CONSUMER_PREPROCESS_ENTITY_TYPE_IGNORE_PATTERN = "atlas.notification.consumer.preprocess.entity.type.ignore.pattern";
-    public static final String CONSUMER_PREPROCESS_ENTITY_IGNORE_PATTERN = "atlas.notification.consumer.preprocess.entity.ignore.pattern";
-    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN = "atlas.notification.consumer.preprocess.hive_table.ignore.pattern";
-    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN = "atlas.notification.consumer.preprocess.hive_table.prune.pattern";
-    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_CACHE_SIZE = "atlas.notification.consumer.preprocess.hive_table.cache.size";
-    public static final String CONSUMER_PREPROCESS_HIVE_DB_IGNORE_DUMMY_ENABLED = "atlas.notification.consumer.preprocess.hive_db.ignore.dummy.enabled";
-    public static final String CONSUMER_PREPROCESS_HIVE_DB_IGNORE_DUMMY_NAMES = "atlas.notification.consumer.preprocess.hive_db.ignore.dummy.names";
-    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_DUMMY_ENABLED = "atlas.notification.consumer.preprocess.hive_table.ignore.dummy.enabled";
-    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_DUMMY_NAMES = "atlas.notification.consumer.preprocess.hive_table.ignore.dummy.names";
-    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_NAME_PREFIXES_ENABLED = "atlas.notification.consumer.preprocess.hive_table.ignore.name.prefixes.enabled";
-    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_NAME_PREFIXES = "atlas.notification.consumer.preprocess.hive_table.ignore.name.prefixes";
+    public static final String CONSUMER_PREPROCESS_ENTITY_TYPE_IGNORE_PATTERN                = "atlas.notification.consumer.preprocess.entity.type.ignore.pattern";
+    public static final String CONSUMER_PREPROCESS_ENTITY_IGNORE_PATTERN                     = "atlas.notification.consumer.preprocess.entity.ignore.pattern";
+    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN                 = "atlas.notification.consumer.preprocess.hive_table.ignore.pattern";
+    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN                  = "atlas.notification.consumer.preprocess.hive_table.prune.pattern";
+    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_CACHE_SIZE                     = "atlas.notification.consumer.preprocess.hive_table.cache.size";
+    public static final String CONSUMER_PREPROCESS_HIVE_DB_IGNORE_DUMMY_ENABLED              = "atlas.notification.consumer.preprocess.hive_db.ignore.dummy.enabled";
+    public static final String CONSUMER_PREPROCESS_HIVE_DB_IGNORE_DUMMY_NAMES                = "atlas.notification.consumer.preprocess.hive_db.ignore.dummy.names";
+    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_DUMMY_ENABLED           = "atlas.notification.consumer.preprocess.hive_table.ignore.dummy.enabled";
+    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_DUMMY_NAMES             = "atlas.notification.consumer.preprocess.hive_table.ignore.dummy.names";
+    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_NAME_PREFIXES_ENABLED   = "atlas.notification.consumer.preprocess.hive_table.ignore.name.prefixes.enabled";
+    public static final String CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_NAME_PREFIXES           = "atlas.notification.consumer.preprocess.hive_table.ignore.name.prefixes";
     public static final String CONSUMER_PREPROCESS_HIVE_PROCESS_UPD_NAME_WITH_QUALIFIED_NAME = "atlas.notification.consumer.preprocess.hive_process.update.name.with.qualified_name";
-    public static final String CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS = "atlas.notification.consumer.preprocess.hive_types.remove.ownedref.attrs";
-    public static final String CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS = "atlas.notification.consumer.preprocess.rdbms_types.remove.ownedref.attrs";
-    public static final String CONSUMER_PREPROCESS_S3_V2_DIRECTORY_PRUNE_OBJECT_PREFIX = "atlas.notification.consumer.preprocess.s3_v2_directory.prune.object_prefix";
-    public static final String CONSUMER_AUTHORIZE_USING_MESSAGE_USER = "atlas.notification.authorize.using.message.user";
-    public static final String CONSUMER_AUTHORIZE_AUTHN_CACHE_TTL_SECONDS = "atlas.notification.authorize.authn.cache.ttl.seconds";
-    public static final int SERVER_READY_WAIT_TIME_MS = 1000;
+    public static final String CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS          = "atlas.notification.consumer.preprocess.hive_types.remove.ownedref.attrs";
+    public static final String CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS         = "atlas.notification.consumer.preprocess.rdbms_types.remove.ownedref.attrs";
+    public static final String CONSUMER_PREPROCESS_S3_V2_DIRECTORY_PRUNE_OBJECT_PREFIX       = "atlas.notification.consumer.preprocess.s3_v2_directory.prune.object_prefix";
+    public static final String CONSUMER_AUTHORIZE_USING_MESSAGE_USER                         = "atlas.notification.authorize.using.message.user";
+    public static final String CONSUMER_AUTHORIZE_AUTHN_CACHE_TTL_SECONDS                    = "atlas.notification.authorize.authn.cache.ttl.seconds";
+    public static final int    SERVER_READY_WAIT_TIME_MS                                     = 1000;
 
-    private static final int SC_OK = 200;
-    private static final int SC_BAD_REQUEST = 400;
-    private static final String TYPE_HIVE_COLUMN_LINEAGE = "hive_column_lineage";
-    private static final String ATTRIBUTE_INPUTS = "inputs";
-    private static final String ATTRIBUTE_QUALIFIED_NAME = "qualifiedName";
-    private static final String EXCEPTION_CLASS_NAME_JANUSGRAPH_EXCEPTION = "JanusGraphException";
+    private static final int    SC_OK                                           = 200;
+    private static final int    SC_BAD_REQUEST                                  = 400;
+    private static final String TYPE_HIVE_COLUMN_LINEAGE                        = "hive_column_lineage";
+    private static final String ATTRIBUTE_INPUTS                                = "inputs";
+    private static final String ATTRIBUTE_QUALIFIED_NAME                        = "qualifiedName";
+    private static final String EXCEPTION_CLASS_NAME_JANUSGRAPH_EXCEPTION       = "JanusGraphException";
     private static final String EXCEPTION_CLASS_NAME_PERMANENTLOCKING_EXCEPTION = "PermanentLockingException";
-    private static final int KAFKA_CONSUMER_SHUTDOWN_WAIT = 30000;
-    private static final String ATLAS_HOOK_CONSUMER_THREAD_NAME = "atlas-hook-consumer-thread";
-    private static final String ATLAS_HOOK_UNSORTED_CONSUMER_THREAD_NAME = "atlas-hook-unsorted-consumer-thread";
-    private static final String ATLAS_IMPORT_CONSUMER_THREAD_PREFIX = "atlas-import-consumer-thread-";
-    private static final String THREADNAME_PREFIX = NotificationHookConsumer.class.getSimpleName();
+    private static final int    KAFKA_CONSUMER_SHUTDOWN_WAIT                    = 30000;
+    private static final String ATLAS_HOOK_CONSUMER_THREAD_NAME                 = "atlas-hook-consumer-thread";
+    private static final String ATLAS_HOOK_UNSORTED_CONSUMER_THREAD_NAME        = "atlas-hook-unsorted-consumer-thread";
+    private static final String ATLAS_IMPORT_CONSUMER_THREAD_PREFIX             = "atlas-import-consumer-thread-";
+    private static final String THREADNAME_PREFIX                               = NotificationHookConsumer.class.getSimpleName();
 
     @VisibleForTesting
     final int consumerRetryInterval;
-    private final AtlasEntityStore atlasEntityStore;
-    private final ServiceState serviceState;
-    private final AtlasInstanceConverter instanceConverter;
-    private final AtlasTypeRegistry typeRegistry;
-    private final AtlasMetricsUtil metricsUtil;
-    private final int maxRetries;
-    private final int failedMsgCacheSize;
-    private final int minWaitDuration;
-    private final int maxWaitDuration;
-    private final int commitBatchSize;
-    private final boolean skipHiveColumnLineageHive20633;
-    private final int skipHiveColumnLineageHive20633InputsThreshold;
-    private final boolean updateHiveProcessNameWithQualifiedName;
-    private final int largeMessageProcessingTimeThresholdMs;
-    private final boolean consumerDisabled;
-    private final List<Pattern> entityTypesToIgnore = new ArrayList<>();
-    private final List<Pattern> entitiesToIgnore = new ArrayList<>();
-    private final List<Pattern> hiveTablesToIgnore = new ArrayList<>();
-    private final List<Pattern> hiveTablesToPrune = new ArrayList<>();
-    private final List<String> hiveDummyDatabasesToIgnore;
-    private final List<String> hiveDummyTablesToIgnore;
-    private final List<String> hiveTablePrefixesToIgnore;
+
+    private final AtlasEntityStore              atlasEntityStore;
+    private final ServiceState                  serviceState;
+    private final AtlasInstanceConverter        instanceConverter;
+    private final AtlasTypeRegistry             typeRegistry;
+    private final AtlasMetricsUtil              metricsUtil;
+    private final int                           maxRetries;
+    private final int                           failedMsgCacheSize;
+    private final int                           minWaitDuration;
+    private final int                           maxWaitDuration;
+    private final int                           commitBatchSize;
+    private final boolean                       skipHiveColumnLineageHive20633;
+    private final int                           skipHiveColumnLineageHive20633InputsThreshold;
+    private final boolean                       updateHiveProcessNameWithQualifiedName;
+    private final int                           largeMessageProcessingTimeThresholdMs;
+    private final boolean                       consumerDisabled;
+    private final List<Pattern>                 entityTypesToIgnore = new ArrayList<>();
+    private final List<Pattern>                 entitiesToIgnore = new ArrayList<>();
+    private final List<Pattern>                 hiveTablesToIgnore = new ArrayList<>();
+    private final List<Pattern>                 hiveTablesToPrune = new ArrayList<>();
+    private final List<String>                  hiveDummyDatabasesToIgnore;
+    private final List<String>                  hiveDummyTablesToIgnore;
+    private final List<String>                  hiveTablePrefixesToIgnore;
     private final Map<String, PreprocessAction> hiveTablesCache;
-    private final boolean hiveTypesRemoveOwnedRefAttrs;
-    private final boolean rdbmsTypesRemoveOwnedRefAttrs;
-    private final boolean s3V2DirectoryPruneObjectPrefix;
-    private final boolean preprocessEnabled;
-    private final boolean createShellEntityForNonExistingReference;
-    private final boolean authorizeUsingMessageUser;
-    private final Map<String, Authentication> authnCache;
-    private final NotificationInterface notificationInterface;
-    private final Configuration applicationProperties;
-    private final Map<TopicPartition, Long> lastCommittedPartitionOffset;
-    private final EntityCorrelationManager entityCorrelationManager;
-    private final long consumerMsgBufferingIntervalMS;
-    private final int consumerMsgBufferingBatchSize;
-    private final AsyncImporter asyncImporter;
+    private final boolean                       hiveTypesRemoveOwnedRefAttrs;
+    private final boolean                       rdbmsTypesRemoveOwnedRefAttrs;
+    private final boolean                       s3V2DirectoryPruneObjectPrefix;
+    private final boolean                       preprocessEnabled;
+    private final boolean                       createShellEntityForNonExistingReference;
+    private final boolean                       authorizeUsingMessageUser;
+    private final Map<String, Authentication>   authnCache;
+    private final NotificationInterface         notificationInterface;
+    private final Configuration                 applicationProperties;
+    private final Map<TopicPartition, Long>     lastCommittedPartitionOffset;
+    private final EntityCorrelationManager      entityCorrelationManager;
+    private final long                          consumerMsgBufferingIntervalMS;
+    private final int                           consumerMsgBufferingBatchSize;
+    private final AsyncImporter                 asyncImporter;
 
     @VisibleForTesting
     List<HookConsumer> consumers;
 
     private ExecutorService executors;
-    private Instant nextStatsLogTime = AtlasMetricsCounter.getNextHourStartTime(Instant.now());
+    private Instant         nextStatsLogTime = AtlasMetricsCounter.getNextHourStartTime(Instant.now());
 
     @Inject
     public NotificationHookConsumer(NotificationInterface notificationInterface, AtlasEntityStore atlasEntityStore, ServiceState serviceState, AtlasInstanceConverter instanceConverter, AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil, EntityCorrelationStore entityCorrelationStore, @Lazy AsyncImporter asyncImporter) throws AtlasException {
-        this.notificationInterface = notificationInterface;
-        this.atlasEntityStore = atlasEntityStore;
-        this.serviceState = serviceState;
-        this.instanceConverter = instanceConverter;
-        this.typeRegistry = typeRegistry;
-        this.applicationProperties = ApplicationProperties.get();
-        this.metricsUtil = metricsUtil;
+        this.notificationInterface        = notificationInterface;
+        this.atlasEntityStore             = atlasEntityStore;
+        this.serviceState                 = serviceState;
+        this.instanceConverter            = instanceConverter;
+        this.typeRegistry                 = typeRegistry;
+        this.applicationProperties        = ApplicationProperties.get();
+        this.metricsUtil                  = metricsUtil;
         this.lastCommittedPartitionOffset = new HashMap<>();
-        this.asyncImporter = asyncImporter;
+        this.asyncImporter                = asyncImporter;
 
-        maxRetries = applicationProperties.getInt(CONSUMER_RETRIES_PROPERTY, 3);
-        failedMsgCacheSize = applicationProperties.getInt(CONSUMER_FAILEDCACHESIZE_PROPERTY, 1);
+        maxRetries            = applicationProperties.getInt(CONSUMER_RETRIES_PROPERTY, 3);
+        failedMsgCacheSize    = applicationProperties.getInt(CONSUMER_FAILEDCACHESIZE_PROPERTY, 1);
         consumerRetryInterval = applicationProperties.getInt(CONSUMER_RETRY_INTERVAL, 500);
-        minWaitDuration = applicationProperties.getInt(CONSUMER_MIN_RETRY_INTERVAL, consumerRetryInterval); // 500 ms  by default
-        maxWaitDuration = applicationProperties.getInt(CONSUMER_MAX_RETRY_INTERVAL, minWaitDuration * 60);  //  30 sec by default
-        commitBatchSize = applicationProperties.getInt(CONSUMER_COMMIT_BATCH_SIZE, 50);
+        minWaitDuration       = applicationProperties.getInt(CONSUMER_MIN_RETRY_INTERVAL, consumerRetryInterval); // 500 ms  by default
+        maxWaitDuration       = applicationProperties.getInt(CONSUMER_MAX_RETRY_INTERVAL, minWaitDuration * 60);  //  30 sec by default
+        commitBatchSize       = applicationProperties.getInt(CONSUMER_COMMIT_BATCH_SIZE, 50);
 
-        skipHiveColumnLineageHive20633 = applicationProperties.getBoolean(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, false);
+        skipHiveColumnLineageHive20633                = applicationProperties.getBoolean(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, false);
         skipHiveColumnLineageHive20633InputsThreshold = applicationProperties.getInt(CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633_INPUTS_THRESHOLD, 15); // skip if avg # of inputs is > 15
-        updateHiveProcessNameWithQualifiedName = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_PROCESS_UPD_NAME_WITH_QUALIFIED_NAME, true);
-        consumerDisabled = applicationProperties.getBoolean(CONSUMER_DISABLED, false);
-        largeMessageProcessingTimeThresholdMs = applicationProperties.getInt("atlas.notification.consumer.large.message.processing.time.threshold.ms", 60 * 1000);  //  60 sec by default
-        createShellEntityForNonExistingReference = AtlasConfiguration.NOTIFICATION_CREATE_SHELL_ENTITY_FOR_NON_EXISTING_REF.getBoolean();
-        authorizeUsingMessageUser = applicationProperties.getBoolean(CONSUMER_AUTHORIZE_USING_MESSAGE_USER, false);
-        consumerMsgBufferingIntervalMS = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_BUFFERING_INTERVAL.getInt() * 1000L;
-        consumerMsgBufferingBatchSize = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_BUFFERING_BATCH_SIZE.getInt();
+        updateHiveProcessNameWithQualifiedName        = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_PROCESS_UPD_NAME_WITH_QUALIFIED_NAME, true);
+        consumerDisabled                              = applicationProperties.getBoolean(CONSUMER_DISABLED, false);
+        largeMessageProcessingTimeThresholdMs         = applicationProperties.getInt("atlas.notification.consumer.large.message.processing.time.threshold.ms", 60 * 1000);  //  60 sec by default
+        createShellEntityForNonExistingReference      = AtlasConfiguration.NOTIFICATION_CREATE_SHELL_ENTITY_FOR_NON_EXISTING_REF.getBoolean();
+        authorizeUsingMessageUser                     = applicationProperties.getBoolean(CONSUMER_AUTHORIZE_USING_MESSAGE_USER, false);
+        consumerMsgBufferingIntervalMS                = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_BUFFERING_INTERVAL.getInt() * 1000L;
+        consumerMsgBufferingBatchSize                 = AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_BUFFERING_BATCH_SIZE.getInt();
 
         int authnCacheTtlSeconds = applicationProperties.getInt(CONSUMER_AUTHORIZE_AUTHN_CACHE_TTL_SECONDS, 300);
 
         authnCache = (authorizeUsingMessageUser && authnCacheTtlSeconds > 0) ? new PassiveExpiringMap<>(authnCacheTtlSeconds * 1000L) : null;
 
         String[] patternEntityTypesToIgnore = applicationProperties.getStringArray(CONSUMER_PREPROCESS_ENTITY_TYPE_IGNORE_PATTERN);
-        String[] patternEntitiesToIgnore = applicationProperties.getStringArray(CONSUMER_PREPROCESS_ENTITY_IGNORE_PATTERN);
+        String[] patternEntitiesToIgnore    = applicationProperties.getStringArray(CONSUMER_PREPROCESS_ENTITY_IGNORE_PATTERN);
 
         String[] patternHiveTablesToIgnore = applicationProperties.getStringArray(CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_PATTERN);
-        String[] patternHiveTablesToPrune = applicationProperties.getStringArray(CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN);
+        String[] patternHiveTablesToPrune  = applicationProperties.getStringArray(CONSUMER_PREPROCESS_HIVE_TABLE_PRUNE_PATTERN);
 
         if (patternEntityTypesToIgnore != null) {
             for (String pattern : patternEntityTypesToIgnore) {
@@ -323,8 +325,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             hiveTablesCache = Collections.emptyMap();
         }
 
-        boolean hiveDbIgnoreDummyEnabled = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_DB_IGNORE_DUMMY_ENABLED, true);
-        boolean hiveTableIgnoreDummyEnabled = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_DUMMY_ENABLED, true);
+        boolean hiveDbIgnoreDummyEnabled         = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_DB_IGNORE_DUMMY_ENABLED, true);
+        boolean hiveTableIgnoreDummyEnabled      = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_DUMMY_ENABLED, true);
         boolean hiveTableIgnoreNamePrefixEnabled = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_TABLE_IGNORE_NAME_PREFIXES_ENABLED, true);
 
         LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_DB_IGNORE_DUMMY_ENABLED, hiveDbIgnoreDummyEnabled);
@@ -363,11 +365,11 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         LOG.info("{}={}", CONSUMER_PREPROCESS_HIVE_PROCESS_UPD_NAME_WITH_QUALIFIED_NAME, updateHiveProcessNameWithQualifiedName);
 
-        hiveTypesRemoveOwnedRefAttrs = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS, true);
-        rdbmsTypesRemoveOwnedRefAttrs = applicationProperties.getBoolean(CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS, true);
+        hiveTypesRemoveOwnedRefAttrs   = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS, true);
+        rdbmsTypesRemoveOwnedRefAttrs  = applicationProperties.getBoolean(CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS, true);
         s3V2DirectoryPruneObjectPrefix = applicationProperties.getBoolean(CONSUMER_PREPROCESS_S3_V2_DIRECTORY_PRUNE_OBJECT_PREFIX, true);
 
-        preprocessEnabled = skipHiveColumnLineageHive20633 || updateHiveProcessNameWithQualifiedName || hiveTypesRemoveOwnedRefAttrs || rdbmsTypesRemoveOwnedRefAttrs || s3V2DirectoryPruneObjectPrefix || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty();
+        preprocessEnabled        = skipHiveColumnLineageHive20633 || updateHiveProcessNameWithQualifiedName || hiveTypesRemoveOwnedRefAttrs || rdbmsTypesRemoveOwnedRefAttrs || s3V2DirectoryPruneObjectPrefix || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty();
         entityCorrelationManager = new EntityCorrelationManager(entityCorrelationStore);
 
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, skipHiveColumnLineageHive20633);
@@ -534,6 +536,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         if (consumers == null) {
             consumers = new ArrayList<>();
         }
+
         if (executorService == null) {
             executorService = new ThreadPoolExecutor(
                     0, // Core pool size
@@ -543,6 +546,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                     new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d").build());
             executors = executorService;
         }
+
         for (final HookConsumer consumer : hookConsumers) {
             consumers.add(consumer);
             executors.submit(consumer);
@@ -650,7 +654,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             if (context.isHivePreprocessEnabled() && CollectionUtils.isNotEmpty(context.getEntities()) && context.getEntities().size() > 1) {
                 // move hive_process and hive_column_lineage entities to end of the list
                 List<AtlasEntity> entities = context.getEntities();
-                int count = entities.size();
+                int               count    = entities.size();
 
                 for (int i = 0; i < count; i++) {
                     AtlasEntity entity = entities.get(i);
@@ -679,7 +683,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         if (entities != null) {
             for (int i = 0; i < entities.size(); i++) {
-                AtlasEntity entity = entities.get(i);
+                AtlasEntity        entity       = entities.get(i);
                 EntityPreprocessor preprocessor = EntityPreprocessor.getRdbmsPreprocessor(entity.getTypeName());
 
                 if (preprocessor != null) {
@@ -716,7 +720,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         if (entities != null) {
             for (int i = 0; i < entities.size(); i++) {
-                AtlasEntity entity = entities.get(i);
+                AtlasEntity        entity       = entities.get(i);
                 EntityPreprocessor preprocessor = EntityPreprocessor.getHivePreprocessor(entity.getTypeName());
 
                 if (preprocessor != null) {
@@ -732,7 +736,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
             if (referredEntities != null) {
                 for (Iterator<Map.Entry<String, AtlasEntity>> iter = referredEntities.entrySet().iterator(); iter.hasNext(); ) {
-                    AtlasEntity entity = iter.next().getValue();
+                    AtlasEntity        entity       = iter.next().getValue();
                     EntityPreprocessor preprocessor = EntityPreprocessor.getHivePreprocessor(entity.getTypeName());
 
                     if (preprocessor != null) {
@@ -746,7 +750,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             }
 
             int ignoredEntities = context.getIgnoredEntities().size();
-            int prunedEntities = context.getPrunedEntities().size();
+            int prunedEntities  = context.getPrunedEntities().size();
 
             if (ignoredEntities > 0 || prunedEntities > 0) {
                 LOG.info("preprocess: ignored entities={}; pruned entities={}. topic-offset={}, partition={}", ignoredEntities, prunedEntities, context.getKafkaMessageOffset(), context.getKafkaPartition());
@@ -758,10 +762,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         List<AtlasEntity> entities = context.getEntities();
 
         if (entities != null) {
-            int lineageCount = 0;
-            int lineageInputsCount = 0;
-            int numRemovedEntities = 0;
-            Set<String> lineageQNames = new HashSet<>();
+            int         lineageCount       = 0;
+            int         lineageInputsCount = 0;
+            int         numRemovedEntities = 0;
+            Set<String> lineageQNames      = new HashSet<>();
 
             // find if all hive_column_lineage entities have same number of inputs, which is likely to be caused by HIVE-20633 that results in incorrect lineage in some cases
             for (int i = 0; i < entities.size(); i++) {
@@ -819,7 +823,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     }
 
     private boolean isEmptyMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) {
-        final boolean ret;
+        final boolean          ret;
         final HookNotification message = kafkaMsg.getMessage();
 
         switch (message.getType()) {
@@ -988,7 +992,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
             if (ret == null) {
                 List<GrantedAuthority> grantedAuths = getAuthoritiesFromUGI(userName);
-                UserDetails principal = new User(userName, "", grantedAuths);
+                UserDetails            principal    = new User(userName, "", grantedAuths);
 
                 ret = new UsernamePasswordAuthenticationToken(principal, "");
 
@@ -1019,11 +1023,11 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         private long lastWaitAt;
 
         public AdaptiveWaiter(long minDuration, long maxDuration, long increment) {
-            this.minDuration = minDuration;
-            this.maxDuration = maxDuration;
-            this.increment = increment;
-            this.waitDuration = minDuration;
-            this.lastWaitAt = 0;
+            this.minDuration   = minDuration;
+            this.maxDuration   = maxDuration;
+            this.increment     = increment;
+            this.waitDuration  = minDuration;
+            this.lastWaitAt    = 0;
             this.resetInterval = maxDuration * 2;
         }
 
@@ -1062,9 +1066,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     @VisibleForTesting
     class HookConsumer extends Thread {
         private final NotificationConsumer<HookNotification> consumer;
-        private final AtomicBoolean shouldRun = new AtomicBoolean(false);
-        private final List<String> failedMessages = new ArrayList<>();
-        private final AdaptiveWaiter adaptiveWaiter = new AdaptiveWaiter(minWaitDuration, maxWaitDuration, minWaitDuration);
+        private final AtomicBoolean                          shouldRun      = new AtomicBoolean(false);
+        private final List<String>                           failedMessages = new ArrayList<>();
+        private final AdaptiveWaiter                         adaptiveWaiter = new AdaptiveWaiter(minWaitDuration, maxWaitDuration, minWaitDuration);
 
         private int duplicateKeyCounter = 1;
 
@@ -1094,8 +1098,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 while (shouldRun.get()) {
                     try {
                         if (StringUtils.equals(ATLAS_HOOK_UNSORTED_CONSUMER_THREAD_NAME, this.getName())) {
-                            long msgBufferingStartTime = System.currentTimeMillis();
-                            Map<String, AtlasKafkaMessage<HookNotification>> msgBuffer = new TreeMap<>();
+                            long                                             msgBufferingStartTime = System.currentTimeMillis();
+                            Map<String, AtlasKafkaMessage<HookNotification>> msgBuffer             = new TreeMap<>();
 
                             sortAndPublishMsgsToAtlasHook(msgBufferingStartTime, msgBuffer);
                         } else {
@@ -1145,9 +1149,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
 
         void sortAndPublishMsgsToAtlasHook(long msgBufferingStartTime, Map<String, AtlasKafkaMessage<HookNotification>> msgBuffer) throws NotificationException {
-            List<AtlasKafkaMessage<HookNotification>> messages = consumer.receiveRawRecordsWithCheckedCommit(lastCommittedPartitionOffset);
-            AtlasKafkaMessage<HookNotification> maxOffsetMsg = null;
-            long maxOffsetProcessed = 0;
+            List<AtlasKafkaMessage<HookNotification>> messages           = consumer.receiveRawRecordsWithCheckedCommit(lastCommittedPartitionOffset);
+            AtlasKafkaMessage<HookNotification>       maxOffsetMsg       = null;
+            long                                      maxOffsetProcessed = 0;
 
             messages.forEach(x -> sortMessages(x, msgBuffer));
 
@@ -1161,7 +1165,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 String hookTopic = StringUtils.isNotEmpty(msg.getTopic()) ? msg.getTopic().split(KafkaNotification.UNSORTED_POSTFIX)[0] : KafkaNotification.ATLAS_HOOK_TOPIC;
 
                 if (maxOffsetProcessed == 0 || maxOffsetProcessed < msg.getOffset()) {
-                    maxOffsetMsg = msg;
+                    maxOffsetMsg       = msg;
                     maxOffsetProcessed = msg.getOffset();
                 }
 
@@ -1185,12 +1189,12 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         @VisibleForTesting
         void handleMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) {
-            AtlasPerfTracer perf = null;
-            HookNotification message = kafkaMsg.getMessage();
-            String messageUser = message.getUser();
-            long startTime = System.currentTimeMillis();
-            NotificationStat stats = new NotificationStat();
-            AuditLog auditLog = null;
+            AtlasPerfTracer  perf        = null;
+            HookNotification message     = kafkaMsg.getMessage();
+            String           messageUser = message.getUser();
+            long             startTime   = System.currentTimeMillis();
+            NotificationStat stats       = new NotificationStat();
+            AuditLog         auditLog    = null;
 
             if (authorizeUsingMessageUser) {
                 setCurrentUser(messageUser);
@@ -1205,22 +1209,22 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 try {
                     switch (message.getType()) {
                         case ENTITY_CREATE: {
-                            final EntityCreateRequest createRequest = (EntityCreateRequest) message;
-                            final AtlasEntitiesWithExtInfo entities = instanceConverter.toAtlasEntities(createRequest.getEntities());
-                            final EntityCreateRequestV2 v2Request = new EntityCreateRequestV2(message.getUser(), entities);
+                            final EntityCreateRequest      createRequest = (EntityCreateRequest) message;
+                            final AtlasEntitiesWithExtInfo entities      = instanceConverter.toAtlasEntities(createRequest.getEntities());
+                            final EntityCreateRequestV2    v2Request     = new EntityCreateRequestV2(message.getUser(), entities);
 
                             kafkaMsg = new AtlasKafkaMessage<>(v2Request, kafkaMsg.getOffset(), kafkaMsg.getTopic(), kafkaMsg.getPartition());
-                            message = kafkaMsg.getMessage();
+                            message  = kafkaMsg.getMessage();
                         }
                         break;
 
                         case ENTITY_FULL_UPDATE: {
-                            final EntityUpdateRequest updateRequest = (EntityUpdateRequest) message;
-                            final AtlasEntitiesWithExtInfo entities = instanceConverter.toAtlasEntities(updateRequest.getEntities());
-                            final EntityUpdateRequestV2 v2Request = new EntityUpdateRequestV2(messageUser, entities);
+                            final EntityUpdateRequest      updateRequest = (EntityUpdateRequest) message;
+                            final AtlasEntitiesWithExtInfo entities      = instanceConverter.toAtlasEntities(updateRequest.getEntities());
+                            final EntityUpdateRequestV2    v2Request     = new EntityUpdateRequestV2(messageUser, entities);
 
                             kafkaMsg = new AtlasKafkaMessage<>(v2Request, kafkaMsg.getOffset(), kafkaMsg.getTopic(), kafkaMsg.getPartition());
-                            message = kafkaMsg.getMessage();
+                            message  = kafkaMsg.getMessage();
                         }
                         break;
                     }
@@ -1239,9 +1243,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 // Used for intermediate conversions during create and update
                 String exceptionClassName = StringUtils.EMPTY;
                 for (int numRetries = 0; numRetries < maxRetries; numRetries++) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("handleMessage({}): attempt {}", message.getType().name(), numRetries);
-                    }
+                    LOG.debug("handleMessage({}): attempt {}", message.getType().name(), numRetries);
 
                     try {
                         RequestContext requestContext = RequestContext.get();
@@ -1255,8 +1257,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                         switch (message.getType()) {
                             case ENTITY_CREATE: {
-                                final EntityCreateRequest createRequest = (EntityCreateRequest) message;
-                                final AtlasEntitiesWithExtInfo entities = instanceConverter.toAtlasEntities(createRequest.getEntities());
+                                final EntityCreateRequest      createRequest = (EntityCreateRequest) message;
+                                final AtlasEntitiesWithExtInfo entities      = instanceConverter.toAtlasEntities(createRequest.getEntities());
 
                                 if (auditLog == null) {
                                     auditLog = new AuditLog(messageUser, THREADNAME_PREFIX, AtlasClient.API_V1.CREATE_ENTITY.getMethod(), AtlasClient.API_V1.CREATE_ENTITY.getNormalizedPath());
@@ -1268,8 +1270,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                             case ENTITY_PARTIAL_UPDATE: {
                                 final EntityPartialUpdateRequest partialUpdateRequest = (EntityPartialUpdateRequest) message;
-                                final Referenceable referenceable = partialUpdateRequest.getEntity();
-                                final AtlasEntitiesWithExtInfo entities = instanceConverter.toAtlasEntity(referenceable);
+                                final Referenceable              referenceable        = partialUpdateRequest.getEntity();
+                                final AtlasEntitiesWithExtInfo   entities             = instanceConverter.toAtlasEntity(referenceable);
 
                                 if (auditLog == null) {
                                     auditLog = new AuditLog(messageUser, THREADNAME_PREFIX,
@@ -1278,7 +1280,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 }
 
                                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(partialUpdateRequest.getTypeName());
-                                String guid = AtlasGraphUtilsV2.getGuidByUniqueAttributes(entityType, Collections.singletonMap(partialUpdateRequest.getAttribute(), partialUpdateRequest.getAttributeValue()));
+                                String          guid       = AtlasGraphUtilsV2.getGuidByUniqueAttributes(entityType, Collections.singletonMap(partialUpdateRequest.getAttribute(), partialUpdateRequest.getAttributeValue()));
 
                                 // There should only be one root entity
                                 entities.getEntities().get(0).setGuid(guid);
@@ -1311,8 +1313,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             break;
 
                             case ENTITY_FULL_UPDATE: {
-                                final EntityUpdateRequest updateRequest = (EntityUpdateRequest) message;
-                                final AtlasEntitiesWithExtInfo entities = instanceConverter.toAtlasEntities(updateRequest.getEntities());
+                                final EntityUpdateRequest      updateRequest = (EntityUpdateRequest) message;
+                                final AtlasEntitiesWithExtInfo entities      = instanceConverter.toAtlasEntities(updateRequest.getEntities());
 
                                 if (auditLog == null) {
                                     auditLog = new AuditLog(messageUser, THREADNAME_PREFIX, AtlasClientV2.API_V2.UPDATE_ENTITY.getMethod(), AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
@@ -1323,8 +1325,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             break;
 
                             case ENTITY_CREATE_V2: {
-                                final EntityCreateRequestV2 createRequestV2 = (EntityCreateRequestV2) message;
-                                final AtlasEntitiesWithExtInfo entities = createRequestV2.getEntities();
+                                final EntityCreateRequestV2    createRequestV2 = (EntityCreateRequestV2) message;
+                                final AtlasEntitiesWithExtInfo entities        = createRequestV2.getEntities();
 
                                 if (auditLog == null) {
                                     auditLog = new AuditLog(messageUser, THREADNAME_PREFIX, AtlasClientV2.API_V2.CREATE_ENTITY.getMethod(), AtlasClientV2.API_V2.CREATE_ENTITY.getNormalizedPath());
@@ -1336,8 +1338,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                             case ENTITY_PARTIAL_UPDATE_V2: {
                                 final EntityPartialUpdateRequestV2 partialUpdateRequest = (EntityPartialUpdateRequestV2) message;
-                                final AtlasObjectId entityId = partialUpdateRequest.getEntityId();
-                                final AtlasEntityWithExtInfo entity = partialUpdateRequest.getEntity();
+                                final AtlasObjectId                entityId             = partialUpdateRequest.getEntityId();
+                                final AtlasEntityWithExtInfo       entity               = partialUpdateRequest.getEntity();
 
                                 if (auditLog == null) {
                                     auditLog = new AuditLog(messageUser, THREADNAME_PREFIX, AtlasClientV2.API_V2.UPDATE_ENTITY.getMethod(), AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
@@ -1350,8 +1352,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             break;
 
                             case ENTITY_FULL_UPDATE_V2: {
-                                final EntityUpdateRequestV2 updateRequest = (EntityUpdateRequestV2) message;
-                                final AtlasEntitiesWithExtInfo entities = updateRequest.getEntities();
+                                final EntityUpdateRequestV2    updateRequest = (EntityUpdateRequestV2) message;
+                                final AtlasEntitiesWithExtInfo entities      = updateRequest.getEntities();
 
                                 if (auditLog == null) {
                                     auditLog = new AuditLog(messageUser, THREADNAME_PREFIX, AtlasClientV2.API_V2.UPDATE_ENTITY.getMethod(), AtlasClientV2.API_V2.UPDATE_ENTITY.getNormalizedPath());
@@ -1363,7 +1365,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                             case ENTITY_DELETE_V2: {
                                 final EntityDeleteRequestV2 deleteRequest = (EntityDeleteRequestV2) message;
-                                final List<AtlasObjectId> entities = deleteRequest.getEntities();
+                                final List<AtlasObjectId>   entities      = deleteRequest.getEntities();
 
                                 try {
                                     for (AtlasObjectId entity : entities) {
@@ -1388,28 +1390,32 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             break;
 
                             case IMPORT_TYPE_DEF: {
-                                final ImportNotification.AtlasTypeDefImportNotification typeDefImportNotification = (ImportNotification.AtlasTypeDefImportNotification) message;
-                                final String importId = typeDefImportNotification.getImportId();
-                                final AtlasTypesDef typesDef = typeDefImportNotification.getTypeDefinitionMap();
+                                final AtlasTypeDefImportNotification typeDefImportNotification = (AtlasTypeDefImportNotification) message;
+                                final String                         importId                  = typeDefImportNotification.getImportId();
+                                final AtlasTypesDef                  typesDef                  = typeDefImportNotification.getTypeDefinitionMap();
+
                                 try {
                                     asyncImporter.onImportTypeDef(typesDef, importId);
                                 } catch (AtlasBaseException abe) {
-                                    LOG.error("IMPORT_TYPE_DEF: {} failed to import type definition: {}", importId, typesDef.toString());
+                                    LOG.error("IMPORT_TYPE_DEF: {} failed to import type definition: {}", importId, typesDef);
+
                                     asyncImporter.onImportComplete(importId);
                                 }
                             }
                             break;
 
                             case IMPORT_ENTITY: {
-                                final ImportNotification.AtlasEntityImportNotification entityImportNotification = (ImportNotification.AtlasEntityImportNotification) message;
-                                final String importId = entityImportNotification.getImportId();
-                                final AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo = entityImportNotification.getEntity();
-                                final int position = entityImportNotification.getPosition();
-                                boolean completeImport = false;
+                                final AtlasEntityImportNotification entityImportNotification = (AtlasEntityImportNotification) message;
+                                final String                        importId                 = entityImportNotification.getImportId();
+                                final AtlasEntityWithExtInfo        entityWithExtInfo        = entityImportNotification.getEntity();
+                                final int                           position                 = entityImportNotification.getPosition();
+                                boolean                             completeImport           = false;
+
                                 try {
                                     completeImport = asyncImporter.onImportEntity(entityWithExtInfo, importId, position);
                                 } catch (AtlasBaseException abe) {
                                     completeImport = true;
+
                                     LOG.error("IMPORT_ENTITY: {} failed to import entity: {}", importId, entityImportNotification);
                                 } finally {
                                     if (completeImport) {
@@ -1431,14 +1437,15 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                         break;
                     } catch (Throwable e) {
                         RequestContext.get().resetEntityGuidUpdates();
+
                         exceptionClassName = e.getClass().getSimpleName();
 
                         // don't retry in following conditions:
                         //  1. number of retry attempts reached configured count
                         //  2. notification processing failed due to invalid data (non-existing type, entity, ..)
-                        boolean maxRetriesReached = numRetries == (maxRetries - 1);
-                        AtlasErrorCode errorCode = (e instanceof AtlasBaseException) ? ((AtlasBaseException) e).getAtlasErrorCode() : null;
-                        boolean unrecoverableFailure = errorCode != null && (Response.Status.NOT_FOUND.equals(errorCode.getHttpCode()) || Response.Status.BAD_REQUEST.equals(errorCode.getHttpCode()));
+                        boolean        maxRetriesReached    = numRetries == (maxRetries - 1);
+                        AtlasErrorCode errorCode            = (e instanceof AtlasBaseException) ? ((AtlasBaseException) e).getAtlasErrorCode() : null;
+                        boolean        unrecoverableFailure = errorCode != null && (Response.Status.NOT_FOUND.equals(errorCode.getHttpCode()) || Response.Status.BAD_REQUEST.equals(errorCode.getHttpCode()));
 
                         if (maxRetriesReached || unrecoverableFailure) {
                             try {

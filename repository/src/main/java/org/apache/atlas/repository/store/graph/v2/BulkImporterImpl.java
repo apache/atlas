@@ -171,7 +171,8 @@ public class BulkImporterImpl implements BulkImporter {
                                                                      List<String> failedGuids, int entityPosition, int totalEntities, float importProgress) throws AtlasBaseException {
         ImportStrategy importStrategy = new RegularImport(this.atlasGraph, this.entityStore, this.typeRegistry);
 
-        LOG.info("BulkImportImpl: {}", importStrategy.getClass().getSimpleName());
+        LOG.info("BulkImportImpl.asyncImport(): {}", importStrategy.getClass().getSimpleName());
+
         return importStrategy.run(entityWithExtInfo, entityMutationResponse, importResult, processedGuids, entityPosition, totalEntities, importProgress, failedGuids);
     }
 }

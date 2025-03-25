@@ -53,18 +53,17 @@ public class AsyncImportTaskExecutor {
 
     private static final String MESSAGE_SOURCE = AsyncImportTaskExecutor.class.getSimpleName();
 
-    private final AsyncImportService            importService;
-    private final NotificationInterface         notificationInterface;
-    private final ImportTaskListener            importTaskListener;
-    private final MessageSource                 messageSource;
+    private final AsyncImportService    importService;
+    private final NotificationInterface notificationInterface;
+    private final ImportTaskListener    importTaskListener;
+    private final MessageSource         messageSource;
 
     @Inject
-    public AsyncImportTaskExecutor(AsyncImportService importService,
-                                   ImportTaskListener importTaskListener) {
-        this.importService        = importService;
-        this.notificationInterface    = NotificationProvider.get();
-        this.importTaskListener   = importTaskListener;
-        this.messageSource        = new MessageSource(MESSAGE_SOURCE);
+    public AsyncImportTaskExecutor(AsyncImportService importService, ImportTaskListener importTaskListener) {
+        this.importService         = importService;
+        this.notificationInterface = NotificationProvider.get();
+        this.importTaskListener    = importTaskListener;
+        this.messageSource         = new MessageSource(MESSAGE_SOURCE);
     }
 
     public AtlasAsyncImportRequest run(AtlasImportResult result, EntityImportStream entityImportStream) throws AtlasBaseException {
@@ -74,16 +73,14 @@ public class AsyncImportTaskExecutor {
 
             if (ObjectUtils.equals(importRequest.getStatus(), ImportStatus.WAITING) || ObjectUtils.equals(importRequest.getStatus(), ImportStatus.PROCESSING)) {
                 LOG.warn("AsyncImportTaskExecutor.run(): Import request with id={} is already in state={}", importId, importRequest.getStatus());
+            } else {
+                // skip to the most recent published position
+                if (ObjectUtils.equals(importRequest.getStatus(), ImportStatus.STAGING)) {
+                    skipToPosition(importRequest, entityImportStream);
+                }
 
-                return importRequest;
+                publishImportRequest(importRequest, entityImportStream);
             }
-
-            // skip to the most recent published position
-            if (ObjectUtils.equals(importRequest.getStatus(), ImportStatus.STAGING)) {
-                skipToPosition(importRequest, entityImportStream);
-            }
-
-            publishImportRequest(importRequest, entityImportStream);
 
             return importRequest;
         } catch (AtlasBaseException abe) {
@@ -91,6 +88,44 @@ public class AsyncImportTaskExecutor {
         } finally {
             entityImportStream.close();
         }
+    }
+
+    public void publishTypeDefNotification(AtlasAsyncImportRequest importRequest, AtlasTypesDef atlasTypesDef) throws AtlasBaseException {
+        LOG.info("==> publishTypeDefNotification(importRequest={}, atlasTypesDef={})", importRequest, atlasTypesDef);
+
+        try {
+            HookNotification typeDefImportNotification = new ImportNotification.AtlasTypeDefImportNotification(importRequest.getImportId(), importRequest.getImportResult().getUserName(), atlasTypesDef);
+
+            sendToTopic(importRequest.getTopicName(), typeDefImportNotification);
+        } finally {
+            LOG.info("<== publishTypeDefNotification(atlasAsyncImportRequest={})", importRequest);
+        }
+    }
+
+    public void onCompleteImportRequest(String importId) {
+        importTaskListener.onCompleteImportRequest(importId);
+    }
+
+    public void abortAsyncImportRequest(String importId) throws AtlasBaseException {
+        LOG.info("==> abortAsyncImportRequest(importId={})", importId);
+
+        try {
+            AtlasAsyncImportRequest importRequest = importService.abortImport(importId);
+
+            notificationInterface.deleteTopic(ASYNC_IMPORT, importRequest.getTopicName());
+        } catch (AtlasBaseException abe) {
+            throw new AtlasBaseException(AtlasErrorCode.ABORT_IMPORT_FAILED, abe, importId);
+        } finally {
+            LOG.info("<== abortAsyncImportRequest(importId={})", importId);
+        }
+    }
+
+    public void delete() {
+        LOG.info("==> delete()");
+
+        importService.deleteRequests();
+
+        LOG.info("<== delete()");
     }
 
     @VisibleForTesting
@@ -110,18 +145,6 @@ public class AsyncImportTaskExecutor {
             notificationInterface.closeProducer(ASYNC_IMPORT, importRequest.getTopicName());
 
             LOG.info("<== publishImportRequest(atlasAsyncImportRequest={})", importRequest);
-        }
-    }
-
-    public void publishTypeDefNotification(AtlasAsyncImportRequest importRequest, AtlasTypesDef atlasTypesDef) throws AtlasBaseException {
-        LOG.info("==> publishTypeDefNotification(importRequest={}, atlasTypesDef={})", importRequest, atlasTypesDef);
-
-        try {
-            HookNotification typeDefImportNotification = new ImportNotification.AtlasTypeDefImportNotification(importRequest.getImportId(), importRequest.getImportResult().getUserName(), atlasTypesDef);
-
-            sendToTopic(importRequest.getTopicName(), typeDefImportNotification);
-        } finally {
-            LOG.info("<== publishTypeDefNotification(atlasAsyncImportRequest={})", importRequest);
         }
     }
 
@@ -227,32 +250,10 @@ public class AsyncImportTaskExecutor {
     }
 
     private void sendToTopic(String topic, HookNotification notification) throws AtlasBaseException {
-        List<HookNotification> notificationMessages = Collections.singletonList(notification);
         try {
-            notificationInterface.send(topic, notificationMessages, messageSource);
+            notificationInterface.send(topic, Collections.singletonList(notification), messageSource);
         } catch (NotificationException exp) {
             throw new AtlasBaseException(exp);
         }
-    }
-
-    public void onCompleteImportRequest(String importId) {
-        importTaskListener.onCompleteImportRequest(importId);
-    }
-
-    public void abortAsyncImportRequest(String importId) throws AtlasBaseException {
-        LOG.info("==> abortImport(importId={})", importId);
-        try {
-            AtlasAsyncImportRequest importRequest = importService.abortImport(importId);
-            notificationInterface.deleteTopic(ASYNC_IMPORT, importRequest.getTopicName());
-        } catch (AtlasBaseException abe) {
-            throw new AtlasBaseException(AtlasErrorCode.ABORT_IMPORT_FAILED, abe, importId);
-        }
-        finally {
-            LOG.info("<== abortImport(importId={})", importId);
-        }
-    }
-
-    public void delete() {
-        importService.deleteRequests();
     }
 }
