@@ -548,18 +548,13 @@ public class AtlasGraphUtilsV2 {
         return findEntityGUIDsByType(graph, typename, null);
     }
 
-    public static List<String> findEntityPropertyValuesByTypeAndPropertyName(String typeName,
-                                                                             Map<String, Object> attributeValues,
-                                                                             String propertyKey) {
-        return findEntityPropertyValuesByTypeAndPropertyName(getGraphInstance(), typeName, attributeValues, propertyKey);
+    public static List<String> findEntityPropertyValuesByTypeAndAttributes(String typeName, Map<String, Object> attributeValues, String propertyKey) {
+        return findEntityPropertyValuesByTypeAndAttributes(getGraphInstance(), typeName, attributeValues, propertyKey);
     }
 
-    public static List<String> findEntityPropertyValuesByTypeAndPropertyName(AtlasGraph graph, String typeName,
-                                                                             Map<String, Object> attributeValues,
-                                                                             String propertyKey) {
-        MetricRecorder metric = RequestContext.get().startMetricRecord("findEntityPropertyValuesByTypeAndPropertyName");
-        AtlasGraphQuery query = graph.query()
-                .has(ENTITY_TYPE_PROPERTY_KEY, typeName);
+    public static List<String> findEntityPropertyValuesByTypeAndAttributes(AtlasGraph graph, String typeName, Map<String, Object> attributeValues, String propertyKey) {
+        MetricRecorder  metric = RequestContext.get().startMetricRecord("findEntityPropertyValuesByTypeAndAttributes");
+        AtlasGraphQuery query  = graph.query().has(ENTITY_TYPE_PROPERTY_KEY, typeName);
 
         for (Map.Entry<String, Object> entry : attributeValues.entrySet()) {
             String attrName  = entry.getKey();
@@ -572,18 +567,19 @@ public class AtlasGraphUtilsV2 {
 
         query.orderBy(PROPERTY_KEY_RECEIVED_AT, ASC);
 
-        Iterator<AtlasVertex> results = query.vertices().iterator();
         List<String> propertyValues = new ArrayList<>();
 
-        while (results.hasNext()) {
-            AtlasVertex vertex = results.next();
-            String propertyValue = AtlasGraphUtilsV2.getProperty(vertex, propertyKey, String.class);
+        for (Iterator<AtlasVertex<?, ?>> results = query.vertices().iterator(); results.hasNext(); ) {
+            AtlasVertex<?, ?> vertex        = results.next();
+            String            propertyValue = AtlasGraphUtilsV2.getProperty(vertex, propertyKey, String.class);
+
             if (propertyValue != null) {
                 propertyValues.add(propertyValue);
             }
         }
 
         RequestContext.get().endMetricRecord(metric);
+
         return propertyValues;
     }
 

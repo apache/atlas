@@ -25,40 +25,36 @@ import org.apache.atlas.model.impexp.AtlasImportResult;
 import static org.apache.atlas.AtlasConfiguration.ATLAS_ASYNC_IMPORT_MIN_DURATION_OVERRIDE_TEST_AUTOMATION;
 
 public class AtlasAsyncImportTestUtil {
+    public static final String OPTION_KEY_ASYNC_IMPORT_MIN_DURATION_IN_MS = "asyncImportMinDurationInMs";
+
     private AtlasAsyncImportTestUtil() {
         // to block instantiation
     }
 
-    public static final String OPTION_KEY_MIN_ASYNC_IMPORT_COMPLETION_TIME = "asyncImportCompletionTime";
+    public static long intercept(AtlasAsyncImportRequest asyncImportRequest) {
+        if (ATLAS_ASYNC_IMPORT_MIN_DURATION_OVERRIDE_TEST_AUTOMATION.getBoolean()) {
+            AtlasImportResult importResult = asyncImportRequest.getImportResult();
 
-    public static void intercept(AtlasAsyncImportRequest asyncImportRequest) {
-        if (!ATLAS_ASYNC_IMPORT_MIN_DURATION_OVERRIDE_TEST_AUTOMATION.getBoolean()) {
-            return;
-        }
-        long startedAt = asyncImportRequest.getReceivedAt();
-        long completedAt = asyncImportRequest.getCompletedAt();
-        AtlasImportResult importResult = null;
-        AtlasImportRequest importRequest = null;
+            if (importResult != null) {
+                AtlasImportRequest importRequest = importResult.getRequest();
 
-        importResult = asyncImportRequest.getImportResult();
-        if (importResult == null) {
-            return;
-        }
-        importRequest = importResult.getRequest();
+                if (importRequest != null) {
+                    long minImportDurationInMs = Long.parseLong(importRequest.getOptions().getOrDefault(OPTION_KEY_ASYNC_IMPORT_MIN_DURATION_IN_MS, "0"));
+                    long waitTimeInMs          = minImportDurationInMs - (asyncImportRequest.getCompletedAt() - asyncImportRequest.getReceivedAt());
 
-        if (importRequest == null) {
-            return;
-        }
-        long minImportDurationInMs = Long.parseLong(importRequest.getOptions().getOrDefault(OPTION_KEY_MIN_ASYNC_IMPORT_COMPLETION_TIME, "0"));
+                    if (waitTimeInMs > 0) {
+                        try {
+                            Thread.sleep(waitTimeInMs);
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
+                    }
 
-        long waitTime = minImportDurationInMs - (completedAt - startedAt);
-
-        if (waitTime > 0) {
-            try {
-                Thread.sleep(waitTime);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                    return waitTimeInMs;
+                }
             }
         }
+
+        return -1;
     }
 }

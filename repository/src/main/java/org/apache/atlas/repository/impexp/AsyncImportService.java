@@ -27,6 +27,7 @@ import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.impexp.AsyncImportStatus;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.repository.ogm.DataAccess;
+import org.apache.atlas.repository.ogm.impexp.AtlasAsyncImportRequestDTO;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
@@ -40,12 +41,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ASYNC_IMPORT_TYPE_NAME;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.ABORTED;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.PROCESSING;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.WAITING;
-import static org.apache.atlas.repository.Constants.PROPERTY_KEY_ASYNC_IMPORT_ID;
-import static org.apache.atlas.repository.Constants.PROPERTY_KEY_ASYNC_IMPORT_STATUS;
+import static org.apache.atlas.repository.ogm.impexp.AtlasAsyncImportRequestDTO.ASYNC_IMPORT_TYPE_NAME;
 
 @Service
 public class AsyncImportService {
@@ -61,11 +60,13 @@ public class AsyncImportService {
     public AtlasAsyncImportRequest fetchImportRequestByImportId(String importId) {
         try {
             AtlasAsyncImportRequest request = new AtlasAsyncImportRequest();
+
             request.setImportId(importId);
 
             return dataAccess.load(request);
         } catch (Exception e) {
             LOG.error("Error fetching request with importId: {}", importId, e);
+
             return null;
         }
     }
@@ -73,9 +74,11 @@ public class AsyncImportService {
     public void saveImportRequest(AtlasAsyncImportRequest importRequest) throws AtlasBaseException {
         try {
             dataAccess.save(importRequest);
+
             LOG.debug("Save request ID: {} request: {}", importRequest.getImportId(), importRequest);
         } catch (AtlasBaseException e) {
             LOG.error("Failed to save import: {} with request: {}", importRequest.getImportId(), importRequest, e);
+
             throw e;
         }
     }
@@ -89,98 +92,88 @@ public class AsyncImportService {
     }
 
     public List<String> fetchInProgressImportIds() {
-        return AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndPropertyName(
-                ASYNC_IMPORT_TYPE_NAME,
-                Collections.singletonMap(PROPERTY_KEY_ASYNC_IMPORT_STATUS, PROCESSING),
-                PROPERTY_KEY_ASYNC_IMPORT_ID);
+        return AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(ASYNC_IMPORT_TYPE_NAME,
+                Collections.singletonMap(AtlasAsyncImportRequestDTO.STATUS_PROPERTY, PROCESSING),
+                AtlasAsyncImportRequestDTO.IMPORT_ID_PROPERTY);
     }
 
     public List<String> fetchQueuedImportRequests() {
-        return AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndPropertyName(
-                ASYNC_IMPORT_TYPE_NAME,
-                Collections.singletonMap(PROPERTY_KEY_ASYNC_IMPORT_STATUS, WAITING),
-                PROPERTY_KEY_ASYNC_IMPORT_ID);
+        return AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(ASYNC_IMPORT_TYPE_NAME,
+                Collections.singletonMap(AtlasAsyncImportRequestDTO.STATUS_PROPERTY, WAITING),
+                AtlasAsyncImportRequestDTO.IMPORT_ID_PROPERTY);
     }
 
     public void deleteRequests() {
         try {
             dataAccess.delete(AtlasGraphUtilsV2.findEntityGUIDsByType(ASYNC_IMPORT_TYPE_NAME, SortOrder.ASCENDING));
         } catch (Exception e) {
-            LOG.error("Error deleting import requests");
+            LOG.error("Error deleting import requests", e);
         }
     }
 
     public AtlasAsyncImportRequest abortImport(String importId) throws AtlasBaseException {
         AtlasAsyncImportRequest importRequestToKill = fetchImportRequestByImportId(importId);
+
         try {
             if (importRequestToKill == null) {
                 throw new AtlasBaseException(AtlasErrorCode.IMPORT_NOT_FOUND, importId);
             }
+
             if (importRequestToKill.getStatus().equals(WAITING)) {
                 importRequestToKill.setStatus(ABORTED);
+
                 saveImportRequest(importRequestToKill);
+
                 LOG.info("Successfully aborted import request: {}", importId);
             } else {
                 LOG.error("Cannot abort import request {}: request is in status: {}", importId, importRequestToKill.getStatus());
+
                 throw new AtlasBaseException(AtlasErrorCode.IMPORT_ABORT_NOT_ALLOWED, importId, importRequestToKill.getStatus().getStatus());
             }
         } catch (AtlasBaseException e) {
             LOG.error("Failed to abort import request: {}", importId, e);
+
             throw e;
         }
+
         return importRequestToKill;
     }
 
     @GraphTransaction
     public PList<AsyncImportStatus> getAllImports(int offset, int limit) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AsyncImportService.getAllImports()");
-        }
+        LOG.debug("==> AsyncImportService.getAllImports()");
 
-        List<String> guids = AtlasGraphUtilsV2.findEntityGUIDsByType(ASYNC_IMPORT_TYPE_NAME, SortOrder.ASCENDING);
+        List<String> allImportGuids = AtlasGraphUtilsV2.findEntityGUIDsByType(ASYNC_IMPORT_TYPE_NAME, SortOrder.ASCENDING);
 
-        int totalCount = guids.size();
-        List<AsyncImportStatus> importRequests;
+        List<AsyncImportStatus> requestedPage;
 
-        if (CollectionUtils.isNotEmpty(guids)) {
-            List<String> paginatedGuids = guids.stream()
-                    .skip(offset)
-                    .limit(limit)
-                    .collect(Collectors.toList());
+        if (CollectionUtils.isNotEmpty(allImportGuids)) {
+            List<String> paginatedGuids = allImportGuids.stream().skip(offset).limit(limit).collect(Collectors.toList());
 
-            List<AtlasAsyncImportRequest> importsToLoad = paginatedGuids.stream()
-                    .map(AtlasAsyncImportRequest::new)
-                    .collect(Collectors.toList());
-
+            List<AtlasAsyncImportRequest>     importsToLoad = paginatedGuids.stream().map(AtlasAsyncImportRequest::new).collect(Collectors.toList());
             Iterable<AtlasAsyncImportRequest> loadedImports = dataAccess.load(importsToLoad);
 
-            importRequests = StreamSupport.stream(loadedImports.spliterator(), false)
-                    .map(AtlasAsyncImportRequest::toImportMinInfo)
-                    .collect(Collectors.toList());
+            requestedPage = StreamSupport.stream(loadedImports.spliterator(), false).map(AtlasAsyncImportRequest::toImportMinInfo).collect(Collectors.toList());
         } else {
-            importRequests = Collections.emptyList();
+            requestedPage = Collections.emptyList();
         }
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AsyncImportService.getAllImports() : {}", importRequests);
-        }
+        LOG.debug("<== AsyncImportService.getAllImports() : {}", requestedPage);
 
-        return new PList<>(importRequests, offset, limit, totalCount, SortType.NONE, null);
+        return new PList<>(requestedPage, offset, limit, allImportGuids.size(), SortType.NONE, null);
     }
 
     @GraphTransaction
     public AtlasAsyncImportRequest getImportStatusById(String importId) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> AsyncImportService.getImportStatusById(importId={})", importId);
-        }
+        LOG.debug("==> AsyncImportService.getImportStatusById(importId={})", importId);
 
         AtlasAsyncImportRequest atlasAsyncImportRequest = new AtlasAsyncImportRequest();
+
         atlasAsyncImportRequest.setImportId(importId);
+
         AtlasAsyncImportRequest importRequest = dataAccess.load(atlasAsyncImportRequest);
 
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== AsyncImportService.getImportStatusById(importId={})", importId);
-        }
+        LOG.debug("<== AsyncImportService.getImportStatusById(importId={})", importId);
 
         return importRequest;
     }

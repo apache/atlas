@@ -88,6 +88,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.time.Instant;
@@ -147,13 +148,13 @@ public class AtlasClientV2 extends AtlasBaseClient {
     private static final String INDEX_RECOVERY_URI = BASE_URI + "v2/indexrecovery";
 
     // Async Import APIs
-    private static final String ASYNC_IMPORT_URI = BASE_URI + "admin/async/import";
-    private static final String ASYNC_IMPORT_STATUS_URI = BASE_URI + "admin/async/import/status";
+    private static final String ASYNC_IMPORT_URI              = BASE_URI + "admin/async/import";
+    private static final String ASYNC_IMPORT_STATUS_URI       = BASE_URI + "admin/async/import/status";
     private static final String ASYNC_IMPORT_STATUS_BY_ID_URI = BASE_URI + "admin/async/import/status/";
-    private static final String ASYNC_IMPORT_BY_ID_URI = BASE_URI + "admin/async/import/";
+    private static final String ASYNC_IMPORT_BY_ID_URI        = BASE_URI + "admin/async/import/";
 
     private static final String IMPORT_REQUEST_PARAMTER = "request";
-    private static final String IMPORT_DATA_PARAMETER = "data";
+    private static final String IMPORT_DATA_PARAMETER   = "data";
 
     public AtlasClientV2(String[] baseUrl, String[] basicAuthUserNamePassword) {
         super(baseUrl, basicAuthUserNamePassword);
@@ -1055,22 +1056,15 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     public AtlasAsyncImportRequest importAsync(AtlasImportRequest request, InputStream stream) throws AtlasServiceException {
-        return performAsyncImport(getImportRequestBodyPart(request),
-                new StreamDataBodyPart(IMPORT_DATA_PARAMETER, stream));
+        return performAsyncImport(getImportRequestBodyPart(request), new StreamDataBodyPart(IMPORT_DATA_PARAMETER, stream));
     }
 
     public PList<AsyncImportStatus> getAsyncImportStatus() throws AtlasServiceException {
-        return callAPI(
-                API_V2.ASYNC_IMPORT_STATUS_ALL,
-                new GenericType<PList<AsyncImportStatus>>() {},
-                null);
+        return callAPI(API_V2.ASYNC_IMPORT_STATUS_ALL, new GenericType<PList<AsyncImportStatus>>() {}, null);
     }
 
     public AtlasAsyncImportRequest getAsyncImportStatusById(String importId) throws AtlasServiceException {
-        return callAPI(
-                formatPathParameters(API_V2.ASYNC_IMPORT_STATUS_BY_ID, importId),
-                AtlasAsyncImportRequest.class,
-                null);
+        return callAPI(formatPathParameters(API_V2.ASYNC_IMPORT_STATUS_BY_ID, importId), AtlasAsyncImportRequest.class, null);
     }
 
     public void deleteAsyncImportById(String importId) throws AtlasServiceException {
@@ -1195,11 +1189,13 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     private AtlasAsyncImportRequest performAsyncImport(BodyPart requestPart, BodyPart filePart) throws AtlasServiceException {
-        MultiPart multipartEntity = new FormDataMultiPart()
-                .bodyPart(requestPart)
-                .bodyPart(filePart);
+        try (FormDataMultiPart formDataMultiPart = new FormDataMultiPart()) {
+            MultiPart multipartEntity = formDataMultiPart.bodyPart(requestPart).bodyPart(filePart);
 
-        return callAPI(API_V2.ASYNC_IMPORT, AtlasAsyncImportRequest.class, multipartEntity);
+            return callAPI(API_V2.ASYNC_IMPORT, AtlasAsyncImportRequest.class, multipartEntity);
+        } catch (IOException e) {
+            throw new AtlasServiceException(e);
+        }
     }
 
     public static class API_V2 extends API {
@@ -1299,9 +1295,9 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 GET_ATLAS_AUDITS    = new API_V2(ATLAS_AUDIT_API, HttpMethod.POST, Response.Status.OK);
         public static final API_V2 AGEOUT_ATLAS_AUDITS = new API_V2(ATLAS_AUDIT_API + "ageout/", HttpMethod.POST, Response.Status.OK);
 
-        //Async Import APIs
-        public static final API_V2 ASYNC_IMPORT = new API_V2(ASYNC_IMPORT_URI, HttpMethod.POST, Response.Status.OK, MediaType.MULTIPART_FORM_DATA, MediaType.APPLICATION_JSON);
-        public static final API_V2 ASYNC_IMPORT_STATUS_ALL = new API_V2(ASYNC_IMPORT_STATUS_URI, HttpMethod.GET, Response.Status.OK);
+        // Async Import APIs
+        public static final API_V2 ASYNC_IMPORT              = new API_V2(ASYNC_IMPORT_URI, HttpMethod.POST, Response.Status.OK, MediaType.MULTIPART_FORM_DATA, MediaType.APPLICATION_JSON);
+        public static final API_V2 ASYNC_IMPORT_STATUS_ALL   = new API_V2(ASYNC_IMPORT_STATUS_URI, HttpMethod.GET, Response.Status.OK);
         public static final API_V2 ASYNC_IMPORT_STATUS_BY_ID = new API_V2(ASYNC_IMPORT_STATUS_BY_ID_URI + "%s", HttpMethod.GET, Response.Status.OK);
         public static final API_V2 DELETE_ASYNC_IMPORT_BY_ID = new API_V2(ASYNC_IMPORT_BY_ID_URI + "%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
 

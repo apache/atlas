@@ -27,8 +27,8 @@ import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
 
 import static org.apache.atlas.AtlasConfiguration.ATLAS_ASYNC_IMPORT_MIN_DURATION_OVERRIDE_TEST_AUTOMATION;
-import static org.apache.atlas.utils.AtlasAsyncImportTestUtil.OPTION_KEY_MIN_ASYNC_IMPORT_COMPLETION_TIME;
-import static org.testng.Assert.assertTrue;
+import static org.apache.atlas.utils.AtlasAsyncImportTestUtil.OPTION_KEY_ASYNC_IMPORT_MIN_DURATION_IN_MS;
+import static org.testng.Assert.assertEquals;
 
 public class TestAtlasAsyncImportTestUtil {
     private Configuration conf;
@@ -42,47 +42,45 @@ public class TestAtlasAsyncImportTestUtil {
     public void testInterceptWaitsForRemainingTimeWhenOverrideEnabled() {
         // Given
         conf.setProperty(ATLAS_ASYNC_IMPORT_MIN_DURATION_OVERRIDE_TEST_AUTOMATION.getPropertyName(), true);
+
+        long               now           = System.currentTimeMillis();
         AtlasImportRequest importRequest = new AtlasImportRequest();
-        importRequest.setOption(OPTION_KEY_MIN_ASYNC_IMPORT_COMPLETION_TIME, "3000");
-        AtlasImportResult importResult = new AtlasImportResult();
+        AtlasImportResult  importResult  = new AtlasImportResult();
+
+        importRequest.setOption(OPTION_KEY_ASYNC_IMPORT_MIN_DURATION_IN_MS, "3000");
         importResult.setRequest(importRequest);
 
         AtlasAsyncImportRequest asyncRequest = new AtlasAsyncImportRequest(importResult);
-        long now = System.currentTimeMillis();
+
         asyncRequest.setReceivedAt(now);
         asyncRequest.setCompletedAt(now + 1000);
 
-        long before = System.currentTimeMillis();
-        // When
-        AtlasAsyncImportTestUtil.intercept(asyncRequest);
-        long after = System.currentTimeMillis();
+        long waitTimeInMs = AtlasAsyncImportTestUtil.intercept(asyncRequest);
 
-        // Then
-        long actualWait = after - before;
-        assertTrue(actualWait >= 1900, "Should have waited ~2000ms");
+        assertEquals(waitTimeInMs, 2000, "Should have waited 2000ms");
     }
 
     @Test
     public void testInterceptSkipsSleepWhenDurationAlreadyMet() {
         // Given
         conf.setProperty(ATLAS_ASYNC_IMPORT_MIN_DURATION_OVERRIDE_TEST_AUTOMATION.getPropertyName(), true);
+
+        long               now           = System.currentTimeMillis();
         AtlasImportRequest importRequest = new AtlasImportRequest();
-        importRequest.setOption(OPTION_KEY_MIN_ASYNC_IMPORT_COMPLETION_TIME, "3000");
-        AtlasImportResult importResult = new AtlasImportResult();
+        AtlasImportResult  importResult  = new AtlasImportResult();
+
+        importRequest.setOption(OPTION_KEY_ASYNC_IMPORT_MIN_DURATION_IN_MS, "3000");
         importResult.setRequest(importRequest);
 
         AtlasAsyncImportRequest asyncRequest = new AtlasAsyncImportRequest();
-        long now = System.currentTimeMillis();
+
         asyncRequest.setReceivedAt(now);
         asyncRequest.setCompletedAt(now + 4000);
 
-        long before = System.currentTimeMillis();
-        // When
-        AtlasAsyncImportTestUtil.intercept(asyncRequest);
-        long after = System.currentTimeMillis();
+        long waitTimeInMs = AtlasAsyncImportTestUtil.intercept(asyncRequest);
 
         // Then
-        assertTrue(after - before < 200, "Should not sleep if already exceeded");
+        assertEquals(waitTimeInMs, -1, "Should not sleep if already exceeded");
     }
 
     @Test
@@ -91,18 +89,17 @@ public class TestAtlasAsyncImportTestUtil {
         conf.setProperty(ATLAS_ASYNC_IMPORT_MIN_DURATION_OVERRIDE_TEST_AUTOMATION.getPropertyName(), false);
 
         AtlasImportRequest importRequest = new AtlasImportRequest();
-        importRequest.setOption(OPTION_KEY_MIN_ASYNC_IMPORT_COMPLETION_TIME, "3000");
-        AtlasImportResult importResult = new AtlasImportResult();
+        AtlasImportResult  importResult  = new AtlasImportResult();
+
+        importRequest.setOption(OPTION_KEY_ASYNC_IMPORT_MIN_DURATION_IN_MS, "3000");
         importResult.setRequest(importRequest);
 
         AtlasAsyncImportRequest asyncRequest = new AtlasAsyncImportRequest(importResult);
 
-        long before = System.currentTimeMillis();
-        AtlasAsyncImportTestUtil.intercept(asyncRequest);
-        long after = System.currentTimeMillis();
+        long waitTimeInMs = AtlasAsyncImportTestUtil.intercept(asyncRequest);
 
         // Then
         // Ensure that we did not actually sleep (i.e., took less than 200ms)
-        assertTrue((after - before) < 200, "intercept() should not sleep when override is disabled");
+        assertEquals(waitTimeInMs, -1, "intercept() should not sleep when override is disabled");
     }
 }

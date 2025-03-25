@@ -18,17 +18,32 @@
 
 package org.apache.atlas.model.impexp;
 
-public class AsyncImportStatus {
-    private String importId;
-    private AtlasAsyncImportRequest.ImportStatus status;
-    private String importRequestReceivedAt;
-    private String importRequestReceivedBy;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus;
+
+import java.io.Serializable;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
+public class AsyncImportStatus implements Serializable {
+    private static final long serialVersionUID = 1L;
+
+    private String       importId;
+    private ImportStatus status;
+    private String       importRequestReceivedAt;
+    private String       importRequestReceivedBy;
 
     public AsyncImportStatus() {}
 
-    public AsyncImportStatus(String importId, AtlasAsyncImportRequest.ImportStatus status, String importRequestReceivedAt, String importRequestReceivedBy) {
-        this.importId = importId;
-        this.status = status;
+    public AsyncImportStatus(String importId, ImportStatus status, String importRequestReceivedAt, String importRequestReceivedBy) {
+        this.importId                = importId;
+        this.status                  = status;
         this.importRequestReceivedAt = importRequestReceivedAt;
         this.importRequestReceivedBy = importRequestReceivedBy;
     }
@@ -37,7 +52,7 @@ public class AsyncImportStatus {
         return importId;
     }
 
-    public AtlasAsyncImportRequest.ImportStatus getStatus() {
+    public ImportStatus getStatus() {
         return status;
     }
 

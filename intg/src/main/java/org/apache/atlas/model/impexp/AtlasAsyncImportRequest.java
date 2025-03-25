@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.model.AtlasBaseModelObject;
 import org.apache.atlas.utils.AtlasEntityUtil;
 
@@ -43,9 +44,6 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Serializable {
     private static final long serialVersionUID = 1L;
-    public static final String ASYNC_IMPORT_TYPE_NAME = "__AtlasAsyncImportRequest";
-    public static final String ASYNC_IMPORT_TOPIC_PREFIX = "ATLAS_IMPORT_";
-    public static final String REQUEST_ID_PREFIX_PROPERTY = "async_import_";
 
     public enum ImportStatus {
         STAGING("STAGING"),
@@ -72,27 +70,17 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         }
     }
 
-    private String importId;
-    private ImportStatus status;
-    private ImportDetails importDetails = new ImportDetails();
-    private long receivedAt;
-    private long stagedAt;
-    private long startedProcessingAt;
-    private long completedAt;
-
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private String            importId;
+    private ImportStatus      status;
+    private ImportDetails     importDetails = new ImportDetails();
+    private long              receivedAt;
+    private long              stagedAt;
+    private long              startedProcessingAt;
+    private long              completedAt;
     private AtlasImportResult importResult;
 
     @JsonIgnore
     private ImportTrackingInfo importTrackingInfo;
-
-    public ImportTrackingInfo getImportTrackingInfo() {
-        return importTrackingInfo;
-    }
-
-    public void setImportTrackingInfo(ImportTrackingInfo importTrackingInfo) {
-        this.importTrackingInfo = importTrackingInfo;
-    }
 
     public AtlasAsyncImportRequest() {}
 
@@ -101,14 +89,15 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
     }
 
     public AtlasAsyncImportRequest(AtlasImportResult result) {
-        this.importResult = result;
-        this.status                      = ImportStatus.STAGING;
-        this.receivedAt                  = 0L;
-        this.stagedAt                    = 0L;
-        this.startedProcessingAt         = 0L;
-        this.completedAt                 = 0L;
-        this.importDetails               = new ImportDetails();
-        this.importTrackingInfo          = new ImportTrackingInfo(null, 0);
+        this.importResult        = result;
+        this.status              = ImportStatus.STAGING;
+        this.receivedAt          = 0L;
+        this.stagedAt            = 0L;
+        this.startedProcessingAt = 0L;
+        this.completedAt         = 0L;
+        this.importDetails       = new ImportDetails();
+        this.importTrackingInfo  = new ImportTrackingInfo(null, 0);
+
         setGuid(getGuid());
     }
 
@@ -118,8 +107,9 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
 
     public void setImportId(String importId) {
         this.importId = importId;
+
         if (importTrackingInfo != null) {
-            importTrackingInfo.setRequestId(REQUEST_ID_PREFIX_PROPERTY + importId + "@" + AtlasEntityUtil.getMetadataNamespace());
+            importTrackingInfo.setRequestId(AtlasConfiguration.REQUEST_ID_PREFIX_PROPERTY.getString() + importId + "@" + AtlasEntityUtil.getMetadataNamespace());
         }
     }
 
@@ -137,19 +127,6 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
 
     public void setImportDetails(ImportDetails importDetails) {
         this.importDetails = importDetails;
-    }
-
-    @JsonIgnore
-    public String getTopicName() {
-        return ASYNC_IMPORT_TOPIC_PREFIX + importId;
-    }
-
-    public AtlasImportResult getImportResult() {
-        return importResult;
-    }
-
-    public void setImportResult(AtlasImportResult importResult) {
-        this.importResult = importResult;
     }
 
     public long getReceivedAt() {
@@ -176,6 +153,19 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         this.startedProcessingAt = startedProcessingAt;
     }
 
+    @JsonIgnore
+    public String getTopicName() {
+        return AtlasConfiguration.ASYNC_IMPORT_TOPIC_PREFIX + importId;
+    }
+
+    public AtlasImportResult getImportResult() {
+        return importResult;
+    }
+
+    public void setImportResult(AtlasImportResult importResult) {
+        this.importResult = importResult;
+    }
+
     public long getCompletedAt() {
         return completedAt;
     }
@@ -184,45 +174,45 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         this.completedAt = completedAt;
     }
 
+    public ImportTrackingInfo getImportTrackingInfo() {
+        return importTrackingInfo;
+    }
+
+    public void setImportTrackingInfo(ImportTrackingInfo importTrackingInfo) {
+        this.importTrackingInfo = importTrackingInfo;
+    }
+
     @JsonIgnore
     public AsyncImportStatus toImportMinInfo() {
-        AsyncImportStatus asyncImportStatus = new AsyncImportStatus(
-                this.getImportId(),
-                status,
-                toIsoDate(new Date(this.receivedAt)),
-                importResult.getUserName());
-        return asyncImportStatus;
+        return new AsyncImportStatus(this.getImportId(), status, toIsoDate(new Date(this.receivedAt)), importResult.getUserName());
     }
 
     private String toIsoDate(Date value) {
-        final TimeZone tz = TimeZone.getTimeZone("UTC");
+        final TimeZone   tz = TimeZone.getTimeZone("UTC");
         final DateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
-        df.setTimeZone(tz);
-        return df.format(value);
-    }
 
-    @Override
-    public String toString() {
-        return toString(new StringBuilder()).toString();
+        df.setTimeZone(tz);
+
+        return df.format(value);
     }
 
     @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
-        }
-        if (!(o instanceof AtlasAsyncImportRequest)) {
+        } else if (!(o instanceof AtlasAsyncImportRequest)) {
+            return false;
+        } else if (!super.equals(o)) {
             return false;
         }
-        if (!super.equals(o)) {
-            return false;
-        }
+
         AtlasAsyncImportRequest that = (AtlasAsyncImportRequest) o;
+
         return Objects.equals(importResult, that.importResult) &&
                 Objects.equals(importId, that.importId) &&
                 Objects.equals(status, that.status) &&
                 Objects.equals(importDetails, that.importDetails) &&
-                Objects.equals(importTrackingInfo.getRequestId(), that.importTrackingInfo.getRequestId()) &&
+                (importTrackingInfo == null ? that.importTrackingInfo == null : (that.importTrackingInfo != null && Objects.equals(importTrackingInfo.getRequestId(), that.importTrackingInfo.getRequestId()))) &&
                 Objects.equals(receivedAt, that.receivedAt) &&
                 Objects.equals(stagedAt, that.stagedAt) &&
                 Objects.equals(startedProcessingAt, that.startedProcessingAt) &&
@@ -231,18 +221,13 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), importTrackingInfo.getRequestId(), importResult,
-                importId, status, importDetails, receivedAt, stagedAt, startedProcessingAt, completedAt);
+        return Objects.hash(super.hashCode(), importResult, importId, status, importDetails,
+                importTrackingInfo == null ? null : importTrackingInfo.getRequestId(), receivedAt, stagedAt, startedProcessingAt, completedAt);
     }
 
     @Override
     protected StringBuilder toString(StringBuilder sb) {
-        sb.append(", importResult=");
-        if (importResult == null) {
-            sb.append("null");
-        } else {
-            sb.append(importResult);
-        }
+        sb.append(", importResult=").append(importResult);
         sb.append(", requestId=").append(importTrackingInfo.getRequestId());
         sb.append(", importId=").append(importId);
         sb.append(", status=").append(status);
@@ -255,16 +240,18 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         return sb;
     }
 
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class ImportDetails {
+    public static class ImportDetails implements Serializable {
         private static final long serialVersionUID = 1L;
 
-        private int publishedEntityCount;
-        private int totalEntitiesCount;
-        private int importedEntitiesCount;
-        private int failedEntitiesCount;
-        private List<String> failedEntities;
-        private float importProgress;
+        private int                 publishedEntityCount;
+        private int                 totalEntitiesCount;
+        private int                 importedEntitiesCount;
+        private int                 failedEntitiesCount;
+        private List<String>        failedEntities;
+        private float               importProgress;
         private Map<String, String> failures;
 
         @JsonIgnore
@@ -272,7 +259,7 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
 
         public ImportDetails() {
             this.failedEntities = new ArrayList<>();
-            this.failures = new HashMap<>();
+            this.failures       = new HashMap<>();
         }
 
         public int getPublishedEntityCount() {
@@ -355,11 +342,12 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         public boolean equals(Object o) {
             if (this == o) {
                 return true;
-            }
-            if (!(o instanceof ImportDetails)) {
+            } else if (!(o instanceof ImportDetails)) {
                 return false;
             }
+
             ImportDetails that = (ImportDetails) o;
+
             return publishedEntityCount == that.publishedEntityCount &&
                     totalEntitiesCount == that.totalEntitiesCount &&
                     importedEntitiesCount == that.importedEntitiesCount &&
@@ -374,16 +362,21 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         }
     }
 
-    public static class ImportTrackingInfo {
+    @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class ImportTrackingInfo implements Serializable {
+        private static final long serialVersionUID = 1L;
+
         private String requestId;
-        private int skipTo;
+        private int    skipTo;
 
         public ImportTrackingInfo() {
         }
 
         public ImportTrackingInfo(String requestId, int skipTo) {
             this.requestId = requestId;
-            this.skipTo = skipTo;
+            this.skipTo    = skipTo;
         }
 
         public String getRequestId() {

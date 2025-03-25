@@ -77,15 +77,16 @@ public class SampleApp {
 
             entityExample.deleteEntities();
 
-            //Async Import Examples
-            AsyncImportApiExample asyncImportApiExample = new AsyncImportApiExample(sampleApp.getClient());
-
-            AtlasAsyncImportRequest asyncRequest = asyncImportApiExample.testImportAsyncWithZip();
+            // Async Import Examples
+            AsyncImportApiExample   asyncImportApiExample = new AsyncImportApiExample(sampleApp.getClient());
+            AtlasAsyncImportRequest asyncRequest          = asyncImportApiExample.testImportAsyncWithZip();
 
             asyncImportApiExample.testGetAsyncImportStatus();
 
             String testImportId = asyncRequest.getImportId();
+
             asyncImportApiExample.testGetAsyncImportStatusById(testImportId);
+
             asyncImportApiExample.testDeleteAsyncImportById(testImportId);
         } finally {
             if (sampleApp != null && sampleApp.getClient() != null) {

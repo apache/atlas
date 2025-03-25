@@ -18,6 +18,7 @@
  */
 package org.apache.atlas.repository.ogm.impexp;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
@@ -38,10 +39,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 
-import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ASYNC_IMPORT_TYPE_NAME;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportDetails;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus;
-import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.REQUEST_ID_PREFIX_PROPERTY;
 
 /**
  * AtlasAsyncImportRequestDTO is the bridge class between AtlasAsyncImportRequest and AtlasEntity.
@@ -50,16 +49,17 @@ import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.REQUEST_ID_P
 public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<AtlasAsyncImportRequest> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAsyncImportRequestDTO.class);
 
-    public static final String IMPORT_RESULT_PROPERTY                        = "importResult";
-    public static final String REQUEST_ID_PROPERTY                           = "requestId";
-    public static final String IMPORT_ID_PROPERTY                            = "importId";
-    public static final String SKIP_TO_PROPERTY                              = "skipTo";
-    public static final String STATUS_PROPERTY                               = "status";
-    public static final String IMPORT_DETAILS_PROPERTY                       = "importDetails";
-    public static final String RECEIVED_AT_PROPERTY                          = "receivedAt";
-    public static final String STAGED_AT_PROPERTY                            = "stagedAt";
-    public static final String STARTED_PROCESSING_AT                         = "startedProcessingAt";
-    public static final String COMPLETED_AT                                  = "completedAt";
+    public static final String ASYNC_IMPORT_TYPE_NAME  = "__AtlasAsyncImportRequest";
+    public static final String IMPORT_RESULT_PROPERTY  = "importResult";
+    public static final String REQUEST_ID_PROPERTY     = "requestId";
+    public static final String IMPORT_ID_PROPERTY      = "importId";
+    public static final String SKIP_TO_PROPERTY        = "skipTo";
+    public static final String STATUS_PROPERTY         = "status";
+    public static final String IMPORT_DETAILS_PROPERTY = "importDetails";
+    public static final String RECEIVED_AT_PROPERTY    = "receivedAt";
+    public static final String STAGED_AT_PROPERTY      = "stagedAt";
+    public static final String STARTED_PROCESSING_AT   = "startedProcessingAt";
+    public static final String COMPLETED_AT            = "completedAt";
 
     @Inject
     public AtlasAsyncImportRequestDTO(AtlasTypeRegistry typeRegistry) {
@@ -256,6 +256,6 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
     }
 
     private String getUniqueValue(AtlasAsyncImportRequest obj) {
-        return REQUEST_ID_PREFIX_PROPERTY + obj.getImportId() + "@" + AuditsWriter.getCurrentClusterName();
+        return AtlasConfiguration.REQUEST_ID_PREFIX_PROPERTY.getString() + obj.getImportId() + "@" + AuditsWriter.getCurrentClusterName();
     }
 }

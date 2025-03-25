@@ -98,7 +98,7 @@ public class Spooler extends AbstractNotification {
 
                 ret = writeInternal(messages);
             } else {
-                LOG.error("Spooler.write(source={}): called after stop is called! Write will not be performed!", configuration.getSourceName(), messages);
+                LOG.error("Spooler.write(source={}): called after stop is called! {} messages will not be written to spool!", configuration.getSourceName(), (messages != null ? messages.size() : 0));
 
                 ret = false;
             }

@@ -130,8 +130,8 @@ public class AbstractNotificationTest {
 
     public static class TestNotification extends AbstractNotification {
         private NotificationType type;
+        private String           topic;
         private List<String>     messages;
-        private String topic;
 
         public TestNotification(Configuration applicationProperties) throws AtlasException {
             super(applicationProperties);
@@ -145,7 +145,7 @@ public class AbstractNotificationTest {
 
         @Override
         public void sendInternal(String notificationTopic, List<String> notificationMessages) throws NotificationException {
-            topic = notificationTopic;
+            topic    = notificationTopic;
             messages = notificationMessages;
         }
 

@@ -52,6 +52,7 @@ public class ImportNotification extends HookNotification implements Serializable
 
     protected ImportNotification(HookNotificationType type, String user, String importId) {
         super(type, user);
+
         this.importId = importId;
     }
 
@@ -66,7 +67,7 @@ public class ImportNotification extends HookNotification implements Serializable
 
         sb.append("ImportNotification{");
         super.toString(sb);
-        sb.append("type=").append(type);
+        sb.append(", type=").append(type);
         sb.append(", user=").append(user);
         sb.append(", importId=").append(importId);
         sb.append("}");
@@ -93,6 +94,7 @@ public class ImportNotification extends HookNotification implements Serializable
 
         public AtlasTypeDefImportNotification(String importId, String user, AtlasTypesDef typeDefinitionMap) {
             super(HookNotificationType.IMPORT_TYPE_DEF, user, importId);
+
             this.typeDefinitionMap = typeDefinitionMap;
         }
 
@@ -108,7 +110,7 @@ public class ImportNotification extends HookNotification implements Serializable
 
             sb.append("AtlasTypeDefImportNotification{");
             super.toString(sb);
-            sb.append(", typeDefinitionMap=").append(typeDefinitionMap == null ? "null" : typeDefinitionMap.toString());
+            sb.append(", typeDefinitionMap=").append(typeDefinitionMap);
             sb.append("}");
 
             return sb;
@@ -137,7 +139,8 @@ public class ImportNotification extends HookNotification implements Serializable
 
         public AtlasEntityImportNotification(String importId, String user, AtlasEntityWithExtInfo entity, int position) {
             super(HookNotificationType.IMPORT_ENTITY, user, importId);
-            this.entity = entity;
+
+            this.entity   = entity;
             this.position = position;
         }
 
@@ -157,8 +160,8 @@ public class ImportNotification extends HookNotification implements Serializable
 
             sb.append("AtlasEntityImportNotification{");
             super.toString(sb);
+            sb.append(", entity=").append(entity);
             sb.append(", position=").append(position);
-            sb.append(", entities=").append(entity == null ? "null" : entity.toString());
             sb.append("}");
 
             return sb;

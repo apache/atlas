@@ -147,6 +147,7 @@ public class AtlasFileSpoolTest extends BaseTest {
         IndexManagement    indexManagement = new IndexManagement(cfg);
 
         indexManagement.init();
+
         Spooler spooler = new Spooler(cfg, indexManagement);
 
         assertThrows(UnsupportedOperationException.class, () -> spooler.sendInternal("topic", Collections.emptyList()));

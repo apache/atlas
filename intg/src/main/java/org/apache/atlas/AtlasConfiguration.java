@@ -112,7 +112,9 @@ public enum AtlasConfiguration {
     ATLAS_AUDIT_AGING_TTL_TEST_AUTOMATION("atlas.audit.aging.ttl.test.automation", false), //Only for test automation
     RELATIONSHIP_SEARCH_ENABLED("atlas.relationship.search.enabled", false),
     UI_TASKS_TAB_USE_ENABLED("atlas.tasks.ui.tab.enabled", false),
-    ATLAS_ASYNC_IMPORT_MIN_DURATION_OVERRIDE_TEST_AUTOMATION("atlas.async.import.min.duration.override.test.automation", false);
+    ATLAS_ASYNC_IMPORT_MIN_DURATION_OVERRIDE_TEST_AUTOMATION("atlas.async.import.min.duration.override.test.automation", false),
+    ASYNC_IMPORT_TOPIC_PREFIX("atlas.async.import.topic.prefix", "ATLAS_IMPORT_"),
+    REQUEST_ID_PREFIX_PROPERTY("atlas.async.import.request_id.prefix", "async_import_");
 
     private static final Configuration APPLICATION_PROPERTIES;
 

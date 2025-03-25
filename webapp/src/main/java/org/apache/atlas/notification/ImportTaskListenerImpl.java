@@ -139,7 +139,9 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
         LOG.info("==> onCompleteImportRequest(importId={})", importId);
         try {
             AtlasAsyncImportRequest importRequest = asyncImportService.fetchImportRequestByImportId(importId);
+
             AtlasAsyncImportTestUtil.intercept(importRequest);
+
             notificationHookConsumer.closeImportConsumer(importId, ASYNC_IMPORT_TOPIC_PREFIX + importId);
         } finally {
             releaseAsyncImportSemaphore();

@@ -57,7 +57,7 @@ import static org.testng.Assert.fail;
 public class KafkaConsumerTest {
     private static final String TRAIT_NAME = "MyTrait";
 
-    private static final String   ATLAS_HOOK_TOPIC           = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
+    private static final String       ATLAS_HOOK_TOPIC           = AtlasConfiguration.NOTIFICATION_HOOK_TOPIC_NAME.getString();
     private static final List<String> ATLAS_HOOK_CONSUMER_TOPICS = KafkaNotification.trimAndPurge(AtlasConfiguration.NOTIFICATION_HOOK_CONSUMER_TOPIC_NAMES.getStringArray(ATLAS_HOOK_TOPIC));
 
     @Mock

@@ -25,10 +25,10 @@ import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.nio.file.Files;
 
 public class AsyncImportApiExample {
     private final AtlasClientV2 client;
@@ -42,58 +42,72 @@ public class AsyncImportApiExample {
 
         if (url == null) {
             System.err.println("importFile.zip not found in classpath.");
+
             return null;
         }
 
-        File zipFile = new File(url.toURI());
-
+        File               zipFile = new File(url.toURI());
         AtlasImportRequest request = new AtlasImportRequest();
 
-        try (InputStream zipStream = new FileInputStream(zipFile)) {
-            System.out.println("Testing importDataAsync with ZIP file...");
+        try (InputStream zipStream = Files.newInputStream(zipFile.toPath())) {
+            System.out.println("Testing Async Import with ZIP file...");
+
             try {
                 AtlasAsyncImportRequest asyncRequest = client.importAsync(request, zipStream);
-                System.out.println("Import Data Async Request Created: " + asyncRequest);
+
+                System.out.println("Async Import Request Created: " + asyncRequest);
+
                 return asyncRequest;
             } catch (AtlasServiceException e) {
-                System.err.println("Failed to execute importDataAsync with ZIP file: " + e.getMessage());
+                System.err.println("Async Import with ZIP file failed: " + e.getMessage());
+
                 throw e;
             }
         } catch (IOException e) {
             System.err.println("Failed to open ZIP file: " + e.getMessage());
+
             throw e;
         }
     }
 
     public void testGetAsyncImportStatus() throws Exception {
         System.out.println("Testing getAllAsyncImportStatus...");
+
         try {
             PList<AsyncImportStatus> statuses = client.getAsyncImportStatus();
+
             System.out.println("All Async Import Statuses: " + statuses);
         } catch (AtlasServiceException e) {
             System.err.println("Failed to fetch all async import statuses: " + e.getMessage());
+
             throw e;
         }
     }
 
     public void testGetAsyncImportStatusById(String importId) throws Exception {
-        System.out.println("Testing getImportStatusById...");
+        System.out.println("Testing getImportStatus for id=" + importId);
+
         try {
             AtlasAsyncImportRequest importStatus = client.getAsyncImportStatusById(importId);
+
             System.out.println("Import Status for ID (" + importId + "): " + importStatus);
         } catch (AtlasServiceException e) {
-            System.err.println("Failed to fetch import status by ID: " + e.getMessage());
+            System.err.println("Failed to fetch import status for id=" + importId + ": " + e.getMessage());
+
             throw e;
         }
     }
 
     public void testDeleteAsyncImportById(String importId) throws Exception {
-        System.out.println("Testing deleteAsyncImportById...");
+        System.out.println("Testing deleteAsyncImport for id=" + importId);
+
         try {
             client.deleteAsyncImportById(importId);
+
             System.out.println("Successfully deleted async import with ID: " + importId);
         } catch (AtlasServiceException e) {
-            System.err.println("Failed to delete async import by ID (" + importId + "): " + e.getMessage());
+            System.err.println("Failed to delete async import for ID (" + importId + "): " + e.getMessage());
+
             throw e;
         }
     }
