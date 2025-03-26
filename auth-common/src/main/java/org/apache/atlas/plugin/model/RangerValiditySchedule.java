@@ -19,9 +19,9 @@
 
 package org.apache.atlas.plugin.model;
 
-import org.apache.htrace.shaded.fasterxml.jackson.annotation.JsonAutoDetect;
-import org.apache.htrace.shaded.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import org.apache.htrace.shaded.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
