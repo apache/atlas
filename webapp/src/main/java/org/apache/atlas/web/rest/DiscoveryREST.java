@@ -885,6 +885,42 @@ public class DiscoveryREST {
             if (StringUtils.isNotEmpty(parameters.getQuery()) && parameters.getQuery().length() > maxFullTextQueryLength) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
             }
+
+            validateEntityFilter(parameters);
+        }
+    }
+
+    private void validateEntityFilter(SearchParameters parameters) throws AtlasBaseException {
+        if (parameters.getEntityFilters() == null) {
+            return;
+        }
+
+        if (parameters.getEntityFilters().getCriterion() != null &&
+                !parameters.getEntityFilters().getCriterion().isEmpty()) {
+            if (StringUtils.isEmpty(parameters.getEntityFilters().getCondition().toString())) {
+                throw new AtlasBaseException("Condition (AND/OR) must be specified when using multiple filters.");
+            }
+
+            for (FilterCriteria filterCriteria : parameters.getEntityFilters().getCriterion()) {
+                if (StringUtils.isBlank(filterCriteria.getAttributeName())
+                        || StringUtils.isBlank(filterCriteria.getAttributeValue())) {
+                    throw new AtlasBaseException(AtlasErrorCode.BLANK_ATTRIBUTES);
+                }
+
+                if (filterCriteria.getOperator() == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_OPERATOR_PASSED, filterCriteria.getAttributeName());
+                }
+            }
+        }
+        else {
+            if (StringUtils.isBlank(parameters.getEntityFilters().getAttributeName())
+                    || StringUtils.isBlank(parameters.getEntityFilters().getAttributeValue())) {
+                throw new AtlasBaseException(AtlasErrorCode.BLANK_ATTRIBUTES);
+            }
+
+            if (parameters.getEntityFilters().getOperator() == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_OPERATOR_PASSED, parameters.getEntityFilters().getAttributeName());
+            }
         }
     }
 
