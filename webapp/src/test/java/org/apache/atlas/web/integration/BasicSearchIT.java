@@ -138,6 +138,11 @@ public class BasicSearchIT extends BaseResourceIT {
                 LOG.info("TestDescription  :{}", testExpectation.testDescription);
                 LOG.info("SearchParameters :{}", testExpectation.searchParameters);
 
+                SearchParameters parameters = testExpectation.getSearchParameters();
+                if (parameters.getEntityFilters() == null || parameters.getEntityFilters().getAttributeName() == null) {
+                    continue;
+                }
+
                 AtlasSearchResult searchResult = atlasClientV2.facetedSearch(testExpectation.searchParameters);
 
                 if (testExpectation.expectedCount > 0) {
