@@ -1,0 +1,114 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@use "variables" as v;
+
+//   .queryBuilder-invalid {
+//     border: 2px solid red;
+//   }
+
+.queryBuilder :focus {
+  outline: none;
+}
+
+.ruleGroup-addRule {
+  margin-left: auto;
+  cursor: pointer;
+}
+
+.ruleGroup-addGroup,
+.ruleGroup-addRule {
+  color: v.$text-green;
+  background: white;
+  border: 1px solid v.$text-green;
+  border-radius: 3px;
+  padding: 2px 6px;
+  cursor: pointer;
+}
+
+.ruleGroup {
+  border-color: #e8e8e8;
+  border-style: solid;
+  background: rgba(0, 75, 183, 0.02);
+}
+
+.ruleGroup-combinators {
+  color: #fff !important;
+  background-color: #5bc0de !important;
+  border-color: #46b8da !important;
+  border-radius: 3px;
+  padding: 2px 6px;
+  cursor: pointer;
+  height: 24px;
+}
+
+.rule-fields {
+  width: 35%;
+}
+
+.rule-value {
+  width: 50%;
+}
+
+.rule-fields,
+.rule-operators,
+.rule-value {
+  height: 34px;
+  padding: 6px 12px;
+  font-size: 14px;
+  background-color: white;
+  border: 1px #eeeeee solid;
+  border-radius: 4px;
+  color: #555;
+  line-height: 1.42857143;
+}
+
+.rule-remove,
+.ruleGroup-remove {
+  box-shadow: none;
+  outline: none;
+  border: 0;
+  border-radius: 3px;
+  color: #fff;
+  background-color: #e14f00;
+  border-color: #e14f00;
+  cursor: pointer;
+}
+
+.query-field-value-autocomplete .MuiOutlinedInput-root.MuiInputBase-sizeSmall {
+  padding-top: 0.32em !important;
+  padding-bottom: 0.32em !important;
+  border-radius: 4px;
+}
+
+.query-field-value-autocomplete fieldset {
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+.ruleGroup-addRule svg,
+.ruleGroup-addGroup svg {
+  width: 0.875em;
+  height: 0.875em;
+}
+
+.ruleGroup-addRule,
+.ruleGroup-addGroup {
+  display: flex;
+  height: 24px;
+  align-items: center;
+  line-height: 17.5px;
+}
