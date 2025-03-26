@@ -111,7 +111,6 @@ public class EntityNotification implements Serializable {
         private OperationType           operationType;
         private long              eventTime;
         private Object       mutatedDetails;
-        private Object       mutatedRelationshipDetails;
         private Map<String, String> headers;
 
         public EntityNotificationV2() {
@@ -145,18 +144,6 @@ public class EntityNotification implements Serializable {
             setHeaders(requestContextHeaders);
         }
 
-        public EntityNotificationV2(AtlasEntityHeader entity, Object mutatedDetails, Object mutatedRelationshipDetails, OperationType operationType,
-                                    long eventTime, Map<String, String> requestContextHeaders) {
-            super(ENTITY_NOTIFICATION_V2);
-
-            setEntity(entity);
-            setOperationType(operationType);
-            setEventTime(eventTime);
-            setMutatedDetails(mutatedDetails);
-            setMutatedRelationshipDetails(mutatedRelationshipDetails);
-            setHeaders(requestContextHeaders);
-        }
-
         public EntityNotificationV2(AtlasRelationshipHeader relationship, OperationType operationType,
                                     long eventTime, Map<String, String> requestContextHeaders) {
             super(ENTITY_NOTIFICATION_V2);
@@ -181,14 +168,6 @@ public class EntityNotification implements Serializable {
 
         public Object getMutatedDetails(){
             return mutatedDetails;
-        }
-
-        public void setMutatedRelationshipDetails(Object mutatedRelationshipDetails){
-            this.mutatedRelationshipDetails = mutatedRelationshipDetails;
-        }
-
-        public Object getMutatedRelationshipDetails(){
-            return mutatedRelationshipDetails;
         }
 
 
