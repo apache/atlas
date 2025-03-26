@@ -86,7 +86,7 @@ else
   done
 fi
 
-mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean package
+mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean install
 
 mv -f distro/target/apache-atlas-${ATLAS_VERSION}-server.tar.gz     /home/atlas/dist/
 mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz  /home/atlas/dist/
