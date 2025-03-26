@@ -155,8 +155,6 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
 
         List<EntityNotificationV2> messages = new ArrayList<>();
 
-        Map <String, Object> mutatedRelationshipDetails = new HashMap<>();
-
         for (AtlasEntity entity : entities) {
              if (isInternalType(entity.getTypeName())) {
                 continue;
