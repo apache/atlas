@@ -23,6 +23,9 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 public class BusinessLineageRequest implements Serializable {
     private static final long serialVersionUID = 1L;
 
+    private static final String PRODUCT_GUIDS_ATTR = "productGUIDs";
+    private static final String PRODUCT_ASSET_OUTPUT_PORT_ATTR = "outputProductGUIDs";
+
     private List<LineageOperation> lineageOperations;
 
     public List<LineageOperation> getLineageOperations() {
@@ -52,6 +55,7 @@ public class BusinessLineageRequest implements Serializable {
         private String productGuid;
         private OperationType operation;
         private String edgeLabel;
+        private String assetDenormAttribute = PRODUCT_GUIDS_ATTR;
 
         public String getWorkflowId() {
             return workflowId;
@@ -93,6 +97,18 @@ public class BusinessLineageRequest implements Serializable {
             this.edgeLabel = edgeLabel;
         }
 
+        public String getAssetDenormAttribute() {
+            return assetDenormAttribute;
+        }
+
+        public void setAssetDenormAttribute(String assetDenormAttribute) {
+            if (PRODUCT_ASSET_OUTPUT_PORT_ATTR.equals(assetDenormAttribute)) {
+                this.assetDenormAttribute = PRODUCT_ASSET_OUTPUT_PORT_ATTR;
+            } else {
+                this.assetDenormAttribute = PRODUCT_GUIDS_ATTR;
+            }
+        }
+
         @Override
         public String toString() {
             return "LineageOperation{" +
@@ -101,6 +117,7 @@ public class BusinessLineageRequest implements Serializable {
                     ", productGuid='" + productGuid + '\'' +
                     ", operation=" + operation +
                     ", edgeLabel='" + edgeLabel + '\'' +
+                    ", assetDenormAttribute='" + assetDenormAttribute + '\'' +
                     '}';
         }
     }
