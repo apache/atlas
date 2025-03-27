@@ -482,7 +482,7 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    public List<AtlasVertex> findAllRelationshipVertices(AtlasVertex vertex) {
+    public List<AtlasVertex> findAllConnectedVertices(AtlasVertex vertex) {
         return graph.getAllEdgesVertices(vertex);
     }
 

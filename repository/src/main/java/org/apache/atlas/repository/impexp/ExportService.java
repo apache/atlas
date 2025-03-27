@@ -33,6 +33,7 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -313,12 +314,18 @@ public class ExportService {
     }
 
     public void extractRelatedVertices(AtlasVertex vertex, ExportContext context) {
-        List<AtlasVertex> relationshipEntities = entityGraphRetriever.findAllRelationshipVertices(vertex);
+        List<AtlasVertex> relationshipEntities = entityGraphRetriever.findAllConnectedVertices(vertex);
+
         if (CollectionUtils.isNotEmpty(relationshipEntities)) {
             for (AtlasVertex e : relationshipEntities) {
-                String relGuid = AtlasGraphUtilsV2.getEncodedProperty(e, GUID_PROPERTY_KEY, String.class);
-                if (!context.guidsProcessed.contains(relGuid)) {
-                    context.guidsToProcess.add(relGuid);
+                String typeName = GraphHelper.getTypeName(e);
+
+                if (typeRegistry.getEntityTypeByName(typeName) != null) {
+                    String relGuid = AtlasGraphUtilsV2.getEncodedProperty(e, GUID_PROPERTY_KEY, String.class);
+
+                    if (!context.guidsProcessed.contains(relGuid)) {
+                        context.guidsToProcess.add(relGuid);
+                    }
                 }
             }
         }
@@ -533,7 +540,7 @@ public class ExportService {
             }
 
             Long updatedTime = AtlasGraphUtilsV2.getEncodedProperty(vertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
-            return changeMarker <= updatedTime;
+            return updatedTime != null && changeMarker <= updatedTime;
         }
 
         public boolean getSkipLineage() {
