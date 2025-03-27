@@ -48,6 +48,7 @@ import org.mockito.stubbing.Answer;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.Test;
 
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -67,6 +68,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
+import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
 import static org.testng.Assert.assertTrue;
 
@@ -370,6 +372,117 @@ public class NotificationHookConsumerTest {
         verify(notificationInterface).deleteTopic(ASYNC_IMPORT, AtlasConfiguration.ASYNC_IMPORT_TOPIC_PREFIX.getString() + importId);
     }
 
+    @Test
+    public void testExecutorCreatedOnlyOnceAcrossStartAndHAActive() throws Exception {
+        // Setup
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
+        when(configuration.getInt(NotificationHookConsumer.CONSUMER_THREADS_PROPERTY, 1)).thenReturn(1);
+        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
+
+        List<NotificationConsumer<Object>> consumers = new ArrayList<>();
+        consumers.add(mock(NotificationConsumer.class));
+        when(notificationInterface.createConsumers(NotificationType.HOOK, 1)).thenReturn(consumers);
+
+        TestableNotificationHookConsumer hookConsumer = new TestableNotificationHookConsumer();
+
+        // Call startInternal() twice
+        hookConsumer.startInternal(configuration, null);
+        hookConsumer.startInternal(configuration, null);
+
+        // Simulate HA active instance, which may call executor creation
+        hookConsumer.instanceIsActive();
+
+        // Validate executor was created only once
+        assertEquals(hookConsumer.getExecutorCreationCount(), 1, "Executor should be created only once and reused");
+    }
+
+    @Test
+    public void testMultipleInstanceIsActiveCallsOnlyCreateExecutorOnce() throws Exception {
+        TestableNotificationHookConsumer notificationHookConsumer = new TestableNotificationHookConsumer();
+
+        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(true);
+        when(configuration.getInt(NotificationHookConsumer.CONSUMER_THREADS_PROPERTY, 1)).thenReturn(1);
+        when(notificationInterface.createConsumers(NotificationType.HOOK, 1))
+                .thenReturn(Collections.singletonList(mock(NotificationConsumer.class)));
+
+        notificationHookConsumer.instanceIsActive();
+        notificationHookConsumer.instanceIsActive();  // should not recreate
+
+        assertEquals(notificationHookConsumer.getExecutorCreationCount(), 1,
+                "Executor should be created only once even if instanceIsActive is called multiple times");
+    }
+
+    @Test
+    public void testStartInternalThenInstanceIsActiveDoesNotCreateExecutorAgain() throws Exception {
+        TestableNotificationHookConsumer notificationHookConsumer =
+                new TestableNotificationHookConsumer();
+
+        when(serviceState.getState()).thenReturn(ServiceState.ServiceStateValue.ACTIVE);
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
+        when(configuration.getInt(NotificationHookConsumer.CONSUMER_THREADS_PROPERTY, 1)).thenReturn(1);
+        when(notificationInterface.createConsumers(NotificationType.HOOK, 1))
+                .thenReturn(Collections.singletonList(mock(NotificationConsumer.class)));
+
+        notificationHookConsumer.startInternal(configuration, null);
+        notificationHookConsumer.instanceIsActive();  // executor already exists
+
+        assertEquals(notificationHookConsumer.getExecutorCreationCount(), 1,
+                "Executor should not be created again in instanceIsActive if already created in startInternal");
+    }
+
+    @Test
+    public void testImportConsumerUsesExistingExecutor() throws Exception {
+        TestableNotificationHookConsumer notificationHookConsumer =
+                new TestableNotificationHookConsumer();
+
+        String importId = "test-import-id";
+        String topic = "ATLAS_IMPORT_" + importId;
+
+        when(notificationInterface.createConsumers(NotificationType.ASYNC_IMPORT, 1))
+                .thenReturn(Collections.singletonList(mock(NotificationConsumer.class)));
+
+        // Manually trigger executor creation
+        notificationHookConsumer.startInternal(configuration, null);
+
+        // Call import consumer – should use the same executor
+        notificationHookConsumer.startAsyncImportConsumer(NotificationType.ASYNC_IMPORT, importId, topic);
+
+        assertEquals(notificationHookConsumer.getExecutorCreationCount(), 1,
+                "startImportNotificationConsumer should reuse existing executor and not create a new one");
+    }
+
+    @Test
+    public void testHookConsumersNotStartedWhenConsumersAreDisabled() throws Exception {
+        // Arrange
+        when(configuration.getBoolean(HAConfiguration.ATLAS_SERVER_HA_ENABLED_KEY, false)).thenReturn(false);
+        when(configuration.getInt(NotificationHookConsumer.CONSUMER_THREADS_PROPERTY, 1)).thenReturn(1);
+
+        // TestableNotificationHookConsumer with override that sets consumerDisabled = true
+        NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter) {
+            @Override
+            protected ExecutorService createExecutor() {
+                return mock(ExecutorService.class);
+            }
+
+            @Override
+            void startHookConsumers() {
+                throw new RuntimeException("startHookConsumers should not be called when consumers are disabled");
+            }
+        };
+
+        // Use reflection to manually set the consumerDisabled field to true
+        Field consumerDisabledField = NotificationHookConsumer.class.getDeclaredField("consumerDisabled");
+        consumerDisabledField.setAccessible(true);
+        consumerDisabledField.set(notificationHookConsumer, true);
+
+        // Act
+        notificationHookConsumer.startInternal(configuration, null);
+
+        // Assert
+        // No exception = test passed; if startHookConsumers() is invoked, it will throw
+    }
+
     private NotificationHookConsumer setupNotificationHookConsumer() throws AtlasException {
         List<NotificationConsumer<Object>> consumers                = new ArrayList<>();
         NotificationConsumer               notificationConsumerMock = mock(NotificationConsumer.class);
@@ -383,5 +496,23 @@ public class NotificationHookConsumerTest {
         when(notificationInterface.createConsumers(NotificationType.HOOK, 1)).thenReturn(consumers);
 
         return new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+    }
+
+    class TestableNotificationHookConsumer extends NotificationHookConsumer {
+        int executorCreationCount;
+
+        TestableNotificationHookConsumer() throws AtlasException {
+            super(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
+        }
+
+        @Override
+        protected ExecutorService createExecutor() {
+            executorCreationCount++;
+            return mock(ExecutorService.class);
+        }
+
+        public int getExecutorCreationCount() {
+            return executorCreationCount;
+        }
     }
 }

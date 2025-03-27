@@ -383,12 +383,6 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
     @Override
     public void start() throws AtlasException {
-        if (consumerDisabled) {
-            LOG.info("No hook messages will be processed. {} = {}", CONSUMER_DISABLED, consumerDisabled);
-
-            return;
-        }
-
         startInternal(applicationProperties, null);
     }
 
@@ -425,13 +419,18 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
      */
     @Override
     public void instanceIsActive() {
+        if (executors == null) {
+            executors = createExecutor();
+            LOG.info("Executors initialized (Instance is active)");
+        }
+
         if (consumerDisabled) {
             return;
         }
 
         LOG.info("Reacting to active state: initializing Kafka consumers");
 
-        startHookConsumers(executors);
+        startHookConsumers();
     }
 
     /**
@@ -481,6 +480,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
     }
 
+    @VisibleForTesting
     void startInternal(Configuration configuration, ExecutorService executorService) {
         if (consumers == null) {
             consumers = new ArrayList<>();
@@ -491,34 +491,26 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
 
         if (!HAConfiguration.isHAEnabled(configuration)) {
+            if (executors == null) {
+                executors = createExecutor();
+                LOG.info("Executors initialized (HA is disabled)");
+            }
+            if (consumerDisabled) {
+                LOG.info("No hook messages will be processed. {} = {}", CONSUMER_DISABLED, consumerDisabled);
+                return;
+            }
+
             LOG.info("HA is disabled, starting consumers inline.");
 
-            startHookConsumers(executorService);
+            startHookConsumers();
         }
     }
 
-    public void startAsyncImportConsumer(NotificationType notificationType, String importId, String topic) {
-        if (topic != null) {
-            notificationInterface.addTopicToNotificationType(notificationType, topic);
-        }
-
-        List<NotificationConsumer<HookNotification>> notificationConsumers = notificationInterface.createConsumers(notificationType, 1);
-        List<HookConsumer>                           hookConsumers         = new ArrayList<>();
-
-        for (final NotificationConsumer<HookNotification> consumer : notificationConsumers) {
-            String       hookConsumerName = ATLAS_IMPORT_CONSUMER_THREAD_PREFIX + importId;
-            HookConsumer hookConsumer     = new HookConsumer(hookConsumerName, consumer);
-
-            hookConsumers.add(hookConsumer);
-        }
-
-        startConsumers(executors, hookConsumers);
-    }
-
-    private void startHookConsumers(ExecutorService executorService) {
-        int                                                           numThreads                  = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
+    @VisibleForTesting
+    void startHookConsumers() {
+        int numThreads = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
         Map<NotificationConsumer<HookNotification>, NotificationType> notificationConsumersByType = new HashMap<>();
-        List<NotificationConsumer<HookNotification>>                  notificationConsumers       = notificationInterface.createConsumers(NotificationType.HOOK, numThreads);
+        List<NotificationConsumer<HookNotification>> notificationConsumers = notificationInterface.createConsumers(NotificationType.HOOK, numThreads);
 
         for (NotificationConsumer<HookNotification> notificationConsumer : notificationConsumers) {
             notificationConsumersByType.put(notificationConsumer, NotificationType.HOOK);
@@ -546,23 +538,44 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             hookConsumers.add(hookConsumer);
         }
 
-        startConsumers(executorService, hookConsumers);
+        startConsumers(hookConsumers);
     }
 
-    private void startConsumers(ExecutorService executorService, List<HookConsumer> hookConsumers) {
+    public void startAsyncImportConsumer(NotificationType notificationType, String importId, String topic) {
+        if (topic != null) {
+            notificationInterface.addTopicToNotificationType(notificationType, topic);
+        }
+
+        List<NotificationConsumer<HookNotification>> notificationConsumers = notificationInterface.createConsumers(notificationType, 1);
+        List<HookConsumer> hookConsumers = new ArrayList<>();
+
+        for (final NotificationConsumer<HookNotification> consumer : notificationConsumers) {
+            String hookConsumerName = ATLAS_IMPORT_CONSUMER_THREAD_PREFIX + importId;
+            HookConsumer hookConsumer = new HookConsumer(hookConsumerName, consumer);
+
+            hookConsumers.add(hookConsumer);
+        }
+
+        startConsumers(hookConsumers);
+    }
+
+    @VisibleForTesting
+    protected ExecutorService createExecutor() {
+        return new ThreadPoolExecutor(
+                0, // Core pool size
+                Integer.MAX_VALUE, // Maximum pool size (dynamic scaling)
+                60L, TimeUnit.SECONDS, // Idle thread timeout
+                new SynchronousQueue<>(), // Direct handoff queue
+                new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d").build());
+    }
+
+    private void startConsumers(List<HookConsumer> hookConsumers) {
         if (consumers == null) {
             consumers = new ArrayList<>();
         }
 
-        if (executorService == null) {
-            executorService = new ThreadPoolExecutor(
-                    0, // Core pool size
-                    Integer.MAX_VALUE, // Maximum pool size (dynamic scaling)
-                    60L, TimeUnit.SECONDS, // Idle thread timeout
-                    new SynchronousQueue<>(), // Direct handoff queue
-                    new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d").build());
-
-            executors = executorService;
+        if (executors == null) {
+            throw new IllegalStateException("Executors must be initialized before starting consumers.");
         }
 
         for (final HookConsumer consumer : hookConsumers) {
