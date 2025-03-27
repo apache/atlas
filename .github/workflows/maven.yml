@@ -28,7 +28,7 @@ on:
       - master
       - lineageondemand
       - mlh-170-create-diff
-      - cassandrapoliciesoptimisation
+      - cassaop
       - ixop
       - mlh40java17
 
