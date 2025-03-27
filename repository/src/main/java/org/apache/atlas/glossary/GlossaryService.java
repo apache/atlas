@@ -1256,7 +1256,8 @@ public class GlossaryService {
         PaginationHelper(Collection<T> items) {
             this.items   = new ArrayList<>(items);
             this.maxSize = items.size();
-            pageStart    = pageEnd = 0;
+            pageStart    = 0;
+            pageEnd      = 0;
         }
 
         List<T> getPaginatedList() {
