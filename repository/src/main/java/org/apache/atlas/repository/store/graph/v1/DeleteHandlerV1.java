@@ -1380,7 +1380,7 @@ public abstract class DeleteHandlerV1 {
             return;
         }
 
-        if (edge == null ) {
+        if (edge == null) {
             LOG.warn("Edge is null, can't schedule task now");
             return;
         }

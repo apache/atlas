@@ -1006,6 +1006,7 @@
       "actions": ["entity-delete"]
     }
   ],
+  
   "persona-ai-application-read": [
     {
       "policyType": "ACCESS",
