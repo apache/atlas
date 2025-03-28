@@ -37,6 +37,7 @@ import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.Constants;
 import org.apache.atlas.utils.AtlasStringUtil;
+import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -163,5 +164,15 @@ public class BulkImporterImpl implements BulkImporter {
         LOG.info("BulkImportImpl: {}", importStrategy.getClass().getSimpleName());
 
         return importStrategy.run(entityStream, importResult);
+    }
+
+    @Override
+    public TypesUtil.Pair<EntityMutationResponse, Float> asyncImport(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, EntityMutationResponse entityMutationResponse, AtlasImportResult importResult, Set<String> processedGuids,
+                                                                     List<String> failedGuids, int entityPosition, int totalEntities, float importProgress) throws AtlasBaseException {
+        ImportStrategy importStrategy = new RegularImport(this.atlasGraph, this.entityStore, this.typeRegistry);
+
+        LOG.info("BulkImportImpl.asyncImport(): {}", importStrategy.getClass().getSimpleName());
+
+        return importStrategy.run(entityWithExtInfo, entityMutationResponse, importResult, processedGuids, entityPosition, totalEntities, importProgress, failedGuids);
     }
 }
