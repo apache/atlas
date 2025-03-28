@@ -559,12 +559,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         this.removedRelationshipAttributes = removedRelationshipAttributes;
     }
 
-    public boolean hasRemovedRelationshipAttribute(String name) {
-        Map<String, Object> r = this.removedRelationshipAttributes;
-
-        return r != null ? r.containsKey(name) : false;
-    }
-
     public void setRemovedRelationshipAttribute(String name, Object value) {
         Map<String, Object> r = this.removedRelationshipAttributes;
 
@@ -576,12 +570,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
             this.removedRelationshipAttributes = r;
         }
-    }
-
-    public boolean hasAddedRelationshipAttribute(String name) {
-        Map<String, Object> r = this.addedRelationshipAttributes;
-
-        return r != null ? r.containsKey(name) : false;
     }
 
     public Map<String, Object> getAddedRelationshipAttributes() {
@@ -602,6 +590,38 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
             r.put(name, value);
 
             this.addedRelationshipAttributes = r;
+        }
+    }
+
+    public void addOrAppendListAddedRelationshipList(String name, AtlasObjectId value) {
+        if (this.addedRelationshipAttributes == null) {
+            this.addedRelationshipAttributes = new HashMap<>(1);
+        }
+
+        if (this.addedRelationshipAttributes.containsKey(name)) {
+            List<Object> currentList = (List<Object>) this.addedRelationshipAttributes.get(name);
+            currentList.add(value);
+            this.addedRelationshipAttributes.put(name, currentList);
+        } else {
+            List<Object> values = new ArrayList<>();
+            values.add(value);
+            this.addedRelationshipAttributes.put(name, values);
+        }
+    }
+
+    public void addOrAppendListRemovedRelationshipList(String name, AtlasObjectId value) {
+        if (this.removedRelationshipAttributes == null) {
+            this.removedRelationshipAttributes = new HashMap<>(1);
+        }
+
+        if (this.removedRelationshipAttributes.containsKey(name)) {
+            List<Object> currentList = (List<Object>) this.removedRelationshipAttributes.get(name);
+            currentList.add(value);
+            this.removedRelationshipAttributes.put(name, currentList);
+        } else {
+            List<Object> values = new ArrayList<>();
+            values.add(value);
+            this.removedRelationshipAttributes.put(name, values);
         }
     }
 
