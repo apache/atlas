@@ -1047,14 +1047,6 @@ public class EntityGraphRetriever {
                 retrieveEdgeLabels(entityVertex, attributes, relationshipsLookup, propertiesMap);
             }
 
-            // for attributes that are complexType and passed by BE, set them to empty string
-            if (!fetchEdgeLabels){
-                attributes.forEach(attribute -> {
-                    propertiesMap.putIfAbsent(attribute, StringUtils.SPACE);
-                });
-
-            }
-
             // Iterate through the resulting VertexProperty objects
             while (traversal.hasNext()) {
                 try {
@@ -1482,21 +1474,9 @@ public class EntityGraphRetriever {
         }
 
         AtlasStructType structType = (AtlasStructType) objType;
-        Map<String,Object> referenceProperties = Collections.emptyMap();
-        boolean enableJanusOptimisation = AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_EXTENDED.getBoolean() && RequestContext.get().isInvokedByIndexSearch();
-
-        if (enableJanusOptimisation){
-            referenceProperties = preloadProperties(entityVertex, structType, structType.getAllAttributes().keySet(), false);
-        }
 
         for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
-            Object attrValue;
-            if (enableJanusOptimisation){
-                attrValue = getVertexAttributePreFetchCache(entityVertex, attribute,referenceProperties);
-            }else {
-               attrValue = mapVertexToAttribute(entityVertex, attribute, entityExtInfo, isMinExtInfo, includeReferences);
-            }
-
+            Object attrValue = mapVertexToAttribute(entityVertex, attribute, entityExtInfo, isMinExtInfo, includeReferences);
             struct.setAttribute(attribute.getName(), attrValue);
         }
         RequestContext.get().endMetricRecord(metricRecorder);
