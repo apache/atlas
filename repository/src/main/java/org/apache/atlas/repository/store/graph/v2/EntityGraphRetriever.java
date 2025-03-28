@@ -1493,10 +1493,10 @@ public class EntityGraphRetriever {
 
         for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
             Object attrValue;
-            if (enableJanusOptimisation){
-                attrValue = getVertexAttributePreFetchCache(entityVertex, attribute,referenceProperties);
-            }else {
-               attrValue = mapVertexToAttribute(entityVertex, attribute, entityExtInfo, isMinExtInfo, includeReferences);
+            if (enableJanusOptimisation) {
+                attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, referenceProperties, entityExtInfo, isMinExtInfo, includeReferences);
+            } else {
+                attrValue = mapVertexToAttribute(entityVertex, attribute, entityExtInfo, isMinExtInfo, includeReferences);
             }
 
             struct.setAttribute(attribute.getName(), attrValue);
@@ -2095,7 +2095,7 @@ public class EntityGraphRetriever {
         return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false) : null;
     }
 
-    public Object getVertexAttributePreFetchCache(AtlasVertex vertex, AtlasAttribute attribute, Map<String, Object> properties) throws AtlasBaseException {
+    public Object getVertexAttributePreFetchCache(AtlasVertex vertex, AtlasAttribute attribute, Map<String, Object> properties,  AtlasEntityExtInfo entityExtInfo, final boolean isMinExtInfo, final boolean includeReferences) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getVertexAttributePreFetchCache");
 
         try{
@@ -2129,7 +2129,7 @@ public class EntityGraphRetriever {
 
             // value is present as marker , fetch the value from the vertex
             if (properties.get(attribute.getName()) != null && properties.get(attribute.getName()).equals(StringUtils.SPACE)) {
-                return mapVertexToAttribute(vertex, attribute, null, false);
+                return mapVertexToAttribute(vertex, attribute, entityExtInfo , isMinExtInfo, includeReferences);
             }
 
             return null;
@@ -2137,6 +2137,11 @@ public class EntityGraphRetriever {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
+
+    public Object getVertexAttributePreFetchCache(AtlasVertex vertex, AtlasAttribute attribute, Map<String, Object> properties) throws AtlasBaseException {
+        return getVertexAttributePreFetchCache(vertex, attribute, properties, null, false, true);
+    }
+
 
     private Object getVertexAttributeIgnoreInactive(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
         return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false, true, true) : null;
