@@ -86,6 +86,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
 import static org.apache.atlas.AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
@@ -1539,7 +1540,7 @@ public class EntityGraphRetriever {
                         .filter(Objects::nonNull) // Remove null classifications
                         .collect(Collectors.toList()); // Collect as a list
             } else {
-                List<AtlasClassification> classifications = new ArrayList<>();
+                List<AtlasClassification> ret = new ArrayList<>();
                 Iterable edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
 
                 if (edges != null) {
@@ -1551,11 +1552,13 @@ public class EntityGraphRetriever {
                         AtlasClassification classification = toAtlasClassification(classificationVertex);
 
                         if (classification != null) {
-                            classifications.add(classification);
+                            ret.add(classification);
                         }
                     }
                 }
-                return classifications;
+
+                RequestContext.get().endMetricRecord(metricRecorder);
+                return ret;
             }
         } catch (Exception e) {
             LOG.error("Error while getting all classifications", e);
