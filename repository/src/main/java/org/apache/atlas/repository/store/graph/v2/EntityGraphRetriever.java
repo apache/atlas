@@ -1518,15 +1518,13 @@ public class EntityGraphRetriever {
             // use optimised path only for indexsearch and when flag is enabled!
             if (ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS.getBoolean() && RequestContext.get().isInvokedByIndexSearch()) {
                 // Fetch classification vertices directly
-                List<AtlasVertex> classificationVertices = ((AtlasJanusGraph) graph).getGraph().traversal()
+                List<AtlasVertex> classificationVertices = new ArrayList<>();
+                ((AtlasJanusGraph) graph).getGraph().traversal()
                         .V(entityVertex.getId())  // Start from the entity vertex
                         .outE(CLASSIFICATION_LABEL) // Get outgoing classification edges
                         .inV() // Move to classification vertex
                         .dedup() // Remove duplicate classification vertices
-                        .toList() // Convert to List<Vertex>
-                        .stream()
-                        .map(m -> GraphDbObjectFactory.createVertex(((AtlasJanusGraph) graph), m)) // Convert Vertex to AtlasVertex
-                        .collect(Collectors.toList());
+                        .forEachRemaining(v -> classificationVertices.add(GraphDbObjectFactory.createVertex(((AtlasJanusGraph) graph), v)));
 
                 return classificationVertices.stream()
                         .map(m -> {
