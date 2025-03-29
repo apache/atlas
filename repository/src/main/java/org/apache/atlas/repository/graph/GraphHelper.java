@@ -61,11 +61,14 @@ import org.apache.atlas.util.IndexedInstance;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.function.Function;
 import java.util.stream.*;
 
 import static org.apache.atlas.AtlasErrorCode.RELATIONSHIP_CREATE_INVALID_PARAMS;
@@ -80,10 +83,12 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelation
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE_VALID;
+import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 
 /**
  * Utility class for graph operations.
  */
+@Component
 public final class GraphHelper {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphHelper.class);
@@ -2091,6 +2096,37 @@ public final class GraphHelper {
 
         } catch (Exception e) {
             LOG.error("Error while getting labels of active edges", e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        }
+        finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
+    public  Object getTopXSuperVertex() throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.retrieveEdgeLabelsAndTypeName");
+// g.V().order().by(both().count(),desc).limit(10).project('guid','edgeCount').by('__guid').by(both().count())
+        try {
+            return ((AtlasJanusGraph) graph).getGraph().traversal()
+                    .V()
+                    .order()
+                    .by(both().count().as("edgeCount"), Order.desc)
+                    .limit(10)
+                    .project("__guid","edgeCount")
+                    .by("__guid")
+                    .by(both().count())
+                    .toStream().
+                    map(m -> {
+                        Object guid = m.get("__guid");
+                        Object edgeCount = m.get("edgeCount");
+                        String guidStr = (guid != null) ? guid.toString() : "";
+                        String edgeCountStr = (edgeCount != null) ? edgeCount.toString() : "";
+
+                        return new AbstractMap.SimpleEntry<>(guidStr, edgeCountStr);
+                    }).collect(Collectors.toList());
+
+        } catch (Exception e) {
+            LOG.error("Error while rich vertices", e);
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
         }
         finally {
