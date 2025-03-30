@@ -1527,7 +1527,7 @@ public class EntityGraphRetriever {
                         .inV() // Move to classification vertex
                         .project(TYPE_NAME_PROPERTY_KEY, CLASSIFICATION_ENTITY_GUID, CLASSIFICATION_ENTITY_STATUS,
                                 CLASSIFICATION_VERTEX_PROPAGATE_KEY, CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE,
-                                CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY,CLASSIFICATION_VALIDITY_PERIODS_KEY) // Fetch only needed properties
+                                CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY) // Fetch only needed properties
                         .by(__.values(TYPE_NAME_PROPERTY_KEY))
                         .by(__.values(CLASSIFICATION_ENTITY_GUID))
                         .by(__.values(CLASSIFICATION_ENTITY_STATUS))
@@ -1535,7 +1535,6 @@ public class EntityGraphRetriever {
                         .by(__.values(CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY))
                         .by(__.values(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE))
                         .by(__.values(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY))
-                        .by(__.values(CLASSIFICATION_VALIDITY_PERIODS_KEY))
                         .toList()
                         .forEach(obj -> {
                             if (obj instanceof Map) {
@@ -1546,8 +1545,6 @@ public class EntityGraphRetriever {
                     if (classificationProperty != null) {
                         AtlasClassification atlasClassification = new AtlasClassification();
                         atlasClassification.setTypeName(classificationProperty.get(TYPE_NAME_PROPERTY_KEY) != null ? (String) classificationProperty.get(TYPE_NAME_PROPERTY_KEY) : "");
-                        String validityPeriods = classificationProperty.get(CLASSIFICATION_VALIDITY_PERIODS_KEY) != null ? (String) classificationProperty.get(CLASSIFICATION_VALIDITY_PERIODS_KEY) : "";
-                        atlasClassification.setValidityPeriods(AtlasJson.fromJson(validityPeriods, TIME_BOUNDARIES_LIST_TYPE));
                         atlasClassification.setEntityGuid(classificationProperty.get(CLASSIFICATION_ENTITY_GUID) != null ? (String) classificationProperty.get(CLASSIFICATION_ENTITY_GUID) : "");
                         atlasClassification.setEntityStatus(classificationProperty.get(CLASSIFICATION_ENTITY_STATUS) != null ? AtlasEntity.Status.valueOf((String) classificationProperty.get(CLASSIFICATION_ENTITY_STATUS)) : null);
                         atlasClassification.setPropagate(classificationProperty.get(CLASSIFICATION_VERTEX_PROPAGATE_KEY) != null ? (Boolean) classificationProperty.get(CLASSIFICATION_VERTEX_PROPAGATE_KEY) : null);
