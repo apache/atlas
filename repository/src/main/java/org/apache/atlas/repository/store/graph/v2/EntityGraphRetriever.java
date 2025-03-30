@@ -1525,7 +1525,8 @@ public class EntityGraphRetriever {
                         .V(entityVertex.getId())  // Start from the entity vertex
                         .outE(CLASSIFICATION_LABEL) // Get outgoing classification edges
                         .inV() // Move to classification vertex
-                        .project("__entityGuid", "__entityStatus", "__propagate", "__removePropagations", "__restrictPropagationThroughLineage", "__restrictPropagationThroughHierarchy") // Fetch only needed properties
+                        .project("__typeName","__entityGuid", "__entityStatus", "__propagate", "__removePropagations", "__restrictPropagationThroughLineage", "__restrictPropagationThroughHierarchy") // Fetch only needed properties
+                        .by(__.values("__typeName"))
                         .by(__.values("__entityGuid"))
                         .by(__.values("__entityStatus"))
                         .by(__.values("__propagate"))
@@ -1543,6 +1544,7 @@ public class EntityGraphRetriever {
                 classificationProperties.forEach(classificationProperty -> {
                     if(classificationProperty!=null) {
                         AtlasClassification atlasClassification = new AtlasClassification();
+                        atlasClassification.setTypeName((String) classificationProperty.get("__typeName"));
                         atlasClassification.setEntityGuid((String) classificationProperty.get("__entityGuid"));
                         atlasClassification.setEntityStatus(AtlasEntity.Status.valueOf((String) classificationProperty.get("__entityStatus")));
                         atlasClassification.setPropagate((Boolean) classificationProperty.get("__propagate"));
