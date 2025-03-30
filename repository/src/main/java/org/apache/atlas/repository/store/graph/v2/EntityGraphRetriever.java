@@ -70,6 +70,7 @@ import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.graphdb.relations.CacheVertexProperty;
@@ -1518,7 +1519,6 @@ public class EntityGraphRetriever {
             // use optimised path only for indexsearch and when flag is enabled!
             if (ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS.getBoolean() && RequestContext.get().isInvokedByIndexSearch()) {
                 // Fetch classification vertices directly
-                List<AtlasVertex> classificationVertices = new ArrayList<>();
                 List<Map<String, Object>> classificationProperties = new ArrayList<>();
                 List<AtlasClassification> ret = new ArrayList<>();
                 ((AtlasJanusGraph) graph).getGraph().traversal()
@@ -1526,23 +1526,28 @@ public class EntityGraphRetriever {
                         .outE(CLASSIFICATION_LABEL) // Get outgoing classification edges
                         .inV() // Move to classification vertex
                         .project("__entityGuid", "__entityStatus", "__propagate", "__removePropagations", "__restrictPropagationThroughLineage", "__restrictPropagationThroughHierarchy") // Fetch only needed properties
-                        .by("__entityGuid")
-                        .by("__entityStatus")
-                        .by("__propagate")
-                        .by("__removePropagations")
-                        .by("__restrictPropagationThroughLineage")
-                        .by("__restrictPropagationThroughHierarchy")
-                        .forEachRemaining(map -> classificationProperties.add((Map<String, Object>) map));
+                        .by(__.values("__entityGuid"))
+                        .by(__.values("__entityStatus"))
+                        .by(__.values("__propagate"))
+                        .by(__.values("__removePropagations"))
+                        .by(__.values("__restrictPropagationThroughLineage"))
+                        .by(__.values("__restrictPropagationThroughHierarchy"))
+                        .toList()
+                        .forEach(obj -> {
+                            if (obj instanceof Map) {
+                                classificationProperties.add((Map<String, Object>) obj);
+                            }
+                        });
 
                 classificationProperties.forEach(classificationProperty -> {
-                   AtlasClassification atlasClassification = new AtlasClassification();
-                   atlasClassification.setEntityGuid((String) classificationProperty.get("__entityGuid"));
-                   atlasClassification.setEntityStatus(AtlasEntity.Status.valueOf((String) classificationProperty.get("__entityStatus")));
-                   atlasClassification.setPropagate((Boolean) classificationProperty.get("__propagate"));
-                   atlasClassification.setRemovePropagationsOnEntityDelete((Boolean) classificationProperty.get("__removePropagations"));
-                   atlasClassification.setRestrictPropagationThroughLineage((Boolean) classificationProperty.get("__restrictPropagationThroughLineage"));
-                   atlasClassification.setRestrictPropagationThroughHierarchy((Boolean) classificationProperty.get("__restrictPropagationThroughHierarchy"));
-                   ret.add(atlasClassification);
+                    AtlasClassification atlasClassification = new AtlasClassification();
+                    atlasClassification.setEntityGuid((String) classificationProperty.get("__entityGuid"));
+                    atlasClassification.setEntityStatus(AtlasEntity.Status.valueOf((String) classificationProperty.get("__entityStatus")));
+                    atlasClassification.setPropagate((Boolean) classificationProperty.get("__propagate"));
+                    atlasClassification.setRemovePropagationsOnEntityDelete((Boolean) classificationProperty.get("__removePropagations"));
+                    atlasClassification.setRestrictPropagationThroughLineage((Boolean) classificationProperty.get("__restrictPropagationThroughLineage"));
+                    atlasClassification.setRestrictPropagationThroughHierarchy((Boolean) classificationProperty.get("__restrictPropagationThroughHierarchy"));
+                    ret.add(atlasClassification);
                 });
                 return ret;
             } else {
