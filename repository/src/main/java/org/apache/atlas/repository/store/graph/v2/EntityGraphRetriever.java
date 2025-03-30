@@ -1525,7 +1525,9 @@ public class EntityGraphRetriever {
                         .V(entityVertex.getId())  // Start from the entity vertex
                         .outE(CLASSIFICATION_LABEL) // Get outgoing classification edges
                         .inV() // Move to classification vertex
-                        .project(CLASSIFICATION_FIELDS) // Fetch only needed properties
+                        .project(TYPE_NAME_PROPERTY_KEY, CLASSIFICATION_ENTITY_GUID, CLASSIFICATION_ENTITY_STATUS,
+                                CLASSIFICATION_VERTEX_PROPAGATE_KEY, CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE,
+                                CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY,CLASSIFICATION_VALIDITY_PERIODS_KEY) // Fetch only needed properties
                         .by(__.values(TYPE_NAME_PROPERTY_KEY))
                         .by(__.values(CLASSIFICATION_ENTITY_GUID))
                         .by(__.values(CLASSIFICATION_ENTITY_STATUS))

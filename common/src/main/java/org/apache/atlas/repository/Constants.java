@@ -324,9 +324,6 @@ public final class Constants {
 
     public static final String VERTEX_ID_IN_IMPORT_KEY = "__vIdInImport";
     public static final String EDGE_ID_IN_IMPORT_KEY   = "__eIdInImport";
-    public static final String[] CLASSIFICATION_FIELDS   = new String[]{TYPE_NAME_PROPERTY_KEY, CLASSIFICATION_ENTITY_GUID, CLASSIFICATION_ENTITY_STATUS,
-            CLASSIFICATION_VERTEX_PROPAGATE_KEY, CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE,
-            CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY};
 
     /*
      * Edge labels for data product relations which are hard deleted
