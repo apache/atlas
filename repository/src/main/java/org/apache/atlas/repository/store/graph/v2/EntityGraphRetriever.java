@@ -1535,19 +1535,23 @@ public class EntityGraphRetriever {
                         .toList()
                         .forEach(obj -> {
                             if (obj instanceof Map) {
+                                LOG.info("Adding classification properties");
                                 classificationProperties.add((Map<String, Object>) obj);
                             }
                         });
-
+                LOG.info("Classification properties: {}", classificationProperties);
                 classificationProperties.forEach(classificationProperty -> {
-                    AtlasClassification atlasClassification = new AtlasClassification();
-                    atlasClassification.setEntityGuid((String) classificationProperty.get("__entityGuid"));
-                    atlasClassification.setEntityStatus(AtlasEntity.Status.valueOf((String) classificationProperty.get("__entityStatus")));
-                    atlasClassification.setPropagate((Boolean) classificationProperty.get("__propagate"));
-                    atlasClassification.setRemovePropagationsOnEntityDelete((Boolean) classificationProperty.get("__removePropagations"));
-                    atlasClassification.setRestrictPropagationThroughLineage((Boolean) classificationProperty.get("__restrictPropagationThroughLineage"));
-                    atlasClassification.setRestrictPropagationThroughHierarchy((Boolean) classificationProperty.get("__restrictPropagationThroughHierarchy"));
-                    ret.add(atlasClassification);
+                    if(classificationProperty!=null) {
+                        AtlasClassification atlasClassification = new AtlasClassification();
+                        atlasClassification.setEntityGuid((String) classificationProperty.get("__entityGuid"));
+                        atlasClassification.setEntityStatus(AtlasEntity.Status.valueOf((String) classificationProperty.get("__entityStatus")));
+                        atlasClassification.setPropagate((Boolean) classificationProperty.get("__propagate"));
+                        atlasClassification.setRemovePropagationsOnEntityDelete((Boolean) classificationProperty.get("__removePropagations"));
+                        atlasClassification.setRestrictPropagationThroughLineage((Boolean) classificationProperty.get("__restrictPropagationThroughLineage"));
+                        atlasClassification.setRestrictPropagationThroughHierarchy((Boolean) classificationProperty.get("__restrictPropagationThroughHierarchy"));
+                        ret.add(atlasClassification);
+                        LOG.info("Classification added: {}", atlasClassification);
+                    }
                 });
                 return ret;
             } else {
