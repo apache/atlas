@@ -1519,24 +1519,13 @@ public class EntityGraphRetriever {
             if (ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS.getBoolean() && RequestContext.get().isInvokedByIndexSearch()) {
                 // Fetch classification vertices directly
                 List<AtlasVertex> classificationVertices = new ArrayList<>();
-                ((AtlasJanusGraph) graph).getGraph().traversal()
+                return ((AtlasJanusGraph) graph).getGraph().traversal()
                         .V(entityVertex.getId())  // Start from the entity vertex
                         .outE(CLASSIFICATION_LABEL) // Get outgoing classification edges
                         .inV() // Move to classification vertex
                         .dedup() // Remove duplicate classification vertices
-                        .forEachRemaining(v -> classificationVertices.add(GraphDbObjectFactory.createVertex(((AtlasJanusGraph) graph), v)));
-
-                return classificationVertices.stream()
-                        .map(m -> {
-                            try {
-                                return toAtlasClassification(m);
-                            } catch (AtlasBaseException e) {
-                                LOG.error("Error while getting all classifications", e);
-                                return null;
-                            }
-                        }) // Convert to AtlasClassification
-                        .filter(Objects::nonNull) // Remove null classifications
-                        .collect(Collectors.toList()); // Collect as a list
+                        .map(v -> toAtlasClassification(classificationVertices.add(GraphDbObjectFactory.createVertex(((AtlasJanusGraph) graph), v))))
+                        .toList();
             } else {
                 List<AtlasClassification> ret = new ArrayList<>();
                 Iterable edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
