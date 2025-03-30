@@ -86,7 +86,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 
+import static org.apache.atlas.AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CREATED_BY;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_DESCRIPTION;
@@ -1491,10 +1493,10 @@ public class EntityGraphRetriever {
 
         for (AtlasAttribute attribute : structType.getAllAttributes().values()) {
             Object attrValue;
-            if (enableJanusOptimisation){
-                attrValue = getVertexAttributePreFetchCache(entityVertex, attribute,referenceProperties);
-            }else {
-               attrValue = mapVertexToAttribute(entityVertex, attribute, entityExtInfo, isMinExtInfo, includeReferences);
+            if (enableJanusOptimisation) {
+                attrValue = getVertexAttributePreFetchCache(entityVertex, attribute, referenceProperties, entityExtInfo, isMinExtInfo, includeReferences);
+            } else {
+                attrValue = mapVertexToAttribute(entityVertex, attribute, entityExtInfo, isMinExtInfo, includeReferences);
             }
 
             struct.setAttribute(attribute.getName(), attrValue);
@@ -1508,29 +1510,62 @@ public class EntityGraphRetriever {
 
     public List<AtlasClassification> getAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getAllClassifications");
-
-        if(LOG.isDebugEnabled()){
-            LOG.debug("Performing getAllClassifications");
-        }
-        List<AtlasClassification> ret   = new ArrayList<>();
-        Iterable                  edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
-
-        if (edges != null) {
-            Iterator<AtlasEdge> iterator = edges.iterator();
-
-            while (iterator.hasNext()) {
-                AtlasEdge           classificationEdge   = iterator.next();
-                AtlasVertex         classificationVertex = classificationEdge != null ? classificationEdge.getInVertex() : null;
-                AtlasClassification classification       = toAtlasClassification(classificationVertex);
-
-                if (classification != null) {
-                    ret.add(classification);
-                }
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Performing getAllClassifications");
             }
-        }
 
-        RequestContext.get().endMetricRecord(metricRecorder);
-        return ret;
+            // use optimised path only for indexsearch and when flag is enabled!
+            if (ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS.getBoolean() && RequestContext.get().isInvokedByIndexSearch()) {
+                // Fetch classification vertices directly
+                List<AtlasVertex> classificationVertices = ((AtlasJanusGraph) graph).getGraph().traversal()
+                        .V(entityVertex.getId())  // Start from the entity vertex
+                        .outE(CLASSIFICATION_LABEL) // Get outgoing classification edges
+                        .inV() // Move to classification vertex
+                        .dedup() // Remove duplicate classification vertices
+                        .toList() // Convert to List<Vertex>
+                        .stream()
+                        .map(m -> GraphDbObjectFactory.createVertex(((AtlasJanusGraph) graph), m)) // Convert Vertex to AtlasVertex
+                        .collect(Collectors.toList());
+
+                return classificationVertices.stream()
+                        .map(m -> {
+                            try {
+                                return toAtlasClassification(m);
+                            } catch (AtlasBaseException e) {
+                                LOG.error("Error while getting all classifications", e);
+                                return null;
+                            }
+                        }) // Convert to AtlasClassification
+                        .filter(Objects::nonNull) // Remove null classifications
+                        .collect(Collectors.toList()); // Collect as a list
+            } else {
+                List<AtlasClassification> ret = new ArrayList<>();
+                Iterable edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
+
+                if (edges != null) {
+                    Iterator<AtlasEdge> iterator = edges.iterator();
+
+                    while (iterator.hasNext()) {
+                        AtlasEdge classificationEdge = iterator.next();
+                        AtlasVertex classificationVertex = classificationEdge != null ? classificationEdge.getInVertex() : null;
+                        AtlasClassification classification = toAtlasClassification(classificationVertex);
+
+                        if (classification != null) {
+                            ret.add(classification);
+                        }
+                    }
+                }
+
+                RequestContext.get().endMetricRecord(metricRecorder);
+                return ret;
+            }
+        } catch (Exception e) {
+            LOG.error("Error while getting all classifications", e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
     }
 
     public List<AtlasTermAssignmentHeader> mapAssignedTerms(AtlasVertex entityVertex) {
@@ -2060,7 +2095,7 @@ public class EntityGraphRetriever {
         return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false) : null;
     }
 
-    public Object getVertexAttributePreFetchCache(AtlasVertex vertex, AtlasAttribute attribute, Map<String, Object> properties) throws AtlasBaseException {
+    public Object getVertexAttributePreFetchCache(AtlasVertex vertex, AtlasAttribute attribute, Map<String, Object> properties,  AtlasEntityExtInfo entityExtInfo, final boolean isMinExtInfo, final boolean includeReferences) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getVertexAttributePreFetchCache");
 
         try{
@@ -2094,7 +2129,7 @@ public class EntityGraphRetriever {
 
             // value is present as marker , fetch the value from the vertex
             if (properties.get(attribute.getName()) != null && properties.get(attribute.getName()).equals(StringUtils.SPACE)) {
-                return mapVertexToAttribute(vertex, attribute, null, false);
+                return mapVertexToAttribute(vertex, attribute, entityExtInfo , isMinExtInfo, includeReferences);
             }
 
             return null;
@@ -2102,6 +2137,11 @@ public class EntityGraphRetriever {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
+
+    public Object getVertexAttributePreFetchCache(AtlasVertex vertex, AtlasAttribute attribute, Map<String, Object> properties) throws AtlasBaseException {
+        return getVertexAttributePreFetchCache(vertex, attribute, properties, null, false, true);
+    }
+
 
     private Object getVertexAttributeIgnoreInactive(AtlasVertex vertex, AtlasAttribute attribute) throws AtlasBaseException {
         return vertex != null && attribute != null ? mapVertexToAttribute(vertex, attribute, null, false, true, true) : null;
