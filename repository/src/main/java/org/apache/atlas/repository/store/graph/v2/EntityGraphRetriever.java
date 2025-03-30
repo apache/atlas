@@ -1525,34 +1525,34 @@ public class EntityGraphRetriever {
                         .V(entityVertex.getId())  // Start from the entity vertex
                         .outE(CLASSIFICATION_LABEL) // Get outgoing classification edges
                         .inV() // Move to classification vertex
-                        .project("__typeName","__entityGuid", "__entityStatus", "__propagate", "__removePropagations", "__restrictPropagationThroughLineage", "__restrictPropagationThroughHierarchy") // Fetch only needed properties
-                        .by(__.values("__typeName"))
-                        .by(__.values("__entityGuid"))
-                        .by(__.values("__entityStatus"))
-                        .by(__.values("__propagate"))
-                        .by(__.values("__removePropagations"))
-                        .by(__.values("__restrictPropagationThroughLineage"))
-                        .by(__.values("__restrictPropagationThroughHierarchy"))
+                        .project(CLASSIFICATION_FIELDS) // Fetch only needed properties
+                        .by(__.values(TYPE_NAME_PROPERTY_KEY))
+                        .by(__.values(CLASSIFICATION_ENTITY_GUID))
+                        .by(__.values(CLASSIFICATION_ENTITY_STATUS))
+                        .by(__.values(CLASSIFICATION_VERTEX_PROPAGATE_KEY))
+                        .by(__.values(CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY))
+                        .by(__.values(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE))
+                        .by(__.values(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY))
+                        .by(__.values(CLASSIFICATION_VALIDITY_PERIODS_KEY))
                         .toList()
                         .forEach(obj -> {
                             if (obj instanceof Map) {
-                                LOG.info("Adding classification properties");
                                 classificationProperties.add((Map<String, Object>) obj);
                             }
                         });
-                LOG.info("Classification properties: {}", classificationProperties);
                 classificationProperties.forEach(classificationProperty -> {
-                    if(classificationProperty!=null) {
+                    if (classificationProperty != null) {
                         AtlasClassification atlasClassification = new AtlasClassification();
-                        atlasClassification.setTypeName((String) classificationProperty.get("__typeName"));
-                        atlasClassification.setEntityGuid((String) classificationProperty.get("__entityGuid"));
-                        atlasClassification.setEntityStatus(AtlasEntity.Status.valueOf((String) classificationProperty.get("__entityStatus")));
-                        atlasClassification.setPropagate((Boolean) classificationProperty.get("__propagate"));
-                        atlasClassification.setRemovePropagationsOnEntityDelete((Boolean) classificationProperty.get("__removePropagations"));
-                        atlasClassification.setRestrictPropagationThroughLineage((Boolean) classificationProperty.get("__restrictPropagationThroughLineage"));
-                        atlasClassification.setRestrictPropagationThroughHierarchy((Boolean) classificationProperty.get("__restrictPropagationThroughHierarchy"));
+                        atlasClassification.setTypeName(classificationProperty.get(TYPE_NAME_PROPERTY_KEY) != null ? (String) classificationProperty.get(TYPE_NAME_PROPERTY_KEY) : "");
+                        String validityPeriods = classificationProperty.get(CLASSIFICATION_VALIDITY_PERIODS_KEY) != null ? (String) classificationProperty.get(CLASSIFICATION_VALIDITY_PERIODS_KEY) : "";
+                        atlasClassification.setValidityPeriods(AtlasJson.fromJson(validityPeriods, TIME_BOUNDARIES_LIST_TYPE));
+                        atlasClassification.setEntityGuid(classificationProperty.get(CLASSIFICATION_ENTITY_GUID) != null ? (String) classificationProperty.get(CLASSIFICATION_ENTITY_GUID) : "");
+                        atlasClassification.setEntityStatus(classificationProperty.get(CLASSIFICATION_ENTITY_STATUS) != null ? AtlasEntity.Status.valueOf((String) classificationProperty.get(CLASSIFICATION_ENTITY_STATUS)) : null);
+                        atlasClassification.setPropagate(classificationProperty.get(CLASSIFICATION_VERTEX_PROPAGATE_KEY) != null ? (Boolean) classificationProperty.get(CLASSIFICATION_VERTEX_PROPAGATE_KEY) : null);
+                        atlasClassification.setRemovePropagationsOnEntityDelete(classificationProperty.get(CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY) != null ? (Boolean) classificationProperty.get(CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY) : null);
+                        atlasClassification.setRestrictPropagationThroughLineage(classificationProperty.get(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE) != null ? (Boolean) classificationProperty.get(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE) : null);
+                        atlasClassification.setRestrictPropagationThroughHierarchy(classificationProperty.get(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY) != null ? (Boolean) classificationProperty.get(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY) : null);
                         ret.add(atlasClassification);
-                        LOG.info("Classification added: {}", atlasClassification);
                     }
                 });
                 return ret;
