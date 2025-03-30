@@ -1519,13 +1519,32 @@ public class EntityGraphRetriever {
             if (ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS.getBoolean() && RequestContext.get().isInvokedByIndexSearch()) {
                 // Fetch classification vertices directly
                 List<AtlasVertex> classificationVertices = new ArrayList<>();
-                return ((AtlasJanusGraph) graph).getGraph().traversal()
+                List<Map<String, Object>> classificationProperties = new ArrayList<>();
+                List<AtlasClassification> ret = new ArrayList<>();
+                ((AtlasJanusGraph) graph).getGraph().traversal()
                         .V(entityVertex.getId())  // Start from the entity vertex
                         .outE(CLASSIFICATION_LABEL) // Get outgoing classification edges
                         .inV() // Move to classification vertex
-                        .dedup() // Remove duplicate classification vertices
-                        .map(v -> toAtlasClassification(classificationVertices.add(GraphDbObjectFactory.createVertex(((AtlasJanusGraph) graph), v))))
-                        .toList();
+                        .project("__entityGuid", "__entityStatus", "__propagate", "__removePropagations", "__restrictPropagationThroughLineage", "__restrictPropagationThroughHierarchy") // Fetch only needed properties
+                        .by("__entityGuid")
+                        .by("__entityStatus")
+                        .by("__propagate")
+                        .by("__removePropagations")
+                        .by("__restrictPropagationThroughLineage")
+                        .by("__restrictPropagationThroughHierarchy")
+                        .forEachRemaining(map -> classificationProperties.add((Map<String, Object>) map));
+
+                classificationProperties.forEach(classificationProperty -> {
+                   AtlasClassification atlasClassification = new AtlasClassification();
+                   atlasClassification.setEntityGuid((String) classificationProperty.get("__entityGuid"));
+                   atlasClassification.setEntityStatus(AtlasEntity.Status.valueOf((String) classificationProperty.get("__entityStatus")));
+                   atlasClassification.setPropagate((Boolean) classificationProperty.get("__propagate"));
+                   atlasClassification.setRemovePropagationsOnEntityDelete((Boolean) classificationProperty.get("__removePropagations"));
+                   atlasClassification.setRestrictPropagationThroughLineage((Boolean) classificationProperty.get("__restrictPropagationThroughLineage"));
+                   atlasClassification.setRestrictPropagationThroughHierarchy((Boolean) classificationProperty.get("__restrictPropagationThroughHierarchy"));
+                   ret.add(atlasClassification);
+                });
+                return ret;
             } else {
                 List<AtlasClassification> ret = new ArrayList<>();
                 Iterable edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
