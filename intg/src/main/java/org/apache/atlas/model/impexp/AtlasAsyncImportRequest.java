@@ -155,7 +155,7 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
 
     @JsonIgnore
     public String getTopicName() {
-        return AtlasConfiguration.ASYNC_IMPORT_TOPIC_PREFIX + importId;
+        return AtlasConfiguration.ASYNC_IMPORT_TOPIC_PREFIX.getString() + importId;
     }
 
     public AtlasImportResult getImportResult() {
