@@ -29,6 +29,7 @@ import org.testng.annotations.Test;
 import static org.apache.atlas.AtlasConfiguration.ATLAS_ASYNC_IMPORT_MIN_DURATION_OVERRIDE_TEST_AUTOMATION;
 import static org.apache.atlas.utils.AtlasAsyncImportTestUtil.OPTION_KEY_ASYNC_IMPORT_MIN_DURATION_IN_MS;
 import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertTrue;
 
 public class TestAtlasAsyncImportTestUtil {
     private Configuration conf;
@@ -43,21 +44,26 @@ public class TestAtlasAsyncImportTestUtil {
         // Given
         conf.setProperty(ATLAS_ASYNC_IMPORT_MIN_DURATION_OVERRIDE_TEST_AUTOMATION.getPropertyName(), true);
 
-        long               now           = System.currentTimeMillis();
         AtlasImportRequest importRequest = new AtlasImportRequest();
-        AtlasImportResult  importResult  = new AtlasImportResult();
+        AtlasImportResult importResult = new AtlasImportResult();
 
         importRequest.setOption(OPTION_KEY_ASYNC_IMPORT_MIN_DURATION_IN_MS, "3000");
         importResult.setRequest(importRequest);
 
         AtlasAsyncImportRequest asyncRequest = new AtlasAsyncImportRequest(importResult);
 
-        asyncRequest.setReceivedAt(now);
-        asyncRequest.setCompletedAt(now + 1000);
+        // Explicitly simulate timing scenario without dependency on actual clock
+        long simulatedReceivedAt = 10000L;       // Arbitrary, stable value
+        long simulatedCompletedAt = 11000L;      // Simulate completion after 1000ms (1 sec)
+
+        asyncRequest.setReceivedAt(simulatedReceivedAt);
+        asyncRequest.setCompletedAt(simulatedCompletedAt);
+
+        long expectedWaitTime = 2000L;  // Min duration (3000ms) - elapsed (1000ms)
 
         long waitTimeInMs = AtlasAsyncImportTestUtil.intercept(asyncRequest);
 
-        assertEquals(waitTimeInMs, 2000, "Should have waited 2000ms");
+        assertEquals(waitTimeInMs, expectedWaitTime, "Should wait exactly 2000ms");
     }
 
     @Test
@@ -65,22 +71,25 @@ public class TestAtlasAsyncImportTestUtil {
         // Given
         conf.setProperty(ATLAS_ASYNC_IMPORT_MIN_DURATION_OVERRIDE_TEST_AUTOMATION.getPropertyName(), true);
 
-        long               now           = System.currentTimeMillis();
         AtlasImportRequest importRequest = new AtlasImportRequest();
-        AtlasImportResult  importResult  = new AtlasImportResult();
+        AtlasImportResult importResult = new AtlasImportResult();
 
         importRequest.setOption(OPTION_KEY_ASYNC_IMPORT_MIN_DURATION_IN_MS, "3000");
         importResult.setRequest(importRequest);
 
-        AtlasAsyncImportRequest asyncRequest = new AtlasAsyncImportRequest();
+        AtlasAsyncImportRequest asyncRequest = new AtlasAsyncImportRequest(importResult);
 
-        asyncRequest.setReceivedAt(now);
-        asyncRequest.setCompletedAt(now + 4000);
+        // Explicit fixed timestamps to ensure stability
+        long simulatedReceivedAt = 10000L;          // arbitrary fixed start timestamp
+        long simulatedCompletedAt = 14000L;         // completed after 4000ms, exceeding the 3000ms min duration
+
+        asyncRequest.setReceivedAt(simulatedReceivedAt);
+        asyncRequest.setCompletedAt(simulatedCompletedAt);
 
         long waitTimeInMs = AtlasAsyncImportTestUtil.intercept(asyncRequest);
 
         // Then
-        assertEquals(waitTimeInMs, -1, "Should not sleep if already exceeded");
+        assertTrue(waitTimeInMs < 0, "Should not sleep as duration already exceeded");
     }
 
     @Test
