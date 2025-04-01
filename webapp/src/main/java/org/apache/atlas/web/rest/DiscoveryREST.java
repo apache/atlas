@@ -896,21 +896,6 @@ public class DiscoveryREST {
         }
     }
 
-    @Path("top")
-    @GET
-    @Timed
-    public Object getTopXSuperVertex(@QueryParam("limit") final int limit)  {
-        AtlasPerfTracer perf = null;
-        try {
-            return graphHelper.getTopXSuperVertex(limit);
-        } catch (AtlasBaseException e) {
-            throw new RuntimeException(e);
-        } finally {
-            AtlasPerfTracer.log(perf);
-        }
-    }
-
-
     private boolean isEmpty(SearchParameters.FilterCriteria filterCriteria) {
         return filterCriteria == null ||
                 (StringUtils.isEmpty(filterCriteria.getAttributeName()) && CollectionUtils.isEmpty(filterCriteria.getCriterion()));
