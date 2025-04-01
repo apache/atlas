@@ -1049,6 +1049,14 @@ public class EntityGraphRetriever {
                 retrieveEdgeLabels(entityVertex, attributes, relationshipsLookup, propertiesMap);
             }
 
+            // for attributes that are complexType and passed by BE, set them to empty string
+            if (!fetchEdgeLabels){
+                attributes.forEach(attribute -> {
+                    propertiesMap.putIfAbsent(attribute, StringUtils.SPACE);
+                });
+
+            }
+
             // Iterate through the resulting VertexProperty objects
             while (traversal.hasNext()) {
                 try {
