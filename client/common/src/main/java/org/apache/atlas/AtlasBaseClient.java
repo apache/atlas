@@ -559,26 +559,6 @@ public abstract class AtlasBaseClient {
     }
 
     @VisibleForTesting
-    ObjectNode callAPIWithRetries(API api, Object requestObject, ResourceCreator resourceCreator)
-            throws AtlasServiceException {
-        for (int i = 0; i < getNumberOfRetries(); i++) {
-            WebResource resource = resourceCreator.createResource();
-            try {
-                LOG.debug("Using resource {} for {} times", resource.getURI(), i + 1);
-                return callAPIWithResource(api, resource, requestObject, ObjectNode.class);
-            } catch (ClientHandlerException che) {
-                if (i == (getNumberOfRetries() - 1)) {
-                    throw che;
-                }
-                LOG.warn("Handled exception in calling api {}", api.getNormalizedPath(), che);
-                LOG.warn("Exception's cause: {}", che.getCause().getClass());
-                handleClientHandlerException(che);
-            }
-        }
-        throw new AtlasServiceException(api, new RuntimeException("Could not get response after retries."));
-    }
-
-    @VisibleForTesting
     void setConfiguration(Configuration configuration) {
         this.configuration = configuration;
     }

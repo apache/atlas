@@ -53,12 +53,6 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-janusgraph-hbase2</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-
-        <dependency>
-            <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-testtools</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
@@ -94,6 +88,10 @@
                 <exclusion>
                     <groupId>org.apache.tinkerpop</groupId>
                     <artifactId>gremlin-driver</artifactId>
+                </exclusion>
+                <exclusion>
+                    <groupId>cassandra-hadoop-util</groupId>
+                    <artifactId>*</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
@@ -151,18 +149,6 @@
         <dependency>
             <groupId>org.janusgraph</groupId>
             <artifactId>janusgraph-es</artifactId>
-            <version>${janusgraph.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>*</artifactId>
-                </exclusion>
-            </exclusions>
-        </dependency>
-
-        <dependency>
-            <groupId>org.janusgraph</groupId>
-            <artifactId>janusgraph-hbase</artifactId>
             <version>${janusgraph.version}</version>
             <exclusions>
                 <exclusion>

@@ -83,7 +83,6 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGOR
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGORY_PURPOSE;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
-import static org.apache.atlas.services.tag.RangerServiceTag.TAG_RESOURCE_NAME;
 
 @Component
 public class CachePolicyTransformerImpl {

@@ -4,8 +4,10 @@ import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
+
+import javax.inject.Inject;
+
 @Component
 public class SearchContextCache {
     private static final Logger LOG = LoggerFactory.getLogger(SearchContextCache.class);
@@ -13,8 +15,8 @@ public class SearchContextCache {
 
     public static final String INVALID_SEQUENCE = "invalid_sequence";
 
-
-    public SearchContextCache(@Qualifier("redisServiceImpl") RedisService redisService) {
+    @Inject
+    public SearchContextCache(RedisService redisService) {
         SearchContextCache.redisService = redisService;
     }
 

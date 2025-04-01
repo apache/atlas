@@ -17,8 +17,8 @@
  */
 package org.apache.atlas.tasks;
 
-import com.datastax.oss.driver.shaded.fasterxml.jackson.core.JsonProcessingException;
-import com.datastax.oss.driver.shaded.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
