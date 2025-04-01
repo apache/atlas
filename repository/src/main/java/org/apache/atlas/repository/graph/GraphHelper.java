@@ -2103,28 +2103,36 @@ public final class GraphHelper {
         }
     }
 
-    public  Object getTopXSuperVertex() throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.retrieveEdgeLabelsAndTypeName");
-// g.V().order().by(both().count(),desc).limit(10).project('guid','edgeCount').by('__guid').by(both().count())
+    // gremlin query to get top 10 vertices with most edges
+    // g.V().order().by(both().count(),desc).limit(10)
+    // .project('guid','edgeCount').by('__guid').by(both().count())
+    public  Object getTopXSuperVertex(final int limit) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.getTopXSuperVertex");
+        String edgeCount = "edgeCount";
         try {
             return ((AtlasJanusGraph) graph).getGraph().traversal()
                     .V()
-                    .order()
-                    .by(both().count().as("edgeCount"), Order.desc)
-                    .limit(10)
-                    .project("__guid","edgeCount")
-                    .by("__guid")
+                    .project(GUID_PROPERTY_KEY, TYPE_NAME_PROPERTY_KEY, edgeCount)
+                    .by(GUID_PROPERTY_KEY)
+                    .by(TYPE_NAME_PROPERTY_KEY)
                     .by(both().count())
-                    .toStream().
-                    map(m -> {
-                        Object guid = m.get("__guid");
-                        Object edgeCount = m.get("edgeCount");
+                    .order()
+                    .by(edgeCount, Order.desc)
+                    .limit(limit)
+                    .toStream()
+                    .map(m -> {
+                        Object guid = m.get(GUID_PROPERTY_KEY);
+                        Object edgeCountObj = m.get(edgeCount);
+                        Object typeName = m.get(TYPE_NAME_PROPERTY_KEY);
                         String guidStr = (guid != null) ? guid.toString() : "";
-                        String edgeCountStr = (edgeCount != null) ? edgeCount.toString() : "";
-
-                        return new AbstractMap.SimpleEntry<>(guidStr, edgeCountStr);
+                        String edgeCountStr = (edgeCountObj != null) ? edgeCountObj.toString() : "";
+                        String typeNameStr = (typeName != null) ? typeName.toString() : "";
+                        return new HashMap() {{
+                            put(GUID_PROPERTY_KEY, guidStr);
+                            put(edgeCount, edgeCountStr);
+                            put(TYPE_NAME_PROPERTY_KEY, typeNameStr);
+                        }};
                     }).collect(Collectors.toList());
-
         } catch (Exception e) {
             LOG.error("Error while rich vertices", e);
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
