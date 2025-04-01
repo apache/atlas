@@ -24,23 +24,10 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AggregationContext;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
-import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
-import org.apache.solr.client.solrj.SolrClient;
-import org.apache.solr.client.solrj.SolrQuery;
-import org.apache.solr.client.solrj.SolrRequest;
 import org.apache.solr.client.solrj.SolrResponse;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.request.GenericSolrRequest;
-import org.apache.solr.client.solrj.request.RequestWriter;
-import org.apache.solr.client.solrj.request.V2Request;
-import org.apache.solr.client.solrj.response.FacetField;
-import org.apache.solr.client.solrj.response.QueryResponse;
-import org.apache.solr.client.solrj.response.TermsResponse;
-import org.apache.solr.common.params.CommonParams;
 import org.apache.solr.common.util.NamedList;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.admin.cluster.health.ClusterHealthRequest;
@@ -56,12 +43,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.PriorityQueue;
-import java.util.Set;
 
 import static org.apache.atlas.repository.Constants.*;
 
@@ -109,283 +94,26 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
 
     @Override
     public void applySearchWeight(String collectionName, Map<String, Integer> indexFieldName2SearchWeightMap) {
-        SolrClient solrClient = null;
-        //TODO: j17
 
-        /*try {
-            solrClient = Solr6Index.getSolrClient(); // get solr client using same settings as that of Janus Graph
-
-            if (solrClient == null) {
-                LOG.warn("AtlasJanusGraphIndexClient.applySearchWeight(): Non SOLR index stores are not supported yet.");
-
-                return;
-            }
-
-            Solr6Index.Mode solrMode = Solr6Index.getSolrMode();
-
-            //1) try updating request handler
-            //2) if update fails, try creating request handler
-
-            int       maxAttempts         = configuration != null ? configuration.getInt("index.client.apply.search.weight.max.attempts", 3) : 3;
-            int       retryWaitIntervalMs = configuration != null ? configuration.getInt("index.client.apply.search.weight.retry.interval.ms", 1000) : 1000;
-            Throwable lastExcp            = null;
-
-            for (int i = 0; i < maxAttempts; i++) {
-                if (i > 0) {
-                    LOG.warn("Attempt #{} failed! Waiting for {}ms before retry", i, retryWaitIntervalMs);
-
-                    try {
-                        Thread.sleep(retryWaitIntervalMs);
-                    } catch (Exception excp) {
-                        // ignore
-                    }
-                }
-
-                try {
-                    LOG.info("Attempting to update free text request handler {} for collection {}", FREETEXT_REQUEST_HANDLER, collectionName);
-
-                    updateFreeTextRequestHandler(solrClient, collectionName, indexFieldName2SearchWeightMap, solrMode);
-
-                    LOG.info("Successfully updated free text request handler {} for collection {}..", FREETEXT_REQUEST_HANDLER, collectionName);
-
-                    return;
-                } catch (Throwable t) {
-                    lastExcp = t;
-
-                    LOG.warn("Error encountered in updating request handler {} for collection {}. Will attempt to create one", FREETEXT_REQUEST_HANDLER, collectionName);
-                }
-
-                try {
-                    LOG.info("Attempting to create free text request handler {} for collection {}", FREETEXT_REQUEST_HANDLER, collectionName);
-
-                    createFreeTextRequestHandler(solrClient, collectionName, indexFieldName2SearchWeightMap, solrMode);
-                    LOG.info("Successfully created free text request handler {} for collection {}", FREETEXT_REQUEST_HANDLER, collectionName);
-
-                    return;
-                } catch (Throwable t) {
-                    lastExcp = t;
-
-                    LOG.warn("Error encountered in creating request handler {} for collection {}", FREETEXT_REQUEST_HANDLER, collectionName, t);
-                }
-            }
-
-            String msg = String.format("Error encountered in creating/updating request handler %s for collection %s", FREETEXT_REQUEST_HANDLER, collectionName);
-
-            throw lastExcp != null ? new RuntimeException(msg, lastExcp) : new RuntimeException(msg);
-        } finally {
-            LOG.debug("Releasing the solr client from usage.");
-
-            Solr6Index.releaseSolrClient(solrClient);
-        }*/
     }
 
 
     @Override
     public Map<String, List<AtlasAggregationEntry>> getAggregatedMetrics(AggregationContext aggregationContext) {
-        SolrClient solrClient = null;
-        //TODO: j17
-
-        /*try {
-            solrClient = Solr6Index.getSolrClient(); // get solr client using same settings as that of Janus Graph
-
-            if (solrClient == null) {
-                LOG.warn("The indexing system is not solr based. Will return empty Aggregation metrics.");
-
-                return Collections.EMPTY_MAP;
-            }
-
-            Set<String>         aggregationCommonFields = aggregationContext.getAggregationFieldNames();
-            Set<AtlasAttribute> aggregationAttributes   = aggregationContext.getAggregationAttributes();
-            Map<String, String> indexFieldNameCache     = aggregationContext.getIndexFieldNameCache();
-
-            if (CollectionUtils.isEmpty(aggregationCommonFields)) {
-                LOG.warn("There are no fields provided for aggregation purpose.");
-
-                if (CollectionUtils.isEmpty(aggregationAttributes)) {
-                    LOG.warn("There are no aggregation fields or attributes are provided. Will return empty metrics.");
-
-                    return Collections.EMPTY_MAP;
-                }
-            }
-
-            if (CollectionUtils.isEmpty(aggregationAttributes)) {
-                LOG.warn("There no attributes provided for aggregation purpose.");
-            }
-
-            Map<String, String>   indexFieldName2PropertyKeyNameMap = new HashMap<>();
-            AtlasSolrQueryBuilder solrQueryBuilder                  = new AtlasSolrQueryBuilder();
-
-            solrQueryBuilder.withEntityTypes(aggregationContext.getSearchForEntityTypes())
-                            .withQueryString(aggregationContext.getQueryString())
-                            .withCriteria(aggregationContext.getFilterCriteria())
-                            .withExcludedDeletedEntities(aggregationContext.isExcludeDeletedEntities())
-                            .withIncludeSubTypes(aggregationContext.isIncludeSubTypes())
-                            .withCommonIndexFieldNames(indexFieldNameCache);
-
-
-            SolrQuery solrQuery      = new SolrQuery();
-            String    finalSolrQuery = solrQueryBuilder.build();
-
-            if(LOG.isDebugEnabled()) {
-                LOG.debug("Final query string prepared is {}", finalSolrQuery);
-            }
-
-            solrQuery.setQuery(finalSolrQuery);
-            solrQuery.setRequestHandler(FREETEXT_REQUEST_HANDLER);
-
-            if (CollectionUtils.isNotEmpty(aggregationCommonFields)) {
-                for (String propertyName : aggregationCommonFields) {
-                    // resolve index field names for aggregation fields.
-                    String indexFieldName = indexFieldNameCache.get(propertyName);
-
-                    indexFieldName2PropertyKeyNameMap.put(indexFieldName, propertyName);
-
-                    solrQuery.addFacetField(indexFieldName);
-                }
-            }
-
-            if (CollectionUtils.isNotEmpty(aggregationAttributes)) {
-                for (AtlasAttribute attribute : aggregationAttributes) {
-                    String indexFieldName = attribute.getIndexFieldName();
-
-                    indexFieldName2PropertyKeyNameMap.put(indexFieldName, attribute.getQualifiedName());
-
-                    solrQuery.addFacetField(indexFieldName);
-                }
-            }
-
-            solrQuery.setFacetMinCount(MIN_FACET_COUNT_REQUIRED);
-
-            QueryResponse    queryResponse = solrClient.query(VERTEX_INDEX, solrQuery, SolrRequest.METHOD.POST);
-            List<FacetField> facetFields   = queryResponse == null ? null : queryResponse.getFacetFields();
-
-            if (CollectionUtils.isNotEmpty(facetFields)) {
-                Map<String, List<AtlasAggregationEntry>> ret = new HashMap<>();
-
-                for (FacetField facetField : facetFields) {
-                    String                      indexFieldName = facetField.getName();
-                    List<AtlasAggregationEntry> entries        = new ArrayList<>(facetField.getValueCount());
-                    List<FacetField.Count>      values         = facetField.getValues();
-
-                    for (FacetField.Count count : values) {
-                        entries.add(new AtlasAggregationEntry(count.getName(), count.getCount()));
-                    }
-
-                    //get the original propertyName from the index field name.
-                    String propertyKeyName = indexFieldName2PropertyKeyNameMap.get(indexFieldName);
-
-                    ret.put(propertyKeyName, entries);
-                }
-
-                return ret;
-            }
-        } catch (Exception e) {
-            LOG.error("Error encountered in getting the aggregation metrics. Will return empty aggregation.", e);
-        } finally {
-            Solr6Index.releaseSolrClient(solrClient);
-        }*/
-
         return Collections.EMPTY_MAP;
     }
 
     @Override
     public void applySuggestionFields(String collectionName, List<String> suggestionProperties) {
-        SolrClient solrClient = null;
-        //TODO: j17
-
-        /*try {
-            solrClient = Solr6Index.getSolrClient(); // get solr client using same settings as that of Janus Graph
-
-            if (solrClient == null) {
-                LOG.warn("The indexing system is not solr based. Suggestions feature will not be available.");
-
-                return;
-            }
-
-            Solr6Index.Mode solrMode = Solr6Index.getSolrMode();
-
-            //update the request handler
-            performRequestHandlerAction(collectionName,
-                                        solrClient,
-                                        generatePayLoadForSuggestions(generateSuggestionsString(suggestionProperties)),
-                                        solrMode);
-        } catch (Throwable t) {
-            String msg = String.format("Error encountered in creating the request handler '%s' for collection '%s'", Constants.TERMS_REQUEST_HANDLER, collectionName);
-
-            LOG.error(msg, t);
-        } finally {
-            Solr6Index.releaseSolrClient(solrClient);
-        }*/
-
         LOG.info("Applied suggestion fields request handler for collection {}.", collectionName);
     }
 
     @Override
     public List<String> getSuggestions(String prefixString, String indexFieldName) {
-        SolrClient solrClient = null;
-        //TODO: j17
-
-        /*try {
-            solrClient = Solr6Index.getSolrClient(); // get solr client using same settings as that of Janus Graph
-
-            if (solrClient == null) {
-                LOG.warn("The indexing system is not solr based. Suggestions feature will not be available.");
-
-                return Collections.EMPTY_LIST;
-            }
-
-            SolrQuery solrQuery = new SolrQuery();
-
-            solrQuery.setRequestHandler(Constants.TERMS_REQUEST_HANDLER)
-                     .setParam(TERMS_PREFIX, prefixString)
-                     .setParam(CommonParams.OMIT_HEADER, true);
-
-            if (StringUtils.isNotEmpty(indexFieldName)) {
-                solrQuery.setParam(TERMS_FIELD, indexFieldName);
-            }
-
-            QueryResponse queryResponse = solrClient.query(VERTEX_INDEX, solrQuery);
-            TermsResponse termsResponse = queryResponse == null? null: queryResponse.getTermsResponse();
-
-            if(termsResponse == null) {
-                LOG.info("Received null for terms response. Will return no suggestions.");
-
-                return Collections.EMPTY_LIST;
-            }
-
-            Map<String, TermFreq> termsMap = new HashMap<>();
-
-            for (List<TermsResponse.Term> fieldTerms : termsResponse.getTermMap().values()) {
-                for (TermsResponse.Term fieldTerm : fieldTerms) {
-                    TermFreq term = termsMap.get(fieldTerm.getTerm());
-
-                    if (term == null) {
-                        term = new TermFreq(fieldTerm.getTerm(), fieldTerm.getFrequency());
-
-                        termsMap.put(term.getTerm(), term);
-                    } else {
-                        term.addFreq(fieldTerm.getFrequency());
-                    }
-                }
-            }
-
-            return getTopTerms(termsMap);
-        } catch (SolrServerException | IOException e) {
-            String msg = String.format("Error encountered in generating the suggestions. Ignoring the error", e);
-
-            LOG.error(msg);
-        } finally {
-            Solr6Index.releaseSolrClient(solrClient);
-        }*/
-
         return Collections.EMPTY_LIST;
     }
 
     private boolean isSolrHealthy() throws SolrServerException, IOException {
-        //TODO: j17
-        /*SolrClient client = Solr6Index.getSolrClient();
-
-        return client != null && client.ping(Constants.VERTEX_INDEX).getStatus() == SOLR_HEALTHY_STATUS;*/
         return true;
     }
 
@@ -531,53 +259,6 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
 
         return ret.toString();
     }
-
-    //TODO: j17
-    /*private SolrResponse updateFreeTextRequestHandler(SolrClient solrClient, String collectionName,
-                                                    Map<String, Integer> indexFieldName2SearchWeightMap,
-                                                    Solr6Index.Mode mode) throws IOException, SolrServerException, AtlasBaseException {
-        String searchWeightString = generateSearchWeightString(indexFieldName2SearchWeightMap);
-        String payLoadString      = generatePayLoadForFreeText("update-requesthandler", searchWeightString);
-
-        return performRequestHandlerAction(collectionName, solrClient, payLoadString, mode);
-    }
-
-    private SolrResponse createFreeTextRequestHandler(SolrClient solrClient, String collectionName,
-                                                    Map<String, Integer> indexFieldName2SearchWeightMap,
-                                                    Solr6Index.Mode mode) throws IOException, SolrServerException, AtlasBaseException {
-        String searchWeightString = generateSearchWeightString(indexFieldName2SearchWeightMap);
-        String payLoadString      = generatePayLoadForFreeText("create-requesthandler", searchWeightString);
-
-        return performRequestHandlerAction(collectionName, solrClient, payLoadString, mode);
-    }*/
-
-    //TODO: j17
-    /*private SolrResponse performRequestHandlerAction(String collectionName,
-                                                   SolrClient solrClient,
-                                                   String actionPayLoad,
-                                                   Solr6Index.Mode mode) throws IOException, SolrServerException, AtlasBaseException {
-        switch (mode) {
-            case CLOUD:
-                V2Request v2request = new V2Request.Builder(String.format("/collections/%s/config", collectionName))
-                                                            .withMethod(SolrRequest.METHOD.POST)
-                                                            .withPayload(actionPayLoad)
-                                                            .build();
-
-                return validateResponseForSuccess(v2request.process(solrClient));
-
-            case HTTP:
-                GenericSolrRequest          request       = new GenericSolrRequest(SolrRequest.METHOD.POST, String.format("/%s/config", collectionName), null);
-                RequestWriter.ContentWriter contentWriter = new RequestWriter.StringPayloadContentWriter(actionPayLoad, "application/json; charset=UTF-8");
-
-                request.setContentWriter(contentWriter);
-                request.setUseV2(false);
-
-                return validateResponseForSuccess(request.process(solrClient));
-
-            default:
-                throw new IllegalArgumentException("Unsupported Solr operation mode: " + mode);
-        }
-    }*/
 
     private SolrResponse validateResponseForSuccess(SolrResponse solrResponse) throws AtlasBaseException {
         if(solrResponse == null) {

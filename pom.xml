@@ -805,6 +805,7 @@
         <module>webapp</module>
 
         <module>plugin-classloader</module>
+
         <module>distro</module>
     </modules>
 
@@ -1363,12 +1364,6 @@
                 <artifactId>atlas-client</artifactId>
                 <version>${project.version}</version>
                 <type>pom</type>
-            </dependency>
-
-            <dependency>
-                <groupId>org.apache.atlas</groupId>
-                <artifactId>atlas-client-v1</artifactId>
-                <version>${project.version}</version>
             </dependency>
 
             <dependency>
