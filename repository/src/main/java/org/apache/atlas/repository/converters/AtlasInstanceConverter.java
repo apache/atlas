@@ -19,7 +19,6 @@ package org.apache.atlas.repository.converters;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.CreateUpdateEntitiesResult;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.EntityAuditEvent;
 import org.apache.atlas.model.audit.EntityAuditEventV2;

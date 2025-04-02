@@ -146,6 +146,7 @@ public class AtlasPerfMetrics {
         public long getInvocations() {
             return invocations;
         }
+
         public void setTotalTimeMSecs(long totalTimeMSecs) {
             this.totalTimeMSecs = totalTimeMSecs;
         }

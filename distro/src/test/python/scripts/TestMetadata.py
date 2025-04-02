@@ -128,7 +128,7 @@ class TestMetadata(unittest.TestCase):
                 ['-app', 'atlas_home\\server\\webapp\\atlas'],
                 'atlas_home\\conf;atlas_home\\server\\webapp\\atlas\\WEB-INF\\classes;atlas_home\\server\\webapp\\atlas\\WEB-INF\\lib\\*;atlas_home\\libext\\*;atlas_home\\hbase\\conf',
                 ['-Datlas.log.dir=atlas_home\\logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home',
-                 '-Datlas.conf=atlas_home\\conf', '-Xmx1024m', "-javaagent:/opt/apache-atlas/libext/jolokia-jvm-agent.jar=port=7777,host=0.0.0.0",
+                 '-Datlas.conf=atlas_home\\conf', '-Xmx1024m',
                  '-Dlogback.configurationFile=atlas-logback.xml', '-Djava.net.preferIPv4Stack=true', '-server'],
                 'atlas_home\\logs')
 
@@ -221,7 +221,7 @@ class TestMetadata(unittest.TestCase):
                 ['-app', 'atlas_home\\server\\webapp\\atlas'],
                 'atlas_home\\conf;atlas_home\\server\\webapp\\atlas\\WEB-INF\\classes;atlas_home\\server\\webapp\\atlas\\WEB-INF\\lib\\*;atlas_home\\libext\\*;atlas_home\\hbase\\conf',
                 ['-Datlas.log.dir=atlas_home\\logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home',
-                 '-Datlas.conf=atlas_home\\conf', '-Xmx1024m', "-javaagent:/opt/apache-atlas/libext/jolokia-jvm-agent.jar=port=7777,host=0.0.0.0", 
+                 '-Datlas.conf=atlas_home\\conf', '-Xmx1024m', "-javaagent:/opt/apache-atlas/libext/jolokia-jvm-agent.jar=port=7777,host=0.0.0.0",
                  '-Dlogback.configurationFile=atlas-logback.xml', '-Djava.net.preferIPv4Stack=true', '-server'],
                 'atlas_home\\logs')
 
