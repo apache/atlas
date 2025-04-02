@@ -90,7 +90,6 @@ public class DiscoveryREST {
     private final int                maxDslQueryLength;
     private final boolean            enableSearchLogging;
 
-    private final GraphHelper graphHelper;
     private final AtlasTypeRegistry     typeRegistry;
     private final AtlasDiscoveryService discoveryService;
     private final SearchLoggingManagement loggerManagement;
@@ -101,14 +100,13 @@ public class DiscoveryREST {
 
     @Inject
     public DiscoveryREST(AtlasTypeRegistry typeRegistry, AtlasDiscoveryService discoveryService,
-                         SearchLoggingManagement loggerManagement, Configuration configuration, GraphHelper graphHelper) {
+                         SearchLoggingManagement loggerManagement, Configuration configuration) {
         this.typeRegistry           = typeRegistry;
         this.discoveryService       = discoveryService;
         this.loggerManagement       = loggerManagement;
         this.maxFullTextQueryLength = configuration.getInt(Constants.MAX_FULLTEXT_QUERY_STR_LENGTH, 4096);
         this.maxDslQueryLength      = configuration.getInt(Constants.MAX_DSL_QUERY_STR_LENGTH, 4096);
         this.enableSearchLogging    = AtlasConfiguration.ENABLE_SEARCH_LOGGER.getBoolean();
-        this.graphHelper           = graphHelper;
     }
 
     /**
@@ -394,7 +392,7 @@ public class DiscoveryREST {
     @Timed
     public AtlasSearchResult indexSearch(@Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-        RequestContext.get().setIsInvokedByIndexSearchOrBulk(true);
+        RequestContext.get().setIsInvokedByIndexSearch(true);
         long startTime = System.currentTimeMillis();
 
         RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
@@ -897,21 +895,6 @@ public class DiscoveryREST {
             AtlasPerfTracer.log(perf);
         }
     }
-
-    @Path("top")
-    @GET
-    @Timed
-    public Object getTopXSuperVertex(@QueryParam("limit") final int limit)  {
-        AtlasPerfTracer perf = null;
-        try {
-            return graphHelper.getTopXSuperVertex(limit);
-        } catch (AtlasBaseException e) {
-            throw new RuntimeException(e);
-        } finally {
-            AtlasPerfTracer.log(perf);
-        }
-    }
-
 
     private boolean isEmpty(SearchParameters.FilterCriteria filterCriteria) {
         return filterCriteria == null ||

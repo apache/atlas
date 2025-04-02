@@ -75,14 +75,13 @@ public class GremlinShellHelper {
     public  Object getVertexRelationshipStats(final String guid) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GremlinShellHelper.getVertexRelationshipStats");
         try {
-             Map<Object,Long> counts=  ((AtlasJanusGraph) graph).getGraph().traversal()
+             return  ((AtlasJanusGraph) graph).getGraph().traversal()
                     .V()
                     .has(GUID_PROPERTY_KEY, guid)
                      .bothE()
                      .groupCount()
                      .by(T.label)
                      .next();
-             return counts;
         } catch (Exception e) {
             LOG.error("Error while getting relationship stats ", e);
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);

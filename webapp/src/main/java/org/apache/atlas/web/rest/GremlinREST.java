@@ -53,9 +53,7 @@ public class GremlinREST {
     public Object getRelationshipStats(@PathParam("guid") final String guid)  {
         AtlasPerfTracer perf = null;
         try {
-            Object counts=  gremlinShellHelper.getVertexRelationshipStats(guid);
-            LOG.info("getRelationshipStats({}): {}", guid, counts);
-            return counts;
+            return gremlinShellHelper.getVertexRelationshipStats(guid);
         } catch (AtlasBaseException e) {
             throw new RuntimeException(e);
         } finally {
