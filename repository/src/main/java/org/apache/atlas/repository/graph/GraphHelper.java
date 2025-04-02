@@ -80,7 +80,6 @@ import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelation
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE_VALID;
-import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 
 /**
  * Utility class for graph operations.
