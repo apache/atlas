@@ -61,14 +61,11 @@ import org.apache.atlas.util.IndexedInstance;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.lang.StringUtils;
-import org.apache.tinkerpop.gremlin.process.traversal.Order;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Component;
 
 import java.util.*;
-import java.util.function.Function;
 import java.util.stream.*;
 
 import static org.apache.atlas.AtlasErrorCode.RELATIONSHIP_CREATE_INVALID_PARAMS;
@@ -88,7 +85,6 @@ import static org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__.*;
 /**
  * Utility class for graph operations.
  */
-@Component
 public final class GraphHelper {
 
     private static final Logger LOG = LoggerFactory.getLogger(GraphHelper.class);
