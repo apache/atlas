@@ -17,7 +17,7 @@
     "@babel/core": "^7.16.7",
     "@babel/plugin-syntax-dynamic-import": "^7.8.3",
     "@babel/preset-react": "^7.16.7",
-    "axios": "0.19.0",
+    "axios": "^1.8.2",
     "babel-loader": "8.0.6",
     "babel-plugin-lodash": "3.3.4",
     "babel-plugin-react-transform": "3.0.0",
