@@ -43,12 +43,16 @@ import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV
 import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV2;
 import org.apache.atlas.model.notification.HookNotification.EntityPartialUpdateRequestV2;
 import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
+import org.apache.atlas.model.notification.ImportNotification.AtlasEntityImportNotification;
+import org.apache.atlas.model.notification.ImportNotification.AtlasTypeDefImportNotification;
+import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.notification.preprocessor.EntityPreprocessor;
 import org.apache.atlas.notification.preprocessor.GenericEntityPreprocessor;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext;
 import org.apache.atlas.notification.preprocessor.PreprocessorContext.PreprocessAction;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
+import org.apache.atlas.repository.impexp.AsyncImporter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.EntityCorrelationStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
@@ -80,6 +84,7 @@ import org.apache.kafka.common.TopicPartition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.DependsOn;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.core.annotation.Order;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
@@ -100,11 +105,13 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.regex.Pattern;
@@ -112,6 +119,7 @@ import java.util.regex.Pattern;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_TYPENAME;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_UNIQUE_ATTRIBUTES;
+import static org.apache.atlas.notification.NotificationInterface.NotificationType.ASYNC_IMPORT;
 import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.TYPE_HIVE_PROCESS;
 import static org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI;
 
@@ -170,9 +178,9 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private static final int    KAFKA_CONSUMER_SHUTDOWN_WAIT                    = 30000;
     private static final String ATLAS_HOOK_CONSUMER_THREAD_NAME                 = "atlas-hook-consumer-thread";
     private static final String ATLAS_HOOK_UNSORTED_CONSUMER_THREAD_NAME        = "atlas-hook-unsorted-consumer-thread";
+    private static final String ATLAS_IMPORT_CONSUMER_THREAD_PREFIX             = "atlas-import-consumer-thread-";
     private static final String THREADNAME_PREFIX                               = NotificationHookConsumer.class.getSimpleName();
 
-    @VisibleForTesting final int consumerRetryInterval;
     private final AtlasEntityStore              atlasEntityStore;
     private final ServiceState                  serviceState;
     private final AtlasInstanceConverter        instanceConverter;
@@ -203,21 +211,25 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final boolean                       createShellEntityForNonExistingReference;
     private final boolean                       authorizeUsingMessageUser;
     private final Map<String, Authentication>   authnCache;
-    private final NotificationInterface     notificationInterface;
-    private final Configuration             applicationProperties;
-    private final Map<TopicPartition, Long> lastCommittedPartitionOffset;
-    private final EntityCorrelationManager  entityCorrelationManager;
-    private final long                      consumerMsgBufferingIntervalMS;
-    private final int                       consumerMsgBufferingBatchSize;
-
-    @VisibleForTesting
-    List<HookConsumer> consumers;
+    private final NotificationInterface         notificationInterface;
+    private final Configuration                 applicationProperties;
+    private final Map<TopicPartition, Long>     lastCommittedPartitionOffset;
+    private final EntityCorrelationManager      entityCorrelationManager;
+    private final long                          consumerMsgBufferingIntervalMS;
+    private final int                           consumerMsgBufferingBatchSize;
+    private final AsyncImporter                 asyncImporter;
 
     private ExecutorService executors;
     private Instant         nextStatsLogTime = AtlasMetricsCounter.getNextHourStartTime(Instant.now());
 
+    @VisibleForTesting
+    final int consumerRetryInterval;
+
+    @VisibleForTesting
+    List<HookConsumer> consumers;
+
     @Inject
-    public NotificationHookConsumer(NotificationInterface notificationInterface, AtlasEntityStore atlasEntityStore, ServiceState serviceState, AtlasInstanceConverter instanceConverter, AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil, EntityCorrelationStore entityCorrelationStore) throws AtlasException {
+    public NotificationHookConsumer(NotificationInterface notificationInterface, AtlasEntityStore atlasEntityStore, ServiceState serviceState, AtlasInstanceConverter instanceConverter, AtlasTypeRegistry typeRegistry, AtlasMetricsUtil metricsUtil, EntityCorrelationStore entityCorrelationStore, @Lazy AsyncImporter asyncImporter) throws AtlasException {
         this.notificationInterface        = notificationInterface;
         this.atlasEntityStore             = atlasEntityStore;
         this.serviceState                 = serviceState;
@@ -226,6 +238,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         this.applicationProperties        = ApplicationProperties.get();
         this.metricsUtil                  = metricsUtil;
         this.lastCommittedPartitionOffset = new HashMap<>();
+        this.asyncImporter                = asyncImporter;
 
         maxRetries            = applicationProperties.getInt(CONSUMER_RETRIES_PROPERTY, 3);
         failedMsgCacheSize    = applicationProperties.getInt(CONSUMER_FAILEDCACHESIZE_PROPERTY, 1);
@@ -370,12 +383,6 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
     @Override
     public void start() throws AtlasException {
-        if (consumerDisabled) {
-            LOG.info("No hook messages will be processed. {} = {}", CONSUMER_DISABLED, consumerDisabled);
-
-            return;
-        }
-
         startInternal(applicationProperties, null);
     }
 
@@ -383,7 +390,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     public void stop() {
         //Allow for completion of outstanding work
         try {
-            if (consumerDisabled) {
+            if (consumerDisabled && consumers.isEmpty()) {
                 return;
             }
 
@@ -412,13 +419,18 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
      */
     @Override
     public void instanceIsActive() {
+        if (executors == null) {
+            executors = createExecutor();
+            LOG.info("Executors initialized (Instance is active)");
+        }
+
         if (consumerDisabled) {
             return;
         }
 
         LOG.info("Reacting to active state: initializing Kafka consumers");
 
-        startConsumers(executors);
+        startHookConsumers();
     }
 
     /**
@@ -429,7 +441,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
      */
     @Override
     public void instanceIsPassive() {
-        if (consumerDisabled) {
+        if (consumerDisabled && consumers.isEmpty()) {
             return;
         }
 
@@ -443,6 +455,32 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         return HandlerOrder.NOTIFICATION_HOOK_CONSUMER.getOrder();
     }
 
+    public void closeImportConsumer(String importId, String topic) {
+        try {
+            LOG.info("==> closeImportConsumer(importId={}, topic={})", importId, topic);
+
+            String                     consumerName      = ATLAS_IMPORT_CONSUMER_THREAD_PREFIX + importId;
+            ListIterator<HookConsumer> consumersIterator = consumers.listIterator();
+
+            while (consumersIterator.hasNext()) {
+                HookConsumer consumer = consumersIterator.next();
+
+                if (consumer.getName().startsWith(consumerName)) {
+                    consumer.shutdown();
+                    consumersIterator.remove();
+                }
+            }
+
+            notificationInterface.closeConsumer(ASYNC_IMPORT, topic);
+            notificationInterface.deleteTopic(ASYNC_IMPORT, topic);
+        } catch (Exception e) {
+            LOG.error("Could not cleanup consumers for importId: {}", importId, e);
+        } finally {
+            LOG.info("<== closeImportConsumer(importId={}, topic={})", importId, topic);
+        }
+    }
+
+    @VisibleForTesting
     void startInternal(Configuration configuration, ExecutorService executorService) {
         if (consumers == null) {
             consumers = new ArrayList<>();
@@ -453,16 +491,25 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         }
 
         if (!HAConfiguration.isHAEnabled(configuration)) {
+            if (executors == null) {
+                executors = createExecutor();
+                LOG.info("Executors initialized (HA is disabled)");
+            }
+            if (consumerDisabled) {
+                LOG.info("No hook messages will be processed. {} = {}", CONSUMER_DISABLED, consumerDisabled);
+                return;
+            }
+
             LOG.info("HA is disabled, starting consumers inline.");
 
-            startConsumers(executorService);
+            startHookConsumers();
         }
     }
 
-    private void startConsumers(ExecutorService executorService) {
-        int                                                           numThreads                  = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
+    @VisibleForTesting
+    void startHookConsumers() {
+        int numThreads = applicationProperties.getInt(CONSUMER_THREADS_PROPERTY, 1);
         Map<NotificationConsumer<HookNotification>, NotificationType> notificationConsumersByType = new HashMap<>();
-
         List<NotificationConsumer<HookNotification>> notificationConsumers = notificationInterface.createConsumers(NotificationType.HOOK, numThreads);
 
         for (NotificationConsumer<HookNotification> notificationConsumer : notificationConsumers) {
@@ -477,11 +524,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
             }
         }
 
-        if (executorService == null) {
-            executorService = Executors.newFixedThreadPool(notificationConsumersByType.size(), new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d").build());
-        }
-
-        executors = executorService;
+        List<HookConsumer> hookConsumers = new ArrayList<>();
 
         for (final NotificationConsumer<HookNotification> consumer : notificationConsumersByType.keySet()) {
             String hookConsumerName = ATLAS_HOOK_CONSUMER_THREAD_NAME;
@@ -492,8 +535,52 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
             HookConsumer hookConsumer = new HookConsumer(hookConsumerName, consumer);
 
-            consumers.add(hookConsumer);
-            executors.submit(hookConsumer);
+            hookConsumers.add(hookConsumer);
+        }
+
+        startConsumers(hookConsumers);
+    }
+
+    public void startAsyncImportConsumer(NotificationType notificationType, String importId, String topic) {
+        if (topic != null) {
+            notificationInterface.addTopicToNotificationType(notificationType, topic);
+        }
+
+        List<NotificationConsumer<HookNotification>> notificationConsumers = notificationInterface.createConsumers(notificationType, 1);
+        List<HookConsumer> hookConsumers = new ArrayList<>();
+
+        for (final NotificationConsumer<HookNotification> consumer : notificationConsumers) {
+            String hookConsumerName = ATLAS_IMPORT_CONSUMER_THREAD_PREFIX + importId;
+            HookConsumer hookConsumer = new HookConsumer(hookConsumerName, consumer);
+
+            hookConsumers.add(hookConsumer);
+        }
+
+        startConsumers(hookConsumers);
+    }
+
+    @VisibleForTesting
+    protected ExecutorService createExecutor() {
+        return new ThreadPoolExecutor(
+                0, // Core pool size
+                Integer.MAX_VALUE, // Maximum pool size (dynamic scaling)
+                60L, TimeUnit.SECONDS, // Idle thread timeout
+                new SynchronousQueue<>(), // Direct handoff queue
+                new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d").build());
+    }
+
+    private void startConsumers(List<HookConsumer> hookConsumers) {
+        if (consumers == null) {
+            consumers = new ArrayList<>();
+        }
+
+        if (executors == null) {
+            throw new IllegalStateException("Executors must be initialized before starting consumers.");
+        }
+
+        for (final HookConsumer consumer : hookConsumers) {
+            consumers.add(consumer);
+            executors.submit(consumer);
         }
     }
 
@@ -502,13 +589,18 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         if (consumers != null) {
             for (HookConsumer consumer : consumers) {
-                consumer.shutdown();
+                stopConsumerThread(consumer);
             }
 
             consumers.clear();
         }
 
         LOG.info("<== stopConsumerThreads()");
+    }
+
+    private void stopConsumerThread(HookConsumer consumer) {
+        consumer.shutdown();
+        consumers.remove(consumer);
     }
 
     private List<String> trimAndPurge(String[] values, String defaultValue) {
@@ -533,8 +625,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
     private void preprocessEntities(PreprocessorContext context) {
         GenericEntityPreprocessor genericEntityPreprocessor = new GenericEntityPreprocessor(this.entityTypesToIgnore, this.entitiesToIgnore);
-
-        List<AtlasEntity> entities = context.getEntities();
+        List<AtlasEntity>        entities                   = context.getEntities();
 
         if (entities != null) {
             for (int i = 0; i < entities.size(); i++) {
@@ -1185,9 +1276,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 // Used for intermediate conversions during create and update
                 String exceptionClassName = StringUtils.EMPTY;
                 for (int numRetries = 0; numRetries < maxRetries; numRetries++) {
-                    if (LOG.isDebugEnabled()) {
-                        LOG.debug("handleMessage({}): attempt {}", message.getType().name(), numRetries);
-                    }
+                    LOG.debug("handleMessage({}): attempt {}", message.getType().name(), numRetries);
 
                     try {
                         RequestContext requestContext = RequestContext.get();
@@ -1333,6 +1422,42 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             }
                             break;
 
+                            case IMPORT_TYPE_DEF: {
+                                final AtlasTypeDefImportNotification typeDefImportNotification = (AtlasTypeDefImportNotification) message;
+                                final String                         importId                  = typeDefImportNotification.getImportId();
+                                final AtlasTypesDef                  typesDef                  = typeDefImportNotification.getTypeDefinitionMap();
+
+                                try {
+                                    asyncImporter.onImportTypeDef(typesDef, importId);
+                                } catch (AtlasBaseException abe) {
+                                    LOG.error("IMPORT_TYPE_DEF: {} failed to import type definition: {}", importId, typesDef);
+
+                                    asyncImporter.onImportComplete(importId);
+                                }
+                            }
+                            break;
+
+                            case IMPORT_ENTITY: {
+                                final AtlasEntityImportNotification entityImportNotification = (AtlasEntityImportNotification) message;
+                                final String                        importId                 = entityImportNotification.getImportId();
+                                final AtlasEntityWithExtInfo        entityWithExtInfo        = entityImportNotification.getEntity();
+                                final int                           position                 = entityImportNotification.getPosition();
+                                boolean                             completeImport           = false;
+
+                                try {
+                                    completeImport = asyncImporter.onImportEntity(entityWithExtInfo, importId, position);
+                                } catch (AtlasBaseException abe) {
+                                    completeImport = true;
+
+                                    LOG.error("IMPORT_ENTITY: {} failed to import entity: {}", importId, entityImportNotification);
+                                } finally {
+                                    if (completeImport) {
+                                        asyncImporter.onImportComplete(importId);
+                                    }
+                                }
+                            }
+                            break;
+
                             default:
                                 throw new IllegalStateException("Unknown notification type: " + message.getType().name());
                         }
@@ -1345,6 +1470,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                         break;
                     } catch (Throwable e) {
                         RequestContext.get().resetEntityGuidUpdates();
+
                         exceptionClassName = e.getClass().getSimpleName();
 
                         // don't retry in following conditions:
@@ -1501,8 +1627,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
                     AtlasEntitiesWithExtInfo batch       = new AtlasEntitiesWithExtInfo(entitiesBatch);
                     AtlasEntityStream        batchStream = new AtlasEntityStream(batch, entityStream);
-
-                    EntityMutationResponse response = atlasEntityStore.createOrUpdate(batchStream, isPartialUpdate);
+                    EntityMutationResponse   response    = atlasEntityStore.createOrUpdate(batchStream, isPartialUpdate);
 
                     recordProcessedEntities(response, stats, context);
 
