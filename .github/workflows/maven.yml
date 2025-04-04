@@ -27,7 +27,7 @@ on:
       - development
       - master
       - lineageondemand
-      - optimise_get_classifications_master
+      - poctagprophashedrebased
 
 jobs:
   build:
