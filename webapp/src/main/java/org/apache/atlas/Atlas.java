@@ -40,7 +40,6 @@ import org.apache.commons.cli.ParseException;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.StringUtils;
-import org.apache.hadoop.util.ShutdownHookManager;
 import org.elasticsearch.action.support.master.AcknowledgedResponse;
 import org.elasticsearch.client.RequestOptions;
 import org.elasticsearch.client.RestHighLevelClient;
@@ -82,7 +81,7 @@ public final class Atlas {
     private static EmbeddedServer server;
 
     static {
-        ShutdownHookManager.get().addShutdownHook(new Thread() {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
                 try {
@@ -95,7 +94,7 @@ public final class Atlas {
                     LOG.info("<== Shutdown of Atlas");
                 }
             }
-        }, AtlasConstants.ATLAS_SHUTDOWN_HOOK_PRIORITY);
+        });
     }
 
     private static void shutdown() {

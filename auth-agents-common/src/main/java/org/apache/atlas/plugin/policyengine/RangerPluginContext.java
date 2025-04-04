@@ -24,8 +24,7 @@ import org.apache.atlas.authz.admin.client.AtlasAuthRESTClient;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.atlas.admin.client.RangerAdminRESTClient;
-import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
+import org.apache.atlas.authorization.config.RangerPluginConfig;
 import org.apache.atlas.plugin.service.RangerAuthContext;
 import org.apache.atlas.plugin.service.RangerAuthContextListener;
 
@@ -85,7 +84,7 @@ public class RangerPluginContext {
 
 		if(StringUtils.isEmpty(policySourceImpl)) {
 			if (LOG.isDebugEnabled()) {
-				LOG.debug(String.format("Value for property[%s] was null or empty. Unexpected! Will use policy source of type[%s]", propertyName, RangerAdminRESTClient.class.getName()));
+				LOG.error("Value for property[%s] was null or empty");
 			}
 		} else {
 			if (LOG.isDebugEnabled()) {
@@ -98,7 +97,7 @@ public class RangerPluginContext {
 
 				ret = adminClass.newInstance();
 			} catch (Exception excp) {
-				LOG.error("failed to instantiate policy source of type '" + policySourceImpl + "'. Will use policy source of type '" + RangerAdminRESTClient.class.getName() + "'", excp);
+				LOG.error("failed to instantiate policy source of type " + policySourceImpl );
 			}
 		}
 

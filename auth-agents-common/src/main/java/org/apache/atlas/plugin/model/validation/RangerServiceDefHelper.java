@@ -49,74 +49,6 @@ public class RangerServiceDefHelper {
 	static final Map<String, Delegate> _Cache = new ConcurrentHashMap<>();
 	final Delegate _delegate;
 
-	static public RangerServiceDef getServiceDefForPolicyFiltering(RangerServiceDef serviceDef) {
-
-		List<RangerResourceDef> modifiedResourceDefs = new ArrayList<RangerResourceDef>();
-
-		for (RangerResourceDef resourceDef : serviceDef.getResources()) {
-
-			final RangerResourceDef modifiedResourceDef;
-
-			String matcherClassName = resourceDef.getMatcher();
-
-			if (RangerPathResourceMatcher.class.getName().equals(matcherClassName)) {
-
-				Map<String, String> modifiedMatcherOptions = new HashMap<String, String>(resourceDef.getMatcherOptions());
-
-				modifiedMatcherOptions.put(RangerAbstractResourceMatcher.OPTION_WILD_CARD, "false");
-
-				modifiedResourceDef = new RangerResourceDef(resourceDef);
-				modifiedResourceDef.setMatcherOptions(modifiedMatcherOptions);
-				modifiedResourceDef.setRecursiveSupported(false);
-
-			} else {
-				modifiedResourceDef = resourceDef;
-			}
-
-			modifiedResourceDefs.add(modifiedResourceDef);
-		}
-
-		return new RangerServiceDef(serviceDef.getName(), serviceDef.getDisplayName(), serviceDef.getImplClass(), serviceDef.getLabel(),
-				serviceDef.getDescription(), serviceDef.getOptions(), serviceDef.getConfigs(), modifiedResourceDefs, serviceDef.getAccessTypes(),
-				serviceDef.getPolicyConditions(), serviceDef.getContextEnrichers(), serviceDef.getEnums());
-	}
-
-	public static Map<String, String> getFilterResourcesForAncestorPolicyFiltering(RangerServiceDef serviceDef, Map<String, String> filterResources) {
-
-		Map<String, String> ret = null;
-
-		for (RangerResourceDef resourceDef : serviceDef.getResources()) {
-
-			String matcherClassName = resourceDef.getMatcher();
-
-			if (RangerPathResourceMatcher.class.getName().equals(matcherClassName)) {
-
-				String resourceDefName = resourceDef.getName();
-
-				final Map<String, String> resourceMatcherOptions = resourceDef.getMatcherOptions();
-
-				String delimiter = resourceMatcherOptions.get(RangerPathResourceMatcher.OPTION_PATH_SEPARATOR);
-				if (StringUtils.isBlank(delimiter)) {
-					delimiter = Character.toString(RangerPathResourceMatcher.DEFAULT_PATH_SEPARATOR_CHAR);
-				}
-
-				String resourceValue = filterResources.get(resourceDefName);
-				if (StringUtils.isNotBlank(resourceValue)) {
-					if (!resourceValue.endsWith(delimiter)) {
-						resourceValue += delimiter;
-					}
-					resourceValue += RangerAbstractResourceMatcher.WILDCARD_ASTERISK;
-
-					if (ret == null) {
-						ret = new HashMap<String, String>();
-					}
-					ret.put(resourceDefName, resourceValue);
-				}
-			}
-		}
-
-		return ret;
-	}
 
 	public RangerServiceDefHelper(RangerServiceDef serviceDef) {
 		this(serviceDef, true, false);
@@ -166,10 +98,6 @@ public class RangerServiceDefHelper {
 		return _delegate._serviceDef;
 	}
 
-	public void patchServiceDefWithDefaultValues() {
-		_delegate.patchServiceDefWithDefaultValues();
-	}
-
 	/**
 	 * for a resource definition as follows:
 	 *
@@ -184,18 +112,6 @@ public class RangerServiceDefHelper {
 	 */
 	public Set<List<RangerResourceDef>> getResourceHierarchies(String policyType) {
 		return _delegate.getResourceHierarchies(policyType);
-	}
-
-	public Set<List<RangerResourceDef>> filterHierarchies_containsOnlyMandatoryResources(String policyType) {
-		Set<List<RangerResourceDef>> hierarchies = getResourceHierarchies(policyType);
-		Set<List<RangerResourceDef>> result = new HashSet<List<RangerResourceDef>>(hierarchies.size());
-		for (List<RangerResourceDef> aHierarchy : hierarchies) {
-			Set<String> mandatoryResources = getMandatoryResourceNames(aHierarchy);
-			if (aHierarchy.size() == mandatoryResources.size()) {
-				result.add(aHierarchy);
-			}
-		}
-		return result;
 	}
 
 	public Set<List<RangerResourceDef>> getResourceHierarchies(String policyType, Collection<String> keys) {
@@ -246,42 +162,6 @@ public class RangerServiceDefHelper {
 			LOG.debug("<== hierarchyHasAllResources(hierarchy=" + StringUtils.join(hierarchy, ",") + ", resourceNames=" + StringUtils.join(resourceNames, ",") + "): " + foundAllResourceKeys);
 		}
 		return foundAllResourceKeys;
-	}
-
-	public Set<String> getMandatoryResourceNames(List<RangerResourceDef> hierarchy) {
-		Set<String> result = new HashSet<String>(hierarchy.size());
-		for (RangerResourceDef resourceDef : hierarchy) {
-			if (Boolean.TRUE.equals(resourceDef.getMandatory())) {
-				result.add(resourceDef.getName());
-			}
-		}
-		return result;
-	}
-	
-	/**
-	 * Set view of a hierarchy's resource names for efficient searching
-	 * @param hierarchy
-	 * @return
-	 */
-	public Set<String> getAllResourceNames(List<RangerResourceDef> hierarchy) {
-		Set<String> result = new HashSet<String>(hierarchy.size());
-		for (RangerResourceDef resourceDef : hierarchy) {
-			result.add(resourceDef.getName());
-		}
-		return result;
-	}
-	
-	/**
-	 * Resources names matching the order of list of resource defs passed in.
-	 * @param hierarchy
-	 * @return
-	 */
-	public List<String> getAllResourceNamesOrdered(List<RangerResourceDef> hierarchy) {
-		List<String> result = new ArrayList<String>(hierarchy.size());
-		for (RangerResourceDef resourceDef : hierarchy) {
-			result.add(resourceDef.getName());
-		}
-		return result;
 	}
 
 	public boolean isResourceGraphValid() {

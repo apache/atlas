@@ -19,16 +19,15 @@ package org.apache.atlas.utils;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.annotation.EnableConditional;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Condition;
 import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
-import org.springframework.core.type.AnnotationMetadata;
+
+import java.util.Map;
 
 public class OnAtlasEnableCondition implements Condition {
     private final Logger LOG = LoggerFactory.getLogger(OnAtlasEnableCondition.class);
@@ -36,12 +35,13 @@ public class OnAtlasEnableCondition implements Condition {
     @Override
     public boolean matches(ConditionContext context, AnnotatedTypeMetadata metadata) {
         boolean matches = false;
-        String propertyName = (String) metadata.getAnnotationAttributes(EnableConditional.class.getName()).get("property");
+        Map<String, Object> attributes = metadata.getAnnotationAttributes(EnableConditional.class.getName());
+        String propertyName = (String) attributes.get("property");
         if (metadata instanceof AnnotatedTypeMetadata) {
 
             try {
                 Configuration configuration = ApplicationProperties.get();
-                boolean enabled = configuration.getBoolean(propertyName, true);
+                boolean enabled = configuration.getBoolean(propertyName, (boolean) attributes.get("isDefault"));
                 return enabled;
             } catch (AtlasException e) {
                 LOG.error("Unable to load atlas properties. Dependent bean configuration may fail");

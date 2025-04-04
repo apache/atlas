@@ -31,8 +31,9 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-client-v1</artifactId>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
         </dependency>
 
         <dependency>

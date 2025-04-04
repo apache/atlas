@@ -19,9 +19,8 @@ package org.apache.atlas.repository.converters;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.CreateUpdateEntitiesResult;
-import org.apache.atlas.EntityAuditEvent;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.model.EntityAuditEvent;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
@@ -223,63 +222,6 @@ public class AtlasInstanceConverter {
         }
 
         return entity;
-    }
-
-    public CreateUpdateEntitiesResult toCreateUpdateEntitiesResult(EntityMutationResponse reponse) {
-        CreateUpdateEntitiesResult ret = null;
-
-        if (reponse != null) {
-            Map<EntityOperation, List<AtlasEntityHeader>> mutatedEntities = reponse.getMutatedEntities();
-            Map<String, String>                           guidAssignments = reponse.getGuidAssignments();
-
-            ret = new CreateUpdateEntitiesResult();
-
-            if (MapUtils.isNotEmpty(guidAssignments)) {
-                ret.setGuidMapping(new GuidMapping(guidAssignments));
-            }
-
-            if (MapUtils.isNotEmpty(mutatedEntities)) {
-                EntityResult entityResult = new EntityResult();
-
-                for (Map.Entry<EntityOperation, List<AtlasEntityHeader>> e : mutatedEntities.entrySet()) {
-                    switch (e.getKey()) {
-                        case CREATE:
-                            List<AtlasEntityHeader> createdEntities = mutatedEntities.get(EntityOperation.CREATE);
-                            if (CollectionUtils.isNotEmpty(createdEntities)) {
-                                Collections.reverse(createdEntities);
-                                entityResult.set(EntityResult.OP_CREATED, getGuids(createdEntities));
-                            }
-                            break;
-                        case UPDATE:
-                            List<AtlasEntityHeader> updatedEntities = mutatedEntities.get(EntityOperation.UPDATE);
-                            if (CollectionUtils.isNotEmpty(updatedEntities)) {
-                                Collections.reverse(updatedEntities);
-                                entityResult.set(EntityResult.OP_UPDATED, getGuids(updatedEntities));
-                            }
-                            break;
-                        case PARTIAL_UPDATE:
-                            List<AtlasEntityHeader> partialUpdatedEntities = mutatedEntities.get(EntityOperation.PARTIAL_UPDATE);
-                            if (CollectionUtils.isNotEmpty(partialUpdatedEntities)) {
-                                Collections.reverse(partialUpdatedEntities);
-                                entityResult.set(EntityResult.OP_UPDATED, getGuids(partialUpdatedEntities));
-                            }
-                            break;
-                        case DELETE:
-                            List<AtlasEntityHeader> deletedEntities = mutatedEntities.get(EntityOperation.DELETE);
-                            if (CollectionUtils.isNotEmpty(deletedEntities)) {
-                                Collections.reverse(deletedEntities);
-                                entityResult.set(EntityResult.OP_DELETED, getGuids(deletedEntities));
-                            }
-                            break;
-                    }
-
-                }
-
-                ret.setEntityResult(entityResult);
-            }
-        }
-
-        return ret;
     }
 
     public List<String> getGuids(List<AtlasEntityHeader> entities) {

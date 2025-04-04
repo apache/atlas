@@ -24,8 +24,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.atlas.authorization.utils.JsonUtils;
-import org.apache.atlas.authorization.utils.StringUtil;
+import org.apache.atlas.authorization.utils.RangerUtil;
 import org.apache.atlas.plugin.contextenricher.RangerTagForEval;
 import org.apache.atlas.plugin.policyengine.RangerAccessRequest;
 import org.apache.atlas.plugin.policyengine.RangerAccessResource;
@@ -204,7 +203,7 @@ public final class RangerScriptExecutionContext {
 			}
 		}
 
-		String strRet = JsonUtils.objectToJson(ret);
+		String strRet = RangerUtil.objectToJson(ret);
 
 		RangerPerfTracer.log(perf);
 
@@ -463,7 +462,7 @@ public final class RangerScriptExecutionContext {
 		if (ret == null) {
 			logError("RangerScriptExecutionContext.getAsDate() - Could not convert [" + value + "] to Date using any of the Format-Strings: " + Arrays.toString(dateFormatStrings));
 		} else {
-			ret = StringUtil.getUTCDateForLocalDate(ret);
+			ret = RangerUtil.getUTCDateForLocalDate(ret);
 		}
 
 		return ret;

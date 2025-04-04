@@ -19,7 +19,6 @@
 package org.apache.atlas.repository.graphdb.janus;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -35,17 +34,12 @@ import org.janusgraph.core.JanusGraph;
 import org.janusgraph.core.JanusGraphException;
 import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.schema.JanusGraphManagement;
-import org.janusgraph.diskstorage.StandardIndexProvider;
-import org.janusgraph.diskstorage.StandardStoreManager;
-import org.janusgraph.diskstorage.solr.Solr6Index;
 import org.janusgraph.graphdb.database.serialize.attribute.SerializableSerializer;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.time.Duration;
@@ -124,52 +118,6 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         janusConfig.setProperty("attributes.custom.attribute4.serializer-class", BigDecimalSerializer.class.getName());
 
         return janusConfig;
-    }
-
-    static {
-        addHBase2Support();
-
-        addSolr6Index();
-    }
-
-    private static void addHBase2Support() {
-        try {
-            Field field = StandardStoreManager.class.getDeclaredField("ALL_MANAGER_CLASSES");
-            field.setAccessible(true);
-
-            Field modifiersField = Field.class.getDeclaredField("modifiers");
-            modifiersField.setAccessible(true);
-            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-
-            Map<String, String> customMap = new HashMap<>(StandardStoreManager.getAllManagerClasses());
-            customMap.put("hbase2", org.janusgraph.diskstorage.hbase2.HBaseStoreManager.class.getName());
-            ImmutableMap<String, String> immap = ImmutableMap.copyOf(customMap);
-            field.set(null, immap);
-
-            LOG.debug("Injected HBase2 support - {}", org.janusgraph.diskstorage.hbase2.HBaseStoreManager.class.getName());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    private static void addSolr6Index() {
-        try {
-            Field field = StandardIndexProvider.class.getDeclaredField("ALL_MANAGER_CLASSES");
-            field.setAccessible(true);
-
-            Field modifiersField = Field.class.getDeclaredField("modifiers");
-            modifiersField.setAccessible(true);
-            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
-
-            Map<String, String> customMap = new HashMap<>(StandardIndexProvider.getAllProviderClasses());
-            customMap.put("solr", Solr6Index.class.getName());
-            ImmutableMap<String, String> immap = ImmutableMap.copyOf(customMap);
-            field.set(null, immap);
-
-            LOG.debug("Injected solr6 index - {}", Solr6Index.class.getName());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
     }
 
     public static JanusGraph getGraphInstance() {

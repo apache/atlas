@@ -19,8 +19,8 @@ package org.apache.atlas.util;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.audit.EntityAuditRepository;
-import org.apache.atlas.repository.audit.HBaseBasedAuditRepository;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerV1;
 import org.apache.atlas.repository.store.graph.v1.SoftDeleteHandlerV1;
@@ -96,7 +96,7 @@ public class AtlasRepositoryConfiguration {
         try {
             Configuration config = ApplicationProperties.get();
             return ApplicationProperties.getClass(config,
-                    AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY, HBaseBasedAuditRepository.class.getName(), EntityAuditRepository.class);
+                    AUDIT_REPOSITORY_IMPLEMENTATION_PROPERTY, ESBasedAuditRepository.class.getName(), EntityAuditRepository.class);
         } catch (AtlasException e) {
             throw new RuntimeException(e);
         }
