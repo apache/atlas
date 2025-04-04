@@ -36,29 +36,30 @@ public class GremlinShellHelper {
     // .project('guid','edgeCount').by('__guid').by(both().count())
     public  Object getTopXSuperVertex(final int limit) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GremlinShellHelper.getTopXSuperVertex");
-        String edgeCount = "edgeCount";
+        String edgeCountLabel = "__edgeCount";
         try {
             return ((AtlasJanusGraph) graph).getGraph().traversal()
                     .V()
-                    .project(GUID_PROPERTY_KEY, TYPE_NAME_PROPERTY_KEY, edgeCount)
+                    .order()
+                    .by(both().count().as("edgeCount"), Order.desc)
+                    .limit(limit)
+                    .project(GUID_PROPERTY_KEY, TYPE_NAME_PROPERTY_KEY, edgeCountLabel)
                     .by(GUID_PROPERTY_KEY)
                     .by(TYPE_NAME_PROPERTY_KEY)
-                    .by(both().count())
-                    .order()
-                    .by(edgeCount, Order.desc)
-                    .limit(limit)
+                    .by("edgeCount")
                     .toStream()
                     .map(m -> {
                         Object guid = m.get(GUID_PROPERTY_KEY);
-                        Object edgeCountObj = m.get(edgeCount);
                         Object typeName = m.get(TYPE_NAME_PROPERTY_KEY);
+                        Object edgeCountObj = m.get(edgeCountLabel);
+
                         String guidStr = (guid != null) ? guid.toString() : "";
-                        String edgeCountStr = (edgeCountObj != null) ? edgeCountObj.toString() : "";
                         String typeNameStr = (typeName != null) ? typeName.toString() : "";
+                        String edgeCountStr = (edgeCountObj != null) ? edgeCountObj.toString() : "";
                         return new HashMap() {{
                             put(GUID_PROPERTY_KEY, guidStr);
-                            put(edgeCount, edgeCountStr);
                             put(TYPE_NAME_PROPERTY_KEY, typeNameStr);
+                            put(edgeCountLabel, edgeCountStr);
                         }};
                     }).collect(Collectors.toList());
         } catch (Exception e) {
