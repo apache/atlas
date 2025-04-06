@@ -23,7 +23,6 @@ import org.apache.atlas.model.impexp.AsyncImportStatus;
 import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
 import org.apache.atlas.repository.ogm.DataAccess;
-import org.apache.atlas.repository.ogm.impexp.AtlasAsyncImportRequestDTO;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
@@ -41,6 +40,8 @@ import java.util.Map;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.PROCESSING;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.SUCCESSFUL;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.WAITING;
+import static org.apache.atlas.repository.Constants.PROPERTY_KEY_ASYNC_IMPORT_ID;
+import static org.apache.atlas.repository.Constants.PROPERTY_KEY_ASYNC_IMPORT_STATUS;
 import static org.apache.atlas.repository.ogm.impexp.AtlasAsyncImportRequestDTO.ASYNC_IMPORT_TYPE_NAME;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.any;
@@ -138,12 +139,12 @@ public class AsyncImportServiceTest {
 
         try (MockedStatic<AtlasGraphUtilsV2> mockedStatic = mockStatic(AtlasGraphUtilsV2.class)) {
             mockedStatic.when(() -> AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(ASYNC_IMPORT_TYPE_NAME,
-                    Collections.singletonMap(AtlasAsyncImportRequestDTO.STATUS_PROPERTY, PROCESSING),
-                    AtlasAsyncImportRequestDTO.IMPORT_ID_PROPERTY)).thenReturn(Collections.singletonList("guid1"));
+                    Collections.singletonMap(PROPERTY_KEY_ASYNC_IMPORT_STATUS, PROCESSING),
+                    PROPERTY_KEY_ASYNC_IMPORT_ID)).thenReturn(Collections.singletonList("guid1"));
 
             mockedStatic.when(() -> AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(ASYNC_IMPORT_TYPE_NAME,
-                    Collections.singletonMap(AtlasAsyncImportRequestDTO.STATUS_PROPERTY, SUCCESSFUL),
-                    AtlasAsyncImportRequestDTO.IMPORT_ID_PROPERTY)).thenReturn(Collections.singletonList("guid2"));
+                    Collections.singletonMap(PROPERTY_KEY_ASYNC_IMPORT_STATUS, SUCCESSFUL),
+                    PROPERTY_KEY_ASYNC_IMPORT_ID)).thenReturn(Collections.singletonList("guid2"));
 
             List<String> result = asyncImportService.fetchInProgressImportIds();
 
@@ -167,12 +168,12 @@ public class AsyncImportServiceTest {
 
         try (MockedStatic<AtlasGraphUtilsV2> mockStatic = mockStatic(AtlasGraphUtilsV2.class)) {
             mockStatic.when(() -> AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(ASYNC_IMPORT_TYPE_NAME,
-                    Collections.singletonMap(AtlasAsyncImportRequestDTO.STATUS_PROPERTY, WAITING),
-                    AtlasAsyncImportRequestDTO.IMPORT_ID_PROPERTY)).thenReturn(Collections.singletonList("guid1"));
+                    Collections.singletonMap(PROPERTY_KEY_ASYNC_IMPORT_STATUS, WAITING),
+                    PROPERTY_KEY_ASYNC_IMPORT_ID)).thenReturn(Collections.singletonList("guid1"));
 
             mockStatic.when(() -> AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(ASYNC_IMPORT_TYPE_NAME,
-                    Collections.singletonMap(AtlasAsyncImportRequestDTO.STATUS_PROPERTY, PROCESSING),
-                    AtlasAsyncImportRequestDTO.IMPORT_ID_PROPERTY)).thenReturn(Collections.singletonList("guid2"));
+                    Collections.singletonMap(PROPERTY_KEY_ASYNC_IMPORT_STATUS, PROCESSING),
+                    PROPERTY_KEY_ASYNC_IMPORT_ID)).thenReturn(Collections.singletonList("guid2"));
 
             List<String> result = asyncImportService.fetchQueuedImportRequests();
 

@@ -42,6 +42,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityImportStream;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.atlas.utils.AtlasAsyncImportTestUtil;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasStringUtil;
 import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
@@ -340,6 +341,8 @@ public class ImportService implements AsyncImporter {
             if (importRequest == null) {
                 throw new AtlasBaseException(AtlasErrorCode.IMPORT_NOT_FOUND, importId);
             }
+
+            AtlasAsyncImportTestUtil.intercept(importRequest);
 
             if (importRequest.getImportDetails().getTotalEntitiesCount() == importRequest.getImportDetails().getImportedEntitiesCount()) {
                 importRequest.setStatus(AtlasAsyncImportRequest.ImportStatus.SUCCESSFUL);
