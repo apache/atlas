@@ -869,6 +869,13 @@
 
     <dependencyManagement>
         <dependencies>
+
+            <dependency>
+                <groupId>com.datastax.oss</groupId>
+                <artifactId>java-driver-core</artifactId>
+                <version>4.15.0</version> <!-- Use the latest version -->
+            </dependency>
+
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-core</artifactId>

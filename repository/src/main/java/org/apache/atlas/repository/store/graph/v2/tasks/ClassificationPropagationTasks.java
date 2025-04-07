@@ -20,6 +20,7 @@ package org.apache.atlas.repository.store.graph.v2.tasks;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
@@ -40,9 +41,11 @@ public class ClassificationPropagationTasks {
             String entityGuid               = (String) parameters.get(PARAM_ENTITY_GUID);
             String classificationVertexId   = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
             String relationshipGuid         = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
+            String tagTypeName              = (String) parameters.get(Constants.TASK_CLASSIFICATION_TYPENAME);
+
             Boolean previousRestrictPropagationThroughLineage = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
             Boolean previousRestrictPropagationThroughHierarchy = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
-            entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage,previousRestrictPropagationThroughHierarchy);
+            entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, tagTypeName, previousRestrictPropagationThroughLineage,previousRestrictPropagationThroughHierarchy);
         }
     }
 
