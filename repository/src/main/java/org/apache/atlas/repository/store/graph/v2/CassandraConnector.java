@@ -52,7 +52,7 @@ public class CassandraConnector {
     //private static String SELECT_ALL_TAGS_FOR_ASSET = "SELECT * FROM tags where bucket = %s AND id = '%s'";
     //private static String SELECT_PROPAGATED_TAGS = "SELECT * FROM propagated_tags where bucket = %s AND id = '%s' AND tag_type_name = '%s'";
 
-    private static String INSERT_PROPAGATED_TAG = "INSERT into tag_propagated ('bucket', 'id', 'tag_type_name', 'source_id') values (%s, '%s', '%s', '%s')";
+    private static String INSERT_PROPAGATED_TAG = "INSERT into tag_propagated (bucket, id, tag_type_name, source_id) values (%s, '%s', '%s', '%s')";
 
     static {
         try {
@@ -181,7 +181,7 @@ public class CassandraConnector {
             String columnName = column.getName().toString();
             Object columnValue = row.getObject(columnName);
 
-            if (columnName.equals("json_data") || columnName.equals("tag_metadata_json")) {
+            if (columnName.equals("json_data") || columnName.equals("tag_meta_json")) {
                 Map<String, Object> interimValue;
                 try {
                     interimValue = objectMapper.readValue(columnValue.toString(), new TypeReference<Map<String, Object>>() {});

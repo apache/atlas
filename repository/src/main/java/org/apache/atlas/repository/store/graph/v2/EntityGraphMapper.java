@@ -102,6 +102,7 @@ import static org.apache.atlas.model.tasks.AtlasTask.Status.IN_PROGRESS;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAME_DELIMITER;
+import static org.apache.atlas.repository.graph.FullTextMapperV2.FULL_TEXT_DELIMITER;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
 import static org.apache.atlas.repository.graph.GraphHelper.getCollectionElementsUsingRelationship;
@@ -3547,6 +3548,7 @@ public class EntityGraphMapper {
             List<String> edgeLabelsToCheck = CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode);
             Boolean toExclude = propagationMode == CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE ? true:false;
             List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV2(entityVertex, null, classificationVertexId, edgeLabelsToCheck,toExclude);
+            impactedVertices.remove(entityVertex);
 
             if (CollectionUtils.isEmpty(impactedVertices)) {
                 LOG.debug("propagateClassification(entityGuid={}, tagTypeName={}): found no entities to propagate the classification", entityGuid, tagTypeName);
@@ -4819,38 +4821,43 @@ public class EntityGraphMapper {
                 // Assuming above entity brings all current tags associated with asset
 
                 if (entity != null) {
+                    List<AtlasClassification> tags = entity.getClassifications();
                     Map<String, Object> deNormAttributes= new HashMap<>();
 
-                    String classificationTextForEntity = fullTextMapperV2.getClassificationTextForEntity(entity);
-                    deNormAttributes.put(CLASSIFICATION_TEXT_KEY, classificationTextForEntity);
+                    if (CollectionUtils.isNotEmpty(tags)) {
+                        String classificationTextForEntity = fullTextMapperV2.getClassificationTextForEntity(entity);
+                        deNormAttributes.put(CLASSIFICATION_TEXT_KEY, classificationTextForEntity);
 
-                    List<AtlasClassification> tags = entity.getClassifications();
-
-                    //filter direct attachments
-                    List<String> traits = tags.stream()
-                            .filter(tag -> classification.getEntityGuid().equals(tag.getEntityGuid()))
-                            .map(AtlasStruct::getTypeName)
-                            .collect(Collectors.toList());
-                    deNormAttributes.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, traits);
+                        //filter direct attachments
+                        List<String> traits = tags.stream()
+                                .filter(tag -> classification.getEntityGuid().equals(tag.getEntityGuid()))
+                                .map(AtlasStruct::getTypeName)
+                                .collect(Collectors.toList());
+                        deNormAttributes.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, traits);
 
 
-                    StringBuilder finalTagNames = new StringBuilder();
-                    List<String> propTraits = tags.stream()
-                            .filter(t -> !classification.getEntityGuid().equals(t.getEntityGuid()))
-                            .map(AtlasStruct::getTypeName)
-                            .toList();
-                    propTraits.forEach(tagName -> finalTagNames.append(CLASSIFICATION_NAME_DELIMITER).append(tagName));
+                        StringBuilder finalTagNames = new StringBuilder();
+                        List<String> propTraits = tags.stream()
+                                .filter(t -> !classification.getEntityGuid().equals(t.getEntityGuid()))
+                                .map(AtlasStruct::getTypeName)
+                                .toList();
+                        propTraits.forEach(tagName -> finalTagNames.append(CLASSIFICATION_NAME_DELIMITER).append(tagName));
 
-                    deNormAttributes.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, finalTagNames);
+                        deNormAttributes.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, finalTagNames);
+                    } else {
+                        String currentTagName = classification.getTypeName();
+                        // This might be temporary path as when we handle read path, we will always see at least one tag in entity
+                        deNormAttributes.put(CLASSIFICATION_TEXT_KEY, currentTagName + FULL_TEXT_DELIMITER);
+                        deNormAttributes.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, Collections.singletonList(currentTagName));
+                        deNormAttributes.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, CLASSIFICATION_NAME_DELIMITER + currentTagName);
+                    }
 
                     deNormAttributesMap.put(vertex.getIdForDisplay(), deNormAttributes);
                     propagatedEntities.add(entity);
                 }
-
-                RequestContext.get().endMetricRecord(metricRecorder);
-
             }
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
         return propagatedEntities;
     }
 

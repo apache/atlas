@@ -1107,30 +1107,6 @@ public abstract class DeleteHandlerV1 {
         entityVertex.setProperty(PROPAGATED_CLASSIFICATION_NAMES_KEY, getDelimitedPropagatedClassificationNames(entityVertex, classificationName));
     }
 
-    private void addToPropagatedClassificationNamesNew(Map<String, Object> entityPropertiesMap, String classificationName) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("addToPropagatedClassificationNamesNew");
-
-        List<String> traits = (List<String>) entityPropertiesMap.get(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
-        if (traits == null) {
-            traits = new ArrayList<>();
-        }
-        traits.add(classificationName);
-        entityPropertiesMap.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, traits);
-
-
-        String tagNames = (String) entityPropertiesMap.get(PROPAGATED_CLASSIFICATION_NAMES_KEY);
-
-        if (StringUtils.isEmpty(tagNames)) {
-            tagNames = CLASSIFICATION_NAME_DELIMITER + classificationName + CLASSIFICATION_NAME_DELIMITER;
-        } else {
-            tagNames = tagNames + classificationName + CLASSIFICATION_NAME_DELIMITER;
-        }
-
-        entityPropertiesMap.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, tagNames);
-
-        RequestContext.get().endMetricRecord(recorder);
-    }
-
     public void removeFromPropagatedClassificationNames(AtlasVertex entityVertex, String classificationName) {
         if (entityVertex != null && StringUtils.isNotEmpty(classificationName)) {
             if (LOG.isDebugEnabled()) {

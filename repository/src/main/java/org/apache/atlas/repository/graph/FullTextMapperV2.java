@@ -57,7 +57,7 @@ import java.util.Set;
 public class FullTextMapperV2 implements IFullTextMapper {
     private static final Logger LOG = LoggerFactory.getLogger(FullTextMapperV2.class);
 
-    private static final String FULL_TEXT_DELIMITER                  = " ";
+    public static final String FULL_TEXT_DELIMITER                  = " ";
     private static final String FULL_TEXT_FOLLOW_REFERENCES          = "atlas.search.fulltext.followReferences";
     private static final String FULL_TEXT_EXCLUDE_ATTRIBUTE_PROPERTY = "atlas.search.fulltext.type";
 

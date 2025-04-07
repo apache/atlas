@@ -830,10 +830,8 @@ public class EntityGraphRetriever {
             while (!verticesAtCurrentLevel.isEmpty()) {
                 Set<String> verticesToVisitNextLevel = new HashSet<>();
                 List<CompletableFuture<Set<String>>> futures = verticesAtCurrentLevel.stream()
-                        .map(vertexId -> {
-                            AtlasVertex entityVertex = graph.getVertex(vertexId);
-                            Map<String, Object> assetMap = CassandraConnector.getVertexProperties(vertexId);
-
+                        .map(t -> {
+                            AtlasVertex entityVertex = graph.getVertex(t);
                             visitedVerticesIds.add(entityVertex.getIdForDisplay());
                             // If we want to store vertices without classification attached
                             // Check if vertices has classification attached or not using function isClassificationAttached
@@ -842,11 +840,7 @@ public class EntityGraphRetriever {
                                 verticesWithOutClassification.add(entityVertex.getIdForDisplay());
                             }
 
-                            if (assetMap == null) {
-                                LOG.error("assetMap is null for id {}", vertexId);
-                            }
-                            String entityTypeName = (String) assetMap.get("__typeName");
-                            return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, entityTypeName, classificationId,
+                            return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, classificationId,
                                     relationshipGuidToExclude, edgeLabelsToCheck,toExclude, visitedVerticesIds), executorService);
                         }).collect(Collectors.toList());
 
@@ -869,11 +863,10 @@ public class EntityGraphRetriever {
         requestContext.endMetricRecord(metricRecorder);
     }
 
-    private Set<String> getAdjacentVerticesIds(AtlasVertex entityVertex, String entityTypeName,
-                                               final String classificationId, final String relationshipGuidToExclude,
-                                               List<String> edgeLabelsToCheck,Boolean toExclude, Set<String> visitedVerticesIds) {
+    private Set<String> getAdjacentVerticesIds(AtlasVertex entityVertex,final String classificationId, final String relationshipGuidToExclude
+            ,List<String> edgeLabelsToCheck,Boolean toExclude, Set<String> visitedVerticesIds) {
 
-        AtlasEntityType         entityType          = typeRegistry.getEntityTypeByName(entityTypeName);
+        AtlasEntityType         entityType          = typeRegistry.getEntityTypeByName(getTypeName(entityVertex));
         String[]                tagPropagationEdges = entityType != null ? entityType.getTagPropagationEdgesArray() : null;
         Set<String>             ret                 = new HashSet<>();
         RequestContext          requestContext      = RequestContext.get();
