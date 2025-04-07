@@ -113,21 +113,15 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                             assetGuid, productGuid, operation, edgeLabel);
                 }
 
-                if (assetDenormAttribute.equals(PRODUCT_ASSET_OUTPUT_PORT_ATTR)) {
+                if (StringUtils.isEmpty(edgeLabel)) {
                     AtlasVertex updatedVertex = processProductAssetLink(assetGuid, productGuid, operation, assetDenormAttribute);
                     if (!updatedVertices.contains(updatedVertex)) {
                         updatedVertices.add(updatedVertex);
                     }
                 } else {
-                    if (StringUtils.isEmpty(edgeLabel)) {
-                        AtlasVertex updatedVertex = processProductAssetLink(assetGuid, productGuid, operation, assetDenormAttribute);
-                        if (!updatedVertices.contains(updatedVertex)) {
-                            updatedVertices.add(updatedVertex);
-                        }
-                    } else {
-                        processProductAssetInputRelation(assetGuid, productGuid, operation, edgeLabel);
-                    }
+                    processProductAssetInputRelation(assetGuid, productGuid, operation, edgeLabel);
                 }
+
             }
             handleEntityMutation(updatedVertices);
             commitChanges();
