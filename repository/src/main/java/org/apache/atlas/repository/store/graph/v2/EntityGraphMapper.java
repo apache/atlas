@@ -3643,7 +3643,7 @@ public class EntityGraphMapper {
 
                 AtlasClassification classification                  = entityRetriever.toAtlasClassification(tagAsMap);
                 List<AtlasEntity>   propagatedEntitiesChunked       = updateClassificationTextNew(classification, chunkedVerticesToPropagate, deNormAttributesMap);
-                entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), false);
+                //entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), false);
 
                 offset += CHUNK_SIZE;
 
@@ -4804,7 +4804,17 @@ public class EntityGraphMapper {
 
         if(CollectionUtils.isNotEmpty(propagatedVertices)) {
             for(AtlasVertex vertex : propagatedVertices) {
-                AtlasEntity entity = null;
+                //TODO: get current associated tags to asset
+                Map<String, Object> deNormAttributes= new HashMap<>();
+                String currentTagName = classification.getTypeName();
+                // This might be temporary path as when we handle read path, we will always see at least one tag in entity
+                deNormAttributes.put(CLASSIFICATION_TEXT_KEY, currentTagName + FULL_TEXT_DELIMITER);
+                deNormAttributes.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, Collections.singletonList(currentTagName));
+                deNormAttributes.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, CLASSIFICATION_NAME_DELIMITER + currentTagName);
+
+                deNormAttributesMap.put(vertex.getIdForDisplay(), deNormAttributes);
+
+                /*AtlasEntity entity = null;
                 for (int i = 1; i <= MAX_NUMBER_OF_RETRIES; i++) {
                     try {
                         entity = instanceConverter.getAndCacheEntity(graphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
@@ -4854,7 +4864,7 @@ public class EntityGraphMapper {
 
                     deNormAttributesMap.put(vertex.getIdForDisplay(), deNormAttributes);
                     propagatedEntities.add(entity);
-                }
+                }*/
             }
         }
         RequestContext.get().endMetricRecord(metricRecorder);
