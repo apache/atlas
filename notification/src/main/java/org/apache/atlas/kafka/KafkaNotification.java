@@ -20,7 +20,9 @@ package org.apache.atlas.kafka;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.notification.AbstractNotification;
 import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
@@ -50,6 +52,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import static org.apache.atlas.security.SecurityProperties.TLS_ENABLED;
@@ -451,8 +454,19 @@ public class KafkaNotification extends AbstractNotification implements Service {
     }
 
     @Override
-    public void addTopicToNotificationType(NotificationType notificationType, String topic) {
-        CONSUMER_TOPICS_MAP.computeIfAbsent(notificationType, k -> new ArrayList<>()).add(topic);
+    public void addTopicToNotificationType(NotificationType notificationType, String topic) throws AtlasBaseException {
+        try (AdminClient adminClient = AdminClient.create(this.properties)) {
+            // checking if a topic exists with the name before adding to consumers.
+            if (adminClient.listTopics().names().get().contains(topic)) {
+                CONSUMER_TOPICS_MAP.computeIfAbsent(notificationType, k -> new ArrayList<>()).add(topic);
+                return;
+            }
+            LOG.error("Error while adding topic: {}, topic not found", topic);
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_TOPIC_NAME);
+        } catch (ExecutionException | InterruptedException e) {
+            LOG.error("Error while adding topic: {}", topic);
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_TOPIC_NAME, e);
+        }
     }
 
     @Override

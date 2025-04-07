@@ -215,7 +215,7 @@ public class NotificationHookConsumerKafkaTest {
         return (AtlasKafkaConsumer) kafkaNotification.createConsumers(notificationType, 1, autoCommitEnabled).get(0);
     }
 
-    void addTopicToNotification(NotificationInterface.NotificationType notificationType, KafkaNotification kafkaNotification, String topic) {
+    void addTopicToNotification(NotificationInterface.NotificationType notificationType, KafkaNotification kafkaNotification, String topic) throws AtlasBaseException {
         kafkaNotification.addTopicToNotificationType(notificationType, topic);
     }
 

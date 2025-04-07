@@ -541,7 +541,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         startConsumers(hookConsumers);
     }
 
-    public void startAsyncImportConsumer(NotificationType notificationType, String importId, String topic) {
+    public void startAsyncImportConsumer(NotificationType notificationType, String importId, String topic) throws AtlasBaseException {
         if (topic != null) {
             notificationInterface.addTopicToNotificationType(notificationType, topic);
         }

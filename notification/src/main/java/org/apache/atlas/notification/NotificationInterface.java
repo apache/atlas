@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.notification;
 
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.notification.MessageSource;
 import org.apache.atlas.notification.entity.EntityMessageDeserializer;
 import org.apache.atlas.notification.hook.HookMessageDeserializer;
@@ -115,7 +116,7 @@ public interface NotificationInterface {
      * @param notificationType The type of notification to which the topic should be added.
      * @param topic The name of the topic to be associated with the notification type.
      */
-    default void addTopicToNotificationType(NotificationType notificationType, String topic) {}
+    default void addTopicToNotificationType(NotificationType notificationType, String topic) throws AtlasBaseException {}
 
     /**
      * Closes the producer associated with the specified notification type and topic.
