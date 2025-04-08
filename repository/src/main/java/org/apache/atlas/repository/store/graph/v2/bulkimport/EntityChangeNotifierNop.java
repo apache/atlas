@@ -53,6 +53,11 @@ public class EntityChangeNotifierNop implements IAtlasEntityChangeNotifier {
     }
 
     @Override
+    public void onClassificationPropagationAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications, boolean forceInline) throws AtlasBaseException {
+
+    }
+
+    @Override
     public void onClassificationDeletedFromEntity(AtlasEntity entity, List<AtlasClassification> deletedClassifications) throws AtlasBaseException {
 
     }

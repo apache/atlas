@@ -39,6 +39,8 @@ public interface IAtlasEntityChangeNotifier {
 
     void onClassificationsAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications, boolean forceInline) throws AtlasBaseException;
 
+    void onClassificationPropagationAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications, boolean forceInline) throws AtlasBaseException;
+
     void onClassificationDeletedFromEntity(AtlasEntity entity, List<AtlasClassification> deletedClassifications) throws AtlasBaseException;
 
     void onClassificationsDeletedFromEntities(List<AtlasEntity> entities, List<AtlasClassification> deletedClassifications) throws AtlasBaseException;

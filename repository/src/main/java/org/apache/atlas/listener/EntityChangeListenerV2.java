@@ -83,6 +83,9 @@ public interface EntityChangeListenerV2 {
      */
     void onClassificationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException;
 
+
+    void onClassificationPropagationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException;
+
     /**
      * This is upon updating classifications to an entity.
      *

@@ -3702,8 +3702,8 @@ public class EntityGraphMapper {
                 Map<String, Map<String, Object>> deNormAttributesMap = new HashMap<>();
 
                 AtlasClassification classification                  = entityRetriever.toAtlasClassification(tagAsMap);
-                List<AtlasEntity>   propagatedEntitiesChunked       = updateClassificationTextNew(classification, chunkedVerticesToPropagate, deNormAttributesMap);
-                //entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), false);
+                List<AtlasEntity>   propagatedEntitiesChunked  = updateClassificationTextNew(classification, chunkedVerticesToPropagate, deNormAttributesMap);
+                entityChangeNotifier.onClassificationPropagationAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), false);
 
                 offset += CHUNK_SIZE;
 
@@ -4861,9 +4861,14 @@ public class EntityGraphMapper {
                                                   Map<String, Map<String, Object>> deNormAttributesMap) throws AtlasBaseException {
         List<AtlasEntity> propagatedEntities = new ArrayList<>();
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateClassificationAttrs");
+        Set<String> attributes = new HashSet<>();
+        attributes.add(QUALIFIED_NAME);
+        attributes.add(NAME);
 
         if(CollectionUtils.isNotEmpty(propagatedVertices)) {
             for(AtlasVertex vertex : propagatedVertices) {
+                AtlasEntity entity = new AtlasEntity(retrieverNoRelation.mapVertexToAtlasEntityHeaderWithPrefetch(vertex, attributes));
+
                 //TODO: get current associated tags to asset
                 Map<String, Object> deNormAttributes= new HashMap<>();
                 String currentTagName = classification.getTypeName();
@@ -4873,6 +4878,8 @@ public class EntityGraphMapper {
                 deNormAttributes.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, CLASSIFICATION_NAME_DELIMITER + currentTagName);
 
                 deNormAttributesMap.put(vertex.getIdForDisplay(), deNormAttributes);
+
+                propagatedEntities.add(entity);
 
                 /*AtlasEntity entity = null;
                 for (int i = 1; i <= MAX_NUMBER_OF_RETRIES; i++) {
