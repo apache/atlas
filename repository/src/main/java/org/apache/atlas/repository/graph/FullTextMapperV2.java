@@ -199,7 +199,8 @@ public class FullTextMapperV2 implements IFullTextMapper {
         }
     }
 
-    private void mapAttributes(AtlasStructType structType, Map<String, Object> attributes, AtlasEntityExtInfo entityExtInfo, StringBuilder sb,
+    @Override
+    public void mapAttributes(AtlasStructType structType, Map<String, Object> attributes, AtlasEntityExtInfo entityExtInfo, StringBuilder sb,
                                Set<String> processedGuids, Set<String> excludeAttributes, boolean isClassificationOnly) throws AtlasBaseException {
         if (MapUtils.isEmpty(attributes)) {
             return;
