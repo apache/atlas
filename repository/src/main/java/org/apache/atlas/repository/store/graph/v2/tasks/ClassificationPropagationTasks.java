@@ -26,11 +26,14 @@ import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.type.AtlasType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.Set;
 
 public class ClassificationPropagationTasks {
+    private static final Logger LOG      = LoggerFactory.getLogger(ClassificationPropagationTasks.class);
     public static class Add extends ClassificationTask {
         public Add(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
             super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
@@ -42,10 +45,18 @@ public class ClassificationPropagationTasks {
             String classificationVertexId   = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
             String relationshipGuid         = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
             String tagTypeName              = (String) parameters.get(Constants.TASK_CLASSIFICATION_TYPENAME);
+            Boolean mode                    = (Boolean) parameters.get("newMode");
 
             Boolean previousRestrictPropagationThroughLineage = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
             Boolean previousRestrictPropagationThroughHierarchy = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
-            entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, tagTypeName, previousRestrictPropagationThroughLineage,previousRestrictPropagationThroughHierarchy);
+
+            if (mode != null && mode) {
+                LOG.info("via new mode");
+                entityGraphMapper.propagateClassificationNew(entityGuid, classificationVertexId, tagTypeName, previousRestrictPropagationThroughLineage, previousRestrictPropagationThroughHierarchy);
+            } else {
+                LOG.info("via old mode");
+                entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage, previousRestrictPropagationThroughHierarchy);
+            }
         }
     }
 
