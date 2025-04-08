@@ -67,6 +67,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
     private final AtlasRelationshipStoreV2 relationshipStoreV2;
     private final IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier;
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
+    private static final HashMap<String, AtlasEntity> guidEntityMap = new HashMap<>();
 
 
 
@@ -99,6 +100,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                 String productGuid = lineageOperation.getProductGuid();
                 BusinessLineageRequest.OperationType operation = lineageOperation.getOperation();
                 String edgeLabel = lineageOperation.getEdgeLabel();
+                String assetDenormAttribute = lineageOperation.getAssetDenormAttribute();
 
                 if (StringUtils.isEmpty(assetGuid) || StringUtils.isEmpty(productGuid) || operation == null) {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Invalid lineage operation");
@@ -113,13 +115,14 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                 }
 
                 if (StringUtils.isEmpty(edgeLabel)) {
-                    AtlasVertex updatedVertex = processProductAssetLink(assetGuid, productGuid, operation);
+                    AtlasVertex updatedVertex = processProductAssetLink(assetGuid, productGuid, operation, assetDenormAttribute);
                     if (!updatedVertices.contains(updatedVertex)) {
                         updatedVertices.add(updatedVertex);
                     }
                 } else {
                     processProductAssetInputRelation(assetGuid, productGuid, operation, edgeLabel);
                 }
+
             }
             handleEntityMutation(updatedVertices);
             commitChanges();
@@ -131,7 +134,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         }
     }
 
-    public AtlasVertex processProductAssetLink (String assetGuid, String productGuid, BusinessLineageRequest.OperationType operation) throws AtlasBaseException {
+    public AtlasVertex processProductAssetLink (String assetGuid, String productGuid, BusinessLineageRequest.OperationType operation, String assetDenormAttribute) throws AtlasBaseException {
         try {
             AtlasVertex assetVertex = entityRetriever.getEntityVertex(assetGuid);
             AtlasVertex productVertex = entityRetriever.getEntityVertex(productGuid);
@@ -143,10 +146,10 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
 
             switch (operation) {
                 case ADD:
-                    linkProductToAsset (assetVertex, productGuid);
+                    linkProductToAsset (assetVertex, productGuid, assetDenormAttribute);
                     break;
                 case REMOVE:
-                    unlinkProductFromAsset (assetVertex, productGuid);
+                    unlinkProductFromAsset (assetVertex, productGuid, assetDenormAttribute);
                     break;
                 default:
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Invalid operation type");
@@ -184,21 +187,21 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         }
     }
 
-    public void linkProductToAsset (AtlasVertex assetVertex, String productGuid) throws AtlasBaseException {
+    public void linkProductToAsset (AtlasVertex assetVertex, String productGuid, String assetDenormAttribute) throws AtlasBaseException {
         try {
             String typeName = assetVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
             if (excludedTypes.contains(typeName)){
                 LOG.warn("Type {} is not allowed to link with PRODUCT entity", typeName);
             }
-            Set<String> existingValues = assetVertex.getMultiValuedSetProperty(PRODUCT_GUIDS_ATTR, String.class);
+            Set<String> existingValues = assetVertex.getMultiValuedSetProperty(assetDenormAttribute, String.class);
 
             if (!existingValues.contains(productGuid)) {
-                assetVertex.setProperty(PRODUCT_GUIDS_ATTR, productGuid);
+                assetVertex.setProperty(assetDenormAttribute, productGuid);
                 existingValues.add(productGuid);
 
                 updateModificationMetadata(assetVertex);
 
-                cacheDifferentialMeshEntity(assetVertex, existingValues);
+                cacheDifferentialMeshEntity(assetVertex, existingValues, assetDenormAttribute);
 
             }
         } catch (Exception e){
@@ -207,17 +210,17 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         }
     }
 
-    public void unlinkProductFromAsset (AtlasVertex assetVertex, String productGuid) throws AtlasBaseException {
+    public void unlinkProductFromAsset (AtlasVertex assetVertex, String productGuid, String assetDenormAttribute) throws AtlasBaseException {
         try {
-            Set<String> existingValues = assetVertex.getMultiValuedSetProperty(PRODUCT_GUIDS_ATTR, String.class);
+            Set<String> existingValues = assetVertex.getMultiValuedSetProperty(assetDenormAttribute, String.class);
 
             if (existingValues.contains(productGuid)) {
                 existingValues.remove(productGuid);
-                assetVertex.removePropertyValue(PRODUCT_GUIDS_ATTR, productGuid);
+                assetVertex.removePropertyValue(assetDenormAttribute, productGuid);
 
                 updateModificationMetadata(assetVertex);
 
-                cacheDifferentialMeshEntity(assetVertex, existingValues);
+                cacheDifferentialMeshEntity(assetVertex, existingValues, assetDenormAttribute);
             }
         } catch (Exception e){
             LOG.error("Error while unlinking product from asset", e);
@@ -288,12 +291,21 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void cacheDifferentialMeshEntity(AtlasVertex ev, Set<String> existingValues) {
-        AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+    private void cacheDifferentialMeshEntity(AtlasVertex ev, Set<String> existingValues, String assetDenormAttribute) {
+        AtlasEntity diffEntity;
+        String assetGuid = ev.getProperty(GUID_PROPERTY_KEY, String.class);
+
+        if (guidEntityMap.containsKey(assetGuid)) {
+            diffEntity = guidEntityMap.get(assetGuid);
+        } else {
+            diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+            guidEntityMap.put(assetGuid, diffEntity);
+        }
+
         diffEntity.setGuid(ev.getProperty(GUID_PROPERTY_KEY, String.class));
         diffEntity.setUpdatedBy(ev.getProperty(MODIFIED_BY_KEY, String.class));
         diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
-        diffEntity.setAttribute(PRODUCT_GUIDS_ATTR, existingValues);
+        diffEntity.setAttribute(assetDenormAttribute, existingValues);
 
         RequestContext requestContext = RequestContext.get();
         requestContext.cacheDifferentialEntity(diffEntity);
