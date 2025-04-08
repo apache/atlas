@@ -6,4 +6,6 @@ import java.util.List;
 
 public interface TagDAO {
     List<AtlasClassification> getTagsForVertex(String vertexId);
+    AtlasClassification findTagByVertexIdAndTagTypeName(String assetVertexId, String tagTypeName);
+
 }

@@ -30,12 +30,13 @@ import static org.apache.atlas.repository.store.graph.v2.CassandraConnector.CASS
 @Repository
 public class TagDAOCassandraImpl implements TagDAO {
     private static final Logger LOG = LoggerFactory.getLogger(TagDAOCassandraImpl.class);
-    private static int BUCKET_POWER = 6;
+    private static int BUCKET_POWER = 5;
     private static String KEYSPACE = null;
     private static final String CASSANDRA_BUCKET_POWER = "atlas.graph.new.bucket.power";
     public static final String CASSANDRA_NEW_KEYSPACE_PROPERTY = "atlas.graph.new.keyspace";
     private final CqlSession cassSession;
     private final PreparedStatement findTagsStmt;
+    private final PreparedStatement findTagsByVertexIdAndTypeNameStmt;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public TagDAOCassandraImpl() {
@@ -49,7 +50,10 @@ public class TagDAOCassandraImpl implements TagDAO {
 
             // Prepare statements for reuse
             findTagsStmt = cassSession.prepare(
-                    "SELECT * FROM tags.tag_direct_attachments WHERE id = ? AND bucket = ?"
+                    "SELECT * FROM tags.effective_tags WHERE id = ? AND bucket = ?"
+            );
+            findTagsByVertexIdAndTypeNameStmt = cassSession.prepare(
+                    "SELECT * FROM tags.effective_tags where bucket = ? AND id = ? AND tag_type_name = ?"
             );
         } catch (Exception e) {
             LOG.error("Failed to initialize TagDAO", e);
@@ -72,9 +76,7 @@ public class TagDAOCassandraImpl implements TagDAO {
                         row.getString("tag_meta_json"),
                         row.getString("tag_type_name")
                 );
-                if (classification != null) {
-                    tags.add(classification);
-                }
+                tags.add(classification);
             }
         } catch (Exception e) {
             LOG.error("Error fetching tags for asset {}", vertexId, e);
@@ -85,17 +87,35 @@ public class TagDAOCassandraImpl implements TagDAO {
         return tags;
     }
 
+    @Override
+    public AtlasClassification findTagByVertexIdAndTagTypeName(String vertexId, String tagTypeName) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findTagByVertexIdAndTagTypeName");
+        try {
+            int bucket = calculateBucket(vertexId);
+            BoundStatement bound = findTagsByVertexIdAndTypeNameStmt.bind(bucket, vertexId, tagTypeName);
+            ResultSet rs = cassSession.execute(bound);
+
+            for (Row row : rs) {
+                AtlasClassification classification = convertToAtlasClassification(
+                        row.getString("tag_meta_json"),
+                        row.getString("tag_type_name")
+                );
+                return classification;
+            }
+            LOG.info("Returning null for tag {}", vertexId);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+        return null;
+    }
+
     private AtlasClassification convertToAtlasClassification(String tagMetaJson, String tag_type_name) {
         try {
             Map jsonMap = objectMapper.readValue(tagMetaJson, Map.class);
             AtlasClassification classification = new AtlasClassification();
 
-            // Set basic properties
             classification.setTypeName((String) jsonMap.get("__typeName"));
             classification.setEntityGuid((String) jsonMap.get("__entityGuid"));
-
-
-            // Set propagation flags
             classification.setPropagate((Boolean) jsonMap.get("__propagate"));
             classification.setRemovePropagationsOnEntityDelete((Boolean) jsonMap.get("__removePropagations"));
             classification.setRestrictPropagationThroughLineage((Boolean) jsonMap.get("__restrictPropagationThroughLineage"));
@@ -129,7 +149,8 @@ public class TagDAOCassandraImpl implements TagDAO {
     }
 
     private int calculateBucket(String vertexId) {
-        int numBuckets = 1 << BUCKET_POWER; // 2^6=64
+        int numBuckets = 1 << BUCKET_POWER; // 2^5=32
         return Integer.parseInt(vertexId) % numBuckets;
     }
+
 }
