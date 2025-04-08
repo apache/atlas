@@ -102,6 +102,7 @@ import static org.apache.atlas.model.tasks.AtlasTask.Status.IN_PROGRESS;
 import static org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef.Cardinality.SET;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAME_DELIMITER;
+import static org.apache.atlas.repository.graph.FullTextMapperV2.FULL_TEXT_DELIMITER;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
 import static org.apache.atlas.repository.graph.GraphHelper.getCollectionElementsUsingRelationship;
@@ -3512,8 +3513,68 @@ public class EntityGraphMapper {
         }
     }
 
+    public List<String> propagateClassification(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean previousRestrictPropagationThroughLineage,Boolean previousRestrictPropagationThroughHierarchy) throws AtlasBaseException {
+        try {
 
-    public void propagateClassification(String entityGuid, String classificationVertexId, String tagTypeName, Boolean previousRestrictPropagationThroughLineage,Boolean previousRestrictPropagationThroughHierarchy) throws AtlasBaseException {
+            if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(classificationVertexId)) {
+                LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): entityGuid and/or classification vertex id is empty", entityGuid, classificationVertexId);
+
+                throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, classificationVertexId=%s): entityGuid and/or classification vertex id is empty", entityGuid, classificationVertexId));
+            }
+
+            AtlasVertex entityVertex = graphHelper.getVertexForGUID(entityGuid);
+            if (entityVertex == null) {
+                LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): entity vertex not found", entityGuid, classificationVertexId);
+
+                throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, classificationVertexId=%s): entity vertex not found", entityGuid, classificationVertexId));
+            }
+
+            AtlasVertex classificationVertex = graph.getVertex(classificationVertexId);
+            if (classificationVertex == null) {
+                LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): classification vertex not found", entityGuid, classificationVertexId);
+
+                throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, classificationVertexId=%s): classification vertex not found", entityGuid, classificationVertexId));
+            }
+
+            /*
+                If restrictPropagateThroughLineage was false at past
+                 then updated to true we need to delete the propagated
+                 classifications and then put the classifications as intended
+             */
+
+            Boolean currentRestrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
+
+            Boolean currentRestrictPropagationThroughHierarchy = AtlasGraphUtilsV2.getProperty(classificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY, Boolean.class);
+            if (previousRestrictPropagationThroughLineage != null && currentRestrictPropagationThroughLineage != null && !previousRestrictPropagationThroughLineage && currentRestrictPropagationThroughLineage) {
+                deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
+            }
+
+            if (previousRestrictPropagationThroughHierarchy != null && currentRestrictPropagationThroughHierarchy != null && !previousRestrictPropagationThroughHierarchy && currentRestrictPropagationThroughHierarchy) {
+                deleteDelegate.getHandler().removeTagPropagation(classificationVertex);
+            }
+
+            String propagationMode = entityRetriever.determinePropagationMode(currentRestrictPropagationThroughLineage, currentRestrictPropagationThroughHierarchy);
+
+            List<String> edgeLabelsToCheck = CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode);
+            Boolean toExclude = propagationMode == CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE ? true:false;
+            List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV2(entityVertex, relationshipGuid, classificationVertexId, edgeLabelsToCheck,toExclude);
+
+            if (CollectionUtils.isEmpty(impactedVertices)) {
+                LOG.debug("propagateClassification(entityGuid={}, classificationVertexId={}): found no entities to propagate the classification", entityGuid, classificationVertexId);
+
+                return null;
+            }
+
+            return processClassificationPropagationAddition(impactedVertices, classificationVertex);
+        } catch (Exception e) {
+            LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): error while propagating classification", entityGuid, classificationVertexId, e);
+
+            throw new AtlasBaseException(e);
+        }
+    }
+
+
+    public void propagateClassificationNew(String entityGuid, String classificationVertexId, String tagTypeName, Boolean previousRestrictPropagationThroughLineage,Boolean previousRestrictPropagationThroughHierarchy) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(tagTypeName)) {
                 LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): entityGuid and/or classification vertex id is empty", entityGuid, tagTypeName);
@@ -3547,6 +3608,7 @@ public class EntityGraphMapper {
             List<String> edgeLabelsToCheck = CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode);
             Boolean toExclude = propagationMode == CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE ? true:false;
             List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV2(entityVertex, null, classificationVertexId, edgeLabelsToCheck,toExclude);
+            impactedVertices.remove(entityVertex);
 
             if (CollectionUtils.isEmpty(impactedVertices)) {
                 LOG.debug("propagateClassification(entityGuid={}, tagTypeName={}): found no entities to propagate the classification", entityGuid, tagTypeName);
@@ -3641,7 +3703,7 @@ public class EntityGraphMapper {
 
                 AtlasClassification classification                  = entityRetriever.toAtlasClassification(tagAsMap);
                 List<AtlasEntity>   propagatedEntitiesChunked       = updateClassificationTextNew(classification, chunkedVerticesToPropagate, deNormAttributesMap);
-                entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), false);
+                //entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), false);
 
                 offset += CHUNK_SIZE;
 
@@ -4802,7 +4864,17 @@ public class EntityGraphMapper {
 
         if(CollectionUtils.isNotEmpty(propagatedVertices)) {
             for(AtlasVertex vertex : propagatedVertices) {
-                AtlasEntity entity = null;
+                //TODO: get current associated tags to asset
+                Map<String, Object> deNormAttributes= new HashMap<>();
+                String currentTagName = classification.getTypeName();
+                // This might be temporary path as when we handle read path, we will always see at least one tag in entity
+                deNormAttributes.put(CLASSIFICATION_TEXT_KEY, currentTagName + FULL_TEXT_DELIMITER);
+                deNormAttributes.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, Collections.singletonList(currentTagName));
+                deNormAttributes.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, CLASSIFICATION_NAME_DELIMITER + currentTagName);
+
+                deNormAttributesMap.put(vertex.getIdForDisplay(), deNormAttributes);
+
+                /*AtlasEntity entity = null;
                 for (int i = 1; i <= MAX_NUMBER_OF_RETRIES; i++) {
                     try {
                         entity = instanceConverter.getAndCacheEntity(graphHelper.getGuid(vertex), ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
@@ -4819,38 +4891,43 @@ public class EntityGraphMapper {
                 // Assuming above entity brings all current tags associated with asset
 
                 if (entity != null) {
+                    List<AtlasClassification> tags = entity.getClassifications();
                     Map<String, Object> deNormAttributes= new HashMap<>();
 
-                    String classificationTextForEntity = fullTextMapperV2.getClassificationTextForEntity(entity);
-                    deNormAttributes.put(CLASSIFICATION_TEXT_KEY, classificationTextForEntity);
+                    if (CollectionUtils.isNotEmpty(tags)) {
+                        String classificationTextForEntity = fullTextMapperV2.getClassificationTextForEntity(entity);
+                        deNormAttributes.put(CLASSIFICATION_TEXT_KEY, classificationTextForEntity);
 
-                    List<AtlasClassification> tags = entity.getClassifications();
-
-                    //filter direct attachments
-                    List<String> traits = tags.stream()
-                            .filter(tag -> classification.getEntityGuid().equals(tag.getEntityGuid()))
-                            .map(AtlasStruct::getTypeName)
-                            .collect(Collectors.toList());
-                    deNormAttributes.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, traits);
+                        //filter direct attachments
+                        List<String> traits = tags.stream()
+                                .filter(tag -> classification.getEntityGuid().equals(tag.getEntityGuid()))
+                                .map(AtlasStruct::getTypeName)
+                                .collect(Collectors.toList());
+                        deNormAttributes.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, traits);
 
 
-                    StringBuilder finalTagNames = new StringBuilder();
-                    List<String> propTraits = tags.stream()
-                            .filter(t -> !classification.getEntityGuid().equals(t.getEntityGuid()))
-                            .map(AtlasStruct::getTypeName)
-                            .toList();
-                    propTraits.forEach(tagName -> finalTagNames.append(CLASSIFICATION_NAME_DELIMITER).append(tagName));
+                        StringBuilder finalTagNames = new StringBuilder();
+                        List<String> propTraits = tags.stream()
+                                .filter(t -> !classification.getEntityGuid().equals(t.getEntityGuid()))
+                                .map(AtlasStruct::getTypeName)
+                                .toList();
+                        propTraits.forEach(tagName -> finalTagNames.append(CLASSIFICATION_NAME_DELIMITER).append(tagName));
 
-                    deNormAttributes.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, finalTagNames);
+                        deNormAttributes.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, finalTagNames);
+                    } else {
+                        String currentTagName = classification.getTypeName();
+                        // This might be temporary path as when we handle read path, we will always see at least one tag in entity
+                        deNormAttributes.put(CLASSIFICATION_TEXT_KEY, currentTagName + FULL_TEXT_DELIMITER);
+                        deNormAttributes.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, Collections.singletonList(currentTagName));
+                        deNormAttributes.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, CLASSIFICATION_NAME_DELIMITER + currentTagName);
+                    }
 
                     deNormAttributesMap.put(vertex.getIdForDisplay(), deNormAttributes);
                     propagatedEntities.add(entity);
-                }
-
-                RequestContext.get().endMetricRecord(metricRecorder);
-
+                }*/
             }
         }
+        RequestContext.get().endMetricRecord(metricRecorder);
         return propagatedEntities;
     }
 

@@ -125,20 +125,6 @@ public final class GraphHelper {
         return ret;
     }
 
-
-    public AtlasEdge addClassificationEdgeNew(String fromGuid, AtlasVertex entityVertex, AtlasVertex classificationVertex, String tagTypeName, boolean isPropagated) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("addClassificationEdgeNew");
-        AtlasEdge ret = addEdgeNew(fromGuid, entityVertex, classificationVertex, CLASSIFICATION_LABEL);
-
-        if (ret != null) {
-            AtlasGraphUtilsV2.setEncodedProperty(ret, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, tagTypeName);
-            AtlasGraphUtilsV2.setEncodedProperty(ret, CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, isPropagated);
-        }
-
-        RequestContext.get().endMetricRecord(recorder);
-        return ret;
-    }
-
     public AtlasEdge addEdge(AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) throws AtlasBaseException {
         AtlasEdge ret;
 
@@ -151,26 +137,6 @@ public final class GraphHelper {
             LOG.error("Attempting to create a relationship between same vertex with guid {}", fromGuid);
             throw new AtlasBaseException(RELATIONSHIP_CREATE_INVALID_PARAMS, fromGuid);
         }
-
-        ret = graph.addEdge(fromVertex, toVertex, edgeLabel);
-
-        if (ret != null) {
-            AtlasGraphUtilsV2.setEncodedProperty(ret, STATE_PROPERTY_KEY, ACTIVE.name());
-            AtlasGraphUtilsV2.setEncodedProperty(ret, TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-            AtlasGraphUtilsV2.setEncodedProperty(ret, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-            AtlasGraphUtilsV2.setEncodedProperty(ret, CREATED_BY_KEY, RequestContext.get().getUser());
-            AtlasGraphUtilsV2.setEncodedProperty(ret, MODIFIED_BY_KEY, RequestContext.get().getUser());
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Added {}", string(ret));
-            }
-        }
-
-        return ret;
-    }
-
-    public AtlasEdge addEdgeNew(String fromGuid, AtlasVertex fromVertex, AtlasVertex toVertex, String edgeLabel) throws AtlasBaseException {
-        AtlasEdge ret;
 
         ret = graph.addEdge(fromVertex, toVertex, edgeLabel);
 
