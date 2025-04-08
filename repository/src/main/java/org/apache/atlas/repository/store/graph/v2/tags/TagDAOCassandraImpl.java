@@ -1,6 +1,5 @@
 package org.apache.atlas.repository.store.graph.v2.tags;
 
-
 import com.datastax.oss.driver.api.core.CqlSession;
 import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
@@ -8,9 +7,10 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.type.AtlasType;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,6 +20,7 @@ import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.apache.atlas.repository.store.graph.v2.CassandraConnector.CASSANDRA_HOSTNAME_PROPERTY;
 
@@ -35,6 +36,7 @@ public class TagDAOCassandraImpl implements TagDAO {
     public static final String CASSANDRA_NEW_KEYSPACE_PROPERTY = "atlas.graph.new.keyspace";
     private final CqlSession cassSession;
     private final PreparedStatement findTagsStmt;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public TagDAOCassandraImpl() {
         try {
@@ -56,9 +58,9 @@ public class TagDAOCassandraImpl implements TagDAO {
     }
 
     @Override
-    public List<AtlasTag> getTagsForVertex(String vertexId) {
+    public List<AtlasClassification> getTagsForVertex(String vertexId) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagsForAsset");
-        List<AtlasTag> tags = new ArrayList<>();
+        List<AtlasClassification> tags = new ArrayList<>();
 
         try {
             int bucket = calculateBucket(vertexId);
@@ -66,9 +68,12 @@ public class TagDAOCassandraImpl implements TagDAO {
             ResultSet rs = cassSession.execute(bound);
 
             for (Row row : rs) {
-                AtlasTag tag = convertRowToTag(row);
-                if (tag != null) {
-                    tags.add(tag);
+                AtlasClassification classification = convertToAtlasClassification(
+                        row.getString("tag_meta_json"),
+                        row.getString("tag_type_name")
+                );
+                if (classification != null) {
+                    tags.add(classification);
                 }
             }
         } catch (Exception e) {
@@ -80,22 +85,27 @@ public class TagDAOCassandraImpl implements TagDAO {
         return tags;
     }
 
-    /**
-     * Convert Cassandra row to AtlasTag object
-     */
-    private AtlasTag convertRowToTag(Row row) {
+    private AtlasClassification convertToAtlasClassification(String tagMetaJson, String tag_type_name) {
         try {
-            // Get tag metadata JSON directly
-            String tagMetaJson = row.getString("tag_meta_json");
+            Map jsonMap = objectMapper.readValue(tagMetaJson, Map.class);
+            AtlasClassification classification = new AtlasClassification();
 
-            AtlasTag tag = AtlasType.fromJson(tagMetaJson, AtlasTag.class);
-            tag.setTagTypeName(row.getString("tag_type_name"));
+            // Set basic properties
+            classification.setTypeName((String) jsonMap.get("__typeName"));
+            classification.setEntityGuid((String) jsonMap.get("__entityGuid"));
 
-            return tag;
+
+            // Set propagation flags
+            classification.setPropagate((Boolean) jsonMap.get("__propagate"));
+            classification.setRemovePropagationsOnEntityDelete((Boolean) jsonMap.get("__removePropagations"));
+            classification.setRestrictPropagationThroughLineage((Boolean) jsonMap.get("__restrictPropagationThroughLineage"));
+            classification.setRestrictPropagationThroughHierarchy((Boolean) jsonMap.get("__restrictPropagationThroughHierarchy"));
+
+            return classification;
         } catch (Exception e) {
-            LOG.error("Error converting row to AtlasTag for tag_type_name: {}",
-                    row.getString("tag_type_name"), e);
-            return null;
+            LOG.error("Error converting to AtlasClassification. JSON: {}",
+                    tagMetaJson, e);
+            throw new RuntimeException("Unable to map to AtlasClassification", e);
         }
     }
 
