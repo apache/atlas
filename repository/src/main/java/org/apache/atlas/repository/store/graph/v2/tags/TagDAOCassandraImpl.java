@@ -11,6 +11,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ public class TagDAOCassandraImpl implements TagDAO {
     private final PreparedStatement findTagsByVertexIdAndTypeNameStmt;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    public TagDAOCassandraImpl() {
+    public TagDAOCassandraImpl() throws AtlasBaseException {
         try {
             KEYSPACE = ApplicationProperties.get().getString(CASSANDRA_NEW_KEYSPACE_PROPERTY, "tags");
             BUCKET_POWER = ApplicationProperties.get().getInt(CASSANDRA_BUCKET_POWER, 6);
@@ -58,7 +59,7 @@ public class TagDAOCassandraImpl implements TagDAO {
             );
         } catch (Exception e) {
             LOG.error("Failed to initialize TagDAO", e);
-            throw new RuntimeException("Failed to initialize TagDAO", e);
+            throw new AtlasBaseException("Failed to initialize TagDAO", e);
         }
     }
 
@@ -86,7 +87,7 @@ public class TagDAOCassandraImpl implements TagDAO {
     }
 
     @Override
-    public AtlasClassification findTagByVertexIdAndTagTypeName(String vertexId, String tagTypeName) {
+    public AtlasClassification findTagByVertexIdAndTagTypeName(String vertexId, String tagTypeName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findTagByVertexIdAndTagTypeName");
         try {
             int bucket = calculateBucket(vertexId);
@@ -104,7 +105,7 @@ public class TagDAOCassandraImpl implements TagDAO {
         return null;
     }
 
-    private AtlasClassification convertToAtlasClassification(String tagMetaJson) {
+    private AtlasClassification convertToAtlasClassification(String tagMetaJson) throws AtlasBaseException {
         try {
             Map jsonMap = objectMapper.readValue(tagMetaJson, Map.class);
 
@@ -119,7 +120,7 @@ public class TagDAOCassandraImpl implements TagDAO {
         } catch (JsonProcessingException e) {
             LOG.error("Error converting to AtlasClassification. JSON: {}",
                     tagMetaJson, e);
-            throw new RuntimeException("Unable to map to AtlasClassification", e);
+            throw new AtlasBaseException("Unable to map to AtlasClassification", e);
         }
     }
 
