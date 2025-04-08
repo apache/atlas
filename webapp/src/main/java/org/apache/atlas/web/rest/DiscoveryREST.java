@@ -908,7 +908,7 @@ public class DiscoveryREST {
                 }
 
                 if (filterCriteria.getOperator() == null) {
-                    throw new AtlasBaseException(AtlasErrorCode.INVALID_OPERATOR_PASSED, filterCriteria.getAttributeName());
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_OPERATOR, filterCriteria.getAttributeName());
                 }
             }
         }
@@ -919,7 +919,7 @@ public class DiscoveryREST {
             }
 
             if (parameters.getEntityFilters().getOperator() == null) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_OPERATOR_PASSED, parameters.getEntityFilters().getAttributeName());
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_OPERATOR, parameters.getEntityFilters().getAttributeName());
             }
         }
     }

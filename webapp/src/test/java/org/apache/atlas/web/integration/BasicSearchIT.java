@@ -42,6 +42,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +52,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class BasicSearchIT extends BaseResourceIT {
@@ -124,6 +126,20 @@ public class BasicSearchIT extends BaseResourceIT {
     public Object[][] attributeSearchJSONNames() {
         return new String[][] {
                 {"search-parameters/attribute-filters"}
+        };
+    }
+
+    @DataProvider
+    public Object[][] attributeSearchJSONNamesInvalidOperator() {
+        return new String[][] {
+                {"search-parameters/operator"}
+        };
+    }
+
+    @DataProvider
+    public Object[][] attributeSearchJSONNamesEmptyAttribute() {
+        return new String[][] {
+                {"search-parameters/attribute-name"}
         };
     }
 
@@ -225,6 +241,50 @@ public class BasicSearchIT extends BaseResourceIT {
                 assertNotNull(list);
             }
         } catch (IOException | AtlasServiceException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test(dataProvider = "attributeSearchJSONNamesInvalidOperator")
+    public void testAttributeSearchInvalidOperator(String jsonFile) {
+        try {
+            BasicSearchParametersWithExpectation[] testExpectations = TestResourceFileUtils.readObjectFromJson(jsonFile, BasicSearchParametersWithExpectation[].class);
+            assertNotNull(testExpectations);
+            Arrays
+                    .stream(testExpectations)
+                    .map(testExpectation -> testExpectation.getSearchParameters())
+                    .filter(params -> params.getEntityFilters() != null && params.getEntityFilters().getAttributeName() != null)
+                    .forEach(params -> {
+                        try {
+                            atlasClientV2.facetedSearch(params);
+                        }
+                        catch (AtlasServiceException e) {
+                            assertTrue(e.getMessage().contains("ATLAS-400-00-103"));
+                        }
+                    });
+        } catch (IOException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test(dataProvider = "attributeSearchJSONNamesEmptyAttribute")
+    public void testAttributeSearchEmptyAttribute(String jsonFile) {
+        try {
+            BasicSearchParametersWithExpectation[] testExpectations = TestResourceFileUtils.readObjectFromJson(jsonFile, BasicSearchParametersWithExpectation[].class);
+            assertNotNull(testExpectations);
+            Arrays
+                    .stream(testExpectations)
+                    .map(testExpectation -> testExpectation.getSearchParameters())
+                    .filter(params -> params.getEntityFilters() != null && params.getEntityFilters().getAttributeName() != null)
+                    .forEach(params -> {
+                        try {
+                            atlasClientV2.facetedSearch(params);
+                        }
+                        catch (AtlasServiceException e) {
+                            assertTrue(e.getMessage().contains("ATLAS-400-00-104"));
+                        }
+                    });
+        } catch (IOException e) {
             fail(e.getMessage());
         }
     }
