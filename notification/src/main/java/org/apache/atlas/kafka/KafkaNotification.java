@@ -299,6 +299,8 @@ public class KafkaNotification extends AbstractNotification implements Service {
                     LOG.debug("Sent message for topic - {}, partition - {}, offset - {}", response.topic(), response.partition(), response.offset());
                 }
             } catch (Exception e) {
+                //TODO differentiate Kafka unavailable OR other error
+                //TODO Add retry 3 times
                 lastFailureException = e;
 
                 failedMessages.add(context.getMessage());

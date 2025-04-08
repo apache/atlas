@@ -48,6 +48,8 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasArrayType;
@@ -203,6 +205,7 @@ public class EntityGraphMapper {
     private final TaskManagement            taskManagement;
     private final TransactionInterceptHelper   transactionInterceptHelper;
     private final EntityGraphRetriever       retrieverNoRelation;
+    private final TagDAO                    tagDAO;
 
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
 
@@ -210,7 +213,8 @@ public class EntityGraphMapper {
     public EntityGraphMapper(DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry, AtlasGraph graph,
                              AtlasRelationshipStore relationshipStore, IAtlasEntityChangeNotifier entityChangeNotifier,
                              AtlasInstanceConverter instanceConverter, IFullTextMapper fullTextMapperV2,
-                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper) {
+                             TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper,
+                             TagDAO tagDAO) {
         this.restoreHandlerV1 = restoreHandlerV1;
         this.graphHelper          = new GraphHelper(graph);
         this.deleteDelegate       = deleteDelegate;
@@ -223,7 +227,9 @@ public class EntityGraphMapper {
         this.retrieverNoRelation  = new EntityGraphRetriever(graph, typeRegistry, true);
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
-        this.transactionInterceptHelper = transactionInterceptHelper;}
+        this.transactionInterceptHelper = transactionInterceptHelper;
+        this.tagDAO = tagDAO;
+    }
 
     @VisibleForTesting
     public void setTasksUseFlag(boolean value) {
@@ -3574,7 +3580,9 @@ public class EntityGraphMapper {
     }
 
 
-    public void propagateClassificationNew(String entityGuid, String classificationVertexId, String tagTypeName, Boolean previousRestrictPropagationThroughLineage,Boolean previousRestrictPropagationThroughHierarchy) throws AtlasBaseException {
+    public void propagateClassificationNew(Map<String, Object> parameters,
+                                           String entityGuid, String classificationVertexId,
+                                           String tagTypeName) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(tagTypeName)) {
                 LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): entityGuid and/or classification vertex id is empty", entityGuid, tagTypeName);
@@ -3618,7 +3626,7 @@ public class EntityGraphMapper {
                 LOG.info("Found {} vertexIds", impactedVertices.size());
             }
 
-            processClassificationPropagationAdditionNew(entityVertex, impactedVertices, tagAsMap);
+            processClassificationPropagationAdditionNew(parameters, entityVertex, impactedVertices, tagAsMap);
         } catch (Exception e) {
             LOG.error("propagateClassification(entityGuid={}, classificationVertexId={}): error while propagating classification", entityGuid, classificationVertexId, e);
 
@@ -3673,9 +3681,10 @@ public class EntityGraphMapper {
 
     }
 
-    public void processClassificationPropagationAdditionNew(AtlasVertex entityVertex,
-                                                                    List<AtlasVertex> verticesToPropagate,
-                                                                    Map<String, Object> tagAsMap) throws AtlasBaseException{
+    public void processClassificationPropagationAdditionNew(Map<String, Object> parameters,
+                                                            AtlasVertex entityVertex,
+                                                            List<AtlasVertex> verticesToPropagate,
+                                                            Map<String, Object> tagAsMap) throws AtlasBaseException{
         AtlasPerfMetrics.MetricRecorder classificationPropagationMetricRecorder = RequestContext.get().startMetricRecord("processClassificationPropagationAddition");
         List<String> propagatedEntitiesGuids = new ArrayList<>();
         int impactedVerticesSize = verticesToPropagate.size();
@@ -3702,14 +3711,21 @@ public class EntityGraphMapper {
                 Map<String, Map<String, Object>> deNormAttributesMap = new HashMap<>();
 
                 AtlasClassification classification             = entityRetriever.toAtlasClassification(tagAsMap);
-                List<AtlasEntity>   propagatedEntitiesChunked  = updateClassificationTextNew(classification, chunkedVerticesToPropagate, deNormAttributesMap);
-                entityChangeNotifier.onClassificationPropagationAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), false);
+                List<AtlasEntity>   propagatedEntitiesChunked  = updateClassificationTextNew(parameters, classification, chunkedVerticesToPropagate, deNormAttributesMap);
 
                 offset += CHUNK_SIZE;
 
                 //CassandraConnector.putEntitiesWithBucket(allChunkedMaps.values());
                 CassandraConnector.putPropagatedTags(entityVertex.getIdForDisplay(), classification.getTypeName(), deNormAttributesMap.keySet());
+                // TODO: Abstract writeTagProperties into putPropagatedTags
                 ESConnector.writeTagProperties(deNormAttributesMap);
+
+                //TODO: call notifications here
+                //TODO: Async notifications with retry
+                Boolean skipNotifications = (Boolean) parameters.get("skipNotifications");
+                if (skipNotifications == null || !skipNotifications) {
+                    entityChangeNotifier.onClassificationPropagationAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), false);
+                }
 
                 LOG.info("offset {}, impactedVerticesSize: {}", offset, impactedVerticesSize);
             } while (offset < impactedVerticesSize);
@@ -4856,7 +4872,8 @@ public class EntityGraphMapper {
         return propagatedEntities;
     }
 
-    List<AtlasEntity> updateClassificationTextNew(AtlasClassification classification,
+    List<AtlasEntity> updateClassificationTextNew(Map<String, Object> parameters,
+                                                  AtlasClassification classification,
                                                   Collection<AtlasVertex> propagatedVertices,
                                                   Map<String, Map<String, Object>> deNormAttributesMap) throws AtlasBaseException {
         List<AtlasEntity> propagatedEntities = new ArrayList<>();
@@ -4870,13 +4887,24 @@ public class EntityGraphMapper {
 
         if(CollectionUtils.isNotEmpty(propagatedVertices)) {
             for(AtlasVertex vertex : propagatedVertices) {
+                Boolean assumeFullMigration = (Boolean) parameters.get("assumeFullMigration");
+
                 AtlasEntity entity = new AtlasEntity(retrieverNoRelation.mapVertexToAtlasEntityHeaderWithPrefetch(vertex, attributes));
+                List<AtlasClassification> finalTags = new ArrayList<>();
 
-                List<AtlasClassification> backTags = entityRetriever.getAllClassifications(vertex);
+                if (assumeFullMigration) {
+                    //TODO: get current associated tags to asset ONLY from Cassandra namespace
+                    tagDAO.getTagsForVertex(vertex.getIdForDisplay());
+                } else {
+                    //TODO: get current associated tags to asset from Cassandra namespace & club with backTags
+                    List<AtlasClassification> backTags = entityRetriever.getAllClassifications(vertex);
 
-                //TODO: get current associated tags to asset from Cassandra namespace
+                }
 
-                Map<String, Object> deNormAttributes= new HashMap<>();
+
+
+
+                Map<String, Object> deNormAttributes = new HashMap<>();
                 if (CollectionUtils.isEmpty(backTags)) {
                     backTags.add(classification);
                     entity.setClassifications(backTags);

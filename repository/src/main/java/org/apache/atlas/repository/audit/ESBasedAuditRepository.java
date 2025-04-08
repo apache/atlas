@@ -155,8 +155,10 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 Response response = lowLevelClient.performRequest(request);
                 int statusCode = response.getStatusLine().getStatusCode();
                 if (statusCode != 200) {
+                    // TODO retry for 400s
                     throw new AtlasException("Unable to push entity audits to ES");
                 }
+
                 String responseString = EntityUtils.toString(response.getEntity());
                 Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
                 if ((boolean) responseMap.get("errors")) {
