@@ -64,7 +64,7 @@ public class TagDAOCassandraImpl implements TagDAO {
     }
 
     @Override
-    public List<AtlasClassification> getTagsForVertex(String vertexId) {
+    public List<AtlasClassification> getTagsForVertex(String vertexId) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagsForAsset");
         List<AtlasClassification> tags = new ArrayList<>();
 
@@ -78,7 +78,7 @@ public class TagDAOCassandraImpl implements TagDAO {
                 tags.add(classification);
             }
         } catch (Exception e) {
-            LOG.error("Error fetching tags for asset {}", vertexId, e);
+            throw new AtlasBaseException(String.format("Error fetching tags for asset: %s", vertexId), e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
@@ -99,6 +99,8 @@ public class TagDAOCassandraImpl implements TagDAO {
                 return classification;
             }
             LOG.info("No tags found for vertex {}, returning null", vertexId);
+        } catch (Exception e) {
+            throw new AtlasBaseException(String.format("Error fetching tag for asset: %s and tag type: %s", vertexId, tagTypeName), e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
