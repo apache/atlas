@@ -253,7 +253,7 @@ public class BasicSearchIT extends BaseResourceIT {
             Arrays
                     .stream(testExpectations)
                     .map(testExpectation -> testExpectation.getSearchParameters())
-                    .filter(params -> params.getEntityFilters() != null && params.getEntityFilters().getAttributeName() != null)
+                    .filter(params -> params.getEntityFilters() != null && params.getEntityFilters().getOperator() != null)
                     .forEach(params -> {
                         try {
                             atlasClientV2.facetedSearch(params);
