@@ -67,6 +67,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
     private final AtlasRelationshipStoreV2 relationshipStoreV2;
     private final IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier;
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
+    private static final HashMap<String, AtlasEntity> guidEntityMap = new HashMap<>();
 
 
 
@@ -291,7 +292,16 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
     }
 
     private void cacheDifferentialMeshEntity(AtlasVertex ev, Set<String> existingValues, String assetDenormAttribute) {
-        AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+        AtlasEntity diffEntity;
+        String assetGuid = ev.getProperty(GUID_PROPERTY_KEY, String.class);
+
+        if (guidEntityMap.containsKey(assetGuid)) {
+            diffEntity = guidEntityMap.get(assetGuid);
+        } else {
+            diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+            guidEntityMap.put(assetGuid, diffEntity);
+        }
+
         diffEntity.setGuid(ev.getProperty(GUID_PROPERTY_KEY, String.class));
         diffEntity.setUpdatedBy(ev.getProperty(MODIFIED_BY_KEY, String.class));
         diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
