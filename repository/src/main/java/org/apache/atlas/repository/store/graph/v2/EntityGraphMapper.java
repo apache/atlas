@@ -4886,47 +4886,96 @@ public class EntityGraphMapper {
         attributes.add(NAME);
 
         if(CollectionUtils.isNotEmpty(propagatedVertices)) {
+            Boolean fetchDeNormFromES = (Boolean) parameters.get("fetchDeNormFromES");
+            Map<String, Map<String, Object>> vertexIdToTagAttributesMap = null;
+
+            if (fetchDeNormFromES != null && fetchDeNormFromES) {
+                vertexIdToTagAttributesMap = ESConnector.getTagAttributes(propagatedVertices);
+            }
+
             for(AtlasVertex vertex : propagatedVertices) {
                 Boolean assumeFullMigration = (Boolean) parameters.get("assumeFullMigration");
 
-                AtlasEntity entity = new AtlasEntity(retrieverNoRelation.mapVertexToAtlasEntityHeaderWithPrefetch(vertex, attributes));
-                List<AtlasClassification> finalTags = new ArrayList<>();
-
-                if (assumeFullMigration) {
-                    //TODO: get current associated tags to asset ONLY from Cassandra namespace
-                    tagDAO.getTagsForVertex(vertex.getIdForDisplay());
-                } else {
-                    //TODO: get current associated tags to asset from Cassandra namespace & club with backTags
-                    List<AtlasClassification> backTags = entityRetriever.getAllClassifications(vertex);
-
+                AtlasEntity entity = null;
+                Boolean skipNotifications = (Boolean) parameters.get("skipNotifications");
+                if (skipNotifications == null || !skipNotifications) {
+                    entity = new AtlasEntity(retrieverNoRelation.mapVertexToAtlasEntityHeaderWithPrefetch(vertex, attributes));
                 }
 
+                List<AtlasClassification> finalTags = new ArrayList<>();
 
+                if (assumeFullMigration != null && assumeFullMigration) {
+                    //get current associated tags to asset ONLY from Cassandra namespace
+                    finalTags = tagDAO.getTagsForVertex(vertex.getIdForDisplay());
+                } else {
+                    //get current associated tags to asset from Cassandra namespace & club with backTags
+                    List<AtlasClassification> backTags = entityRetriever.getAllClassifications(vertex);
+                    List<AtlasClassification> cassandraTags = tagDAO.getTagsForVertex(vertex.getIdForDisplay());
 
+                    if (CollectionUtils.isNotEmpty(backTags)) {
+                        finalTags.addAll(backTags);
+                    }
+                    if (CollectionUtils.isNotEmpty(cassandraTags)) {
+                        finalTags.addAll(cassandraTags);
+                    }
+                }
+
+                if (skipNotifications == null || !skipNotifications) {
+                    entity.setClassifications(finalTags);
+                }
 
                 Map<String, Object> deNormAttributes = new HashMap<>();
-                if (CollectionUtils.isEmpty(backTags)) {
-                    backTags.add(classification);
-                    entity.setClassifications(backTags);
+
+                if (CollectionUtils.isEmpty(finalTags)) {
 
                     String currentTagName = classification.getTypeName();
                     // This might be temporary path as when we handle read path, we will always see at least one tag in entity
                     deNormAttributes.put(CLASSIFICATION_TEXT_KEY, currentTagName + FULL_TEXT_DELIMITER);
                     deNormAttributes.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, Collections.singletonList(currentTagName));
                     deNormAttributes.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, CLASSIFICATION_NAME_DELIMITER + currentTagName);
-                } else {
-                    backTags.add(classification);
-                    entity.setClassifications(backTags);
+                } else if (fetchDeNormFromES != null && fetchDeNormFromES) {
+                    String currentTagName = classification.getTypeName();
+                    Map<String, Object> currentDeNormAttrsMap = vertexIdToTagAttributesMap.get(vertex.getIdForDisplay());
 
-                    String classificationTextForEntity = fullTextMapperV2.getClassificationTextForEntity(entity);
-                    /*StringBuilder sb = new StringBuilder();
-                    sb.append(classification.getTypeName()).append(FULL_TEXT_DELIMITER);
-                    fullTextMapperV2.mapAttributes(classificationType, classification.getAttributes(), null, sb, null, null, true);*/
+                    StringBuilder sb = new StringBuilder();
+
+                    sb.append(currentDeNormAttrsMap.get(CLASSIFICATION_TEXT_KEY));
+                    sb.append(currentTagName).append(FULL_TEXT_DELIMITER);
+                    fullTextMapperV2.mapAttributes(classificationType, classification.getAttributes(), null, sb, null, null, true);
+
+                    deNormAttributes.put(CLASSIFICATION_TEXT_KEY, sb.toString());
+
+                    List<String> currentPropTraits = (List<String>) currentDeNormAttrsMap.get(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
+                    if (currentPropTraits == null) {
+                        currentPropTraits = new ArrayList<>();
+                    }
+                    currentPropTraits.add(currentTagName);
+                    deNormAttributes.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, currentPropTraits);
+
+                    String propNames = (String) currentDeNormAttrsMap.get(PROPAGATED_CLASSIFICATION_NAMES_KEY);
+                    if (propNames == null) {
+                        propNames = CLASSIFICATION_NAME_DELIMITER + currentTagName;
+                    } else {
+                        propNames = propNames + CLASSIFICATION_NAME_DELIMITER + currentTagName;
+                    }
+                    deNormAttributes.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, propNames);
+
+                } else {
+
+                    String classificationTextForEntity;
+                    if (skipNotifications == null || !skipNotifications) {
+                        classificationTextForEntity = fullTextMapperV2.getClassificationTextForEntity(entity);
+                    } else {
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(classification.getTypeName()).append(FULL_TEXT_DELIMITER);
+                        fullTextMapperV2.mapAttributes(classificationType, classification.getAttributes(), null, sb, null, null, true);
+                        classificationTextForEntity = sb.toString();
+                    }
 
                     deNormAttributes.put(CLASSIFICATION_TEXT_KEY, classificationTextForEntity);
 
                     //filter propagated attachments
-                    List<String> propTraits = backTags.stream()
+                    List<String> propTraits = finalTags.stream()
                             .filter(tag -> !classification.getEntityGuid().equals(tag.getEntityGuid()))
                             .map(AtlasStruct::getTypeName)
                             .collect(Collectors.toList());
