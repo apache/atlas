@@ -3349,6 +3349,7 @@
                 "policyCategory": "bootstrap",
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
+                "isPolicyEnabled": false,
                 "policyType": "allow",
                 "policyPriority": 0,
                 "policyUsers":
@@ -3384,6 +3385,7 @@
                 "policySubCategory": "default",
                 "policyServiceName": "atlas",
                 "policyType": "allow",
+                "isPolicyEnabled": false,
                 "policyPriority": 0,
                 "policyUsers":
                 [],
