@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.RequestContext;
@@ -72,10 +73,7 @@ public class TagDAOCassandraImpl implements TagDAO {
             ResultSet rs = cassSession.execute(bound);
 
             for (Row row : rs) {
-                AtlasClassification classification = convertToAtlasClassification(
-                        row.getString("tag_meta_json"),
-                        row.getString("tag_type_name")
-                );
+                AtlasClassification classification = convertToAtlasClassification(row.getString("tag_meta_json"));
                 tags.add(classification);
             }
         } catch (Exception e) {
@@ -96,33 +94,29 @@ public class TagDAOCassandraImpl implements TagDAO {
             ResultSet rs = cassSession.execute(bound);
 
             for (Row row : rs) {
-                AtlasClassification classification = convertToAtlasClassification(
-                        row.getString("tag_meta_json"),
-                        row.getString("tag_type_name")
-                );
+                AtlasClassification classification = convertToAtlasClassification(row.getString("tag_meta_json"));
                 return classification;
             }
-            LOG.info("Returning null for tag {}", vertexId);
+            LOG.info("No tags found for vertex {}, returning null", vertexId);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
         return null;
     }
 
-    private AtlasClassification convertToAtlasClassification(String tagMetaJson, String tag_type_name) {
+    private AtlasClassification convertToAtlasClassification(String tagMetaJson) {
         try {
             Map jsonMap = objectMapper.readValue(tagMetaJson, Map.class);
-            AtlasClassification classification = new AtlasClassification();
 
+            AtlasClassification classification = new AtlasClassification();
             classification.setTypeName((String) jsonMap.get("__typeName"));
             classification.setEntityGuid((String) jsonMap.get("__entityGuid"));
             classification.setPropagate((Boolean) jsonMap.get("__propagate"));
             classification.setRemovePropagationsOnEntityDelete((Boolean) jsonMap.get("__removePropagations"));
             classification.setRestrictPropagationThroughLineage((Boolean) jsonMap.get("__restrictPropagationThroughLineage"));
             classification.setRestrictPropagationThroughHierarchy((Boolean) jsonMap.get("__restrictPropagationThroughHierarchy"));
-
             return classification;
-        } catch (Exception e) {
+        } catch (JsonProcessingException e) {
             LOG.error("Error converting to AtlasClassification. JSON: {}",
                     tagMetaJson, e);
             throw new RuntimeException("Unable to map to AtlasClassification", e);
