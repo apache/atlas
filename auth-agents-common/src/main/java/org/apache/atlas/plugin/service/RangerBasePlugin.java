@@ -25,32 +25,24 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.atlas.admin.client.RangerAdminClient;
-import org.apache.atlas.admin.client.RangerAdminRESTClient;
 import org.apache.atlas.audit.provider.AuditHandler;
 import org.apache.atlas.audit.provider.AuditProviderFactory;
-import org.apache.atlas.audit.provider.StandAloneAuditProviderFactory;
-import org.apache.atlas.authorization.hadoop.config.RangerAuditConfig;
-import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
-import org.apache.atlas.authorization.utils.StringUtil;
+import org.apache.atlas.authorization.config.RangerPluginConfig;
+import org.apache.atlas.authorization.utils.RangerUtil;
 import org.apache.atlas.plugin.conditionevaluator.RangerScriptExecutionContext;
 import org.apache.atlas.plugin.contextenricher.RangerContextEnricher;
 import org.apache.atlas.plugin.contextenricher.RangerTagEnricher;
 import org.apache.atlas.plugin.model.RangerPolicy;
-import org.apache.atlas.plugin.model.RangerRole;
 import org.apache.atlas.plugin.model.RangerServiceDef;
 import org.apache.atlas.plugin.policyengine.RangerAccessRequest;
-import org.apache.atlas.plugin.policyengine.RangerAccessRequestImpl;
-import org.apache.atlas.plugin.policyengine.RangerAccessResourceImpl;
 import org.apache.atlas.plugin.policyengine.RangerAccessResult;
 import org.apache.atlas.plugin.policyengine.RangerAccessResultProcessor;
 import org.apache.atlas.plugin.policyengine.RangerPluginContext;
 import org.apache.atlas.plugin.policyengine.RangerPolicyEngine;
 import org.apache.atlas.plugin.policyengine.RangerPolicyEngineImpl;
 import org.apache.atlas.plugin.policyengine.RangerResourceACLs;
-import org.apache.atlas.plugin.policyengine.RangerResourceAccessInfo;
 import org.apache.atlas.plugin.policyevaluator.RangerPolicyEvaluator;
-import org.apache.atlas.plugin.store.EmbeddedServiceDefsUtil;
+import org.apache.atlas.plugin.store.ServiceDefsUtil;
 import org.apache.atlas.plugin.util.*;
 
 import java.util.ArrayList;
@@ -115,25 +107,6 @@ public class RangerBasePlugin {
 		RangerScriptExecutionContext.init(pluginConfig);
 
 		this.chainedPlugins = initChainedPlugins();
-	}
-
-	public RangerBasePlugin(RangerPluginConfig pluginConfig, ServicePolicies policies, ServiceTags tags, RangerRoles roles) {
-		this(pluginConfig);
-
-		init();
-
-		setPolicies(policies);
-		setRoles(roles);
-
-		if (tags != null) {
-			RangerTagEnricher tagEnricher = getTagEnricher();
-
-			if (tagEnricher != null) {
-				tagEnricher.setServiceTags(tags);
-			} else {
-				LOG.warn("RangerBasePlugin(tagsVersion=" + tags.getTagVersion() + "): no tag enricher found. Plugin will not enforce tag-based policies");
-			}
-		}
 	}
 
 	public static AuditHandler getAuditProvider(String serviceName) {
@@ -233,8 +206,6 @@ public class RangerBasePlugin {
 	public String getServiceName() {
 		return pluginConfig.getServiceName();
 	}
-
-	public AuditProviderFactory getAuditProviderFactory() { return RangerBasePlugin.getAuditProviderFactory(getServiceName()); }
 
 	public AtlasTypeRegistry getTypeRegistry() {
 		return typeRegistry;
@@ -458,10 +429,6 @@ public class RangerBasePlugin {
 		this.resultProcessor = resultProcessor;
 	}
 
-	public RangerAccessResultProcessor getResultProcessor() {
-		return this.resultProcessor;
-	}
-
 	public RangerAccessResult isAccessAllowed(RangerAccessRequest request) {
 		return isAccessAllowed(request, resultProcessor);
 	}
@@ -578,64 +545,6 @@ public class RangerBasePlugin {
 		return ret;
 	}
 
-	public void evalAuditPolicies(RangerAccessResult result) {
-		RangerPolicyEngine policyEngine = this.policyEngine;
-
-		if (policyEngine != null) {
-			policyEngine.evaluateAuditPolicies(result);
-		}
-	}
-
-	public RangerResourceAccessInfo getResourceAccessInfo(RangerAccessRequest request) {
-		RangerPolicyEngine policyEngine = this.policyEngine;
-
-		if(policyEngine != null) {
-			return policyEngine.getResourceAccessInfo(request);
-		}
-
-		return null;
-	}
-
-	public RangerResourceACLs getResourceACLs(RangerAccessRequest request) {
-		return getResourceACLs(request, null);
-	}
-
-	public RangerResourceACLs getResourceACLs(RangerAccessRequest request, String policyType) {
-		RangerResourceACLs ret          = null;
-		RangerPolicyEngine policyEngine = this.policyEngine;
-
-		if(policyEngine != null) {
-			ret = policyEngine.getResourceACLs(request, policyType);
-		}
-
-		for (RangerChainedPlugin chainedPlugin : chainedPlugins) {
-			RangerResourceACLs chainedResourceACLs = chainedPlugin.getResourceACLs(request, policyType);
-
-			if (chainedResourceACLs != null) {
-				if (LOG.isDebugEnabled()) {
-					LOG.debug("Chained-plugin returned non-null ACLs!!");
-				}
-				if (chainedPlugin.isAuthorizeOnlyWithChainedPlugin()) {
-					if (LOG.isDebugEnabled()) {
-						LOG.debug("Chained-plugin is configured to ignore Base-plugin's ACLs");
-					}
-					ret = chainedResourceACLs;
-					break;
-				} else {
-					if (ret != null) {
-						ret = getMergedResourceACLs(ret, chainedResourceACLs);
-					}
-				}
-			} else {
-				if (LOG.isDebugEnabled()) {
-					LOG.debug("Chained-plugin returned null ACLs!!");
-				}
-			}
-		}
-
-		return ret;
-	}
-
 	public Set<String> getRolesFromUserAndGroups(String user, Set<String> groups) {
 		RangerPolicyEngine policyEngine = this.policyEngine;
 
@@ -646,331 +555,12 @@ public class RangerBasePlugin {
 		return null;
 	}
 
-	public RangerRoles getRangerRoles() {
-		RangerPolicyEngine policyEngine = this.policyEngine;
-
-		if(policyEngine != null) {
-			return policyEngine.getRangerRoles();
-		}
-
-		return null;
-	}
-
-	public Set<RangerRole> getRangerRoleForPrincipal(String principal, String type) {
-		Set<RangerRole>  		 ret                 = new HashSet<>();
-		Set<RangerRole>			 rangerRoles		 = null;
-		Map<String, Set<String>> roleMapping         = null;
-		RangerRoles		 		 roles 		         = getRangerRoles();
-		if (roles != null) {
-			rangerRoles = roles.getRangerRoles();
-		}
-
-		if (rangerRoles != null) {
-			RangerPluginContext rangerPluginContext = policyEngine.getPluginContext();
-			if (rangerPluginContext != null) {
-				RangerAuthContext rangerAuthContext = rangerPluginContext.getAuthContext();
-				if (rangerAuthContext != null) {
-					RangerRolesUtil rangerRolesUtil = rangerAuthContext.getRangerRolesUtil();
-					if (rangerRolesUtil != null) {
-						switch (type) {
-							case "USER":
-								roleMapping = rangerRolesUtil.getUserRoleMapping();
-								break;
-							case "GROUP":
-								roleMapping = rangerRolesUtil.getGroupRoleMapping();
-								break;
-							case "ROLE":
-								roleMapping = rangerRolesUtil.getRoleRoleMapping();
-								break;
-						}
-					}
-				}
-			}
-			if (roleMapping != null) {
-				Set<String>  principalRoles = roleMapping.get(principal);
-				if (CollectionUtils.isNotEmpty(principalRoles)) {
-					for (String role : principalRoles) {
-						for (RangerRole rangerRole : rangerRoles) {
-							if (rangerRole.getName().equals(role)) {
-								ret.add(rangerRole);
-							}
-						}
-					}
-				}
-			}
-		}
-		return ret;
-	}
-
-	public boolean isServiceAdmin(String userName) {
-		boolean ret = false;
-
-		RangerPolicyEngine policyEngine = this.policyEngine;
-
-		if(policyEngine != null) {
-			RangerPolicyEngineImpl rangerPolicyEngine = (RangerPolicyEngineImpl) policyEngine;
-			ret = rangerPolicyEngine.isServiceAdmin(userName);
-		}
-
-		return ret;
-	}
-
-	public RangerRole createRole(RangerRole request, RangerAccessResultProcessor resultProcessor) throws Exception {
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerBasePlugin.createRole(" + request + ")");
-		}
-
-		RangerRole ret = getAdminClient().createRole(request);
-
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerBasePlugin.createRole(" + request + ")");
-		}
-		return ret;
-	}
-
-	public void dropRole(String execUser, String roleName, RangerAccessResultProcessor resultProcessor) throws Exception {
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerBasePlugin.dropRole(" + roleName + ")");
-		}
-
-		getAdminClient().dropRole(execUser, roleName);
-
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerBasePlugin.dropRole(" + roleName + ")");
-		}
-	}
-
-	public List<String> getUserRoles(String execUser, RangerAccessResultProcessor resultProcessor) throws Exception {
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerBasePlugin.getUserRoleNames(" + execUser + ")");
-		}
-
-		final List<String> ret = getAdminClient().getUserRoles(execUser);
-
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerBasePlugin.getUserRoleNames(" + execUser + ")");
-		}
-		return ret;
-	}
-
-	public List<String> getAllRoles(String execUser, RangerAccessResultProcessor resultProcessor) throws Exception {
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerBasePlugin.getAllRoles()");
-		}
-
-		final List<String> ret = getAdminClient().getAllRoles(execUser);
-
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerBasePlugin.getAllRoles()");
-		}
-		return ret;
-	}
-
-	public RangerRole getRole(String execUser, String roleName, RangerAccessResultProcessor resultProcessor) throws Exception {
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerBasePlugin.getPrincipalsForRole(" + roleName + ")");
-		}
-
-		final RangerRole ret = getAdminClient().getRole(execUser, roleName);
-
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerBasePlugin.getPrincipalsForRole(" + roleName + ")");
-		}
-		return ret;
-	}
-
-	public void grantRole(GrantRevokeRoleRequest request, RangerAccessResultProcessor resultProcessor) throws Exception {
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerBasePlugin.grantRole(" + request + ")");
-		}
-
-		getAdminClient().grantRole(request);
-
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerBasePlugin.grantRole(" + request + ")");
-		}
-	}
-
-	public void revokeRole(GrantRevokeRoleRequest request, RangerAccessResultProcessor resultProcessor) throws Exception {
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerBasePlugin.revokeRole(" + request + ")");
-		}
-
-		getAdminClient().revokeRole(request);
-
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerBasePlugin.revokeRole(" + request + ")");
-		}
-	}
-
-	public void grantAccess(GrantRevokeRequest request, RangerAccessResultProcessor resultProcessor) throws Exception {
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerBasePlugin.grantAccess(" + request + ")");
-		}
-
-		boolean isSuccess = false;
-
-		try {
-			RangerPolicyEngine policyEngine = this.policyEngine;
-
-			if (policyEngine != null) {
-				request.setZoneName(policyEngine.getUniquelyMatchedZoneName(request));
-			}
-
-			getAdminClient().grantAccess(request);
-
-			isSuccess = true;
-		} finally {
-			auditGrantRevoke(request, "grant", isSuccess, resultProcessor);
-		}
-
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerBasePlugin.grantAccess(" + request + ")");
-		}
-	}
-
-	public void revokeAccess(GrantRevokeRequest request, RangerAccessResultProcessor resultProcessor) throws Exception {
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerBasePlugin.revokeAccess(" + request + ")");
-		}
-
-		boolean isSuccess = false;
-
-		try {
-			RangerPolicyEngine policyEngine = this.policyEngine;
-
-			if (policyEngine != null) {
-				request.setZoneName(policyEngine.getUniquelyMatchedZoneName(request));
-			}
-
-			getAdminClient().revokeAccess(request);
-
-			isSuccess = true;
-		} finally {
-			auditGrantRevoke(request, "revoke", isSuccess, resultProcessor);
-		}
-
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerBasePlugin.revokeAccess(" + request + ")");
-		}
-	}
-
-	public void registerAuthContextEventListener(RangerAuthContextListener authContextListener) {
-		this.pluginContext.setAuthContextListener(authContextListener);
-	}
-
-	public static RangerAdminClient createAdminClient(RangerPluginConfig pluginConfig) {
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerBasePlugin.createAdminClient(" + pluginConfig.getServiceName() + ", " + pluginConfig.getAppId() + ", " + pluginConfig.getPropertyPrefix() + ")");
-		}
-
-		RangerAdminClient ret              = null;
-		String            propertyName     = pluginConfig.getPropertyPrefix() + ".policy.source.impl";
-		String            policySourceImpl = pluginConfig.get(propertyName);
-
-		if(StringUtils.isEmpty(policySourceImpl)) {
-			if (LOG.isDebugEnabled()) {
-				LOG.debug(String.format("Value for property[%s] was null or empty. Unexpected! Will use policy source of type[%s]", propertyName, RangerAdminRESTClient.class.getName()));
-			}
-		} else {
-			if (LOG.isDebugEnabled()) {
-				LOG.debug(String.format("Value for property[%s] was [%s].", propertyName, policySourceImpl));
-			}
-
-			try {
-				@SuppressWarnings("unchecked")
-				Class<RangerAdminClient> adminClass = (Class<RangerAdminClient>)Class.forName(policySourceImpl);
-				
-				ret = adminClass.newInstance();
-			} catch (Exception excp) {
-				LOG.error("failed to instantiate policy source of type '" + policySourceImpl + "'. Will use policy source of type '" + RangerAdminRESTClient.class.getName() + "'", excp);
-			}
-		}
-
-		if(ret == null) {
-			ret = new RangerAdminRESTClient();
-		}
-
-		ret.init(pluginConfig.getServiceName(), pluginConfig.getAppId(), pluginConfig.getPropertyPrefix(), pluginConfig);
-
-		if(LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerBasePlugin.createAdminClient(" + pluginConfig.getServiceName() + ", " + pluginConfig.getAppId() + ", " + pluginConfig.getPropertyPrefix() + "): policySourceImpl=" + policySourceImpl + ", client=" + ret);
-		}
-		return ret;
-	}
-
-	public void refreshPoliciesAndTags() {
-		if (LOG.isDebugEnabled()) {
-			LOG.debug("==> refreshPoliciesAndTags()");
-		}
-
-		try {
-			RangerPolicyEngine policyEngine = this.policyEngine;
-
-			// Synch-up policies
-			long oldPolicyVersion = policyEngine.getPolicyVersion();
-
-			if (refresher != null) {
-				refresher.syncPoliciesWithAdmin(accessTrigger);
-			}
-
-			policyEngine = this.policyEngine; // might be updated in syncPoliciesWithAdmin()
-
-			long newPolicyVersion = policyEngine.getPolicyVersion();
-
-			if (oldPolicyVersion == newPolicyVersion) {
-				// Synch-up tags
-				RangerTagEnricher tagEnricher = getTagEnricher();
-
-				if (tagEnricher != null) {
-					tagEnricher.syncTagsWithAdmin(accessTrigger);
-				}
-			}
-		} catch (InterruptedException exception) {
-			LOG.error("Failed to update policy-engine, continuing to use old policy-engine and/or tags", exception);
-		}
-
-		if (LOG.isDebugEnabled()) {
-			LOG.debug("<== refreshPoliciesAndTags()");
-		}
-	}
-
-
-	private void auditGrantRevoke(GrantRevokeRequest request, String action, boolean isSuccess, RangerAccessResultProcessor resultProcessor) {
-		if(request != null && resultProcessor != null) {
-			RangerAccessRequestImpl accessRequest = new RangerAccessRequestImpl();
-	
-			accessRequest.setResource(new RangerAccessResourceImpl(StringUtil.toStringObjectMap(request.getResource())));
-			accessRequest.setUser(request.getGrantor());
-			accessRequest.setAccessType(RangerPolicyEngine.ANY_ACCESS);
-			accessRequest.setAction(action);
-			accessRequest.setClientIPAddress(request.getClientIPAddress());
-			accessRequest.setClientType(request.getClientType());
-			accessRequest.setRequestData(request.getRequestData());
-			accessRequest.setSessionId(request.getSessionId());
-
-			// call isAccessAllowed() to determine if audit is enabled or not
-			RangerAccessResult accessResult = isAccessAllowed(accessRequest, null);
-
-			if(accessResult != null && accessResult.getIsAudited()) {
-				accessRequest.setAccessType(action);
-				accessResult.setIsAllowed(isSuccess);
-
-				if(! isSuccess) {
-					accessResult.setPolicyId("-1");
-				}
-
-				resultProcessor.processResult(accessResult);
-			}
-		}
-	}
-
 	private RangerServiceDef getDefaultServiceDef() {
 		RangerServiceDef ret = null;
 
 		if (StringUtils.isNotBlank(getServiceType())) {
 			try {
-				ret = EmbeddedServiceDefsUtil.instance().getEmbeddedServiceDef(getServiceType());
+				ret = ServiceDefsUtil.instance().getEmbeddedServiceDef(getServiceType());
 			} catch (Exception exp) {
 				LOG.error("Could not get embedded service-def for " + getServiceType());
 			}
@@ -997,29 +587,8 @@ public class RangerBasePlugin {
 		return ret;
 	}
 
-	public boolean logErrorMessage(String message) {
-		LogHistory log = logHistoryList.get(message);
-		if (log == null) {
-			log = new LogHistory();
-			logHistoryList.put(message, log);
-		}
-		if ((System.currentTimeMillis() - log.lastLogTime) > logInterval) {
-			log.lastLogTime = System.currentTimeMillis();
-			int counter = log.counter;
-			log.counter = 0;
-			if( counter > 0) {
-				message += ". Messages suppressed before: " + counter;
-			}
-			LOG.error(message);
-			return true;
-		} else {
-			log.counter++;
-		}
-		return false;
-	}
-
 	private Set<String> toSet(String value) {
-		return StringUtils.isNotBlank(value) ? StringUtil.toSet(value) : Collections.emptySet();
+		return StringUtils.isNotBlank(value) ? RangerUtil.toSet(value) : Collections.emptySet();
 	}
 
 	static private final class LogHistory {
@@ -1049,38 +618,11 @@ public class RangerBasePlugin {
 		return ret;
 	}
 
-	public static RangerResourceACLs getMergedResourceACLs(RangerResourceACLs baseACLs, RangerResourceACLs chainedACLs) {
-		if (LOG.isDebugEnabled()) {
-			LOG.debug("==> RangerBasePlugin.getMergedResourceACLs()");
-			LOG.debug("baseACLs:[" + baseACLs + "]");
-			LOG.debug("chainedACLS:[" + chainedACLs + "]");
-		}
-
-		overrideACLs(chainedACLs, baseACLs, RangerRolesUtil.ROLES_FOR.USER);
-		overrideACLs(chainedACLs, baseACLs, RangerRolesUtil.ROLES_FOR.GROUP);
-		overrideACLs(chainedACLs, baseACLs, RangerRolesUtil.ROLES_FOR.ROLE);
-
-		if (LOG.isDebugEnabled()) {
-			LOG.debug("<== RangerBasePlugin.getMergedResourceACLs() : ret:[" + baseACLs + "]");
-		}
-		return baseACLs;
-	}
-
-	private RangerAdminClient getAdminClient() throws Exception {
-		PolicyRefresher   refresher = this.refresher;
-		RangerAdminClient admin     = refresher == null ? null : refresher.getRangerAdminClient();
-
-		if(admin == null) {
-			throw new Exception("ranger-admin client is null");
-		}
-		return admin;
-	}
-
 	private List<RangerChainedPlugin> initChainedPlugins() {
 		List<RangerChainedPlugin> ret                      = new ArrayList<>();
 		String                    chainedServicePropPrefix = pluginConfig.getPropertyPrefix() + ".chained.services";
 
-		for (String chainedService : StringUtil.toList(pluginConfig.get(chainedServicePropPrefix))) {
+		for (String chainedService : RangerUtil.toList(pluginConfig.get(chainedServicePropPrefix))) {
 			if (StringUtils.isBlank(chainedService)) {
 				continue;
 			}
@@ -1218,18 +760,8 @@ public class RangerBasePlugin {
 	private static AuditProviderFactory getAuditProviderFactory(String serviceName) {
 		AuditProviderFactory ret = AuditProviderFactory.getInstance();
 
-		if (!ret.isInitDone()) {
-			LOG.warn("RangerBasePlugin.getAuditProviderFactory(serviceName=" + serviceName + "): audit not initialized yet. Will use stand-alone audit factory");
-
-			ret = StandAloneAuditProviderFactory.getInstance();
-
-			if (!ret.isInitDone()) {
-				RangerAuditConfig conf = new RangerAuditConfig();
-
-				if (conf.isInitSuccess()) {
-					ret.init(conf.getProperties(), "StandAlone");
-				}
-			}
+		if (ret == null || !ret.isInitDone()) {
+			LOG.error("AuditProviderFactory not configured properly, will not log authz events");
 		}
 
 		return ret;

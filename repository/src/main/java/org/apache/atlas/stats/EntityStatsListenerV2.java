@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.Set;
 
 @Component
-@EnableConditional(property = "atlas.enable.entity.stats")
+@EnableConditional(property = "atlas.enable.entity.stats", isDefault = true)
 @Order(8)
 public class EntityStatsListenerV2 implements EntityChangeListenerV2 {
 

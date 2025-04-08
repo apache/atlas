@@ -19,11 +19,11 @@
 
 package org.apache.atlas.plugin.service;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.apache.atlas.plugin.policyengine.RangerAccessRequest;
 import org.apache.atlas.plugin.policyengine.RangerAccessResult;
 import org.apache.atlas.plugin.policyengine.RangerResourceACLs;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 
 import java.util.Collection;
 

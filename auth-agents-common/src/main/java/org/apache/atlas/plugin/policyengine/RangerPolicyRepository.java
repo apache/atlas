@@ -19,12 +19,13 @@
 
 package org.apache.atlas.plugin.policyengine;
 
+import org.apache.atlas.authorization.utils.RangerAtlasConstants;
+import org.apache.atlas.authorization.utils.RangerUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-import org.apache.atlas.authorization.utils.JsonUtils;
 import org.apache.atlas.plugin.contextenricher.RangerAbstractContextEnricher;
 import org.apache.atlas.plugin.contextenricher.RangerContextEnricher;
 import org.apache.atlas.plugin.contextenricher.RangerTagEnricher;
@@ -40,7 +41,6 @@ import org.apache.atlas.plugin.policyevaluator.RangerAuditPolicyEvaluator;
 import org.apache.atlas.plugin.policyevaluator.RangerCachedPolicyEvaluator;
 import org.apache.atlas.plugin.policyevaluator.RangerOptimizedPolicyEvaluator;
 import org.apache.atlas.plugin.policyevaluator.RangerPolicyEvaluator;
-import org.apache.atlas.plugin.store.AbstractServiceStore;
 import org.apache.atlas.plugin.util.RangerPerfTracer;
 import org.apache.atlas.plugin.util.ServiceDefUtil;
 import org.apache.atlas.plugin.util.ServicePolicies;
@@ -308,7 +308,7 @@ public class RangerPolicyRepository {
         String                      jsonStr = svcConfigs != null ? svcConfigs.get(PLUGIN_AUDIT_FILTER) : null;
 
         if (StringUtils.isNotBlank(jsonStr)) {
-            List<AuditFilter> auditFilters = JsonUtils.jsonToAuditFilterList(jsonStr);
+            List<AuditFilter> auditFilters = RangerUtil.jsonToAuditFilterList(jsonStr);
             int               filterCount  = auditFilters != null ? auditFilters.size() : 0;
 
             if (filterCount > 0) {
@@ -822,7 +822,7 @@ public class RangerPolicyRepository {
 
     private List<? extends RangerPolicy.RangerPolicyItem> normalizeAndPrunePolicyItems(List<? extends RangerPolicy.RangerPolicyItem> policyItems, final String componentType) {
         if(CollectionUtils.isNotEmpty(policyItems)) {
-            final String                        prefix       = componentType + AbstractServiceStore.COMPONENT_ACCESSTYPE_SEPARATOR;
+            final String                        prefix       = componentType + RangerAtlasConstants.COMPONENT_ACCESSTYPE_SEPARATOR;
             List<RangerPolicy.RangerPolicyItem> itemsToPrune = null;
 
             for (RangerPolicy.RangerPolicyItem policyItem : policyItems) {
@@ -838,7 +838,7 @@ public class RangerPolicyRepository {
                             String newAccessType = StringUtils.removeStart(accessType, prefix);
 
                             access.setType(newAccessType);
-                        } else if (accessType.contains(AbstractServiceStore.COMPONENT_ACCESSTYPE_SEPARATOR)) {
+                        } else if (accessType.contains(RangerAtlasConstants.COMPONENT_ACCESSTYPE_SEPARATOR)) {
                             if(accessesToPrune == null) {
                                 accessesToPrune = new ArrayList<>();
                             }
@@ -868,7 +868,7 @@ public class RangerPolicyRepository {
 
                     if (StringUtils.startsWith(maskType, prefix)) {
                         dataMaskInfo.setDataMaskType(StringUtils.removeStart(maskType, prefix));
-                    } else if (maskType.contains(AbstractServiceStore.COMPONENT_ACCESSTYPE_SEPARATOR)) {
+                    } else if (maskType.contains(RangerAtlasConstants.COMPONENT_ACCESSTYPE_SEPARATOR)) {
                         if (itemsToPrune == null) {
                             itemsToPrune = new ArrayList<>();
                         }

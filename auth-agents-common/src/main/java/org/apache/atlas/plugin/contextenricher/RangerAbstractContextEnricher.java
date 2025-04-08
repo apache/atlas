@@ -23,7 +23,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
+import org.apache.atlas.authorization.config.RangerPluginConfig;
 import org.apache.atlas.plugin.model.RangerServiceDef;
 import org.apache.atlas.plugin.model.RangerServiceDef.RangerContextEnricherDef;
 import org.apache.atlas.plugin.policyengine.RangerAccessRequest;

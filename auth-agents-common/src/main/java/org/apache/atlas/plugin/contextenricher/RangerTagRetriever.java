@@ -19,7 +19,7 @@
 
 package org.apache.atlas.plugin.contextenricher;
 
-import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
+import org.apache.atlas.authorization.config.RangerPluginConfig;
 import org.apache.atlas.plugin.model.RangerServiceDef;
 import org.apache.atlas.plugin.policyengine.RangerPluginContext;
 import org.apache.atlas.plugin.util.ServiceTags;

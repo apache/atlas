@@ -28,7 +28,6 @@
     <!-- Sub modules -->
     <modules>
         <module>common</module>
-        <module>client-v1</module>
         <module>client-v2</module>
     </modules>
 
