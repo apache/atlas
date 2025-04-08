@@ -194,12 +194,12 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                 LOG.warn("Type {} is not allowed to link with PRODUCT entity", typeName);
             }
             Set<String> existingValues = assetVertex.getMultiValuedSetProperty(assetDenormAttribute, String.class);
-            LOG.debug("Existing values for {}: {}", assetDenormAttribute, existingValues);
+            LOG.info("Existing values for {}: {}", assetDenormAttribute, existingValues);
 
             if (!existingValues.contains(productGuid)) {
                 assetVertex.setProperty(assetDenormAttribute, productGuid);
                 existingValues.add(productGuid);
-                LOG.debug("Adding {} to {}: {}", productGuid, assetDenormAttribute, existingValues);
+                LOG.info("Adding {} to {}: {}", productGuid, assetDenormAttribute, existingValues);
 
                 updateModificationMetadata(assetVertex);
 
