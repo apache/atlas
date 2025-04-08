@@ -208,6 +208,14 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     @Override
+    public void onClassificationPropagationAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications, boolean forceInline) throws AtlasBaseException {
+        for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+            listener.onClassificationPropagationsAdded(entities, addedClassifications, forceInline);
+        }
+    }
+
+
+    @Override
     public void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications) throws AtlasBaseException {
         doFullTextMapping(entity.getGuid());
 

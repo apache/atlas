@@ -242,6 +242,26 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
+    public void onClassificationPropagationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(classifications)) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("onClassificationPropagationsAdded");
+            FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
+
+            for (AtlasClassification classification : classifications) {
+                for (AtlasEntity entity : entities) {
+                    createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification));
+                }
+            }
+
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(events.toList());
+            }
+
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
     public void onClassificationsUpdated(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("onClassificationsUpdated");

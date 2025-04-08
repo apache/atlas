@@ -90,6 +90,13 @@ public class EntityStatsListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
+    public void onClassificationPropagationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException {
+        if (classifications != null) {
+            classifications.forEach(e -> this.statsClient.increment(Constants.CLASSIFICATIONS_ADDED_METRIC));
+        }
+    }
+
+    @Override
     public void onClassificationsUpdated(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (classifications != null) {
             classifications.forEach(e -> this.statsClient.increment(Constants.CLASSIFICATIONS_UPDATED_METRIC));

@@ -20,8 +20,11 @@ package org.apache.atlas.repository.graph;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.type.AtlasStructType;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public interface IFullTextMapper {
     /**
@@ -42,4 +45,7 @@ public interface IFullTextMapper {
     AtlasEntity  getAndCacheEntity(String guid, boolean includeReferences) throws AtlasBaseException;
 
     AtlasEntity.AtlasEntityWithExtInfo getAndCacheEntityWithExtInfo(String guid) throws AtlasBaseException;
+
+    void mapAttributes(AtlasStructType structType, Map<String, Object> attributes, AtlasEntity.AtlasEntityExtInfo entityExtInfo, StringBuilder sb,
+                              Set<String> processedGuids, Set<String> excludeAttributes, boolean isClassificationOnly) throws AtlasBaseException;
 }
