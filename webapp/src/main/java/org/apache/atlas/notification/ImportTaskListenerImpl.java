@@ -52,7 +52,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.apache.atlas.AtlasConfiguration.ASYNC_IMPORT_TOPIC_PREFIX;
 import static org.apache.atlas.AtlasErrorCode.IMPORT_QUEUEING_FAILED;
-import static org.apache.atlas.notification.NotificationInterface.NotificationType.ASYNC_IMPORT;
 
 @Component
 @Order(8)
@@ -194,7 +193,7 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
         try {
             LOG.info("==> startImportConsumer(atlasAsyncImportRequest={})", importRequest);
 
-            notificationHookConsumer.startAsyncImportConsumer(ASYNC_IMPORT, importRequest.getImportId(), importRequest.getTopicName());
+            notificationHookConsumer.startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, importRequest.getImportId(), importRequest.getTopicName());
 
             importRequest.setStatus(ImportStatus.PROCESSING);
             importRequest.setStartedProcessingAt(System.currentTimeMillis());
@@ -383,6 +382,6 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
 
     @Override
     public int getHandlerOrder() {
-        return HandlerOrder.IMPORT_TASK_LISTENER.getOrder();
+        return ActiveStateChangeHandler.HandlerOrder.IMPORT_TASK_LISTENER.getOrder();
     }
 }

@@ -119,7 +119,6 @@ import java.util.regex.Pattern;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_TYPENAME;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_UNIQUE_ATTRIBUTES;
-import static org.apache.atlas.notification.NotificationInterface.NotificationType.ASYNC_IMPORT;
 import static org.apache.atlas.notification.preprocessor.EntityPreprocessor.TYPE_HIVE_PROCESS;
 import static org.apache.atlas.web.security.AtlasAbstractAuthenticationProvider.getAuthoritiesFromUGI;
 
@@ -471,8 +470,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 }
             }
 
-            notificationInterface.closeConsumer(ASYNC_IMPORT, topic);
-            notificationInterface.deleteTopic(ASYNC_IMPORT, topic);
+            notificationInterface.closeConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, topic);
+            notificationInterface.deleteTopic(NotificationInterface.NotificationType.ASYNC_IMPORT, topic);
         } catch (Exception e) {
             LOG.error("Could not cleanup consumers for importId: {}", importId, e);
         } finally {
