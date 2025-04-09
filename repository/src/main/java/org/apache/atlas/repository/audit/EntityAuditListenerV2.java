@@ -170,6 +170,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         for (EntityAuditRepository auditRepository: auditRepositories) {
             FixedBufferList<EntityAuditEventV2> deletedEntities = getAuditEventsList();
             for (AtlasEntity entity : entities) {
+                entity.setClassifications(Collections.emptyList());
                 long auditMaxSize = getAuditMaxSize(auditRepository, entities.size());
                 createEvent(deletedEntities.next(), entity, isImport ? ENTITY_IMPORT_DELETE : ENTITY_DELETE, auditMaxSize);
             }
