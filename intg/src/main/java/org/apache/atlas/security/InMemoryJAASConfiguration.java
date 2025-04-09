@@ -143,8 +143,11 @@ public final class InMemoryJAASConfiguration extends Configuration {
     }
 
     public static void init(String propFile) throws AtlasException {
-        LOG.debug("==> InMemoryJAASConfiguration.init({})", propFile);
 
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> Start to InMemoryJAASConfiguration.init({})", propFile);
+        }
+        
         InputStream in = null;
 
         try {
@@ -176,25 +179,30 @@ public final class InMemoryJAASConfiguration extends Configuration {
                 }
             }
         }
-
-        LOG.debug("<== InMemoryJAASConfiguration.init({})", propFile);
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> End to InMemoryJAASConfiguration.init({})", propFile);
+        }
     }
 
     public static void init(org.apache.commons.configuration.Configuration atlasConfiguration) throws AtlasException {
-        LOG.debug("==> InMemoryJAASConfiguration.init()");
-
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> Start to InMemoryJAASConfiguration.init({}) by atlasConfiguration");
+        }
         if (atlasConfiguration != null && !atlasConfiguration.isEmpty()) {
             Properties properties = ConfigurationConverter.getProperties(atlasConfiguration);
             init(properties);
         } else {
             throw new AtlasException("Failed to load JAAS application properties: configuration NULL or empty!");
         }
-
-        LOG.debug("<== InMemoryJAASConfiguration.init()");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> End to InMemoryJAASConfiguration.init({}) by atlasConfiguration");
+        }
     }
 
     public static void init(Properties properties) throws AtlasException {
-        LOG.debug("==> InMemoryJAASConfiguration.init()");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> Start to InMemoryJAASConfiguration.init({}) by properties");
+        }
 
         if (MapUtils.isNotEmpty(properties)) {
             InMemoryJAASConfiguration conf = new InMemoryJAASConfiguration(properties);
@@ -204,12 +212,15 @@ public final class InMemoryJAASConfiguration extends Configuration {
             throw new AtlasException("Failed to load JAAS application properties: properties NULL or empty!");
         }
 
-        LOG.debug("<== InMemoryJAASConfiguration.init()");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> End to InMemoryJAASConfiguration.init({}) by properties");
+        }
     }
 
     public static void setConfigSectionRedirect(String name, String redirectTo) {
-        LOG.debug("setConfigSectionRedirect({}, {})", name, redirectTo);
-
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("setConfigSectionRedirect({}, {})", name, redirectTo);
+        }
         if (name != null) {
             if (redirectTo != null) {
                 CONFIG_SECTION_REDIRECTS.put(name, redirectTo);
@@ -221,8 +232,9 @@ public final class InMemoryJAASConfiguration extends Configuration {
 
     @Override
     public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
-        LOG.debug("==> InMemoryJAASConfiguration.getAppConfigurationEntry({})", name);
-
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> InMemoryJAASConfiguration.getAppConfigurationEntry({})", name);
+        }
         AppConfigurationEntry[]     ret            = null;
         List<AppConfigurationEntry> retList        = null;
         String                      redirectedName = getConfigSectionRedirect(name);
@@ -256,7 +268,9 @@ public final class InMemoryJAASConfiguration extends Configuration {
     }
 
     private void initialize(Properties properties) {
-        LOG.debug("==> InMemoryJAASConfiguration.initialize()");
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> InMemoryJAASConfiguration.initialize()");
+        }
 
         int                             prefixLen   = JAAS_CONFIG_PREFIX_PARAM.length();
         Map<String, SortedSet<Integer>> jaasClients = new HashMap<>();
@@ -379,8 +393,10 @@ public final class InMemoryJAASConfiguration extends Configuration {
                 retList.add(entry);
             }
         }
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== InMemoryJAASConfiguration.initialize({})", applicationConfigEntryMap);
+        }
 
-        LOG.debug("<== InMemoryJAASConfiguration.initialize({})", applicationConfigEntryMap);
     }
 
     private static boolean isNumeric(String str) {
