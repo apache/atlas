@@ -44,6 +44,7 @@ public interface IAtlasEntityChangeNotifier {
     void onClassificationDeletedFromEntity(AtlasEntity entity, List<AtlasClassification> deletedClassifications) throws AtlasBaseException;
 
     void onClassificationsDeletedFromEntities(List<AtlasEntity> entities, List<AtlasClassification> deletedClassifications) throws AtlasBaseException;
+    void onClassificationDeletedFromEntities(List<AtlasEntity> entities, AtlasClassification deletedClassification) throws AtlasBaseException;
 
     void onTermAddedToEntities(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entityIds) throws AtlasBaseException;
 
@@ -54,6 +55,8 @@ public interface IAtlasEntityChangeNotifier {
     void notifyPropagatedEntities() throws AtlasBaseException;
 
     void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications) throws AtlasBaseException;
+
+    void onClassificationUpdatedToEntities(List<AtlasEntity> entities, AtlasClassification updatedClassification) throws AtlasBaseException;
 
     void onBusinessAttributesUpdated(String entityGuid, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException;
 }

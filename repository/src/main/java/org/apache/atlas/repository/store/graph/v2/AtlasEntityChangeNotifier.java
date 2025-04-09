@@ -246,6 +246,14 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     @Override
+    @Async
+    public void onClassificationUpdatedToEntities(List<AtlasEntity> entities, AtlasClassification updatedClassification) throws AtlasBaseException {
+        for (AtlasEntity entity : entities) {
+            onClassificationUpdatedToEntity(entity, Collections.singletonList(updatedClassification));
+        }
+    }
+
+    @Override
     public void onClassificationDeletedFromEntity(AtlasEntity entity, List<AtlasClassification> deletedClassifications) throws AtlasBaseException {
         doFullTextMapping(entity.getGuid());
 
@@ -274,6 +282,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     @Override
+    @Async
     public void onClassificationsDeletedFromEntities(List<AtlasEntity> entities, List<AtlasClassification> deletedClassifications) throws AtlasBaseException {
         doFullTextMappingHelper(entities);
 
@@ -304,6 +313,14 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
                     }
                 }
             }
+        }
+    }
+
+    @Override
+    @Async
+    public void onClassificationDeletedFromEntities(List<AtlasEntity> entities, AtlasClassification deletedClassification) throws AtlasBaseException {
+        for (AtlasEntity entity : entities) {
+            onClassificationDeletedFromEntity(entity, Collections.singletonList(deletedClassification));
         }
     }
 

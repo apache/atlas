@@ -68,6 +68,11 @@ public class EntityChangeNotifierNop implements IAtlasEntityChangeNotifier {
     }
 
     @Override
+    public void onClassificationDeletedFromEntities(List<AtlasEntity> entities, AtlasClassification deletedClassification) throws AtlasBaseException {
+
+    }
+
+    @Override
     public void onTermAddedToEntities(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entityIds) throws AtlasBaseException {
 
     }
@@ -89,6 +94,11 @@ public class EntityChangeNotifierNop implements IAtlasEntityChangeNotifier {
 
     @Override
     public void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications) throws AtlasBaseException {
+
+    }
+
+    @Override
+    public void onClassificationUpdatedToEntities(List<AtlasEntity> entities, AtlasClassification updatedClassification) throws AtlasBaseException {
 
     }
 
