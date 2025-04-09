@@ -1538,6 +1538,7 @@ public class EntityGraphRetriever {
 
             // use optimised path only for indexsearch and when flag is enabled!
             if (ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS.getBoolean() && RequestContext.get().isInvokedByIndexSearch()) {
+                LOG.info("optimised tags fetch");
                 // Fetch classification vertices directly
                 List<AtlasVertex> classificationVertices = ((AtlasJanusGraph) graph).getGraph().traversal()
                         .V(entityVertex.getId())  // Start from the entity vertex

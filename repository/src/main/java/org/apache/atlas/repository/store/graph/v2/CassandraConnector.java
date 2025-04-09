@@ -52,11 +52,11 @@ public class CassandraConnector {
     //private static String SELECT_ALL_TAGS_FOR_ASSET = "SELECT * FROM tags where bucket = %s AND id = '%s'";
     //private static String SELECT_PROPAGATED_TAGS = "SELECT * FROM propagated_tags where bucket = %s AND id = '%s' AND tag_type_name = '%s'";
 
-    private static String INSERT_PROPAGATED_TAG = "INSERT into tag_propagated (bucket, id, tag_type_name, source_id) values (%s, '%s', '%s', '%s')";
+    private static String INSERT_PROPAGATED_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id) values (%s, '%s', '%s', '%s')";
 
     static {
         try {
-            keyspace = ApplicationProperties.get().getString(CASSANDRA_NEW_KEYSPACE_PROPERTY, "atlas_test");
+            keyspace = ApplicationProperties.get().getString(CASSANDRA_NEW_KEYSPACE_PROPERTY, "tags");
             vertexTableName = ApplicationProperties.get().getString(CASSANDRA_NEW_KEYSPACE_VERTEX_TABLE_NAME_PROPERTY, "vertices");
             String hostname = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, "localhost");
             String clusterName = ApplicationProperties.get().getString(CASSANDRA_CLUSTERNAME_PROPERTY, DEFAULT_CLUSTER_NAME);
@@ -241,23 +241,6 @@ public class CassandraConnector {
 
         for (Map entry : entitiesMap) {
             String update = String.format(UPDATE_BY_ID, vertexTableName, AtlasType.toJson(entry), entry.get("id"), entry.get("bucket"));
-            batchQuery.append(update).append(";");
-        }
-
-        batchQuery.append("APPLY BATCH;");
-        cassSession.execute(batchQuery.toString());
-
-        RequestContext.get().endMetricRecord(recorder);
-    }
-
-    public static void putPropagatedTags(String sourceAssetId, String tagTypeName, Set<String> propagatedAssetVertexIds) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("putPropagatedTags");
-        StringBuilder batchQuery = new StringBuilder();
-        batchQuery.append("BEGIN BATCH ");
-
-        for (String propagatedAssetVertexId : propagatedAssetVertexIds) {
-            int bucket = calculateBucket(propagatedAssetVertexId);
-            String update = String.format(INSERT_PROPAGATED_TAG, bucket, propagatedAssetVertexId, tagTypeName, sourceAssetId);
             batchQuery.append(update).append(";");
         }
 
