@@ -71,8 +71,8 @@ public class TagDAOCassandraImpl implements TagDAO {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagsForAsset");
         List<AtlasClassification> tags = new ArrayList<>();
 
+        int bucket = calculateBucket(vertexId);
         try {
-            int bucket = calculateBucket(vertexId);
             BoundStatement bound = findTagsStmt.bind(vertexId, bucket);
             ResultSet rs = cassSession.execute(bound);
 
@@ -81,7 +81,7 @@ public class TagDAOCassandraImpl implements TagDAO {
                 tags.add(classification);
             }
         } catch (Exception e) {
-            throw new AtlasBaseException(String.format("Error fetching tags for asset: %s", vertexId), e);
+            throw new AtlasBaseException(String.format("Error fetching tags for asset: %s, bucket: %s, tag_type_name: %s", vertexId, bucket), e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
@@ -92,8 +92,8 @@ public class TagDAOCassandraImpl implements TagDAO {
     @Override
     public AtlasClassification findTagByVertexIdAndTagTypeName(String vertexId, String tagTypeName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findTagByVertexIdAndTagTypeName");
+        int bucket = calculateBucket(vertexId);
         try {
-            int bucket = calculateBucket(vertexId);
             BoundStatement bound = findTagsByVertexIdAndTypeNameStmt.bind(bucket, vertexId, tagTypeName);
             ResultSet rs = cassSession.execute(bound);
 
@@ -101,9 +101,9 @@ public class TagDAOCassandraImpl implements TagDAO {
                 AtlasClassification classification = convertToAtlasClassification(row.getString("tag_meta_json"));
                 return classification;
             }
-            LOG.info("No tags found for vertex {}, returning null", vertexId);
+            LOG.info("No tags found for id: {}, tag type: {}, bucket {}, returning null", vertexId, tagTypeName, bucket);
         } catch (Exception e) {
-            throw new AtlasBaseException(String.format("Error fetching tag for asset: %s and tag type: %s", vertexId, tagTypeName), e);
+            throw new AtlasBaseException(String.format("Error fetching tag for asset: %s and tag type: %s, bucket: %s", vertexId, tagTypeName, bucket), e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
