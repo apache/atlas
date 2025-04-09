@@ -879,7 +879,7 @@
       ],
       "description": "Atlan Type representing parent model for Persona, Purpose",
       "serviceType": "atlan",
-      "typeVersion": "1.4",
+      "typeVersion": "1.5",
       "attributeDefs": [
         {
           "name": "isAccessControlEnabled",
@@ -894,6 +894,17 @@
         },
         {
           "name": "denyCustomMetadataGuids",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "denyAssetMetadataTypes",
           "typeName": "array<string>",
           "indexType": "STRING",
           "cardinality": "SET",

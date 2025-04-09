@@ -19,7 +19,7 @@
 
 package org.apache.atlas.plugin.util;
 
-import org.apache.atlas.authorization.utils.JsonUtils;
+import org.apache.atlas.authorization.utils.RangerUtil;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -137,7 +137,7 @@ public class RangerPluginCapability {
     @Override
     public String toString() {
         List<String> capabilities =  toStrings(pluginCapabilities);
-        return JsonUtils.objectToJson(capabilities);
+        return RangerUtil.objectToJson(capabilities);
     }
 
     public static String getBaseRangerCapabilities() {

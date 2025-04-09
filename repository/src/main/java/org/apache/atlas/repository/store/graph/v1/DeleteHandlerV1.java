@@ -62,8 +62,6 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.AtlasClient.DATA_SET_SUPER_TYPE;
-import static org.apache.atlas.AtlasClient.PROCESS_SUPER_TYPE;
 import static org.apache.atlas.model.TypeCategory.*;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
@@ -1382,12 +1380,17 @@ public abstract class DeleteHandlerV1 {
             return;
         }
 
+        if (edge == null) {
+            LOG.warn("Edge is null, can't schedule task now");
+            return;
+        }
+
         String      currentUser         = RequestContext.getCurrentUser();
         boolean     isRelationshipEdge  = isRelationshipEdge(edge);
         boolean     isTermEntityEdge    = GraphHelper.isTermEntityEdge(edge);
 
-        if (edge == null || !isRelationshipEdge) {
-            LOG.warn("Edge is null or it is not relationship edge, can't schedule task now");
+        if (!isRelationshipEdge) {
+            LOG.warn("Edge is not relationship edge, can't schedule task now");
             return;
         }
 

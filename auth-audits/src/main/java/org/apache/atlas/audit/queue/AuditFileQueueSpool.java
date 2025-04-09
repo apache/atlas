@@ -19,15 +19,13 @@
 
 package org.apache.atlas.audit.queue;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-//import org.apache.log4j.MDC;
 import org.apache.atlas.audit.model.AuditEventBase;
 import org.apache.atlas.audit.model.AuthzAuditEvent;
 import org.apache.atlas.audit.provider.AuditHandler;
 import org.apache.atlas.audit.provider.MiscUtil;
+import org.apache.atlas.audit.utils.AuthObjectUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -58,7 +56,7 @@ import java.util.concurrent.TimeUnit;
  */
 
 public class AuditFileQueueSpool implements Runnable {
-    private static final Log logger = LogFactory.getLog(AuditFileQueueSpool.class);
+    private static final Logger logger = LoggerFactory.getLogger(AuditFileQueueSpool.class);
 
     public enum SPOOL_FILE_STATUS {
         pending, write_inprogress, read_inprogress, done
@@ -114,8 +112,6 @@ public class AuditFileQueueSpool implements Runnable {
     boolean isDestDown 	= false;
     boolean isSpoolingSuccessful = true;
 
-    private Gson gson = null;
-
     public AuditFileQueueSpool(AuditHandler consumerProvider) {
         this.consumerProvider = consumerProvider;
     }
@@ -139,8 +135,6 @@ public class AuditFileQueueSpool implements Runnable {
         }
 
         try {
-            gson = new GsonBuilder().setDateFormat("yyyy-MM-dd HH:mm:ss.SSS")
-                    .create();
             // Initial folder and file properties
             String logFolderProp = MiscUtil.getStringProperty(props, propPrefix
                     + "." + PROP_FILE_SPOOL_LOCAL_DIR);
@@ -166,7 +160,7 @@ public class AuditFileQueueSpool implements Runnable {
                     + FILE_QUEUE_PROVIDER_NAME);
 
             if (logFolderProp == null || logFolderProp.isEmpty()) {
-                logger.fatal("Audit spool folder is not configured. Please set "
+                logger.error("Audit spool folder is not configured. Please set "
                         + propPrefix
                         + "."
                         + PROP_FILE_SPOOL_LOCAL_DIR
@@ -177,7 +171,7 @@ public class AuditFileQueueSpool implements Runnable {
             if (!logFolder.isDirectory()) {
                 boolean result = logFolder.mkdirs();
                 if (!logFolder.isDirectory() || !result) {
-                    logger.fatal("File Spool folder not found and can't be created. folder="
+                    logger.error("File Spool folder not found and can't be created. folder="
                             + logFolder.getAbsolutePath()
                             + ", queueName="
                             + FILE_QUEUE_PROVIDER_NAME);
@@ -227,7 +221,7 @@ public class AuditFileQueueSpool implements Runnable {
             if (!indexFile.exists()) {
                 boolean ret = indexFile.createNewFile();
                 if (!ret) {
-                    logger.fatal("Error creating index file. fileName="
+                    logger.error("Error creating index file. fileName="
                             + indexFile.getPath());
                     return false;
                 }
@@ -245,7 +239,7 @@ public class AuditFileQueueSpool implements Runnable {
             if (!indexDoneFile.exists()) {
                 boolean ret = indexDoneFile.createNewFile();
                 if (!ret) {
-                    logger.fatal("Error creating index done file. fileName="
+                    logger.error("Error creating index done file. fileName="
                             + indexDoneFile.getPath());
                     return false;
                 }
@@ -291,7 +285,7 @@ public class AuditFileQueueSpool implements Runnable {
             }
 
         } catch (Throwable t) {
-            logger.fatal("Error initializing File Spooler. queue="
+            logger.error("Error initializing File Spooler. queue="
                     + FILE_QUEUE_PROVIDER_NAME, t);
             return false;
         }
@@ -600,7 +594,7 @@ public class AuditFileQueueSpool implements Runnable {
             String line;
             while ((line = br.readLine()) != null) {
                 if (!line.isEmpty() && !line.startsWith("#")) {
-                    AuditIndexRecord record = gson.fromJson(line,
+                    AuditIndexRecord record = AuthObjectUtil.fromJson(line,
                             AuditIndexRecord.class);
                     indexRecords.add(record);
                 }
@@ -648,7 +642,7 @@ public class AuditFileQueueSpool implements Runnable {
     synchronized void saveIndexFile() throws FileNotFoundException, IOException {
         PrintWriter out = new PrintWriter(indexFile,"UTF-8");
         for (AuditIndexRecord auditIndexRecord : indexRecords) {
-            out.println(gson.toJson(auditIndexRecord));
+            out.println(AuthObjectUtil.toJson(auditIndexRecord));
         }
         out.close();
         // printIndex();
@@ -660,7 +654,7 @@ public class AuditFileQueueSpool implements Runnable {
         logger.info("Moving to done file. " + indexRecord.filePath
                 + ", queueName=" + FILE_QUEUE_PROVIDER_NAME + ", consumer="
                 + consumerProvider.getName());
-        String line = gson.toJson(indexRecord);
+        String line = AuthObjectUtil.toJson(indexRecord);
         PrintWriter out = new PrintWriter(new BufferedWriter(new OutputStreamWriter(new FileOutputStream(
                 indexDoneFile, true),"UTF-8")));
         out.println(line);
@@ -708,8 +702,7 @@ public class AuditFileQueueSpool implements Runnable {
                     int filesDeletedCount = 0;
                     while ((line = br.readLine()) != null) {
                         if (!line.isEmpty() && !line.startsWith("#")) {
-                            AuditIndexRecord record = gson.fromJson(line,
-                                    AuditIndexRecord.class);
+                            AuditIndexRecord record = AuthObjectUtil.fromJson(line, AuditIndexRecord.class);
                             logFile = new File(record.filePath);
                             String fileName = logFile.getName();
                             archiveFile = new File(archiveFolder, fileName);
@@ -789,7 +782,7 @@ public class AuditFileQueueSpool implements Runnable {
             //MDC.clear();
             runLogAudit();
         } catch (Throwable t) {
-            logger.fatal("Exited thread without abnormaly. queue="
+            logger.error("Exited thread without abnormaly. queue="
                     + consumerProvider.getName(), t);
         }
     }

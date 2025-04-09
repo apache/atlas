@@ -28,9 +28,6 @@ import javax.script.ScriptEngineManager;
 import java.io.IOException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
-import java.security.PrivilegedExceptionAction;
 import java.util.Enumeration;
 import java.util.List;
 
@@ -44,13 +41,7 @@ public class RangerPluginClassLoader extends URLClassLoader {
 
 	public RangerPluginClassLoader(String pluginType, Class<?> pluginClass ) throws Exception {
 		super(RangerPluginClassLoaderUtil.getInstance().getPluginFilesForServiceTypeAndPluginclass(pluginType, pluginClass), null);
-		componentClassLoader = AccessController.doPrivileged(
-									new PrivilegedAction<MyClassLoader>() {
-										public MyClassLoader run() {
-												return  new MyClassLoader(Thread.currentThread().getContextClassLoader());
-										}
-									}
-								);
+		componentClassLoader = new MyClassLoader(Thread.currentThread().getContextClassLoader());
     }
 
 	public static RangerPluginClassLoader getInstance(final String pluginType, final Class<?> pluginClass ) throws Exception {
@@ -59,13 +50,7 @@ public class RangerPluginClassLoader extends URLClassLoader {
 		  synchronized(RangerPluginClassLoader.class) {
 		  ret = me;
 		  if (ret == null && pluginClass != null) {
-			  me = ret = AccessController.doPrivileged(
-							new PrivilegedExceptionAction<RangerPluginClassLoader>(){
-								public RangerPluginClassLoader run() throws Exception {
-									return  new RangerPluginClassLoader(pluginType,pluginClass);
-							}
-						}
-				   );
+                me = ret = new RangerPluginClassLoader(pluginType,pluginClass);
 		      }
 		   }
 	   }

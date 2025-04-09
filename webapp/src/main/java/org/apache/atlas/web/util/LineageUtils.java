@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.web.util;
 
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -35,6 +34,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 
 
 public final class LineageUtils {
@@ -67,15 +69,15 @@ public final class LineageUtils {
                     vertexIdMap.put(Constants.ATTRIBUTE_NAME_STATE, (entityHeader.getStatus() == AtlasEntity.Status.ACTIVE) ? "ACTIVE" : "DELETED");
                     vertexIdMap.put(Constants.ATTRIBUTE_NAME_TYPENAME, entityHeader.getTypeName());
 
-                    Object qualifiedName = entityHeader.getAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME);
+                    Object qualifiedName = entityHeader.getAttribute(QUALIFIED_NAME);
                     if (qualifiedName == null) {
                         qualifiedName = entityHeader.getDisplayText();
                     }
 
                     Map<String, Object> values = new HashMap<>();
-                    values.put(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, qualifiedName);
+                    values.put(QUALIFIED_NAME, qualifiedName);
                     values.put(VERTEX_ID_ATTR_NAME, constructResultStruct(vertexIdMap, true));
-                    values.put(AtlasClient.NAME, entityHeader.getDisplayText());
+                    values.put(NAME, entityHeader.getDisplayText());
                     verticesMap.put(guid, constructResultStruct(values, false));
                 }
             }

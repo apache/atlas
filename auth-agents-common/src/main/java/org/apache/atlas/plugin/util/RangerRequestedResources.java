@@ -19,8 +19,8 @@
 
 package org.apache.atlas.plugin.util;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.commons.collections.CollectionUtils;
-import org.apache.htrace.shaded.fasterxml.jackson.annotation.JsonInclude;
 import org.apache.atlas.plugin.policyengine.RangerAccessResource;
 import org.apache.atlas.plugin.policyresourcematcher.RangerPolicyResourceMatcher;
 
@@ -31,7 +31,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-@JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 /*@JsonAutoDetect(getterVisibility= JsonAutoDetect.Visibility.NONE, setterVisibility= JsonAutoDetect.Visibility.NONE, fieldVisibility= JsonAutoDetect.Visibility.ANY)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL )
 @JsonIgnoreProperties(ignoreUnknown=true)*/

@@ -3,8 +3,8 @@ package org.apache.atlas.authz.admin.client;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
-import org.apache.atlas.authorization.utils.StringUtil;
+import org.apache.atlas.authorization.config.RangerPluginConfig;
+import org.apache.atlas.authorization.utils.RangerUtil;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
 import org.apache.atlas.plugin.util.ServicePolicies;
@@ -130,7 +130,7 @@ public class AtlasAuthRESTClient implements AtlasAuthAdminClient {
         String url = "";
         String tmpUrl = config.get(config.getPropertyPrefix() + ".authz.rest.url");
 
-        if (!StringUtil.isEmpty(tmpUrl)) {
+        if (!RangerUtil.isEmpty(tmpUrl)) {
             url = tmpUrl.trim();
         }
 

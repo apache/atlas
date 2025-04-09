@@ -2893,6 +2893,7 @@
                 "policyResources":
                 [
                     "entity-type:DataDomain",
+                    "entity-type:DataProduct",
                     "entity-classification:*",
                     "entity:*"
                 ],
@@ -3699,6 +3700,41 @@
                 [
                     "entity-update",
                     "entity-delete"
+                ]
+            }
+        },
+        {
+            "typeName": "AuthPolicy",
+            "attributes":
+            {
+                "name": "ENTITY_BUSINESS_UPDATE_METADATA_BOOT",
+                "qualifiedName": "ENTITY_BUSINESS_UPDATE_METADATA_BOOT",
+                "policyCategory": "bootstrap",
+                "policySubCategory": "default",
+                "policyServiceName": "atlas",
+                "policyType": "allow",
+                "policyPriority": 0,
+                "policyUsers":
+                [],
+                "policyGroups":
+                [],
+                "policyRoles":
+                [
+                    "$admin",
+                    "$api-token-default-access"
+                ],
+                "policyResourceCategory": "ENTITY",
+                "policyResources":
+                [
+                    "entity:*",
+                    "entity-type:DataDomain",
+                    "entity-type:DataProduct",
+                    "entity-classification:*",
+                    "entity-business-metadata:*"
+                ],
+                "policyActions":
+                [
+                    "entity-update-business-metadata"
                 ]
             }
         }

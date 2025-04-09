@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.web.rest;
 
-import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
@@ -68,6 +67,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.Arrays;
 
+import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_HOST;
 import static org.apache.atlas.repository.Constants.REQUEST_HEADER_USER_AGENT;
@@ -297,7 +297,7 @@ public class DiscoveryREST {
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
                 if (entityType != null) {
-                    String[] defaultAttrNames = new String[] { AtlasClient.QUALIFIED_NAME, AtlasClient.NAME };
+                    String[] defaultAttrNames = new String[] { QUALIFIED_NAME, NAME };
 
                     for (String defaultAttrName : defaultAttrNames) {
                         AtlasStructType.AtlasAttribute attribute = entityType.getAttribute(defaultAttrName);
@@ -311,14 +311,14 @@ public class DiscoveryREST {
                 }
 
                 if (StringUtils.isEmpty(attrName)) {
-                    attrName = AtlasClient.QUALIFIED_NAME;
+                    attrName = QUALIFIED_NAME;
                 }
             }
 
             SearchParameters searchParams = new SearchParameters();
             FilterCriteria   attrFilter   = new FilterCriteria();
 
-            attrFilter.setAttributeName(StringUtils.isEmpty(attrName) ? AtlasClient.QUALIFIED_NAME : attrName);
+            attrFilter.setAttributeName(StringUtils.isEmpty(attrName) ? QUALIFIED_NAME : attrName);
             attrFilter.setOperator(SearchParameters.Operator.STARTS_WITH);
             attrFilter.setAttributeValue(attrValuePrefix);
 

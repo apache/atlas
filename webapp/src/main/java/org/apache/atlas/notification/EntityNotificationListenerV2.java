@@ -49,6 +49,7 @@ import javax.inject.Inject;
 import java.util.*;
 
 import static org.apache.atlas.model.notification.EntityNotification.EntityNotificationV2.OperationType.*;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.isInternalType;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.CREATE_TIME;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.DESCRIPTION;
@@ -57,7 +58,7 @@ import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.OW
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever.QUALIFIED_NAME;
 
 @Component
-@EnableConditional(property = "atlas.enable.entity.notifications")
+@EnableConditional(property = "atlas.enable.entity.notifications", isDefault = true)
 public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     private static final Logger LOG = LoggerFactory.getLogger(EntityNotificationListenerV2.class);
 

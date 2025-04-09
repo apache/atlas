@@ -11,6 +11,7 @@ on:
       - mlh41-integration-tests
       - mlh41tests
       - mlh40java17
+      - dq651
     types:
       - completed
 

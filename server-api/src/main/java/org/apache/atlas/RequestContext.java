@@ -908,5 +908,4 @@ public class RequestContext {
     public boolean isEdgeLabelAlreadyProcessed(String processEdgeLabel) {
         return edgeLabels.contains(processEdgeLabel);
     }
-
 }

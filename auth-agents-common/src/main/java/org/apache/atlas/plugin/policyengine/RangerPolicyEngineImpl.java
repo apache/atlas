@@ -26,8 +26,8 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.apache.hadoop.conf.Configuration;
-import org.apache.atlas.authorization.hadoop.config.RangerPluginConfig;
-import org.apache.atlas.authorization.utils.StringUtil;
+import org.apache.atlas.authorization.config.RangerPluginConfig;
+import org.apache.atlas.authorization.utils.RangerUtil;
 import org.apache.atlas.plugin.contextenricher.RangerTagForEval;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.plugin.model.RangerPolicy.RangerPolicyItemDataMaskInfo;
@@ -1299,12 +1299,12 @@ public class RangerPolicyEngineImpl implements RangerPolicyEngine {
 
 		public ServiceConfig(Map<String, String> svcConfig) {
 			if (svcConfig != null) {
-				auditExcludedUsers  = StringUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_AUDIT_EXCLUDE_USERS));
-				auditExcludedGroups = StringUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_AUDIT_EXCLUDE_GROUPS));
-				auditExcludedRoles  = StringUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_AUDIT_EXCLUDE_ROLES));
-				superUsers          = StringUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_SUPER_USERS));
-				superGroups         = StringUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_SUPER_GROUPS));
-				serviceAdmins       = StringUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_SERVICE_ADMINS));
+				auditExcludedUsers  = RangerUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_AUDIT_EXCLUDE_USERS));
+				auditExcludedGroups = RangerUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_AUDIT_EXCLUDE_GROUPS));
+				auditExcludedRoles  = RangerUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_AUDIT_EXCLUDE_ROLES));
+				superUsers          = RangerUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_SUPER_USERS));
+				superGroups         = RangerUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_SUPER_GROUPS));
+				serviceAdmins       = RangerUtil.toSet(svcConfig.get(RangerPolicyEngine.PLUGIN_SERVICE_ADMINS));
 			} else {
 				auditExcludedUsers  = Collections.emptySet();
 				auditExcludedGroups = Collections.emptySet();
