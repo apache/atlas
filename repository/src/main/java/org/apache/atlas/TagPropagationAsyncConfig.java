@@ -20,9 +20,9 @@ public class TagPropagationAsyncConfig implements AsyncConfigurer {
     @Bean
     public Executor classificationPropagationExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
-        executor.setCorePoolSize(75);
-        executor.setMaxPoolSize(150);
-        executor.setQueueCapacity(50000);
+        executor.setCorePoolSize(100);
+        executor.setMaxPoolSize(200);
+        executor.setQueueCapacity(1000);
         executor.setKeepAliveSeconds(300); // 5 minutes to keep extra threads alive
         executor.setAllowCoreThreadTimeOut(true); // Allow thread pool to shrink when idle
         executor.setThreadNamePrefix("ClassificationPropagation-");
