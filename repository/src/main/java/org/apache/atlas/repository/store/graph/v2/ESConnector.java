@@ -18,6 +18,7 @@ import org.elasticsearch.client.Request;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
+import org.janusgraph.util.StringUtils;
 import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -120,15 +121,14 @@ public class ESConnector {
         try {
             Map<String, String> docIdTovertexIdMap = new HashMap<>();
             List<String> vertexIds = vertices.stream().map(x -> x.getIdForDisplay()).toList();
-            vertexIds.stream().map(vertexId -> docIdTovertexIdMap.put(LongEncoding.encode(Long.parseLong(vertexId)), vertexId));
+            vertexIds.forEach(vertexId -> docIdTovertexIdMap.put(LongEncoding.encode(Long.parseLong(vertexId)), vertexId));
             Set<String> docIds = docIdTovertexIdMap.keySet();
 
             JSONObject requestBody = new JSONObject();
             requestBody.put("ids", new JSONArray(docIds));
-            requestBody.put("_source", new JSONArray(DENORM_ATTRS));
 
 
-            Request request = new Request("POST", GET_DOCS_BY_ID);
+            Request request = new Request("POST", GET_DOCS_BY_ID + "?_source=" + StringUtils.join(DENORM_ATTRS, ","));
             HttpEntity entity = new NStringEntity(requestBody.toString(), ContentType.APPLICATION_JSON);
             request.setEntity(entity);
 
