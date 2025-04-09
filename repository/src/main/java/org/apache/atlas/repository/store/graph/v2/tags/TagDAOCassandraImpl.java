@@ -167,8 +167,8 @@ public class TagDAOCassandraImpl implements TagDAO {
     }
 
     private int calculateBucket(String vertexId) {
-        int numBuckets = 1 << BUCKET_POWER; // 2^5=32
-        return Integer.parseInt(vertexId) % numBuckets;
+        int numBuckets = 2 << BUCKET_POWER; // 2^5=32
+        return (int) (Long.parseLong(vertexId) % numBuckets);
     }
 
 }
