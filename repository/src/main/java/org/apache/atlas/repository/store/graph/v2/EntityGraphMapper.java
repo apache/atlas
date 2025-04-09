@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 
+import com.datastax.oss.driver.shaded.json.JSONArray;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
@@ -4883,15 +4884,18 @@ public class EntityGraphMapper {
 
                 //get current associated tags to asset ONLY from Cassandra namespace
                 List<AtlasClassification> finalTags = tagDAO.getTagsForVertex(vertex.getIdForDisplay());
-                finalTags.add(currentTag);
+                AtlasClassification copiedPropagatedTag = new AtlasClassification(currentTag);
+                copiedPropagatedTag.setEntityGuid(vertex.getProperty("__guid", String.class));
+                finalTags.add(copiedPropagatedTag);
 
                 if (skipNotifications == null || !skipNotifications) {
                     entity.setClassifications(finalTags);
 
                     if (getMinimalEntity != null && getMinimalEntity) {
                         entity.setTypeName(vertex.getProperty("__typeName", String.class));
-                        entity.setGuid(vertex.getProperty("__guid", String.class));
-                        entity.setGuid(vertex.getProperty("name", String.class));
+                        //entity.setGuid(vertex.getProperty("__guid", String.class));
+                        entity.setGuid(copiedPropagatedTag.getEntityGuid());
+
                         entity.setAttribute("name", vertex.getProperty("name", String.class));
                         entity.setAttribute("qualifiedName", vertex.getProperty("__qualifiedName", String.class));
 
@@ -4926,9 +4930,10 @@ public class EntityGraphMapper {
 
                     deNormAttributes.put(CLASSIFICATION_TEXT_KEY, sb.toString());
 
-                    List<String> currentPropTraits = (List<String>) currentDeNormAttrsMap.get(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
-                    if (currentPropTraits == null) {
-                        currentPropTraits = new ArrayList<>();
+                    JSONArray currentJsonArray = (JSONArray) currentDeNormAttrsMap.get(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
+                    List<String> currentPropTraits = new ArrayList<>();
+                    for (int i = 0; i < currentJsonArray.length(); i++) {
+                        currentPropTraits.add(currentJsonArray.getString(i));
                     }
                     currentPropTraits.add(currentTagName);
                     deNormAttributes.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, currentPropTraits);
