@@ -52,7 +52,7 @@ public class ClassificationPropagationTasks {
 
             if (mode != null && mode) {
                 LOG.info("via new mode");
-                entityGraphMapper.propagateClassificationNew(entityGuid, classificationVertexId, tagTypeName, previousRestrictPropagationThroughLineage, previousRestrictPropagationThroughHierarchy);
+                entityGraphMapper.propagateClassificationNew(parameters, entityGuid, classificationVertexId, tagTypeName);
             } else {
                 LOG.info("via old mode");
                 entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage, previousRestrictPropagationThroughHierarchy);

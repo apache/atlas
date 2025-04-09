@@ -23,6 +23,7 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.repository.store.graph.v2.CassandraConnector.CASSANDRA_HOSTNAME_PROPERTY;
 
@@ -40,6 +41,8 @@ public class TagDAOCassandraImpl implements TagDAO {
     private final PreparedStatement findTagsStmt;
     private final PreparedStatement findTagsByVertexIdAndTypeNameStmt;
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static String INSERT_PROPAGATED_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id) values (%s, '%s', '%s', '%s')";
 
     public TagDAOCassandraImpl() throws AtlasBaseException {
         try {
@@ -105,6 +108,24 @@ public class TagDAOCassandraImpl implements TagDAO {
             RequestContext.get().endMetricRecord(recorder);
         }
         return null;
+    }
+
+    @Override
+    public void putPropagatedTags(String sourceAssetId, String tagTypeName, Set<String> propagatedAssetVertexIds) {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("putPropagatedTags");
+        StringBuilder batchQuery = new StringBuilder();
+        batchQuery.append("BEGIN BATCH ");
+
+        for (String propagatedAssetVertexId : propagatedAssetVertexIds) {
+            int bucket = calculateBucket(propagatedAssetVertexId);
+            String update = String.format(INSERT_PROPAGATED_TAG, bucket, propagatedAssetVertexId, tagTypeName, sourceAssetId);
+            batchQuery.append(update).append(";");
+        }
+
+        batchQuery.append("APPLY BATCH;");
+        cassSession.execute(batchQuery.toString());
+
+        RequestContext.get().endMetricRecord(recorder);
     }
 
     private AtlasClassification convertToAtlasClassification(String tagMetaJson) throws AtlasBaseException {
