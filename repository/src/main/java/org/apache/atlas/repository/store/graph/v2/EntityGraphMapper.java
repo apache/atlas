@@ -4903,7 +4903,7 @@ public class EntityGraphMapper {
                         entity.setUpdatedBy(vertex.getProperty(MODIFIED_BY_KEY, String.class));
 
                         entity.setCreateTime(new Date(vertex.getProperty(TIMESTAMP_PROPERTY_KEY, Long.class)));
-                        entity.setCreateTime(new Date(vertex.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class)));
+                        entity.setUpdateTime(new Date(vertex.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class)));
                     } else {
                         entity = new AtlasEntity(retrieverNoRelation.mapVertexToAtlasEntityHeaderWithPrefetch(vertex, attributes));
                     }
