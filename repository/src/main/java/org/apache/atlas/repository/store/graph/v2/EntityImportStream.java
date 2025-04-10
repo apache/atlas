@@ -57,4 +57,6 @@ public interface EntityImportStream extends EntityStream {
     List<String> getCreationOrder();
 
     void close();
+
+    String getMd5Hash();
 }
