@@ -18,6 +18,7 @@
 package org.apache.atlas.glossary;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.bulkimport.BulkImportResponse;
@@ -71,8 +72,7 @@ import static org.apache.atlas.glossary.GlossaryUtils.getGlossarySkeleton;
 
 @Service
 public class GlossaryService {
-    private static final Logger LOG = LoggerFactory.getLogger(GlossaryService.class);
-
+    private static final Logger LOG                                   = LoggerFactory.getLogger(GlossaryService.class);
     private static final String ATLAS_GLOSSARY_TERM                   = "AtlasGlossaryTerm";
     private static final String NAME_ATTR                             = "name";
     private static final String QUALIFIED_NAME_ATTR                   = "qualifiedName";
@@ -121,24 +121,56 @@ public class GlossaryService {
     public List<AtlasGlossary> getGlossaries(int limit, int offset, SortOrder sortOrder) throws AtlasBaseException {
         LOG.debug("==> GlossaryService.getGlossaries({}, {}, {})", limit, offset, sortOrder);
 
-        List<String>             glossaryGuids    = AtlasGraphUtilsV2.findEntityGUIDsByType(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME, sortOrder);
-        PaginationHelper<String> paginationHelper = new PaginationHelper<>(glossaryGuids, offset, limit);
+        List<String> glossaryGuids = AtlasGraphUtilsV2.findEntityGUIDsByType(GlossaryUtils.ATLAS_GLOSSARY_TYPENAME, sortOrder);
 
-        List<AtlasGlossary>                  ret;
-        List<String>                         guidsToLoad = paginationHelper.getPaginatedList();
-        AtlasEntity.AtlasEntitiesWithExtInfo glossaryEntities;
+        if (CollectionUtils.isEmpty(glossaryGuids)) {
+            return Collections.emptyList();
+        }
 
-        if (CollectionUtils.isNotEmpty(guidsToLoad)) {
-            glossaryEntities = dataAccess.getAtlasEntityStore().getByIds(guidsToLoad, true, false);
-            ret              = new ArrayList<>();
+        List<AtlasGlossary> ret           = new ArrayList<>();
+        int                 currentOffset = offset;
+        int                 maxSize       = glossaryGuids.size();
 
-            for (AtlasEntity glossaryEntity : glossaryEntities.getEntities()) {
-                AtlasGlossary glossary = glossaryDTO.from(glossaryEntity);
+        // If limit is negative, use maxSize; otherwise, take the minimum of limit and maxSize
+        int adjustedLimit = (limit < 0) ? maxSize : Integer.min(maxSize, limit);
 
-                ret.add(glossary);
+        try {
+            // Enable skipping failed entities during processing
+            RequestContext.get().setSkipFailedEntities(true);
+
+            PaginationHelper<String> paginationHelper = new PaginationHelper<>(glossaryGuids);
+
+            while (ret.size() < adjustedLimit && currentOffset < glossaryGuids.size()) {
+                // Fetch next batch of GUIDs
+                List<String> guidsToLoad = paginationHelper.getPaginatedList(currentOffset, adjustedLimit - ret.size());
+
+                // If no GUIDs are found, stop fetching
+                if (CollectionUtils.isEmpty(guidsToLoad)) {
+                    break;
+                }
+
+                // Fetch glossary entities by GUIDs
+                AtlasEntity.AtlasEntitiesWithExtInfo glossaryEntities = dataAccess.getAtlasEntityStore().getByIds(guidsToLoad, true, false);
+                List<AtlasEntity>                    entityList       = glossaryEntities.getEntities();
+
+                if (CollectionUtils.isNotEmpty(entityList)) {
+                    for (AtlasEntity glossaryEntity : entityList) {
+                        AtlasGlossary glossary = glossaryDTO.from(glossaryEntity);
+                        ret.add(glossary);
+
+                        // Stop adding if the page limit is reached
+                        if (ret.size() >= adjustedLimit) {
+                            break;
+                        }
+                    }
+                }
+
+                // Move offset forward
+                currentOffset += guidsToLoad.size();
             }
-        } else {
-            ret = Collections.emptyList();
+        } finally {
+            // Disable skipping failed entities after processing
+            RequestContext.get().setSkipFailedEntities(false);
         }
 
         LOG.debug("<== GlossaryService.getGlossaries() : {}", ret);
@@ -1221,6 +1253,13 @@ public class GlossaryService {
             pageEnd = Integer.min(adjustedLimit + pageStart, maxSize);
         }
 
+        PaginationHelper(Collection<T> items) {
+            this.items   = new ArrayList<>(items);
+            this.maxSize = items.size();
+            pageStart    = 0;
+            pageEnd      = 0;
+        }
+
         List<T> getPaginatedList() {
             List<T> ret;
 
@@ -1235,6 +1274,15 @@ public class GlossaryService {
             }
 
             return ret;
+        }
+
+        List<T> getPaginatedList(int offset, int limit) {
+            if (offset >= maxSize) {
+                return Collections.emptyList();
+            }
+
+            int localPageEnd = Math.min(offset + limit, maxSize);
+            return items.subList(offset, localPageEnd);
         }
 
         private boolean isPagingNeeded() {
