@@ -30,7 +30,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.Set;
 
 public class ClassificationPropagationTasks {
     private static final Logger LOG      = LoggerFactory.getLogger(ClassificationPropagationTasks.class);
@@ -81,43 +80,15 @@ public class ClassificationPropagationTasks {
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
             String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
             String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
+            String tagTypeName              = (String) parameters.get(Constants.TASK_CLASSIFICATION_TYPENAME);
+            Boolean mode                    = (Boolean) parameters.get("newMode");
 
-            entityGraphMapper.deleteClassificationPropagation(entityGuid, classificationVertexId);
-        }
-    }
-
-    // TODO: Will be deprecated
-    public static class DeleteOnlyPropagations extends ClassificationTask {
-        public DeleteOnlyPropagations(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
-            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
-        }
-
-        @Override
-        protected void run(Map<String, Object> parameters) throws AtlasBaseException {
-            if (parameters.get(PARAM_DELETED_EDGE_IDS) != null) {
-                Set<String> deletedEdgeIds    =  AtlasType.fromJson((String) parameters.get(PARAM_DELETED_EDGE_IDS), Set.class);
-                entityGraphMapper.deleteClassificationOnlyPropagation(deletedEdgeIds);
+            if (mode != null && mode) {
+                LOG.info("via new mode");
+                entityGraphMapper.deleteClassificationPropagationV2(entityGuid, classificationVertexId);
             } else {
-                String deletedEdgeId          =  (String) parameters.get(PARAM_DELETED_EDGE_ID);
-                String classificationVertexId =  (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-                entityGraphMapper.deleteClassificationOnlyPropagation(deletedEdgeId, classificationVertexId);
+                entityGraphMapper.deleteClassificationPropagation(entityGuid, tagTypeName);
             }
-        }
-    }
-
-    // TODO: Will be deprecated
-    public static class DeleteOnlyPropagationsOnHardDelete extends ClassificationTask {
-        public DeleteOnlyPropagationsOnHardDelete(AtlasTask task, AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
-            super(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
-        }
-
-        @Override
-        protected void run(Map<String, Object> parameters) throws AtlasBaseException {
-            String classificationVertexId =  (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-            String referencedVertexId = (String) parameters.get(PARAM_REFERENCED_VERTEX_ID);
-            boolean isTermEntityEdge = (boolean) parameters.get(PARAM_IS_TERM_ENTITY_EDGE);
-
-            entityGraphMapper.deleteClassificationOnlyPropagation(classificationVertexId, referencedVertexId, isTermEntityEdge);
         }
     }
 

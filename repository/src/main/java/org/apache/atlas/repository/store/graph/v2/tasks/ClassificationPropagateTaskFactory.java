@@ -98,12 +98,6 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
             case CLASSIFICATION_PROPAGATION_DELETE:
                 return new ClassificationPropagationTasks.Delete(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
 
-            case CLASSIFICATION_ONLY_PROPAGATION_DELETE:
-                return new ClassificationPropagationTasks.DeleteOnlyPropagations(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
-
-            case CLASSIFICATION_ONLY_PROPAGATION_DELETE_ON_HARD_DELETE:
-                return new ClassificationPropagationTasks.DeleteOnlyPropagationsOnHardDelete(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
-
             case CLASSIFICATION_REFRESH_PROPAGATION:
                 return new ClassificationPropagationTasks.RefreshPropagation(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
 

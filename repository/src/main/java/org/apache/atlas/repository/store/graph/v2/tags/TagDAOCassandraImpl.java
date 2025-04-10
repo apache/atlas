@@ -40,6 +40,8 @@ public class TagDAOCassandraImpl implements TagDAO {
     private final CqlSession cassSession;
     private final PreparedStatement findTagsStmt;
     private final PreparedStatement findTagsByVertexIdAndTypeNameStmt;
+    private final PreparedStatement findPropagatedTagsBySourceAndTypeNameStmt;
+    private final PreparedStatement deletePropagatedTagsBySourceAndTypeNameStmt;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     private static String INSERT_PROPAGATED_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id) values (%s, '%s', '%s', '%s')";
@@ -59,6 +61,14 @@ public class TagDAOCassandraImpl implements TagDAO {
             );
             findTagsByVertexIdAndTypeNameStmt = cassSession.prepare(
                     "SELECT * FROM tags.effective_tags where bucket = ? AND id = ? AND tag_type_name = ?"
+            );
+
+            findPropagatedTagsBySourceAndTypeNameStmt = cassSession.prepare(
+                    "SELECT * FROM tags.effective_tags where source_id = ? AND tag_type_name = ? AND is_propagated == true"
+            );
+
+            deletePropagatedTagsBySourceAndTypeNameStmt = cassSession.prepare(
+                    "delete * FROM tags.effective_tags where source_id = ? AND tag_type_name = ?"
             );
         } catch (Exception e) {
             LOG.error("Failed to initialize TagDAO", e);
@@ -81,7 +91,7 @@ public class TagDAOCassandraImpl implements TagDAO {
                 tags.add(classification);
             }
         } catch (Exception e) {
-            throw new AtlasBaseException(String.format("Error fetching tags for asset: %s, bucket: %s, tag_type_name: %s", vertexId, bucket), e);
+            throw new AtlasBaseException(String.format("Error fetching tags for asset: %s, bucket: %s", vertexId, bucket), e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
@@ -104,6 +114,47 @@ public class TagDAOCassandraImpl implements TagDAO {
             LOG.info("No tags found for id: {}, tag type: {}, bucket {}, returning null", vertexId, tagTypeName, bucket);
         } catch (Exception e) {
             throw new AtlasBaseException(String.format("Error fetching tag for asset: %s and tag type: %s, bucket: %s", vertexId, tagTypeName, bucket), e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+        return null;
+    }
+
+    @Override
+    public List<String> getVertexIdsForAttachment(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getVertexIdsForAttachment");
+        List<String> ids = new ArrayList<>();
+
+        try {
+            BoundStatement bound = findPropagatedTagsBySourceAndTypeNameStmt.bind(sourceVertexId, tagTypeName);
+            ResultSet rs = cassSession.execute(bound);
+
+            for (Row row : rs) {
+                ids.add(row.getString("id"));
+            }
+            LOG.info("No propagated tags found for source_id: {}, tagTypeName: {}, returning null", sourceVertexId, tagTypeName);
+        } catch (Exception e) {
+            throw new AtlasBaseException(String.format("Error fetching tags found for source_id: %s and tag type: %s", sourceVertexId, tagTypeName), e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+        return null;
+    }
+
+    @Override
+    public List<String> deleteAllTagsForAttachment(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("deleteAllTagsForAttachment");
+        List<String> ids = new ArrayList<>();
+
+        try {
+            BoundStatement bound = deletePropagatedTagsBySourceAndTypeNameStmt.bind(sourceVertexId, tagTypeName);
+            ResultSet rs = cassSession.execute(bound);
+
+            for (Row row : rs) {
+                ids.add(row.getString("id"));
+            }
+        } catch (Exception e) {
+            throw new AtlasBaseException(String.format("Error deleting tags found for source_id: %s and tag type: %s", sourceVertexId, tagTypeName), e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
