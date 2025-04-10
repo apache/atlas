@@ -78,6 +78,7 @@ import javax.script.ScriptException;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -417,6 +418,17 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
 
     public JanusGraph getGraph() {
         return this.janusGraph;
+    }
+
+    @Override
+    public List<AtlasVertex> getAllEdgesVertices(AtlasVertex vertex) {
+        GraphTraversal gt = V(vertex.getId()).both();
+        List<AtlasVertex> resultList = new ArrayList<>();
+        while (gt.hasNext()) {
+            Vertex v = (Vertex) gt.next();
+            resultList.add(GraphDbObjectFactory.createVertex(this, v));
+        }
+        return resultList;
     }
 
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> wrapVertices(Iterable<? extends Vertex> it) {

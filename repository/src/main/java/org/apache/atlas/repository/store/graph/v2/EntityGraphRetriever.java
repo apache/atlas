@@ -482,6 +482,10 @@ public class EntityGraphRetriever {
         return ret;
     }
 
+    public List<AtlasVertex> findAllConnectedVertices(AtlasVertex vertex) {
+        return graph.getAllEdgesVertices(vertex);
+    }
+
     public Map<String, Object> getEntityUniqueAttribute(AtlasVertex entityVertex) throws AtlasBaseException {
         Map<String, Object> ret        = null;
         String              typeName   = AtlasGraphUtilsV2.getTypeName(entityVertex);

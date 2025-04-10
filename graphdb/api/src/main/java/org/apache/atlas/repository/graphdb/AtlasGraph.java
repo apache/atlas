@@ -27,6 +27,7 @@ import javax.script.ScriptException;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -359,4 +360,11 @@ public interface AtlasGraph<V, E> {
      * @throws AtlasException when error encountered in creating the client.
      */
     AtlasGraphIndexClient getGraphIndexClient() throws AtlasException;
+
+    /**
+     *
+     * @param vertex
+     * @return
+     */
+    List<AtlasVertex> getAllEdgesVertices(AtlasVertex vertex);
 }
