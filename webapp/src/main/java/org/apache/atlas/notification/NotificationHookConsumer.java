@@ -587,10 +587,12 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         LOG.info("==> stopConsumerThreads()");
 
         if (consumers != null) {
-            for (HookConsumer consumer : consumers) {
-                stopConsumerThread(consumer);
+            Iterator<HookConsumer> iterator = consumers.iterator();
+            while (iterator.hasNext()) {
+                HookConsumer consumer = iterator.next();
+                consumer.shutdown();
+                iterator.remove(); // Safe removal
             }
-
             consumers.clear();
         }
 

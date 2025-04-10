@@ -23,7 +23,9 @@ import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.repository.impexp.AsyncImportService;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.MockitoAnnotations;
+import org.testng.annotations.AfterMethod;
 import org.testng.annotations.BeforeMethod;
 import org.testng.annotations.BeforeTest;
 import org.testng.annotations.DataProvider;
@@ -41,7 +43,6 @@ import java.util.concurrent.TimeUnit;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.ABORTED;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.FAILED;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.WAITING;
-import static org.easymock.EasyMock.reset;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
@@ -99,8 +100,6 @@ public class ImportTaskListenerImplTest {
 
     @BeforeMethod
     public void resetMocks() throws AtlasException {
-        reset(asyncImportService, notificationHookConsumer, requestQueue, importRequest);
-
         MockitoAnnotations.openMocks(this);
 
         when(importRequest.getImportId()).thenReturn("import123");
@@ -108,6 +107,11 @@ public class ImportTaskListenerImplTest {
         when(asyncImportService.fetchImportRequestByImportId(any(String.class))).thenReturn(importRequest);
 
         importTaskListener = new ImportTaskListenerImpl(asyncImportService, notificationHookConsumer, requestQueue);
+    }
+
+    @AfterMethod
+    public void teardown() {
+        Mockito.reset(asyncImportService, notificationHookConsumer, requestQueue, importRequest);
     }
 
     @Test

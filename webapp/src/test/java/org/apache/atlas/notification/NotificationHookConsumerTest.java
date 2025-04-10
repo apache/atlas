@@ -360,6 +360,14 @@ public class NotificationHookConsumerTest {
 
         NotificationHookConsumer notificationHookConsumer = new NotificationHookConsumer(notificationInterface, atlasEntityStore, serviceState, instanceConverter, typeRegistry, metricsUtil, null, asyncImporter);
 
+        // setting this just so this test would not create hook consumers
+        Field consumerDisabledField = NotificationHookConsumer.class.getDeclaredField("consumerDisabled");
+        consumerDisabledField.setAccessible(true);
+        consumerDisabledField.set(notificationHookConsumer, true);
+
+        // initializing the executors
+        notificationHookConsumer.startInternal(configuration, null);
+
         notificationHookConsumer.startAsyncImportConsumer(ASYNC_IMPORT, importId, "ATLAS_IMPORT_" + importId);
 
         // consumer created
