@@ -67,7 +67,6 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
     private final AtlasRelationshipStoreV2 relationshipStoreV2;
     private final IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier;
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
-    private static final HashMap<String, AtlasEntity> diffEntityCache = new HashMap<>();
 
 
 
@@ -122,7 +121,6 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                 } else {
                     processProductAssetInputRelation(assetGuid, productGuid, operation, edgeLabel);
                 }
-
             }
             handleEntityMutation(updatedVertices);
             commitChanges();
@@ -295,11 +293,12 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         AtlasEntity diffEntity;
         String assetGuid = ev.getProperty(GUID_PROPERTY_KEY, String.class);
 
-        if (diffEntityCache.containsKey(assetGuid)) {
-            diffEntity = diffEntityCache.get(assetGuid);
+        RequestContext requestContext = RequestContext.get();
+
+        if (requestContext.getDifferentialEntity(assetGuid) != null) {
+            diffEntity = requestContext.getDifferentialEntity(assetGuid);
         } else {
             diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
-            diffEntityCache.put(assetGuid, diffEntity);
         }
 
         diffEntity.setGuid(ev.getProperty(GUID_PROPERTY_KEY, String.class));
@@ -307,7 +306,6 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
         diffEntity.setAttribute(assetDenormAttribute, existingValues);
 
-        RequestContext requestContext = RequestContext.get();
         requestContext.cacheDifferentialEntity(diffEntity);
     }
 
