@@ -85,6 +85,7 @@ import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getState;
+import static org.apache.tinkerpop.gremlin.groovy.jsr223.dsl.credential.__.id;
 import static org.apache.tinkerpop.gremlin.groovy.jsr223.dsl.credential.__.outV;
 
 public abstract class DeleteHandlerV1 {
@@ -1709,7 +1710,7 @@ public abstract class DeleteHandlerV1 {
         // Complete the traversal with common operations
         return traversal
                 .project("id", HAS_LINEAGE)
-                .by("id")
+                .by(id())
                 .by(outV().values(HAS_LINEAGE))
                 .toStream()
                 .anyMatch(edge -> {
