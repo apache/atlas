@@ -19,13 +19,9 @@
 
 package org.apache.atlas.plugin.util;
 
-<<<<<<< HEAD
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-=======
-
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.atlas.authorizer.store.PoliciesStore;
->>>>>>> baeb19057 (Save abac policies to cache file as well)
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -411,7 +407,7 @@ public class ServicePolicies implements java.io.Serializable {
 		}
 	}
 
-	@JsonInclude(JsonInclude.Include.NON_NULL)
+	@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 	@XmlRootElement
 	@XmlAccessorType(XmlAccessType.FIELD)
 	public static class SecurityZoneInfo implements java.io.Serializable {

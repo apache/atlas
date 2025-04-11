@@ -85,7 +85,6 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_CATEGOR
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SERVICE_NAME_ABAC;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyCategory;
-import static org.apache.atlas.services.tag.RangerServiceTag.TAG_RESOURCE_NAME;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyFilterCriteria;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResourceCategory;
 
