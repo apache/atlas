@@ -27,7 +27,7 @@ on:
       - development
       - master
       - staging
-      - soppLineage
+      - sopplineagee
 
 jobs:
   build:
