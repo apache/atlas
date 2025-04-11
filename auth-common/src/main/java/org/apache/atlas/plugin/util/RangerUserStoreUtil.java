@@ -56,5 +56,3 @@ public class RangerUserStoreUtil {
         return cloudId;
     }
 }
-
-
