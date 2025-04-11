@@ -98,7 +98,7 @@ public enum AtlasConfiguration {
     LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", true),
     LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT("atlas.lineage.on.demand.default.node.count", 3),
     LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 100),
-    USE_OPTIMISED_LINEAGE_CALCULATION("atlas.lineage.optimised.calculation", false),
+    USE_OPTIMISED_LINEAGE_CALCULATION("atlas.lineage.optimised.calculation", true),
 
     SUPPORTED_RELATIONSHIP_EVENTS("atlas.notification.relationships.filter", "asset_readme,asset_links"),
     ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_ASSET_TYPES("atlas.relationship.cleanup.supported.asset.types", "Process,AirflowTask"),
