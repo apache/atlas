@@ -1619,8 +1619,10 @@ public abstract class DeleteHandlerV1 {
     private void updateAssetHasLineageStatus(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
         if (AtlasConfiguration.USE_OPTIMISED_LINEAGE_CALCULATION.getBoolean()) {
             updateAssetHasLineageStatusV2(assetVertex, currentEdge, removedEdges);
+        }else {
+            updateAssetHasLineageStatusV1(assetVertex, currentEdge, removedEdges);
         }
-        updateAssetHasLineageStatusV1(assetVertex, currentEdge, removedEdges);
+
     }
     private void updateAssetHasLineageStatusV1(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatusV1");
