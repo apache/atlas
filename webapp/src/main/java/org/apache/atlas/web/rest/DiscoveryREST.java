@@ -885,7 +885,54 @@ public class DiscoveryREST {
             if (StringUtils.isNotEmpty(parameters.getQuery()) && parameters.getQuery().length() > maxFullTextQueryLength) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
             }
+
+            validateEntityFilter(parameters);
         }
+    }
+
+    private void validateEntityFilter(SearchParameters parameters) throws AtlasBaseException {
+        if (parameters.getEntityFilters() == null) {
+            return;
+        }
+
+        if (parameters.getEntityFilters().getCriterion() != null &&
+                !parameters.getEntityFilters().getCriterion().isEmpty()) {
+            if (StringUtils.isEmpty(parameters.getEntityFilters().getCondition().toString())) {
+                throw new AtlasBaseException("Condition (AND/OR) must be specified when using multiple filters.");
+            }
+
+            for (FilterCriteria filterCriteria : parameters.getEntityFilters().getCriterion()) {
+                if (filterCriteria.getOperator() == null) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_OPERATOR, filterCriteria.getAttributeName());
+                }
+
+                if (StringUtils.isBlank(filterCriteria.getAttributeName())) {
+                    throw new AtlasBaseException(AtlasErrorCode.BLANK_ATTRIBUTES);
+                }
+
+                if (requiresValue(filterCriteria.getOperator()) && StringUtils.isBlank(filterCriteria.getAttributeValue())) {
+                    throw new AtlasBaseException(AtlasErrorCode.BLANK_ATTRIBUTES);
+                }
+            }
+        }
+        else {
+            if (parameters.getEntityFilters().getOperator() == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_OPERATOR, parameters.getEntityFilters().getAttributeName());
+            }
+
+            if (StringUtils.isBlank(parameters.getEntityFilters().getAttributeName())) {
+                throw new AtlasBaseException(AtlasErrorCode.BLANK_ATTRIBUTES);
+            }
+
+            if (requiresValue(parameters.getEntityFilters().getOperator()) && StringUtils.isBlank(parameters.getEntityFilters().getAttributeValue())) {
+                throw new AtlasBaseException(AtlasErrorCode.BLANK_ATTRIBUTES);
+            }
+        }
+    }
+
+    private boolean requiresValue(SearchParameters.Operator operator) {
+        return operator != SearchParameters.Operator.IS_NULL
+                && operator != SearchParameters.Operator.NOT_NULL;
     }
 
     private void validateSearchParameters(QuickSearchParameters parameters) throws AtlasBaseException {
