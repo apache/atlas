@@ -1719,7 +1719,7 @@ public abstract class DeleteHandlerV1 {
 
                     // Skip if in deleted list or matches current edge
                     if (RequestContext.get().getDeletedEdgesIdsForResetHasLineage().contains(edgeIdStr) ||
-                            currentEdge.getId().equals(edgeIdStr)) {
+                            currentEdge.getIdForDisplay().equals(edgeIdStr)) {
                         return false;
                     }
 
