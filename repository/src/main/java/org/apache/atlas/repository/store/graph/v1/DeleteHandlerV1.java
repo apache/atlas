@@ -42,6 +42,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -56,10 +57,15 @@ import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.model.TypeCategory.*;
@@ -78,6 +84,7 @@ import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getState;
+import static org.apache.tinkerpop.gremlin.groovy.jsr223.dsl.credential.__.outV;
 
 public abstract class DeleteHandlerV1 {
     public static final Logger  LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
@@ -1609,18 +1616,28 @@ public abstract class DeleteHandlerV1 {
     }
 
     private void updateAssetHasLineageStatus(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatus");
+        if (AtlasConfiguration.USE_OPTIMISED_LINEAGE_CALCULATION.getBoolean()) {
+            updateAssetHasLineageStatusV2(assetVertex, currentEdge, removedEdges);
+        }
+        updateAssetHasLineageStatusV1(assetVertex, currentEdge, removedEdges);
+    }
+    private void updateAssetHasLineageStatusV1(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatusV1");
 
         removedEdges.forEach(edge -> RequestContext.get().addToDeletedEdgesIdsForResetHasLineage(edge.getIdForDisplay()));
 
+        AtlasPerfMetrics.MetricRecorder metricRecorder1 = RequestContext.get().startMetricRecord("updateAssetHasLineageStatus-edges");
         Iterator<AtlasEdge> edgeIterator = assetVertex.query()
                 .direction(AtlasEdgeDirection.BOTH)
                 .label(PROCESS_EDGE_LABELS)
                 .has(STATE_PROPERTY_KEY, ACTIVE.name())
                 .edges()
                 .iterator();
+        RequestContext.get().endMetricRecord(metricRecorder1);
 
         int processHasLineageCount = 0;
+
+        AtlasPerfMetrics.MetricRecorder metricRecorder2 = RequestContext.get().startMetricRecord("updateAssetHasLineageStatus-getLineage");
         while (edgeIterator.hasNext()) {
             AtlasEdge edge = edgeIterator.next();
             if (!RequestContext.get().getDeletedEdgesIdsForResetHasLineage().contains(edge.getIdForDisplay()) && !currentEdge.equals(edge)) {
@@ -1632,6 +1649,8 @@ public abstract class DeleteHandlerV1 {
                 }
             }
         }
+         RequestContext.get().endMetricRecord(metricRecorder2);
+
 
         if (processHasLineageCount == 0) {
             AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
@@ -1640,4 +1659,68 @@ public abstract class DeleteHandlerV1 {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
+    private void updateAssetHasLineageStatusV2(AtlasVertex assetVertex, AtlasEdge currentEdge, Collection<AtlasEdge> removedEdges) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateAssetHasLineageStatusV2");
+
+        // Add removed edges to the context
+        removedEdges.forEach(edge -> RequestContext.get().addToDeletedEdgesIdsForResetHasLineage(edge.getIdForDisplay()));
+
+        // Check for active lineage in outgoing edges first
+        boolean hasActiveLineage = hasActiveLineageInDirection(assetVertex, currentEdge, true);
+
+        // If no active lineage in outgoing edges, check incoming edges
+        if (!hasActiveLineage) {
+            hasActiveLineage = hasActiveLineageInDirection(assetVertex, currentEdge, false);
+        }
+
+        // Only update if no active lineage found
+        if (!hasActiveLineage) {
+            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
+        }
+
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    /**
+     * Helper method to check for active lineage in a specific direction
+     * @param assetVertex The vertex to check
+     * @param currentEdge The current edge to exclude
+     * @param isOutgoing If true, checks outgoing edges; if false, checks incoming edges
+     * @return True if active lineage exists in the specified direction
+     */
+    private boolean hasActiveLineageInDirection(AtlasVertex assetVertex, AtlasEdge currentEdge, boolean isOutgoing) {
+        GraphTraversalSource g = ((AtlasJanusGraph) graph).getGraph().traversal();
+        GraphTraversal<Vertex, Edge> traversal;
+
+        // Create the appropriate directional traversal
+        if (isOutgoing) {
+            traversal = g.V(assetVertex.getId())
+                    .outE()
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE);
+        } else {
+            traversal = g.V(assetVertex.getId())
+                    .inE()
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE);
+        }
+
+        // Complete the traversal with common operations
+        return traversal
+                .project("id", HAS_LINEAGE)
+                .by("id")
+                .by(outV().values(HAS_LINEAGE))
+                .toStream()
+                .anyMatch(edge -> {
+                    Object edgeId = edge.get("id");
+                    String edgeIdStr = (edgeId != null) ? edgeId.toString() : "";
+
+                    // Skip if in deleted list or matches current edge
+                    if (RequestContext.get().getDeletedEdgesIdsForResetHasLineage().contains(edgeIdStr) ||
+                            currentEdge.getId().equals(edgeIdStr)) {
+                        return false;
+                    }
+
+                    // Check if this edge has lineage
+                    return Boolean.TRUE.equals(edge.get(HAS_LINEAGE));
+                });
+    }
 }
