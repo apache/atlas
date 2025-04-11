@@ -59,6 +59,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
+import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.Vertex;
 import org.slf4j.Logger;
@@ -1666,11 +1667,11 @@ public abstract class DeleteHandlerV1 {
         removedEdges.forEach(edge -> RequestContext.get().addToDeletedEdgesIdsForResetHasLineage(edge.getIdForDisplay()));
 
         // Check for active lineage in outgoing edges first
-        boolean hasActiveLineage = hasActiveLineageInDirection(assetVertex, currentEdge, true);
+        boolean hasActiveLineage = hasActiveLineageDirection(assetVertex, currentEdge, Direction.OUT);
 
         // If no active lineage in outgoing edges, check incoming edges
         if (!hasActiveLineage) {
-            hasActiveLineage = hasActiveLineageInDirection(assetVertex, currentEdge, false);
+            hasActiveLineage = hasActiveLineageDirection(assetVertex, currentEdge, Direction.IN);
         }
 
         // Only update if no active lineage found
@@ -1685,15 +1686,15 @@ public abstract class DeleteHandlerV1 {
      * Helper method to check for active lineage in a specific direction
      * @param assetVertex The vertex to check
      * @param currentEdge The current edge to exclude
-     * @param isOutgoing If true, checks outgoing edges; if false, checks incoming edges
+     * @param direction The edge direction to explore
      * @return True if active lineage exists in the specified direction
      */
-    private boolean hasActiveLineageInDirection(AtlasVertex assetVertex, AtlasEdge currentEdge, boolean isOutgoing) {
+    private boolean hasActiveLineageDirection(AtlasVertex assetVertex, AtlasEdge currentEdge, Direction direction) {
         GraphTraversalSource g = ((AtlasJanusGraph) graph).getGraph().traversal();
         GraphTraversal<Vertex, Edge> traversal;
 
         // Create the appropriate directional traversal
-        if (isOutgoing) {
+        if (direction.equals(Direction.OUT)) {
             traversal = g.V(assetVertex.getId())
                     .outE()
                     .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE);
