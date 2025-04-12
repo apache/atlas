@@ -255,6 +255,8 @@ public class AtlasLdapAuthenticationProvider extends AtlasAbstractAuthentication
         defaultLdapAuthoritiesPopulator.setGroupRoleAttribute(ldapGroupRoleAttribute);
         defaultLdapAuthoritiesPopulator.setGroupSearchFilter(ldapGroupSearchFilter);
         defaultLdapAuthoritiesPopulator.setIgnorePartialResultException(true);
+        defaultLdapAuthoritiesPopulator.setRolePrefix("");
+        defaultLdapAuthoritiesPopulator.setConvertToUpperCase(false);
 
         return defaultLdapAuthoritiesPopulator;
     }
