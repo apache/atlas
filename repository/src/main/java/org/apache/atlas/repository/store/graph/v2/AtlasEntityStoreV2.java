@@ -1089,7 +1089,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         context.cacheEntity(guid, entityVertex, typeRegistry.getEntityTypeByName(entityHeader.getTypeName()));
 
-
         for (AtlasClassification classification : classifications) {
             validateAndNormalize(classification);
         }

@@ -235,7 +235,7 @@ public class ClassificationAssociator {
                     entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(addedClassification), false);
                 }
             }
-            entityGraphMapper.updateClassificationText(null, allVertices);
+            //entityGraphMapper.updateClassificationText(null, allVertices);
             transactionInterceptHelper.intercept();
 
             RequestContext.get().endMetricRecord(recorder);

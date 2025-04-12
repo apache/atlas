@@ -99,7 +99,8 @@ public class AtlasTask {
     public AtlasTask() {
     }
 
-    public AtlasTask(String type, String createdBy, Map<String, Object> parameters, String classificationId,
+    public AtlasTask(String type, String createdBy, Map<String, Object> parameters,
+                     String classificationId, String classificationTypeName,
                      String entityGuid) {
         this.guid               = UUID.randomUUID().toString();
         this.type               = type;
@@ -111,6 +112,7 @@ public class AtlasTask {
         this.attemptCount       = 0;
         this.classificationId   = classificationId;
         this.entityGuid         = entityGuid;
+        this.classificationTypeName = classificationTypeName;
     }
 
     public String getGuid() {

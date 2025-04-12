@@ -51,7 +51,7 @@ public class ClassificationPropagationTasks {
 
             if (mode != null && mode) {
                 LOG.info("via new mode");
-                entityGraphMapper.propagateClassificationNew(parameters, entityGuid, classificationVertexId, tagTypeName);
+                entityGraphMapper.propagateClassificationV2(parameters, entityGuid, classificationVertexId, tagTypeName);
             } else {
                 LOG.info("via old mode");
                 entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage, previousRestrictPropagationThroughHierarchy);
@@ -85,9 +85,9 @@ public class ClassificationPropagationTasks {
 
             if (mode != null && mode) {
                 LOG.info("via new mode");
-                entityGraphMapper.deleteClassificationPropagationV2(entityGuid, classificationVertexId);
+                entityGraphMapper.deleteClassificationPropagationV2(entityGuid, tagTypeName);
             } else {
-                entityGraphMapper.deleteClassificationPropagation(entityGuid, tagTypeName);
+                entityGraphMapper.deleteClassificationPropagation(entityGuid, classificationVertexId);
             }
         }
     }

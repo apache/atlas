@@ -873,7 +873,7 @@
             <dependency>
                 <groupId>com.datastax.oss</groupId>
                 <artifactId>java-driver-core</artifactId>
-                <version>4.15.0</version> <!-- Use the latest version -->
+                <version>4.17.0</version>
             </dependency>
 
             <dependency>

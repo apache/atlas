@@ -32,9 +32,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_TEXT_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;import static org.apache.atlas.repository.audit.ESBasedAuditRepository.getHttpHosts;
 
 public class ESConnector {
@@ -43,7 +45,6 @@ public class ESConnector {
     private static RestClient lowLevelClient;
 
     private static Set<String> DENORM_ATTRS;
-    private static String endpoint = VERTEX_INDEX_NAME + "/_update/%s";
     private static String GET_DOCS_BY_ID = VERTEX_INDEX_NAME + "/_mget";
 
     static {
@@ -63,8 +64,10 @@ public class ESConnector {
                     DENORM_ATTRS = new HashSet<>();
                     DENORM_ATTRS.add(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY); //List
                     DENORM_ATTRS.add(PROPAGATED_CLASSIFICATION_NAMES_KEY); //String
-                    DENORM_ATTRS.add(CLASSIFICATION_TEXT_KEY); //String
+                    DENORM_ATTRS.add(CLASSIFICATION_TEXT_KEY);//String
 
+                    DENORM_ATTRS.add(TRAIT_NAMES_PROPERTY_KEY); //List
+                    DENORM_ATTRS.add(CLASSIFICATION_NAMES_KEY); //String
 
                 } catch (AtlasException e) {
                     LOG.error("Failed to initialize low level rest client for ES");

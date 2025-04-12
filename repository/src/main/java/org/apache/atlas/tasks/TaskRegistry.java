@@ -533,7 +533,7 @@ public class TaskRegistry {
     }
 
     public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters, String classificationId, String entityGuid) {
-        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, entityGuid);
+        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, null, entityGuid);
 
         createVertex(ret);
 
@@ -541,8 +541,16 @@ public class TaskRegistry {
     }
 
     public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters, String classificationId,String classificationTypeName, String entityGuid) {
-        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, entityGuid);
+        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, null,  entityGuid);
         ret.setClassificationTypeName(classificationTypeName);
+        createVertex(ret);
+
+        return ret;
+    }
+
+    public AtlasTask createVertexV2(String taskType, String createdBy, Map<String, Object> parameters, String tagTypeName, String entityGuid) {
+        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, null, tagTypeName, entityGuid);
+
         createVertex(ret);
 
         return ret;
