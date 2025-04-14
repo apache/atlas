@@ -142,6 +142,6 @@ public class MigrationImport extends ImportStrategy {
 
     private AtlasInstanceConverter getInstanceConverter(AtlasGraph graph) {
         AtlasFormatConverters formatConverters = new AtlasFormatConverters(typeRegistry);
-        return new AtlasInstanceConverter(graph, typeRegistry, formatConverters);
+        return new AtlasInstanceConverter(graph, typeRegistry, formatConverters, null);
     }
 }

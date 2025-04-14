@@ -140,20 +140,20 @@ public class ClassificationAssociator {
 
         public Updater(AtlasGraph graph, AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore,
                        EntityGraphMapper entityGraphMapper, IAtlasEntityChangeNotifier entityChangeNotifier,
-                       AtlasInstanceConverter instanceConverter) {
+                       AtlasInstanceConverter instanceConverter, EntityGraphRetriever entityRetriever) {
             this.graph = graph;
             this.typeRegistry = typeRegistry;
             this.entitiesStore = entitiesStore;
             this.entityGraphMapper = entityGraphMapper;
             this.entityChangeNotifier = entityChangeNotifier;
             this.instanceConverter = instanceConverter;
-            entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
+            this.entityRetriever = entityRetriever;
         }
 
         public Updater(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore,
                        EntityGraphMapper entityGraphMapper, IAtlasEntityChangeNotifier entityChangeNotifier,
-                       AtlasInstanceConverter instanceConverter) {
-            this(AtlasGraphProvider.getGraphInstance(), typeRegistry, entitiesStore, entityGraphMapper, entityChangeNotifier, instanceConverter);
+                       AtlasInstanceConverter instanceConverter, EntityGraphRetriever entityRetriever) {
+            this(AtlasGraphProvider.getGraphInstance(), typeRegistry, entitiesStore, entityGraphMapper, entityChangeNotifier, instanceConverter, entityRetriever);
         }
 
         public void setClassifications(Map<String, AtlasEntityHeader> map, boolean overrideClassifications) throws AtlasBaseException {

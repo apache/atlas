@@ -44,6 +44,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
 import org.apache.atlas.repository.store.graph.v2.BulkRequestContext;
 import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityStream;
 import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -116,16 +117,19 @@ public class EntityREST {
     private final EntityGraphMapper entityGraphMapper;
     private final IAtlasEntityChangeNotifier entityChangeNotifier;
     private final AtlasInstanceConverter instanceConverter;
+    private final EntityGraphRetriever entityGraphRetriever;
 
     @Inject
     public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository,
-                      EntityGraphMapper entityGraphMapper, IAtlasEntityChangeNotifier entityChangeNotifier, AtlasInstanceConverter instanceConverter) {
+                      EntityGraphMapper entityGraphMapper, IAtlasEntityChangeNotifier entityChangeNotifier, AtlasInstanceConverter instanceConverter,
+                      EntityGraphRetriever retriever) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
         this.esBasedAuditRepository = esBasedAuditRepository;
         this.entityGraphMapper = entityGraphMapper;
         this.entityChangeNotifier = entityChangeNotifier;
         this.instanceConverter = instanceConverter;
+        this.entityGraphRetriever = retriever;
     }
 
     /**
@@ -1222,7 +1226,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.setClassifications(" + overrideClassifications +")");
             }
 
-            ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(typeRegistry, entitiesStore, entityGraphMapper, entityChangeNotifier, instanceConverter);
+            ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(typeRegistry, entitiesStore, entityGraphMapper, entityChangeNotifier, instanceConverter, entityGraphRetriever);
             associator.setClassifications(entityHeaders.getGuidHeaderMap(), overrideClassifications);
         } finally {
             AtlasPerfTracer.log(perf);
