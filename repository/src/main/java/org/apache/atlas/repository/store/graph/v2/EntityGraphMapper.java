@@ -3731,14 +3731,6 @@ public class EntityGraphMapper {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityGraphMapper.deleteClassification");
         }
 
-        List<String> traitNames = getTraitNames(entityVertex);
-
-        if (CollectionUtils.isEmpty(traitNames)) {
-            throw new AtlasBaseException(AtlasErrorCode.NO_CLASSIFICATIONS_FOUND_FOR_ENTITY, entityGuid);
-        }
-
-        validateClassificationExists(traitNames, classificationName);
-
         //AtlasVertex         classificationVertex = getClassificationVertex(graphHelper, entityVertex, classificationName);
         AtlasClassification tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), classificationName);
 
