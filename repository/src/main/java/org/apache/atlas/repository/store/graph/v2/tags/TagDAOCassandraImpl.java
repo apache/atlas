@@ -50,6 +50,8 @@ public class TagDAOCassandraImpl implements TagDAO {
     private static String INSERT_PROPAGATED_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata) values (%s, '%s', '%s', '%s', %s, %s, '%s')";
     private static String INSERT_DIRECT_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json) values (%s, '%s', '%s', '%s', %s, %s,'%s', '%s')";
 
+    private static String DELETE_DIRECT_TAG = "DELETE FROM tags.effective_tags where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s' AND is_propagated = false";
+
     private static String DELETE_PROPAGATED_TAG = "DELETE FROM tags.effective_tags where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s'";
 
 
@@ -195,6 +197,26 @@ public class TagDAOCassandraImpl implements TagDAO {
             RequestContext.get().endMetricRecord(recorder);
         }
         return tags;
+    }
+
+    @Override
+    public void deleteDirectTag(String sourceVertexId, AtlasClassification tagToDelete) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("deleteTags");
+
+        try {
+            String delete = String.format(DELETE_DIRECT_TAG,
+                    calculateBucket(sourceVertexId),
+                    sourceVertexId,
+                    sourceVertexId,
+                    tagToDelete.getTypeName());
+
+            cassSession.execute(delete);
+
+        } catch (Exception e) {
+            throw new AtlasBaseException("Error deleting tags", e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
     }
 
     @Override

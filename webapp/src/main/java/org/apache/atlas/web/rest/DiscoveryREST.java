@@ -394,9 +394,6 @@ public class DiscoveryREST {
         RequestContext.get().setIsInvokedByIndexSearch(true);
         long startTime = System.currentTimeMillis();
 
-        RequestContext.get().setIncludeMeanings(!parameters.isExcludeMeanings());
-        RequestContext.get().setIncludeClassifications(!parameters.isExcludeClassifications());
-        RequestContext.get().setIncludeClassificationNames(parameters.isIncludeClassificationNames());
         try     {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearch(" + parameters + ")");

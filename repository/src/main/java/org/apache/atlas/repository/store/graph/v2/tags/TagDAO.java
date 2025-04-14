@@ -24,5 +24,6 @@ public interface TagDAO {
                       AtlasClassification tag,
                       Map<String, Object> assetMetadata);
 
-    public void deleteTags(List<Tag> tagsToDelete) throws AtlasBaseException;
+    void deleteDirectTag(String sourceVertexId, AtlasClassification tagToDelete) throws AtlasBaseException;
+    void deleteTags(List<Tag> tagsToDelete) throws AtlasBaseException;
 }

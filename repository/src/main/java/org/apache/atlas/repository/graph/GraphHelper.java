@@ -28,6 +28,7 @@ import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -319,16 +320,6 @@ public final class GraphHelper {
 
             ret = (enabled == null) ? true : enabled;
         }
-
-        return ret;
-    }
-
-    public static boolean isPropagationEnabled(Map<String, Object> classificationPropertiesMap) {
-        boolean ret = false;
-
-        Boolean enabled = (Boolean) classificationPropertiesMap.get(CLASSIFICATION_VERTEX_PROPAGATE_KEY);
-
-        ret = (enabled == null) ? true : enabled;
 
         return ret;
     }

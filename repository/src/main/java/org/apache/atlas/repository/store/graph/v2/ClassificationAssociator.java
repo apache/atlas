@@ -208,7 +208,7 @@ public class ClassificationAssociator {
 
                     for (Object obj: vertices) {
                         AtlasVertex vertex = (AtlasVertex) obj;
-                        AtlasEntity entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), IGNORE_REL);
+                        AtlasEntity entity = entityGraphMapper.getMinimalAtlasEntityForNotification(vertex);
 
                         allVertices.add(vertex);
                         propagatedEntities.add(entity);
@@ -226,7 +226,7 @@ public class ClassificationAssociator {
 
                     for (Object obj: vertices) {
                         AtlasVertex vertex = (AtlasVertex) obj;
-                        AtlasEntity entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), IGNORE_REL);
+                        AtlasEntity entity = entityGraphMapper.getMinimalAtlasEntityForNotification(vertex);
 
                         allVertices.add(vertex);
                         propagatedEntities.add(entity);
@@ -235,8 +235,9 @@ public class ClassificationAssociator {
                     entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(addedClassification), false);
                 }
             }
+
             //entityGraphMapper.updateClassificationText(null, allVertices);
-            transactionInterceptHelper.intercept();
+            //transactionInterceptHelper.intercept();
 
             RequestContext.get().endMetricRecord(recorder);
             RequestContext.get().setDelayTagNotifications(false);

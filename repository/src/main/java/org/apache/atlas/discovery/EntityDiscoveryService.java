@@ -43,6 +43,7 @@ import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.userprofile.UserProfileService;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.searchlog.ESSearchLogger;
@@ -86,7 +87,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private static final String DEFAULT_SORT_ATTRIBUTE_NAME = "name";
 
     private final AtlasGraph                      graph;
-    private final EntityGraphRetriever            entityRetriever;
     private final AtlasGremlinQueryProvider       gremlinQueryProvider;
     private final AtlasTypeRegistry               typeRegistry;
     private final GraphBackedSearchIndexer        indexer;
@@ -100,7 +100,21 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final DSLQueryExecutor                dslQueryExecutor;
     private final StatsClient                     statsClient;
 
+    private EntityGraphRetriever            entityRetriever;
+
     @Inject
+    public EntityDiscoveryService(AtlasTypeRegistry typeRegistry,
+                                  AtlasGraph graph,
+                                  GraphBackedSearchIndexer indexer,
+                                  SearchTracker searchTracker,
+                                  UserProfileService userProfileService,
+                                  StatsClient statsClient,
+                                  EntityGraphRetriever entityRetriever) throws AtlasException {
+        this(typeRegistry, graph, indexer, searchTracker, userProfileService, statsClient);
+
+        this.entityRetriever          = entityRetriever;
+    }
+
     public EntityDiscoveryService(AtlasTypeRegistry typeRegistry,
                            AtlasGraph graph,
                            GraphBackedSearchIndexer indexer,
@@ -976,6 +990,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
         RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
         RequestContext.get().setIncludeRelationshipAttributes(params.isIncludeRelationshipAttributes());
+
+        RequestContext.get().setIncludeMeanings(!searchParams.isExcludeMeanings());
+        RequestContext.get().setIncludeClassifications(!searchParams.isExcludeClassifications());
+        RequestContext.get().setIncludeClassificationNames(searchParams.isIncludeClassificationNames());
 
         AtlasSearchResult ret = new AtlasSearchResult();
         AtlasIndexQuery indexQuery;

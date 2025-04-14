@@ -50,6 +50,7 @@ import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.*;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
@@ -144,10 +145,24 @@ public class EntityGraphRetriever {
 
     private final boolean ignoreRelationshipAttr;
     private final AtlasGraph graph;
+    private TagDAO tagDAO;
 
     @Inject
+    public EntityGraphRetriever(TagDAO tagDAO, AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
+        this(graph, typeRegistry, false);
+        this.tagDAO = tagDAO;
+    }
+
     public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
         this(graph, typeRegistry, false);
+    }
+
+    public EntityGraphRetriever(EntityGraphRetriever retriever, boolean ignoreRelationshipAttr) {
+        this.tagDAO                 = retriever.tagDAO;
+        this.graph                  = retriever.graph;
+        this.graphHelper            = retriever.graphHelper;
+        this.typeRegistry           = retriever.typeRegistry;
+        this.ignoreRelationshipAttr = ignoreRelationshipAttr;
     }
 
     public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean ignoreRelationshipAttr) {
@@ -155,7 +170,6 @@ public class EntityGraphRetriever {
         this.graphHelper            = new GraphHelper(graph);
         this.typeRegistry           = typeRegistry;
         this.ignoreRelationshipAttr = ignoreRelationshipAttr;
-
     }
 
     public AtlasEntity toAtlasEntity(String guid, boolean includeReferences) throws AtlasBaseException {
@@ -410,27 +424,6 @@ public class EntityGraphRetriever {
             ret.setValidityPeriods(AtlasJson.fromJson(strValidityPeriods, TIME_BOUNDARIES_LIST_TYPE));
             mapAttributes(classificationVertex, ret, null);
         }
-
-        return ret;
-    }
-
-    public AtlasClassification toAtlasClassification(Map<String, Object> classification) throws AtlasBaseException {
-        AtlasClassification ret                = null;
-        String              classificationName = (String) classification.get("__typeName");
-
-        ret = new AtlasClassification(classificationName);
-
-        ret.setEntityGuid((String) classification.get(CLASSIFICATION_ENTITY_GUID));
-        ret.setEntityStatus(AtlasEntity.Status.valueOf((String) classification.get(CLASSIFICATION_ENTITY_STATUS)));
-        ret.setPropagate(isPropagationEnabled(classification));
-        ret.setRemovePropagationsOnEntityDelete(getRemovePropagations(classification));
-        ret.setRestrictPropagationThroughLineage(getRestrictPropagationThroughLineage(classification));
-        ret.setRestrictPropagationThroughHierarchy(getRestrictPropagationThroughHierarchy(classification));
-
-        //String strValidityPeriods = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VALIDITY_PERIODS_KEY, String.class);
-        //ret.setValidityPeriods( AtlasJson.fromJson(strValidityPeriods, TIME_BOUNDARIES_LIST_TYPE));
-
-        //mapAttributes(classificationVertex, ret, null);
 
         return ret;
     }
@@ -1004,7 +997,8 @@ public class EntityGraphRetriever {
                 mapRelationshipAttributes(entityVertex, entity, entityExtInfo, isMinExtInfo);
             }
 
-            mapClassifications(entityVertex, entity);
+            //mapClassifications(entityVertex, entity);
+            entity.setClassifications(tagDAO.getAllDirectTagsForVertex(entityVertex.getIdForDisplay()));
         }
 
         return entity;
@@ -1536,8 +1530,10 @@ public class EntityGraphRetriever {
                 LOG.debug("Performing getAllClassifications");
             }
 
+            return tagDAO.getTagsForVertex(entityVertex.getIdForDisplay());
+
             // use optimised path only for indexsearch and when flag is enabled!
-            if (ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS.getBoolean() && RequestContext.get().isInvokedByIndexSearch()) {
+            /*if (ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS.getBoolean() && RequestContext.get().isInvokedByIndexSearch()) {
                 LOG.info("optimised tags fetch");
                 // Fetch classification vertices directly
                 List<AtlasVertex> classificationVertices = ((AtlasJanusGraph) graph).getGraph().traversal()
@@ -1581,7 +1577,7 @@ public class EntityGraphRetriever {
 
                 RequestContext.get().endMetricRecord(metricRecorder);
                 return ret;
-            }
+            }*/
         } catch (Exception e) {
             LOG.error("Error while getting all classifications", e);
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);

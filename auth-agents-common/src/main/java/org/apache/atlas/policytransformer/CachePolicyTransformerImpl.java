@@ -599,6 +599,8 @@ public class CachePolicyTransformerImpl {
         List<AtlasEntityHeader> ret = new ArrayList<>();
         try {
             IndexSearchParams indexSearchParams = new IndexSearchParams();
+            indexSearchParams.setExcludeClassifications(true);
+
             Set<String> attributes = new HashSet<>();
             attributes.add(NAME);
             attributes.add(ATTR_POLICY_CATEGORY);
@@ -673,6 +675,8 @@ public class CachePolicyTransformerImpl {
 
     private AtlasEntityHeader getServiceEntity(String serviceName) throws AtlasBaseException {
         IndexSearchParams indexSearchParams = new IndexSearchParams();
+        indexSearchParams.setExcludeClassifications(true);
+
         Set<String> attributes = new HashSet<>();
         attributes.add(NAME);
         attributes.add(ATTR_SERVICE_SERVICE_TYPE);
