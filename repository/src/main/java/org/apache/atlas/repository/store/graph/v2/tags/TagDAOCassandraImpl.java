@@ -50,7 +50,7 @@ public class TagDAOCassandraImpl implements TagDAO {
     private static String INSERT_PROPAGATED_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata) values (%s, '%s', '%s', '%s', %s, %s, '%s')";
     private static String INSERT_DIRECT_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json) values (%s, '%s', '%s', '%s', %s, %s,'%s', '%s')";
 
-    private static String DELETE_DIRECT_TAG = "DELETE FROM tags.effective_tags where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s' AND is_propagated = false";
+    private static String DELETE_DIRECT_TAG = "DELETE FROM tags.effective_tags where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s'";
 
     private static String DELETE_PROPAGATED_TAG = "DELETE FROM tags.effective_tags where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s'";
 
