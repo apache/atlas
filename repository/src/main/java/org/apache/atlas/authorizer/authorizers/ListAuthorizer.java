@@ -70,7 +70,7 @@ public class ListAuthorizer {
             shouldClauses.addAll(getDSLForAbacPolicies(abacPolicies));
         }
 
-        //LOG.info("Applicable policies to user {}", resourcePolicies.size() + tagPolicies.size());
+        LOG.info("Applicable policies to user resource={}, tag={}, abac={}", resourcePolicies.size(), tagPolicies.size(), abacPolicies.size());
 
         Map<String, Object> boolClause = new HashMap<>();
         if (shouldClauses.isEmpty()) {
@@ -150,6 +150,7 @@ public class ListAuthorizer {
         if (!combinedEntityTypes.isEmpty()) {
             shouldClauses.add(getDSLForResources(new ArrayList<>(), combinedEntityTypes, null, null));
         }
+        LOG.info("ABAC_AUTH: FULL_RESTRICTION: filter for resource policies: {}", shouldClauses);
         return shouldClauses;
     }
 
@@ -209,11 +210,9 @@ public class ListAuthorizer {
     public static Map<String, Object> getDSLForTagPolicies(List<RangerPolicy> policies) {
         // To reduce the number of clauses
         Set<String> allTags = new HashSet<>();
-        //LOG.info("Found {} tag policies", policies.size());
 
         for (RangerPolicy policy : policies) {
             if (MapUtils.isNotEmpty(policy.getResources())) {
-                //LOG.info("policy {}", AtlasType.toJson(policy));
                 List<String> tags = new ArrayList<>(0);
 
                 if (policy.getResources().get("tag") != null) {
@@ -225,10 +224,11 @@ public class ListAuthorizer {
                 }
             }
         }
-        if (!allTags.isEmpty()) {
-            return getDSLForTags(allTags);
-        }
-        return null;
+
+        Map<String, Object> clauses = allTags.isEmpty() ? null : getDSLForTags(allTags);
+        LOG.info("ABAC_AUTH: FULL_RESTRICTION: filter for tag policies: {}", clauses);
+
+        return clauses;
     }
 
     public static List<Map<String, Object>> getDSLForAbacPolicies(List<RangerPolicy> policies) {
@@ -257,6 +257,7 @@ public class ListAuthorizer {
             String policyDSLBase64 = Base64.getEncoder().encodeToString(dsl.getBytes());;
             clauses.add(getMap("wrapper", getMap("query", policyDSLBase64)));
         }
+        LOG.info("ABAC_AUTH: FULL_RESTRICTION: filter for abac policies: {}", dslList);
         return clauses;
     }
 
