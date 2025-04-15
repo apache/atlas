@@ -59,6 +59,8 @@ public class AtlasLdapAuthenticationProvider extends AtlasAbstractAuthentication
     private String  ldapReferral;
     private String  ldapBase;
     private boolean groupsFromUGI;
+    private boolean ldapGroupRoleToUpper;
+    private boolean ldapGroupRolePrefix;
 
     @PostConstruct
     public void setup() {
