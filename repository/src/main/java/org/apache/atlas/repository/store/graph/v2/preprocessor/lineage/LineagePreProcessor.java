@@ -278,7 +278,11 @@ public class LineagePreProcessor implements PreProcessor {
                     deleteConnectionProcess(connectionProcessQn);
                 }
             }
-        } finally {
+        }
+        catch (Exception exp) {
+            LOG.error("Error in LineagePreProcessor.processDelete", exp);
+        }
+        finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
