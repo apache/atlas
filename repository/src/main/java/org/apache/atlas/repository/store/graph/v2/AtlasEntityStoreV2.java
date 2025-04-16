@@ -147,6 +147,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private static final List<String> RELATIONSHIP_CLEANUP_SUPPORTED_TYPES = Arrays.asList(AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_ASSET_TYPES.getStringArray());
     private static final List<String> RELATIONSHIP_CLEANUP_RELATIONSHIP_LABELS = Arrays.asList(AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_RELATIONSHIP_LABELS.getStringArray());
 
+    private boolean isConnectionLineageEnabled = false;
+
     @Inject
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
@@ -168,6 +170,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.esAliasStore = new ESAliasStore(graph, entityRetriever);
         this.atlasAlternateChangeNotifier = atlasAlternateChangeNotifier;
         this.taskNotificationSender = taskNotificationSender;
+        this.isConnectionLineageEnabled =  org.apache.atlas.service.FeatureFlagStore.evaluate("enable_connection_lineage", "true");
+
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
         } catch (AtlasException e) {
@@ -2075,7 +2079,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 break;
 
             case PROCESS_ENTITY_TYPE:
-                preProcessors.add(new LineagePreProcessor(typeRegistry, entityRetriever, graph, this));
+                if(isConnectionLineageEnabled){
+                    preProcessors.add(new LineagePreProcessor(typeRegistry, entityRetriever, graph, this));
+                }
         }
 
         //  The default global pre-processor for all AssetTypes
