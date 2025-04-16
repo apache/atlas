@@ -130,27 +130,6 @@ public class BasicSearchIT extends BaseResourceIT {
         };
     }
 
-    @DataProvider
-    public Object[][] invalidOperatorTestFiles() {
-        return new String[][] {
-                {"search-parameters/operator"}
-        };
-    }
-
-    @DataProvider
-    public Object[][] emptyNameAttributeTestFiles() {
-        return new String[][] {
-                {"search-parameters/attribute-name"}
-        };
-    }
-
-    @DataProvider
-    public Object[][] emptyValueAttributeTestFiles() {
-        return new String[][] {
-                {"search-parameters/attribute-value"}
-        };
-    }
-
     @Test(dataProvider = "basicSearchJSONNames")
     public void testDiscoveryWithSearchParameters(String jsonFile) {
         try {
@@ -248,18 +227,21 @@ public class BasicSearchIT extends BaseResourceIT {
         }
     }
 
-    @Test(dataProvider = "invalidOperatorTestFiles")
-    public void testAttributeSearchInvalidOperator(String jsonFile) {
+    @Test
+    public void testAttributeSearchInvalidOperator() {
+        String jsonFile = "search-parameters/operator";
         runNegativeSearchTest(jsonFile, "ATLAS-400-00-103", parameters -> parameters.getEntityFilters() != null && parameters.getEntityFilters().getOperator() != null);
     }
 
-    @Test(dataProvider = "emptyNameAttributeTestFiles")
-    public void testAttributeSearchEmptyNameAttribute(String jsonFile) {
+    @Test
+    public void testAttributeSearchEmptyNameAttribute() {
+        String jsonFile = "search-parameters/attribute-name";
         runNegativeSearchTest(jsonFile, "ATLAS-400-00-104", parameters -> parameters.getEntityFilters() != null && parameters.getEntityFilters().getAttributeName() != null);
     }
 
-    @Test(dataProvider = "emptyValueAttributeTestFiles")
-    public void testAttributeSearchEmptyValueAttribute(String jsonFile) {
+    @Test
+    public void testAttributeSearchEmptyValueAttribute() {
+        String jsonFile = "search-parameters/attribute-value";
         runNegativeSearchTest(jsonFile, "ATLAS-400-00-105", parameters -> parameters.getEntityFilters() != null && parameters.getEntityFilters().getAttributeValue() != null);
     }
 
