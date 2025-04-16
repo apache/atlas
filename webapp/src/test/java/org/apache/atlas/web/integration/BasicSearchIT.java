@@ -229,20 +229,17 @@ public class BasicSearchIT extends BaseResourceIT {
 
     @Test
     public void testAttributeSearchInvalidOperator() {
-        String jsonFile = "search-parameters/operator";
-        runNegativeSearchTest(jsonFile, "ATLAS-400-00-103", parameters -> parameters.getEntityFilters() != null && parameters.getEntityFilters().getOperator() != null);
+        runNegativeSearchTest("search-parameters/operator", "ATLAS-400-00-103", parameters -> parameters.getEntityFilters() != null && parameters.getEntityFilters().getOperator() != null);
     }
 
     @Test
     public void testAttributeSearchEmptyNameAttribute() {
-        String jsonFile = "search-parameters/attribute-name";
-        runNegativeSearchTest(jsonFile, "ATLAS-400-00-104", parameters -> parameters.getEntityFilters() != null && parameters.getEntityFilters().getAttributeName() != null);
+        runNegativeSearchTest("search-parameters/attribute-name", "ATLAS-400-00-104", parameters -> parameters.getEntityFilters() != null && parameters.getEntityFilters().getAttributeName() != null);
     }
 
     @Test
     public void testAttributeSearchEmptyValueAttribute() {
-        String jsonFile = "search-parameters/attribute-value";
-        runNegativeSearchTest(jsonFile, "ATLAS-400-00-105", parameters -> parameters.getEntityFilters() != null && parameters.getEntityFilters().getAttributeValue() != null);
+        runNegativeSearchTest("search-parameters/attribute-value", "ATLAS-400-00-105", parameters -> parameters.getEntityFilters() != null && parameters.getEntityFilters().getAttributeValue() != null);
     }
 
     public void runNegativeSearchTest(String jsonFile, String expectedErrorCode, java.util.function.Predicate<SearchParameters> paramFilter) {
