@@ -1,0 +1,34 @@
+[  {
+  "testDescription": "hive_table contains testtable or retentionSize != 0",
+  "searchParameters": {
+    "typeName": "hive_table",
+    "excludeDeletedEntities": true,
+    "classification": "",
+    "query": "",
+    "limit": 25,
+    "offset": 0,
+    "entityFilters": {
+      "attributeName": "name",
+      "attributeValue": "",
+      "condition" : "AND",
+      "criterion" : [
+        {
+          "attributeName": "name",
+          "operator": "eq",
+          "attributeValue": ""
+        },
+        {
+          "attributeName": "retention",
+          "operator": "neq",
+          "attributeValue": ""
+        }
+      ]
+    },
+    "tagFilters": null,
+    "attributes": [
+      ""
+    ]
+  },
+  "expectedCount": 0
+}
+]
