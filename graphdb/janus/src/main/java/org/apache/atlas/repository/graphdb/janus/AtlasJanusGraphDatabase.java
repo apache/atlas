@@ -23,6 +23,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
+import org.apache.atlas.repository.graphdb.janus.graphv3.AtlasJanusGraphFactory;
 import org.apache.atlas.repository.graphdb.janus.serializer.BigDecimalSerializer;
 import org.apache.atlas.repository.graphdb.janus.serializer.BigIntegerSerializer;
 import org.apache.atlas.repository.graphdb.janus.serializer.TypeCategorySerializer;
@@ -149,7 +150,20 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
         org.apache.commons.configuration2.Configuration conf2 = createConfiguration2(config);
         try {
-            return JanusGraphFactory.open(conf2);
+            return AtlasJanusGraphFactory.open(conf2);
+            //return JanusGraphFactory.open(conf2);
+
+            /*JanusGraph graph = JanusGraphFactory.open(conf2);
+
+            StandardJanusGraph standardJanusGraph = (StandardJanusGraph) graph;
+
+            Field indexSerializerField = StandardJanusGraph.class.getDeclaredField("indexSerializer");
+            indexSerializerField.setAccessible(true);
+
+            CustomIndexSerializer customSerializer = new CustomIndexSerializer(standardJanusGraph);
+            indexSerializerField.set(standardJanusGraph, customSerializer);
+
+            return standardJanusGraph;*/
         } catch (JanusGraphException e) {
             LOG.warn("JanusGraphException: {}", e.getMessage());
             if (e.getMessage().startsWith(OLDER_STORAGE_EXCEPTION)) {
