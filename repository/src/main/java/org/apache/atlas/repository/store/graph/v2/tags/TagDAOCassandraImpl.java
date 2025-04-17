@@ -126,14 +126,6 @@ public class TagDAOCassandraImpl implements TagDAO {
 
             for (Row row : rs) {
                 AtlasClassification classification = convertToAtlasClassification(row.getString("tag_meta_json"));
-                boolean isPropagated = row.getBoolean("is_propagated");
-                if (isPropagated) {
-                    String assetMetadata = row.getString("asset_metadata");
-                    Map jsonMap = objectMapper.readValue(assetMetadata, Map.class);
-
-                    classification.setEntityGuid((String) jsonMap.get("__guid"));
-                }
-
                 tags.add(classification);
             }
         } catch (Exception e) {
