@@ -69,13 +69,13 @@ public class FullTextMapperV2 implements IFullTextMapper {
 
 
     @Inject
-    public FullTextMapperV2(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, Configuration configuration) {
+    public FullTextMapperV2(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, Configuration configuration, EntityGraphRetriever entityGraphRetriever) {
         this.typeRegistry  = typeRegistry;
         this.configuration = configuration;
 
         followReferences = this.configuration != null && this.configuration.getBoolean(FULL_TEXT_FOLLOW_REFERENCES, false);
         // If followReferences = false then ignore relationship attr loading
-        entityGraphRetriever = new EntityGraphRetriever(atlasGraph, typeRegistry, !followReferences);
+        this.entityGraphRetriever = new EntityGraphRetriever(entityGraphRetriever, !followReferences);
     }
 
     /**
