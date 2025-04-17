@@ -16,9 +16,11 @@ public interface TagDAO {
     List<Tag> getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException;
     AtlasClassification findDirectTagByVertexIdAndTagTypeName(String assetVertexId, String tagTypeName) throws AtlasBaseException;
 
-    void putPropagatedTags(String sourceAssetId, String tagTypeName,
+    void putPropagatedTags(String sourceAssetId,
+                           String tagTypeName,
                            Set<String> propagatedAssetVertexIds,
-                           Map<String, Map<String, Object>> assetMinAttrsMap);
+                           Map<String, Map<String, Object>> assetMinAttrsMap,
+                           AtlasClassification tag);
 
     void putDirectTag(String assetId, String tagTypeName,
                       AtlasClassification tag,

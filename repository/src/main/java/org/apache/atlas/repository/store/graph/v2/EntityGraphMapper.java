@@ -3437,6 +3437,7 @@ public class EntityGraphMapper {
 
                 //addToClassificationNames(entityVertex, classificationName);
                 List<AtlasClassification> currentTags = tagDAO.getTagsForVertex(entityVertex.getIdForDisplay());
+                currentTags.add(classification);
 
                 // add a new AtlasVertex for the struct or trait instance
                 // AtlasVertex classificationVertex = createClassificationVertex(classification);
@@ -3673,7 +3674,7 @@ public class EntityGraphMapper {
                 List<AtlasEntity> propagatedEntitiesChunked = updateClassificationTextV2(parameters, tag, chunkedVerticesToPropagate, deNormAttributesMap, assetMinAttrsMap);
 
                 //CassandraConnector.putEntitiesWithBucket(allChunkedMaps.values());
-                tagDAO.putPropagatedTags(entityVertex.getIdForDisplay(), tag.getTypeName(), deNormAttributesMap.keySet(), assetMinAttrsMap);
+                tagDAO.putPropagatedTags(entityVertex.getIdForDisplay(), tag.getTypeName(), deNormAttributesMap.keySet(), assetMinAttrsMap, tag);
                 // TODO: Abstract writeTagProperties into putPropagatedTags
                 ESConnector.writeTagProperties(deNormAttributesMap);
 
@@ -3736,7 +3737,7 @@ public class EntityGraphMapper {
 
         if (Objects.isNull(tag)) {
             LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
-            return;
+            throw new AtlasBaseException(AtlasErrorCode.CLASSIFICATION_NOT_FOUND, classificationName);
         }
         // Get in progress task to see if there already is a propagation for this particular vertex
         List<AtlasTask> inProgressTasks = taskManagement.getInProgressTasks();
@@ -4791,85 +4792,38 @@ public class EntityGraphMapper {
                                                  Map<String, Map<String, Object>> assetMinAttrsMap) throws AtlasBaseException {
         List<AtlasEntity> propagatedEntities = new ArrayList<>();
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateClassificationAttrs");
-        final AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(currentTag.getTypeName());
-
-        Set<String> attributes = new HashSet<>();
-        attributes.add(QUALIFIED_NAME);
-        attributes.add(NAME);
 
         if(CollectionUtils.isNotEmpty(propagatedVertices)) {
-            Boolean fetchDeNormFromES = (Boolean) parameters.get("fetchDeNormFromES");
-            Map<String, Map<String, Object>> vertexIdToTagAttributesMap = null;
-
-            if (fetchDeNormFromES != null && fetchDeNormFromES) {
-                vertexIdToTagAttributesMap = ESConnector.getTagAttributes(propagatedVertices);
-            }
-
             for(AtlasVertex vertex : propagatedVertices) {
-                AtlasEntity entity = new AtlasEntity();
+                Map<String, Object> assetMinAttrs = getMinimalAssetMap(vertex);
+                assetMinAttrsMap.put(vertex.getIdForDisplay(), assetMinAttrs);
 
                 //get current associated tags to asset ONLY from Cassandra namespace
                 List<AtlasClassification> finalTags = tagDAO.getTagsForVertex(vertex.getIdForDisplay());
                 AtlasClassification copiedPropagatedTag = new AtlasClassification(currentTag);
-                copiedPropagatedTag.setEntityGuid(vertex.getProperty("__guid", String.class));
+                copiedPropagatedTag.setEntityGuid((String) assetMinAttrs.get(GUID_PROPERTY_KEY));
                 finalTags.add(copiedPropagatedTag);
 
+
+                AtlasEntity entity = new AtlasEntity();
                 entity.setClassifications(finalTags);
 
-                entity.setGuid(copiedPropagatedTag.getEntityGuid());
-                entity.setTypeName(vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
-                entity.setCreatedBy(vertex.getProperty(CREATED_BY_KEY, String.class));
-                entity.setUpdatedBy(vertex.getProperty(MODIFIED_BY_KEY, String.class));
-                entity.setCreateTime(new Date(vertex.getProperty(TIMESTAMP_PROPERTY_KEY, Long.class)));
-                entity.setUpdateTime(new Date(vertex.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class)));
+                entity.setGuid((String) assetMinAttrs.get(GUID_PROPERTY_KEY));
+                entity.setTypeName((String) assetMinAttrs.get(TYPE_NAME_PROPERTY_KEY));
 
-                entity.setAttribute("name", vertex.getProperty("name", String.class));
-                entity.setAttribute("qualifiedName", vertex.getProperty("__qualifiedName", String.class));
+                entity.setCreatedBy((String) assetMinAttrs.get(CREATED_BY_KEY));
+                entity.setUpdatedBy((String) assetMinAttrs.get(MODIFIED_BY_KEY));
 
-                Map<String, Object> assetMinAttrs = new HashMap<>();
-                assetMinAttrs.put(GUID_PROPERTY_KEY, entity.getGuid());
-                assetMinAttrs.put(TYPE_NAME_PROPERTY_KEY, entity.getTypeName());
-                assetMinAttrs.put(CREATED_BY_KEY, entity.getCreatedBy());
-                assetMinAttrs.put(MODIFIED_BY_KEY, entity.getUpdatedBy());
-                assetMinAttrs.put(TIMESTAMP_PROPERTY_KEY, entity.getCreateTime());
-                assetMinAttrs.put(MODIFICATION_TIMESTAMP_PROPERTY_KEY, entity.getUpdateTime());
-                assetMinAttrs.put(NAME, entity.getAttribute("name"));
-                assetMinAttrs.put(QUALIFIED_NAME, entity.getAttribute("__qualifiedName"));
-                assetMinAttrsMap.put(vertex.getIdForDisplay(), assetMinAttrs);
+                entity.setCreateTime((Date) assetMinAttrs.get(TIMESTAMP_PROPERTY_KEY));
+                entity.setUpdateTime((Date) assetMinAttrs.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY));
 
-                Map<String, Object> deNormAttributes = new HashMap<>();
+                entity.setAttribute(NAME, assetMinAttrs.get(NAME));
+                entity.setAttribute(QUALIFIED_NAME, assetMinAttrs.get(QUALIFIED_NAME));
 
+
+                Map<String, Object> deNormAttributes;
                 if (CollectionUtils.isEmpty(finalTags)) {
                     deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForNoTags(currentTag.getTypeName());
-
-                } else if (fetchDeNormFromES != null && fetchDeNormFromES) {
-                    String currentTagName = currentTag.getTypeName();
-                    Map<String, Object> currentDeNormAttrsMap = vertexIdToTagAttributesMap.get(vertex.getIdForDisplay());
-
-                    StringBuilder sb = new StringBuilder();
-
-                    sb.append(currentDeNormAttrsMap.get(CLASSIFICATION_TEXT_KEY));
-                    sb.append(currentTagName).append(FULL_TEXT_DELIMITER);
-                    fullTextMapperV2.mapAttributes(classificationType, currentTag.getAttributes(), null, sb, null, null, true);
-
-                    deNormAttributes.put(CLASSIFICATION_TEXT_KEY, sb.toString());
-
-                    JSONArray currentJsonArray = (JSONArray) currentDeNormAttrsMap.get(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
-                    List<String> currentPropTraits = new ArrayList<>();
-                    for (int i = 0; i < currentJsonArray.length(); i++) {
-                        currentPropTraits.add(currentJsonArray.getString(i));
-                    }
-                    currentPropTraits.add(currentTagName);
-                    deNormAttributes.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, currentPropTraits);
-
-                    String propNames = (String) currentDeNormAttrsMap.get(PROPAGATED_CLASSIFICATION_NAMES_KEY);
-                    if (propNames == null) {
-                        propNames = CLASSIFICATION_NAME_DELIMITER + currentTagName;
-                    } else {
-                        propNames = propNames + CLASSIFICATION_NAME_DELIMITER + currentTagName;
-                    }
-                    deNormAttributes.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, propNames);
-
                 } else {
                     deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForTags(currentTag, finalTags, typeRegistry, fullTextMapperV2);
                 }

@@ -47,8 +47,8 @@ public class TagDAOCassandraImpl implements TagDAO {
     private final PreparedStatement deletePropagatedTag;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static String INSERT_PROPAGATED_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata) values (%s, '%s', '%s', '%s', %s, %s, '%s')";
-    private static String INSERT_DIRECT_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json) values (%s, '%s', '%s', '%s', %s, %s,'%s', '%s')";
+    private static String INSERT_PROPAGATED_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json) values (%s, '%s', '%s', '%s', %s, %s, '%s', '%s')";
+    private static String INSERT_DIRECT_TAG     = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json) values (%s, '%s', '%s', '%s', %s, %s, '%s', '%s')";
 
     private static String DELETE_DIRECT_TAG = "DELETE FROM tags.effective_tags where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s'";
 
@@ -125,17 +125,13 @@ public class TagDAOCassandraImpl implements TagDAO {
             ResultSet rs = cassSession.execute(bound);
 
             for (Row row : rs) {
-                AtlasClassification classification;
+                AtlasClassification classification = convertToAtlasClassification(row.getString("tag_meta_json"));
                 boolean isPropagated = row.getBoolean("is_propagated");
                 if (isPropagated) {
                     String assetMetadata = row.getString("asset_metadata");
                     Map jsonMap = objectMapper.readValue(assetMetadata, Map.class);
 
-                    classification = new AtlasClassification();
-                    classification.setTypeName(row.getString("tag_type_name"));
                     classification.setEntityGuid((String) jsonMap.get("__guid"));
-                } else {
-                    classification = convertToAtlasClassification(row.getString("tag_meta_json"));
                 }
 
                 tags.add(classification);
@@ -247,18 +243,26 @@ public class TagDAOCassandraImpl implements TagDAO {
     }
 
     @Override
-    public void putPropagatedTags(String sourceAssetId, String tagTypeName,
+    public void putPropagatedTags(String sourceAssetId,
+                                  String tagTypeName,
                                   Set<String> propagatedAssetVertexIds,
-                                  Map<String, Map<String, Object>> assetMinAttrsMap) {
+                                  Map<String, Map<String, Object>> assetMinAttrsMap,
+                                  AtlasClassification tag) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("putPropagatedTags");
         StringBuilder batchQuery = new StringBuilder();
         batchQuery.append("BEGIN BATCH ");
 
         for (String propagatedAssetVertexId : propagatedAssetVertexIds) {
             int bucket = calculateBucket(propagatedAssetVertexId);
-            String insert = String.format(INSERT_PROPAGATED_TAG, bucket, propagatedAssetVertexId, tagTypeName, sourceAssetId, true,
+            String insert = String.format(INSERT_PROPAGATED_TAG,
+                    bucket,
+                    propagatedAssetVertexId,
+                    tagTypeName,
+                    sourceAssetId,
+                    true,
                     RequestContext.get().getRequestTime(),
-                    AtlasType.toJson(assetMinAttrsMap.get(propagatedAssetVertexId)));
+                    AtlasType.toJson(assetMinAttrsMap.get(propagatedAssetVertexId)),
+                    AtlasType.toJson(tag));
             batchQuery.append(insert).append(";");
         }
 
@@ -277,7 +281,12 @@ public class TagDAOCassandraImpl implements TagDAO {
 
         int bucket = calculateBucket(assetId);
 
-        String insert = String.format(INSERT_DIRECT_TAG, bucket, assetId, tagTypeName, assetId, false,
+        String insert = String.format(INSERT_DIRECT_TAG,
+                bucket,
+                assetId,
+                tagTypeName,
+                assetId,
+                false,
                 RequestContext.get().getRequestTime(),
                 AtlasType.toJson(assetMetadata),
                 AtlasType.toJson(tag));
@@ -298,6 +307,8 @@ public class TagDAOCassandraImpl implements TagDAO {
             classification.setRemovePropagationsOnEntityDelete((Boolean) jsonMap.get("removePropagations"));
             classification.setRestrictPropagationThroughLineage((Boolean) jsonMap.get("restrictPropagationThroughLineage"));
             classification.setRestrictPropagationThroughHierarchy((Boolean) jsonMap.get("restrictPropagationThroughHierarchy"));
+
+            classification.setAttributes((Map<String, Object>) jsonMap.get("attributes"));
             return classification;
         } catch (JsonProcessingException e) {
             LOG.error("Error converting to AtlasClassification. JSON: {}",

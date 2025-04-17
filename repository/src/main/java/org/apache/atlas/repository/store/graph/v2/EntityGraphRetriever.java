@@ -1586,6 +1586,23 @@ public class EntityGraphRetriever {
         }
     }
 
+    public List<AtlasClassification> getDirectClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getDirectClassifications");
+        try {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Performing getDirectClassifications");
+            }
+
+            return tagDAO.getAllDirectTagsForVertex(entityVertex.getIdForDisplay());
+
+        } catch (Exception e) {
+            LOG.error("Error while getting direct classifications", e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
     public List<AtlasTermAssignmentHeader> mapAssignedTerms(AtlasVertex entityVertex) {
         List<AtlasTermAssignmentHeader> ret = new ArrayList<>();
 

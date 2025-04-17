@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -40,18 +41,16 @@ public class TagDeNormAttributesUtil {
                                                                                 AtlasTypeRegistry typeRegistry,
                                                                                 IFullTextMapper fullTextMapperV2) throws AtlasBaseException {
         // Add direct Tag
-
         Map<String, Object> deNormAttrs = new HashMap<>();
 
-        if (CollectionUtils.isEmpty(currentTags)) {
-            deNormAttrs = getDirectAttributesForNoTags(tagAdded.getTypeName());
+        deNormAttrs.put(CLASSIFICATION_TEXT_KEY, getClassificationTextKey(currentTags, typeRegistry, fullTextMapperV2));
+
+        if (currentTags.size() == 1) {
+            deNormAttrs.put(CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(Collections.singletonList(tagAdded.getTypeName())));
+            deNormAttrs.put(TRAIT_NAMES_PROPERTY_KEY, Collections.singletonList(tagAdded.getTypeName()));
 
         } else {
-            currentTags.add(tagAdded);
-
-            deNormAttrs.put(CLASSIFICATION_TEXT_KEY, getClassificationTextKey(currentTags, typeRegistry, fullTextMapperV2));
-
-            //filter propagated attachments
+            //filter direct attachments
             List<String> directTraits = currentTags.stream()
                     .filter(tag -> tagAdded.getEntityGuid().equals(tag.getEntityGuid()))
                     .map(AtlasStruct::getTypeName)
@@ -68,8 +67,7 @@ public class TagDeNormAttributesUtil {
                                                                                 List<AtlasClassification> currentTags,
                                                                                 AtlasTypeRegistry typeRegistry,
                                                                                 IFullTextMapper fullTextMapperV2) throws AtlasBaseException {
-        // Add direct Tag
-
+        // Delete direct Tag
         Map<String, Object> deNormAttrs = new HashMap<>();
 
         if (CollectionUtils.isEmpty(currentTags)) {
@@ -82,7 +80,7 @@ public class TagDeNormAttributesUtil {
 
             deNormAttrs.put(CLASSIFICATION_TEXT_KEY, getClassificationTextKey(currentTags, typeRegistry, fullTextMapperV2));
 
-            //filter propagated attachments
+            //filter direct attachments
             List<String> directTraits = currentTags.stream()
                     .filter(tag -> tagDeleted.getEntityGuid().equals(tag.getEntityGuid()))
                     .map(AtlasStruct::getTypeName)
@@ -146,18 +144,6 @@ public class TagDeNormAttributesUtil {
         return finalDeNormMap;
     }
 
-    private static Map<String, Object> getDirectAttributesForNoTags(String tagNameAdded) {
-        // Add direct Tag
-
-        Map<String, Object> deNormAttrs = new HashMap<>();
-
-        deNormAttrs.put(CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(Collections.singletonList(tagNameAdded)));
-        deNormAttrs.put(CLASSIFICATION_TEXT_KEY, tagNameAdded + FULL_TEXT_DELIMITER);
-        deNormAttrs.put(TRAIT_NAMES_PROPERTY_KEY, Collections.singletonList(tagNameAdded));
-
-        return deNormAttrs;
-    }
-
     public static Map<String, Object> getPropagatedAttributesForNoTags(String tagNamePropagated) {
         // Add tag Propagation, asset does not have any other tag
 
@@ -177,14 +163,7 @@ public class TagDeNormAttributesUtil {
         // Add tag Propagation, asset having other tags
         Map<String, Object> deNormAttrs = new HashMap<>();
 
-        final AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(propagatedTag.getTypeName());
-
-        StringBuilder sb = new StringBuilder();
-        sb.append(propagatedTag.getTypeName()).append(FULL_TEXT_DELIMITER);
-        fullTextMapperV2.mapAttributes(classificationType, propagatedTag.getAttributes(), null, sb, null, null, true);
-        String classificationTextForEntity = sb.toString();
-
-        deNormAttrs.put(CLASSIFICATION_TEXT_KEY, classificationTextForEntity);
+        deNormAttrs.put(CLASSIFICATION_TEXT_KEY, getClassificationTextKey(finalTags, typeRegistry, fullTextMapperV2));
 
         //filter propagated attachments
         List<String> propTraits = finalTags.stream()
@@ -222,7 +201,7 @@ public class TagDeNormAttributesUtil {
             final AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(currentTag.getTypeName());
 
             sb.append(currentTag.getTypeName()).append(FULL_TEXT_DELIMITER);
-            fullTextMapperV2.mapAttributes(classificationType, currentTag.getAttributes(), null, sb, null, null, true);
+            fullTextMapperV2.mapAttributes(classificationType, currentTag.getAttributes(), null, sb, null, new HashSet<>(), true);
         }
 
         return sb.toString();
