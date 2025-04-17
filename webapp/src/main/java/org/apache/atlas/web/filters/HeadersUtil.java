@@ -50,6 +50,10 @@ public class HeadersUtil {
         return HEADER_MAP.get(header);
     }
 
+    public static Map<String, String> getAllHeaders() {
+        return HEADER_MAP;
+    }
+
     public static void setHeaderMapAttributes(AtlasResponseRequestWrapper responseWrapper, String headerKey) {
         responseWrapper.setHeader(headerKey, HEADER_MAP.get(headerKey));
     }

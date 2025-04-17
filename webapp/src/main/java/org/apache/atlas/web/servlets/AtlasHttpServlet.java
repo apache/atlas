@@ -17,34 +17,69 @@
  */
 package org.apache.atlas.web.servlets;
 
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.web.filters.AtlasResponseRequestWrapper;
+import org.apache.atlas.web.filters.HeadersUtil;
+import org.apache.commons.configuration.Configuration;
+import org.apache.commons.configuration.ConfigurationConverter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.RequestDispatcher;
-import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import java.util.Optional;
+import java.util.Properties;
+
 public class AtlasHttpServlet extends HttpServlet {
     public static final Logger LOG = LoggerFactory.getLogger(AtlasHttpServlet.class);
 
-    public static final String TEXT_HTML     = "text/html";
-    public static final String XFRAME_OPTION = "X-Frame-Options";
-    public static final String DENY          = "DENY";
-    public static final String ALLOW         = "ALLOW";
+    public static final String TEXT_HTML          = "text/html";
+    public static final String HEADER_CONFIG_KEY  = "atlas.headers";
+    public static final String ALLOW              = "ALLOW";
+
+    private Configuration configuration;
+    private Properties headerProperties;
+
+    @Override
+    public void init() throws ServletException {
+        try {
+            configuration = ApplicationProperties.get();
+            headerProperties = Optional.ofNullable(configuration)
+                    .map(c -> ConfigurationConverter.getProperties(c.subset(HEADER_CONFIG_KEY)))
+                    .orElseGet(Properties::new);
+        } catch (Exception e) {
+            throw new ServletException("Failed to initialize AtlasHttpServlet", e);
+        }
+    }
 
     protected void includeResponse(HttpServletRequest request, HttpServletResponse response, String template) {
         try {
             response.setContentType(TEXT_HTML);
-            response.setHeader(XFRAME_OPTION, DENY);
+            AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(response);
 
-            ServletContext    context = getServletContext();
-            RequestDispatcher rd      = context.getRequestDispatcher(template);
+            applyHeaders(responseWrapper, headerProperties);
 
-            rd.include(request, response);
+            getServletContext()
+                    .getRequestDispatcher(template)
+                    .include(request, response);
         } catch (Exception e) {
-            LOG.error("Error in AtlasHttpServlet {}", template, e);
+            LOG.error("Failed to include template [{}] in AtlasHttpServlet", template, e);
         }
+    }
+
+    private void applyHeaders(HttpServletResponse response, Properties configHeaders) {
+        Optional.ofNullable(HeadersUtil.getAllHeaders())
+                .ifPresent(headers -> headers.forEach((k, v) -> {
+                    if (k != null) {
+                        response.setHeader(k, v);
+                    }
+                }));
+
+        // Apply configured headers
+        configHeaders.stringPropertyNames()
+                .forEach(key -> response.setHeader(key, configHeaders.getProperty(key)));
     }
 }
