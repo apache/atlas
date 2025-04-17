@@ -70,6 +70,7 @@ import org.apache.atlas.v1.model.instance.Id;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.graphdb.relations.CacheVertexProperty;
@@ -1518,27 +1519,42 @@ public class EntityGraphRetriever {
             // use optimised path only for indexsearch and when flag is enabled!
             if (ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS.getBoolean() && RequestContext.get().isInvokedByIndexSearch()) {
                 // Fetch classification vertices directly
-                List<AtlasVertex> classificationVertices = ((AtlasJanusGraph) graph).getGraph().traversal()
+                List<Map<String, Object>> classificationProperties = new ArrayList<>();
+                List<AtlasClassification> ret = new ArrayList<>();
+                ((AtlasJanusGraph) graph).getGraph().traversal()
                         .V(entityVertex.getId())  // Start from the entity vertex
                         .outE(CLASSIFICATION_LABEL) // Get outgoing classification edges
                         .inV() // Move to classification vertex
-                        .dedup() // Remove duplicate classification vertices
-                        .toList() // Convert to List<Vertex>
-                        .stream()
-                        .map(m -> GraphDbObjectFactory.createVertex(((AtlasJanusGraph) graph), m)) // Convert Vertex to AtlasVertex
-                        .collect(Collectors.toList());
-
-                return classificationVertices.stream()
-                        .map(m -> {
-                            try {
-                                return toAtlasClassification(m);
-                            } catch (AtlasBaseException e) {
-                                LOG.error("Error while getting all classifications", e);
-                                return null;
+                        .project(TYPE_NAME_PROPERTY_KEY, CLASSIFICATION_ENTITY_GUID, CLASSIFICATION_ENTITY_STATUS,
+                                CLASSIFICATION_VERTEX_PROPAGATE_KEY, CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE,
+                                CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY) // Fetch only needed properties
+                        .by(__.values(TYPE_NAME_PROPERTY_KEY))
+                        .by(__.values(CLASSIFICATION_ENTITY_GUID))
+                        .by(__.values(CLASSIFICATION_ENTITY_STATUS))
+                        .by(__.values(CLASSIFICATION_VERTEX_PROPAGATE_KEY))
+                        .by(__.values(CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY))
+                        .by(__.values(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE))
+                        .by(__.values(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY))
+                        .toList()
+                        .forEach(obj -> {
+                            if (obj instanceof Map) {
+                                classificationProperties.add((Map<String, Object>) obj);
                             }
-                        }) // Convert to AtlasClassification
-                        .filter(Objects::nonNull) // Remove null classifications
-                        .collect(Collectors.toList()); // Collect as a list
+                        });
+                classificationProperties.forEach(classificationProperty -> {
+                    if (classificationProperty != null) {
+                        AtlasClassification atlasClassification = new AtlasClassification();
+                        atlasClassification.setTypeName(classificationProperty.get(TYPE_NAME_PROPERTY_KEY) != null ? (String) classificationProperty.get(TYPE_NAME_PROPERTY_KEY) : "");
+                        atlasClassification.setEntityGuid(classificationProperty.get(CLASSIFICATION_ENTITY_GUID) != null ? (String) classificationProperty.get(CLASSIFICATION_ENTITY_GUID) : "");
+                        atlasClassification.setEntityStatus(classificationProperty.get(CLASSIFICATION_ENTITY_STATUS) != null ? AtlasEntity.Status.valueOf((String) classificationProperty.get(CLASSIFICATION_ENTITY_STATUS)) : null);
+                        atlasClassification.setPropagate(classificationProperty.get(CLASSIFICATION_VERTEX_PROPAGATE_KEY) != null ? (Boolean) classificationProperty.get(CLASSIFICATION_VERTEX_PROPAGATE_KEY) : null);
+                        atlasClassification.setRemovePropagationsOnEntityDelete(classificationProperty.get(CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY) != null ? (Boolean) classificationProperty.get(CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY) : null);
+                        atlasClassification.setRestrictPropagationThroughLineage(classificationProperty.get(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE) != null ? (Boolean) classificationProperty.get(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE) : null);
+                        atlasClassification.setRestrictPropagationThroughHierarchy(classificationProperty.get(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY) != null ? (Boolean) classificationProperty.get(CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY) : null);
+                        ret.add(atlasClassification);
+                    }
+                });
+                return ret;
             } else {
                 List<AtlasClassification> ret = new ArrayList<>();
                 Iterable edges = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL).edges();
