@@ -42,15 +42,18 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.function.Predicate;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class BasicSearchIT extends BaseResourceIT {
@@ -220,6 +223,43 @@ public class BasicSearchIT extends BaseResourceIT {
                 assertNotNull(list);
             }
         } catch (IOException | AtlasServiceException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    @Test
+    public void testAttributeSearchInvalidOperator() {
+        runNegativeSearchTest("search-parameters/operator", "ATLAS-400-00-103", parameters -> parameters.getEntityFilters() != null && parameters.getEntityFilters().getOperator() != null);
+    }
+
+    @Test
+    public void testAttributeSearchEmptyNameAttribute() {
+        runNegativeSearchTest("search-parameters/attribute-name", "ATLAS-400-00-104", parameters -> parameters.getEntityFilters() != null && parameters.getEntityFilters().getAttributeName() != null);
+    }
+
+    @Test
+    public void testAttributeSearchEmptyValueAttribute() {
+        runNegativeSearchTest("search-parameters/attribute-value", "ATLAS-400-00-105", parameters -> parameters.getEntityFilters() != null && parameters.getEntityFilters().getAttributeValue() != null);
+    }
+
+    public void runNegativeSearchTest(String jsonFile, String expectedErrorCode, java.util.function.Predicate<SearchParameters> paramFilter) {
+        try {
+            BasicSearchParametersWithExpectation[] testExpectations = TestResourceFileUtils.readObjectFromJson(jsonFile, BasicSearchParametersWithExpectation[].class);
+            assertNotNull(testExpectations);
+            Arrays
+                    .stream(testExpectations)
+                    .map(testExpectation -> testExpectation.getSearchParameters())
+                    .filter(paramFilter)
+                    .forEach(params -> {
+                        try {
+                            atlasClientV2.facetedSearch(params);
+                        }
+                        catch (AtlasServiceException e) {
+                            assertTrue(e.getMessage().contains(expectedErrorCode),
+                                    "Expected error code " + expectedErrorCode + " in exception message: " + e.getMessage());
+                        }
+                    });
+        } catch (IOException e) {
             fail(e.getMessage());
         }
     }
