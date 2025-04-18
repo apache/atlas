@@ -1217,8 +1217,18 @@ public class EntityGraphRetriever {
 
             ret.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
             ret.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
-            ret.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
-            ret.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
+
+            // Set entity creation time if available
+            Long createdTime = GraphHelper.getCreatedTime(entityVertex);
+            if (createdTime != null) {
+                ret.setCreateTime(new Date(createdTime));
+            }
+
+            // Set entity last update time if available
+            Long updatedTime = GraphHelper.getModifiedTime(entityVertex);
+            if (updatedTime != null) {
+                ret.setUpdateTime(new Date(updatedTime));
+            }
 
             if(RequestContext.get().includeMeanings()) {
                 List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
