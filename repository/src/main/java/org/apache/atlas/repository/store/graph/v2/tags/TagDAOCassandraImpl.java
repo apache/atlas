@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.store.graph.v2.CassandraConnector.CASSANDRA_HOSTNAME_PROPERTY;
 
@@ -88,6 +89,31 @@ public class TagDAOCassandraImpl implements TagDAO {
         } catch (Exception e) {
             LOG.error("Failed to initialize TagDAO", e);
             throw new AtlasBaseException("Failed to initialize TagDAO", e);
+        }
+    }
+
+    @Override
+    public List<AtlasClassification> getPropagationsForAttachment(String vertexId,
+                                                                  String sourceEntityGuid) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder =
+                RequestContext.get().startMetricRecord("getPropagationsForAttachment");
+        try {
+            // Fetch all (direct + propagated) tags on this vertex
+            List<AtlasClassification> allTags = getTagsForVertex(vertexId);
+
+            // Return only those whose classification origin (entityGuid) matches our source
+            return allTags.stream()
+                    .filter(tag -> sourceEntityGuid.equals(tag.getEntityGuid()))
+                    .collect(Collectors.toList());
+        } catch (AtlasBaseException abe) {
+            throw abe;
+        } catch (Exception e) {
+            throw new AtlasBaseException(
+                    String.format("Error fetching propagations for attachment: vertexId=%s, sourceEntityGuid=%s",
+                            vertexId, sourceEntityGuid),
+                    e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
         }
     }
 

@@ -66,8 +66,18 @@ public class ClassificationPropagationTasks {
 
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
+            Boolean mode                    = (Boolean) parameters.get("newMode");
             String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-            entityGraphMapper.updateClassificationTextPropagation(classificationVertexId);
+            String tagTypeName              = (String) parameters.get(Constants.TASK_CLASSIFICATION_TYPENAME);
+            String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
+
+            if (mode != null && mode) {
+                LOG.info("via new mode");
+                entityGraphMapper.updateClassificationTextPropagationV2(tagTypeName, entityGuid);
+            } else {
+                LOG.info("via old mode");
+                entityGraphMapper.updateClassificationTextPropagation(classificationVertexId);
+            }
         }
     }
 

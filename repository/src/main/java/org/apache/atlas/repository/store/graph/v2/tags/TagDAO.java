@@ -28,4 +28,6 @@ public interface TagDAO {
 
     void deleteDirectTag(String sourceVertexId, AtlasClassification tagToDelete) throws AtlasBaseException;
     void deleteTags(List<Tag> tagsToDelete) throws AtlasBaseException;
+
+    List<AtlasClassification> getPropagationsForAttachment(String vertexId, String sourceEntityGuid) throws AtlasBaseException;
 }
