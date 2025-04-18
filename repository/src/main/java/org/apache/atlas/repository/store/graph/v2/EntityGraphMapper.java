@@ -3447,7 +3447,7 @@ public class EntityGraphMapper {
                 Map<String, Map<String, Object>> deNormMAp = new HashMap<>();
                 deNormMAp.put(entityVertex.getIdForDisplay(), TagDeNormAttributesUtil.getDirectTagAttachmentAttributesForAddTag(tagDAO, classification,
                         currentTags, typeRegistry, fullTextMapperV2));
-                ESConnector.writeTagProperties(deNormMAp);
+                ESConnector.writeTagProperties(deNormMAp, true);
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("created direct tag {}", classificationName);

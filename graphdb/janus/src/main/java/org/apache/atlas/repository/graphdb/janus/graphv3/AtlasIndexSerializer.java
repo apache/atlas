@@ -397,11 +397,12 @@ public class AtlasIndexSerializer extends IndexSerializer {
                     }
                 } else { //Update mixed indexes
                     ParameterIndexField field = ((MixedIndexType)index).getField(p.propertyKey());
-                    if (EXCLUDE_ES_SYNC_ATTRIBUTES.contains(field.getFieldKey().name())) {
-                        continue;
-                    }
                     if (field == null) {
                         throw new SchemaViolationException(p.propertyKey() + " is not available in mixed index " + index);
+                    }
+
+                    if (EXCLUDE_ES_SYNC_ATTRIBUTES.contains(field.getFieldKey().name())) {
+                        continue;
                     }
                     if (field.getStatus() == SchemaStatus.DISABLED) continue;
                     final IndexUpdate update = getMixedIndexUpdate(vertex, p.propertyKey(), p.value(), (MixedIndexType) index, updateType);

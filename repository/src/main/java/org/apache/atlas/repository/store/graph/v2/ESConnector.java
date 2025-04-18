@@ -81,6 +81,24 @@ public class ESConnector {
     }
 
     public static void writeTagProperties(Map<String, Map<String, Object>> entitiesMap) {
+        writeTagProperties(entitiesMap, false);
+    }
+
+    /**
+     * Updates and writes tag properties for multiple entities to Elasticsearch index.
+     *
+     * This method processes the provided entities map to prepare an Elasticsearch bulk
+     * request for updating tag properties and denormalized attributes. The modifications
+     * include attributes specified in the {@code DENORM_ATTRS} field and a modification
+     * timestamp. The bulk request is then executed using a low-level client.
+     *
+     * @param entitiesMap A map where the keys represent the entity vertex IDs (as strings),
+     *                    and the values are maps containing the attributes to be updated
+     *                    for each entity.
+     * @param upsert A boolean flag that indicates whether the update operation should upsert
+     *               (create new doc if not found) the document in the Elasticsearch index.
+     */
+    public static void writeTagProperties(Map<String, Map<String, Object>> entitiesMap, boolean upsert) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("writeTagPropertiesES");
 
         try {
@@ -93,14 +111,21 @@ public class ESConnector {
                 DENORM_ATTRS.stream().filter(entry::containsKey).forEach(x -> toUpdate.put(x, entry.get(x)));
                 toUpdate.put("__modificationTimestamp", System.currentTimeMillis());
 
-                if (!toUpdate.isEmpty()) {
-                    long vertexId = Long.valueOf(assetVertexId);
-                    String docId = LongEncoding.encode(vertexId);
-                    bulkRequestBody.append("{ \"update\": { \"_index\": \"janusgraph_vertex_index\", \"_id\": \"" + docId + "\" } }\n");
 
-                    String attrsToUpdate = AtlasType.toJson(toUpdate);
-                    bulkRequestBody.append("{ \"doc\": " + attrsToUpdate + " }\n");
+                long vertexId = Long.valueOf(assetVertexId);
+                String docId = LongEncoding.encode(vertexId);
+                bulkRequestBody.append("{\"update\":{\"_index\":\"janusgraph_vertex_index\",\"_id\":\"" + docId + "\" }}\n");
+
+                bulkRequestBody.append("{");
+
+                String attrsToUpdate = AtlasType.toJson(toUpdate);
+                bulkRequestBody.append("\"doc\":" + attrsToUpdate);
+
+                if (upsert) {
+                    bulkRequestBody.append(",\"upsert\":" + attrsToUpdate);
                 }
+
+                bulkRequestBody.append("}\n");
             }
 
             Request request = new Request("POST", "/_bulk");
