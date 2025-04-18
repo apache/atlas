@@ -435,6 +435,18 @@
       "actions": ["entity-read"]
     }
   ],
+  "persona-domain-create": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}",
+        "entity-type:DataDomain",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create"]
+    }
+  ],
   "persona-domain-update": [
     {
       "policyResourceCategory": "ENTITY",
