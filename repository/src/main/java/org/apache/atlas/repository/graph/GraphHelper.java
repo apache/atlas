@@ -34,6 +34,7 @@ import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.repository.graphdb.janus.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.TransactionInterceptHelper;
@@ -859,17 +860,9 @@ public final class GraphHelper {
     public static List<String> getPropagatedTraitNames(AtlasVertex entityVertex) {
         return getTraitNames(entityVertex, true);
     }
-    public static List<String> getAllTraitNamesFromAttribute(AtlasVertex entityVertex) {
-        List<String>     ret   = new ArrayList<>();
-        List<String>    traitNames = entityVertex.getMultiValuedProperty(TRAIT_NAMES_PROPERTY_KEY, String.class);
-        if (traitNames != null) {
-            ret.addAll(traitNames);
-        }
-        List<String>    propagatedTraitNames = entityVertex.getMultiValuedProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, String.class);
-        if (propagatedTraitNames != null) {
-            ret.addAll(propagatedTraitNames);
-        }
-        return ret;
+
+    public static List<String> getAllTagNames(List<AtlasClassification> tags) {
+        return tags.stream().map(AtlasStruct::getTypeName).collect(Collectors.toList());
     }
     public static List<String> getAllTraitNames(AtlasVertex entityVertex) {
         return getTraitNames(entityVertex, null);
