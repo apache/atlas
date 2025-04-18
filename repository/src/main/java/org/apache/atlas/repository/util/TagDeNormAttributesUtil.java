@@ -63,6 +63,49 @@ public class TagDeNormAttributesUtil {
         return deNormAttrs;
     }
 
+    public static Map<String, Map<String, Object>> getPropagatedTagDeNormForUpdateProp(
+            TagDAO                    tagDAO,
+            String                    sourceEntityGuid,
+            List<String>              entityVertexIds,
+            AtlasTypeRegistry         typeRegistry,
+            IFullTextMapper           fullTextMapperV2
+    ) throws AtlasBaseException {
+        Map<String, Map<String, Object>> deNormAttrsMap = new HashMap<>();
+
+        for (String vertexId : entityVertexIds) {
+            // Fetch all classifications (direct + propagated) currently attached to this entity
+            List<AtlasClassification> currentTags =
+                    tagDAO.getPropagationsForAttachment(vertexId, sourceEntityGuid);
+
+            Map<String, Object> deNormAttrs = new HashMap<>();
+            if (CollectionUtils.isEmpty(currentTags)) {
+                // No remaining tags ⇒ reset to empty values
+                deNormAttrs.put(CLASSIFICATION_TEXT_KEY,   Strings.EMPTY);
+                deNormAttrs.put(CLASSIFICATION_NAMES_KEY,  Strings.EMPTY);
+                deNormAttrs.put(TRAIT_NAMES_PROPERTY_KEY,  Collections.emptyList());
+            } else {
+                // 1) Recompute the full‑text classification string for this entity
+                String fullText = getClassificationTextKey(currentTags, typeRegistry, fullTextMapperV2);
+                deNormAttrs.put(CLASSIFICATION_TEXT_KEY, fullText);
+
+                // 2) Compute the list of “direct” trait names on this entity
+                List<String> directTraits = currentTags.stream()
+                        .filter(tag -> vertexId.equals(tag.getEntityGuid()))
+                        .map(AtlasStruct::getTypeName)
+                        .collect(Collectors.toList());
+
+                // 3) Build the delimited names and raw list for direct traits
+                deNormAttrs.put(CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(directTraits));
+                deNormAttrs.put(TRAIT_NAMES_PROPERTY_KEY, directTraits);
+            }
+
+            deNormAttrsMap.put(vertexId, deNormAttrs);
+        }
+
+        return deNormAttrsMap;
+    }
+
+
     public static Map<String, Object> getDirectTagAttachmentAttributesForDeleteTag(AtlasClassification tagDeleted,
                                                                                 List<AtlasClassification> currentTags,
                                                                                 AtlasTypeRegistry typeRegistry,
