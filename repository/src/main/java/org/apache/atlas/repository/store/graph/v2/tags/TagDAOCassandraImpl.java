@@ -36,54 +36,45 @@ import static org.apache.atlas.repository.store.graph.v2.CassandraConnector.CASS
 @Repository
 public class TagDAOCassandraImpl implements TagDAO {
     private static final Logger LOG = LoggerFactory.getLogger(TagDAOCassandraImpl.class);
-    private static int BUCKET_POWER = 5;
+    private static int BUCKET_POWER;
     private static String KEYSPACE = null;
-    private static final String CASSANDRA_BUCKET_POWER = "atlas.graph.new.bucket.power";
     public static final String CASSANDRA_NEW_KEYSPACE_PROPERTY = "atlas.graph.new.keyspace";
     private final CqlSession cassSession;
-    private final PreparedStatement findDirectTagsStmt;
-    private final PreparedStatement findTagsStmt;
-    private final PreparedStatement findDirectTagsByVertexIdAndTypeNameStmt;
-    private final PreparedStatement findPropagatedTagsBySourceAndTypeNameStmt;
-    private final PreparedStatement deletePropagatedTag;
+    private final PreparedStatement findAllTagsStmt;
+    private final PreparedStatement findAllDirectTagsStmt;
+    private final PreparedStatement findADirectTagStmt;
+    private final PreparedStatement findAllPropagatedTagsStmt;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static String INSERT_PROPAGATED_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json) values (%s, '%s', '%s', '%s', %s, %s, '%s', '%s')";
-    private static String INSERT_DIRECT_TAG     = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json) values (%s, '%s', '%s', '%s', %s, %s, '%s', '%s')";
+    private static String INSERT_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json, is_active) values (%s, '%s', '%s', '%s', %s, %s, '%s', '%s', %s)";
 
-    private static String DELETE_DIRECT_TAG = "DELETE FROM tags.effective_tags where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s'";
-
-    private static String DELETE_PROPAGATED_TAG = "DELETE FROM tags.effective_tags where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s'";
+    private static String DELETE_TAG = "UPDATE tags.effective_tags SET is_active = false where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s'";
 
 
     public TagDAOCassandraImpl() throws AtlasBaseException {
         try {
             KEYSPACE = ApplicationProperties.get().getString(CASSANDRA_NEW_KEYSPACE_PROPERTY, "tags");
-            BUCKET_POWER = ApplicationProperties.get().getInt(CASSANDRA_BUCKET_POWER, 6);
+            BUCKET_POWER = 5;
 
             // Initialize Cassandra connection
             String hostname = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, "localhost");
             cassSession = initializeCassandraSession(hostname);
 
             // Prepare statements for reuse
-            findDirectTagsStmt = cassSession.prepare(
-                    "SELECT * FROM tags.effective_tags WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false"
+            findAllDirectTagsStmt = cassSession.prepare(
+                    "SELECT * FROM tags.effective_tags WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false AND is_active = true ALLOW FILTERING"
             );
 
-            findTagsStmt = cassSession.prepare(
-                    "SELECT * FROM tags.effective_tags WHERE id = ? AND bucket = ?"
+            findAllTagsStmt = cassSession.prepare(
+                    "SELECT * FROM tags.effective_tags WHERE id = ? AND bucket = ? AND is_active = true"
             );
 
-            findDirectTagsByVertexIdAndTypeNameStmt = cassSession.prepare(
-                    "SELECT * FROM tags.effective_tags where bucket = ? AND id = ? AND tag_type_name = ? AND source_id = ? AND is_propagated = false"
+            findADirectTagStmt = cassSession.prepare(
+                    "SELECT * FROM tags.effective_tags where bucket = ? AND id = ? AND tag_type_name = ? AND source_id = ? AND is_propagated = false AND is_active = true ALLOW FILTERING"
             );
 
-            findPropagatedTagsBySourceAndTypeNameStmt = cassSession.prepare(
-                    "SELECT * FROM tags.effective_tags where source_id = ? AND tag_type_name = ? AND is_propagated = true ALLOW FILTERING"
-            );
-
-            deletePropagatedTag = cassSession.prepare(
-                    "DELETE FROM tags.effective_tags where bucket = ? AND id = ? AND source_id = ? AND tag_type_name = ?"
+            findAllPropagatedTagsStmt = cassSession.prepare(
+                    "SELECT * FROM tags.effective_tags where source_id = ? AND tag_type_name = ? AND is_propagated = true AND is_active = true ALLOW FILTERING"
             );
 
         } catch (Exception e) {
@@ -124,7 +115,7 @@ public class TagDAOCassandraImpl implements TagDAO {
 
         int bucket = calculateBucket(vertexId);
         try {
-            BoundStatement bound = findDirectTagsStmt.bind(vertexId, bucket, vertexId);
+            BoundStatement bound = findAllDirectTagsStmt.bind(vertexId, bucket, vertexId);
             ResultSet rs = cassSession.execute(bound);
 
             for (Row row : rs) {
@@ -147,7 +138,7 @@ public class TagDAOCassandraImpl implements TagDAO {
 
         int bucket = calculateBucket(vertexId);
         try {
-            BoundStatement bound = findTagsStmt.bind(vertexId, bucket);
+            BoundStatement bound = findAllTagsStmt.bind(vertexId, bucket);
             ResultSet rs = cassSession.execute(bound);
 
             for (Row row : rs) {
@@ -168,7 +159,7 @@ public class TagDAOCassandraImpl implements TagDAO {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findTagByVertexIdAndTagTypeName");
         int bucket = calculateBucket(vertexId);
         try {
-            BoundStatement bound = findDirectTagsByVertexIdAndTypeNameStmt.bind(bucket, vertexId, tagTypeName, vertexId);
+            BoundStatement bound = findADirectTagStmt.bind(bucket, vertexId, tagTypeName, vertexId);
             ResultSet rs = cassSession.execute(bound);
 
             for (Row row : rs) {
@@ -190,7 +181,7 @@ public class TagDAOCassandraImpl implements TagDAO {
         List<Tag> tags = new ArrayList<>();
 
         try {
-            BoundStatement bound = findPropagatedTagsBySourceAndTypeNameStmt.bind(sourceVertexId, tagTypeName).setPageSize(100);
+            BoundStatement bound = findAllPropagatedTagsStmt.bind(sourceVertexId, tagTypeName).setPageSize(100);
             ResultSet rs = cassSession.execute(bound);
 
             for (Row row : rs) {
@@ -215,10 +206,13 @@ public class TagDAOCassandraImpl implements TagDAO {
 
     @Override
     public void deleteDirectTag(String sourceVertexId, AtlasClassification tagToDelete) throws AtlasBaseException {
+        // Delete Direct tags
+        // Do not delete row, mark is_active as false
+
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("deleteTags");
 
         try {
-            String delete = String.format(DELETE_DIRECT_TAG,
+            String delete = String.format(DELETE_TAG,
                     calculateBucket(sourceVertexId),
                     sourceVertexId,
                     sourceVertexId,
@@ -235,14 +229,16 @@ public class TagDAOCassandraImpl implements TagDAO {
 
     @Override
     public void deleteTags(List<Tag> tagsToDelete) throws AtlasBaseException {
+        // Delete Propagated tags
+        // Do not delete rows, mark is_active as false
+
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("deleteTags");
-        //BatchStatement batchStatement = BatchStatement.newInstance(LOGGED);
         StringBuilder batchQuery = new StringBuilder();
         batchQuery.append("BEGIN BATCH ");
 
         try {
             for (Tag tagToDelete: tagsToDelete) {
-                String delete = String.format(DELETE_PROPAGATED_TAG,
+                String delete = String.format(DELETE_TAG,
                         tagToDelete.getBucket(),
                         tagToDelete.getVertexId(),
                         tagToDelete.getSourceVertexId(),
@@ -272,7 +268,7 @@ public class TagDAOCassandraImpl implements TagDAO {
 
         for (String propagatedAssetVertexId : propagatedAssetVertexIds) {
             int bucket = calculateBucket(propagatedAssetVertexId);
-            String insert = String.format(INSERT_PROPAGATED_TAG,
+            String insert = String.format(INSERT_TAG,
                     bucket,
                     propagatedAssetVertexId,
                     tagTypeName,
@@ -299,7 +295,7 @@ public class TagDAOCassandraImpl implements TagDAO {
 
         int bucket = calculateBucket(assetId);
 
-        String insert = String.format(INSERT_DIRECT_TAG,
+        String insert = String.format(INSERT_TAG,
                 bucket,
                 assetId,
                 tagTypeName,
