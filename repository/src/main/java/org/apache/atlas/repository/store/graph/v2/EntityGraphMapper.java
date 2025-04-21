@@ -101,9 +101,13 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
 import static org.apache.atlas.repository.graph.GraphHelper.getCollectionElementsUsingRelationship;
+import static org.apache.atlas.repository.graph.GraphHelper.getCreatedByAsString;
+import static org.apache.atlas.repository.graph.GraphHelper.getCreatedTime;
 import static org.apache.atlas.repository.graph.GraphHelper.getDelimitedClassificationNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getLabels;
 import static org.apache.atlas.repository.graph.GraphHelper.getMapElementsProperty;
+import static org.apache.atlas.repository.graph.GraphHelper.getModifiedByAsString;
+import static org.apache.atlas.repository.graph.GraphHelper.getModifiedTime;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitLabel;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
@@ -1297,7 +1301,7 @@ public class EntityGraphMapper {
                         //delete old reference
                         deleteDelegate.getHandler().deleteEdgeReference(currentEdge, ctx.getAttrType().getTypeCategory(), ctx.getAttribute().isOwnedRef(),
                                 true, ctx.getAttribute().getRelationshipEdgeDirection(), ctx.getReferringVertex());
-                        if (edgeDirection == IN) {
+                        if (IN == edgeDirection) {
                             recordEntityUpdate(currentEdge.getOutVertex(), ctx, false);
                         } else {
                             recordEntityUpdate(currentEdge.getInVertex(), ctx, false);
@@ -1722,7 +1726,7 @@ public class EntityGraphMapper {
 
                         ret = getOrCreateRelationship(fromVertex, toVertex, relationshipName, relationshipAttributes);
 
-                        boolean isCreated = graphHelper.getCreatedTime(ret) == RequestContext.get().getRequestTime();
+                        boolean isCreated = getCreatedTime(ret) == RequestContext.get().getRequestTime();
 
                         if (isCreated) {
                             // if relationship did not exist before and new relationship was created
@@ -3001,7 +3005,7 @@ public class EntityGraphMapper {
                                          AtlasRelationshipEdgeDirection edgeDirection,  Map<String, Object> relationshipAttributes)
             throws AtlasBaseException {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("Updating entity reference using relationship {} for reference attribute {}", getTypeName(newEntityVertex));
+            LOG.debug("Updating entity reference using relationship {} for reference attribute {}", getTypeName(newEntityVertex), ctx.getAttribute().getName());
         }
 
         AtlasEdge currentEdge = ctx.getCurrentEdge();
@@ -3042,7 +3046,7 @@ public class EntityGraphMapper {
                 ret = getOrCreateRelationship(newEntityVertex, parentEntityVertex, relationshipName, relationshipAttributes);
             }
 
-            boolean isCreated = graphHelper.getCreatedTime(ret) == RequestContext.get().getRequestTime();
+            boolean isCreated = getCreatedTime(ret) == RequestContext.get().getRequestTime();
             if (isCreated) {
                 // This flow is executed even if edge was only updated, or even the different order in payload
                 // Necessary to call recordEntityUpdate for only new edge creation, hence checking `isCreated`
@@ -3113,7 +3117,7 @@ public class EntityGraphMapper {
                             if (!deleted) {
                                 removedElements.add(edge);
 
-                                if (attribute.getRelationshipEdgeDirection() == IN) {
+                                if (IN == attribute.getRelationshipEdgeDirection()) {
                                     recordEntityUpdate(edge.getOutVertex(), ctx, false);
                                 } else {
                                     recordEntityUpdate(edge.getInVertex(), ctx, false);
@@ -4536,9 +4540,17 @@ public class EntityGraphMapper {
         if (vertex != null) {
             RequestContext req = RequestContext.get();
 
-            AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex);
+            //AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex);
+            AtlasEntityHeader header = new AtlasEntityHeader(getTypeName(vertex));
+            header.setGuid(GraphHelper.getGuid(vertex));
+            header.setCreateTime(new Date(getCreatedTime(vertex)));
+            header.setUpdateTime(new Date(getModifiedTime(vertex)));
+            header.setCreatedBy(getCreatedByAsString(vertex));
+            header.setUpdatedBy(getModifiedByAsString(vertex));
+            header.setAttribute(NAME, vertex.getProperty(NAME, String.class));
+            header.setAttribute(QUALIFIED_NAME, vertex.getProperty(QUALIFIED_NAME, String.class));
 
-            if (!req.isUpdatedEntity(graphHelper.getGuid(vertex))) {
+            if (!req.isUpdatedEntity(header.getGuid())) {
                 updateModificationMetadata(vertex);
                 req.recordEntityUpdate(header);
             }
@@ -4572,9 +4584,9 @@ public class EntityGraphMapper {
                     }
                 } else {
                     if (isAdd) {
-                        entity.addOrAppendListAddedRelationshipList(inverseEnd.getName(), objectId);
+                        entity.addOrAppendAddedRelationshipAttribute(inverseEnd.getName(), objectId);
                     } else {
-                        entity.addOrAppendListRemovedRelationshipList(inverseEnd.getName(), objectId);
+                        entity.addOrAppendRemovedRelationshipAttribute(inverseEnd.getName(), objectId);
                     }
                 }
 
