@@ -437,14 +437,32 @@
   ],
   "persona-domain-create": [
     {
-      "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
       "resources": [
         "entity:{entity}",
         "entity-type:DataDomain",
         "entity-classification:*"
       ],
       "actions": ["entity-create"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink this DataDomain to other Domains",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity:{entity}/*",
+        "end-one-entity:{entity}",
+        "end-one-entity-type:DataDomain",
+        "end-one-entity-classification:*",
+
+        "end-two-entity:{entity}",
+        "end-two-entity-type:DataDomain",
+        "end-two-entity-classification:*"
+      ],
+      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
   ],
   "persona-domain-update": [
