@@ -51,7 +51,11 @@ public interface AtlasAuthorizer {
      * @return
      * @throws AtlasAuthorizationException
      */
-    AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException;
+    default AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException {
+        return isAccessAllowed(request, true);
+    }
+
+    AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request, boolean auditLogEnabled) throws AtlasAuthorizationException;
 
     /**
      * authorize operations on a type

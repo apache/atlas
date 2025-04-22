@@ -34,7 +34,6 @@ import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
-import org.apache.atlas.authorizer.authorizers.EntityAuthorizer;
 import org.apache.atlas.authorizer.authorizers.ListAuthorizer;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -172,6 +171,10 @@ public class AtlasAuthorizationUtils {
     }
 
     public static boolean isAccessAllowed(AtlasEntityAccessRequest request) {
+        return isAccessAllowed(request, true);
+    }
+
+    public static boolean isAccessAllowed(AtlasEntityAccessRequest request, boolean isAuditLogEnabled) {
         MetricRecorder metric = RequestContext.get().startMetricRecord("isAccessAllowed");
 
         String  userName = getCurrentUserName();
@@ -184,7 +187,7 @@ public class AtlasAuthorizationUtils {
                 request.setClientIPAddress(RequestContext.get().getClientIPAddress());
                 request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
                 request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
-                AtlasAccessResult atlasPoliciesResult = authorizer.isAccessAllowed(request);
+                AtlasAccessResult atlasPoliciesResult =  authorizer.isAccessAllowed(request, isAuditLogEnabled);
 
                 RequestContext.get().endMetricRecord(metric);
                 if (!isABACAuthorizerEnabled()) {

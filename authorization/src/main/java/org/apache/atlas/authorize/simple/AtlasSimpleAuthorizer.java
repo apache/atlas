@@ -262,7 +262,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
-    public AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException {
+    public AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request, boolean isAuditEnabled) throws AtlasAuthorizationException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> SimpleAtlasAuthorizer.isAccessAllowed({})", request);
         }
@@ -504,7 +504,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             entityAccessRequest.setClientIPAddress(request.getClientIPAddress());
 
 
-            if (!isAccessAllowed(entityAccessRequest).isAllowed()) {
+            if (!isAccessAllowed(entityAccessRequest, true).isAllowed()) {
                 scrubEntityHeader(entity, request.getTypeRegistry());
             }
         }

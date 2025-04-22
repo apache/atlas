@@ -31,6 +31,7 @@ import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
 import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
+import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.model.discovery.AtlasSearchResult;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -182,7 +183,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
-    public AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException {
+    public AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request, boolean isAuditEnabled) throws AtlasAuthorizationException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> isAccessAllowed(" + request + ")");
         }
@@ -197,7 +198,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
             }
 
             // not initializing audit handler, so that audits are not logged when entity details are NULL or EMPTY STRING
-            if (!(StringUtils.isEmpty(request.getEntityId()) && request.getClassification() == null && request.getEntity() == null)) {
+            if (isAuditEnabled && !(StringUtils.isEmpty(request.getEntityId()) && request.getClassification() == null && request.getEntity() == null)) {
                 auditHandler = new RangerAtlasAuditHandler(request, getServiceDef());
             }
 
@@ -649,6 +650,8 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
         return plugin != null ? plugin.getServiceDef() : null;
     }
 
+    // deprecated: isAccessAllowed only checks for atlas and atlas_tag policies, use AuthorizationUtil.isAccessAllowed
+    // to include the checks for abac policies as well.
     private AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request, RangerAtlasAuditHandler auditHandler) throws AtlasAuthorizationException {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> isAccessAllowed(" + request + ")");
@@ -846,17 +849,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
     }
 
     private void checkAccessAndScrub(AtlasEntityHeader entity, AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {
-        if (entity != null && request != null) {
-            final AtlasEntityAccessRequest entityAccessRequest = new AtlasEntityAccessRequest(request.getTypeRegistry(), AtlasPrivilege.ENTITY_READ, entity, request.getUser(), request.getUserGroups());
-
-            entityAccessRequest.setClientIPAddress(request.getClientIPAddress());
-            entityAccessRequest.setForwardedAddresses(request.getForwardedAddresses());
-            entityAccessRequest.setRemoteIPAddress(request.getRemoteIPAddress());
-
-            if (!isAccessAllowed(entityAccessRequest, null).isAllowed()) {
-                scrubEntityHeader(entity, request.getTypeRegistry());
-            }
-        }
+        checkAccessAndScrub(entity, request, false);
     }
 
     private void checkAccessAndScrub(AtlasEntityHeader entity, AtlasSearchResultScrubRequest request, boolean isScrubAuditEnabled) throws AtlasAuthorizationException {
@@ -867,9 +860,7 @@ public class RangerAtlasAuthorizer implements AtlasAuthorizer {
             entityAccessRequest.setForwardedAddresses(request.getForwardedAddresses());
             entityAccessRequest.setRemoteIPAddress(request.getRemoteIPAddress());
 
-            boolean isEntityAccessAllowed  = isScrubAuditEnabled ?
-                    isAccessAllowed(entityAccessRequest).isAllowed() :
-                    isAccessAllowed(entityAccessRequest, null).isAllowed();
+            boolean isEntityAccessAllowed  = AtlasAuthorizationUtils.isAccessAllowed(entityAccessRequest, isScrubAuditEnabled);
             if (!isEntityAccessAllowed) {
                 scrubEntityHeader(entity, request.getTypeRegistry());
             }
