@@ -46,9 +46,9 @@ public class TagDAOCassandraImpl implements TagDAO {
     private final PreparedStatement findAllPropagatedTagsStmt;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static String INSERT_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json, is_active) values (%s, '%s', '%s', '%s', %s, %s, '%s', '%s', %s)";
+    private static String INSERT_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json) values (%s, '%s', '%s', '%s', %s, %s, '%s', '%s')";
 
-    private static String DELETE_TAG = "UPDATE tags.effective_tags SET is_active = false where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s'";
+    private static String DELETE_TAG = "DELETE FROM tags.effective_tags where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s'";
 
 
     public TagDAOCassandraImpl() throws AtlasBaseException {
@@ -62,19 +62,19 @@ public class TagDAOCassandraImpl implements TagDAO {
 
             // Prepare statements for reuse
             findAllDirectTagsStmt = cassSession.prepare(
-                    "SELECT * FROM tags.effective_tags WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false AND is_active = true ALLOW FILTERING"
+                    "SELECT * FROM tags.effective_tags WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false"
             );
 
             findAllTagsStmt = cassSession.prepare(
-                    "SELECT * FROM tags.effective_tags WHERE id = ? AND bucket = ? AND is_active = true"
+                    "SELECT * FROM tags.effective_tags WHERE id = ? AND bucket = ?"
             );
 
             findADirectTagStmt = cassSession.prepare(
-                    "SELECT * FROM tags.effective_tags where bucket = ? AND id = ? AND tag_type_name = ? AND source_id = ? AND is_propagated = false AND is_active = true ALLOW FILTERING"
+                    "SELECT * FROM tags.effective_tags WHERE bucket = ? AND id = ? AND tag_type_name = ? AND source_id = ? AND is_propagated = false"
             );
 
             findAllPropagatedTagsStmt = cassSession.prepare(
-                    "SELECT * FROM tags.effective_tags where source_id = ? AND tag_type_name = ? AND is_propagated = true AND is_active = true ALLOW FILTERING"
+                    "SELECT * FROM tags.effective_tags WHERE source_id = ? AND tag_type_name = ? AND is_propagated = true ALLOW FILTERING"
             );
 
         } catch (Exception e) {
