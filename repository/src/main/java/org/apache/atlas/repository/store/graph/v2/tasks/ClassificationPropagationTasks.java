@@ -73,7 +73,7 @@ public class ClassificationPropagationTasks {
 
             if (mode != null && mode) {
                 LOG.info("via new mode");
-                entityGraphMapper.updateClassificationTextPropagationV2(tagTypeName, entityGuid);
+                entityGraphMapper.updateClassificationTextPropagationV2(entityGuid, tagTypeName);
             } else {
                 LOG.info("via old mode");
                 entityGraphMapper.updateClassificationTextPropagation(classificationVertexId);
