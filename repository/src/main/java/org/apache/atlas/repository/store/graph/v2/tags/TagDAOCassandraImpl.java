@@ -62,19 +62,19 @@ public class TagDAOCassandraImpl implements TagDAO {
 
             // Prepare statements for reuse
             findAllDirectTagsStmt = cassSession.prepare(
-                    "SELECT * FROM tags.effective_tags WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false"
+                    "SELECT tag_meta_json FROM tags.effective_tags WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false"
             );
 
             findAllTagsStmt = cassSession.prepare(
-                    "SELECT * FROM tags.effective_tags WHERE id = ? AND bucket = ?"
+                    "SELECT tag_meta_json FROM tags.effective_tags WHERE id = ? AND bucket = ?"
             );
 
             findADirectTagStmt = cassSession.prepare(
-                    "SELECT * FROM tags.effective_tags WHERE bucket = ? AND id = ? AND tag_type_name = ? AND source_id = ? AND is_propagated = false"
+                    "SELECT tag_meta_json FROM tags.effective_tags WHERE bucket = ? AND id = ? AND tag_type_name = ? AND source_id = ? AND is_propagated = false"
             );
 
             findAllPropagatedTagsStmt = cassSession.prepare(
-                    "SELECT * FROM tags.effective_tags WHERE source_id = ? AND tag_type_name = ? AND is_propagated = true ALLOW FILTERING"
+                    "SELECT bucket, id, source_id, tag_type_name, asset_metadata FROM tags.effective_tags WHERE source_id = ? AND tag_type_name = ? AND is_propagated = true ALLOW FILTERING"
             );
 
         } catch (Exception e) {
