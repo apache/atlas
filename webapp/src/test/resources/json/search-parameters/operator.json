@@ -1,0 +1,102 @@
+[  {
+  "testDescription": "hive_table contains testtable or retentionSize != 0",
+  "searchParameters": {
+    "typeName": "hive_table",
+    "excludeDeletedEntities": true,
+    "classification": "",
+    "query": "",
+    "limit": 25,
+    "offset": 0,
+    "entityFilters": {
+      "attributeName": "name",
+      "attributeValue": "testtable",
+      "condition" : "AND",
+      "criterion" : [
+        {
+          "attributeName": "name",
+          "operator": "invalid_contains",
+          "attributeValue": "testtable"
+        },
+        {
+          "attributeName": "retention",
+          "operator": "neq",
+          "attributeValue": "0"
+        }
+      ]
+    },
+    "tagFilters": null,
+    "attributes": [
+      ""
+    ]
+  },
+  "expectedCount": 0
+},
+
+  {
+    "testDescription": "hive_table contains testtable or retentionSize != 0",
+    "searchParameters": {
+      "typeName": "hive_table",
+      "excludeDeletedEntities": true,
+      "classification": "",
+      "query": "",
+      "limit": 25,
+      "offset": 0,
+      "entityFilters": {
+        "attributeName": "name",
+        "attributeValue": "testtable",
+        "condition" : "OR",
+        "criterion" : [
+          {
+            "attributeName": "name",
+            "operator": "invalid_eq",
+            "attributeValue": "testtable"
+          },
+          {
+            "attributeName": "retention",
+            "operator": "invalid_eq",
+            "attributeValue": "0"
+          }
+        ]
+      },
+      "tagFilters": null,
+      "attributes": [
+        ""
+      ]
+    },
+    "expectedCount": 0
+  },
+
+  {
+    "testDescription": "hive_table contains testtable or retentionSize != 0",
+    "searchParameters": {
+      "typeName": "hive_table",
+      "excludeDeletedEntities": true,
+      "classification": "",
+      "query": "",
+      "limit": 25,
+      "offset": 0,
+      "entityFilters": {
+        "attributeName": "name",
+        "attributeValue": "testtable",
+        "condition" : "OR",
+        "criterion" : [
+          {
+            "attributeName": "name",
+            "operator": "invalid_neq",
+            "attributeValue": "testtable"
+          },
+          {
+            "attributeName": "retention",
+            "operator": "invalid_contains",
+            "attributeValue": "0"
+          }
+        ]
+      },
+      "tagFilters": null,
+      "attributes": [
+        ""
+      ]
+    },
+    "expectedCount": 0
+  }
+]
