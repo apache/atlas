@@ -40,7 +40,7 @@ public class AtlasNoneAuthorizer implements AtlasAuthorizer {
         return result;
     }
 
-    public AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException {
+    public AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request, boolean isAuditEnabled) throws AtlasAuthorizationException {
         AtlasAccessResult result = new AtlasAccessResult(true, null);
         return result;
     }
