@@ -179,6 +179,9 @@ public enum AtlasErrorCode {
     LINEAGE_ON_DEMAND_NOT_ENABLED(400, "ATLAS-400-00-100", "Lineage on demand config: {0} is not enabled"),
     INVALID_TOPIC_NAME(400, "ATLAS-400-00-101", "Unsupported topic name : {0}"),
     UNSUPPORTED_TYPE_NAME(400, "ATLAS-400-00-102", "Unsupported {0} name. Names such as 'description','version','options','name','servicetype' are not supported"),
+    INVALID_OPERATOR(400, "ATLAS-400-00-103", "Invalid operator specified for attribute: {0}"),
+    BLANK_NAME_ATTRIBUTE(400, "ATLAS-400-00-104", "Name Attribute can't be empty!"),
+    BLANK_VALUE_ATTRIBUTE(400, "ATLAS-400-00-105", "Value Attribute can't be empty!"),
 
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
