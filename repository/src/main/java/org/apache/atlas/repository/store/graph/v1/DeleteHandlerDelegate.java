@@ -42,6 +42,7 @@ public class DeleteHandlerDelegate {
     private final DeleteHandlerV1     defaultHandler;
     private final AtlasGraph graph;
     private final TaskManagement      taskManagement;
+    private final EntityGraphRetriever entityRetriever;
 
     @Inject
     public DeleteHandlerDelegate(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement, EntityGraphRetriever entityRetriever) {
@@ -49,6 +50,7 @@ public class DeleteHandlerDelegate {
         this.taskManagement    = taskManagement;
         this.softDeleteHandler = new SoftDeleteHandlerV1(graph, typeRegistry, taskManagement, entityRetriever);
         this.hardDeleteHandler = new HardDeleteHandlerV1(graph, typeRegistry, taskManagement, entityRetriever);
+        this.entityRetriever   = entityRetriever;
         this.defaultHandler    = getDefaultConfiguredHandler(typeRegistry);
     }
 
@@ -84,8 +86,8 @@ public class DeleteHandlerDelegate {
 
             LOG.debug("Default delete handler set to: {}", handlerFromProperties.getName());
 
-            ret = (DeleteHandlerV1) handlerFromProperties.getConstructor(AtlasGraph.class, AtlasTypeRegistry.class, TaskManagement.class)
-                                    .newInstance(this.graph, typeRegistry, taskManagement);
+            ret = (DeleteHandlerV1) handlerFromProperties.getConstructor(AtlasGraph.class, AtlasTypeRegistry.class, TaskManagement.class, EntityGraphRetriever.class)
+                                    .newInstance(this.graph, typeRegistry, taskManagement, entityRetriever);
         } catch (Exception ex) {
             LOG.error("Error instantiating default delete handler. Defaulting to: {}", softDeleteHandler.getClass().getName(), ex);
 
