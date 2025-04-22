@@ -4161,69 +4161,6 @@ public class EntityGraphMapper {
         }
     }
 
-    public void updateClassificationTextPropagationV2(String sourceEntityGuid, String tagTypeName) throws AtlasBaseException {
-        // start metrics
-        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateClassificationTextPropagationNew");
-        try {
-            // validate inputs
-            if (StringUtils.isEmpty(tagTypeName)) {
-                LOG.warn("updateClassificationTextPropagation(tagTypeName={}): tag type name is empty", tagTypeName);
-                return;
-            }
-
-            // load the source entity vertex by GUID
-            AtlasVertex entityVertex = graphHelper.getVertexForGUID(sourceEntityGuid);
-            if (entityVertex == null) {
-                LOG.error("updateClassificationTextPropagation(entityGuid={}, tagTypeName={}): entity vertex not found",
-                        sourceEntityGuid, tagTypeName);
-                throw new AtlasBaseException(
-                        String.format("updateClassificationTextPropagation(entityGuid=%s, tagTypeName=%s): entity vertex not found",
-                                sourceEntityGuid, tagTypeName));
-            }
-
-            int totalUpdated = 0;
-
-            // fetch propagated‑tag attachments in batches
-            List<Tag> batchToUpdate = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
-            while (!batchToUpdate.isEmpty()) {
-                // collect the vertex IDs in this batch
-                List<String> vertexIds = batchToUpdate.stream()
-                        .map(Tag::getVertexId)
-                        .toList();
-
-                // compute fresh classification‑text de‑norm attributes for this batch
-                // (assumes a helper similar to the delete case exists for updating)
-                Map<String, Map<String, Object>> deNormMap =
-                        TagDeNormAttributesUtil.getPropagatedTagDeNormForUpdateProp(
-                                tagDAO,
-                                sourceEntityGuid,
-                                vertexIds,
-                                typeRegistry,
-                                fullTextMapperV2
-                        );
-
-                // push them to ES
-                ESConnector.writeTagProperties(deNormMap);
-
-                // notify listeners (async) that these entities got their classification text updated
-//                entityChangeNotifier.onClassificationUpdatedToEntities(vertexIds, deNormMap);
-
-                totalUpdated += batchToUpdate.size();
-                // grab next batch
-                batchToUpdate = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
-            }
-
-            LOG.info("Updated classification text for {} propagations, taskId: {}",
-                    totalUpdated, RequestContext.get().getCurrentTask().getGuid());
-        } catch (Exception e) {
-            LOG.error("Error while updating classification text for tag type {}: {}", tagTypeName, e.getMessage());
-            throw new AtlasBaseException(e);
-        } finally {
-            // end metrics
-            RequestContext.get().endMetricRecord(metricRecorder);
-        }
-    }
-
     public List<String> deleteClassificationPropagation(String entityGuid, String classificationVertexId) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(classificationVertexId)) {
@@ -4281,21 +4218,25 @@ public class EntityGraphMapper {
             }
 
             int totalDeleted = 0;
+            
+            // Get tags in batches and delete them
             List<Tag> batchToDelete = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
             while (!batchToDelete.isEmpty()) {
                 tagDAO.deleteTags(batchToDelete);
 
-                //Update DeNorm attributes
-                List<String> entityVertexIds = batchToDelete.stream().map(x -> x.getVertexId()).toList();
-                Map<String, Map<String, Object>> finalDeNormMap = TagDeNormAttributesUtil.getPropagatedTagDeNormForDeleteProp(tagDAO, sourceEntityGuid, entityVertexIds,
-                        typeRegistry, fullTextMapperV2);
+                // Update DeNorm attributes
+                List<String> entityVertexIds = batchToDelete.stream().map(Tag::getVertexId).toList();
+                Map<String, Map<String, Object>> finalDeNormMap = TagDeNormAttributesUtil.getPropagatedTagDeNormForDeleteProp(
+                        tagDAO, sourceEntityGuid, entityVertexIds, typeRegistry, fullTextMapperV2);
                 ESConnector.writeTagProperties(finalDeNormMap);
 
-                totalDeleted += 100;
+                totalDeleted += batchToDelete.size();
+                // Get next batch
                 batchToDelete = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
             }
 
-            LOG.info(String.format("Deleted {} propagations : %s, taskId: %s", totalDeleted, RequestContext.get().getCurrentTask().getGuid()));
+            LOG.info("Deleted {} propagations for source entity {} and tag type {}, taskId: {}", 
+                    totalDeleted, sourceEntityGuid, tagTypeName, RequestContext.get().getCurrentTask().getGuid());
 
             //TODO: send special notification
             //entityChangeNotifier.onClassificationDeletedFromEntities(propagatedEntities, classification);
@@ -5364,5 +5305,64 @@ public class EntityGraphMapper {
         minEntity.setUpdateTime(new Date(vertex.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class)));
 
         return minEntity;
+    }
+
+    public void updateClassificationTextPropagationV2(String sourceEntityGuid, String tagTypeName) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateClassificationTextPropagationNew");
+        try {
+            if (StringUtils.isEmpty(tagTypeName)) {
+                LOG.warn("updateClassificationTextPropagation(classificationVertexId={}): classification type name is empty", tagTypeName);
+                return;
+            }
+
+            AtlasVertex entityVertex = graphHelper.getVertexForGUID(sourceEntityGuid);
+            if (entityVertex == null) {
+                LOG.error("updateClassificationTextPropagation(entityGuid={}, tagTypeName={}): entity vertex not found",
+                        sourceEntityGuid, tagTypeName);
+                throw new AtlasBaseException(
+                        String.format("updateClassificationTextPropagation(entityGuid=%s, tagTypeName=%s): entity vertex not found",
+                                sourceEntityGuid, tagTypeName));
+            }
+
+            int totalUpdated = 0;
+
+            // fetch propagated‑tag attachments in batches
+            List<Tag> batchToUpdate = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
+            while (!batchToUpdate.isEmpty()) {
+                // collect the vertex IDs in this batch
+                List<String> vertexIds = batchToUpdate.stream()
+                        .map(Tag::getVertexId)
+                        .toList();
+
+                // compute fresh classification‑text de‑norm attributes for this batch
+                Map<String, Map<String, Object>> deNormMap =
+                        TagDeNormAttributesUtil.getPropagatedTagDeNormForUpdateProp(
+                                tagDAO,
+                                sourceEntityGuid,
+                                vertexIds,
+                                typeRegistry,
+                                fullTextMapperV2
+                        );
+
+                // push them to ES
+                ESConnector.writeTagProperties(deNormMap);
+
+                // notify listeners (async) that these entities got their classification text updated
+                // entityChangeNotifier.onClassificationUpdatedToEntities(vertexIds, deNormMap);
+
+                totalUpdated += batchToUpdate.size();
+                // grab next batch
+                batchToUpdate = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
+            }
+
+            LOG.info("Updated classification text for {} propagations, taskId: {}",
+                    totalUpdated, RequestContext.get().getCurrentTask().getGuid());
+        } catch (Exception e) {
+            LOG.error("Error while updating classification text for tag type {}: {}", tagTypeName, e.getMessage());
+            throw new AtlasBaseException(e);
+        } finally {
+            // end metrics
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
     }
 }

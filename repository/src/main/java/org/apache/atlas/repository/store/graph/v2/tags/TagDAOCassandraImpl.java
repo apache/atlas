@@ -7,6 +7,7 @@ import com.datastax.oss.driver.api.core.cql.BoundStatement;
 import com.datastax.oss.driver.api.core.cql.PreparedStatement;
 import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
+import com.datastax.oss.driver.api.core.cql.PagingState;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
@@ -21,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -177,31 +179,59 @@ public class TagDAOCassandraImpl implements TagDAO {
 
     @Override
     public List<Tag> getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
+        PaginatedTagResult result = getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, null, 100);
+        return result.getTags();
+    }
+
+    @Override
+    public PaginatedTagResult getPropagationsForAttachmentBatchWithPagination(String sourceVertexId, String tagTypeName, 
+                                                       String pagingStateStr, int pageSize) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getVertexIdsForAttachment");
         List<Tag> tags = new ArrayList<>();
+        String nextPagingState = null;
 
         try {
-            BoundStatement bound = findAllPropagatedTagsStmt.bind(sourceVertexId, tagTypeName).setPageSize(100);
+            BoundStatement bound = findAllPropagatedTagsStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
+            
+            // Apply the paging state if provided
+            if (pagingStateStr != null && !pagingStateStr.isEmpty()) {
+                bound = bound.setPagingState(PagingState.fromString(pagingStateStr));
+            }
+            
             ResultSet rs = cassSession.execute(bound);
+            
+            // Save the paging state for the next call
+            if (!rs.isFullyFetched()) {
+                // Get the ByteBuffer containing paging state
+                ByteBuffer pagingStateBytes = rs.getExecutionInfo().getPagingState();
+                if (pagingStateBytes != null) {
+                    // Create a PagingState from the ByteBuffer
+                    PagingState pagingState = PagingState.fromBytes(pagingStateBytes.array());
+                    nextPagingState = pagingState.toString();
+                }
+            }
 
             for (Row row : rs) {
                 Tag tag = new Tag();
-
                 tag.setBucket(row.getInt("bucket"));
                 tag.setVertexId(row.getString("id"));
                 tag.setTagTypeName(row.getString("tag_type_name"));
                 tag.setSourceVertexId(row.getString("source_id"));
                 tag.setAssetMetadata(objectMapper.readValue(row.getString("asset_metadata"), Map.class));
-
                 tags.add(tag);
             }
-            LOG.info("No propagated tags found for source_id: {}, tagTypeName: {}, returning null", sourceVertexId, tagTypeName);
+            
+            if (tags.isEmpty()) {
+                LOG.info("No propagated tags found for source_id: {}, tagTypeName: {}", sourceVertexId, tagTypeName);
+            }
         } catch (Exception e) {
-            throw new AtlasBaseException(String.format("Error fetching tags found for source_id: %s and tag type: %s", sourceVertexId, tagTypeName), e);
+            throw new AtlasBaseException(String.format("Error fetching tags for source_id: %s and tag type: %s", 
+                                       sourceVertexId, tagTypeName), e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
-        return tags;
+        
+        return new PaginatedTagResult(tags, nextPagingState);
     }
 
     @Override
