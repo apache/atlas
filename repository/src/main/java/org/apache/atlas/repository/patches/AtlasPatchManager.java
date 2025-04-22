@@ -111,6 +111,7 @@ public class AtlasPatchManager {
         handlers.add(new UpdateCompositeIndexStatusPatch(context));
         handlers.add(new RelationshipTypeNamePatch(context));
         handlers.add(new ProcessImpalaNamePatch(context));
+        handlers.add(new ReplaceHugeSparkProcessAttributesPatch(context));
 
         LOG.info("<== AtlasPatchManager.init()");
     }
