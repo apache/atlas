@@ -593,36 +593,25 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         }
     }
 
-    public void addOrAppendListAddedRelationshipList(String name, AtlasObjectId value) {
+    public void addOrAppendAddedRelationshipAttribute(String name, AtlasObjectId relationship) {
         if (this.addedRelationshipAttributes == null) {
             this.addedRelationshipAttributes = new HashMap<>(1);
         }
 
-        if (this.addedRelationshipAttributes.containsKey(name)) {
-            List<Object> currentList = (List<Object>) this.addedRelationshipAttributes.get(name);
-            currentList.add(value);
-            this.addedRelationshipAttributes.put(name, currentList);
-        } else {
-            List<Object> values = new ArrayList<>();
-            values.add(value);
-            this.addedRelationshipAttributes.put(name, values);
-        }
+        addToMapList(this.addedRelationshipAttributes, name, relationship);
     }
 
-    public void addOrAppendListRemovedRelationshipList(String name, AtlasObjectId value) {
+    public void addOrAppendRemovedRelationshipAttribute(String name, AtlasObjectId relationship) {
         if (this.removedRelationshipAttributes == null) {
             this.removedRelationshipAttributes = new HashMap<>(1);
         }
+        addToMapList(this.removedRelationshipAttributes, name, relationship);
+    }
 
-        if (this.removedRelationshipAttributes.containsKey(name)) {
-            List<Object> currentList = (List<Object>) this.removedRelationshipAttributes.get(name);
-            currentList.add(value);
-            this.removedRelationshipAttributes.put(name, currentList);
-        } else {
-            List<Object> values = new ArrayList<>();
-            values.add(value);
-            this.removedRelationshipAttributes.put(name, values);
-        }
+    private void addToMapList(Map<String, Object> map, String key, Object value) {
+        List<Object> values = (List<Object>) map.getOrDefault(key, new ArrayList<>(1));
+        values.add(value);
+        map.put(key, values);
     }
 
     private void init() {
