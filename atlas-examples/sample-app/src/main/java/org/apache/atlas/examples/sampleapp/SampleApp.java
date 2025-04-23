@@ -87,7 +87,7 @@ public class SampleApp {
 
             asyncImportApiExample.testGetAsyncImportStatusById(testImportId);
 
-            asyncImportApiExample.testDeleteAsyncImportById(testImportId);
+            asyncImportApiExample.testAbortAsyncImportById(testImportId);
         } finally {
             if (sampleApp != null && sampleApp.getClient() != null) {
                 sampleApp.getClient().close();

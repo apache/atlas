@@ -734,7 +734,7 @@ public class AdminResource {
     @Path("/async/import/{importId}")
     @Produces(Servlets.JSON_MEDIA_TYPE)
     @Consumes(MediaType.APPLICATION_JSON)
-    public void deleteAsyncImportById(@PathParam("importId") String importId) throws AtlasBaseException {
+    public void abortAsyncImport(@PathParam("importId") String importId) throws AtlasBaseException {
         importService.abortAsyncImport(importId);
     }
 

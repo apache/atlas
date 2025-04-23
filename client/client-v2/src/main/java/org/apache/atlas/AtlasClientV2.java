@@ -1067,8 +1067,8 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return callAPI(formatPathParameters(API_V2.ASYNC_IMPORT_STATUS_BY_ID, importId), AtlasAsyncImportRequest.class, null);
     }
 
-    public void deleteAsyncImportById(String importId) throws AtlasServiceException {
-        callAPI(formatPathParameters(API_V2.DELETE_ASYNC_IMPORT_BY_ID, importId), null, null);
+    public void abortAsyncImport(String importId) throws AtlasServiceException {
+        callAPI(formatPathParameters(API_V2.ABORT_ASYNC_IMPORT_BY_ID, importId), null, null);
     }
 
     @Override
@@ -1299,7 +1299,7 @@ public class AtlasClientV2 extends AtlasBaseClient {
         public static final API_V2 ASYNC_IMPORT              = new API_V2(ASYNC_IMPORT_URI, HttpMethod.POST, Response.Status.OK, MediaType.MULTIPART_FORM_DATA, MediaType.APPLICATION_JSON);
         public static final API_V2 ASYNC_IMPORT_STATUS_ALL   = new API_V2(ASYNC_IMPORT_STATUS_URI, HttpMethod.GET, Response.Status.OK);
         public static final API_V2 ASYNC_IMPORT_STATUS_BY_ID = new API_V2(ASYNC_IMPORT_STATUS_BY_ID_URI + "%s", HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 DELETE_ASYNC_IMPORT_BY_ID = new API_V2(ASYNC_IMPORT_BY_ID_URI + "%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
+        public static final API_V2 ABORT_ASYNC_IMPORT_BY_ID = new API_V2(ASYNC_IMPORT_BY_ID_URI + "%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
 
         // Glossary APIs
         public static final API_V2 GET_ALL_GLOSSARIES              = new API_V2(GLOSSARY_URI, HttpMethod.GET, Response.Status.OK);

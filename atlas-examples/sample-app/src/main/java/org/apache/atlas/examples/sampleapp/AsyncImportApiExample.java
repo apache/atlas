@@ -98,15 +98,15 @@ public class AsyncImportApiExample {
         }
     }
 
-    public void testDeleteAsyncImportById(String importId) throws Exception {
-        System.out.println("Testing deleteAsyncImport for id=" + importId);
+    public void testAbortAsyncImportById(String importId) throws Exception {
+        System.out.println("Testing abortAsyncImport for id=" + importId);
 
         try {
-            client.deleteAsyncImportById(importId);
+            client.abortAsyncImport(importId);
 
-            System.out.println("Successfully deleted async import with ID: " + importId);
+            System.out.println("Successfully aborted async import with ID: " + importId);
         } catch (AtlasServiceException e) {
-            System.err.println("Failed to delete async import for ID (" + importId + "): " + e.getMessage());
+            System.err.println("Failed to abort async import for ID (" + importId + "): " + e.getMessage());
 
             throw e;
         }
