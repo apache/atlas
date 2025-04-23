@@ -168,14 +168,16 @@ public class AsyncImportService {
     public AtlasAsyncImportRequest getAsyncImportRequest(String importId) throws AtlasBaseException {
         LOG.debug("==> AsyncImportService.getImportStatusById(importId={})", importId);
 
-        AtlasAsyncImportRequest atlasAsyncImportRequest = new AtlasAsyncImportRequest();
+        try {
+            AtlasAsyncImportRequest importRequest = fetchImportRequestByImportId(importId);
 
-        atlasAsyncImportRequest.setImportId(importId);
+            if (importRequest == null) {
+                throw new AtlasBaseException(AtlasErrorCode.IMPORT_NOT_FOUND, importId);
+            }
 
-        AtlasAsyncImportRequest importRequest = dataAccess.load(atlasAsyncImportRequest);
-
-        LOG.debug("<== AsyncImportService.getImportStatusById(importId={})", importId);
-
-        return importRequest;
+            return importRequest;
+        } finally {
+            LOG.debug("<== AsyncImportService.getImportStatusById(importId={})", importId);
+        }
     }
 }

@@ -599,11 +599,6 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         LOG.info("<== stopConsumerThreads()");
     }
 
-    private void stopConsumerThread(HookConsumer consumer) {
-        consumer.shutdown();
-        consumers.remove(consumer);
-    }
-
     private List<String> trimAndPurge(String[] values, String defaultValue) {
         final List<String> ret;
 

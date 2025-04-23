@@ -205,7 +205,7 @@ public enum AtlasErrorCode {
     FILE_NAME_NOT_FOUND(404, "ATLAS-404-00-014", "File name should not be blank"),
     NO_TYPE_NAME_ON_VERTEX(404, "ATLAS-404-00-015", "No typename found for given entity with guid: {0}"),
     NO_LINEAGE_CONSTRAINTS_FOR_GUID(404, "ATLAS-404-00-016", "No lineage constraints found for requested entity with guid : {0}"),
-    IMPORT_NOT_FOUND(404, "ATLAS-404-00-017", "Import id={0} is not found"),
+    IMPORT_NOT_FOUND(404, "ATLAS-404-00-017", "Import id {0} is not found"),
 
     METHOD_NOT_ALLOWED(405, "ATLAS-405-00-001", "Error 405 - The request method {0} is inappropriate for the URL: {1}"),
 
@@ -224,7 +224,7 @@ public enum AtlasErrorCode {
     GLOSSARY_IMPORT_FAILED(409, "ATLAS-409-00-011", "Glossary import failed"),
     METRICSSTAT_ALREADY_EXISTS(409, "ATLAS-409-00-012", "Metric Statistics already collected at {0}"),
     PENDING_TASKS_ALREADY_IN_PROGRESS(409, "ATLAS-409-00-013", "There are already {0} pending tasks in queue"),
-    IMPORT_ABORT_NOT_ALLOWED(409, "ATLAS-409-00-016", "Import id={0} is currently in state {1}, cannot be aborted"),
+    IMPORT_ABORT_NOT_ALLOWED(409, "ATLAS-409-00-016", "Import id {0} is currently in state {1}, cannot be aborted"),
 
     // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),
@@ -252,9 +252,9 @@ public enum AtlasErrorCode {
     NOTIFICATION_EXCEPTION(500, "ATLAS-500-00-018", "{0}"),
     IMPORT_UPDATE_FAILED(500, "ATLAS-500-00-019", "Failed to update import with id={0}"),
     IMPORT_REGISTRATION_FAILED(500, "ATLAS-500-00-020", "Failed to register import request"),
-    IMPORT_FAILED(500, "ATLAS-500-00-021", "Import with id={0} failed"),
-    ABORT_IMPORT_FAILED(500, "ATLAS-500-00-022", "Failed to abort import with id={0}"),
-    IMPORT_QUEUEING_FAILED(500, "ATLAS-500-00-023", "Failed to add import with id={0} to request queue, please try again later");
+    IMPORT_FAILED(500, "ATLAS-500-00-021", "Import with id {0} failed"),
+    ABORT_IMPORT_FAILED(500, "ATLAS-500-00-022", "Failed to abort import with id {0}"),
+    IMPORT_QUEUEING_FAILED(500, "ATLAS-500-00-023", "Failed to add import with id {0} to request queue, please try again later");
 
     private static final Logger LOG = LoggerFactory.getLogger(AtlasErrorCode.class);
     private final        String errorCode;
