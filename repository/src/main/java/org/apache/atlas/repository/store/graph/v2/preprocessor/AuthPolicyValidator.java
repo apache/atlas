@@ -68,6 +68,10 @@ public class AuthPolicyValidator {
         add("persona-entity-remove-classification");
         add("persona-add-terms");
         add("persona-remove-terms");
+        add("persona-dq-update");
+        add("persona-dq-read");
+        add("persona-dq-create");
+        add("persona-dq-delete");
     }};
 
     private static final Set<String> DATA_POLICY_ACTIONS = new HashSet<String>(){{

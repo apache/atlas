@@ -110,11 +110,10 @@ public class RequestContext {
     private boolean skipAuthorizationCheck = false;
     private Set<String> deletedEdgesIdsForResetHasLineage = new HashSet<>(0);
     private String requestUri;
-    private boolean cacheEnabled;
 
     private boolean delayTagNotifications = false;
     private boolean skipHasLineageCalculation = false;
-    private boolean isInvokedByIndexSearch = false;
+    private boolean isInvokedByIndexSearchOrBulk = false;
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
     private Map<AtlasClassification, Collection<Object>> addedClassificationAndVertices = new HashMap<>();
 
@@ -758,14 +757,6 @@ public class RequestContext {
         return this.requestUri;
     }
 
-    public void setEnableCache(boolean cacheEnabled) {
-        this.cacheEnabled = cacheEnabled;
-    }
-
-    public boolean isCacheEnabled() {
-        return this.cacheEnabled;
-    }
-
     public boolean isIncludeClassificationNames() {
         return includeClassificationNames;
     }
@@ -805,12 +796,12 @@ public class RequestContext {
         this.skipHasLineageCalculation = skipHasLineageCalculation;
     }
 
-    public void setIsInvokedByIndexSearch(boolean isInvokedByIndexSearch) {
-        this.isInvokedByIndexSearch = isInvokedByIndexSearch;
+    public void setIsInvokedByIndexSearchOrBulk(boolean isInvokedByIndexSearch) {
+        this.isInvokedByIndexSearchOrBulk = isInvokedByIndexSearch;
     }
 
-    public boolean isInvokedByIndexSearch() {
-        return isInvokedByIndexSearch;
+    public boolean isInvokedByIndexSearchOrBulk() {
+        return isInvokedByIndexSearchOrBulk;
     }
 
     public class EntityGuidPair {

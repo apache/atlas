@@ -133,6 +133,7 @@ atlas.graph.storage.hbase.regions-per-server=1
                 </plugins>
             </build>
         </profile>
+
     </profiles>
 
     <build>

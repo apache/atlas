@@ -98,6 +98,7 @@ public enum AtlasConfiguration {
     LINEAGE_ON_DEMAND_ENABLED("atlas.lineage.on.demand.enabled", true),
     LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT("atlas.lineage.on.demand.default.node.count", 3),
     LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 100),
+    USE_OPTIMISED_LINEAGE_CALCULATION("atlas.lineage.optimised.calculation", false),
 
     SUPPORTED_RELATIONSHIP_EVENTS("atlas.notification.relationships.filter", "asset_readme,asset_links"),
     ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_ASSET_TYPES("atlas.relationship.cleanup.supported.asset.types", "Process,AirflowTask"),
@@ -140,7 +141,8 @@ public enum AtlasConfiguration {
     OTEL_RESOURCE_ATTRIBUTES("OTEL_RESOURCE_ATTRIBUTES", "service.name=atlas"),
     OTEL_SERVICE_NAME(" OTEL_SERVICE_NAME", "atlas"),
     OTEL_EXPORTER_OTLP_ENDPOINT("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"),
-    ATLAS_BULK_API_MAX_ENTITIES_ALLOWED("atlas.bulk.api.max.entities.allowed", 10000);
+    ATLAS_BULK_API_MAX_ENTITIES_ALLOWED("atlas.bulk.api.max.entities.allowed", 10000),
+    ATLAS_BULK_API_ENABLE_JANUS_OPTIMISATION("atlas.bulk.api.enable.janus.optimization", false);
 
 
 

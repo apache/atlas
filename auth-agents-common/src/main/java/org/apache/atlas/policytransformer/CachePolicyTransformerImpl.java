@@ -621,12 +621,11 @@ public class CachePolicyTransformerImpl {
 
     private List<RangerPolicyItemCondition> getPolicyConditions(AtlasEntityHeader atlasPolicy) {
         List<RangerPolicyItemCondition> ret = new ArrayList<>();
-
-        if (!atlasPolicy.hasAttribute("policyConditions")) {
+        if (!atlasPolicy.hasAttribute(ATTR_POLICY_CONDITIONS) || atlasPolicy.getAttribute(ATTR_POLICY_CONDITIONS) == null) {
             return null;
         }
 
-        List<AtlasStruct> conditions = (List<AtlasStruct>) atlasPolicy.getAttribute("policyConditions");
+        List<AtlasStruct> conditions = (List<AtlasStruct>) atlasPolicy.getAttribute(ATTR_POLICY_CONDITIONS);
 
         for (AtlasStruct condition : conditions) {
             RangerPolicyItemCondition rangerCondition = new RangerPolicyItemCondition();

@@ -69,6 +69,7 @@ public class SolrIndexHelper implements IndexChangeListener {
     @Override
     public void onChange(ChangedTypeDefs changedTypeDefs) {
         if (!AtlasRepositoryConfiguration.isFreeTextSearchEnabled()) {
+            LOG.info("SolrIndexHelper isFreeTextSearchEnabled false");
             return;
         }
 
