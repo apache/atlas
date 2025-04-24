@@ -1584,7 +1584,11 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             if (!RequestContext.get().isImportInProgress() && !RequestContext.get().isSkipAuthorizationCheck()) {
                 for (AtlasEntity entity : context.getCreatedEntities()) {
                     if (!PreProcessor.skipInitialAuthCheckTypes.contains(entity.getTypeName())) {
-                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, new AtlasEntityHeader(entity)),
+                        AtlasEntityHeader header = new AtlasEntityHeader(entity);
+
+                        LOG.info("AtlasEntityHeader for debugging ->", header);
+
+                        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_CREATE, header),
                                 "create entity: type=", entity.getTypeName());
                     }
                 }
