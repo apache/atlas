@@ -73,10 +73,6 @@ public class HeadersUtil {
         HEADER_MAP.forEach((key, value) -> responseWrapper.setHeader(key, value));
     }
 
-    public static void loadHeadersFromProperties(Properties props) {
-        props.stringPropertyNames().forEach(name -> HEADER_MAP.put(name, props.getProperty(name)));
-    }
-
     @VisibleForTesting
     public static void initializeHttpResponseHeaders(Properties configuredHeaders) {
         HEADER_MAP.clear();
@@ -97,8 +93,9 @@ public class HeadersUtil {
         Properties configuredHeaders = null;
 
         try {
-            Configuration baseConfig    = ApplicationProperties.get();
-            Configuration headerConfig  = ApplicationProperties.getSubsetConfiguration(baseConfig, CONFIG_PREFIX_HTTP_RESPONSE_HEADER);
+            Configuration baseConfig   = ApplicationProperties.get();
+            Configuration headerConfig = ApplicationProperties.getSubsetConfiguration(baseConfig, CONFIG_PREFIX_HTTP_RESPONSE_HEADER);
+
             configuredHeaders = Optional.ofNullable(headerConfig)
                     .map(ConfigurationConverter::getProperties)
                     .orElseGet(Properties::new);
