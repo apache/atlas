@@ -28,7 +28,7 @@ import java.util.*;
 
 
 public class AtlanExcludeResourceByType extends RangerAbstractConditionEvaluator {
-    private static final Log LOG = LogFactory.getLog(AtlanHasAnyRole.class);
+    private static final Log LOG = LogFactory.getLog(AtlanExcludeResourceByType.class);
     protected Set<String> excludeEntityTypes = new HashSet<>();
     public static final String RESOURCE_ENTITY_TYPE                   = "entity-type";
     public static final String RESOURCE_END_ONE_ENTITY_TYPE           = "end-one-entity-type";
@@ -61,35 +61,38 @@ public class AtlanExcludeResourceByType extends RangerAbstractConditionEvaluator
         }
 
         boolean ret = true;
-        RangerAccessRequest	readOnlyRequest = request.getReadOnlyCopy();
+        RangerAccessRequest readOnlyRequest = request.getReadOnlyCopy();
 
-        Object[] entityTypeObjects = {
-                readOnlyRequest.getResource().getValue(RESOURCE_ENTITY_TYPE),
-                readOnlyRequest.getResource().getValue(RESOURCE_END_ONE_ENTITY_TYPE),
-                readOnlyRequest.getResource().getValue(RESOURCE_END_TWO_ENTITY_TYPE)
-        };
+        Set<Object> entityTypes = new HashSet<>();
+        Object entityType = readOnlyRequest.getResource().getValue(RESOURCE_ENTITY_TYPE);
+        Object endOneEntityType = readOnlyRequest.getResource().getValue(RESOURCE_END_ONE_ENTITY_TYPE);
+        Object endTwoEntityType = readOnlyRequest.getResource().getValue(RESOURCE_END_TWO_ENTITY_TYPE);
 
-        List<?> entityTypes = Arrays.stream(entityTypeObjects)
-                .filter(Objects::nonNull)
-                .map(this::convertToList)
-                .findFirst()
-                .orElseGet(ArrayList::new);
+        if (entityType != null) {
+            entityTypes.addAll(convertToSet(entityType));
+        } else if (endOneEntityType != null) {
+            entityTypes.addAll(convertToSet(endOneEntityType));
+        } else if (endTwoEntityType != null) {
+            entityTypes.addAll(convertToSet(endTwoEntityType));
+        }
 
-        if (CollectionUtils.isNotEmpty(entityTypes)) {
-            ret = !excludeEntityTypes.stream().anyMatch(entityType -> entityTypes.stream().anyMatch(x -> Objects.equals(x, entityType)));
+        if (!entityTypes.isEmpty()) {
+            ret = excludeEntityTypes.stream().noneMatch(entityTypes::contains);
+        }
 
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== AtlanExcludeResourceByType.isMatched(" + condition + "): " + ret);
         }
         return ret;
-
     }
 
-    private List<?> convertToList(Object obj) {
+    private Set<Object> convertToSet(Object obj) {
         if (obj instanceof Object[]) {
-            return Arrays.asList((Object[]) obj);
+            return new HashSet<>(Arrays.asList((Object[]) obj));
         } else if (obj instanceof Collection) {
-            return new ArrayList<>((Collection<?>) obj);
+            return new HashSet<>((Collection<?>) obj);
         }
-        return Collections.emptyList();
+        return Collections.emptySet();
     }
 
 }
