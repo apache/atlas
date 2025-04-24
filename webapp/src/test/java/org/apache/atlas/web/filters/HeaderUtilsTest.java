@@ -45,14 +45,15 @@ public class HeaderUtilsTest {
 
     private Properties convertMapToProperties(Map<String, String> map) {
         Properties props = new Properties();
+
         map.forEach(props::setProperty);
+
         return props;
     }
 
     @Test
     public void testLoadHeadersFromProperties() {
-        Properties props = createPropertiesWithHeaders("X-Custom-Header-One", "ValueOne", "X-Custom-Header-Two", "ValueTwo");
-        HeadersUtil.loadHeadersFromProperties(props);
+        HeadersUtil.initializeHttpResponseHeaders(createPropertiesWithHeaders("X-Custom-Header-One", "ValueOne", "X-Custom-Header-Two", "ValueTwo"));
 
         assertEquals("ValueOne", HeadersUtil.getHeaderMap("X-Custom-Header-One"));
         assertEquals("ValueTwo", HeadersUtil.getHeaderMap("X-Custom-Header-Two"));
@@ -60,16 +61,14 @@ public class HeaderUtilsTest {
 
     @Test
     public void testGetHeaderMapReturnsNullForMissingKey() {
-        Properties props = createPropertiesWithHeaders("X-Exists", "ExistsValue");
-        HeadersUtil.loadHeadersFromProperties(props);
+        HeadersUtil.initializeHttpResponseHeaders(createPropertiesWithHeaders("X-Exists", "ExistsValue"));
 
         assertNull(HeadersUtil.getHeaderMap("X-Does-Not-Exist"));
     }
 
     @Test
     public void testSetSecurityHeadersSetsAllHeaders() {
-        Properties props = createPropertiesWithHeaders("X-One", "Val1", "X-Two", "Val2");
-        HeadersUtil.loadHeadersFromProperties(props);
+        HeadersUtil.initializeHttpResponseHeaders(createPropertiesWithHeaders("X-One", "Val1", "X-Two", "Val2"));
 
         AtlasResponseRequestWrapper mockWrapper = mock(AtlasResponseRequestWrapper.class);
         HeadersUtil.setSecurityHeaders(mockWrapper);
@@ -80,8 +79,7 @@ public class HeaderUtilsTest {
 
     @Test
     public void testSetHeaderMapAttributes() {
-        Properties props = createPropertiesWithHeaders("X-Test", "HeaderTestValue");
-        HeadersUtil.loadHeadersFromProperties(props);
+        HeadersUtil.initializeHttpResponseHeaders(createPropertiesWithHeaders("X-Test", "HeaderTestValue"));
 
         AtlasResponseRequestWrapper mockWrapper = mock(AtlasResponseRequestWrapper.class);
         HeadersUtil.setHeaderMapAttributes(mockWrapper, "X-Test");
@@ -100,9 +98,11 @@ public class HeaderUtilsTest {
 
     private Properties createPropertiesWithHeaders(String... headers) {
         Properties props = new Properties();
-        for (int i = 0; i < headers.length; i += 2) {
-            props.setProperty(headers[i], headers[i + 1]);
+
+        for (int i = 0; i < headers.length / 2; i++) {
+            props.setProperty(headers[i * 2], headers[(i *2) + 1]);
         }
+
         return props;
     }
 }
