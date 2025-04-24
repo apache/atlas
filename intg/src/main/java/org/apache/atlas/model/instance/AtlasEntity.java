@@ -559,12 +559,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
         this.removedRelationshipAttributes = removedRelationshipAttributes;
     }
 
-    public boolean hasRemovedRelationshipAttribute(String name) {
-        Map<String, Object> r = this.removedRelationshipAttributes;
-
-        return r != null ? r.containsKey(name) : false;
-    }
-
     public void setRemovedRelationshipAttribute(String name, Object value) {
         Map<String, Object> r = this.removedRelationshipAttributes;
 
@@ -576,12 +570,6 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
             this.removedRelationshipAttributes = r;
         }
-    }
-
-    public boolean hasAddedRelationshipAttribute(String name) {
-        Map<String, Object> r = this.addedRelationshipAttributes;
-
-        return r != null ? r.containsKey(name) : false;
     }
 
     public Map<String, Object> getAddedRelationshipAttributes() {
@@ -603,6 +591,27 @@ public class AtlasEntity extends AtlasStruct implements Serializable {
 
             this.addedRelationshipAttributes = r;
         }
+    }
+
+    public void addOrAppendAddedRelationshipAttribute(String name, AtlasObjectId relationship) {
+        if (this.addedRelationshipAttributes == null) {
+            this.addedRelationshipAttributes = new HashMap<>(1);
+        }
+
+        addToMapList(this.addedRelationshipAttributes, name, relationship);
+    }
+
+    public void addOrAppendRemovedRelationshipAttribute(String name, AtlasObjectId relationship) {
+        if (this.removedRelationshipAttributes == null) {
+            this.removedRelationshipAttributes = new HashMap<>(1);
+        }
+        addToMapList(this.removedRelationshipAttributes, name, relationship);
+    }
+
+    private void addToMapList(Map<String, Object> map, String key, Object value) {
+        List<Object> values = (List<Object>) map.getOrDefault(key, new ArrayList<>(1));
+        values.add(value);
+        map.put(key, values);
     }
 
     private void init() {
