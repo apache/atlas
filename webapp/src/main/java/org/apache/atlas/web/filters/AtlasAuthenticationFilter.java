@@ -155,10 +155,6 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             throw new ServletException(e);
         }
 
-        if (configuration != null) {
-            headerProperties = ConfigurationConverter.getProperties(configuration.subset("atlas.headers"));
-        }
-
         String tokenValidityStr = null;
 
         if (configuration != null) {
@@ -416,16 +412,7 @@ public class AtlasAuthenticationFilter extends AuthenticationFilter {
             String                      action          = httpRequest.getParameter("action");
             String                      doAsUser        = request.getParameter("doAs");
 
-            HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.X_FRAME_OPTIONS_KEY);
-            HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.X_CONTENT_TYPE_OPTIONS_KEY);
-            HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.X_XSS_PROTECTION_KEY);
-            HeadersUtil.setHeaderMapAttributes(responseWrapper, HeadersUtil.STRICT_TRANSPORT_SEC_KEY);
-
-            if (headerProperties != null) {
-                for (String headerKey : headerProperties.stringPropertyNames()) {
-                    responseWrapper.setHeader(headerKey, headerProperties.getProperty(headerKey));
-                }
-            }
+            HeadersUtil.setSecurityHeaders(responseWrapper);
 
             if (logoutHandler != null && supportTrustedProxy && StringUtils.isNotEmpty(doAsUser) && StringUtils.equals(action, RestUtil.TIMEOUT_ACTION)) {
                 if (existingAuth != null) {
