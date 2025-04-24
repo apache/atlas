@@ -111,7 +111,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                                   StatsClient statsClient,
                                   EntityGraphRetriever entityRetriever) throws AtlasException {
         this(typeRegistry, graph, indexer, searchTracker, userProfileService, statsClient);
-
         this.entityRetriever          = entityRetriever;
     }
 
@@ -122,7 +121,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                            UserProfileService userProfileService,
                            StatsClient statsClient) throws AtlasException {
         this.graph                    = graph;
-        this.entityRetriever          = new EntityGraphRetriever(this.graph, typeRegistry);
         this.indexer                  = indexer;
         this.searchTracker            = searchTracker;
         this.gremlinQueryProvider     = AtlasGremlinQueryProvider.INSTANCE;

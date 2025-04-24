@@ -62,23 +62,25 @@ public class ClassificationAssociator {
     private static final Logger LOG = LoggerFactory.getLogger(ClassificationAssociator.class);
 
     private static TransactionInterceptHelper transactionInterceptHelper;
+    private final EntityGraphRetriever entityGraphRetriever;
 
     @Inject
-    public ClassificationAssociator(TransactionInterceptHelper transactionInterceptHelper) {
+    public ClassificationAssociator(TransactionInterceptHelper transactionInterceptHelper, EntityGraphRetriever entityGraphRetriever) {
         ClassificationAssociator.transactionInterceptHelper = transactionInterceptHelper;
+        this.entityGraphRetriever = entityGraphRetriever;
     }
 
     public static class Retriever {
         private final EntityAuditRepository auditRepository;
         private final EntityGraphRetriever entityRetriever;
 
-        public Retriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry, EntityAuditRepository auditRepository) {
-            this.entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
+        public Retriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry, EntityAuditRepository auditRepository, EntityGraphRetriever entityRetriever) {
+            this.entityRetriever = entityRetriever;
             this.auditRepository = auditRepository;
         }
 
-        public Retriever(AtlasTypeRegistry typeRegistry, EntityAuditRepository auditRepository) {
-            this(AtlasGraphProvider.getGraphInstance(), typeRegistry, auditRepository);
+        public Retriever(AtlasTypeRegistry typeRegistry, EntityAuditRepository auditRepository, EntityGraphRetriever entityRetriever) {
+            this(AtlasGraphProvider.getGraphInstance(), typeRegistry, auditRepository, entityRetriever);
         }
 
         public AtlasEntityHeaders get(long fromTimestamp, long toTimestamp) throws AtlasBaseException {

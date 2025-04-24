@@ -1206,7 +1206,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getEntityHeaders(" + tagUpdateStartTime + ", " + tagUpdateEndTime + ")");
             }
 
-            ClassificationAssociator.Retriever associator = new ClassificationAssociator.Retriever(typeRegistry, esBasedAuditRepository);
+            ClassificationAssociator.Retriever associator = new ClassificationAssociator.Retriever(typeRegistry, esBasedAuditRepository, entityGraphRetriever);
             return associator.get(tagUpdateStartTime, tagUpdateEndTime);
         } finally {
             AtlasPerfTracer.log(perf);

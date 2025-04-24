@@ -87,8 +87,8 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         this.preProcessor = new AuthPolicyPreProcessor(graph, typeRegistry, entityRetriever);
 
         try {
-            this.entityRetrieverNoRelations = new EntityGraphRetriever(graph, typeRegistry, true);
-            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
+            this.entityRetrieverNoRelations = new EntityGraphRetriever(entityRetriever, true);
+            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null, entityRetriever);
         } catch (AtlasException e) {
             e.printStackTrace();
         }
