@@ -327,6 +327,10 @@ public class EntityAuditEventV2 implements Serializable, Clearable {
         if(StringUtils.isNotEmpty(jsonPartFromDetails)) {
             ret = AtlasType.fromJson(jsonPartFromDetails, AtlasEntityHeader.class);
         }
+        if (ret.getTypeName() == null ) {
+            ret.setTypeName(typeName);
+        }
+
         if(!ret.hasAttribute("qualifiedName")) {
             ret.setAttribute("qualifiedName", entityQualifiedName);
         }
