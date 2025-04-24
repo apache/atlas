@@ -25,6 +25,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.util.AtlasEntityUtils;
+import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.HashMap;
 
 import static org.apache.atlas.repository.graph.GraphHelper.getCustomAttributes;
 import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_ADD;
@@ -215,8 +217,11 @@ public class AtlasEntityComparator {
         }
 
         if (context.isReplaceBusinessAttributes()) {
-            Map<String, Map<String, Object>> newBusinessMetadata  = updatedEntity.getBusinessAttributes();
-            Map<String, Map<String, Object>> currBusinessMetadata = (storedEntity != null) ? storedEntity.getBusinessAttributes() : entityRetriever.getBusinessMetadata(storedVertex);;
+            getBusinessMetadataFromEntityAttribute(updatedEntity, entityType);
+            Map<String, Map<String, Object>> newBusinessMetadata  = updatedEntity.getBusinessAttributes() == null ? getBusinessMetadataFromEntityAttribute(updatedEntity, entityType) : updatedEntity.getBusinessAttributes();
+            Map<String, Map<String, Object>> currBusinessMetadata = (storedEntity != null)
+                    ? storedEntity.getBusinessAttributes()
+                    : entityRetriever.getBusinessMetadata(storedVertex);
 
             if (!Objects.equals(currBusinessMetadata, newBusinessMetadata)) {
                 diffEntity.setBusinessAttributes(newBusinessMetadata);
@@ -233,6 +238,29 @@ public class AtlasEntityComparator {
         return new AtlasEntityDiffResult(diffEntity, sectionsWithDiff > 0, sectionsWithDiff == 1 && hasDiffInCustomAttributes, sectionsWithDiff == 1 && hasDiffInBusinessAttributes);
     }
 
+    public Map<String, Map<String, Object>> getBusinessMetadataFromEntityAttribute(AtlasEntity entity, AtlasEntityType entityType) {
+        Map<String, Map<String, Object>> businessMetadata = new HashMap<>();
+
+        if (entity == null || entity.getAttributes() == null || entityType == null) {
+            return businessMetadata;
+        }
+
+        for (String attrName : entity.getAttributes().keySet()) {
+            AtlasAttribute attributeDefinition = entityType.getAttribute(attrName);
+
+            if (attributeDefinition instanceof AtlasBusinessMetadataType.AtlasBusinessAttribute) {
+                Object entityAttrValue = entity.getAttribute(attrName);
+
+                if (entityAttrValue != null) {
+                    String bmTypeName = attributeDefinition.getDefinedInDef().getName();
+                    Map<String, Object> bmAttributes = businessMetadata.computeIfAbsent(bmTypeName, k -> new HashMap<>());
+                    bmAttributes.put(attributeDefinition.getName(), entityAttrValue);
+                }
+            }
+        }
+
+        return businessMetadata;
+    }
     public static class AtlasEntityDiffResult {
         private final AtlasEntity diffEntity;
         private final boolean     hasDifference;
