@@ -94,14 +94,12 @@ public class EntityLineageService implements AtlasLineageService {
     private final EntityGraphRetriever entityRetriever;
     private final AtlasTypeRegistry atlasTypeRegistry;
     private final VertexEdgeCache vertexEdgeCache;
-    private final EntityGraphRetriever entityGraphRetriever;
 
     private static final List<String> FETCH_ENTITY_ATTRIBUTES = Arrays.asList(ATTRIBUTE_NAME_GUID, QUALIFIED_NAME, NAME);
 
     @Inject
-    EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, VertexEdgeCache vertexEdgeCache, EntityGraphRetriever entityRetriever, EntityGraphRetriever entityGraphRetriever) {
+    EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, VertexEdgeCache vertexEdgeCache, EntityGraphRetriever entityRetriever) {
         this.graph = atlasGraph;
-        this.entityGraphRetriever = entityGraphRetriever;
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
         this.entityRetriever = entityRetriever;
         this.atlasTypeRegistry = typeRegistry;
@@ -109,8 +107,7 @@ public class EntityLineageService implements AtlasLineageService {
     }
 
     @VisibleForTesting
-    EntityLineageService(EntityGraphRetriever entityGraphRetriever) {
-        this.entityGraphRetriever = entityGraphRetriever;
+    EntityLineageService() {
         this.graph = null;
         this.gremlinQueryProvider = null;
         this.entityRetriever = null;
