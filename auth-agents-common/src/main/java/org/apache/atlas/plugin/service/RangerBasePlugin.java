@@ -19,6 +19,8 @@
 
 package org.apache.atlas.plugin.service;
 
+import org.apache.atlas.authorizer.store.PoliciesStore;
+import org.apache.atlas.authorizer.store.UsersStore;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -149,6 +151,7 @@ public class RangerBasePlugin {
 
 	public void setRoles(RangerRoles roles) {
 		this.roles = roles;
+		UsersStore.setAllRoles(roles);
 
 		RangerPolicyEngine policyEngine = this.policyEngine;
 
@@ -165,6 +168,7 @@ public class RangerBasePlugin {
 
 	public void setUserStore(RangerUserStore userStore) {
 		this.userStore = userStore;
+		UsersStore.setUserStore(userStore);
 
 		// RangerPolicyEngine policyEngine = this.policyEngine;
 
@@ -392,6 +396,15 @@ public class RangerBasePlugin {
 						this.refresher.saveToCache(usePolicyDeltas ? servicePolicies : policies);
 					}
 					LOG.info("New RangerPolicyEngine created with policy count:"+ (usePolicyDeltas? servicePolicies.getPolicies().size() : policies.getPolicies().size()));
+
+					List<RangerPolicy> abacPolicies = policies.getAbacPolicies() != null ? policies.getAbacPolicies().getPolicies() : new ArrayList<>();
+					if (usePolicyDeltas) {
+						abacPolicies = servicePolicies.getAbacPolicies() != null ? servicePolicies.getAbacPolicies().getPolicies() : new ArrayList<>();
+					}
+					PoliciesStore.setAbacPolicies(abacPolicies);
+					PoliciesStore.setResourcePolicies(this.policyEngine.getResourcePolicies());
+					PoliciesStore.setTagPolicies(this.policyEngine.getTagPolicies());
+					LOG.info("PolicyRefresher: ABAC_AUTH: abac policies set: " + abacPolicies.size());
 				}
 
 			} else {

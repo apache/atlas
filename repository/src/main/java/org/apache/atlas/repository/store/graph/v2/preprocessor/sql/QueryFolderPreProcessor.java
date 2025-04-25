@@ -19,10 +19,10 @@ package org.apache.atlas.repository.store.graph.v2.preprocessor.sql;
 
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;

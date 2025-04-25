@@ -45,7 +45,7 @@ public interface AtlasAuthorizer {
      * @return
      * @throws AtlasAuthorizationException
      */
-    boolean isAccessAllowed(AtlasAdminAccessRequest request) throws AtlasAuthorizationException;
+    AtlasAccessResult isAccessAllowed(AtlasAdminAccessRequest request) throws AtlasAuthorizationException;
 
     /**
      * authorize operations on an entity
@@ -53,7 +53,11 @@ public interface AtlasAuthorizer {
      * @return
      * @throws AtlasAuthorizationException
      */
-    boolean isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException;
+    default AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException {
+        return isAccessAllowed(request, true);
+    }
+
+    AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request, boolean auditLogEnabled) throws AtlasAuthorizationException;
 
     /**
      * authorize operations on a type
@@ -61,7 +65,7 @@ public interface AtlasAuthorizer {
      * @return
      * @throws AtlasAuthorizationException
      */
-    boolean isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException;
+    AtlasAccessResult isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException;
 
     AtlasAccessorResponse getAccessors(AtlasEntityAccessRequest request);
 
@@ -78,8 +82,9 @@ public interface AtlasAuthorizer {
      * @throws AtlasAuthorizationException
      */
     default
-    boolean isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
-        return true;
+    AtlasAccessResult isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
+        AtlasAccessResult result = new AtlasAccessResult(true, null);
+        return result;
     }
 
     /**

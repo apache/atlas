@@ -64,6 +64,11 @@ public class PolicyTransformerTemplate {
                 templatePolicy.setPolicyServiceName((String) policy.get("policyServiceName"));
                 templatePolicy.setPolicyConditions((List<Map>) policy.get("policyConditions"));
 
+                Object filterCriteria = policy.get("policyFilterCriteria");
+                if (filterCriteria != null) {
+                    templatePolicy.setPolicyFilterCriteria((String) filterCriteria);
+                }
+
                 policies.add(templatePolicy);
             }
 
@@ -77,6 +82,7 @@ public class PolicyTransformerTemplate {
         private List<String> resources;
         private List<String> actions;
         private String policyResourceCategory;
+        private String policyFilterCriteria;
         private List<AtlasStruct> policyConditions = new ArrayList<>();
 
         public String getPolicyServiceName() {
@@ -119,6 +125,14 @@ public class PolicyTransformerTemplate {
             this.actions = actions;
         }
 
+        public String getPolicyFilterCriteria() {
+            return policyFilterCriteria;
+        }
+
+        public void setPolicyFilterCriteria(String policyFilterCriteria) {
+            this.policyFilterCriteria = policyFilterCriteria;
+        }
+        
         public List<AtlasStruct> getPolicyConditions() {
             return policyConditions;
         }

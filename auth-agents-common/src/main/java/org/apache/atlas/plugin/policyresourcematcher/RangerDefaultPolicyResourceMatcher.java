@@ -148,7 +148,7 @@ public class RangerDefaultPolicyResourceMatcher implements RangerPolicyResourceM
                         validResourceHierarchy = null;
                     }
                 } else {
-                    LOG.warn("RangerDefaultPolicyResourceMatcher.init(): gaps found in policyResources, skipping hierarchy:[" + resourceHierarchies + "]");
+                    LOG.warn("RangerDefaultPolicyResourceMatcher.init(): gaps found in policyResources, skipping hierarchy");
                 }
             }
 
