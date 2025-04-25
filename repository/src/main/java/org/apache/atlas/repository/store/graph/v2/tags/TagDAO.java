@@ -13,7 +13,7 @@ public interface TagDAO {
     List<AtlasClassification> getAllDirectTagsForVertex(String vertexId) throws AtlasBaseException;
     List<AtlasClassification> getTagsForVertex(String vertexId) throws AtlasBaseException;
 
-    List<Tag> getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException;
+    PaginatedTagResult getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException;
     AtlasClassification findDirectTagByVertexIdAndTagTypeName(String assetVertexId, String tagTypeName) throws AtlasBaseException;
 
     void putPropagatedTags(String sourceAssetId,
@@ -25,6 +25,7 @@ public interface TagDAO {
     void putDirectTag(String assetId, String tagTypeName,
                       AtlasClassification tag,
                       Map<String, Object> assetMetadata);
+
 
     void deleteDirectTag(String sourceVertexId, AtlasClassification tagToDelete) throws AtlasBaseException;
     void deleteTags(List<Tag> tagsToDelete) throws AtlasBaseException;
@@ -41,34 +42,7 @@ public interface TagDAO {
      * @return A PaginatedTagResult containing the tags and pagination state
      * @throws AtlasBaseException If an error occurs during retrieval
      */
-    PaginatedTagResult getPropagationsForAttachmentBatchWithPagination(String sourceVertexId, 
-                                                                      String tagTypeName,
-                                                                      String pagingStateStr, 
-                                                                      int pageSize) throws AtlasBaseException;
+     PaginatedTagResult getPropagationsForAttachmentBatchWithPagination(String sourceVertexId, String tagTypeName,
+                                                                              String pagingStateStr, int pageSize, String cacheKey) throws AtlasBaseException;
 }
 
-/**
- * A class to represent paginated results from tag queries.
- * Includes both the list of tags and the pagination state for subsequent requests.
- */
-class PaginatedTagResult {
-    private final List<Tag> tags;
-    private final String pagingState;
-    
-    public PaginatedTagResult(List<Tag> tags, String pagingState) {
-        this.tags = tags;
-        this.pagingState = pagingState;
-    }
-    
-    public List<Tag> getTags() {
-        return tags;
-    }
-    
-    public String getPagingState() {
-        return pagingState;
-    }
-    
-    public boolean hasMorePages() {
-        return pagingState != null && !pagingState.isEmpty();
-    }
-}
