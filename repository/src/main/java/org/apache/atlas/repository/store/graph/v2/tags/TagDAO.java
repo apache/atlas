@@ -13,6 +13,8 @@ public interface TagDAO {
     List<AtlasClassification> getAllDirectTagsForVertex(String vertexId) throws AtlasBaseException;
     List<AtlasClassification> getTagsForVertex(String vertexId) throws AtlasBaseException;
 
+    Tag findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(String vertexId, String tagTypeName) throws AtlasBaseException;
+
     List<Tag> getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException;
     AtlasClassification findDirectTagByVertexIdAndTagTypeName(String assetVertexId, String tagTypeName) throws AtlasBaseException;
 

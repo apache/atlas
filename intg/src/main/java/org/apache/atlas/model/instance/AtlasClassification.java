@@ -24,10 +24,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import java.io.Serializable;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -97,6 +94,38 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
             setRestrictPropagationThroughLineage(other.getRestrictPropagationThroughLineage());
             setRestrictPropagationThroughHierarchy(other.getRestrictPropagationThroughHierarchy());
         }
+    }
+
+    public AtlasClassification deepCopy() {
+        AtlasClassification copy = new AtlasClassification(this.getTypeName());
+
+        // Copy basic fields
+        copy.setEntityGuid(this.getEntityGuid());
+        copy.setEntityStatus(this.getEntityStatus());
+        copy.setPropagate(this.isPropagate());
+        copy.setRemovePropagationsOnEntityDelete(this.getRemovePropagationsOnEntityDelete());
+        copy.setRestrictPropagationThroughLineage(this.getRestrictPropagationThroughLineage());
+        copy.setRestrictPropagationThroughHierarchy(this.getRestrictPropagationThroughHierarchy());
+
+        // Deep copy attributes map
+        if (this.getAttributes() != null) {
+            Map<String, Object> attributesCopy = new HashMap<>();
+            for (Map.Entry<String, Object> entry : this.getAttributes().entrySet()) {
+                Object value = entry.getValue();
+                // Handle different types of attribute values
+                if (value instanceof Collection) {
+                    attributesCopy.put(entry.getKey(), new ArrayList<>((Collection<?>) value));
+                } else if (value instanceof Map) {
+                    attributesCopy.put(entry.getKey(), new HashMap<>((Map<?, ?>) value));
+                } else {
+                    attributesCopy.put(entry.getKey(), value);
+                }
+            }
+            copy.setAttributes(attributesCopy);
+        }
+
+        copy.setEntityGuid(this.getEntityGuid());
+        return copy;
     }
 
     public void setRestrictPropagationThroughHierarchy(Boolean restrictPropagationThroughHierarchy) {

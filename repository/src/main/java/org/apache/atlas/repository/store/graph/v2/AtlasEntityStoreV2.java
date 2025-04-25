@@ -29,6 +29,7 @@ import org.apache.atlas.bulkimport.BulkImportResponse.ImportInfo;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.featureflag.FeatureFlagStore;
+import org.apache.atlas.model.CassandraTagOperation;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
@@ -74,6 +75,7 @@ import org.apache.atlas.repository.store.graph.v2.preprocessor.resource.ReadmePr
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryCollectionPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryFolderPreProcessor;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.sql.QueryPreProcessor;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTask;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.*;
@@ -142,6 +144,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     private final ESAliasStore esAliasStore;
     private final IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier;
     private final AtlasDistributedTaskNotificationSender taskNotificationSender;
+    private final TagDAO tagDAO;
 
     private static final List<String> RELATIONSHIP_CLEANUP_SUPPORTED_TYPES = Arrays.asList(AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_ASSET_TYPES.getStringArray());
     private static final List<String> RELATIONSHIP_CLEANUP_RELATIONSHIP_LABELS = Arrays.asList(AtlasConfiguration.ATLAS_RELATIONSHIP_CLEANUP_SUPPORTED_RELATIONSHIP_LABELS.getStringArray());
@@ -151,7 +154,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
                               AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore,
                               IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier, AtlasDistributedTaskNotificationSender taskNotificationSender,
-                              EntityGraphRetriever entityRetriever) {
+                              EntityGraphRetriever entityRetriever, TagDAO tagDAO) {
 
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
@@ -160,6 +163,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.entityChangeNotifier = entityChangeNotifier;
         this.entityGraphMapper    = entityGraphMapper;
         this.entityRetriever      = entityRetriever;
+        this.tagDAO = tagDAO;
         this.storeDifferentialAudits = STORE_DIFFERENTIAL_AUDITS.getBoolean();
         this.graphHelper          = new GraphHelper(graph);
         this.taskManagement = taskManagement;
@@ -867,6 +871,54 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             }
         }
         return response;
+    }
+
+    @Override
+    public void rollbackCassandraOperations() {
+        Map<String, Stack<CassandraTagOperation>> cassandraOps = RequestContext.get().getCassandraTagOperations();
+        if (MapUtils.isEmpty(cassandraOps))
+            return;
+
+        LOG.info("Rolling back {} Cassandra tag operations",
+                cassandraOps.values().stream().mapToInt(Stack::size).sum());
+
+        for (Map.Entry<String, Stack<CassandraTagOperation>> entry : cassandraOps.entrySet()) {
+            rollbackEntityOperations(entry.getKey(), entry.getValue());
+        }
+    }
+
+    private void rollbackEntityOperations(String entityGuid, Stack<CassandraTagOperation> operations) {
+        while (!operations.isEmpty()) {
+            CassandraTagOperation op = operations.pop();
+            try {
+                rollbackOperation(entityGuid, op);
+            } catch (Exception rollbackError) {
+                LOG.error("Error rolling back Cassandra operation for entity {}: {}",
+                        entityGuid, rollbackError.getMessage(), rollbackError);
+            }
+        }
+    }
+
+    private void rollbackOperation(String entityGuid, CassandraTagOperation op) throws AtlasBaseException {
+        switch (op.getOperationType()) {
+            case INSERT:
+                tagDAO.deleteDirectTag(op.getId(), op.getAtlasClassification());
+                break;
+
+            case UPDATE:
+                tagDAO.putDirectTag(op.getId(),
+                        op.getTagTypeName(),
+                        op.getAtlasClassification(),
+                        op.getMinAssetMap());
+                break;
+
+            case DELETE:
+                //entitiesStore.insertTagInCassandra(entityGuid, op.getTagName(), op.getPreviousValue());
+                break;
+
+            default:
+                LOG.warn("Unknown operation type {} for entity {}", op.getOperationType(), entityGuid);
+        }
     }
 
     private String generateCacheKey(String guid, String id, String typeName) {

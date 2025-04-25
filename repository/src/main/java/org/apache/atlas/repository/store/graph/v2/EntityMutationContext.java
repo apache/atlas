@@ -17,6 +17,8 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
+import org.apache.atlas.model.CassandraTagOperation;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -39,6 +41,7 @@ public class EntityMutationContext {
     private List<AtlasVertex> entitiesToRestore = null;
 
     private Set<String> removedLineageRelations = new HashSet<>();
+
 
     public EntityMutationContext(final EntityGraphDiscoveryContext context) {
         this.context = context;
@@ -218,4 +221,5 @@ public class EntityMutationContext {
     public void addRemovedLineageRelations(Set<String> removedLineageRelations) {
         this.removedLineageRelations.addAll(removedLineageRelations);
     }
+
 }

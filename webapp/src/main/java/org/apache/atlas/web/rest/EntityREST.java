@@ -835,35 +835,54 @@ public class EntityREST {
         AtlasPerfTracer perf = null;
         RequestContext.get().setEnableCache(false);
         RequestContext.get().setSkipProcessEdgeRestoration(skipProcessEdgeRestoration);
+
+        if (CollectionUtils.isEmpty(entities.getEntities())) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
+        }
+        int entitiesCount = entities.getEntities().size();
+
+        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" + entitiesCount+ ")");
+        }
+
+        if( entitiesCount > ENTITIES_ALLOWED_IN_BULK) {
+            RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("requestThrottledDueToBulkEntityOperation"));
+            throw new AtlasBaseException(AtlasErrorCode.EXCEEDED_MAX_ENTITIES_ALLOWED, String.valueOf(ENTITIES_ALLOWED_IN_BULK));
+        }
+
+        validateAttributeLength(entities.getEntities());
+
+        EntityStream entityStream = new AtlasEntityStream(entities);
+
+        BulkRequestContext context = new BulkRequestContext.Builder()
+                .setReplaceClassifications(replaceClassifications)
+                .setReplaceTags(replaceTags)
+                .setAppendTags(appendTags)
+                .setReplaceBusinessAttributes(replaceBusinessAttributes)
+                .setOverwriteBusinessAttributes(isOverwriteBusinessAttributes)
+                .build();
+
+        boolean rollbackRequired = false;
         try {
-
-            if (CollectionUtils.isEmpty(entities.getEntities())) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
-            }
-            int entitiesCount = entities.getEntities().size();
-
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" + entitiesCount+ ")");
-            }
-
-            if( entitiesCount > ENTITIES_ALLOWED_IN_BULK) {
-                RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("requestThrottledDueToBulkEntityOperation"));
-                throw new AtlasBaseException(AtlasErrorCode.EXCEEDED_MAX_ENTITIES_ALLOWED, String.valueOf(ENTITIES_ALLOWED_IN_BULK));
-            }
-
-            validateAttributeLength(entities.getEntities());
-
-            EntityStream entityStream = new AtlasEntityStream(entities);
-
-            BulkRequestContext context = new BulkRequestContext.Builder()
-                    .setReplaceClassifications(replaceClassifications)
-                    .setReplaceTags(replaceTags)
-                    .setAppendTags(appendTags)
-                    .setReplaceBusinessAttributes(replaceBusinessAttributes)
-                    .setOverwriteBusinessAttributes(isOverwriteBusinessAttributes)
-                    .build();
             return entitiesStore.createOrUpdate(entityStream, context);
+        } catch (AtlasBaseException e) {
+            // Rollback
+            rollbackRequired = true;
+
+            entitiesStore.rollbackCassandraOperations();
+            throw e;
         } finally {
+            // Only execute ES operations if no errors occurred
+//            if (!rollbackRequired && !context.getPendingESOperations().isEmpty()) {
+//                try {
+//                    //executeESOperations(context.getPendingESOperations());
+//                } catch (Exception e) {
+//                    LOG.error("Error executing ES operations", e);
+//                    // ES failure doesn't invalidate the transaction since graph is already committed
+//                    // But we should log and monitor these failures
+//                }
+//            }
+
             AtlasPerfTracer.log(perf);
         }
     }

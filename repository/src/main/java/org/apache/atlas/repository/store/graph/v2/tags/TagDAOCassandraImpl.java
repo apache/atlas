@@ -9,6 +9,7 @@ import com.datastax.oss.driver.api.core.cql.ResultSet;
 import com.datastax.oss.driver.api.core.cql.Row;
 import com.datastax.oss.driver.api.core.cql.PagingState;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.RequestContext;
@@ -17,6 +18,7 @@ import org.apache.atlas.model.Tag;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
@@ -45,8 +47,9 @@ public class TagDAOCassandraImpl implements TagDAO {
     private final PreparedStatement findAllTagsStmt;
     private final PreparedStatement findAllDirectTagsStmt;
     private final PreparedStatement findADirectTagStmt;
+    private final PreparedStatement findADirectTagCompleteRowStmt;
     private final PreparedStatement findAllPropagatedTagsStmt;
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     private static String INSERT_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json) values (%s, '%s', '%s', '%s', %s, %s, '%s', '%s')";
 
@@ -73,6 +76,10 @@ public class TagDAOCassandraImpl implements TagDAO {
 
             findADirectTagStmt = cassSession.prepare(
                     "SELECT tag_meta_json FROM tags.effective_tags WHERE bucket = ? AND id = ? AND tag_type_name = ? AND source_id = ? AND is_propagated = false"
+            );
+
+            findADirectTagCompleteRowStmt = cassSession.prepare(
+                    "SELECT tag_meta_json, asset_metadata FROM tags.effective_tags WHERE bucket = ? AND id = ? AND tag_type_name = ? AND source_id = ? AND is_propagated = false"
             );
 
             findAllPropagatedTagsStmt = cassSession.prepare(
@@ -178,28 +185,53 @@ public class TagDAOCassandraImpl implements TagDAO {
     }
 
     @Override
+    public Tag findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(String vertexId, String tagTypeName) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata");
+        int bucket = calculateBucket(vertexId);
+        try {
+            BoundStatement bound = findADirectTagCompleteRowStmt.bind(bucket, vertexId, tagTypeName, vertexId);
+            ResultSet rs = cassSession.execute(bound);
+
+            for (Row row : rs) {
+                Tag tag = new Tag();
+                tag.setVertexId(vertexId);
+                tag.setTagTypeName(tagTypeName);
+                tag.setTagMetaJson(objectMapper.readValue(row.getString("tag_meta_json"), Map.class));
+                tag.setAssetMetadata(objectMapper.readValue(row.getString("asset_metadata"), Map.class));
+                return tag;
+            }
+            LOG.info("No tags found for id: {}, tag type: {}, bucket {}, returning null", vertexId, tagTypeName, bucket);
+        } catch (Exception e) {
+            throw new AtlasBaseException(String.format("Error fetching tag for asset: %s and tag type: %s, bucket: %s", vertexId, tagTypeName, bucket), e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+        return null;
+    }
+
+    @Override
     public List<Tag> getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
         PaginatedTagResult result = getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, null, 100);
         return result.getTags();
     }
 
     @Override
-    public PaginatedTagResult getPropagationsForAttachmentBatchWithPagination(String sourceVertexId, String tagTypeName, 
-                                                       String pagingStateStr, int pageSize) throws AtlasBaseException {
+    public PaginatedTagResult getPropagationsForAttachmentBatchWithPagination(String sourceVertexId, String tagTypeName,
+                                                                              String pagingStateStr, int pageSize) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getVertexIdsForAttachment");
         List<Tag> tags = new ArrayList<>();
         String nextPagingState = null;
 
         try {
             BoundStatement bound = findAllPropagatedTagsStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
-            
+
             // Apply the paging state if provided
             if (pagingStateStr != null && !pagingStateStr.isEmpty()) {
                 bound = bound.setPagingState(PagingState.fromString(pagingStateStr));
             }
-            
+
             ResultSet rs = cassSession.execute(bound);
-            
+
             // Save the paging state for the next call
             if (!rs.isFullyFetched()) {
                 // Get the ByteBuffer containing paging state
@@ -220,25 +252,23 @@ public class TagDAOCassandraImpl implements TagDAO {
                 tag.setAssetMetadata(objectMapper.readValue(row.getString("asset_metadata"), Map.class));
                 tags.add(tag);
             }
-            
+
             if (tags.isEmpty()) {
                 LOG.info("No propagated tags found for source_id: {}, tagTypeName: {}", sourceVertexId, tagTypeName);
             }
         } catch (Exception e) {
-            throw new AtlasBaseException(String.format("Error fetching tags for source_id: %s and tag type: %s", 
-                                       sourceVertexId, tagTypeName), e);
+            throw new AtlasBaseException(String.format("Error fetching tags for source_id: %s and tag type: %s",
+                    sourceVertexId, tagTypeName), e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
-        
+
         return new PaginatedTagResult(tags, nextPagingState);
     }
 
     @Override
     public void deleteDirectTag(String sourceVertexId, AtlasClassification tagToDelete) throws AtlasBaseException {
         // Delete Direct tags
-        // Do not delete row, mark is_active as false
-
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("deleteTags");
 
         try {
@@ -317,19 +347,19 @@ public class TagDAOCassandraImpl implements TagDAO {
     }
 
     @Override
-    public void putDirectTag(String assetId,
+    public void putDirectTag(String vertexId,
                              String tagTypeName,
                              AtlasClassification tag,
                              Map<String, Object> assetMetadata) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("putDirectTag");
 
-        int bucket = calculateBucket(assetId);
+        int bucket = calculateBucket(vertexId);
 
         String insert = String.format(INSERT_TAG,
                 bucket,
-                assetId,
+                vertexId,
                 tagTypeName,
-                assetId,
+                vertexId,
                 false,
                 RequestContext.get().getRequestTime(),
                 AtlasType.toJson(assetMetadata),
@@ -340,24 +370,44 @@ public class TagDAOCassandraImpl implements TagDAO {
         RequestContext.get().endMetricRecord(recorder);
     }
 
-    private AtlasClassification convertToAtlasClassification(String tagMetaJson) throws AtlasBaseException {
+    public static AtlasClassification convertToAtlasClassification(String tagMetaJson) throws AtlasBaseException {
         try {
-            Map jsonMap = objectMapper.readValue(tagMetaJson, Map.class);
-
-            AtlasClassification classification = new AtlasClassification();
-            classification.setTypeName((String) jsonMap.get("typeName"));
-            classification.setEntityGuid((String) jsonMap.get("entityGuid"));
-            classification.setPropagate((Boolean) jsonMap.get("propagate"));
-            classification.setRemovePropagationsOnEntityDelete((Boolean) jsonMap.get("removePropagations"));
-            classification.setRestrictPropagationThroughLineage((Boolean) jsonMap.get("restrictPropagationThroughLineage"));
-            classification.setRestrictPropagationThroughHierarchy((Boolean) jsonMap.get("restrictPropagationThroughHierarchy"));
-
-            classification.setAttributes((Map<String, Object>) jsonMap.get("attributes"));
-            return classification;
+            Map tagMetaJsonMap = objectMapper.readValue(tagMetaJson, Map.class);
+            return getAtlasClassification(tagMetaJsonMap);
         } catch (JsonProcessingException e) {
             LOG.error("Error converting to AtlasClassification. JSON: {}",
                     tagMetaJson, e);
             throw new AtlasBaseException("Unable to map to AtlasClassification", e);
+        }
+    }
+
+    public static AtlasClassification toAtlasClassification(Map<String, Object> tagMetaJsonMap) {
+        return getAtlasClassification(tagMetaJsonMap);
+    }
+
+    private static AtlasClassification getAtlasClassification(Map<String, Object> tagMetaJsonMap) {
+        AtlasClassification classification = new AtlasClassification();
+        classification.setTypeName((String) tagMetaJsonMap.get("typeName"));
+        classification.setEntityGuid((String) tagMetaJsonMap.get("entityGuid"));
+        classification.setPropagate((Boolean) tagMetaJsonMap.get("propagate"));
+        classification.setRemovePropagationsOnEntityDelete((Boolean) tagMetaJsonMap.get("removePropagations"));
+        classification.setRestrictPropagationThroughLineage((Boolean) tagMetaJsonMap.get("restrictPropagationThroughLineage"));
+        classification.setRestrictPropagationThroughHierarchy((Boolean) tagMetaJsonMap.get("restrictPropagationThroughHierarchy"));
+
+        Map<String, Object> originalAttributes = (Map<String, Object>) tagMetaJsonMap.get("attributes");
+        if (originalAttributes != null) {
+            classification.setAttributes(deepCopyMap(originalAttributes));
+        }
+        return classification;
+    }
+
+    private static Map<String, Object> deepCopyMap(Map<String, Object> original) {
+        try {
+            ObjectMapper objectMapper = new ObjectMapper();
+            String json = objectMapper.writeValueAsString(original);
+            return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException("Error during deep copy of map", e);
         }
     }
 

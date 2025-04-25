@@ -18,6 +18,7 @@
 
 package org.apache.atlas;
 
+import org.apache.atlas.model.CassandraTagOperation;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.tasks.AtlasTask;
@@ -118,6 +119,9 @@ public class RequestContext {
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
     private Map<AtlasClassification, Collection<Object>> addedClassificationAndVertices = new HashMap<>();
 
+    // Track Cassandra operations for rollback
+    private final Map<String, Stack<CassandraTagOperation>> cassandraTagOperations = new HashMap<>();
+
     Map<String, Object> tagsDiff = new HashMap<>();
 
     private RequestContext() {
@@ -183,6 +187,7 @@ public class RequestContext {
         this.delayTagNotifications = false;
         deletedClassificationAndVertices.clear();
         addedClassificationAndVertices.clear();
+        this.cassandraTagOperations.clear();
 
         if (metrics != null && !metrics.isEmpty()) {
             METRICS.debug(metrics.toString());
@@ -887,5 +892,13 @@ public class RequestContext {
 
     public boolean isEdgeLabelAlreadyProcessed(String processEdgeLabel) {
         return edgeLabels.contains(processEdgeLabel);
+    }
+
+    public void addCassandraTagOperation(String entityGuid, CassandraTagOperation operation) {
+        cassandraTagOperations.computeIfAbsent(entityGuid, k -> new Stack<>()).push(operation);
+    }
+
+    public Map<String, Stack<CassandraTagOperation>> getCassandraTagOperations() {
+        return cassandraTagOperations;
     }
 }
