@@ -40,13 +40,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
-import org.apache.atlas.repository.store.graph.v2.BulkRequestContext;
-import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.repository.store.graph.v2.EntityStream;
-import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
+import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
@@ -118,11 +112,12 @@ public class EntityREST {
     private final IAtlasEntityChangeNotifier entityChangeNotifier;
     private final AtlasInstanceConverter instanceConverter;
     private final EntityGraphRetriever entityGraphRetriever;
+    private final EntityMutationService entityMutationService;
 
     @Inject
     public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository,
                       EntityGraphMapper entityGraphMapper, IAtlasEntityChangeNotifier entityChangeNotifier, AtlasInstanceConverter instanceConverter,
-                      EntityGraphRetriever retriever) {
+                      EntityGraphRetriever retriever, EntityMutationService entityMutationService) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
         this.esBasedAuditRepository = esBasedAuditRepository;
@@ -130,6 +125,7 @@ public class EntityREST {
         this.entityChangeNotifier = entityChangeNotifier;
         this.instanceConverter = instanceConverter;
         this.entityGraphRetriever = retriever;
+        this.entityMutationService = entityMutationService;
     }
 
     /**
@@ -835,57 +831,39 @@ public class EntityREST {
         AtlasPerfTracer perf = null;
         RequestContext.get().setEnableCache(false);
         RequestContext.get().setSkipProcessEdgeRestoration(skipProcessEdgeRestoration);
-
-        if (CollectionUtils.isEmpty(entities.getEntities())) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
-        }
-        int entitiesCount = entities.getEntities().size();
-
-        if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" + entitiesCount+ ")");
-        }
-
-        if( entitiesCount > ENTITIES_ALLOWED_IN_BULK) {
-            RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("requestThrottledDueToBulkEntityOperation"));
-            throw new AtlasBaseException(AtlasErrorCode.EXCEEDED_MAX_ENTITIES_ALLOWED, String.valueOf(ENTITIES_ALLOWED_IN_BULK));
-        }
-
-        validateAttributeLength(entities.getEntities());
-
-        EntityStream entityStream = new AtlasEntityStream(entities);
-
-        BulkRequestContext context = new BulkRequestContext.Builder()
-                .setReplaceClassifications(replaceClassifications)
-                .setReplaceTags(replaceTags)
-                .setAppendTags(appendTags)
-                .setReplaceBusinessAttributes(replaceBusinessAttributes)
-                .setOverwriteBusinessAttributes(isOverwriteBusinessAttributes)
-                .build();
-
-        boolean rollbackRequired = false;
         try {
-            return entitiesStore.createOrUpdate(entityStream, context);
-        } catch (AtlasBaseException e) {
-            // Rollback
-            rollbackRequired = true;
 
-            entitiesStore.rollbackCassandraOperations();
-            throw e;
+            if (CollectionUtils.isEmpty(entities.getEntities())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
+            }
+            int entitiesCount = entities.getEntities().size();
+
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate(entityCount=" + entitiesCount+ ")");
+            }
+
+            if( entitiesCount > ENTITIES_ALLOWED_IN_BULK) {
+                RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("requestThrottledDueToBulkEntityOperation"));
+                throw new AtlasBaseException(AtlasErrorCode.EXCEEDED_MAX_ENTITIES_ALLOWED, String.valueOf(ENTITIES_ALLOWED_IN_BULK));
+            }
+
+            validateAttributeLength(entities.getEntities());
+
+            EntityStream entityStream = new AtlasEntityStream(entities);
+
+            BulkRequestContext context = new BulkRequestContext.Builder()
+                    .setReplaceClassifications(replaceClassifications)
+                    .setReplaceTags(replaceTags)
+                    .setAppendTags(appendTags)
+                    .setReplaceBusinessAttributes(replaceBusinessAttributes)
+                    .setOverwriteBusinessAttributes(isOverwriteBusinessAttributes)
+                    .build();
+            return entityMutationService.createOrUpdate(entityStream, context);
         } finally {
-            // Only execute ES operations if no errors occurred
-//            if (!rollbackRequired && !context.getPendingESOperations().isEmpty()) {
-//                try {
-//                    //executeESOperations(context.getPendingESOperations());
-//                } catch (Exception e) {
-//                    LOG.error("Error executing ES operations", e);
-//                    // ES failure doesn't invalidate the transaction since graph is already committed
-//                    // But we should log and monitor these failures
-//                }
-//            }
-
             AtlasPerfTracer.log(perf);
         }
     }
+
 
     public static void validateAttributeLength(final List<AtlasEntity> entities) throws AtlasBaseException {
         List<String> errorMessages = new ArrayList<>();

@@ -47,16 +47,14 @@ public class MigrationImport extends ImportStrategy {
     private final AtlasTypeRegistry typeRegistry;
     private final AtlasEntityChangeNotifier entityChangeNotifier;
     private final EntityGraphRetriever entityGraphRetriever;
-    private final TagDAO tagDAO;
 
     public MigrationImport(AtlasGraph graph, AtlasGraphProvider graphProvider,
-                           AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier, EntityGraphRetriever entityGraphRetriever, TagDAO tagDAO) {
+                           AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier, EntityGraphRetriever entityGraphRetriever) {
         this.graph = graph;
         this.graphProvider = graphProvider;
         this.typeRegistry = typeRegistry;
         this.entityChangeNotifier = entityChangeNotifier;
         this.entityGraphRetriever = entityGraphRetriever;
-        this.tagDAO = tagDAO;
         LOG.info("MigrationImport: Using bulkLoading...");
     }
 
@@ -134,7 +132,7 @@ public class MigrationImport extends ImportStrategy {
                 graph, relationshipStore, entityChangeNotifier, getInstanceConverter(graph), fullTextMapperV2, null, null, null, null);
         AtlasRelationshipStoreV2 atlasRelationshipStoreV2 = new AtlasRelationshipStoreV2(graph, typeRegistry, deleteDelegate, entityChangeNotifier, null);
 
-        return new AtlasEntityStoreV2(graph, deleteDelegate, restoreHandlerV1, typeRegistry, entityChangeNotifier, entityGraphMapper, null, atlasRelationshipStoreV2, null, null, null, null, tagDAO);
+        return new AtlasEntityStoreV2(graph, deleteDelegate, restoreHandlerV1, typeRegistry, entityChangeNotifier, entityGraphMapper, null, atlasRelationshipStoreV2, null, null, null, null);
     }
 
     private void shutdownEntityCreationManager(EntityCreationManager creationManager) {

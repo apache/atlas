@@ -3820,7 +3820,7 @@ public class EntityGraphMapper {
                         classificationName,
                         CassandraTagOperation.OperationType.DELETE,
                         currentClassification.deepCopy(),
-                        Collections.emptyMap())
+                        currentTag.getAssetMetadata())
         );
 
         List<AtlasClassification> currentTags = tagDAO.getTagsForVertex(entityVertex.getIdForDisplay());
