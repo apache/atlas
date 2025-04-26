@@ -254,25 +254,6 @@ jobs:
           done
           echo "❌ ERROR: Max retries reached. Commit ID did not match the revision."
           exit 1
-  setup-java-sdk:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout Java SDK Repo
-        uses: actions/checkout@v4
-        with:
-          repository: atlanhq/atlan-java
-          ref: main
-
-      - name: Set up JDK for SDK
-        uses: actions/setup-java@v4
-        with:
-          java-version: 17
-          distribution: temurin
-
-      - name: Compile
-        uses: burrunan/gradle-cache-action@v1
-        with:
-          arguments: assemble shadowJar test
 
   list-integration-tests:
     runs-on: ubuntu-latest
@@ -289,7 +270,7 @@ jobs:
       - name: List integration tests
         id: test-files
         run: |
-          SKIP_PATTERN="SearchTest.java|RequestsTest.java|SSOTest.java|PersonaTest.java|AdminTest.java|DataMeshTest.java|InsightsTest.java|PurposeTest.java"
+          SKIP_PATTERN="/SearchTest.java|/RequestsTest.java|/SSOTest.java|/PersonaTest.java|/AdminTest.java|/DataMeshTest.java|/InsightsTest.java|/PurposeTest.java"
 
           # List all *Test.java files, exclude the ones that match SKIP_PATTERN
           tests=$(ls integration-tests/src/test/java/com/atlan/java/sdk/*Test.java \
@@ -316,7 +297,6 @@ jobs:
   integration-test:
     needs:
       - wait-for-deployment
-      - setup-java-sdk
       - list-integration-tests
     runs-on: ubuntu-latest
     strategy:
@@ -336,7 +316,7 @@ jobs:
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
-          java-version: 17
+          java-version: 21
           distribution: temurin
 
       - name: Run integration test for ${{ matrix.tests }}
