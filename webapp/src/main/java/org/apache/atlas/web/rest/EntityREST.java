@@ -408,7 +408,7 @@ public class EntityREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.createOrUpdate()");
             }
-            (Lists.newArrayList(entity.getEntity()));
+            validateAttributeLength(Lists.newArrayList(entity.getEntity()));
 
             BulkRequestContext context = new BulkRequestContext.Builder()
                     .setReplaceClassifications(replaceClassifications)
@@ -855,8 +855,9 @@ public class EntityREST {
         }
     }
 
+
     public static void validateAttributeLength(final List<AtlasEntity> entities) throws AtlasBaseException {
-        List<String> errorvalidateAttributeLengthMessages = new ArrayList<>();
+        List<String> errorMessages = new ArrayList<>();
 
         for (final AtlasEntity atlasEntity : entities) {
             for (Map.Entry<String, Object> attribute : atlasEntity.getAttributes().entrySet()) {
