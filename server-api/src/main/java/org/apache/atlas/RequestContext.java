@@ -19,6 +19,7 @@
 package org.apache.atlas;
 
 import org.apache.atlas.model.CassandraTagOperation;
+import org.apache.atlas.model.ESDeferredOperation;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.tasks.AtlasTask;
@@ -121,6 +122,7 @@ public class RequestContext {
 
     // Track Cassandra operations for rollback
     private final Map<String, Stack<CassandraTagOperation>> cassandraTagOperations = new HashMap<>();
+    private final List<ESDeferredOperation> ESDeferredOperations = new ArrayList<>();
 
     Map<String, Object> tagsDiff = new HashMap<>();
 
@@ -187,6 +189,7 @@ public class RequestContext {
         this.delayTagNotifications = false;
         deletedClassificationAndVertices.clear();
         addedClassificationAndVertices.clear();
+        ESDeferredOperations.clear();
         this.cassandraTagOperations.clear();
 
         if (metrics != null && !metrics.isEmpty()) {
@@ -901,4 +904,13 @@ public class RequestContext {
     public Map<String, Stack<CassandraTagOperation>> getCassandraTagOperations() {
         return cassandraTagOperations;
     }
+
+    public void addESDeferredOperation(ESDeferredOperation op) {
+        ESDeferredOperations.add(op);
+    }
+
+    public List<ESDeferredOperation> getESDeferredOperations() {
+        return ESDeferredOperations;
+    }
+
 }

@@ -132,7 +132,7 @@ public class ESConnector {
             request.setEntity(new StringEntity(bulkRequestBody.toString(), ContentType.APPLICATION_JSON));
 
             try {
-                Response response = lowLevelClient.performRequest(request);
+                lowLevelClient.performRequest(request);
             } catch (IOException e) {
                 LOG.error("Failed to update ES doc for denorm attributes");
                 throw new RuntimeException(e);

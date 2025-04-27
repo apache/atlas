@@ -289,9 +289,6 @@ public class TagDAOCassandraImpl implements TagDAO {
 
     @Override
     public void deleteTags(List<Tag> tagsToDelete) throws AtlasBaseException {
-        // Delete Propagated tags
-        // Do not delete rows, mark is_active as false
-
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("deleteTags");
         StringBuilder batchQuery = new StringBuilder();
         batchQuery.append("BEGIN BATCH ");
@@ -430,7 +427,7 @@ public class TagDAOCassandraImpl implements TagDAO {
                 .build();
     }
 
-    private int calculateBucket(String vertexId) {
+    public static int calculateBucket(String vertexId) {
         int numBuckets = 2 << BUCKET_POWER; // 2^5=32
         return (int) (Long.parseLong(vertexId) % numBuckets);
     }

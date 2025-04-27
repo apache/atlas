@@ -26,10 +26,7 @@ import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.exception.EntityNotFoundException;
-import org.apache.atlas.model.CassandraTagOperation;
-import org.apache.atlas.model.Tag;
-import org.apache.atlas.model.TimeBoundary;
-import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.*;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.tasks.AtlasTask;
@@ -3458,10 +3455,17 @@ public class EntityGraphMapper {
                 );
 
                 // Update ES attributes
-                Map<String, Map<String, Object>> deNormMAp = new HashMap<>();
-                deNormMAp.put(entityVertex.getIdForDisplay(), TagDeNormAttributesUtil.getDirectTagAttachmentAttributesForAddTag(classification,
+                Map<String, Map<String, Object>> deNormMap = new HashMap<>();
+                deNormMap.put(entityVertex.getIdForDisplay(), TagDeNormAttributesUtil.getDirectTagAttachmentAttributesForAddTag(classification,
                         currentTags, typeRegistry, fullTextMapperV2));
-                ESConnector.writeTagProperties(deNormMAp, true);
+                // ES operation collected to be executed in the end
+                RequestContext.get().addESDeferredOperation(
+                        new ESDeferredOperation(
+                                ESDeferredOperation.OperationType.TAG_DENORM_FOR_ADD_CLASSIFICATIONS,
+                                entityVertex.getIdForDisplay(),
+                                deNormMap
+                        )
+                );
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("created direct tag {}", classificationName);
@@ -3827,7 +3831,15 @@ public class EntityGraphMapper {
 
         Map<String, Map<String, Object>> deNormMap = new HashMap<>();
         deNormMap.put(entityVertex.getIdForDisplay(), TagDeNormAttributesUtil.getDirectTagAttachmentAttributesForDeleteTag(currentClassification, currentTags, typeRegistry, fullTextMapperV2));
-        ESConnector.writeTagProperties(deNormMap);
+
+        // ES operation collected to be executed in the end
+        RequestContext.get().addESDeferredOperation(
+                new ESDeferredOperation(
+                        ESDeferredOperation.OperationType.TAG_DENORM_FOR_DELETE_CLASSIFICATIONS,
+                        entityVertex.getIdForDisplay(),
+                        deNormMap
+                )
+        );
 
         updateModificationMetadata(entityVertex);
 
