@@ -28,6 +28,20 @@ public class FeatureFlagStore {
         return ret;
     }
 
+    public static String getFlag(String key) {
+        String ret = "";
+        try{
+            if (StringUtils.isEmpty(key))
+            {
+                return ret;
+            }
+            String value = redisService.getValue(addFeatureFlagNamespace(key));
+            return value;
+        } catch (Exception e) {
+            return ret;
+        }
+    }
+
     public static void setFlag(String key, String value) {
         if (StringUtils.isEmpty(key) || StringUtils.isEmpty(value))
             return;

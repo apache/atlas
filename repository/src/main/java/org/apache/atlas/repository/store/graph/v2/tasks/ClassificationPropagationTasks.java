@@ -41,18 +41,17 @@ public class ClassificationPropagationTasks {
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
             String entityGuid               = (String) parameters.get(PARAM_ENTITY_GUID);
-            String classificationVertexId   = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-            String relationshipGuid         = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
-            String tagTypeName              = (String) parameters.get(Constants.TASK_CLASSIFICATION_TYPENAME);
-            Boolean mode                    = (Boolean) parameters.get("newMode");
+            String tagTypeName              = getTaskDef().getClassificationTypeName();
 
             Boolean previousRestrictPropagationThroughLineage = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
             Boolean previousRestrictPropagationThroughHierarchy = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
 
-            if (mode != null && mode) {
-                LOG.info("via new mode");
-                entityGraphMapper.propagateClassificationV2(parameters, entityGuid, classificationVertexId, tagTypeName);
+            if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
+                LOG.info("via JANUS_OPTIMISATION_ENABLED mode");
+                entityGraphMapper.propagateClassificationV2(parameters, entityGuid, tagTypeName);
             } else {
+                String classificationVertexId   = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
+                String relationshipGuid         = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
                 LOG.info("via old mode");
                 entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage, previousRestrictPropagationThroughHierarchy);
             }
@@ -66,15 +65,14 @@ public class ClassificationPropagationTasks {
 
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
-            Boolean mode                    = (Boolean) parameters.get("newMode");
-            String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-            String tagTypeName              = (String) parameters.get(Constants.TASK_CLASSIFICATION_TYPENAME);
+            String tagTypeName              = getTaskDef().getClassificationTypeName();
             String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
 
-            if (mode != null && mode) {
-                LOG.info("via new mode");
+            if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
+                LOG.info("via JANUS_OPTIMISATION_ENABLED mode");
                 entityGraphMapper.updateClassificationTextPropagationV2(entityGuid, tagTypeName);
             } else {
+                String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 LOG.info("via old mode");
                 entityGraphMapper.updateClassificationTextPropagation(classificationVertexId);
             }
@@ -89,14 +87,13 @@ public class ClassificationPropagationTasks {
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
             String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
-            String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-            String tagTypeName              = (String) parameters.get(Constants.TASK_CLASSIFICATION_TYPENAME);
-            Boolean mode                    = (Boolean) parameters.get("newMode");
+            String tagTypeName              = getTaskDef().getClassificationTypeName();
 
-            if (mode != null && mode) {
-                LOG.info("via new mode");
+            if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
+                LOG.info("via JANUS_OPTIMISATION_ENABLED mode");
                 entityGraphMapper.deleteClassificationPropagationV2(entityGuid, tagTypeName);
             } else {
+                String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 entityGraphMapper.deleteClassificationPropagation(entityGuid, classificationVertexId);
             }
         }
@@ -109,9 +106,14 @@ public class ClassificationPropagationTasks {
 
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
-            String            classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-
-            entityGraphMapper.classificationRefreshPropagation(classificationVertexId);
+            String classificationTypeName = getTaskDef().getClassificationTypeName();
+            String sourceEntity = getTaskDef().getEntityGuid();
+            if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
+                entityGraphMapper.classificationRefreshPropagationV2(parameters, sourceEntity, classificationTypeName);
+            } else {
+            String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
+                entityGraphMapper.classificationRefreshPropagation(classificationVertexId);
+            }
         }
     }
 

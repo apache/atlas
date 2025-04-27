@@ -14,6 +14,7 @@ public interface TagDAO {
     List<AtlasClassification> getTagsForVertex(String vertexId) throws AtlasBaseException;
 
     List<Tag> getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException;
+    List<Tag> getTagPropagationsForAttachment(String sourceVertexId, String tagTypeName) throws AtlasBaseException;
     AtlasClassification findDirectTagByVertexIdAndTagTypeName(String assetVertexId, String tagTypeName) throws AtlasBaseException;
 
     void putPropagatedTags(String sourceAssetId,

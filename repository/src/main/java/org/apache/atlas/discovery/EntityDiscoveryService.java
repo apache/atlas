@@ -43,7 +43,6 @@ import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.userprofile.UserProfileService;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.searchlog.ESSearchLogger;
@@ -508,7 +507,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(atlasVertex, resultAttributes);
 
                 if(searchParameters.getIncludeClassificationAttributes()) {
-                    entity.setClassifications(entityRetriever.getAllClassifications(atlasVertex));
+                    entity.setClassifications(entityRetriever.handleGetAllClassifications(atlasVertex));
                 }
 
                 ret.addEntity(entity);
@@ -664,7 +663,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(vertex, searchParameters.getAttributes());
 
                 if (searchParameters.getIncludeClassificationAttributes()) {
-                    entity.setClassifications(entityRetriever.getAllClassifications(vertex));
+                    entity.setClassifications(entityRetriever.handleGetAllClassifications(vertex));
                 }
                 resultList.add(entity);
             }
