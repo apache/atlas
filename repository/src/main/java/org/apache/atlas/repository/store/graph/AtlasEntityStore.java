@@ -21,7 +21,6 @@ package org.apache.atlas.repository.store.graph;
 import org.apache.atlas.authorize.AtlasAccessorRequest;
 import org.apache.atlas.authorize.AtlasAccessorResponse;
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.CassandraTagOperation;
 import org.apache.atlas.model.instance.*;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
@@ -38,7 +37,6 @@ import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Stack;
 
 /**
  * Persistence/Retrieval API for AtlasEntity

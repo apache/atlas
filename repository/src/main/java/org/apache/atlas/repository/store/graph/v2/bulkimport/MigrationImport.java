@@ -34,7 +34,6 @@ import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.pc.EntityConsumerBuilder;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.pc.EntityCreationManager;
-import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

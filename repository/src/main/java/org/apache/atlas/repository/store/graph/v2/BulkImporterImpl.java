@@ -33,7 +33,6 @@ import org.apache.atlas.repository.store.graph.BulkImporter;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.ImportStrategy;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.MigrationImport;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.RegularImport;
-import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.Constants;

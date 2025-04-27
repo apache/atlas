@@ -122,7 +122,7 @@ public class RequestContext {
 
     // Track Cassandra operations for rollback
     private final Map<String, Stack<CassandraTagOperation>> cassandraTagOperations = new HashMap<>();
-    private final List<ESDeferredOperation> ESDeferredOperations = new ArrayList<>();
+    private final List<ESDeferredOperation> esDeferredOperations = new ArrayList<>();
 
     Map<String, Object> tagsDiff = new HashMap<>();
 
@@ -189,7 +189,7 @@ public class RequestContext {
         this.delayTagNotifications = false;
         deletedClassificationAndVertices.clear();
         addedClassificationAndVertices.clear();
-        ESDeferredOperations.clear();
+        esDeferredOperations.clear();
         this.cassandraTagOperations.clear();
 
         if (metrics != null && !metrics.isEmpty()) {
@@ -906,11 +906,11 @@ public class RequestContext {
     }
 
     public void addESDeferredOperation(ESDeferredOperation op) {
-        ESDeferredOperations.add(op);
+        esDeferredOperations.add(op);
     }
 
     public List<ESDeferredOperation> getESDeferredOperations() {
-        return ESDeferredOperations;
+        return esDeferredOperations;
     }
 
 }

@@ -432,7 +432,7 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    public AtlasClassification toAtlasClassification(Tag tag) {
+    public AtlasClassification toAtlasClassification(Tag tag) throws AtlasBaseException {
         if (tag != null) {
             AtlasClassification classification = TagDAOCassandraImpl.toAtlasClassification(tag.getTagMetaJson());
             return classification;

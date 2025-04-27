@@ -18,7 +18,6 @@ import org.apache.atlas.model.Tag;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Repository;
@@ -224,14 +223,11 @@ public class TagDAOCassandraImpl implements TagDAO {
 
         try {
             BoundStatement bound = findAllPropagatedTagsStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
-
             // Apply the paging state if provided
             if (pagingStateStr != null && !pagingStateStr.isEmpty()) {
                 bound = bound.setPagingState(PagingState.fromString(pagingStateStr));
             }
-
             ResultSet rs = cassSession.execute(bound);
-
             // Save the paging state for the next call
             if (!rs.isFullyFetched()) {
                 // Get the ByteBuffer containing paging state
@@ -252,7 +248,6 @@ public class TagDAOCassandraImpl implements TagDAO {
                 tag.setAssetMetadata(objectMapper.readValue(row.getString("asset_metadata"), Map.class));
                 tags.add(tag);
             }
-
             if (tags.isEmpty()) {
                 LOG.info("No propagated tags found for source_id: {}, tagTypeName: {}", sourceVertexId, tagTypeName);
             }
@@ -262,7 +257,6 @@ public class TagDAOCassandraImpl implements TagDAO {
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
-
         return new PaginatedTagResult(tags, nextPagingState);
     }
 
@@ -378,11 +372,11 @@ public class TagDAOCassandraImpl implements TagDAO {
         }
     }
 
-    public static AtlasClassification toAtlasClassification(Map<String, Object> tagMetaJsonMap) {
+    public static AtlasClassification toAtlasClassification(Map<String, Object> tagMetaJsonMap) throws AtlasBaseException {
         return getAtlasClassification(tagMetaJsonMap);
     }
 
-    private static AtlasClassification getAtlasClassification(Map<String, Object> tagMetaJsonMap) {
+    private static AtlasClassification getAtlasClassification(Map<String, Object> tagMetaJsonMap) throws AtlasBaseException {
         AtlasClassification classification = new AtlasClassification();
         classification.setTypeName((String) tagMetaJsonMap.get("typeName"));
         classification.setEntityGuid((String) tagMetaJsonMap.get("entityGuid"));
@@ -398,13 +392,13 @@ public class TagDAOCassandraImpl implements TagDAO {
         return classification;
     }
 
-    private static Map<String, Object> deepCopyMap(Map<String, Object> original) {
+    private static Map<String, Object> deepCopyMap(Map<String, Object> original) throws AtlasBaseException {
         try {
             ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writeValueAsString(original);
             return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
         } catch (JsonProcessingException e) {
-            throw new RuntimeException("Error during deep copy of map", e);
+            throw new AtlasBaseException("Error during deep copy of map", e);
         }
     }
 

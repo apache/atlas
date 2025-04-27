@@ -243,7 +243,6 @@ public class ClassificationAssociator {
 
             RequestContext.get().endMetricRecord(recorder);
             RequestContext.get().setDelayTagNotifications(false);
-            throw new AtlasBaseException("Testt!!!!!!!!!");
         }
 
         private Map<String, List<AtlasClassification>> validateAndTransfer(AtlasEntityHeader incomingEntityHeader, AtlasEntityHeader entityToBeChanged) throws AtlasBaseException {
