@@ -123,8 +123,6 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
             }
             copy.setAttributes(attributesCopy);
         }
-
-        copy.setEntityGuid(this.getEntityGuid());
         return copy;
     }
 
