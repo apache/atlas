@@ -35,6 +35,8 @@ import org.apache.atlas.model.PList;
 import org.apache.atlas.model.SearchFilter.SortType;
 import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
+import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
@@ -108,18 +110,17 @@ public class AtlasClassification extends AtlasStruct implements Serializable {
         copy.setRestrictPropagationThroughHierarchy(this.getRestrictPropagationThroughHierarchy());
 
         // Deep copy attributes map
-        if (this.getAttributes() != null) {
+        if (MapUtils.isNotEmpty(this.getAttributes())) {
             Map<String, Object> attributesCopy = new HashMap<>();
             for (Map.Entry<String, Object> entry : this.getAttributes().entrySet()) {
                 Object value = entry.getValue();
                 // Handle different types of attribute values
-                if (value instanceof Collection) {
+                if (value instanceof Collection)
                     attributesCopy.put(entry.getKey(), new ArrayList<>((Collection<?>) value));
-                } else if (value instanceof Map) {
+                else if (value instanceof Map)
                     attributesCopy.put(entry.getKey(), new HashMap<>((Map<?, ?>) value));
-                } else {
+                else
                     attributesCopy.put(entry.getKey(), value);
-                }
             }
             copy.setAttributes(attributesCopy);
         }
