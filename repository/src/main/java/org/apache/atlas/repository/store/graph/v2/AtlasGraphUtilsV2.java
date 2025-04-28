@@ -238,6 +238,7 @@ public class AtlasGraphUtilsV2 {
             if (value instanceof Date) {
                 value = ((Date) value).getTime();
             }
+
             element.setProperty(propertyName, value);
         }
     }
