@@ -134,12 +134,22 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
 
     public AtlasVertex processProductAssetLink (String assetGuid, String productGuid, BusinessLineageRequest.OperationType operation, String assetDenormAttribute) throws AtlasBaseException {
         try {
-            AtlasVertex assetVertex = entityRetriever.getEntityVertex(assetGuid);
-            AtlasVertex productVertex = entityRetriever.getEntityVertex(productGuid);
+            AtlasVertex assetVertex;
+            AtlasVertex productVertex;
+            try{
+                assetVertex = entityRetriever.getEntityVertex(assetGuid);
+                if (assetVertex == null) {
+                    LOG.warn("Asset not found for assetGuid: {}", assetGuid);
+                    return null;
+                }
 
-
-            if (assetVertex == null || productVertex == null) {
-                LOG.warn("Asset or Product not found for assetGuid: {}, productGuid: {}", assetGuid, productGuid);
+                productVertex = entityRetriever.getEntityVertex(productGuid);
+                if (productVertex == null) {
+                    LOG.warn("Product not found for productGuid: {}", productGuid);
+                    return null;
+                }
+            } catch (AtlasBaseException e){
+                LOG.warn("Entity Vertex not found", e);
                 return null;
             }
 
@@ -163,11 +173,22 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
 
     public void processProductAssetInputRelation(String assetGuid, String productGuid, BusinessLineageRequest.OperationType operation, String edgeLabel) throws AtlasBaseException, RepositoryException {
         try {
-             AtlasVertex assetVertex = entityRetriever.getEntityVertex(assetGuid);
-             AtlasVertex productVertex = entityRetriever.getEntityVertex(productGuid);
+            AtlasVertex assetVertex;
+            AtlasVertex productVertex;
+            try{
+                assetVertex = entityRetriever.getEntityVertex(assetGuid);
+                if (assetVertex == null) {
+                    LOG.warn("Asset not found for assetGuid: {}", assetGuid);
+                    return;
+                }
 
-            if (assetVertex == null || productVertex == null) {
-                LOG.warn("Asset or Product not found for assetGuid: {}, productGuid: {}", assetGuid, productGuid);
+                productVertex = entityRetriever.getEntityVertex(productGuid);
+                if (productVertex == null) {
+                    LOG.warn("Product not found for productGuid: {}", productGuid);
+                    return;
+                }
+            } catch (AtlasBaseException e){
+                LOG.warn("Entity Vertex not found", e);
                 return;
             }
 
