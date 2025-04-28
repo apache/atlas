@@ -935,90 +935,6 @@
       "actions": ["select"]
     }
   ],
-
-  "persona-dq-read": [
-    {
-      "policyType": "ACCESS",
-      "policyResourceCategory": "ENTITY",
-      "resources": [
-        "entity:{entity}/*/rule/*",
-        "entity-type:alpha_DQRule",
-        "entity-classification:*"
-      ],
-      "actions": ["entity-read"]
-    }
-  ],
-  "persona-dq-create": [
-    {
-      "policyResourceCategory": "ENTITY",
-      "policyType": "ACCESS",
-      "resources": [
-        "entity:{entity}/*/rule/*",
-        "entity-type:alpha_DQRule",
-        "entity-classification:*"
-      ],
-      "actions": ["entity-create"]
-    },
-    {
-      "policyResourceCategory": "RELATIONSHIP",
-      "policyType": "ACCESS",
-      "description": "Link/unlink this DQRule to any Asset",
-      "resources": [
-        "relationship-type:*",
-
-        "end-one-entity:{entity}/*/rule/*",
-        "end-one-entity-type:alpha_DQRule",
-        "end-one-entity-classification:*",
-
-        "end-two-entity:*",
-        "end-two-entity-type:Asset",
-        "end-two-entity-classification:*"
-
-      ],
-      "actions": ["add-relationship", "remove-relationship", "update-relationship"]
-    }
-  ],
-  "persona-dq-update": [
-    {
-      "policyType": "ACCESS",
-      "policyResourceCategory": "ENTITY",
-      "resources": [
-        "entity:{entity}/*/rule/*",
-        "entity-type:alpha_DQRule",
-        "entity-classification:*"
-      ],
-      "actions": ["entity-update"]
-    },
-    {
-      "policyType": "ACCESS",
-      "policyResourceCategory": "RELATIONSHIP",
-      "resources": [
-        "relationship-type:*",
-
-        "end-one-entity:{entity}/*/rule/*",
-        "end-one-entity-type:alpha_DQRule",
-        "end-one-entity-classification:*",
-
-        "end-two-entity:*",
-        "end-two-entity-type:Asset",
-        "end-two-entity-classification:*"
-      ],
-      "actions": ["add-relationship", "remove-relationship", "update-relationship"]
-    }
-  ],
-  "persona-dq-delete": [
-    {
-      "policyResourceCategory": "ENTITY",
-      "policyType": "ACCESS",
-      "resources": [
-        "entity:{entity}/*/rule/*",
-        "entity-type:alpha_DQRule",
-        "entity-classification:*"
-      ],
-      "actions": ["entity-delete"]
-    }
-  ],
-  
   "persona-ai-application-read": [
     {
       "policyType": "ACCESS",
@@ -1345,6 +1261,88 @@
         "entity-update-classification",
         "entity-remove-classification"
       ]
+    }
+  ],
+  "persona-dq-read": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}/*/rule/*",
+        "entity-type:alpha_DQRule",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-dq-create": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*/rule/*",
+        "entity-type:alpha_DQRule",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-create"]
+    },
+    {
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyType": "ACCESS",
+      "description": "Link/unlink this DQRule to any Asset",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity:{entity}/*/rule/*",
+        "end-one-entity-type:alpha_DQRule",
+        "end-one-entity-classification:*",
+
+        "end-two-entity:*",
+        "end-two-entity-type:Asset",
+        "end-two-entity-classification:*"
+
+      ],
+      "actions": ["add-relationship", "remove-relationship", "update-relationship"]
+    }
+  ],
+  "persona-dq-update": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "resources": [
+        "entity:{entity}/*/rule/*",
+        "entity-type:alpha_DQRule",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-update"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "resources": [
+        "relationship-type:*",
+
+        "end-one-entity:{entity}/*/rule/*",
+        "end-one-entity-type:alpha_DQRule",
+        "end-one-entity-classification:*",
+
+        "end-two-entity:*",
+        "end-two-entity-type:Asset",
+        "end-two-entity-classification:*"
+      ],
+      "actions": ["add-relationship", "remove-relationship", "update-relationship"]
+    }
+  ],
+  "persona-dq-delete": [
+    {
+      "policyResourceCategory": "ENTITY",
+      "policyType": "ACCESS",
+      "resources": [
+        "entity:{entity}/*/rule/*",
+        "entity-type:alpha_DQRule",
+        "entity-classification:*"
+      ],
+      "actions": ["entity-delete"]
     }
   ]
 
