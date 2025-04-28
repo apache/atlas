@@ -2156,7 +2156,7 @@ public class EntityGraphMapper {
         }
 
         switch (ctx.getAttribute().getRelationshipEdgeLabel()) {
-            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, newElementsCreated, new ArrayList<>(0));
+            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, newElementsCreated, new ArrayList<>(0), true);
                 break;
 
             case CATEGORY_TERMS_EDGE_LABEL: addCategoriesToTermEntity(ctx, newElementsCreated, new ArrayList<>(0));
@@ -2232,7 +2232,7 @@ public class EntityGraphMapper {
 
 
         switch (ctx.getAttribute().getRelationshipEdgeLabel()) {
-            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, new ArrayList<>(0) , removedElements);
+            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, new ArrayList<>(0) , removedElements, true);
                 break;
 
             case CATEGORY_TERMS_EDGE_LABEL: addCategoriesToTermEntity(ctx, new ArrayList<>(0), removedElements);
@@ -2629,6 +2629,10 @@ public class EntityGraphMapper {
     }
 
     private void addMeaningsToEntity(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) {
+        addMeaningsToEntity(ctx, createdElements, deletedElements, false);
+    }
+
+    private void addMeaningsToEntity(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements, boolean isAppend) {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addMeaningsToEntity");
         // handle __terms attribute of entity
         List<AtlasVertex> meanings = createdElements.stream()
@@ -2649,8 +2653,10 @@ public class EntityGraphMapper {
                 .map(x -> x.getProperty(NAME, String.class))
                 .collect(Collectors.toList());
 
-        ctx.getReferringVertex().removeProperty(MEANINGS_PROPERTY_KEY);
-        ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
+        if (!isAppend){
+            ctx.getReferringVertex().removeProperty(MEANINGS_PROPERTY_KEY);
+            ctx.getReferringVertex().removeProperty(MEANINGS_TEXT_PROPERTY_KEY);
+        }
 
         if (CollectionUtils.isNotEmpty(qNames)) {
             qNames.forEach(q -> AtlasGraphUtilsV2.addEncodedProperty(ctx.getReferringVertex(), MEANINGS_PROPERTY_KEY, q));
