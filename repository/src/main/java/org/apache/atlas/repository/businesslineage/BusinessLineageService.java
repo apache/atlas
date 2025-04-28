@@ -115,7 +115,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
 
                 if (StringUtils.isEmpty(edgeLabel)) {
                     AtlasVertex updatedVertex = processProductAssetLink(assetGuid, productGuid, operation, assetDenormAttribute);
-                    if (!updatedVertices.contains(updatedVertex)) {
+                    if (!updatedVertices.contains(updatedVertex) && updatedVertex != null) {
                         updatedVertices.add(updatedVertex);
                     }
                 } else {
@@ -139,7 +139,8 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
 
 
             if (assetVertex == null || productVertex == null) {
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, assetGuid + " or " + productGuid);
+                LOG.warn("Asset or Product not found for assetGuid: {}, productGuid: {}", assetGuid, productGuid);
+                return null;
             }
 
             switch (operation) {
@@ -166,7 +167,8 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
              AtlasVertex productVertex = entityRetriever.getEntityVertex(productGuid);
 
             if (assetVertex == null || productVertex == null) {
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, assetGuid + " or " + productGuid);
+                LOG.warn("Asset or Product not found for assetGuid: {}, productGuid: {}", assetGuid, productGuid);
+                return;
             }
 
             switch (operation) {
