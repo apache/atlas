@@ -827,8 +827,20 @@ public final class GraphHelper {
     }
 
     public static void updateModificationMetadata(AtlasVertex vertex) {
-        AtlasGraphUtilsV2.setEncodedProperty(vertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-        AtlasGraphUtilsV2.setEncodedProperty(vertex, MODIFIED_BY_KEY, RequestContext.get().getUser());
+        int maxRetries = 2; // Number of retries
+        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                AtlasGraphUtilsV2.setEncodedProperty(vertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+                AtlasGraphUtilsV2.setEncodedProperty(vertex, MODIFIED_BY_KEY, RequestContext.get().getUser());
+                break;
+            } catch (Exception e) {
+                e.printStackTrace();
+                LOG.info("Attemp : {} , Exception while updating metadata attributes: {}", attempt,e.getMessage());
+                if (attempt == maxRetries) {
+                    throw e;
+                }
+            }
+        }
     }
     public static void updateMetadataAttributes(AtlasVertex vertex, List<String> attributes, String metadataType) {
         if (attributes != null && attributes.size() > 0) {
