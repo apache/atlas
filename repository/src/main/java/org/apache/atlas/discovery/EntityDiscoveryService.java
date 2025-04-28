@@ -289,7 +289,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                     }
 
                     if (classificationNames != null) {
-                        List<String> traitNames = GraphHelper.getTraitNames(vertex);
+                        List<String> traitNames = GraphHelper.handleGetTraitNames(vertex);
 
                         if (CollectionUtils.isEmpty(traitNames) ||
                                 !CollectionUtils.containsAny(classificationNames, traitNames)) {

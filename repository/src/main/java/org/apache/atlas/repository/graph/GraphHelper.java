@@ -37,7 +37,8 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.repository.graphdb.janus.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
-import org.apache.atlas.repository.store.graph.v2.TransactionInterceptHelper;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -853,22 +854,34 @@ public final class GraphHelper {
         return traitName;
     }
 
-    public static List<String> getTraitNames(AtlasVertex entityVertex) {
-        return getTraitNames(entityVertex, false);
+    public static List<String> handleGetTraitNames(AtlasVertex entityVertex) {
+        return handleGetTraitNames(entityVertex, false);
     }
 
     public static List<String> getPropagatedTraitNames(AtlasVertex entityVertex) {
-        return getTraitNames(entityVertex, true);
+        return handleGetTraitNames(entityVertex, true);
     }
 
     public static List<String> getAllTagNames(List<AtlasClassification> tags) {
         return tags.stream().map(AtlasStruct::getTypeName).collect(Collectors.toList());
     }
     public static List<String> getAllTraitNames(AtlasVertex entityVertex) {
-        return getTraitNames(entityVertex, null);
+        return handleGetTraitNames(entityVertex, null);
     }
 
-    public static List<String> getTraitNames(AtlasVertex entityVertex, Boolean propagated) {
+    public static boolean getJanusOptimisationEnabled() {
+        return StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
+    }
+
+    public static List<String> handleGetTraitNames(AtlasVertex entityVertex, Boolean propagated) {
+        if (getJanusOptimisationEnabled()) {
+            return getTraitNamesV2(entityVertex, propagated);
+        } else {
+            return getTraitNamesV1(entityVertex, propagated);
+        }
+    }
+
+    public static List<String> getTraitNamesV1(AtlasVertex entityVertex, Boolean propagated) {
         List<String>     ret   = new ArrayList<>();
         AtlasVertexQuery query = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL);
 
@@ -888,6 +901,27 @@ public final class GraphHelper {
             }
         }
 
+        return ret;
+    }
+
+    public static List<String> getTraitNamesV2(AtlasVertex entityVertex, Boolean propagated) {
+        List<String>     ret   = new ArrayList<>();
+        try {
+        TagDAOCassandraImpl tagDAOCassandra = new TagDAOCassandraImpl();
+            if (!propagated) {
+                ret = tagDAOCassandra.getAllDirectTagsForVertex(entityVertex.getIdForDisplay())
+                                     .stream()
+                                     .map(AtlasClassification::getTypeName)
+                                     .collect(Collectors.toList());
+            } else {
+                ret = tagDAOCassandra.getPropagatedTagsForVertex(entityVertex.getIdForDisplay())
+                                     .stream()
+                                     .map(AtlasClassification::getTypeName)
+                                     .collect(Collectors.toList());
+            }
+        } catch (AtlasBaseException e) {
+            e.printStackTrace();
+        }
         return ret;
     }
 

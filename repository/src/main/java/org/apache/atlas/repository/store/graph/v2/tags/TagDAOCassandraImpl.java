@@ -44,8 +44,9 @@ public class TagDAOCassandraImpl implements TagDAO {
     private final CqlSession cassSession;
     private final PreparedStatement findAllTagsStmt;
     private final PreparedStatement findAllDirectTagsStmt;
-    private final PreparedStatement findADirectTagStmt;
     private final PreparedStatement findAllPropagatedTagsStmt;
+    private final PreparedStatement findADirectTagStmt;
+    private final PreparedStatement findAllPropagatedTagsByTypeNameStmt;
     private final PreparedStatement findAllPropagatedTagsOptStmt;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -68,6 +69,10 @@ public class TagDAOCassandraImpl implements TagDAO {
                     "SELECT tag_meta_json FROM tags.effective_tags WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false"
             );
 
+            findAllPropagatedTagsStmt = cassSession.prepare(
+                    "SELECT tag_meta_json FROM tags.effective_tags WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false"
+            );
+
             findAllTagsStmt = cassSession.prepare(
                     "SELECT tag_meta_json FROM tags.effective_tags WHERE id = ? AND bucket = ?"
             );
@@ -76,7 +81,7 @@ public class TagDAOCassandraImpl implements TagDAO {
                     "SELECT tag_meta_json FROM tags.effective_tags WHERE bucket = ? AND id = ? AND tag_type_name = ? AND source_id = ? AND is_propagated = false"
             );
 
-            findAllPropagatedTagsStmt = cassSession.prepare(
+            findAllPropagatedTagsByTypeNameStmt = cassSession.prepare(
                     "SELECT bucket, id, source_id, tag_type_name, asset_metadata FROM tags.effective_tags WHERE source_id = ? AND tag_type_name = ? AND is_propagated = true ALLOW FILTERING"
             );
 
@@ -161,6 +166,30 @@ public class TagDAOCassandraImpl implements TagDAO {
         return tags;
     }
 
+
+    @Override
+    public List<AtlasClassification> getPropagatedTagsForVertex(String vertexId) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getPropagatedTagsForVertex");
+        List<AtlasClassification> tags = new ArrayList<>();
+
+        int bucket = calculateBucket(vertexId);
+        try {
+            BoundStatement bound = findAllPropagatedTagsStmt.bind(vertexId, bucket);
+            ResultSet rs = cassSession.execute(bound);
+
+            for (Row row : rs) {
+                AtlasClassification classification = convertToAtlasClassification(row.getString("tag_meta_json"));
+                tags.add(classification);
+            }
+        } catch (Exception e) {
+            throw new AtlasBaseException(String.format("Error fetching tags for asset: %s, bucket: %s", vertexId, bucket), e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+
+        return tags;
+    }
+
     @Override
     public AtlasClassification findDirectTagByVertexIdAndTagTypeName(String vertexId, String tagTypeName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findTagByVertexIdAndTagTypeName");
@@ -196,7 +225,7 @@ public class TagDAOCassandraImpl implements TagDAO {
         String nextPagingState = null;
 
         try {
-            BoundStatement bound = findAllPropagatedTagsStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
+            BoundStatement bound = findAllPropagatedTagsByTypeNameStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
 
             // Apply the paging state if provided
             if (pagingStateStr != null && !pagingStateStr.isEmpty()) {
