@@ -394,7 +394,6 @@ public class TagDAOCassandraImpl implements TagDAO {
 
     private static Map<String, Object> deepCopyMap(Map<String, Object> original) throws AtlasBaseException {
         try {
-            ObjectMapper objectMapper = new ObjectMapper();
             String json = objectMapper.writeValueAsString(original);
             return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
         } catch (JsonProcessingException e) {

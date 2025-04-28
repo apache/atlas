@@ -40,10 +40,10 @@ public class EntityMutationContext {
 
     private Set<String> removedLineageRelations = new HashSet<>();
 
-
     public EntityMutationContext(final EntityGraphDiscoveryContext context) {
         this.context = context;
     }
+
     public EntityMutationContext() {
         this.context = null;
     }

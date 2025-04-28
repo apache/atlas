@@ -433,11 +433,8 @@ public class EntityGraphRetriever {
     }
 
     public AtlasClassification toAtlasClassification(Tag tag) throws AtlasBaseException {
-        if (tag != null) {
-            AtlasClassification classification = TagDAOCassandraImpl.toAtlasClassification(tag.getTagMetaJson());
-            return classification;
-        }
-        return null;
+        AtlasClassification classification = TagDAOCassandraImpl.toAtlasClassification(tag.getTagMetaJson());
+        return classification;
     }
 
     public AtlasVertex getReferencedEntityVertex(AtlasEdge edge, AtlasRelationshipEdgeDirection relationshipDirection, AtlasVertex parentVertex) throws AtlasBaseException {

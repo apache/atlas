@@ -95,7 +95,7 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
 
             for (Map.Entry<String, Stack<CassandraTagOperation>> entry : cassandraOps.entrySet()) {
                 Stack<CassandraTagOperation> operations = entry.getValue();
-                while (!operations.isEmpty()) {
+                while (CollectionUtils.isNotEmpty(operations)) {
                     CassandraTagOperation op = operations.pop();
                     try {
                         if (op.getOperationType() == CassandraTagOperation.OperationType.INSERT) {
@@ -129,16 +129,16 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
 
     private static Tag toTagForDelete(CassandraTagOperation op) {
         Tag tag = new Tag();
-        tag.setVertexId(op.getId());
+        tag.setVertexId(op.getVertexId());
         tag.setTagTypeName(op.getTagTypeName());
-        tag.setSourceVertexId(op.getId());
-        tag.setBucket(TagDAOCassandraImpl.calculateBucket(op.getId()));
+        tag.setSourceVertexId(op.getVertexId());
+        tag.setBucket(TagDAOCassandraImpl.calculateBucket(op.getVertexId()));
         return tag;
     }
 
     private void rollbackUpdateOrDelete(String entityGuid, CassandraTagOperation op) {
         switch (op.getOperationType()) {
-            case UPDATE, DELETE -> tagDAO.putDirectTag(op.getId(),
+            case UPDATE, DELETE -> tagDAO.putDirectTag(op.getVertexId(),
                     op.getTagTypeName(),
                     op.getAtlasClassification(),
                     op.getMinAssetMap());

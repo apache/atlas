@@ -5,14 +5,14 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import java.util.Map;
 
 public class CassandraTagOperation {
-    private final String id;
+    private final String vertexId;
     private final String tagTypeName;
     private final OperationType operationType;
     private final AtlasClassification atlasClassification;
     private final Map<String, Object> minAssetMap;
 
     public CassandraTagOperation(String vertexId, String tagTypeName, OperationType operationType, AtlasClassification atlasClassification, Map<String, Object> minAssetMap) {
-        this.id = vertexId;
+        this.vertexId = vertexId;
         this.tagTypeName = tagTypeName;
         this.operationType = operationType;
         this.atlasClassification = atlasClassification;
@@ -25,8 +25,8 @@ public class CassandraTagOperation {
         DELETE
     }
 
-    public String getId() {
-        return id;
+    public String getVertexId() {
+        return vertexId;
     }
 
     public String getTagTypeName() {
