@@ -38,8 +38,10 @@ import static org.apache.atlas.repository.store.graph.v2.CassandraConnector.CASS
 @Repository
 public class TagDAOCassandraImpl implements TagDAO {
     private static final Logger LOG = LoggerFactory.getLogger(TagDAOCassandraImpl.class);
+    public static final String CASSANDRA_TAG_TABLE_NAME = "atlas.graph.tag.table.name";
     private static int BUCKET_POWER;
     private static String KEYSPACE = null;
+    private static String TABLE_NAME = null;
     public static final String CASSANDRA_NEW_KEYSPACE_PROPERTY = "atlas.graph.new.keyspace";
     private final CqlSession cassSession;
     private final PreparedStatement findAllTagsStmt;
@@ -50,43 +52,44 @@ public class TagDAOCassandraImpl implements TagDAO {
     private final PreparedStatement findAllPropagatedTagsOptStmt;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
-    private static String INSERT_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json) values (%s, '%s', '%s', '%s', %s, %s, '%s', '%s')";
+    private static String INSERT_TAG = "INSERT into %s.%s (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json) values (%s, '%s', '%s', '%s', %s, %s, '%s', '%s')";
 
-    private static String DELETE_TAG = "DELETE FROM tags.effective_tags where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s'";
-
+    private static String DELETE_TAG = "DELETE FROM %s.%s where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s'";
 
     public TagDAOCassandraImpl() throws AtlasBaseException {
         try {
             KEYSPACE = ApplicationProperties.get().getString(CASSANDRA_NEW_KEYSPACE_PROPERTY, "tags");
+            TABLE_NAME = ApplicationProperties.get().getString(CASSANDRA_TAG_TABLE_NAME, "effective_tags");
             BUCKET_POWER = 5;
 
             // Initialize Cassandra connection
             String hostname = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, "localhost");
-            cassSession = initializeCassandraSession(hostname);
+            Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", "1");
+            cassSession = initializeCassandraSession(hostname, KEYSPACE, TABLE_NAME, replicationConfig);
 
             // Prepare statements for reuse
             findAllDirectTagsStmt = cassSession.prepare(
-                    "SELECT tag_meta_json FROM tags.effective_tags WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false"
+                    String.format("SELECT tag_meta_json FROM %s.%s WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false", KEYSPACE, TABLE_NAME)
             );
 
             findAllPropagatedTagsStmt = cassSession.prepare(
-                    "SELECT tag_meta_json FROM tags.effective_tags WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false"
+                    String.format("SELECT tag_meta_json FROM %s.%s WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false", KEYSPACE, TABLE_NAME)
             );
 
             findAllTagsStmt = cassSession.prepare(
-                    "SELECT tag_meta_json FROM tags.effective_tags WHERE id = ? AND bucket = ?"
+                    String.format("SELECT tag_meta_json FROM %s.%s WHERE id = ? AND bucket = ?", KEYSPACE, TABLE_NAME)
             );
 
             findADirectTagStmt = cassSession.prepare(
-                    "SELECT tag_meta_json FROM tags.effective_tags WHERE bucket = ? AND id = ? AND tag_type_name = ? AND source_id = ? AND is_propagated = false"
+                    String.format("SELECT tag_meta_json FROM %s.%s WHERE bucket = ? AND id = ? AND tag_type_name = ? AND source_id = ? AND is_propagated = false", KEYSPACE, TABLE_NAME)
             );
 
             findAllPropagatedTagsByTypeNameStmt = cassSession.prepare(
-                    "SELECT bucket, id, source_id, tag_type_name, asset_metadata FROM tags.effective_tags WHERE source_id = ? AND tag_type_name = ? AND is_propagated = true ALLOW FILTERING"
+                    String.format("SELECT bucket, id, source_id, tag_type_name, asset_metadata FROM %s.%s WHERE source_id = ? AND tag_type_name = ? AND is_propagated = true ALLOW FILTERING", KEYSPACE, TABLE_NAME)
             );
 
             findAllPropagatedTagsOptStmt = cassSession.prepare(
-                    "SELECT bucket, id, source_id, tag_type_name FROM tags.effective_tags WHERE source_id = ? AND tag_type_name = ? AND is_propagated = true ALLOW FILTERING"
+                    String.format("SELECT bucket, id, source_id, tag_type_name FROM %s.%s WHERE source_id = ? AND tag_type_name = ? AND is_propagated = true ALLOW FILTERING", KEYSPACE, TABLE_NAME)
             );
 
         } catch (Exception e) {
@@ -309,7 +312,7 @@ public class TagDAOCassandraImpl implements TagDAO {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("deleteTags");
 
         try {
-            String delete = String.format(DELETE_TAG,
+            String delete = String.format(DELETE_TAG,KEYSPACE,TABLE_NAME,
                     calculateBucket(sourceVertexId),
                     sourceVertexId,
                     sourceVertexId,
@@ -365,7 +368,7 @@ public class TagDAOCassandraImpl implements TagDAO {
 
         for (String propagatedAssetVertexId : propagatedAssetVertexIds) {
             int bucket = calculateBucket(propagatedAssetVertexId);
-            String insert = String.format(INSERT_TAG,
+            String insert = String.format(INSERT_TAG,KEYSPACE,TABLE_NAME,
                     bucket,
                     propagatedAssetVertexId,
                     tagTypeName,
@@ -392,7 +395,7 @@ public class TagDAOCassandraImpl implements TagDAO {
 
         int bucket = calculateBucket(assetId);
 
-        String insert = String.format(INSERT_TAG,
+        String insert = String.format(INSERT_TAG,KEYSPACE, TABLE_NAME,
                 bucket,
                 assetId,
                 tagTypeName,
@@ -428,23 +431,51 @@ public class TagDAOCassandraImpl implements TagDAO {
         }
     }
 
-    private CqlSession initializeCassandraSession(String hostname) {
-        return CqlSession.builder()
+    public CqlSession initializeCassandraSession(String hostname, String keyspace, String tableName, Map<String, String> replicationConfig) {
+        CqlSession session = CqlSession.builder()
                 .addContactPoint(new InetSocketAddress(hostname, 9042))
                 .withConfigLoader(
                         DriverConfigLoader.programmaticBuilder()
                                 .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, Duration.ofSeconds(10))
                                 .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, Duration.ofSeconds(15))
-                                // Control timeout for requests
                                 .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(15))
-                                .withDuration(DefaultDriverOption.CONTROL_CONNECTION_AGREEMENT_TIMEOUT, Duration.ofSeconds(20))
-                                // More specific timeouts for different query types
-                                .withDuration(DefaultDriverOption.REQUEST_TRACE_INTERVAL, Duration.ofMillis(500))
-                                .withDuration(DefaultDriverOption.REQUEST_TRACE_ATTEMPTS, Duration.ofSeconds(20))
                                 .build())
                 .withLocalDatacenter("datacenter1")
-                .withKeyspace(KEYSPACE)
                 .build();
+
+        // Check and create keyspace if it doesn't exist
+        String replicationConfigString = replicationConfig.entrySet().stream()
+                .map(entry -> String.format("'%s': '%s'", entry.getKey(), entry.getValue()))
+                .collect(Collectors.joining(", "));
+        String createKeyspaceQuery = String.format("CREATE KEYSPACE IF NOT EXISTS %s " +
+                "WITH replication = {%s} " +
+                "AND durable_writes = true;", keyspace, replicationConfigString);
+        session.execute(createKeyspaceQuery);
+
+        // Switch to the keyspace
+        session.execute(String.format("USE %s", keyspace));
+
+        // Check and create table if it doesn't exist
+        String createTableQuery = String.format("CREATE TABLE IF NOT EXISTS %s (" +
+                "id text, " +
+                "bucket int, " +
+                "property_name text, " +
+                "tag_type_name text, " +
+                "is_propagated boolean, " +
+                "source_id text, " +
+                "tag_meta_json text, " +
+                "asset_metadata text, " +
+                "updated_at timestamp, " +
+                "is_deleted boolean, " +
+                "PRIMARY KEY ((bucket), id, source_id, tag_type_name, is_deleted)) " +
+                ";", tableName);
+        session.execute(createTableQuery);
+
+        session.execute("CREATE INDEX IF NOT EXISTS ON " + keyspace + "." + tableName + " (is_propagated);");
+        session.execute("CREATE INDEX IF NOT EXISTS ON " + keyspace + "." + tableName + " (tag_type_name);");
+        session.execute("CREATE INDEX IF NOT EXISTS ON " + keyspace + "." + tableName + " (source_id);");
+        session.execute("CREATE INDEX IF NOT EXISTS ON " + keyspace + "." + tableName + " (id);");
+        return session;
     }
 
     private int calculateBucket(String vertexId) {

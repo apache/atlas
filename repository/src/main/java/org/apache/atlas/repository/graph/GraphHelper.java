@@ -37,6 +37,7 @@ import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.repository.graphdb.janus.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.type.AtlasArrayType;
@@ -102,6 +103,8 @@ public final class GraphHelper {
     private long    retrySleepTimeMillis = 1000;
     private boolean removePropagations = true;
 
+    private static TagDAO tagDAO = null;
+
     public GraphHelper(AtlasGraph graph) {
         this.graph = graph;
         try {
@@ -115,6 +118,17 @@ public final class GraphHelper {
 
     public static boolean isTermEntityEdge(AtlasEdge edge) {
         return StringUtils.equals(edge.getLabel(), TERM_ASSIGNMENT_LABEL);
+    }
+
+    public static TagDAO getTagDAO() throws AtlasBaseException {
+        if (tagDAO == null) {
+            synchronized (GraphHelper.class) {
+                if (tagDAO == null) {
+                    tagDAO = new TagDAOCassandraImpl(); // Replace with the actual implementation
+                }
+            }
+        }
+        return tagDAO;
     }
 
     public AtlasEdge addClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex, boolean isPropagated) throws AtlasBaseException {
@@ -919,7 +933,7 @@ public final class GraphHelper {
     public static List<String> getTraitNamesV2(AtlasVertex entityVertex, Boolean propagated) {
         List<String>     ret   = new ArrayList<>();
         try {
-        TagDAOCassandraImpl tagDAOCassandra = new TagDAOCassandraImpl();
+            TagDAO tagDAOCassandra = getTagDAO();
             if (!propagated) {
                 ret = tagDAOCassandra.getAllDirectTagsForVertex(entityVertex.getIdForDisplay())
                                      .stream()
