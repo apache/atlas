@@ -108,7 +108,7 @@ import static org.apache.atlas.repository.graph.GraphHelper.getLabels;
 import static org.apache.atlas.repository.graph.GraphHelper.getMapElementsProperty;
 import static org.apache.atlas.repository.graph.GraphHelper.getStatus;
 import static org.apache.atlas.repository.graph.GraphHelper.getTraitLabel;
-import static org.apache.atlas.repository.graph.GraphHelper.getTraitNames;
+import static org.apache.atlas.repository.graph.GraphHelper.handleGetTraitNames;
 import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
 import static org.apache.atlas.repository.graph.GraphHelper.isRelationshipEdge;
 import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
@@ -3886,7 +3886,7 @@ public class EntityGraphMapper {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityGraphMapper.deleteClassification");
         }
 
-        List<String> traitNames = getTraitNames(entityVertex);
+        List<String> traitNames = handleGetTraitNames(entityVertex);
 
         if (CollectionUtils.isEmpty(traitNames)) {
             throw new AtlasBaseException(AtlasErrorCode.NO_CLASSIFICATIONS_FOUND_FOR_ENTITY, entityGuid);
@@ -4662,7 +4662,7 @@ public class EntityGraphMapper {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
 
-        List<String> traitNames = getTraitNames(instanceVertex);
+        List<String> traitNames = handleGetTraitNames(instanceVertex);
 
         if (CollectionUtils.isNotEmpty(traitNames)) {
             for (String traitName : traitNames) {
@@ -4763,6 +4763,7 @@ public class EntityGraphMapper {
             int totalDeleted = 0;
             while (!batchToDelete.isEmpty()) {
                 totalDeleted += deletePropagations(batchToDelete, sourceEntityGuid, entityVertex, tagTypeName);
+                batchToDelete = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
             }
             LOG.info("Deleted {} propagations for source entity {} and tag type {}, taskId: {}",
                     totalDeleted, sourceEntityGuid, tagTypeName, RequestContext.get().getCurrentTask().getGuid());
