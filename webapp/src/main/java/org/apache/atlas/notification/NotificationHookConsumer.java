@@ -1281,6 +1281,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             break;
 
                             case ENTITY_PARTIAL_UPDATE_V2: {
+                                RequestContext.setIsUpdateNotification(true);
                                 final EntityPartialUpdateRequestV2 partialUpdateRequest = (EntityPartialUpdateRequestV2) message;
                                 final AtlasObjectId                entityId             = partialUpdateRequest.getEntityId();
                                 final AtlasEntityWithExtInfo       entity               = partialUpdateRequest.getEntity();
@@ -1296,6 +1297,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             break;
 
                             case ENTITY_FULL_UPDATE_V2: {
+                                RequestContext.setIsUpdateNotification(true);
                                 final EntityUpdateRequestV2    updateRequest = (EntityUpdateRequestV2) message;
                                 final AtlasEntitiesWithExtInfo entities      = updateRequest.getEntities();
 
@@ -1395,6 +1397,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                         }
                     } finally {
                         RequestContext.clear();
+                        RequestContext.setIsUpdateNotification(false);
                     }
                 }
 
