@@ -39,8 +39,10 @@ import static org.apache.atlas.repository.store.graph.v2.CassandraConnector.CASS
 @Repository
 public class TagDAOCassandraImpl implements TagDAO {
     private static final Logger LOG = LoggerFactory.getLogger(TagDAOCassandraImpl.class);
+    public static final String CASSANDRA_TAG_TABLE_NAME = "atlas.graph.tag.table.name";
     private static int BUCKET_POWER;
     private static String KEYSPACE = null;
+    private static String TABLE_NAME = null;
     public static final String CASSANDRA_NEW_KEYSPACE_PROPERTY = "atlas.graph.new.keyspace";
     private final CqlSession cassSession;
     private final PreparedStatement findAllTagsStmt;
@@ -49,40 +51,51 @@ public class TagDAOCassandraImpl implements TagDAO {
     private final PreparedStatement findADirectTagCompleteRowStmt;
     private final PreparedStatement findAllPropagatedTagsStmt;
     private static final ObjectMapper objectMapper = new ObjectMapper();
+    private final PreparedStatement findAllPropagatedTagsByTypeNameStmt;
+    private final PreparedStatement findAllPropagatedTagsOptStmt;
 
-    private static String INSERT_TAG = "INSERT into tags.effective_tags (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json) values (%s, '%s', '%s', '%s', %s, %s, '%s', '%s')";
+    private static String INSERT_TAG = "INSERT into %s.%s (bucket, id, tag_type_name, source_id, is_propagated, updated_at, asset_metadata, tag_meta_json) values (%s, '%s', '%s', '%s', %s, %s, '%s', '%s')";
 
-    private static String DELETE_TAG = "DELETE FROM tags.effective_tags where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s'";
-
+    private static String DELETE_TAG = "DELETE FROM %s.%s where bucket = %s AND id = '%s' AND source_id = '%s' AND tag_type_name = '%s'";
 
     public TagDAOCassandraImpl() throws AtlasBaseException {
         try {
             KEYSPACE = ApplicationProperties.get().getString(CASSANDRA_NEW_KEYSPACE_PROPERTY, "tags");
+            TABLE_NAME = ApplicationProperties.get().getString(CASSANDRA_TAG_TABLE_NAME, "effective_tags");
             BUCKET_POWER = 5;
 
             // Initialize Cassandra connection
             String hostname = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, "localhost");
-            cassSession = initializeCassandraSession(hostname);
+            Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", "1");
+            cassSession = initializeCassandraSession(hostname, KEYSPACE, TABLE_NAME, replicationConfig);
 
             // Prepare statements for reuse
             findAllDirectTagsStmt = cassSession.prepare(
-                    "SELECT tag_meta_json FROM tags.effective_tags WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false"
+                    String.format("SELECT tag_meta_json FROM %s.%s WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false", KEYSPACE, TABLE_NAME)
+            );
+
+            findAllPropagatedTagsStmt = cassSession.prepare(
+                    String.format("SELECT tag_meta_json FROM %s.%s WHERE id = ? AND bucket = ? AND source_id = ? AND is_propagated = false", KEYSPACE, TABLE_NAME)
             );
 
             findAllTagsStmt = cassSession.prepare(
-                    "SELECT tag_meta_json FROM tags.effective_tags WHERE id = ? AND bucket = ?"
+                    String.format("SELECT tag_meta_json FROM %s.%s WHERE id = ? AND bucket = ?", KEYSPACE, TABLE_NAME)
             );
 
             findADirectTagStmt = cassSession.prepare(
-                    "SELECT tag_meta_json FROM tags.effective_tags WHERE bucket = ? AND id = ? AND tag_type_name = ? AND source_id = ? AND is_propagated = false"
+                    String.format("SELECT tag_meta_json FROM %s.%s WHERE bucket = ? AND id = ? AND tag_type_name = ? AND source_id = ? AND is_propagated = false", KEYSPACE, TABLE_NAME)
+            );
+
+            findAllPropagatedTagsByTypeNameStmt = cassSession.prepare(
+                    String.format("SELECT bucket, id, source_id, tag_type_name, asset_metadata FROM %s.%s WHERE source_id = ? AND tag_type_name = ? AND is_propagated = true ALLOW FILTERING", KEYSPACE, TABLE_NAME)
+            );
+
+            findAllPropagatedTagsOptStmt = cassSession.prepare(
+                    String.format("SELECT bucket, id, source_id, tag_type_name FROM %s.%s WHERE source_id = ? AND tag_type_name = ? AND is_propagated = true ALLOW FILTERING", KEYSPACE, TABLE_NAME)
             );
 
             findADirectTagCompleteRowStmt = cassSession.prepare(
                     "SELECT tag_meta_json, asset_metadata FROM tags.effective_tags WHERE bucket = ? AND id = ? AND tag_type_name = ? AND source_id = ? AND is_propagated = false"
-            );
-
-            findAllPropagatedTagsStmt = cassSession.prepare(
-                    "SELECT bucket, id, source_id, tag_type_name, asset_metadata FROM tags.effective_tags WHERE source_id = ? AND tag_type_name = ? AND is_propagated = true ALLOW FILTERING"
             );
 
         } catch (Exception e) {
@@ -162,6 +175,30 @@ public class TagDAOCassandraImpl implements TagDAO {
         return tags;
     }
 
+
+    @Override
+    public List<AtlasClassification> getPropagatedTagsForVertex(String vertexId) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getPropagatedTagsForVertex");
+        List<AtlasClassification> tags = new ArrayList<>();
+
+        int bucket = calculateBucket(vertexId);
+        try {
+            BoundStatement bound = findAllPropagatedTagsStmt.bind(vertexId, bucket);
+            ResultSet rs = cassSession.execute(bound);
+
+            for (Row row : rs) {
+                AtlasClassification classification = convertToAtlasClassification(row.getString("tag_meta_json"));
+                tags.add(classification);
+            }
+        } catch (Exception e) {
+            throw new AtlasBaseException(String.format("Error fetching tags for asset: %s, bucket: %s", vertexId, bucket), e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+
+        return tags;
+    }
+
     @Override
     public AtlasClassification findDirectTagByVertexIdAndTagTypeName(String vertexId, String tagTypeName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findTagByVertexIdAndTagTypeName");
@@ -216,18 +253,21 @@ public class TagDAOCassandraImpl implements TagDAO {
 
     @Override
     public PaginatedTagResult getPropagationsForAttachmentBatchWithPagination(String sourceVertexId, String tagTypeName,
-                                                                              String pagingStateStr, int pageSize) throws AtlasBaseException {
+                                                       String pagingStateStr, int pageSize) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getVertexIdsForAttachment");
         List<Tag> tags = new ArrayList<>();
         String nextPagingState = null;
 
         try {
-            BoundStatement bound = findAllPropagatedTagsStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
+            BoundStatement bound = findAllPropagatedTagsByTypeNameStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
+
             // Apply the paging state if provided
             if (pagingStateStr != null && !pagingStateStr.isEmpty()) {
                 bound = bound.setPagingState(PagingState.fromString(pagingStateStr));
             }
+
             ResultSet rs = cassSession.execute(bound);
+
             // Save the paging state for the next call
             if (!rs.isFullyFetched()) {
                 // Get the ByteBuffer containing paging state
@@ -248,25 +288,62 @@ public class TagDAOCassandraImpl implements TagDAO {
                 tag.setAssetMetadata(objectMapper.readValue(row.getString("asset_metadata"), Map.class));
                 tags.add(tag);
             }
+
             if (tags.isEmpty()) {
                 LOG.info("No propagated tags found for source_id: {}, tagTypeName: {}", sourceVertexId, tagTypeName);
             }
         } catch (Exception e) {
             throw new AtlasBaseException(String.format("Error fetching tags for source_id: %s and tag type: %s",
-                    sourceVertexId, tagTypeName), e);
+                                       sourceVertexId, tagTypeName), e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
+
         return new PaginatedTagResult(tags, nextPagingState);
+    }
+
+    @Override
+    public List<Tag> getTagPropagationsForAttachment(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getVertexIdsForAttachment");
+        List<Tag> tags = new ArrayList<>();
+        String nextPagingState = null;
+
+        try {
+            BoundStatement bound = findAllPropagatedTagsOptStmt.bind(sourceVertexId, tagTypeName);
+
+            ResultSet rs = cassSession.execute(bound);
+
+            for (Row row : rs) {
+                Tag tag = new Tag();
+                tag.setBucket(row.getInt("bucket"));
+                tag.setVertexId(row.getString("id"));
+                tag.setTagTypeName(row.getString("tag_type_name"));
+                tag.setSourceVertexId(row.getString("source_id"));
+                tags.add(tag);
+            }
+
+            if (tags.isEmpty()) {
+                LOG.info("No propagated assets found for source_id: {}, tagTypeName: {}", sourceVertexId, tagTypeName);
+            }
+        } catch (Exception e) {
+            throw new AtlasBaseException(String.format("Error fetching tags for source_id: %s and tag type: %s",
+                                       sourceVertexId, tagTypeName), e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+
+        return tags;
     }
 
     @Override
     public void deleteDirectTag(String sourceVertexId, AtlasClassification tagToDelete) throws AtlasBaseException {
         // Delete Direct tags
+        // Do not delete row, mark is_active as false
+
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("deleteTags");
 
         try {
-            String delete = String.format(DELETE_TAG,
+            String delete = String.format(DELETE_TAG,KEYSPACE,TABLE_NAME,
                     calculateBucket(sourceVertexId),
                     sourceVertexId,
                     sourceVertexId,
@@ -283,6 +360,9 @@ public class TagDAOCassandraImpl implements TagDAO {
 
     @Override
     public void deleteTags(List<Tag> tagsToDelete) throws AtlasBaseException {
+        // Delete Propagated tags
+        // Do not delete rows, mark is_active as false
+
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("deleteTags");
         StringBuilder batchQuery = new StringBuilder();
         batchQuery.append("BEGIN BATCH ");
@@ -319,7 +399,7 @@ public class TagDAOCassandraImpl implements TagDAO {
 
         for (String propagatedAssetVertexId : propagatedAssetVertexIds) {
             int bucket = calculateBucket(propagatedAssetVertexId);
-            String insert = String.format(INSERT_TAG,
+            String insert = String.format(INSERT_TAG,KEYSPACE,TABLE_NAME,
                     bucket,
                     propagatedAssetVertexId,
                     tagTypeName,
@@ -338,19 +418,19 @@ public class TagDAOCassandraImpl implements TagDAO {
     }
 
     @Override
-    public void putDirectTag(String vertexId,
+    public void putDirectTag(String assetId,
                              String tagTypeName,
                              AtlasClassification tag,
                              Map<String, Object> assetMetadata) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("putDirectTag");
 
-        int bucket = calculateBucket(vertexId);
+        int bucket = calculateBucket(assetId);
 
-        String insert = String.format(INSERT_TAG,
+        String insert = String.format(INSERT_TAG,KEYSPACE, TABLE_NAME,
                 bucket,
-                vertexId,
+                assetId,
                 tagTypeName,
-                vertexId,
+                assetId,
                 false,
                 RequestContext.get().getRequestTime(),
                 AtlasType.toJson(assetMetadata),
@@ -401,27 +481,56 @@ public class TagDAOCassandraImpl implements TagDAO {
         }
     }
 
-    private CqlSession initializeCassandraSession(String hostname) {
-        return CqlSession.builder()
+    public CqlSession initializeCassandraSession(String hostname, String keyspace, String tableName, Map<String, String> replicationConfig) {
+        CqlSession session = CqlSession.builder()
                 .addContactPoint(new InetSocketAddress(hostname, 9042))
                 .withConfigLoader(
                         DriverConfigLoader.programmaticBuilder()
                                 .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, Duration.ofSeconds(10))
                                 .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, Duration.ofSeconds(15))
-                                // Control timeout for requests
                                 .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, Duration.ofSeconds(15))
-                                .withDuration(DefaultDriverOption.CONTROL_CONNECTION_AGREEMENT_TIMEOUT, Duration.ofSeconds(20))
-                                // More specific timeouts for different query types
-                                .withDuration(DefaultDriverOption.REQUEST_TRACE_INTERVAL, Duration.ofMillis(500))
-                                .withDuration(DefaultDriverOption.REQUEST_TRACE_ATTEMPTS, Duration.ofSeconds(20))
                                 .build())
                 .withLocalDatacenter("datacenter1")
-                .withKeyspace(KEYSPACE)
                 .build();
+
+        // Check and create keyspace if it doesn't exist
+        String replicationConfigString = replicationConfig.entrySet().stream()
+                .map(entry -> String.format("'%s': '%s'", entry.getKey(), entry.getValue()))
+                .collect(Collectors.joining(", "));
+        String createKeyspaceQuery = String.format("CREATE KEYSPACE IF NOT EXISTS %s " +
+                "WITH replication = {%s} " +
+                "AND durable_writes = true;", keyspace, replicationConfigString);
+        session.execute(createKeyspaceQuery);
+
+        // Switch to the keyspace
+        session.execute(String.format("USE %s", keyspace));
+
+        // Check and create table if it doesn't exist
+        String createTableQuery = String.format("CREATE TABLE IF NOT EXISTS %s (" +
+                "id text, " +
+                "bucket int, " +
+                "property_name text, " +
+                "tag_type_name text, " +
+                "is_propagated boolean, " +
+                "source_id text, " +
+                "tag_meta_json text, " +
+                "asset_metadata text, " +
+                "updated_at timestamp, " +
+                "is_deleted boolean, " +
+                "PRIMARY KEY ((bucket), id, source_id, tag_type_name, is_deleted)) " +
+                ";", tableName);
+        session.execute(createTableQuery);
+
+        session.execute("CREATE INDEX IF NOT EXISTS ON " + keyspace + "." + tableName + " (is_propagated);");
+        session.execute("CREATE INDEX IF NOT EXISTS ON " + keyspace + "." + tableName + " (tag_type_name);");
+        session.execute("CREATE INDEX IF NOT EXISTS ON " + keyspace + "." + tableName + " (source_id);");
+        session.execute("CREATE INDEX IF NOT EXISTS ON " + keyspace + "." + tableName + " (id);");
+        return session;
     }
 
     public static int calculateBucket(String vertexId) {
         int numBuckets = 2 << BUCKET_POWER; // 2^5=32
         return (int) (Long.parseLong(vertexId) % numBuckets);
     }
+
 }
