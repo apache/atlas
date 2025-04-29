@@ -136,7 +136,7 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
         return tag;
     }
 
-    private void rollbackUpdateOrDelete(String entityGuid, CassandraTagOperation op) {
+    private void rollbackUpdateOrDelete(String entityGuid, CassandraTagOperation op) throws AtlasBaseException {
         switch (op.getOperationType()) {
             case UPDATE, DELETE -> tagDAO.putDirectTag(op.getVertexId(),
                     op.getTagTypeName(),

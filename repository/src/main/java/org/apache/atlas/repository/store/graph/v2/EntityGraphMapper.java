@@ -197,7 +197,7 @@ public class EntityGraphMapper {
     private final TransactionInterceptHelper   transactionInterceptHelper;
     private final EntityGraphRetriever       retrieverNoRelation;
     private final TagDAO                    tagDAO;
-    public static Boolean JANUS_OPTIMISATION_ENABLED;
+    private static final Boolean JANUS_OPTIMISATION_ENABLED = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
 
     @Inject
@@ -220,7 +220,6 @@ public class EntityGraphMapper {
         this.taskManagement       = taskManagement;
         this.transactionInterceptHelper = transactionInterceptHelper;
         this.tagDAO = tagDAO;
-        this.JANUS_OPTIMISATION_ENABLED = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
     }
 
     @VisibleForTesting
@@ -3513,7 +3512,7 @@ public class EntityGraphMapper {
     }
 
     public void handleAddClassifications(final EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
-        if(getjanusOptimisationEnabled()){
+        if(JANUS_OPTIMISATION_ENABLED){
             addClassificationsV2_(context, guid, classifications);
         } else {
             addClassificationsV1(context, guid, classifications);
@@ -4025,7 +4024,7 @@ public class EntityGraphMapper {
     }
 
     public void handleDirectDeleteClassification(String entityGuid, String classificationName) throws AtlasBaseException {
-        if(getjanusOptimisationEnabled()) {
+        if(JANUS_OPTIMISATION_ENABLED) {
             deleteClassificationV2(entityGuid, classificationName);
         } else {
             deleteClassificationV1(entityGuid, classificationName);
@@ -4460,13 +4459,8 @@ public class EntityGraphMapper {
         AtlasPerfTracer.log(perf);
     }
 
-    public boolean getjanusOptimisationEnabled() {
-        this.JANUS_OPTIMISATION_ENABLED = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
-        return this.JANUS_OPTIMISATION_ENABLED;
-    }
-
     public void handleUpdateClassifications(EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
-        if (getjanusOptimisationEnabled()) {
+        if (JANUS_OPTIMISATION_ENABLED) {
             updateClassificationsV2(context, guid, classifications);
         } else {
             updateClassificationsV1(context, guid, classifications);
@@ -5976,8 +5970,7 @@ public class EntityGraphMapper {
         propagationMode = entityRetriever.determinePropagationMode(restrictPropagationThroughLineage,restrictPropagationThroughHierarchy);
         Boolean toExclude = propagationMode == CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE ? true:false;
 
-        List<Tag> tagPropagations = tagDAO.
-                getTagPropagationsForAttachment(sourceEntityVertexId, classificationTypeName);
+        List<Tag> tagPropagations = tagDAO.getTagPropagationsForAttachment(sourceEntityVertexId, classificationTypeName);
         LOG.info("{} entity vertices have classification with typeName {} attached", tagPropagations.size(), classificationTypeName);
 
         Set<String> verticesIdsToAddClassification = tagPropagations.stream()
