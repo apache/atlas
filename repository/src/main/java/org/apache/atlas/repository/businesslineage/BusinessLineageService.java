@@ -115,7 +115,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
 
                 if (StringUtils.isEmpty(edgeLabel)) {
                     AtlasVertex updatedVertex = processProductAssetLink(assetGuid, productGuid, operation, assetDenormAttribute);
-                    if (!updatedVertices.contains(updatedVertex)) {
+                    if (!updatedVertices.contains(updatedVertex) && updatedVertex != null) {
                         updatedVertices.add(updatedVertex);
                     }
                 } else {
@@ -134,12 +134,23 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
 
     public AtlasVertex processProductAssetLink (String assetGuid, String productGuid, BusinessLineageRequest.OperationType operation, String assetDenormAttribute) throws AtlasBaseException {
         try {
-            AtlasVertex assetVertex = entityRetriever.getEntityVertex(assetGuid);
-            AtlasVertex productVertex = entityRetriever.getEntityVertex(productGuid);
+            AtlasVertex assetVertex;
+            AtlasVertex productVertex;
+            try{
+                assetVertex = entityRetriever.getEntityVertex(assetGuid);
+                if (assetVertex == null) {
+                    LOG.warn("Asset not found for assetGuid: {}", assetGuid);
+                    return null;
+                }
 
-
-            if (assetVertex == null || productVertex == null) {
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, assetGuid + " or " + productGuid);
+                productVertex = entityRetriever.getEntityVertex(productGuid);
+                if (productVertex == null) {
+                    LOG.warn("Product not found for productGuid: {}", productGuid);
+                    return null;
+                }
+            } catch (AtlasBaseException e){
+                LOG.warn("Entity Vertex not found", e);
+                return null;
             }
 
             switch (operation) {
@@ -162,11 +173,23 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
 
     public void processProductAssetInputRelation(String assetGuid, String productGuid, BusinessLineageRequest.OperationType operation, String edgeLabel) throws AtlasBaseException, RepositoryException {
         try {
-             AtlasVertex assetVertex = entityRetriever.getEntityVertex(assetGuid);
-             AtlasVertex productVertex = entityRetriever.getEntityVertex(productGuid);
+            AtlasVertex assetVertex;
+            AtlasVertex productVertex;
+            try{
+                assetVertex = entityRetriever.getEntityVertex(assetGuid);
+                if (assetVertex == null) {
+                    LOG.warn("Asset not found for assetGuid: {}", assetGuid);
+                    return;
+                }
 
-            if (assetVertex == null || productVertex == null) {
-                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, assetGuid + " or " + productGuid);
+                productVertex = entityRetriever.getEntityVertex(productGuid);
+                if (productVertex == null) {
+                    LOG.warn("Product not found for productGuid: {}", productGuid);
+                    return;
+                }
+            } catch (AtlasBaseException e){
+                LOG.warn("Entity Vertex not found", e);
+                return;
             }
 
             switch (operation) {

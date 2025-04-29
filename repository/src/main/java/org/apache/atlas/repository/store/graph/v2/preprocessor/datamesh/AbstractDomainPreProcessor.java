@@ -70,7 +70,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
 
     private static final Set<String> POLICY_ATTRIBUTES_FOR_SEARCH = new HashSet<>(Arrays.asList(ATTR_POLICY_RESOURCES));
     private static final Set<String> STAKEHOLDER_ATTRIBUTES_FOR_SEARCH = new HashSet<>(Arrays.asList(ATTR_DOMAIN_QUALIFIED_NAMES, ATTR_DOMAIN_QUALIFIED_NAME));
-    private static final Set<String> DOMAIN_GUID_ATTR = new HashSet<>(Arrays.asList(DOMAIN_GUIDS));
+    private static final Set<String> DOMAIN_GUID_ATTR = new HashSet<>(Arrays.asList(DOMAIN_GUIDS, PRODUCT_GUIDS));
 
     static final Set<String> PARENT_ATTRIBUTES            = new HashSet<>(Arrays.asList(SUPER_DOMAIN_QN_ATTR, PARENT_DOMAIN_QN_ATTR));
 
@@ -287,11 +287,11 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         }
     }
 
-    protected Boolean hasLinkedAssets(String domainGuid) throws AtlasBaseException {
+    protected Boolean hasLinkedAssets(String entityGuid, String attribute) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("isAssetLinked");
         try {
             List<Map<String, Object>> mustClauseList = new ArrayList<>();
-            mustClauseList.add(mapOf("term", mapOf(DOMAIN_GUIDS, domainGuid)));
+            mustClauseList.add(mapOf("term", mapOf(attribute, entityGuid)));
 
             Map<String, Object> bool = new HashMap<>();
             bool.put("must", mustClauseList);
