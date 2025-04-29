@@ -158,7 +158,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             // Find all propagated tags optimized
             SimpleStatement findAllPropagatedTagsOptStatement = SimpleStatement.builder(
                             String.format("SELECT bucket, id, source_id, tag_type_name FROM %s.%s " +
-                                            "WHERE bucket = ? AND source_id = ? AND tag_type_name = ? AND is_propagated = true AND is_deleted = false ALLOW FILTERING",
+                                            "WHERE source_id = ? AND tag_type_name = ? AND is_propagated = true AND is_deleted = false ALLOW FILTERING",
                                     KEYSPACE, TABLE_NAME))
                     .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
                     .build();
@@ -281,7 +281,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
         try {
             int bucket = calculateBucket(assetId);
-
             // Use prepared statement with bound values
             BoundStatement bound = insertTagStmt.bind()
                     .setInt(0, bucket)                                    // bucket
@@ -572,10 +571,11 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             for (Tag tagToDelete : tagsToDelete) {
                 // Create bound statement for each delete
                 BoundStatement bound = deleteTagStmt.bind()
-                        .setInt(0, tagToDelete.getBucket())
-                        .setString(1, tagToDelete.getVertexId())
-                        .setString(2, tagToDelete.getSourceVertexId())
-                        .setString(3, tagToDelete.getTagTypeName());
+                        .setInstant(0, Instant.ofEpochMilli(RequestContext.get().getRequestTime()))   // updated_at
+                        .setInt(1, tagToDelete.getBucket())            // bucket
+                        .setString(2, tagToDelete.getVertexId())       // id
+                        .setString(3, tagToDelete.getSourceVertexId()) // source_id
+                        .setString(4, tagToDelete.getTagTypeName());   // tag_type_name
 
                 // Add to batch
                 batch = batch.add(bound);
@@ -629,8 +629,8 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                     BoundStatement bound = insertTagStmt.bind()
                             .setInt(0, bucket)
                             .setString(1, propagatedAssetVertexId)
-                            .setString(2, tagTypeName)
-                            .setString(3, sourceAssetId)
+                            .setString(2, sourceAssetId)
+                            .setString(3, tagTypeName)
                             .setBoolean(4, true)  // is_propagated
                             .setInstant(5, Instant.ofEpochMilli(RequestContext.get().getRequestTime()))
                             .setString(6, AtlasType.toJson(assetMinAttrsMap.get(propagatedAssetVertexId)))
