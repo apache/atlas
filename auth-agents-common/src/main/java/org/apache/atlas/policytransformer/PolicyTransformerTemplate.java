@@ -18,8 +18,8 @@
 
 package org.apache.atlas.policytransformer;
 
+import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.type.AtlasType;
-import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -62,6 +62,7 @@ public class PolicyTransformerTemplate {
                 templatePolicy.setPolicyType((String) policy.get("policyType"));
                 templatePolicy.setPolicyResourceCategory((String) policy.get("policyResourceCategory"));
                 templatePolicy.setPolicyServiceName((String) policy.get("policyServiceName"));
+                templatePolicy.setPolicyConditions((List<Map>) policy.get("policyConditions"));
 
                 policies.add(templatePolicy);
             }
@@ -76,6 +77,7 @@ public class PolicyTransformerTemplate {
         private List<String> resources;
         private List<String> actions;
         private String policyResourceCategory;
+        private List<AtlasStruct> policyConditions = new ArrayList<>();
 
         public String getPolicyServiceName() {
             return policyServiceName;
@@ -115,6 +117,18 @@ public class PolicyTransformerTemplate {
 
         public void setActions(List<String> actions) {
             this.actions = actions;
+        }
+
+        public List<AtlasStruct> getPolicyConditions() {
+            return policyConditions;
+        }
+
+        public void setPolicyConditions(List<Map> policyConditions) {
+            if (policyConditions != null) {
+                for (Map condition: policyConditions) {
+                    this.policyConditions.add(new AtlasStruct(condition));
+                }
+            }
         }
     }
 }
