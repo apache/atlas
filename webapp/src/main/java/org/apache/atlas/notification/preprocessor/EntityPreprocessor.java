@@ -34,6 +34,7 @@ public abstract class EntityPreprocessor {
     public static final String TYPE_HIVE_DB_DDL         = "hive_db_ddl";
     public static final String TYPE_HIVE_TABLE_DDL      = "hive_table_ddl";
     public static final String TYPE_HIVE_TABLE          = "hive_table";
+    public static final String TYPE_SPARK_PROCESS       = "spark_process";
     public static final String TYPE_RDBMS_INSTANCE      = "rdbms_instance";
     public static final String TYPE_RDBMS_DB            = "rdbms_db";
     public static final String TYPE_RDBMS_TABLE         = "rdbms_table";
@@ -42,6 +43,8 @@ public abstract class EntityPreprocessor {
     public static final String TYPE_RDBMS_FOREIGN_KEY   = "rdbms_foreign_key";
 
     public static final String ATTRIBUTE_COLUMNS        = "columns";
+    public static final String ATTRIBUTE_DETAILS        = "details";
+    public static final String ATTRIBUTE_SPARKPLANDESCRIPTION = "sparkPlanDescription";
     public static final String ATTRIBUTE_INPUTS         = "inputs";
     public static final String ATTRIBUTE_OUTPUTS        = "outputs";
     public static final String ATTRIBUTE_PARTITION_KEYS = "partitionKeys";
@@ -66,6 +69,7 @@ public abstract class EntityPreprocessor {
     private static final Map<String, EntityPreprocessor> HIVE_PREPROCESSOR_MAP      = new HashMap<>();
     private static final Map<String, EntityPreprocessor> RDBMS_PREPROCESSOR_MAP     = new HashMap<>();
     private static final Map<String, EntityPreprocessor> AWS_S3_V2_PREPROCESSOR_MAP = new HashMap<>();
+    private static final Map<String, EntityPreprocessor> SPARK_PREPROCESSOR_MAP     = new HashMap<>();
 
     private final String typeName;
 
@@ -83,6 +87,10 @@ public abstract class EntityPreprocessor {
 
     public static EntityPreprocessor getS3V2Preprocessor(String typeName) {
         return typeName != null ? AWS_S3_V2_PREPROCESSOR_MAP.get(typeName) : null;
+    }
+
+    public static EntityPreprocessor getSparkPreprocessor(String typeName) {
+        return typeName != null ? SPARK_PREPROCESSOR_MAP.get(typeName) : null;
     }
 
     public static String getQualifiedName(AtlasEntity entity) {
@@ -175,6 +183,10 @@ public abstract class EntityPreprocessor {
                 new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor()
         };
 
+        EntityPreprocessor[] sparkPreprocessors = new EntityPreprocessor[]{
+                new SparkPreprocessor.SparkProcessPreprocessor()
+        };
+
         for (EntityPreprocessor preprocessor : hivePreprocessors) {
             HIVE_PREPROCESSOR_MAP.put(preprocessor.getTypeName(), preprocessor);
         }
@@ -185,6 +197,10 @@ public abstract class EntityPreprocessor {
 
         for (EntityPreprocessor preprocessor : s3V2Preprocessors) {
             AWS_S3_V2_PREPROCESSOR_MAP.put(preprocessor.getTypeName(), preprocessor);
+        }
+
+        for (EntityPreprocessor preprocessor : sparkPreprocessors) {
+            SPARK_PREPROCESSOR_MAP.put(preprocessor.getTypeName(), preprocessor);
         }
     }
 }
