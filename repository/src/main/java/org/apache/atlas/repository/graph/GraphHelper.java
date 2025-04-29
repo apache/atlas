@@ -940,7 +940,7 @@ public final class GraphHelper {
                                      .map(AtlasClassification::getTypeName)
                                      .collect(Collectors.toList());
             } else {
-                ret = tagDAOCassandra.getPropagatedTagsForVertex(entityVertex.getIdForDisplay())
+                ret = tagDAOCassandra.findByVertexIdAndPropagated(entityVertex.getIdForDisplay())
                                      .stream()
                                      .map(AtlasClassification::getTypeName)
                                      .collect(Collectors.toList());

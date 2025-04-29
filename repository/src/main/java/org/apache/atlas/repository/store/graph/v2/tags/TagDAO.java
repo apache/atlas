@@ -13,10 +13,12 @@ public interface TagDAO {
     List<AtlasClassification> getAllDirectTagsForVertex(String vertexId) throws AtlasBaseException;
     List<AtlasClassification> getTagsForVertex(String vertexId) throws AtlasBaseException;
 
+    Tag findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(String vertexId, String tagTypeName) throws AtlasBaseException;
+
     List<Tag> getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException;
     List<Tag> getTagPropagationsForAttachment(String sourceVertexId, String tagTypeName) throws AtlasBaseException;
 
-    List<AtlasClassification> getPropagatedTagsForVertex(String vertexId) throws AtlasBaseException;
+    List<AtlasClassification> findByVertexIdAndPropagated(String vertexId) throws AtlasBaseException;
 
     AtlasClassification findDirectTagByVertexIdAndTagTypeName(String assetVertexId, String tagTypeName) throws AtlasBaseException;
 
@@ -24,11 +26,11 @@ public interface TagDAO {
                            String tagTypeName,
                            Set<String> propagatedAssetVertexIds,
                            Map<String, Map<String, Object>> assetMinAttrsMap,
-                           AtlasClassification tag);
+                           AtlasClassification tag) throws AtlasBaseException;
 
     void putDirectTag(String assetId, String tagTypeName,
                       AtlasClassification tag,
-                      Map<String, Object> assetMetadata);
+                      Map<String, Object> assetMetadata) throws AtlasBaseException;
 
     void deleteDirectTag(String sourceVertexId, AtlasClassification tagToDelete) throws AtlasBaseException;
     void deleteTags(List<Tag> tagsToDelete) throws AtlasBaseException;

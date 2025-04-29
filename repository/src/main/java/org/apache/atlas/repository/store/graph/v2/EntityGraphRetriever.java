@@ -17,12 +17,15 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.Tag;
 import org.apache.atlas.model.TimeBoundary;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.glossary.enums.AtlasTermAssignmentStatus;
@@ -51,6 +54,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.*;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.type.AtlasArrayType;
@@ -432,6 +436,11 @@ public class EntityGraphRetriever {
         return ret;
     }
 
+    public AtlasClassification toAtlasClassification(Tag tag) throws AtlasBaseException {
+        AtlasClassification classification = TagDAOCassandraImpl.toAtlasClassification(tag.getTagMetaJson());
+        return classification;
+    }
+
     public AtlasVertex getReferencedEntityVertex(AtlasEdge edge, AtlasRelationshipEdgeDirection relationshipDirection, AtlasVertex parentVertex) throws AtlasBaseException {
         AtlasVertex entityVertex = null;
 
@@ -598,9 +607,9 @@ public class EntityGraphRetriever {
     public String determinePropagationMode(Boolean currentRestrictPropagationThroughLineage, Boolean currentRestrictPropagationThroughHierarchy) throws AtlasBaseException {
         String propagationMode;
 
-        if (Boolean.TRUE.equals(currentRestrictPropagationThroughLineage) && Boolean.TRUE.equals(currentRestrictPropagationThroughHierarchy)) {
-            throw new AtlasBaseException("Both restrictPropagationThroughLineage and restrictPropagationThroughHierarchy cannot be true simultaneously.");
-        } else if (Boolean.TRUE.equals(currentRestrictPropagationThroughLineage)) {
+        validatePropagationRestrictionOptions(currentRestrictPropagationThroughLineage, currentRestrictPropagationThroughHierarchy);
+
+        if (Boolean.TRUE.equals(currentRestrictPropagationThroughLineage)) {
             propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE;
         } else if (Boolean.TRUE.equals(currentRestrictPropagationThroughHierarchy)) {
             propagationMode = CLASSIFICATION_PROPAGATION_MODE_RESTRICT_HIERARCHY;
@@ -610,6 +619,12 @@ public class EntityGraphRetriever {
 
         return propagationMode;
     }
+
+    public void validatePropagationRestrictionOptions(Boolean currentRestrictPropagationThroughLineage, Boolean currentRestrictPropagationThroughHierarchy) throws AtlasBaseException {
+        if (Boolean.TRUE.equals(currentRestrictPropagationThroughLineage) && Boolean.TRUE.equals(currentRestrictPropagationThroughHierarchy))
+            throw new AtlasBaseException("Both restrictPropagationThroughLineage and restrictPropagationThroughHierarchy cannot be true simultaneously.");
+    }
+
     public List<AtlasVertex> getImpactedVerticesV2(AtlasVertex entityVertex) {
         return getImpactedVerticesV2(entityVertex, (List<String>) null,false);
     }
