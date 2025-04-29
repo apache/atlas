@@ -395,7 +395,7 @@ public class TagDAOCassandraImpl implements TagDAO {
             classification.setTypeName((String) jsonMap.get("typeName"));
             classification.setEntityGuid((String) jsonMap.get("entityGuid"));
             classification.setPropagate((Boolean) jsonMap.get("propagate"));
-            classification.setRemovePropagationsOnEntityDelete((Boolean) jsonMap.get("removePropagations"));
+            classification.setRemovePropagationsOnEntityDelete((Boolean) jsonMap.get("removePropagationsOnEntityDelete"));
             classification.setRestrictPropagationThroughLineage((Boolean) jsonMap.get("restrictPropagationThroughLineage"));
             classification.setRestrictPropagationThroughHierarchy((Boolean) jsonMap.get("restrictPropagationThroughHierarchy"));
 

@@ -5359,6 +5359,7 @@ public class EntityGraphMapper {
 
             int totalUpdated = 0;
             boolean done = false;
+            Map<String, Map<String, Object>> assetMinAttrsMap = new HashMap<>();
 
             // fetch propagated‑tag attachments in batches
             PaginatedTagResult paginatedResult = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
@@ -5387,6 +5388,16 @@ public class EntityGraphMapper {
                         .map(Tag::getVertexId)
                         .toList();
 
+                // print vertexIds in for loop
+                for (String vertexId : vertexIds) {
+                    LOG.info("-----------Vertex ID: {}", vertexId);
+                }
+
+                //push them to cassandra
+                AtlasClassification tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
+                tagDAO.putPropagatedTags(entityVertex.getIdForDisplay(), tagTypeName, new HashSet<>(vertexIds), assetMinAttrsMap, tag);
+
+
                 // compute fresh classification‑text de‑norm attributes for this batch
                 Map<String, Map<String, Object>> deNormMap =
                         TagDeNormAttributesUtil.getPropagatedTagDeNormForUpdateProp(
@@ -5396,6 +5407,8 @@ public class EntityGraphMapper {
                                 typeRegistry,
                                 fullTextMapperV2
                         );
+
+
 
                 // push them to ES
                 ESConnector.writeTagProperties(deNormMap);
