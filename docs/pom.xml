@@ -105,7 +105,6 @@
                                 <resource>
                                     <directory>${basedir}</directory>
                                     <excludes>
-                                        <exclude>package-lock.json</exclude>
                                         <exclude>.docz/**</exclude>
                                         <exclude>node_modules/**</exclude>
                                         <exclude>target/**</exclude>
@@ -138,7 +137,6 @@
                         </goals>
                         <phase>pre-site</phase>
                         <configuration>
-                            <arguments>install --no-package-lock</arguments>
                             <arguments>install</arguments>
                         </configuration>
                     </execution>
