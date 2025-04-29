@@ -336,7 +336,7 @@ public class EntityGraphMapper {
 
         setCustomAttributes(ret, entity);
 
-        if (RequestContext.getIsUpdateNotification() || CollectionUtils.isNotEmpty(entity.getLabels())) {
+        if (RequestContext.get().getIsUpdateNotification() || CollectionUtils.isNotEmpty(entity.getLabels())) {
             setLabels(ret, entity.getLabels());
         }
 

@@ -46,10 +46,10 @@ public class RequestContext {
 
     private static final ThreadLocal<RequestContext> CURRENT_CONTEXT           = new ThreadLocal<>();
     private static final Set<RequestContext>         ACTIVE_REQUESTS           = new HashSet<>();
-    private static final ThreadLocal<Boolean>        isUpdateNotification      = new ThreadLocal<>();
     private static final boolean                     IS_METRICS_ENABLED = METRICS.isDebugEnabled();
 
     private final long                                   requestTime          = System.currentTimeMillis();
+    private       Boolean                                isUpdateNotification = false;
     private final Map<String, AtlasEntityHeader>         updatedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         deletedEntities      = new HashMap<>();
     private final Map<String, AtlasEntity>               entityCache          = new HashMap<>();
@@ -162,12 +162,12 @@ public class RequestContext {
         return ret;
     }
 
-    public static Boolean getIsUpdateNotification() {
-        return (isUpdateNotification.get() == null) ? Boolean.FALSE : isUpdateNotification.get();
+    public Boolean getIsUpdateNotification() {
+        return (isUpdateNotification == null) ? Boolean.FALSE : isUpdateNotification;
     }
 
-    public static void setIsUpdateNotification(Boolean value) {
-        isUpdateNotification.set(value);
+    public void setIsUpdateNotification(Boolean value) {
+        isUpdateNotification = value;
     }
 
     public String getUser() {
