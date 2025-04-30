@@ -74,7 +74,7 @@ public class TagDeNormAttributesUtil {
         for (String vertexId : entityVertexIds) {
             // Fetch all classifications (direct + propagated) currently attached to this entity
             List<AtlasClassification> currentTags =
-                    tagDAO.getTagsForVertex(vertexId);
+                    tagDAO.getPropagationsForAttachment(vertexId, sourceEntityGuid);
 
             Map<String, Object> deNormAttrs = new HashMap<>();
             if (CollectionUtils.isEmpty(currentTags)) {
