@@ -34,6 +34,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.store.graph.v2.CassandraConnector.CASSANDRA_HOSTNAME_PROPERTY;
+import static org.apache.atlas.repository.store.graph.v2.CassandraConnector.CASSANDRA_REPLICATION_FACTOR_PROPERTY;
 import static org.apache.atlas.repository.store.graph.v2.tags.CassandraTagConfig.*;
 
 /**
@@ -75,7 +76,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     public TagDAOCassandraImpl() throws AtlasBaseException {
         try {
             String hostname = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, "localhost");
-            Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", "1");
+            Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", ApplicationProperties.get().getString(CASSANDRA_REPLICATION_FACTOR_PROPERTY, "1"));
 
             DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
                     // Connection timeouts
