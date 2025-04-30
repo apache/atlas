@@ -169,7 +169,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.atlasAlternateChangeNotifier = atlasAlternateChangeNotifier;
         this.taskNotificationSender = taskNotificationSender;
         try {
-            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
+            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null, entityRetriever);
         } catch (AtlasException e) {
             e.printStackTrace();
         }
@@ -425,7 +425,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             LOG.debug("==> checkState({})", request);
         }
 
-        EntityStateChecker entityStateChecker = new EntityStateChecker(graph, typeRegistry);
+        EntityStateChecker entityStateChecker = new EntityStateChecker(graph, typeRegistry, entityRetriever);
 
         AtlasCheckStateResult ret = entityStateChecker.checkState(request);
 
@@ -1093,7 +1093,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         // validate if entity, not already associated with classifications
         validateEntityAssociations(guid, classifications);
 
-        entityGraphMapper.addClassifications(context, guid, classifications);
+        entityGraphMapper.handleAddClassifications(context, guid, classifications);
     }
 
     @Override
@@ -1140,7 +1140,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             validateAndNormalize(classification);
         }
 
-        entityGraphMapper.updateClassifications(context, guid, classifications);
+        entityGraphMapper.handleUpdateClassifications(context, guid, classifications);
 
         AtlasPerfTracer.log(perf);
     }
@@ -1199,7 +1199,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         for (String guid : validGuids) {
-            entityGraphMapper.addClassifications(context, guid, classifications);
+            entityGraphMapper.handleAddClassifications(context, guid, classifications);
         }
     }
 

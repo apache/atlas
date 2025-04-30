@@ -43,7 +43,6 @@ import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery.Result;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.userprofile.UserProfileService;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.searchlog.ESSearchLogger;
@@ -111,7 +110,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                                   StatsClient statsClient,
                                   EntityGraphRetriever entityRetriever) throws AtlasException {
         this(typeRegistry, graph, indexer, searchTracker, userProfileService, statsClient);
-
         this.entityRetriever          = entityRetriever;
     }
 
@@ -122,7 +120,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                            UserProfileService userProfileService,
                            StatsClient statsClient) throws AtlasException {
         this.graph                    = graph;
-        this.entityRetriever          = new EntityGraphRetriever(this.graph, typeRegistry);
         this.indexer                  = indexer;
         this.searchTracker            = searchTracker;
         this.gremlinQueryProvider     = AtlasGremlinQueryProvider.INSTANCE;
@@ -292,7 +289,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                     }
 
                     if (classificationNames != null) {
-                        List<String> traitNames = GraphHelper.getTraitNames(vertex);
+                        List<String> traitNames = GraphHelper.handleGetTraitNames(vertex);
 
                         if (CollectionUtils.isEmpty(traitNames) ||
                                 !CollectionUtils.containsAny(classificationNames, traitNames)) {
@@ -508,7 +505,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(atlasVertex, resultAttributes);
 
                 if(searchParameters.getIncludeClassificationAttributes()) {
-                    entity.setClassifications(entityRetriever.getAllClassifications(atlasVertex));
+                    entity.setClassifications(entityRetriever.handleGetAllClassifications(atlasVertex));
                 }
 
                 ret.addEntity(entity);
@@ -664,7 +661,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(vertex, searchParameters.getAttributes());
 
                 if (searchParameters.getIncludeClassificationAttributes()) {
-                    entity.setClassifications(entityRetriever.getAllClassifications(vertex));
+                    entity.setClassifications(entityRetriever.handleGetAllClassifications(vertex));
                 }
                 resultList.add(entity);
             }

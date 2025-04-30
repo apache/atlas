@@ -45,7 +45,6 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.repository.store.graph.v2.tasks.TaskUtil;
 import org.apache.atlas.tasks.TaskManagement;
@@ -74,7 +73,6 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_REFRESH_PROPAGATION;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask.PARAM_CLASSIFICATION_VERTEX_ID;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask.PARAM_ENTITY_GUID;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
@@ -137,7 +135,7 @@ public abstract class DeleteHandlerV1 {
                 AtlasEntityHeader entityHeader = vertexInfo.getEntity();
 
                 if (requestContext.isPurgeRequested()) {
-                    entityHeader.setClassifications(entityRetriever.getAllClassifications(vertexInfo.getVertex()));
+                    entityHeader.setClassifications(entityRetriever.handleGetAllClassifications(vertexInfo.getVertex()));
                 }
 
                 requestContext.recordEntityDelete(entityHeader);
@@ -1352,7 +1350,6 @@ public abstract class DeleteHandlerV1 {
         Map<String, Object> taskParams  = new HashMap<String, Object>() {{
             put(PARAM_ENTITY_GUID, entityGuid);
             put(TASK_CLASSIFICATION_TYPENAME, classificationTypeName);
-            put("newMode", true);
         }};
 
         AtlasTask task = taskManagement.createTaskV2(taskType, currentUser, taskParams, classificationTypeName, entityGuid);

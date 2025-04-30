@@ -40,13 +40,7 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
-import org.apache.atlas.repository.store.graph.v2.BulkRequestContext;
-import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.repository.store.graph.v2.EntityStream;
-import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
+import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
@@ -98,7 +92,6 @@ public class EntityREST {
 
     public static final String PREFIX_ATTR  = "attr:";
     public static final String PREFIX_ATTR_ = "attr_";
-    public static final String QUALIFIED_NAME  = "qualifiedName";
     private static final int HUNDRED_THOUSAND = 100000;
     private static final int TWO_MILLION = HUNDRED_THOUSAND * 10 * 2;
     private static  final int  ENTITIES_ALLOWED_IN_BULK = AtlasConfiguration.ATLAS_BULK_API_MAX_ENTITIES_ALLOWED.getInt();
@@ -114,22 +107,16 @@ public class EntityREST {
     private final AtlasTypeRegistry      typeRegistry;
     private final AtlasEntityStore       entitiesStore;
     private final ESBasedAuditRepository  esBasedAuditRepository;
-    private final EntityGraphMapper entityGraphMapper;
-    private final IAtlasEntityChangeNotifier entityChangeNotifier;
-    private final AtlasInstanceConverter instanceConverter;
     private final EntityGraphRetriever entityGraphRetriever;
+    private final EntityMutationService entityMutationService;
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository,
-                      EntityGraphMapper entityGraphMapper, IAtlasEntityChangeNotifier entityChangeNotifier, AtlasInstanceConverter instanceConverter,
-                      EntityGraphRetriever retriever) {
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository, EntityGraphRetriever retriever, EntityMutationService entityMutationService) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
         this.esBasedAuditRepository = esBasedAuditRepository;
-        this.entityGraphMapper = entityGraphMapper;
-        this.entityChangeNotifier = entityChangeNotifier;
-        this.instanceConverter = instanceConverter;
         this.entityGraphRetriever = retriever;
+        this.entityMutationService = entityMutationService;
     }
 
     /**
@@ -862,11 +849,12 @@ public class EntityREST {
                     .setReplaceBusinessAttributes(replaceBusinessAttributes)
                     .setOverwriteBusinessAttributes(isOverwriteBusinessAttributes)
                     .build();
-            return entitiesStore.createOrUpdate(entityStream, context);
+            return entityMutationService.createOrUpdate(entityStream, context);
         } finally {
             AtlasPerfTracer.log(perf);
         }
     }
+
 
     public static void validateAttributeLength(final List<AtlasEntity> entities) throws AtlasBaseException {
         List<String> errorMessages = new ArrayList<>();
@@ -1206,7 +1194,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getEntityHeaders(" + tagUpdateStartTime + ", " + tagUpdateEndTime + ")");
             }
 
-            ClassificationAssociator.Retriever associator = new ClassificationAssociator.Retriever(typeRegistry, esBasedAuditRepository);
+            ClassificationAssociator.Retriever associator = new ClassificationAssociator.Retriever(typeRegistry, esBasedAuditRepository, entityGraphRetriever);
             return associator.get(tagUpdateStartTime, tagUpdateEndTime);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1226,8 +1214,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.setClassifications(" + overrideClassifications +")");
             }
 
-            ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(typeRegistry, entitiesStore, entityGraphMapper, entityChangeNotifier, instanceConverter, entityGraphRetriever);
-            associator.setClassifications(entityHeaders.getGuidHeaderMap(), overrideClassifications);
+            entityMutationService.setClassifications(entityHeaders, overrideClassifications);
         } finally {
             AtlasPerfTracer.log(perf);
         }

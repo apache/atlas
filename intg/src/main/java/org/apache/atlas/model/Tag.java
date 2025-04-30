@@ -34,7 +34,7 @@ public class Tag {
     Date updatedAt;
 
     @JsonProperty("tag_meta_json")
-    boolean tagMeatdata;
+    Map<String, Object> tagMetaJson;
 
     @JsonProperty("asset_metadata")
     Map<String, Object> assetMetadata;
@@ -93,5 +93,13 @@ public class Tag {
 
     public void setAssetMetadata(Map<String, Object> assetMetadata) {
         this.assetMetadata = assetMetadata;
+    }
+
+    public Map<String, Object> getTagMetaJson() {
+        return tagMetaJson;
+    }
+
+    public void setTagMetaJson(Map<String, Object> tagMetaJson) {
+        this.tagMetaJson = tagMetaJson;
     }
 }

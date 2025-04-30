@@ -58,7 +58,7 @@ public class DataDomainPreProcessor extends AbstractDomainPreProcessor {
                                   AtlasGraph graph) {
         super(typeRegistry, entityRetriever, graph);
         this.updatedPolicyResources = new HashMap<>();
-        this.retrieverNoRelation = new EntityGraphRetriever(graph, typeRegistry, true);
+        this.retrieverNoRelation = new EntityGraphRetriever(entityRetriever, true);
         this.updatedDomainQualifiedNames = new HashMap<>();
     }
 

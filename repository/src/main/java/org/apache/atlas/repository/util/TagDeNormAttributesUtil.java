@@ -35,8 +35,7 @@ public class TagDeNormAttributesUtil {
 
     private static final Logger LOG = LoggerFactory.getLogger(TagDeNormAttributesUtil.class);
 
-    public static Map<String, Object> getDirectTagAttachmentAttributesForAddTag(final TagDAO tagDAO,
-                                                                                AtlasClassification tagAdded,
+    public static Map<String, Object> getDirectTagAttachmentAttributesForAddTag(AtlasClassification tagAdded,
                                                                                 List<AtlasClassification> currentTags,
                                                                                 AtlasTypeRegistry typeRegistry,
                                                                                 IFullTextMapper fullTextMapperV2) throws AtlasBaseException {

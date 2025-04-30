@@ -36,6 +36,7 @@ public class CassandraConnector {
     public static final String CASSANDRA_NEW_KEYSPACE_PROPERTY = "atlas.graph.new.keyspace";
     public static final String CASSANDRA_NEW_KEYSPACE_VERTEX_TABLE_NAME_PROPERTY = "atlas.graph.new.keyspace.vertex.table.name";
     public static final String CASSANDRA_HOSTNAME_PROPERTY = "atlas.graph.storage.hostname";
+    public static final String CASSANDRA_REPLICATION_FACTOR_PROPERTY = "atlas.graph.storage.replication-factor";
     public static final String CASSANDRA_CLUSTERNAME_PROPERTY = "atlas.graph.storage.clustername";
 
     private static CqlSession cassSession;
