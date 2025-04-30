@@ -5388,11 +5388,6 @@ public class EntityGraphMapper {
                         .map(Tag::getVertexId)
                         .toList();
 
-                // print vertexIds in for loop
-                for (String vertexId : vertexIds) {
-                    LOG.info("-----------Vertex ID: {}", vertexId);
-                }
-
                 //push them to cassandra
                 AtlasClassification tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
                 tagDAO.putPropagatedTags(entityVertex.getIdForDisplay(), tagTypeName, new HashSet<>(vertexIds), assetMinAttrsMap, tag);
