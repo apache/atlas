@@ -676,7 +676,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         classification.setTypeName((String) tagMetaJsonMap.get("typeName"));
         classification.setEntityGuid((String) tagMetaJsonMap.get("entityGuid"));
         classification.setPropagate((Boolean) tagMetaJsonMap.get("propagate"));
-        classification.setRemovePropagationsOnEntityDelete((Boolean) tagMetaJsonMap.get("removePropagations"));
+        classification.setRemovePropagationsOnEntityDelete((Boolean) tagMetaJsonMap.get("removePropagationsOnEntityDelete"));
         classification.setRestrictPropagationThroughLineage((Boolean) tagMetaJsonMap.get("restrictPropagationThroughLineage"));
         classification.setRestrictPropagationThroughHierarchy((Boolean) tagMetaJsonMap.get("restrictPropagationThroughHierarchy"));
 
