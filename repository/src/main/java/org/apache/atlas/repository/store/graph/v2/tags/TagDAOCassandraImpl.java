@@ -27,10 +27,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.store.graph.v2.CassandraConnector.CASSANDRA_HOSTNAME_PROPERTY;
@@ -443,39 +440,51 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     }
 
     @Override
-    public List<Tag> getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
-        PaginatedTagResult result = getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, null, 100);
-        return result.getTags();
+    public PaginatedTagResult getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
+        // Track all pages using a static variable per tag type and source
+        String cacheKey = sourceVertexId + "|" + tagTypeName;
+        String storedPagingState = PagingStateCache.getState(cacheKey);
+
+        PaginatedTagResult result = getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, storedPagingState, 100, cacheKey);
+
+        // Store paging state for next call
+        PagingStateCache.setState(cacheKey, result.getPagingState());
+
+        // Return empty list when we've reached the end
+        if (result.getTags().isEmpty() && result.getPagingState() == null) {
+            LOG.info("No more tags found for source_id: {}, tagTypeName: {}", sourceVertexId, tagTypeName);
+        }
+
+        return result;
     }
 
     @Override
     public PaginatedTagResult getPropagationsForAttachmentBatchWithPagination(String sourceVertexId, String tagTypeName,
-                                                       String pagingStateStr, int pageSize) throws AtlasBaseException {
+                                                                              String pagingStateStr, int pageSize, String cacheKey) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getVertexIdsForAttachment");
         List<Tag> tags = new ArrayList<>();
         String nextPagingState = null;
-
+        Boolean done = false;
         try {
-            BoundStatement bound = findAllPropagatedTagsByTypeNameStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
+            BoundStatement bound = findAllPropagatedTagsStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
 
             // Apply the paging state if provided
             if (pagingStateStr != null && !pagingStateStr.isEmpty()) {
-                bound = bound.setPagingState(PagingState.fromString(pagingStateStr));
-            }
-
-            ResultSet rs = executeWithRetry(bound);
-
-            // Save the paging state for the next call
-            if (!rs.isFullyFetched()) {
-                // Get the ByteBuffer containing paging state
-                ByteBuffer pagingStateBytes = rs.getExecutionInfo().getPagingState();
-                if (pagingStateBytes != null) {
-                    // Create a PagingState from the ByteBuffer
-                    PagingState pagingState = PagingState.fromBytes(pagingStateBytes.array());
-                    nextPagingState = pagingState.toString();
+                try {
+                    // For Driver 4.13.0, convert the Base64 string back to ByteBuffer
+                    byte[] decoded = Base64.getDecoder().decode(pagingStateStr);
+                    ByteBuffer pagingStateBuffer = ByteBuffer.wrap(decoded);
+                    bound = bound.setPagingState(pagingStateBuffer);
+                } catch (Exception e) {
+                    LOG.warn("Failed to decode paging state string", e);
+                    // Continue without paging state on error
                 }
             }
 
+            ResultSet rs = cassSession.execute(bound);
+
+            // Process only up to pageSize rows
+            int count = 0;
             for (Row row : rs) {
                 Tag tag = new Tag();
                 tag.setBucket(row.getInt("bucket"));
@@ -484,6 +493,41 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 tag.setSourceVertexId(row.getString("source_id"));
                 tag.setAssetMetadata(objectMapper.readValue(row.getString("asset_metadata"), Map.class));
                 tags.add(tag);
+
+                count++;
+                if (count >= pageSize) {
+                    break;
+                }
+            }
+
+            // Only set paging state if we got a full page of results
+            if (count >= pageSize && !rs.isFullyFetched()) {
+                try {
+                    // Get the paging state from the result set
+                    ByteBuffer pagingStateBuffer = rs.getExecutionInfo().getPagingState();
+                    if (pagingStateBuffer != null) {
+                        // Make a copy of the buffer to avoid position issues
+                        ByteBuffer copy = ByteBuffer.allocate(pagingStateBuffer.remaining());
+                        copy.put(pagingStateBuffer.duplicate());
+                        copy.flip();
+
+                        // Encode as Base64 string for safe transport
+                        byte[] bytes = new byte[copy.remaining()];
+                        copy.get(bytes);
+                        nextPagingState = Base64.getEncoder().encodeToString(bytes);
+                    }
+                } catch (Exception e) {
+                    LOG.warn("Could not process paging state, pagination may not work correctly", e);
+                    nextPagingState = null;
+                    PagingStateCache.setState(cacheKey, nextPagingState);
+                }
+            } else {
+                // We've reached the end - explicitly set nextPagingState to null
+                nextPagingState = null;
+                PagingStateCache.setState(cacheKey, nextPagingState);
+                done = true;
+                LOG.info("Reached end of results for source_id: {}, tagTypeName: {}, fetched {} rows",
+                        sourceVertexId, tagTypeName, count);
             }
 
             if (tags.isEmpty()) {
@@ -491,12 +535,12 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             }
         } catch (Exception e) {
             throw new AtlasBaseException(String.format("Error fetching tags for source_id: %s and tag type: %s",
-                                       sourceVertexId, tagTypeName), e);
+                    sourceVertexId, tagTypeName), e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
 
-        return new PaginatedTagResult(tags, nextPagingState);
+        return new PaginatedTagResult(tags, nextPagingState, done);
     }
 
     @Override
@@ -729,6 +773,22 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 }
             } catch (Exception e) {
                 LOG.error("Error closing Cassandra session", e);
+            }
+        }
+    }
+
+    private static class PagingStateCache {
+        private static final Map<String, String> pagingStates = new java.util.HashMap<>();
+
+        public static String getState(String key) {
+            return pagingStates.get(key);
+        }
+
+        public static void setState(String key, String state) {
+            if (state == null) {
+                pagingStates.remove(key);
+            } else {
+                pagingStates.put(key, state);
             }
         }
     }
