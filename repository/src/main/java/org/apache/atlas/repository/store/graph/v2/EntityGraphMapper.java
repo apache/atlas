@@ -176,6 +176,7 @@ public class EntityGraphMapper {
 
     private static final boolean RESTRICT_PROPAGATION_THROUGH_HIERARCHY_DEFAULT        = false;
     public static final int CLEANUP_BATCH_SIZE = 200000;
+    public static final String GUID = "__guid";
     private              boolean DEFERRED_ACTION_ENABLED                             = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
     private              boolean DIFFERENTIAL_AUDITS                                 = STORE_DIFFERENTIAL_AUDITS.getBoolean();
 
@@ -197,7 +198,6 @@ public class EntityGraphMapper {
     private final TransactionInterceptHelper   transactionInterceptHelper;
     private final EntityGraphRetriever       retrieverNoRelation;
     private final TagDAO                    tagDAO;
-    private static final Boolean JANUS_OPTIMISATION_ENABLED = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
 
     @Inject
@@ -3512,7 +3512,7 @@ public class EntityGraphMapper {
     }
 
     public void handleAddClassifications(final EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
-        if(JANUS_OPTIMISATION_ENABLED){
+        if(getJanusOptimisationEnabled()){
             addClassificationsV2_(context, guid, classifications);
         } else {
             addClassificationsV1(context, guid, classifications);
@@ -3854,7 +3854,7 @@ public class EntityGraphMapper {
                 ESConnector.writeTagProperties(deNormAttributesMap);
 
                 entityChangeNotifier.onClassificationPropagationAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(tag), false); // Async call
-
+                entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(tag), false);
                 offset += CHUNK_SIZE;
                 LOG.info("offset {}, impactedVerticesSize: {}", offset, impactedVerticesSize);
             } while (offset < impactedVerticesSize);
@@ -4023,8 +4023,12 @@ public class EntityGraphMapper {
         AtlasPerfTracer.log(perf);
     }
 
+    public boolean getJanusOptimisationEnabled() {
+        return StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
+    }
+
     public void handleDirectDeleteClassification(String entityGuid, String classificationName) throws AtlasBaseException {
-        if(JANUS_OPTIMISATION_ENABLED) {
+        if(getJanusOptimisationEnabled()) {
             deleteClassificationV2(entityGuid, classificationName);
         } else {
             deleteClassificationV1(entityGuid, classificationName);
@@ -4460,7 +4464,7 @@ public class EntityGraphMapper {
     }
 
     public void handleUpdateClassifications(EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
-        if (JANUS_OPTIMISATION_ENABLED) {
+        if (getJanusOptimisationEnabled()) {
             updateClassificationsV2(context, guid, classifications);
         } else {
             updateClassificationsV1(context, guid, classifications);
@@ -4793,6 +4797,7 @@ public class EntityGraphMapper {
             }
 
             AtlasVertex entityVertex = graphHelper.getVertexForGUID(sourceEntityGuid);
+            AtlasClassification classification = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
             if (entityVertex == null) {
                 LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): entity vertex not found", sourceEntityGuid, tagTypeName);
 
@@ -4805,13 +4810,26 @@ public class EntityGraphMapper {
             int totalDeleted = 0;
             while (!batchToDelete.isEmpty()) {
                 totalDeleted += deletePropagations(batchToDelete, sourceEntityGuid, entityVertex, tagTypeName);
+
+                List<AtlasEntity> ret = batchToDelete.stream()
+                        .map(tag -> tag.getAssetMetadata().get(GUID) == null
+                             ? (String)tag.getAssetMetadata().get(GUID)
+                             : (String)tag.getAssetMetadata().get(GUID))
+                        .map(guid -> { try {
+                            return instanceConverter.getAndCacheEntity(guid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
+                        } catch (AtlasBaseException e) {
+                            throw new RuntimeException(e);
+                        }})
+                        .collect(Collectors.toList());
+
+                entityChangeNotifier.onClassificationDeletedFromEntities(ret, classification);
+//                entityChangeNotifier.onClassificationDeletedFromEntities(propagatedEntities, classification);
                 batchToDelete = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
             }
             LOG.info("Deleted {} propagations for source entity {} and tag type {}, taskId: {}",
                     totalDeleted, sourceEntityGuid, tagTypeName, RequestContext.get().getCurrentTask().getGuid());
 
             //TODO: send special notification
-            //entityChangeNotifier.onClassificationDeletedFromEntities(propagatedEntities, classification);
 
         } catch (Exception e) {
             LOG.error("Error while removing tag with type name {} with error {} ", tagTypeName, e.getMessage());

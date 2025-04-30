@@ -143,7 +143,6 @@ public class EntityGraphRetriever {
     public static final String QUALIFIED_NAME = "qualifiedName";
 
     private static final TypeReference<List<TimeBoundary>> TIME_BOUNDARIES_LIST_TYPE = new TypeReference<List<TimeBoundary>>() {};
-    private static boolean JANUS_OPTIMISATION_ENABLED;
     private final GraphHelper graphHelper;
 
     private final AtlasTypeRegistry typeRegistry;
@@ -156,7 +155,6 @@ public class EntityGraphRetriever {
     public EntityGraphRetriever(TagDAO tagDAO, AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
         this(graph, typeRegistry, false);
         this.tagDAO = tagDAO;
-        this.JANUS_OPTIMISATION_ENABLED = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
     }
 
     public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
@@ -169,7 +167,6 @@ public class EntityGraphRetriever {
         this.graphHelper            = retriever.graphHelper;
         this.typeRegistry           = retriever.typeRegistry;
         this.ignoreRelationshipAttr = ignoreRelationshipAttr;
-        this.JANUS_OPTIMISATION_ENABLED = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
     }
 
     public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean ignoreRelationshipAttr) {
@@ -177,7 +174,6 @@ public class EntityGraphRetriever {
         this.graphHelper            = new GraphHelper(graph);
         this.typeRegistry           = typeRegistry;
         this.ignoreRelationshipAttr = ignoreRelationshipAttr;
-        this.JANUS_OPTIMISATION_ENABLED = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
     }
 
     public AtlasEntity toAtlasEntity(String guid, boolean includeReferences) throws AtlasBaseException {
@@ -1626,7 +1622,7 @@ public class EntityGraphRetriever {
     }
 
     public List<AtlasClassification> handleGetAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
-        if(JANUS_OPTIMISATION_ENABLED) {
+        if(getJanusOptimisationEnabled()) {
             return getAllClassificationsV1(entityVertex);
         } else {
             return getAllClassificationsV2(entityVertex);
