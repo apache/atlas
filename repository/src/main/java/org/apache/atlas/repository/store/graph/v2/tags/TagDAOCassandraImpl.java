@@ -51,11 +51,9 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     // Batch Configuration
     private static final int BATCH_SIZE_LIMIT = 100;
-    private static final Duration BATCH_TIMEOUT = Duration.ofSeconds(30);
 
     // Configuration constants
     private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(5);
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration HEARTBEAT_INTERVAL = Duration.ofSeconds(30);
 
     private final CqlSession cassSession;
@@ -83,9 +81,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                     .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, CONNECTION_TIMEOUT)
                     .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, CONNECTION_TIMEOUT)
                     .withDuration(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, CONNECTION_TIMEOUT)
-
-                    // Request configurations
-                    .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, REQUEST_TIMEOUT)
 
                     // Connection pool settings
                     .withInt(DefaultDriverOption.CONNECTION_POOL_LOCAL_SIZE, calculateOptimalLocalPoolSize())
@@ -566,7 +561,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             // Create initial batch
             BatchStatement batch = BatchStatement.builder(DefaultBatchType.LOGGED)
                     .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                    .setTimeout(BATCH_TIMEOUT)
                     .build();
 
             for (Tag tagToDelete : tagsToDelete) {
@@ -617,7 +611,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 // Create new batch for each group
                 BatchStatement batch = BatchStatement.builder(DefaultBatchType.LOGGED)
                         .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                        .setTimeout(BATCH_TIMEOUT)
                         .build();
 
                 // Process up to BATCH_SIZE_LIMIT vertices
