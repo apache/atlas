@@ -88,15 +88,15 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
 
       // Validate the token online with keycloak server if token introspection is enabled
       if (isTokenIntrospectionEnabled) {
-        String apiKey = authentication.getName();
+        String apiKeyServiceUserName = authentication.getName();
+        KeycloakAuthenticationToken keycloakToken = (KeycloakAuthenticationToken) authentication;
+        String bearerToken = keycloakToken.getAccount().getKeycloakSecurityContext().getTokenString();
         try {
-          if (apiKeySessionCache.isValid(apiKey)) {
+          if (apiKeySessionCache.isValid(apiKeyServiceUserName, bearerToken)) {
             authentication.setAuthenticated(true);
-          } else if (apiKeySessionCache.isDenied(apiKey)) {
+          } else if (apiKeySessionCache.isDenied(bearerToken)) {
             handleInvalidApiKey(authentication);
           } else {
-            KeycloakAuthenticationToken keycloakToken = (KeycloakAuthenticationToken) authentication;
-            String bearerToken = keycloakToken.getAccount().getKeycloakSecurityContext().getTokenString();
             TokenMetadataRepresentation introspectToken = atlasKeycloakClient.introspectToken(bearerToken);
             if (Objects.nonNull(introspectToken) && introspectToken.isActive()) {
               apiKeySessionCache.setCache(authentication.getName());
