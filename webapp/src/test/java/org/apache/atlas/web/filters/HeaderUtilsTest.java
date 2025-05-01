@@ -100,7 +100,7 @@ public class HeaderUtilsTest {
         Properties props = new Properties();
 
         for (int i = 0; i < headers.length / 2; i++) {
-            props.setProperty(headers[i * 2], headers[(i *2) + 1]);
+            props.setProperty(headers[i * 2], headers[(i * 2) + 1]);
         }
 
         return props;
