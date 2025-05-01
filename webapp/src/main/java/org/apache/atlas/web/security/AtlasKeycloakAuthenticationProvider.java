@@ -19,6 +19,7 @@ package org.apache.atlas.web.security;
 import io.micrometer.core.instrument.Counter;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient;
+import org.apache.atlas.repository.graphdb.janus.APIKeySessionCache;
 import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.commons.configuration.Configuration;
@@ -45,6 +46,7 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
 
   private final KeycloakAuthenticationProvider keycloakAuthenticationProvider;
   private final AtlasKeycloakClient atlasKeycloakClient;
+  private final APIKeySessionCache apiKeySessionCache = APIKeySessionCache.getInstance();
   private static final Logger LOG = LoggerFactory.getLogger(AtlasKeycloakAuthenticationProvider.class);
 
   public AtlasKeycloakAuthenticationProvider() throws Exception {
@@ -89,13 +91,18 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
       if (isTokenIntrospectionEnabled) {
         LOG.info("Validating request for clientId: {}", authentication.getName().substring("service-account-".length()));
         try {
-          KeycloakAuthenticationToken keycloakToken = (KeycloakAuthenticationToken) authentication;
-          String bearerToken = keycloakToken.getAccount().getKeycloakSecurityContext().getTokenString();
-          TokenMetadataRepresentation introspectToken = atlasKeycloakClient.introspectToken(bearerToken);
-          if (Objects.nonNull(introspectToken) && introspectToken.isActive()) {
+          if (apiKeySessionCache.isValid(authentication.getName())) {
             authentication.setAuthenticated(true);
           } else {
-            handleInvalidApiKey(authentication);
+            KeycloakAuthenticationToken keycloakToken = (KeycloakAuthenticationToken) authentication;
+            String bearerToken = keycloakToken.getAccount().getKeycloakSecurityContext().getTokenString();
+            TokenMetadataRepresentation introspectToken = atlasKeycloakClient.introspectToken(bearerToken);
+            if (Objects.nonNull(introspectToken) && introspectToken.isActive()) {
+              apiKeySessionCache.setCache(authentication.getName());
+              authentication.setAuthenticated(true);
+            } else {
+              handleInvalidApiKey(authentication);
+            }
           }
         } catch (Exception e) {
           throw new KeycloakAuthenticationException("Keycloak Authentication failed", e.getCause());
