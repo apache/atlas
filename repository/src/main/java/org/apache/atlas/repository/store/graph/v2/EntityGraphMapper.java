@@ -4810,6 +4810,7 @@ public class EntityGraphMapper {
             List<Tag> batchToDelete = pageToDelete.getTags();
             int previousBatchSize = -1; // Track previous batch size for loop detection
             int loopDetectionCounter = 0;
+            AtlasClassification classification = tagDAO.findDirectDeletedTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
 
             while (!batchToDelete.isEmpty()) {
                 // Safety check to prevent infinite loops - if we get the same batch size twice in a row
@@ -4831,6 +4832,8 @@ public class EntityGraphMapper {
                         .map(Tag::getVertexId)
                         .toList();
 
+                List<AtlasEntity> entities = batchToDelete.stream().map(x->getEntityForNotification(x.getAssetMetadata())).toList();
+
                 // compute fresh classification‑text de‑norm attributes for this batch
                 Map<String, Map<String, Object>> deNormMap =
                         TagDeNormAttributesUtil.getPropagatedTagDeNormForUpdateProp(
@@ -4845,7 +4848,7 @@ public class EntityGraphMapper {
                 ESConnector.writeTagProperties(deNormMap);
 
                 // notify listeners (async) that these entities got their classification text updated
-                // entityChangeNotifier.onClassificationUpdatedToEntities(vertexIds, deNormMap);
+                 entityChangeNotifier.onClassificationDeletedFromEntities(entities, classification);
 
                 totalDeleted += batchToDelete.size();
                 // grab next batch
@@ -5966,6 +5969,7 @@ public class EntityGraphMapper {
 
             // fetch propagated‑tag attachments in batches
             PaginatedTagResult paginatedResult = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
+            AtlasClassification originalTag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
             List<Tag> batchToUpdate = paginatedResult.getTags();
             int previousBatchSize = -1; // Track previous batch size for loop detection
             int loopDetectionCounter = 0;
@@ -5991,6 +5995,8 @@ public class EntityGraphMapper {
                         .map(Tag::getVertexId)
                         .toList();
 
+                List<AtlasEntity> entities = batchToUpdate.stream().map(x->getEntityForNotification(x.getAssetMetadata())).toList();
+
                 // compute fresh classification‑text de‑norm attributes for this batch
                 Map<String, Map<String, Object>> deNormMap =
                         TagDeNormAttributesUtil.getPropagatedTagDeNormForUpdateProp(
@@ -6005,7 +6011,7 @@ public class EntityGraphMapper {
                 ESConnector.writeTagProperties(deNormMap);
 
                 // notify listeners (async) that these entities got their classification text updated
-                // entityChangeNotifier.onClassificationUpdatedToEntities(vertexIds, deNormMap);
+                 entityChangeNotifier.onClassificationUpdatedToEntities(entities, originalTag);
 
                 totalUpdated += batchToUpdate.size();
                 // grab next batch
@@ -6026,6 +6032,26 @@ public class EntityGraphMapper {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
+
+    private AtlasEntity getEntityForNotification(Map<String, Object> assetMetadata) {
+        AtlasEntity entity = new AtlasEntity();
+        entity.setAttribute(NAME, assetMetadata.get(NAME));
+        entity.setAttribute(QUALIFIED_NAME, assetMetadata.get(QUALIFIED_NAME));
+
+        entity.setGuid((String) assetMetadata.get(GUID_PROPERTY_KEY));
+        entity.setTypeName((String) assetMetadata.get(TYPE_NAME_PROPERTY_KEY));
+        entity.setCreatedBy((String) assetMetadata.get(CREATED_BY_KEY));
+        entity.setUpdatedBy((String) assetMetadata.get(MODIFIED_BY_KEY));
+        Long ts = (Long) assetMetadata.get(TIMESTAMP_PROPERTY_KEY);
+        Date created = new Date(ts);
+        entity.setCreateTime(created);
+
+        Long tsModified = (Long) assetMetadata.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+        Date modified = new Date(tsModified);
+        entity.setUpdateTime(modified);
+        return entity;
+    }
+
     public void classificationRefreshPropagationV2(Map<String, Object> parameters, String sourceEntityId, String classificationTypeName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder classificationRefreshPropagationMetricRecorder = RequestContext.get().startMetricRecord("classificationRefreshPropagationV2");
 
