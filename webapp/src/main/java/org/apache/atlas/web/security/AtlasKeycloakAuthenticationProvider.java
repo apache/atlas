@@ -102,7 +102,7 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
               apiKeySessionCache.setCache(authentication.getName());
               authentication.setAuthenticated(true);
             } else {
-                apiKeySessionCache.addToDeniedCache(authentication.getName());
+                apiKeySessionCache.addToDeniedCache(bearerToken);
                 handleInvalidApiKey(authentication);
             }
           }
