@@ -4,7 +4,7 @@ import java.util.Map;
 
 public class ESDeferredOperation {
 
-    public enum OperationType {TAG_DENORM_FOR_ADD_CLASSIFICATIONS, TAG_DENORM_FOR_DELETE_CLASSIFICATIONS }
+    public enum OperationType {TAG_DENORM_FOR_ADD_CLASSIFICATIONS, TAG_DENORM_FOR_DELETE_CLASSIFICATIONS, TAG_DENORM_FOR_UPDATE_CLASSIFICATIONS}
 
     private final OperationType operationType;
     private final String entityId;

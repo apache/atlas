@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.store.graph.v2;
 
-import org.apache.atlas.repository.store.graph.v2.tags.PaginatedTagResult;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
@@ -47,6 +46,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.repository.store.graph.v2.tags.PaginatedTagResult;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.repository.util.TagDeNormAttributesUtil;
@@ -4522,6 +4522,11 @@ public class EntityGraphMapper {
                 LOG.debug("Updating classification {} for entity {}", classification, guid);
             }
 
+            List<AtlasClassification> currentTags = tagDAO.getTagsForVertex(entityVertex.getIdForDisplay());
+            currentTags = currentTags.stream()
+                    .filter(tag -> !(tag.getEntityGuid().equals(classification.getEntityGuid()) && tag.getTypeName().equals(classification.getTypeName())))
+                    .collect(Collectors.toList());
+            currentTags.add(classification);
             // Update tag
             Map<String, Object> minAssetMAp = getMinimalAssetMap(entityVertex);
             tagDAO.putDirectTag(entityVertex.getIdForDisplay(), classificationName, classification, minAssetMAp);
@@ -4535,6 +4540,17 @@ public class EntityGraphMapper {
                             CassandraTagOperation.OperationType.UPDATE,
                             currentClassification.deepCopy(),
                             currentTag.getAssetMetadata()
+                    )
+            );
+            Map<String, Map<String, Object>> deNormMap = new HashMap<>();
+            deNormMap.put(entityVertex.getIdForDisplay(), TagDeNormAttributesUtil.getDirectTagAttachmentAttributesForAddTag(classification,
+                    currentTags, typeRegistry, fullTextMapperV2));
+            // ES operation collected to be executed in the end
+            RequestContext.get().addESDeferredOperation(
+                    new ESDeferredOperation(
+                            ESDeferredOperation.OperationType.TAG_DENORM_FOR_UPDATE_CLASSIFICATIONS,
+                            entityVertex.getIdForDisplay(),
+                            deNormMap
                     )
             );
 
