@@ -35,21 +35,22 @@ public class APIKeySessionCache {
     
     public void setCache(String apiKeyUsername) {
         apiKeyCache.put(apiKeyUsername, Boolean.TRUE);
-        LOG.debug("Cached API key for user: {}", apiKeyUsername);
     }
     
     public void addToDeniedCache(String apiKeyUsername) {
         deniedApiKeys.add(apiKeyUsername);
-        LOG.debug("Added API key to denied cache: {}", apiKeyUsername);
     }
     
     public boolean isValid(String apiKeyUsername) {
         if (deniedApiKeys.contains(apiKeyUsername)) {
-            LOG.debug("API key found in denied cache: {}", apiKeyUsername);
             return false;
         }
         
         Boolean isPresent = apiKeyCache.getIfPresent(apiKeyUsername);
         return isPresent != null && isPresent;
+    }
+
+    public boolean isDenied(String apiKeyUsername) {
+        return deniedApiKeys.contains(apiKeyUsername);
     }
 }

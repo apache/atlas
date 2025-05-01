@@ -87,12 +87,13 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
       Counter.builder("service_account_apikey_request_counter").register(MetricUtils.getMeterRegistry()).increment();
 
       // Validate the token online with keycloak server if token introspection is enabled
-      LOG.info("isTokenIntrospectionEnabled: {}", isTokenIntrospectionEnabled);
       if (isTokenIntrospectionEnabled) {
-        LOG.info("Validating request for clientId: {}", authentication.getName().substring("service-account-".length()));
+        String apiKey = authentication.getName();
         try {
-          if (apiKeySessionCache.isValid(authentication.getName())) {
+          if (apiKeySessionCache.isValid(apiKey)) {
             authentication.setAuthenticated(true);
+          } else if (apiKeySessionCache.isDenied(apiKey)) {
+            handleInvalidApiKey(authentication);
           } else {
             KeycloakAuthenticationToken keycloakToken = (KeycloakAuthenticationToken) authentication;
             String bearerToken = keycloakToken.getAccount().getKeycloakSecurityContext().getTokenString();
