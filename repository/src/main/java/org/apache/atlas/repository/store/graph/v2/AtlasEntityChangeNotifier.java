@@ -246,7 +246,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     @Override
-    @Async
+//    @Async
     public void onClassificationUpdatedToEntities(List<AtlasEntity> entities, AtlasClassification updatedClassification) throws AtlasBaseException {
         for (AtlasEntity entity : entities) {
             onClassificationUpdatedToEntity(entity, Collections.singletonList(updatedClassification));
@@ -317,7 +317,6 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     @Override
-    @Async
     public void onClassificationDeletedFromEntities(List<AtlasEntity> entities, AtlasClassification deletedClassification) throws AtlasBaseException {
         for (AtlasEntity entity : entities) {
             onClassificationDeletedFromEntity(entity, Collections.singletonList(deletedClassification));

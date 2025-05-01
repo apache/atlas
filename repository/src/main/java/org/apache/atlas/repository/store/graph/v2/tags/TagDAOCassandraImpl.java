@@ -64,6 +64,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     private final PreparedStatement findAllPropagatedTagsStmt;
     private final PreparedStatement findAllPropagatedTagsByTypeNameStmt;
     private final PreparedStatement findAllPropagatedTagsOptStmt;
+    private final PreparedStatement findADirectDeletedTagStmt;
     private final PreparedStatement insertTagStmt;
     private final PreparedStatement deleteTagStmt;
 
@@ -120,6 +121,15 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                     .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
                     .build();
             findADirectTagStmt = cassSession.prepare(findADirectTagStatement);
+
+            // Find a deleted direct tag
+            SimpleStatement findADirectDeletedTagStatement = SimpleStatement.builder(
+                            String.format("SELECT tag_meta_json FROM %s.%s " +
+                                            "WHERE bucket = ? AND id = ? AND source_id = ? AND tag_type_name = ? AND is_deleted = true",
+                                    KEYSPACE, TABLE_NAME))
+                    .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
+                    .build();
+            findADirectDeletedTagStmt = cassSession.prepare(findADirectDeletedTagStatement);
 
             // Find a direct tag with asset metadata
             SimpleStatement findADirectTagWithAssetMetadata = SimpleStatement.builder(
@@ -415,6 +425,26 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     }
 
     @Override
+    public AtlasClassification findDirectDeletedTagByVertexIdAndTagTypeName(String vertexId, String tagTypeName) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDirectDeletedTagByVertexIdAndTagTypeName");
+        int bucket = calculateBucket(vertexId);
+        try {
+            BoundStatement bound = findADirectDeletedTagStmt.bind(bucket, vertexId, vertexId, tagTypeName);
+            ResultSet rs = executeWithRetry(bound);
+
+            for (Row row : rs) {
+                return convertToAtlasClassification(row.getString("tag_meta_json"));
+            }
+            LOG.info("No tags found for id: {}, tag type: {}, bucket {}, returning null", vertexId, tagTypeName, bucket);
+        } catch (Exception e) {
+            throw new AtlasBaseException(String.format("Error fetching tag for asset: %s and tag type: %s, bucket: %s", vertexId, tagTypeName, bucket), e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+        return null;
+    }
+
+    @Override
     public Tag findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(String vertexId, String tagTypeName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata");
         int bucket = calculateBucket(vertexId);
@@ -466,7 +496,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         String nextPagingState = null;
         Boolean done = false;
         try {
-            BoundStatement bound = findAllPropagatedTagsStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
+            BoundStatement bound = findAllPropagatedTagsByTypeNameStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
 
             // Apply the paging state if provided
             if (pagingStateStr != null && !pagingStateStr.isEmpty()) {
