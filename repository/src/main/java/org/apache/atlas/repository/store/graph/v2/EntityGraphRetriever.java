@@ -1623,9 +1623,9 @@ public class EntityGraphRetriever {
 
     public List<AtlasClassification> handleGetAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
         if(getJanusOptimisationEnabled()) {
-            return getAllClassificationsV1(entityVertex);
-        } else {
             return getAllClassificationsV2(entityVertex);
+        } else {
+            return getAllClassificationsV1(entityVertex);
         }
     }
 
