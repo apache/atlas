@@ -4052,7 +4052,6 @@ public class EntityGraphMapper {
             perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityGraphMapper.deleteClassification");
         }
 
-        //AtlasVertex         classificationVertex = getClassificationVertex(graphHelper, entityVertex, classificationName);
         Tag currentTag = tagDAO.findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(entityVertex.getIdForDisplay(), classificationName);
         if (Objects.isNull(currentTag)) {
             LOG.error(AtlasErrorCode.CLASSIFICATION_NOT_FOUND.getFormattedErrorMessage(classificationName));
@@ -4071,7 +4070,7 @@ public class EntityGraphMapper {
 
         // remove classification from propagated entities if propagation is turned on
         if (currentClassification.isPropagate()) {
-            if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
+            if (DEFERRED_ACTION_ENABLED) {
                 List<String> entityTaskGuids = (List<String>) entityVertex.getPropertyValues(PENDING_TASKS_PROPERTY_KEY, String.class);
 
                 if (CollectionUtils.isNotEmpty(entityTaskGuids)) {
@@ -4148,7 +4147,6 @@ public class EntityGraphMapper {
         if (RequestContext.get().isDelayTagNotifications()) {
             RequestContext.get().addDeletedClassificationAndVertices(currentClassification, Collections.singleton(entityVertex));
         }
-
         AtlasPerfTracer.log(perf);
     }
 
@@ -4863,7 +4861,7 @@ public class EntityGraphMapper {
                 // push them to ES
                 ESConnector.writeTagProperties(deNormMap);
 
-                // notify listeners (async) that these entities got their classification text updated
+                // notify listeners (async)
                  entityChangeNotifier.onClassificationDeletedFromEntities(entities, classification);
 
                 totalDeleted += batchToDelete.size();

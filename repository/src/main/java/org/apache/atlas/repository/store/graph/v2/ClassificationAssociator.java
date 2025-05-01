@@ -239,7 +239,7 @@ public class ClassificationAssociator {
             }
 
             //entityGraphMapper.updateClassificationText(null, allVertices);
-            //transactionInterceptHelper.intercept();
+            transactionInterceptHelper.intercept();
 
             RequestContext.get().endMetricRecord(recorder);
             RequestContext.get().setDelayTagNotifications(false);
