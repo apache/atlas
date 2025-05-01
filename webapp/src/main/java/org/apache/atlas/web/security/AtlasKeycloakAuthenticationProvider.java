@@ -19,6 +19,7 @@ package org.apache.atlas.web.security;
 import io.micrometer.core.instrument.Counter;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.auth.client.keycloak.AtlasKeycloakClient;
+import org.apache.atlas.repository.graphdb.janus.APIKeySessionCache;
 import org.apache.atlas.service.metrics.MetricUtils;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.commons.configuration.Configuration;
@@ -42,9 +43,11 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
   private final boolean groupsFromUGI;
   private final String groupsClaim;
   private final boolean isTokenIntrospectionEnabled;
+  private final boolean isTokenIntrospectionCacheEnabled;
 
   private final KeycloakAuthenticationProvider keycloakAuthenticationProvider;
   private final AtlasKeycloakClient atlasKeycloakClient;
+  private final APIKeySessionCache apiKeySessionCache = APIKeySessionCache.getInstance();
   private static final Logger LOG = LoggerFactory.getLogger(AtlasKeycloakAuthenticationProvider.class);
 
   public AtlasKeycloakAuthenticationProvider() throws Exception {
@@ -54,6 +57,7 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
     Configuration configuration = ApplicationProperties.get();
 
     this.isTokenIntrospectionEnabled = AtlasConfiguration.ENABLE_KEYCLOAK_TOKEN_INTROSPECTION.getBoolean();
+    this.isTokenIntrospectionCacheEnabled = AtlasConfiguration.KEYCLOAK_INTROSPECTION_USE_CACHE.getBoolean();
     this.groupsFromUGI = configuration.getBoolean("atlas.authentication.method.keycloak.ugi-groups", true);
     this.groupsClaim = configuration.getString("atlas.authentication.method.keycloak.groups_claim");
   }
@@ -85,17 +89,29 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
       Counter.builder("service_account_apikey_request_counter").register(MetricUtils.getMeterRegistry()).increment();
 
       // Validate the token online with keycloak server if token introspection is enabled
-      LOG.info("isTokenIntrospectionEnabled: {}", isTokenIntrospectionEnabled);
       if (isTokenIntrospectionEnabled) {
-        LOG.info("Validating request for clientId: {}", authentication.getName().substring("service-account-".length()));
+        String apiKeyServiceUserName = authentication.getName();
+        KeycloakAuthenticationToken keycloakToken = (KeycloakAuthenticationToken) authentication;
+        String bearerToken = keycloakToken.getAccount().getKeycloakSecurityContext().getTokenString();
         try {
-          KeycloakAuthenticationToken keycloakToken = (KeycloakAuthenticationToken) authentication;
-          String bearerToken = keycloakToken.getAccount().getKeycloakSecurityContext().getTokenString();
-          TokenMetadataRepresentation introspectToken = atlasKeycloakClient.introspectToken(bearerToken);
-          if (Objects.nonNull(introspectToken) && introspectToken.isActive()) {
-            authentication.setAuthenticated(true);
+          if (isTokenIntrospectionCacheEnabled) {
+            // Check if the token is already in the cache
+            if (apiKeySessionCache.isValid(apiKeyServiceUserName)) {
+              authentication.setAuthenticated(true);
+            } else {
+              if (isTokenValid(bearerToken)) {
+                apiKeySessionCache.setCache(authentication.getName());
+                authentication.setAuthenticated(true);
+              } else {
+                handleInvalidApiKey(authentication);
+              }
+            }
           } else {
-            handleInvalidApiKey(authentication);
+            if (isTokenValid(bearerToken)) {
+              authentication.setAuthenticated(true);
+            } else {
+              handleInvalidApiKey(authentication);
+            }
           }
         } catch (Exception e) {
           throw new KeycloakAuthenticationException("Keycloak Authentication failed", e.getCause());
@@ -104,6 +120,16 @@ public class AtlasKeycloakAuthenticationProvider extends AtlasAbstractAuthentica
     }
 
     return authentication;
+  }
+
+  private boolean isTokenValid( String bearerToken) {
+    try {
+      TokenMetadataRepresentation introspectToken = atlasKeycloakClient.introspectToken(bearerToken);
+      return Objects.nonNull(introspectToken) && introspectToken.isActive();
+    } catch (Exception e) {
+      LOG.error("Error while validating token: {}", e.getMessage());
+      return false;
+    }
   }
 
   @Override
