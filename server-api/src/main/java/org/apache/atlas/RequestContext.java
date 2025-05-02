@@ -49,7 +49,6 @@ public class RequestContext {
     private static final boolean                     IS_METRICS_ENABLED = METRICS.isDebugEnabled();
 
     private final long                                   requestTime          = System.currentTimeMillis();
-    private       Boolean                                isUpdateNotification = false;
     private final Map<String, AtlasEntityHeader>         updatedEntities      = new HashMap<>();
     private final Map<String, AtlasEntityHeader>         deletedEntities      = new HashMap<>();
     private final Map<String, AtlasEntity>               entityCache          = new HashMap<>();
@@ -160,14 +159,6 @@ public class RequestContext {
         }
 
         return ret;
-    }
-
-    public Boolean getIsUpdateNotification() {
-        return (isUpdateNotification == null) ? Boolean.FALSE : isUpdateNotification;
-    }
-
-    public void setIsUpdateNotification(Boolean value) {
-        isUpdateNotification = value;
     }
 
     public String getUser() {
