@@ -513,7 +513,6 @@ public class TypesREST {
             throw new AtlasBaseException("Error while updating a type definition");
         } finally {
             RequestContext.clear();
-            redisService.releaseDistributedLock(ATLAS_TYPEDEF_LOCK);
             AtlasPerfTracer.log(perf);
         }
     }
