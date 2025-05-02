@@ -3840,7 +3840,7 @@ public class EntityGraphMapper {
 
         try {
             do {
-                toIndex = ((offset + CHUNK_SIZE > impactedVerticesSize) ? impactedVerticesSize : (offset + CHUNK_SIZE));
+                toIndex = (Math.min(offset + CHUNK_SIZE, impactedVerticesSize));
                 List<AtlasVertex> chunkedVerticesToPropagate = verticesToPropagate.subList(offset, toIndex);
 
                 Map<String, Map<String, Object>> deNormAttributesMap = new HashMap<>();
@@ -3854,7 +3854,6 @@ public class EntityGraphMapper {
                 ESConnector.writeTagProperties(deNormAttributesMap);
 
                 entityChangeNotifier.onClassificationPropagationAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(tag), false); // Async call
-                entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(tag), false);
                 offset += CHUNK_SIZE;
                 LOG.info("offset {}, impactedVerticesSize: {}", offset, impactedVerticesSize);
             } while (offset < impactedVerticesSize);
