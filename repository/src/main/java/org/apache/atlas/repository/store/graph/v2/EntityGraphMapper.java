@@ -3840,7 +3840,7 @@ public class EntityGraphMapper {
 
         try {
             do {
-                toIndex = (Math.min(offset + CHUNK_SIZE, impactedVerticesSize));
+                toIndex = Math.min(offset + CHUNK_SIZE, impactedVerticesSize);
                 List<AtlasVertex> chunkedVerticesToPropagate = verticesToPropagate.subList(offset, toIndex);
 
                 Map<String, Map<String, Object>> deNormAttributesMap = new HashMap<>();
@@ -3848,19 +3848,17 @@ public class EntityGraphMapper {
 
                 List<AtlasEntity> propagatedEntitiesChunked = updateClassificationTextV2(parameters, tag, chunkedVerticesToPropagate, deNormAttributesMap, assetMinAttrsMap);
 
-                //CassandraConnector.putEntitiesWithBucket(allChunkedMaps.values());
                 tagDAO.putPropagatedTags(entityVertex.getIdForDisplay(), tag.getTypeName(), deNormAttributesMap.keySet(), assetMinAttrsMap, tag);
-                // TODO: Abstract writeTagProperties into putPropagatedTags
                 ESConnector.writeTagProperties(deNormAttributesMap);
 
-                entityChangeNotifier.onClassificationPropagationAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(tag), false); // Async call
+                entityChangeNotifier.onClassificationPropagationAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(tag), true); // Async call
                 offset += CHUNK_SIZE;
                 LOG.info("offset {}, impactedVerticesSize: {}", offset, impactedVerticesSize);
             } while (offset < impactedVerticesSize);
-
             LOG.info(String.format("Total number of vertices propagated: %d", impactedVerticesSize));
         } catch (Exception exception) {
-            LOG.error("Error occurred while adding classification propagation for classification with propagation id {}");
+            LOG.error("Error occurred while adding classification propagation for classification with source entity id {}",
+                    entityVertex.getIdForDisplay(), exception);
             throw exception;
         } finally {
             RequestContext.get().endMetricRecord(classificationPropagationMetricRecorder);
