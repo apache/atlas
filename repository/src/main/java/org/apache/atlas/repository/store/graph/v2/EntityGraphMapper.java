@@ -18,6 +18,11 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.annotations.VisibleForTesting;
+import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import javax.inject.Inject;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -46,14 +51,15 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.EntityGraphDiscoveryContext;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
+import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.tags.PaginatedTagResult;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.repository.util.TagDeNormAttributesUtil;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasArrayType;
-import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.type.AtlasBuiltInTypes;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.type.AtlasClassificationType;
@@ -78,11 +84,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
-import javax.inject.Inject;
-import java.util.*;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.LABEL_MAX_LENGTH;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
@@ -3830,7 +3831,7 @@ public class EntityGraphMapper {
     public void processClassificationPropagationAdditionV2(Map<String, Object> parameters,
                                                            AtlasVertex entityVertex,
                                                            List<AtlasVertex> verticesToPropagate,
-                                                           AtlasClassification tag) throws AtlasBaseException{
+                                                           AtlasClassification classification) throws AtlasBaseException{
         AtlasPerfMetrics.MetricRecorder classificationPropagationMetricRecorder = RequestContext.get().startMetricRecord("processClassificationPropagationAddition");
         int impactedVerticesSize = verticesToPropagate.size();
 
@@ -3846,12 +3847,12 @@ public class EntityGraphMapper {
                 Map<String, Map<String, Object>> deNormAttributesMap = new HashMap<>();
                 Map<String, Map<String, Object>> assetMinAttrsMap = new HashMap<>();
 
-                List<AtlasEntity> propagatedEntitiesChunked = updateClassificationTextV2(parameters, tag, chunkedVerticesToPropagate, deNormAttributesMap, assetMinAttrsMap);
+                List<AtlasEntity> propagatedEntitiesChunked = updateClassificationTextV2(classification, chunkedVerticesToPropagate, deNormAttributesMap, assetMinAttrsMap);
 
-                tagDAO.putPropagatedTags(entityVertex.getIdForDisplay(), tag.getTypeName(), deNormAttributesMap.keySet(), assetMinAttrsMap, tag);
+                tagDAO.putPropagatedTags(entityVertex.getIdForDisplay(), classification.getTypeName(), deNormAttributesMap.keySet(), assetMinAttrsMap, classification);
                 ESConnector.writeTagProperties(deNormAttributesMap);
 
-                entityChangeNotifier.onClassificationPropagationAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(tag), true); // Async call
+                entityChangeNotifier.onClassificationPropagationAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), true); // Async call
                 offset += CHUNK_SIZE;
                 LOG.info("offset {}, impactedVerticesSize: {}", offset, impactedVerticesSize);
             } while (offset < impactedVerticesSize);
@@ -5440,8 +5441,7 @@ public class EntityGraphMapper {
         return propagatedEntities;
     }
 
-    List<AtlasEntity> updateClassificationTextV2(Map<String, Object> parameters,
-                                                 AtlasClassification currentTag,
+    List<AtlasEntity> updateClassificationTextV2(AtlasClassification currentTag,
                                                  Collection<AtlasVertex> propagatedVertices,
                                                  Map<String, Map<String, Object>> deNormAttributesMap,
                                                  Map<String, Map<String, Object>> assetMinAttrsMap) throws AtlasBaseException {
@@ -5454,14 +5454,32 @@ public class EntityGraphMapper {
                 assetMinAttrsMap.put(vertex.getIdForDisplay(), assetMinAttrs);
 
                 //get current associated tags to asset ONLY from Cassandra namespace
-                List<AtlasClassification> finalTags = tagDAO.getTagsForVertex(vertex.getIdForDisplay());
-                AtlasClassification copiedPropagatedTag = new AtlasClassification(currentTag);
-                copiedPropagatedTag.setEntityGuid((String) assetMinAttrs.get(GUID_PROPERTY_KEY));
-                finalTags.add(copiedPropagatedTag);
+                List<Tag> tags = tagDAO.getTagsWithIsPropagatedByVertexId(vertex.getIdForDisplay());
+                List<AtlasClassification> finalClassifications = tags.stream().map(t -> {
+                    try {
+                        return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
+                    } catch (AtlasBaseException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).collect(Collectors.toList());
 
+                List<Tag> propagatedTags = tags.stream().filter(Tag::isPropagated).toList();
+                List<AtlasClassification> finalPropagatedClassifications = propagatedTags.stream().map(t -> {
+                    try {
+                        return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
+                    } catch (AtlasBaseException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).collect(Collectors.toList());
+
+
+                AtlasClassification copiedPropagatedClassification = new AtlasClassification(currentTag);
+                copiedPropagatedClassification.setEntityGuid((String) assetMinAttrs.get(GUID_PROPERTY_KEY));
+                finalClassifications.add(copiedPropagatedClassification);
+                finalPropagatedClassifications.add(copiedPropagatedClassification);
 
                 AtlasEntity entity = new AtlasEntity();
-                entity.setClassifications(finalTags);
+                entity.setClassifications(finalClassifications);
 
                 entity.setGuid((String) assetMinAttrs.get(GUID_PROPERTY_KEY));
                 entity.setTypeName((String) assetMinAttrs.get(TYPE_NAME_PROPERTY_KEY));
@@ -5477,10 +5495,10 @@ public class EntityGraphMapper {
 
 
                 Map<String, Object> deNormAttributes;
-                if (CollectionUtils.isEmpty(finalTags)) {
+                if (CollectionUtils.isEmpty(finalClassifications)) {
                     deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForNoTags(currentTag.getTypeName());
                 } else {
-                    deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForTags(currentTag, finalTags, typeRegistry, fullTextMapperV2);
+                    deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForTags(currentTag, finalClassifications, finalPropagatedClassifications, typeRegistry, fullTextMapperV2);
                 }
 
                 deNormAttributesMap.put(vertex.getIdForDisplay(), deNormAttributes);

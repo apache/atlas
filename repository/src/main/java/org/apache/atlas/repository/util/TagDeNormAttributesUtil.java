@@ -200,6 +200,7 @@ public class TagDeNormAttributesUtil {
 
     public static Map<String, Object> getPropagatedAttributesForTags(AtlasClassification propagatedTag,
                                                                      List<AtlasClassification> finalTags,
+                                                                     List<AtlasClassification> finalPropagatedTags,
                                                                      AtlasTypeRegistry typeRegistry,
                                                                      IFullTextMapper fullTextMapperV2) throws AtlasBaseException {
         // Add tag Propagation, asset having other tags
@@ -208,8 +209,7 @@ public class TagDeNormAttributesUtil {
         deNormAttrs.put(CLASSIFICATION_TEXT_KEY, getClassificationTextKey(finalTags, typeRegistry, fullTextMapperV2));
 
         //filter propagated attachments
-        List<String> propTraits = finalTags.stream()
-                .filter(tag -> !propagatedTag.getEntityGuid().equals(tag.getEntityGuid()))
+        List<String> propTraits = finalPropagatedTags.stream()
                 .map(AtlasStruct::getTypeName)
                 .collect(Collectors.toList());
 

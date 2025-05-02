@@ -58,6 +58,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     // Prepared Statements
     private final PreparedStatement findAllTagsStmt;
+    private final PreparedStatement findTagsWithIsPropagatedByVertexIdStmt;
     private final PreparedStatement findAllDirectTagsStmt;
     private final PreparedStatement findADirectTagStmt;
     private final PreparedStatement findADirectTagWithAssetMetadataRowStmt;
@@ -112,6 +113,15 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                     .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
                     .build();
             findAllTagsStmt = cassSession.prepare(findAllTagsStatement);
+
+            // Find all tags with additional is_propagated key
+            SimpleStatement findTagsWithIsPropagatedByVertexIdStatement = SimpleStatement.builder(
+                            String.format("SELECT tag_meta_json, is_propagated FROM %s.%s " +
+                                            "WHERE bucket = ? AND id = ? AND is_deleted = false",
+                                    KEYSPACE, TABLE_NAME))
+                    .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
+                    .build();
+            findTagsWithIsPropagatedByVertexIdStmt = cassSession.prepare(findTagsWithIsPropagatedByVertexIdStatement);
 
             // Find a direct tag
             SimpleStatement findADirectTagStatement = SimpleStatement.builder(
@@ -467,6 +477,30 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             RequestContext.get().endMetricRecord(recorder);
         }
         return null;
+    }
+
+    @Override
+    public List<Tag> getTagsWithIsPropagatedByVertexId(String vertexId) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagsWithIsPropagatedByVertexId");
+        int bucket = calculateBucket(vertexId);
+        try {
+            BoundStatement bound = findTagsWithIsPropagatedByVertexIdStmt.bind(bucket, vertexId);
+            ResultSet rs = executeWithRetry(bound);
+
+            List<Tag> results = new ArrayList<>();
+            for (Row row : rs) {
+                Tag tag = new Tag();
+                tag.setVertexId(vertexId);
+                tag.setPropagated(row.getBoolean("is_propagated"));
+                tag.setTagMetaJson(objectMapper.readValue(row.getString("tag_meta_json"), Map.class));
+                results.add(tag);
+            }
+            return results;
+        } catch (Exception e) {
+            throw new AtlasBaseException(String.format("Error fetching tag for id: %s and bucket: %s", vertexId, bucket), e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
     }
 
     @Override
