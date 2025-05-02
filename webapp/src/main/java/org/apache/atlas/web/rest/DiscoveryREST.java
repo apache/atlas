@@ -415,7 +415,7 @@ public class DiscoveryREST {
 
             if (StringUtils.isEmpty(parameters.getQuery())) {
                 AtlasBaseException abe = new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
-                if (enableSearchLogging && parameters.isSaveSearchLog()) {
+                if (enableSearchLogging && parameters.isSaveSearchLog() && !shouldSkipSearchLog(parameters)) {
                     logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
                 }
                 throw abe;
@@ -430,19 +430,19 @@ public class DiscoveryREST {
             }
             long endTime = System.currentTimeMillis();
 
-            if (enableSearchLogging && parameters.isSaveSearchLog()) {
+            if (enableSearchLogging && parameters.isSaveSearchLog() && !shouldSkipSearchLog(parameters)) {
                 logSearchLog(parameters, result, servletRequest, endTime - startTime);
             }
 
             return result;
         } catch (AtlasBaseException abe) {
-            if (enableSearchLogging && parameters.isSaveSearchLog()) {
+            if (enableSearchLogging && parameters.isSaveSearchLog() && !shouldSkipSearchLog(parameters)) {
                 logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
             }
             throw abe;
         } catch (Exception e) {
             AtlasBaseException abe = new AtlasBaseException(e.getMessage(), e.getCause());
-            if (enableSearchLogging && parameters.isSaveSearchLog()) {
+            if (enableSearchLogging && parameters.isSaveSearchLog() && !shouldSkipSearchLog(parameters)) {
                 logSearchLog(parameters, servletRequest, abe, System.currentTimeMillis() - startTime);
             }
             abe.setStackTrace(e.getStackTrace());
@@ -1047,5 +1047,34 @@ public class DiscoveryREST {
                 .setResponseTime(requestTime);
 
         loggerManagement.log(builder.build());
+    }
+
+    private boolean shouldSkipSearchLog(IndexSearchParams parameters) {
+
+        // Skip if utmTags contain specific landing page patterns
+        Set<String> utmTags = parameters.getUtmTags();
+        if (CollectionUtils.isNotEmpty(utmTags)) {
+            // Pattern 1: Bootstrap/landing page load
+            if (utmTags.contains("project_webapp") &&
+                    utmTags.contains("action_bootstrap") &&
+                    utmTags.contains("action_fetch_starred_assets")) {
+                return true;
+            }
+
+            // Pattern 2: Page loading
+            if (utmTags.contains("project_webapp") &&
+                    utmTags.contains("action_searched_on_load")) {
+                return true;
+            }
+
+            // Pattern 3: Assets page with search input empty
+            if (utmTags.contains("project_webapp") &&
+                    utmTags.contains("page_assets") &&
+                    utmTags.contains("action_searched")) {
+                return StringUtils.isEmpty(parameters.getSearchInput());
+            }
+        }
+
+        return false;
     }
 }
