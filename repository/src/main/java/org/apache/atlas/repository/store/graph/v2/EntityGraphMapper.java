@@ -5273,4 +5273,40 @@ public class EntityGraphMapper {
                 "read on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
 
     }
+
+    public List<AtlasVertex> unlinkBusinessPolicyV2(Set<String> assetGuids, Set<String> unlinkGuids) {
+
+        if (CollectionUtils.isEmpty(assetGuids) || CollectionUtils.isEmpty(unlinkGuids)) {
+            throw new IllegalArgumentException("assets and unlinkGuids must not be empty");
+        }
+
+        return assetGuids.stream()
+                .map(guid -> AtlasGraphUtilsV2.findByGuid(graph, guid))
+                .filter(Objects::nonNull)
+                .map(vertex -> updateVertexPolicyV2(vertex, unlinkGuids))
+                .collect(Collectors.toList());
+    }
+
+
+    private AtlasVertex updateVertexPolicyV2(AtlasVertex vertex, Set<String> policyIds) {
+        Set<String> compliantPolicies = getMultiValuedSetProperty(vertex, ASSET_POLICY_GUIDS);
+        Set<String> nonCompliantPolicies = getMultiValuedSetProperty(vertex, NON_COMPLIANT_ASSET_POLICY_GUIDS);
+        policyIds.forEach(policyId -> {
+            vertex.removePropertyValue(ASSET_POLICY_GUIDS, policyId);
+            vertex.removePropertyValue(NON_COMPLIANT_ASSET_POLICY_GUIDS, policyId);
+        });
+
+        int compliantPolicyCount = countPoliciesExcluding(compliantPolicies, "rule");
+        int nonCompliantPolicyCount = countPoliciesExcluding(nonCompliantPolicies, "rule");
+        int totalPolicyCount = compliantPolicyCount + nonCompliantPolicyCount;
+        vertex.setProperty(ASSET_POLICIES_COUNT, totalPolicyCount);
+
+        updateModificationMetadata(vertex);
+        cacheDifferentialEntity(vertex, compliantPolicies, nonCompliantPolicies);
+
+        return vertex;
+    }
+
+
+
 }

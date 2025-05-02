@@ -3054,4 +3054,25 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             RequestContext.get().endMetricRecord(metric);
         }
     }
+
+
+    @Override
+    @GraphTransaction
+    public void unlinkBusinessPolicyV2(Set<String> assetGuids, Set<String> unlinkGuids) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkBusinessPolicy.GraphTransaction");
+        try {
+            List<AtlasVertex> vertices = this.entityGraphMapper.unlinkBusinessPolicyV2(assetGuids, unlinkGuids);
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+
+            handleEntityMutation(vertices);
+        } catch (Exception e) {
+            LOG.error("Error during unlinkBusinessPolicy", e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
 }

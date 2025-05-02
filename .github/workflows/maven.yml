@@ -28,6 +28,7 @@ on:
       - master
       - lineageondemand
       - optimise_classifications_fetch
+      - featarpit1
 
 jobs:
   build:

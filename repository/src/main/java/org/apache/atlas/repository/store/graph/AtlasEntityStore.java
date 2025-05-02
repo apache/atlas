@@ -383,4 +383,6 @@ public interface AtlasEntityStore {
      *  For evaluations of policies
      */
     List<AtlasEvaluatePolicyResponse> evaluatePolicies(List<AtlasEvaluatePolicyRequest> entities) throws AtlasBaseException;
+
+    void unlinkBusinessPolicyV2(Set<String> assetGuids, Set<String> unlinkGuids) throws AtlasBaseException;
 }
