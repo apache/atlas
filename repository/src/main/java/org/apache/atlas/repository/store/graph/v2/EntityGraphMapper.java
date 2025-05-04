@@ -4705,7 +4705,7 @@ public class EntityGraphMapper {
         mapAttributes(classification, traitInstanceVertex, operation, context);
 
         AtlasEdge ret = getClassificationEdge(parentInstanceVertex, traitInstanceVertex);
-
+        // TODO :  Edge is created with correct ref. but vertices are not connecting or referencing back to edge
         if (ret == null) {
             ret = graphHelper.addClassificationEdge(parentInstanceVertex, traitInstanceVertex, false);
         }
