@@ -1082,8 +1082,11 @@ public class EntityGraphRetriever {
                 mapRelationshipAttributes(entityVertex, entity, entityExtInfo, isMinExtInfo);
             }
 
-            //mapClassifications(entityVertex, entity);
-            entity.setClassifications(tagDAO.getAllDirectTagsForVertex(entityVertex.getIdForDisplay()));
+            if(getJanusOptimisationEnabled()) {
+                entity.setClassifications(tagDAO.getAllDirectTagsForVertex(entityVertex.getIdForDisplay()));
+            } else {
+                mapClassifications(entityVertex, entity);
+            }
         }
 
         return entity;
