@@ -86,9 +86,14 @@ else
   done
 fi
 
+echo "mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean verify"
+
 mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean verify
 
-mv -f distro/target/apache-atlas-${ATLAS_VERSION}-server.tar.gz     /home/atlas/dist/
-mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz  /home/atlas/dist/
-mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hbase-hook.tar.gz /home/atlas/dist/
-mv -f distro/target/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz /home/atlas/dist/
+if [ "${PROFILE}" != "" ]
+then
+	mv -f distro/target/apache-atlas-${ATLAS_VERSION}-server.tar.gz     /home/atlas/dist/
+	mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz  /home/atlas/dist/
+	mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hbase-hook.tar.gz /home/atlas/dist/
+	mv -f distro/target/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz /home/atlas/dist/
+fi
