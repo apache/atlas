@@ -131,6 +131,14 @@ public class BusinessPolicyREST {
             throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Policy unlinking");
         }
 
+        if(CollectionUtils.isEmpty(request.getAssetGuids()) || CollectionUtils.isEmpty(request.getUnlinkGuids())) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Asset GUIDs or Unlink GUIDs cannot be empty");
+        }
+
+        if(request.getAssetGuids().size() > 50 || request.getUnlinkGuids().size() > 50) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Asset GUIDs and Unlink GUIDs should not exceed 50");
+        }
+
         // Set request context parameters
         RequestContext.get().setIncludeClassifications(false);
         RequestContext.get().setIncludeMeanings(false);
