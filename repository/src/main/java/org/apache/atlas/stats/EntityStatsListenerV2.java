@@ -104,6 +104,11 @@ public class EntityStatsListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
+    public void onClassificationsUpdatedV2(AtlasEntity entity, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException {
+        onClassificationsUpdated(entity, classifications);
+    }
+
+    @Override
     public void onClassificationsDeleted(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (classifications != null) {
             classifications.forEach(e -> this.statsClient.increment(Constants.CLASSIFICATIONS_DELETED_METRIC));

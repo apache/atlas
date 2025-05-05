@@ -123,6 +123,18 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
+    public void onClassificationsUpdatedV2(AtlasEntity entity, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException {
+        Map<String, List<AtlasClassification>> addedPropagations   = RequestContext.get().getAddedPropagations();
+        Map<String, List<AtlasClassification>> removedPropagations = RequestContext.get().getRemovedPropagations();
+
+        if (addedPropagations.containsKey(entity.getGuid())) {
+            notifyClassificationEvents(Collections.singletonList(entity), CLASSIFICATION_ADD, classifications, forceInline);
+        } else if (!removedPropagations.containsKey(entity.getGuid())) {
+            notifyClassificationEvents(Collections.singletonList(entity), CLASSIFICATION_UPDATE, classifications, forceInline);
+        }
+    }
+
+    @Override
     public void onClassificationsDeleted(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         notifyClassificationEvents(Collections.singletonList(entity), CLASSIFICATION_DELETE, classifications);
     }

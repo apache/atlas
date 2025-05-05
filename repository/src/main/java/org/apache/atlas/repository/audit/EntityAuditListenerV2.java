@@ -291,6 +291,11 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
     }
 
+    @Override
+    public void onClassificationsUpdatedV2(AtlasEntity entity, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException {
+        onClassificationsUpdated(entity, classifications);
+    }
+
     private String getDeleteClassificationString(String typeName) {
         return String.format("{\"typeName\": \"%s\"}", typeName);
     }

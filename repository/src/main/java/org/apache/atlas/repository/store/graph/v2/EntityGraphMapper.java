@@ -4860,7 +4860,7 @@ public class EntityGraphMapper {
                 ESConnector.writeTagProperties(deNormMap);
 
                 // notify listeners (async)
-                 entityChangeNotifier.onClassificationDeletedFromEntities(entities, classification);
+                entityChangeNotifier.onClassificationDeletedFromEntities(entities, classification);
 
                 totalDeleted += batchToDelete.size();
                 // grab next batch
@@ -6083,7 +6083,7 @@ public class EntityGraphMapper {
                 ESConnector.writeTagProperties(deNormMap);
 
                 // notify listeners (async) that these entities got their classification text updated
-                entityChangeNotifier.onClassificationUpdatedToEntities(entities, originalClassification);
+                entityChangeNotifier.onClassificationUpdatedToEntitiesV2(entities, originalClassification, true);
 
                 totalUpdated += batchToUpdate.size();
                 // grab next batch
