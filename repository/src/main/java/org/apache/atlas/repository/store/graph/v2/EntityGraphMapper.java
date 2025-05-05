@@ -5463,15 +5463,14 @@ public class EntityGraphMapper {
                     }
                 }).collect(Collectors.toList());
 
-                List<Tag> propagatedTags = tags.stream().filter(Tag::isPropagated).toList();
-                List<AtlasClassification> finalPropagatedClassifications = propagatedTags.stream().map(t -> {
+                tags = tags.stream().filter(Tag::isPropagated).toList();
+                List<AtlasClassification> finalPropagatedClassifications = tags.stream().map(t -> {
                     try {
                         return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
                     } catch (AtlasBaseException e) {
                         throw new RuntimeException(e);
                     }
                 }).collect(Collectors.toList());
-
 
                 AtlasClassification copiedPropagatedClassification = new AtlasClassification(currentTag);
                 copiedPropagatedClassification.setEntityGuid((String) assetMinAttrs.get(GUID_PROPERTY_KEY));
@@ -5541,7 +5540,6 @@ public class EntityGraphMapper {
                 if (CollectionUtils.isEmpty(finalClassifications)) {
                     deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForNoTags(currentTag.getTypeName());
                 } else {
-                    // Create an immutable empty list
                     deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForTags(currentTag, finalClassifications, propagatedClassifications, typeRegistry, fullTextMapperV2);
                 }
 
