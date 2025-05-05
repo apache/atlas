@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 public abstract class AbstractRedisService implements RedisService {
 
@@ -60,6 +61,22 @@ public abstract class AbstractRedisService implements RedisService {
         return isLockAcquired;
     }
 
+    @Override
+    public Lock acquireDistributedLockV2(String key) throws Exception {
+        getLogger().info("Attempting to acquire distributed lock for {}, host:{}", key, getHostAddress());
+        RLock lock = null;
+        try {
+            lock = redisClient.getFairLock(key);
+            lock.tryLock(waitTimeInMS, leaseTimeInMS, TimeUnit.MILLISECONDS);
+            getLogger().info("Lock with key {} is acquired, host: {}.", key, getHostAddress());
+           return lock;
+
+        } catch (InterruptedException e) {
+            getLogger().error("Failed to acquire distributed lock for {}, host: {}", key, getHostAddress(), e);
+            throw new AtlasException(e);
+        }
+    }
+
 
     @Override
     public void releaseDistributedLock(String key) {
@@ -72,6 +89,17 @@ public abstract class AbstractRedisService implements RedisService {
                 lock.unlock();
             }
 
+        } catch (Exception e) {
+            getLogger().error("Failed to release distributed lock for {}", key, e);
+        }
+    }
+
+
+    @Override
+    public void releaseDistributedLockV2(Lock lock, String key) {
+        try {
+
+            lock.unlock();
         } catch (Exception e) {
             getLogger().error("Failed to release distributed lock for {}", key, e);
         }
