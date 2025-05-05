@@ -5446,7 +5446,7 @@ public class EntityGraphMapper {
                                                  Map<String, Map<String, Object>> deNormAttributesMap,
                                                  Map<String, Map<String, Object>> assetMinAttrsMap) throws AtlasBaseException {
         List<AtlasEntity> propagatedEntities = new ArrayList<>();
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateClassificationAttrs");
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateClassificationTextV2");
 
         if(CollectionUtils.isNotEmpty(propagatedVertices)) {
             for(AtlasVertex vertex : propagatedVertices) {
@@ -5507,6 +5507,48 @@ public class EntityGraphMapper {
         }
         RequestContext.get().endMetricRecord(metricRecorder);
         return propagatedEntities;
+    }
+
+    void updateClassificationTextV2(AtlasClassification currentTag,
+                                                 List<String> propagatedVertexIds,
+                                                 List<Tag> propagatedTags,
+                                                 Map<String, Map<String, Object>> deNormAttributesMap) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateClassificationTextV2");
+
+        if(CollectionUtils.isNotEmpty(propagatedVertexIds)) {
+            for(Tag tagAttachment : propagatedTags) {
+                //get current associated tags to asset ONLY from Cassandra namespace
+                List<Tag> tags = tagDAO.getTagsWithIsPropagatedByVertexId(tagAttachment.getVertexId());
+
+                List<AtlasClassification> finalClassifications = tags.stream().map(t -> {
+                    try {
+                        return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
+                    } catch (AtlasBaseException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).collect(Collectors.toList());
+
+                tags = tags.stream().filter(Tag::isPropagated).toList();
+                List<AtlasClassification> propagatedClassifications = tags.stream().map(t -> {
+                    try {
+                        return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
+                    } catch (AtlasBaseException e) {
+                        throw new RuntimeException(e);
+                    }
+                }).collect(Collectors.toList());
+
+                Map<String, Object> deNormAttributes;
+                if (CollectionUtils.isEmpty(finalClassifications)) {
+                    deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForNoTags(currentTag.getTypeName());
+                } else {
+                    // Create an immutable empty list
+                    deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForTags(currentTag, finalClassifications, propagatedClassifications, typeRegistry, fullTextMapperV2);
+                }
+
+                deNormAttributesMap.put(tagAttachment.getVertexId(), deNormAttributes);
+            }
+        }
+        RequestContext.get().endMetricRecord(metricRecorder);
     }
 
     private void updateLabels(AtlasVertex vertex, Set<String> labels) {
@@ -5984,8 +6026,8 @@ public class EntityGraphMapper {
                 return;
             }
 
-            AtlasVertex entityVertex = graphHelper.getVertexForGUID(sourceEntityGuid);
-            if (entityVertex == null) {
+            AtlasVertex sourceEntityVertex = graphHelper.getVertexForGUID(sourceEntityGuid);
+            if (sourceEntityVertex == null) {
                 LOG.error("updateClassificationTextPropagation(entityGuid={}, tagTypeName={}): entity vertex not found",
                         sourceEntityGuid, tagTypeName);
                 throw new AtlasBaseException(
@@ -5994,15 +6036,18 @@ public class EntityGraphMapper {
             }
 
             int totalUpdated = 0;
-            boolean done = false;
 
             // fetch propagated‑tag attachments in batches
-            PaginatedTagResult paginatedResult = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
-            AtlasClassification originalTag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
+            PaginatedTagResult paginatedResult = tagDAO.getPropagationsForAttachmentBatch(sourceEntityVertex.getIdForDisplay(), tagTypeName);
+            AtlasClassification originalClassification = tagDAO.findDirectTagByVertexIdAndTagTypeName(sourceEntityVertex.getIdForDisplay(), tagTypeName);
+            if (originalClassification == null) {
+                LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): classification vertex not found", sourceEntityGuid, tagTypeName);
+                throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, tagTypeName=%s): classification vertex not found", sourceEntityGuid, tagTypeName));
+            }
+
             List<Tag> batchToUpdate = paginatedResult.getTags();
             int previousBatchSize = -1; // Track previous batch size for loop detection
             int loopDetectionCounter = 0;
-
 
             while (!batchToUpdate.isEmpty()) {
                 // Safety check to prevent infinite loops - if we get the same batch size twice in a row
@@ -6024,30 +6069,30 @@ public class EntityGraphMapper {
                         .map(Tag::getVertexId)
                         .toList();
 
-                List<AtlasEntity> entities = batchToUpdate.stream().map(x->getEntityForNotification(x.getAssetMetadata())).toList();
+                Map<String, Map<String, Object>> assetMinAttrsMap = batchToUpdate.stream()
+                        .collect(Collectors.toMap(Tag::getVertexId, Tag::getAssetMetadata));
+
+                List<AtlasEntity> entities = batchToUpdate.stream().map(x -> getEntityForNotification(x.getAssetMetadata())).toList();
+
+                // Update all propagated tags in Cassandra
+                tagDAO.putPropagatedTags(sourceEntityVertex.getIdForDisplay(), tagTypeName, new HashSet<>(vertexIds), assetMinAttrsMap, originalClassification);
 
                 // compute fresh classification‑text de‑norm attributes for this batch
-                Map<String, Map<String, Object>> deNormMap =
-                        TagDeNormAttributesUtil.getPropagatedTagDeNormForUpdateProp(
-                                tagDAO,
-                                sourceEntityGuid,
-                                vertexIds,
-                                typeRegistry,
-                                fullTextMapperV2
-                        );
+                Map<String, Map<String, Object>> deNormMap = new HashMap<>();
+                updateClassificationTextV2(originalClassification, vertexIds, batchToUpdate, deNormMap);
 
                 // push them to ES
                 ESConnector.writeTagProperties(deNormMap);
 
                 // notify listeners (async) that these entities got their classification text updated
-                 entityChangeNotifier.onClassificationUpdatedToEntities(entities, originalTag);
+                entityChangeNotifier.onClassificationUpdatedToEntities(entities, originalClassification);
 
                 totalUpdated += batchToUpdate.size();
                 // grab next batch
                 if (paginatedResult.isDone()) {
                     break;
                 }
-                paginatedResult = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
+                paginatedResult = tagDAO.getPropagationsForAttachmentBatch(sourceEntityVertex.getIdForDisplay(), tagTypeName);
                 batchToUpdate = paginatedResult.getTags();
             }
 

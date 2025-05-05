@@ -206,9 +206,16 @@ public class TagDeNormAttributesUtil {
         // Add tag Propagation, asset having other tags
         Map<String, Object> deNormAttrs = new HashMap<>();
 
-        deNormAttrs.put(CLASSIFICATION_TEXT_KEY, getClassificationTextKey(finalTags, typeRegistry, fullTextMapperV2));
+        if (CollectionUtils.isNotEmpty(finalTags))
+            deNormAttrs.put(CLASSIFICATION_TEXT_KEY, getClassificationTextKey(finalTags, typeRegistry, fullTextMapperV2));
 
         //filter propagated attachments
+        updateDenormAttributesForPropagatedTags(propagatedTag, finalPropagatedTags, deNormAttrs);
+
+        return deNormAttrs;
+    }
+
+    private static void updateDenormAttributesForPropagatedTags(AtlasClassification propagatedTag, List<AtlasClassification> finalPropagatedTags, Map<String, Object> deNormAttrs) {
         List<String> propTraits = finalPropagatedTags.stream()
                 .map(AtlasStruct::getTypeName)
                 .collect(Collectors.toList());
@@ -224,8 +231,6 @@ public class TagDeNormAttributesUtil {
             deNormAttrs.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, Collections.singletonList(propagatedTag.getTypeName()));
             deNormAttrs.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, CLASSIFICATION_NAME_DELIMITER + propagatedTag.getTypeName());
         }
-
-        return deNormAttrs;
     }
 
     private static String getClassificationTextKey(List<AtlasClassification> tags, AtlasTypeRegistry typeRegistry, IFullTextMapper fullTextMapperV2) throws AtlasBaseException {
