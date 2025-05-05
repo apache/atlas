@@ -41,6 +41,9 @@ public class ImpalaOperationParser {
     private static final Pattern INSERT_SELECT_FROM_PATTERN =
             Pattern.compile("^[ ]*\\binsert\\b.*\\b(into|overwrite)\\b.*\\bselect\\b.*\\bfrom\\b.*", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
 
+    private static final Pattern WITH_CLAUSE_INSERT_SELECT_FROM_PATTERN =
+            Pattern.compile("^[ ]*(\\bwith\\b.*)?\\s*\\binsert\\b.*\\b(into|overwrite)\\b.*\\bselect\\b.*\\bfrom\\b.*", Pattern.DOTALL | Pattern.CASE_INSENSITIVE);
+    
     public ImpalaOperationParser() {
     }
 
@@ -55,6 +58,9 @@ public class ImpalaOperationParser {
             return ImpalaOperationType.ALTERVIEW_AS;
         } else if (doesMatch(queryTextWithNoComments, INSERT_SELECT_FROM_PATTERN)) {
             return ImpalaOperationType.QUERY;
+        } else if (doesMatch(queryTextWithNoComments, WITH_CLAUSE_INSERT_SELECT_FROM_PATTERN)) {
+            return ImpalaOperationType.QUERY_WITH_CLAUSE;
+            
         }
 
         return ImpalaOperationType.UNKNOWN;

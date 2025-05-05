@@ -32,12 +32,6 @@ github:
     squash:  true
     merge:   false
     rebase:  false
-  notifications:
-    commits: commits@atlas.apache.org
-    issues: dev@atlas.apache.org
-    pullrequests: dev@atlas.apache.org
-    pullrequests_comment: dev@atlas.apache.org
-    jira_options: worklog link label
   protected_branches:
     master: {}
   collaborators:
@@ -48,3 +42,10 @@ github:
     - pinal-shah
     - rkundam
     - sarathsubramanian
+
+notifications:
+  commits: commits@atlas.apache.org
+  issues: dev@atlas.apache.org
+  pullrequests: dev@atlas.apache.org
+  pullrequests_comment: dev@atlas.apache.org
+  jira_options: worklog link label

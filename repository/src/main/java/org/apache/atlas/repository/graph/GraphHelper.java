@@ -1142,14 +1142,13 @@ public final class GraphHelper {
 
         for (int numRetries = 0; numRetries < maxRetries; numRetries++) {
             try {
-                LOG.debug("Running edge creation attempt {}", numRetries);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Running edge creation attempt {}", numRetries);
+                }
 
-                if (inVertex.hasEdges(AtlasEdgeDirection.IN, edgeLabel) && outVertex.hasEdges(AtlasEdgeDirection.OUT, edgeLabel)) {
-                    AtlasEdge edge = graph.getEdgeBetweenVertices(outVertex, inVertex, edgeLabel);
-
-                    if (edge != null) {
-                        return edge;
-                    }
+                AtlasEdge edge = graph.getEdgeBetweenVertices(outVertex, inVertex, edgeLabel);
+                if (edge != null) {
+                    return edge;
                 }
 
                 return addEdge(outVertex, inVertex, edgeLabel);
