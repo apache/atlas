@@ -359,6 +359,42 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     @Override
+    @Async
+    public void onClassificationDeletedFromEntitiesV2(List<AtlasEntity> entities, AtlasClassification deletedClassification, boolean forceInline) throws AtlasBaseException {
+        for (AtlasEntity entity : entities) {
+            onClassificationDeletedFromEntityV2(entity, Collections.singletonList(deletedClassification), forceInline);
+        }
+    }
+
+    @Override
+    public void onClassificationDeletedFromEntityV2(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException {
+        doFullTextMapping(entity.getGuid());
+
+        if (isV2EntityNotificationEnabled) {
+            for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+                listener.onClassificationsDeletedV2(entity, deletedClassifications, forceInline);
+            }
+        } else {
+            if (instanceConverter != null) {
+                Referenceable entityRef = toReferenceable(entity.getGuid());
+                List<Struct>  traits    = toStruct(deletedClassifications);
+
+                if (entityRef == null || CollectionUtils.isEmpty(deletedClassifications)) {
+                    return;
+                }
+
+                for (EntityChangeListener listener : entityChangeListeners) {
+                    try {
+                        listener.onTraitsDeleted(entityRef, traits);
+                    } catch (AtlasException e) {
+                        throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitDelete");
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
     public void onTermAddedToEntities(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entityIds) throws AtlasBaseException {
         // listeners notified on term-entity association only if v2 notifications are enabled
         if (isV2EntityNotificationEnabled) {

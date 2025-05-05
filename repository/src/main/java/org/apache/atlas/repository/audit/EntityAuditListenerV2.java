@@ -499,6 +499,11 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
         }
     }
 
+    @Override
+    public void onClassificationsDeletedV2(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException {
+        onClassificationsDeleted(entity, deletedClassifications);
+    }
+
     private EntityAuditEventV2 createEvent(EntityAuditEventV2 entityAuditEventV2, AtlasEntity entity, EntityAuditActionV2 action, String details) {
         return createEvent(entityAuditEventV2, entity, null, action, details);
     }

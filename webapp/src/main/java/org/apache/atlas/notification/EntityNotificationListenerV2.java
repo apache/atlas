@@ -413,4 +413,10 @@ public class EntityNotificationListenerV2 implements EntityChangeListenerV2 {
     public void onBusinessAttributesUpdated(AtlasEntity entity, Map<String, Map<String, Object>> updatedBusinessAttributes) throws AtlasBaseException{
         notifyBusinessMetadataEvents(entity, BUSINESS_ATTRIBUTE_UPDATE, updatedBusinessAttributes);
     }
+
+    @Override
+    public void onClassificationsDeletedV2(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException {
+        notifyClassificationEvents(Collections.singletonList(entity), CLASSIFICATION_DELETE, deletedClassifications, forceInline);
+    }
+
 }

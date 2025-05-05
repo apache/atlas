@@ -4822,7 +4822,11 @@ public class EntityGraphMapper {
             List<Tag> batchToDelete = pageToDelete.getTags();
             int previousBatchSize = -1; // Track previous batch size for loop detection
             int loopDetectionCounter = 0;
-            AtlasClassification classification = tagDAO.findDirectDeletedTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
+            AtlasClassification originalClassification = tagDAO.findDirectDeletedTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
+            if (originalClassification == null) {
+                LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): classification vertex not found", sourceEntityGuid, tagTypeName);
+                throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, tagTypeName=%s): classification vertex not found", sourceEntityGuid, tagTypeName));
+            }
 
             while (!batchToDelete.isEmpty()) {
                 // Safety check to prevent infinite loops - if we get the same batch size twice in a row
@@ -4844,23 +4848,20 @@ public class EntityGraphMapper {
                         .map(Tag::getVertexId)
                         .toList();
 
+
                 List<AtlasEntity> entities = batchToDelete.stream().map(x->getEntityForNotification(x.getAssetMetadata())).toList();
 
-                // compute fresh classification‑text de‑norm attributes for this batch
-                Map<String, Map<String, Object>> deNormMap =
-                        TagDeNormAttributesUtil.getPropagatedTagDeNormForUpdateProp(
-                                tagDAO,
-                                sourceEntityGuid,
-                                vertexIds,
-                                typeRegistry,
-                                fullTextMapperV2
-                        );
+                // Delete from Cassandra
+                deletePropagations(batchToDelete);
 
+                // compute fresh classification‑text de‑norm attributes for this batch
+                Map<String, Map<String, Object>> deNormMap = new HashMap<>();
+                updateClassificationTextV2(originalClassification, vertexIds, batchToDelete, deNormMap);
                 // push them to ES
                 ESConnector.writeTagProperties(deNormMap);
 
                 // notify listeners (async)
-                entityChangeNotifier.onClassificationDeletedFromEntities(entities, classification);
+                entityChangeNotifier.onClassificationDeletedFromEntitiesV2(entities, originalClassification, true);
 
                 totalDeleted += batchToDelete.size();
                 // grab next batch
@@ -4882,18 +4883,11 @@ public class EntityGraphMapper {
         }
     }
 
-    public int deletePropagations(List<Tag> batchToDelete, String sourceEntityGuid, AtlasVertex entityVertex, String tagTypeName) throws AtlasBaseException {
+    public int deletePropagations(List<Tag> batchToDelete) throws AtlasBaseException {
         if(batchToDelete.isEmpty())
             return 0;
         int totalDeleted = 0;
         tagDAO.deleteTags(batchToDelete);
-
-        // Update DeNorm attributes
-        List<String> entityVertexIds = batchToDelete.stream().map(Tag::getVertexId).toList();
-        Map<String, Map<String, Object>> finalDeNormMap = TagDeNormAttributesUtil.getPropagatedTagDeNormForDeleteProp(
-                tagDAO, sourceEntityGuid, entityVertexIds, typeRegistry, fullTextMapperV2);
-        ESConnector.writeTagProperties(finalDeNormMap);
-
         totalDeleted += batchToDelete.size();
         return totalDeleted;
     }
@@ -6149,16 +6143,28 @@ public class EntityGraphMapper {
 
         LOG.info("To add classification with typeName {} to {} vertices",classificationTypeName, verticesIdsToAddClassification.size());
 
-        List<Tag> verticesIdsToRemove = tagPropagations.stream()
+        List<Tag> tagsToRemove = tagPropagations.stream()
                 .filter(t -> !impactedVertices.contains(t.getVertexId()))
                 .collect(Collectors.toList());
+
+        // collect the vertex IDs in this batch
+        List<String> vertexIdsToDelete = tagsToRemove.stream()
+                .map(Tag::getVertexId)
+                .toList();
 
         List<AtlasVertex> verticesToAddClassification  = verticesIdsToAddClassification.stream()
                 .map(x -> graph.getVertex(x))
                 .filter(vertex -> vertex != null)
                 .collect(Collectors.toList());
 
-        int totalDeleted = deletePropagations(verticesIdsToRemove, sourceEntityVertexId, sourceEntityVertex, classificationTypeName);
+        deletePropagations(tagsToRemove);
+
+        // compute fresh classification‑text de‑norm attributes for this batch
+        Map<String, Map<String, Object>> deNormMap = new HashMap<>();
+        updateClassificationTextV2(tag, vertexIdsToDelete, tagsToRemove, deNormMap);
+        // push them to ES
+        ESConnector.writeTagProperties(deNormMap);
+
         if (CollectionUtils.isEmpty(verticesToAddClassification)) {
             LOG.debug("propagateClassification(entityGuid={}, classificationTypeName={}): found no entities to propagate the classification", sourceEntityId, classificationTypeName);
             return;

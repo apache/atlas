@@ -185,4 +185,9 @@ public class EntityStatsListenerV2 implements EntityChangeListenerV2 {
             updatedBusinessAttributes.keySet().forEach(e -> this.statsClient.increment(Constants.BA_UPDATED_METRIC));
         }
     }
+
+    @Override
+    public void onClassificationsDeletedV2(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException {
+        onClassificationsDeleted(entity, deletedClassifications);
+    }
 }
