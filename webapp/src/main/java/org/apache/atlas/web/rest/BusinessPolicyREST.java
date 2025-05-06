@@ -6,6 +6,7 @@ import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.BusinessPolicyRequest;
 import org.apache.atlas.model.instance.LinkBusinessPolicyRequest;
+import org.apache.atlas.model.instance.UnlinkBusinessPolicyRequest;
 import org.apache.atlas.model.instance.MoveBusinessPolicyRequest;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -120,47 +121,46 @@ public class BusinessPolicyREST {
         }
     }
 
-
     @POST
-    @Path("/move/{assetId}")
+    @Path("/unlink-business-policy/v2")
     @Timed
-    public void moveBusinessPolicies(
-            @PathParam("assetId") String assetId,
-            final MoveBusinessPolicyRequest request
-    ) throws AtlasBaseException {
-        if (isInvalidRequest(request, assetId)) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Request is missing required parameters.");
-        }
-        // Start performance metric recording
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("moveBusinessPolicy");
-
-        // Ensure the current user is authorized to move the policy
-        String currentUser = RequestContext.getCurrentUser();
-        if (!ARGO_SERVICE_USER_NAME.equals(currentUser)) {
-            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, currentUser, "moveBusinessPolicy");
+    public void unlinkBusinessPolicyV2(final UnlinkBusinessPolicyRequest request) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("unlinkBusinessPolicyV2");
+        // Ensure the current user is authorized to unlink policies
+        if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
+            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Policy unlinking");
         }
 
-        // Set request context parameters for the current operation
-        RequestContext requestContext = RequestContext.get();
-        requestContext.setIncludeClassifications(false);
-        requestContext.setIncludeMeanings(false);
-        requestContext.getRequestContextHeaders().put("x-atlan-route", "business-policy-rest");
+        if(CollectionUtils.isEmpty(request.getAssetGuids()) || CollectionUtils.isEmpty(request.getUnlinkGuids())) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Asset GUIDs or Unlink GUIDs cannot be empty");
+        }
+
+        if(request.getAssetGuids().size() > 50 || request.getUnlinkGuids().size() > 50) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Asset GUIDs and Unlink GUIDs should not exceed 50");
+        }
+
+        // Set request context parameters
+        RequestContext.get().setIncludeClassifications(false);
+        RequestContext.get().setIncludeMeanings(false);
+        RequestContext.get().getRequestContextHeaders().put("x-atlan-route", "business-policy-rest");
 
         AtlasPerfTracer perf = null;
         try {
             // Start performance tracing if enabled
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BusinessPolicyREST.moveBusinessPolicy(" + assetId + ")");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "BusinessPolicyREST.unlinkBusinessPolicyV2()");
             }
 
-            // Move the business policy using the entitiesStore
-            entitiesStore.moveBusinessPolicies(request.getPolicyIds(), assetId, request.getType());
+            // Unlink the business policy from the specified entities
+            entitiesStore.unlinkBusinessPolicyV2(request.getAssetGuids(), request.getUnlinkGuids());
         } finally {
-            // Log performance trace and end metric recording
+            // Log performance metrics
             AtlasPerfTracer.log(perf);
-            requestContext.endMetricRecord(metric);
+            RequestContext.get().endMetricRecord(metric);
         }
     }
+
+
 
     private boolean isInvalidRequest(MoveBusinessPolicyRequest request, String assetId) {
         return Objects.isNull(request) ||
