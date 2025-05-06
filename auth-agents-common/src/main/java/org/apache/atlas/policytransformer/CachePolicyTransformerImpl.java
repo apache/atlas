@@ -66,7 +66,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import java.util.Iterator;
 
 import static org.apache.atlas.repository.Constants.NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
@@ -221,11 +220,7 @@ public class CachePolicyTransformerImpl {
 
                     // filter and set abac policies
                     if (abacService != null) {
-                        ServicePolicies.AbacPolicies abacPolicies = new ServicePolicies.AbacPolicies();
-                        abacPolicies.setServiceName(abacServiceName);
-                        abacPolicies.setPolicyUpdateTime(new Date());
-                        abacPolicies.setServiceId(abacService.getGuid());
-                        abacPolicies.setPolicyVersion(-1L);
+                        ServicePolicies.ABACPolicies abacPolicies = new ServicePolicies.ABACPolicies(abacServiceName, abacService.getGuid());
                         servicePolicies.setAbacPolicies(abacPolicies); // this only sets the service name for abac policies, the actual policies will be added to main delta.policies itself
 
                         List<AtlasEntityHeader> abacServicePolicies = allAtlasPolicies.stream().filter(x -> abacServiceName.equals(x.getAttribute(ATTR_POLICY_SERVICE_NAME))).collect(Collectors.toList());
@@ -302,11 +297,7 @@ public class CachePolicyTransformerImpl {
                     AtlasEntityHeader abacService = getServiceEntity(abacServiceName);
                     if (abacService != null) {
                         allPolicies.addAll(getServicePolicies(abacService, 0));
-                        ServicePolicies.AbacPolicies abacPolicies = new ServicePolicies.AbacPolicies();
-                        abacPolicies.setServiceName(abacServiceName);
-                        abacPolicies.setPolicyUpdateTime(new Date());
-                        abacPolicies.setServiceId(abacService.getGuid());
-                        abacPolicies.setPolicyVersion(-1L);
+                        ServicePolicies.ABACPolicies abacPolicies = new ServicePolicies.ABACPolicies(abacServiceName, abacService.getGuid());
 
                         servicePolicies.setAbacPolicies(abacPolicies);
                     }
@@ -327,7 +318,7 @@ public class CachePolicyTransformerImpl {
                 servicePolicies.getTagPolicies().setPolicies(policiesB);
 
                 if (servicePolicies.getAbacPolicies() == null) {
-                    servicePolicies.setAbacPolicies(new ServicePolicies.AbacPolicies());
+                    servicePolicies.setAbacPolicies(new ServicePolicies.ABACPolicies());
                 }
                 servicePolicies.getAbacPolicies().setPolicies(policiesC);
 

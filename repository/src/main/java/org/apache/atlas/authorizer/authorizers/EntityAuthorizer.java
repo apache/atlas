@@ -73,7 +73,8 @@ public class EntityAuthorizer {
             try {
                 filterCriteriaNode = mapper.readTree(filterCriteria);
             } catch (JsonProcessingException e) {
-                e.printStackTrace();
+                LOG.error("ABAC_AUTH: parsing json filter criteria failed for policy={} filterCriteria={}", policy.getGuid(), filterCriteria);
+                return result;
             }
             if (filterCriteriaNode != null && filterCriteriaNode.get("entity") != null) {
                 JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("entity");
@@ -95,7 +96,7 @@ public class EntityAuthorizer {
         String condition = data.get("condition").asText();
         JsonNode criterion = data.get("criterion");
 
-        if (criterion.size() == 0) {
+        if (criterion == null || !criterion.isArray() || criterion.isEmpty() ) {
             return false;
         }
         boolean result = true;

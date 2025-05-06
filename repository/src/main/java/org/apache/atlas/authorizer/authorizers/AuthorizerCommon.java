@@ -8,6 +8,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -98,12 +99,10 @@ public class AuthorizerCommon {
     }
 
     public static AtlasEntityHeader toAtlasEntityHeaderWithClassifications(String guid) throws AtlasBaseException {
-        //return new AtlasEntity(entityRetriever.toAtlasEntityHeaderWithClassifications(guid));
         return entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
     }
 
     public static AtlasEntityHeader toAtlasEntityHeaderWithClassifications(AtlasVertex vertex) throws AtlasBaseException {
-        //return new AtlasEntity(entityRetriever.toAtlasEntityHeaderWithClassifications(vertex));
         return entityRetriever.toAtlasEntityHeaderWithClassifications(vertex);
     }
 
@@ -133,7 +132,7 @@ public class AuthorizerCommon {
 
     public static boolean isTagResourceMatch(List<String> policyValues, AtlasEntityHeader entityHeader) {
         if (!policyValues.contains(("*"))) {
-            if (entityHeader.getClassifications() == null || entityHeader.getClassifications().isEmpty()) {
+            if (CollectionUtils.isEmpty(entityHeader.getClassifications())) {
                 //since entity does not have tags at all, it should not pass this evaluation
                 return false;
             }

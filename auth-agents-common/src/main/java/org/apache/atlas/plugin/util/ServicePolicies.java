@@ -20,9 +20,7 @@
 package org.apache.atlas.plugin.util;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.apache.atlas.authorizer.store.PoliciesStore;
-import org.apache.commons.collections.MapUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
@@ -42,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
@@ -57,7 +56,7 @@ public class ServicePolicies implements java.io.Serializable {
 	private RangerServiceDef   serviceDef;
 	private String             auditMode = RangerPolicyEngine.AUDIT_DEFAULT;
 	private TagPolicies        tagPolicies;
-	private AbacPolicies       abacPolicies;
+	private ABACPolicies abacPolicies;
 	private Map<String, SecurityZoneInfo> securityZones;
 	private List<RangerPolicyDelta> policyDeltas;
 	private Map<String, String> serviceConfig;
@@ -163,11 +162,11 @@ public class ServicePolicies implements java.io.Serializable {
 		this.tagPolicies = tagPolicies;
 	}
 
-	public AbacPolicies getAbacPolicies() {
+	public ABACPolicies getAbacPolicies() {
 		return abacPolicies;
 	}
 
-	public void setAbacPolicies(AbacPolicies abacPolicies) {
+	public void setAbacPolicies(ABACPolicies abacPolicies) {
 		this.abacPolicies = abacPolicies;
 	}
 
@@ -317,7 +316,7 @@ public class ServicePolicies implements java.io.Serializable {
 	@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
 	@XmlRootElement
 	@XmlAccessorType(XmlAccessType.FIELD)
-	public static class AbacPolicies implements java.io.Serializable {
+	public static class ABACPolicies implements java.io.Serializable {
 		private static final long serialVersionUID = 1L;
 
 		private String serviceName;
@@ -328,6 +327,15 @@ public class ServicePolicies implements java.io.Serializable {
 		private RangerServiceDef serviceDef;
 		private String auditMode = RangerPolicyEngine.AUDIT_DEFAULT;
 		private Map<String, String> serviceConfig;
+
+		public ABACPolicies(String abacServiceName, String serviceId) {
+			this.setServiceName(abacServiceName);
+			this.setPolicyUpdateTime(new Date());
+			this.setPolicyVersion(-1L);
+			this.setServiceId(serviceId);
+		}
+
+		public ABACPolicies() {}
 
 		public String getServiceName() {
 			return serviceName;
@@ -479,22 +487,22 @@ public class ServicePolicies implements java.io.Serializable {
 		}
 
 		if (source.getAbacPolicies() != null) {
-			AbacPolicies abacPolicies = copyHeader(source.getAbacPolicies(), null);
+			ABACPolicies abacPolicies = copyHeader(source.getAbacPolicies(), null);
 			ret.setAbacPolicies(abacPolicies);
 		}
 
 		return ret;
 	}
 
-	static public AbacPolicies copyHeader(AbacPolicies source, String componentServiceName) {
-		AbacPolicies ret = new AbacPolicies();
+	static public ABACPolicies copyHeader(ABACPolicies source, String componentServiceName) {
+		ABACPolicies ret = new ABACPolicies();
 
 		ret.setServiceName(source.getServiceName());
 		ret.setServiceId(source.getServiceId());
 		ret.setPolicyVersion(source.getPolicyVersion());
 		ret.setAuditMode(source.getAuditMode());
 		ret.setPolicyUpdateTime(source.getPolicyUpdateTime());
-		ret.setPolicies(Collections.emptyList());
+		ret.setPolicies(new ArrayList<>());
 
 		if (componentServiceName != null) {
 			ret.setServiceDef(ServiceDefUtil.normalizeAccessTypeDefs(source.getServiceDef(), componentServiceName));

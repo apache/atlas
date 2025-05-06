@@ -14,6 +14,7 @@ import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.solr.common.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -119,13 +120,14 @@ public class AccessorsExtractor {
 
             for (RangerPolicy policy : abacPolicies) {
                 String filterCriteria = policy.getPolicyFilterCriteria();
-                if (filterCriteria != null && !filterCriteria.isEmpty() ) {
+                if (!StringUtils.isEmpty(filterCriteria)) {
 
                     JsonNode filterCriteriaNode = null;
                     try {
                         filterCriteriaNode = mapper.readTree(policy.getPolicyFilterCriteria());
                     } catch (JsonProcessingException e) {
-                        e.printStackTrace();
+                        LOG.error("ABAC_AUTH: getAccessorsInMemoryForAbacPolicies.entity_actions: parsing filterCriteria failed for policy={}, filterCriteria={}", policy.getGuid(), policy.getPolicyFilterCriteria());
+                        continue;
                     }
 
                     if (filterCriteriaNode != null && filterCriteriaNode.get("entity") != null) {
@@ -162,7 +164,7 @@ public class AccessorsExtractor {
                     try {
                         filterCriteriaNode = mapper.readTree(policy.getPolicyFilterCriteria());
                     } catch (JsonProcessingException e) {
-                        e.printStackTrace();
+                        LOG.error("ABAC_AUTH: getAccessorsInMemoryForAbacPolicies.relationship_actions: parsing filterCriteria failed for policy={}, filterCriteria={}", policy.getGuid(), policy.getPolicyFilterCriteria());
                     }
 
                     if (filterCriteriaNode != null && filterCriteriaNode.get("endOneEntity") != null) {

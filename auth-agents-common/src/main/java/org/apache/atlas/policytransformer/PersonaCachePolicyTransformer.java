@@ -102,7 +102,7 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                 header.setAttribute(ATTR_NAME, "transformed_policy_persona");
                 header.setAttribute(ATTR_POLICY_CONDITIONS, templatePolicy.getPolicyConditions());
 
-                if (policyServiceName.equals(POLICY_SERVICE_NAME_ABAC)) {
+                if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
                     if (policyFilterCriteria != null && !policyFilterCriteria.isEmpty()) {
                         ObjectMapper mapper = new ObjectMapper();
                         try {

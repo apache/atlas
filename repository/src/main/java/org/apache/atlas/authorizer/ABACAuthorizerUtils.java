@@ -103,7 +103,7 @@ public class ABACAuthorizerUtils {
     }
 
     private static AtlasAccessResult verifyAccess(String relationshipType, AtlasEntityHeader endOneEntity, AtlasEntityHeader endTwoEntity, AtlasPrivilege action) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyAccess");
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("verifyRelationshipTypeAccess");
         AtlasAccessResult result = new AtlasAccessResult(false);
 
         AtlasRelationshipAccessRequest request = new AtlasRelationshipAccessRequest(typeRegistry,
