@@ -76,7 +76,10 @@ public class AsyncImportApiExample {
         try {
             PList<AsyncImportStatus> statuses = client.getAsyncImportStatus();
 
-            System.out.println("All Async Import Statuses: " + statuses);
+            System.out.println("All Async Import Statuses:");
+            for (AsyncImportStatus status : statuses.getList()) {
+                System.out.println(status);
+            }
         } catch (AtlasServiceException e) {
             System.err.println("Failed to fetch all async import statuses: " + e.getMessage());
 

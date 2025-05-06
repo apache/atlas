@@ -233,7 +233,7 @@ public final class Constants {
      * Atlas Async Import vertex property keys.
      */
     public static final String ATLAS_ASYNC_IMPORT_PREFIX                            = INTERNAL_PROPERTY_KEY_PREFIX + "AtlasAsyncImportRequest.";
-    public static final String PROPERTY_KEY_RECEIVED_AT                             = encodePropertyKey(ATLAS_ASYNC_IMPORT_PREFIX + "receivedAt");
+    public static final String PROPERTY_KEY_RECEIVED_TIME                            = encodePropertyKey(ATLAS_ASYNC_IMPORT_PREFIX + "receivedTime");
     public static final String PROPERTY_KEY_ASYNC_IMPORT_STATUS                     = encodePropertyKey(ATLAS_ASYNC_IMPORT_PREFIX + "status");
     public static final String PROPERTY_KEY_ASYNC_IMPORT_ID                         = encodePropertyKey(ATLAS_ASYNC_IMPORT_PREFIX + "importId");
 

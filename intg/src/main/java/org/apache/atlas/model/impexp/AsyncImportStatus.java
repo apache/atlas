@@ -63,4 +63,14 @@ public class AsyncImportStatus implements Serializable {
     public String getImportRequestUser() {
         return importRequestUser;
     }
+
+    @Override
+    public String toString() {
+        return "AsyncImportStatus{" +
+                "importId='" + importId + '\'' +
+                ", status='" + status + '\'' +
+                ", importRequestReceivedTime='" + importRequestReceivedTime + '\'' +
+                ", importRequestUser='" + importRequestUser + '\'' +
+                '}';
+    }
 }

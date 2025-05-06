@@ -150,8 +150,6 @@ public class AtlasClientV2 extends AtlasBaseClient {
     // Async Import APIs
     private static final String ASYNC_IMPORT_URI              = BASE_URI + "admin/async/import";
     private static final String ASYNC_IMPORT_STATUS_URI       = BASE_URI + "admin/async/import/status";
-    private static final String ASYNC_IMPORT_STATUS_BY_ID_URI = BASE_URI + "admin/async/import/status/";
-    private static final String ASYNC_IMPORT_BY_ID_URI        = BASE_URI + "admin/async/import/";
 
     private static final String IMPORT_REQUEST_PARAMTER = "request";
     private static final String IMPORT_DATA_PARAMETER   = "data";
@@ -1060,7 +1058,15 @@ public class AtlasClientV2 extends AtlasBaseClient {
     }
 
     public PList<AsyncImportStatus> getAsyncImportStatus() throws AtlasServiceException {
-        return callAPI(API_V2.ASYNC_IMPORT_STATUS_ALL, new GenericType<PList<AsyncImportStatus>>() {}, null);
+        return getAsyncImportStatus(0, 50);
+    }
+
+    public PList<AsyncImportStatus> getAsyncImportStatus(Integer offset, Integer limit) throws AtlasServiceException {
+        MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
+        queryParams.add("offset", String.valueOf(offset));
+        queryParams.add("limit", String.valueOf(limit));
+
+        return callAPI(API_V2.ASYNC_IMPORT_STATUS_ALL, new GenericType<PList<AsyncImportStatus>>() {}, queryParams);
     }
 
     public AtlasAsyncImportRequest getAsyncImportStatusById(String importId) throws AtlasServiceException {
@@ -1298,8 +1304,8 @@ public class AtlasClientV2 extends AtlasBaseClient {
         // Async Import APIs
         public static final API_V2 ASYNC_IMPORT              = new API_V2(ASYNC_IMPORT_URI, HttpMethod.POST, Response.Status.OK, MediaType.MULTIPART_FORM_DATA, MediaType.APPLICATION_JSON);
         public static final API_V2 ASYNC_IMPORT_STATUS_ALL   = new API_V2(ASYNC_IMPORT_STATUS_URI, HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 ASYNC_IMPORT_STATUS_BY_ID = new API_V2(ASYNC_IMPORT_STATUS_BY_ID_URI + "%s", HttpMethod.GET, Response.Status.OK);
-        public static final API_V2 ABORT_ASYNC_IMPORT_BY_ID = new API_V2(ASYNC_IMPORT_BY_ID_URI + "%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
+        public static final API_V2 ASYNC_IMPORT_STATUS_BY_ID = new API_V2(ASYNC_IMPORT_STATUS_URI + "/%s", HttpMethod.GET, Response.Status.OK);
+        public static final API_V2 ABORT_ASYNC_IMPORT_BY_ID = new API_V2(ASYNC_IMPORT_URI + "/%s", HttpMethod.DELETE, Response.Status.NO_CONTENT);
 
         // Glossary APIs
         public static final API_V2 GET_ALL_GLOSSARIES              = new API_V2(GLOSSARY_URI, HttpMethod.GET, Response.Status.OK);
