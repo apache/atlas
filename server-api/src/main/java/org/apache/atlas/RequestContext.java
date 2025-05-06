@@ -44,8 +44,8 @@ import static org.apache.atlas.model.instance.AtlasObjectId.KEY_GUID;
 public class RequestContext {
     private static final Logger METRICS = LoggerFactory.getLogger("METRICS");
 
-    private static final ThreadLocal<RequestContext> CURRENT_CONTEXT           = new ThreadLocal<>();
-    private static final Set<RequestContext>         ACTIVE_REQUESTS           = new HashSet<>();
+    private static final ThreadLocal<RequestContext> CURRENT_CONTEXT    = new ThreadLocal<>();
+    private static final Set<RequestContext>         ACTIVE_REQUESTS    = new HashSet<>();
     private static final boolean                     IS_METRICS_ENABLED = METRICS.isDebugEnabled();
 
     private final long                                   requestTime          = System.currentTimeMillis();
