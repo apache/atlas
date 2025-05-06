@@ -217,7 +217,7 @@ public class AtlasEntityComparator {
         }
 
         if (context.isReplaceBusinessAttributes()) {
-            Map<String, Map<String, Object>> newBusinessMetadata  = updatedEntity.getBusinessAttributes() == null
+            Map<String, Map<String, Object>> newBusinessMetadata = updatedEntity.getBusinessAttributes() == null
                     ? getBusinessMetadataFromEntityAttribute(updatedEntity, entityType)
                     : updatedEntity.getBusinessAttributes();
             Map<String, Map<String, Object>> currBusinessMetadata = (storedEntity != null)
