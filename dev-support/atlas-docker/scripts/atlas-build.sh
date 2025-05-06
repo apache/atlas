@@ -86,7 +86,7 @@ else
   done
 fi
 
-echo "mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean verify"
+echo "mvn -T 8 ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean verify --no-transfer-progress -B -V"
 
 mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean verify
 
