@@ -23,6 +23,7 @@ import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.*;
+import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.TypeCacheRefresher;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.service.redis.RedisService;
@@ -44,10 +45,14 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
+import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 
 /**
@@ -523,7 +528,42 @@ public class TypesREST {
             RequestContext.get().setAllowDuplicateDisplayName(allowDuplicateDisplayName);
             LOG.info("TypesRest.updateAtlasTypeDefs:: Typedef patch enabled:" + patch);
             AtlasTypesDef atlasTypesDef = typeDefStore.updateTypesDef(typesDef);
-            typeCacheRefresher.refreshAllHostCache();
+            ExecutorService executor = Executors.newSingleThreadExecutor();
+            executor.submit(() -> {
+                try {
+                    int maxRetries = 3;
+                    int retryCount = 0;
+                    boolean success = false;
+
+                    while (!success && retryCount < maxRetries) {
+                        try {
+                            typeCacheRefresher.refreshAllHostCache();
+                            LOG.info("TypesRest.updateAtlasTypeDefs:: Typedef refreshed successfully on attempt {}", retryCount + 1);
+                            success = true;
+                        } catch (IOException | URISyntaxException | RepositoryException e) {
+                            retryCount++;
+                            if (retryCount >= maxRetries) {
+                                LOG.error("TypesRest.updateAtlasTypeDefs:: Failed to refresh typedef after {} attempts", maxRetries, e);
+                                throw new RuntimeException("Failed to refresh typedef after " + maxRetries + " attempts", e);
+                            }
+
+                            // Exponential backoff: wait longer between each retry
+                            long waitTimeMs = 1000 * (long)Math.pow(2, retryCount - 1);
+                            LOG.warn("TypesRest.updateAtlasTypeDefs:: Retry attempt {} after {} ms", retryCount, waitTimeMs);
+
+                            try {
+                                Thread.sleep(waitTimeMs);
+                            } catch (InterruptedException ie) {
+                                Thread.currentThread().interrupt();
+                                throw new RuntimeException("Retry interrupted", ie);
+                            }
+                        }
+                    }
+                } finally {
+                    executor.shutdown();
+                }
+            });
+            LOG.info("TypesRest.updateAtlasTypeDefs:: Done");
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.updateAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
