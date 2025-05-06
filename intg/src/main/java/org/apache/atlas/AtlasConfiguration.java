@@ -111,7 +111,9 @@ public enum AtlasConfiguration {
     ATLAS_AUDIT_DEFAULT_AGEOUT_IGNORE_TTL("atlas.audit.default.ageout.ignore.ttl", false),
     ATLAS_AUDIT_AGING_TTL_TEST_AUTOMATION("atlas.audit.aging.ttl.test.automation", false), //Only for test automation
     RELATIONSHIP_SEARCH_ENABLED("atlas.relationship.search.enabled", false),
-    UI_TASKS_TAB_USE_ENABLED("atlas.tasks.ui.tab.enabled", false);
+    UI_TASKS_TAB_USE_ENABLED("atlas.tasks.ui.tab.enabled", false),
+    ENTITY_AUDIT_FILTER_ENABLED("atlas.entity.audit.filter.enabled", false),
+    DEFAULT_ENTITY_AUDIT_FILTER_ACTION("atlas.entity.audit.filter.default.action", "ACCEPT");
 
     private static final Configuration APPLICATION_PROPERTIES;
 
