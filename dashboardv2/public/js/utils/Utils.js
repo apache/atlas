@@ -953,7 +953,11 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
         var dateValue = null,
             dateFormat = Globals.dateTimeFormat,
             isValidDate = false;
-        if (options && options.date) {
+
+        if (options && !options.date) {
+            return null;
+        }
+        else  {
             dateValue = options.date;
             if (dateValue !== "-") {
                 dateValue = parseInt(dateValue);
@@ -961,7 +965,7 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
                     dateValue = options.date;
                 }
                 dateValue = moment(dateValue);
-                if (dateValue._isValid) {
+                if (dateValue.isValid) {
                     isValidDate = true;
                     dateValue = dateValue.format(dateFormat);
                 }

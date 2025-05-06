@@ -885,7 +885,50 @@ public class DiscoveryREST {
             if (StringUtils.isNotEmpty(parameters.getQuery()) && parameters.getQuery().length() > maxFullTextQueryLength) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
             }
+
+            validateEntityFilter(parameters);
         }
+    }
+
+    private void validateEntityFilter(SearchParameters parameters) throws AtlasBaseException {
+        FilterCriteria entityFilter = parameters.getEntityFilters();
+
+        if (entityFilter == null) {
+            return;
+        }
+
+        if (entityFilter.getCriterion() != null &&
+                !entityFilter.getCriterion().isEmpty()) {
+            if (entityFilter.getCondition() == null || StringUtils.isEmpty(entityFilter.getCondition().toString())) {
+                throw new AtlasBaseException("Condition (AND/OR) must be specified when using multiple filters.");
+            }
+
+            for (FilterCriteria filterCriteria : entityFilter.getCriterion()) {
+                validateCriteria(filterCriteria);
+            }
+        }
+        else {
+            validateCriteria(entityFilter);
+        }
+    }
+
+    private void validateCriteria(SearchParameters.FilterCriteria criteria) throws AtlasBaseException {
+        if (criteria.getOperator() == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_OPERATOR, criteria.getAttributeName());
+        }
+
+        if (StringUtils.isBlank(criteria.getAttributeName())) {
+            throw new AtlasBaseException(AtlasErrorCode.BLANK_NAME_ATTRIBUTE);
+        }
+
+        if (requiresValue(criteria.getOperator()) && StringUtils.isBlank(criteria.getAttributeValue())) {
+            throw new AtlasBaseException(AtlasErrorCode.BLANK_VALUE_ATTRIBUTE);
+        }
+    }
+
+    private boolean requiresValue(SearchParameters.Operator operator) {
+        return operator != SearchParameters.Operator.IS_NULL
+                && operator != SearchParameters.Operator.NOT_NULL;
     }
 
     private void validateSearchParameters(QuickSearchParameters parameters) throws AtlasBaseException {
