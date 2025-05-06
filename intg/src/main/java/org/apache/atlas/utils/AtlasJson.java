@@ -384,8 +384,8 @@ public class AtlasJson {
                         ret = mapper.treeToValue(root, EntityDeleteRequestV2.class);
                         break;
 
-                    case IMPORT_TYPE_DEF:
-                        ret = mapper.treeToValue(root, ImportNotification.AtlasTypeDefImportNotification.class);
+                    case IMPORT_TYPES_DEF:
+                        ret = mapper.treeToValue(root, ImportNotification.AtlasTypesDefImportNotification.class);
                         break;
 
                     case IMPORT_ENTITY:

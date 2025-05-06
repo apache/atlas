@@ -167,7 +167,7 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
 
         try {
             if (!asyncImportSemaphore.tryAcquire()) {
-                LOG.warn("An async import is in progress, import request is queued");
+                LOG.info("An async import is in progress, import request is queued");
 
                 return;
             }

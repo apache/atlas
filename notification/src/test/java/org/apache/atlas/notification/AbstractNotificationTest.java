@@ -93,7 +93,7 @@ public class AbstractNotificationTest {
         Configuration    configuration = mock(Configuration.class);
         TestNotification notification  = new TestNotification(configuration);
         Test             message1      = new Test(HookNotificationType.IMPORT_ENTITY, "user1");
-        Test             message2      = new Test(HookNotificationType.IMPORT_TYPE_DEF, "user1");
+        Test             message2      = new Test(HookNotificationType.IMPORT_TYPES_DEF, "user1");
         String           topic         = "ATLAS_IMPORT_21334wqdrr";
         List<Test>       messages      = Arrays.asList(message1, message2);
         List<String>     messageJson   = new ArrayList<>();

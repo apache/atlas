@@ -44,7 +44,7 @@ import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV
 import org.apache.atlas.model.notification.HookNotification.EntityPartialUpdateRequestV2;
 import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
 import org.apache.atlas.model.notification.ImportNotification.AtlasEntityImportNotification;
-import org.apache.atlas.model.notification.ImportNotification.AtlasTypeDefImportNotification;
+import org.apache.atlas.model.notification.ImportNotification.AtlasTypesDefImportNotification;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.notification.NotificationInterface.NotificationType;
 import org.apache.atlas.notification.preprocessor.EntityPreprocessor;
@@ -1418,10 +1418,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                             }
                             break;
 
-                            case IMPORT_TYPE_DEF: {
-                                final AtlasTypeDefImportNotification typeDefImportNotification = (AtlasTypeDefImportNotification) message;
-                                final String                         importId                  = typeDefImportNotification.getImportId();
-                                final AtlasTypesDef                  typesDef                  = typeDefImportNotification.getTypeDefinitionMap();
+                            case IMPORT_TYPES_DEF: {
+                                final AtlasTypesDefImportNotification typesDefImportNotification = (AtlasTypesDefImportNotification) message;
+                                final String                         importId                  = typesDefImportNotification.getImportId();
+                                final AtlasTypesDef                  typesDef                  = typesDefImportNotification.getTypesDef();
 
                                 try {
                                     asyncImporter.onImportTypeDef(typesDef, importId);

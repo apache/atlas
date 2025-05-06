@@ -250,7 +250,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
             autoCommitEnabled = true;
         }
 
-        List<String> topics = CONSUMER_TOPICS_MAP.get(notificationType);
+        List<String> topics = CONSUMER_TOPICS_MAP.getOrDefault(notificationType, Collections.emptyList());
 
         if (numConsumers < topics.size()) {
             LOG.warn("consumers count {} is fewer than number of topics {}. Creating {} consumers, so that consumer count is equal to number of topics.", numConsumers, topics.size(), topics.size());
@@ -346,7 +346,7 @@ public class KafkaNotification extends AbstractNotification implements Service {
 
         try {
             if (ret == null || !isKafkaConsumerOpen(ret)) {
-                List<String> topics = CONSUMER_TOPICS_MAP.get(notificationType);
+                List<String> topics = CONSUMER_TOPICS_MAP.getOrDefault(notificationType, Collections.emptyList());
                 String       topic  = topics.get(idxConsumer % topics.size());
 
                 LOG.debug("Creating new KafkaConsumer for topic : {}, index : {}", topic, idxConsumer);
@@ -461,10 +461,10 @@ public class KafkaNotification extends AbstractNotification implements Service {
                 CONSUMER_TOPICS_MAP.computeIfAbsent(notificationType, k -> new ArrayList<>()).add(topic);
                 return;
             }
-            LOG.error("Error while adding topic: {}, topic not found", topic);
+            LOG.error("Failed to add consumer for notificationType={}, topic={}: topic does not exist", notificationType, topic);
             throw new AtlasBaseException(AtlasErrorCode.INVALID_TOPIC_NAME);
         } catch (ExecutionException | InterruptedException e) {
-            LOG.error("Error while adding topic: {}", topic);
+            LOG.error("Failed to add consumer for notificationType={}, topic={}", notificationType, topic, e);
             throw new AtlasBaseException(AtlasErrorCode.INVALID_TOPIC_NAME, e);
         }
     }

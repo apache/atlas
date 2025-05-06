@@ -94,7 +94,7 @@ public class AsyncImportTaskExecutor {
         LOG.info("==> publishTypeDefNotification(importRequest={}, atlasTypesDef={})", importRequest, atlasTypesDef);
 
         try {
-            HookNotification typeDefImportNotification = new ImportNotification.AtlasTypeDefImportNotification(importRequest.getImportId(), importRequest.getImportResult().getUserName(), atlasTypesDef);
+            HookNotification typeDefImportNotification = new ImportNotification.AtlasTypesDefImportNotification(importRequest.getImportId(), importRequest.getImportResult().getUserName(), atlasTypesDef);
 
             sendToTopic(importRequest.getTopicName(), typeDefImportNotification);
         } finally {

@@ -281,7 +281,7 @@ public class ZipSource implements EntityImportStream {
                 md5Hash.append(String.format("%02x", b));
             }
 
-            setMd5Hash(md5Hash.toString());
+            this.md5Hash = md5Hash.toString();
         } catch (NoSuchAlgorithmException e) {
             throw new IOException(e);
         }
@@ -343,10 +343,6 @@ public class ZipSource implements EntityImportStream {
         }
 
         return null;
-    }
-
-    public void setMd5Hash(String md5Hash) {
-        this.md5Hash = md5Hash;
     }
 
     @Override

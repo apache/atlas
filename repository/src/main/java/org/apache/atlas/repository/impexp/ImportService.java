@@ -524,16 +524,11 @@ public class ImportService implements AsyncImporter {
 
             auditService.add(AtlasAuditEntry.AuditOperation.IMPORT, params, AtlasJson.toJson(result.getMetrics()), resultCount);
         } else {
-            List<AtlasObjectId> objectIds = result.getExportResult().getRequest().getItemsToExport();
+            List<AtlasObjectId> objectIds         = result.getExportResult().getRequest().getItemsToExport();
+            Map<String, Long>   entityCountByType = objectIds.stream().collect(Collectors.groupingBy(AtlasObjectId::getTypeName, Collectors.counting()));
+            int                 resultCount       = objectIds.size();
 
-            auditImportExportOperations(objectIds, AtlasAuditEntry.AuditOperation.IMPORT, params);
+            auditService.add(AtlasAuditEntry.AuditOperation.IMPORT, params, AtlasJson.toJson(entityCountByType), resultCount);
         }
-    }
-
-    private void auditImportExportOperations(List<AtlasObjectId> objectIds, AtlasAuditEntry.AuditOperation auditOperation, String params) throws AtlasBaseException {
-        Map<String, Long> entityCountByType = objectIds.stream().collect(Collectors.groupingBy(AtlasObjectId::getTypeName, Collectors.counting()));
-        int               resultCount       = objectIds.size();
-
-        auditService.add(auditOperation, params, AtlasJson.toJson(entityCountByType), resultCount);
     }
 }

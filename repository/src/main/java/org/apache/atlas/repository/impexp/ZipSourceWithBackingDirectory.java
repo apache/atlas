@@ -315,7 +315,7 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
                 md5Hash.append(String.format("%02x", b));
             }
 
-            setMd5Hash(md5Hash.toString());
+            this.md5Hash = md5Hash.toString();
 
             numberOfEntries -= ZipExportFileNames.values().length;
         } catch (NoSuchAlgorithmException e) {
@@ -441,10 +441,6 @@ public class ZipSourceWithBackingDirectory implements EntityImportStream {
         }
 
         return null;
-    }
-
-    public void setMd5Hash(String md5Hash) {
-        this.md5Hash = md5Hash;
     }
 
     @Override

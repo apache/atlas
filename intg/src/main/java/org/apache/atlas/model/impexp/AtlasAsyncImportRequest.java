@@ -72,7 +72,7 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
 
     private String            importId;
     private ImportStatus      status;
-    private ImportDetails     importDetails = new ImportDetails();
+    private ImportDetails     importDetails;
     private long              receivedAt;
     private long              stagedAt;
     private long              startedProcessingAt;
@@ -109,7 +109,7 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         this.importId = importId;
 
         if (importTrackingInfo != null) {
-            importTrackingInfo.setRequestId(AtlasConfiguration.REQUEST_ID_PREFIX_PROPERTY.getString() + importId + "@" + AtlasEntityUtil.getMetadataNamespace());
+            importTrackingInfo.setRequestId(AtlasConfiguration.ASYNC_IMPORT_REQUEST_ID_PREFIX.getString() + importId + "@" + AtlasEntityUtil.getMetadataNamespace());
         }
     }
 

@@ -106,7 +106,7 @@ public class HookNotification implements Serializable {
     public enum HookNotificationType {
         TYPE_CREATE, TYPE_UPDATE, ENTITY_CREATE, ENTITY_PARTIAL_UPDATE, ENTITY_FULL_UPDATE, ENTITY_DELETE,
         ENTITY_CREATE_V2, ENTITY_PARTIAL_UPDATE_V2, ENTITY_FULL_UPDATE_V2, ENTITY_DELETE_V2,
-        IMPORT_TYPE_DEF, IMPORT_ENTITY
+        IMPORT_TYPES_DEF, IMPORT_ENTITY
     }
 
     @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)

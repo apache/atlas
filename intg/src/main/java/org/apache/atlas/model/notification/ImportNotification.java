@@ -83,23 +83,23 @@ public class ImportNotification extends HookNotification implements Serializable
     @JsonIgnoreProperties(ignoreUnknown = true)
     @XmlRootElement
     @XmlAccessorType(XmlAccessType.PROPERTY)
-    public static class AtlasTypeDefImportNotification extends ImportNotification implements Serializable {
+    public static class AtlasTypesDefImportNotification extends ImportNotification implements Serializable {
         private static final long serialVersionUID = 1L;
 
         @JsonProperty
-        private AtlasTypesDef typeDefinitionMap;
+        private AtlasTypesDef typesDef;
 
-        public AtlasTypeDefImportNotification() {
+        public AtlasTypesDefImportNotification() {
         }
 
-        public AtlasTypeDefImportNotification(String importId, String user, AtlasTypesDef typeDefinitionMap) {
-            super(HookNotificationType.IMPORT_TYPE_DEF, user, importId);
+        public AtlasTypesDefImportNotification(String importId, String user, AtlasTypesDef typesDef) {
+            super(HookNotificationType.IMPORT_TYPES_DEF, user, importId);
 
-            this.typeDefinitionMap = typeDefinitionMap;
+            this.typesDef = typesDef;
         }
 
-        public AtlasTypesDef getTypeDefinitionMap() {
-            return typeDefinitionMap;
+        public AtlasTypesDef getTypesDef() {
+            return typesDef;
         }
 
         @Override
@@ -110,7 +110,7 @@ public class ImportNotification extends HookNotification implements Serializable
 
             sb.append("AtlasTypeDefImportNotification{");
             super.toString(sb);
-            sb.append(", typeDefinitionMap=").append(typeDefinitionMap);
+            sb.append(", typesDef=").append(typesDef);
             sb.append("}");
 
             return sb;

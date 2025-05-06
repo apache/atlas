@@ -246,6 +246,6 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
     }
 
     private String getUniqueValue(AtlasAsyncImportRequest obj) {
-        return AtlasConfiguration.REQUEST_ID_PREFIX_PROPERTY.getString() + obj.getImportId() + "@" + AuditsWriter.getCurrentClusterName();
+        return AtlasConfiguration.ASYNC_IMPORT_REQUEST_ID_PREFIX.getString() + obj.getImportId() + "@" + AuditsWriter.getCurrentClusterName();
     }
 }
