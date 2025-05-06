@@ -132,10 +132,10 @@ public class AsyncImportTaskExecutorTest {
         // Verify that skipToPosition and publishImportRequest are NOT called
         AsyncImportTaskExecutor spyPublisher = spy(asyncImportTaskExecutor);
 
-        doNothing().when(spyPublisher).skipToPosition(any(), any());
+        doNothing().when(spyPublisher).skipToStartEntityPosition(any(), any());
         doNothing().when(spyPublisher).publishImportRequest(any(), any());
 
-        verify(spyPublisher, never()).skipToPosition(mockRequest, mockEntityImportStream);
+        verify(spyPublisher, never()).skipToStartEntityPosition(mockRequest, mockEntityImportStream);
         verify(spyPublisher, never()).publishImportRequest(mockRequest, mockEntityImportStream);
     }
 
@@ -166,10 +166,10 @@ public class AsyncImportTaskExecutorTest {
         // Verify that skipToPosition and publishImportRequest are NOT called
         AsyncImportTaskExecutor spyPublisher = spy(asyncImportTaskExecutor);
 
-        doNothing().when(spyPublisher).skipToPosition(any(), any());
+        doNothing().when(spyPublisher).skipToStartEntityPosition(any(), any());
         doNothing().when(spyPublisher).publishImportRequest(any(), any());
 
-        verify(spyPublisher, never()).skipToPosition(mockRequest, mockEntityImportStream);
+        verify(spyPublisher, never()).skipToStartEntityPosition(mockRequest, mockEntityImportStream);
         verify(spyPublisher, never()).publishImportRequest(mockRequest, mockEntityImportStream);
     }
 
@@ -246,7 +246,7 @@ public class AsyncImportTaskExecutorTest {
         verify(notificationInterface).send(eq("test-topic"), anyList(), any());
         verify(mockEntityImportStream).onImportComplete("entity-guid");
         verify(importService).updateImportRequest(mockImportRequest);
-        assertEquals(mockImportRequest.getImportTrackingInfo().getSkipTo(), 1);
+        assertEquals(mockImportRequest.getImportTrackingInfo().getStartEntityPosition(), 1);
         assertEquals(mockImportRequest.getImportDetails().getPublishedEntityCount(), 1);
     }
 
@@ -266,7 +266,7 @@ public class AsyncImportTaskExecutorTest {
         verify(notificationInterface, never()).send(anyString(), anyList(), any());
         verify(mockEntityImportStream, never()).onImportComplete(anyString());
         verify(importService).updateImportRequest(mockImportRequest);
-        assertEquals(mockImportRequest.getImportTrackingInfo().getSkipTo(), 1);
+        assertEquals(mockImportRequest.getImportTrackingInfo().getStartEntityPosition(), 1);
         assertEquals(mockImportRequest.getImportDetails().getPublishedEntityCount(), 0);
     }
 
@@ -299,7 +299,7 @@ public class AsyncImportTaskExecutorTest {
         verify(notificationInterface).send(eq("test-topic"), anyList(), any());
         verify(mockEntityImportStream, never()).onImportComplete("entity-guid");
         verify(importService).updateImportRequest(mockImportRequest);
-        assertEquals(mockImportRequest.getImportTrackingInfo().getSkipTo(), 1);
+        assertEquals(mockImportRequest.getImportTrackingInfo().getStartEntityPosition(), 1);
         assertEquals(mockImportRequest.getImportDetails().getFailedEntitiesCount(), 1);
         assertEquals(mockImportRequest.getImportDetails().getPublishedEntityCount(), 0);
     }
@@ -347,7 +347,7 @@ public class AsyncImportTaskExecutorTest {
         when(mockEntityImportStream.hasNext()).thenReturn(true, true, true, true, false); // 4 entities in total
         when(mockEntityImportStream.getPosition()).thenReturn(0, 1, 2, 3);
 
-        asyncImportTaskExecutor.skipToPosition(mockImportRequest, mockEntityImportStream);
+        asyncImportTaskExecutor.skipToStartEntityPosition(mockImportRequest, mockEntityImportStream);
 
         verify(mockEntityImportStream, times(3)).next(); // Skip 3 entities
     }
@@ -361,7 +361,7 @@ public class AsyncImportTaskExecutorTest {
         when(mockEntityImportStream.hasNext()).thenReturn(true, true, true, false); // 3 entities in total
         when(mockEntityImportStream.getPosition()).thenReturn(0, 1, 2);
 
-        asyncImportTaskExecutor.skipToPosition(mockImportRequest, mockEntityImportStream);
+        asyncImportTaskExecutor.skipToStartEntityPosition(mockImportRequest, mockEntityImportStream);
 
         verify(mockEntityImportStream, times(3)).next(); // Skipped all 3 entities
     }
@@ -374,7 +374,7 @@ public class AsyncImportTaskExecutorTest {
         when(mockImportRequest.getImportTrackingInfo()).thenReturn(new AtlasAsyncImportRequest.ImportTrackingInfo("", 3)); // Skip to position 3
         when(mockEntityImportStream.hasNext()).thenReturn(false); // No entities in the stream
 
-        asyncImportTaskExecutor.skipToPosition(mockImportRequest, mockEntityImportStream);
+        asyncImportTaskExecutor.skipToStartEntityPosition(mockImportRequest, mockEntityImportStream);
 
         verify(mockEntityImportStream, never()).next(); // No entities to skip
     }
@@ -388,7 +388,7 @@ public class AsyncImportTaskExecutorTest {
         when(mockEntityImportStream.hasNext()).thenReturn(true); // At least one entity in the stream
         when(mockEntityImportStream.getPosition()).thenReturn(2); // Already at position 2
 
-        asyncImportTaskExecutor.skipToPosition(mockImportRequest, mockEntityImportStream);
+        asyncImportTaskExecutor.skipToStartEntityPosition(mockImportRequest, mockEntityImportStream);
 
         verify(mockEntityImportStream, never()).next(); // No entities skipped since current position matches skipTo
     }
@@ -427,7 +427,7 @@ public class AsyncImportTaskExecutorTest {
         if ("NEW".equals(expectedOutcome)) {
             verify(importService).saveImportRequest(any(AtlasAsyncImportRequest.class));
         } else if ("RESUMED".equals(expectedOutcome)) {
-            verify(existingRequest).setReceivedAt(any(long.class));
+            verify(existingRequest).setReceivedTime(any(long.class));
             verify(importService).updateImportRequest(existingRequest);
         } else if ("EXISTING".equals(expectedOutcome)) {
             verify(importService, never()).saveImportRequest(any(AtlasAsyncImportRequest.class));

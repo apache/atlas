@@ -36,16 +36,16 @@ public class AsyncImportStatus implements Serializable {
 
     private String       importId;
     private ImportStatus status;
-    private String       importRequestReceivedAt;
-    private String       importRequestReceivedBy;
+    private String       importRequestReceivedTime;
+    private String       importRequestUser;
 
     public AsyncImportStatus() {}
 
-    public AsyncImportStatus(String importId, ImportStatus status, String importRequestReceivedAt, String importRequestReceivedBy) {
+    public AsyncImportStatus(String importId, ImportStatus status, String importRequestReceivedTime, String importRequestUser) {
         this.importId                = importId;
         this.status                  = status;
-        this.importRequestReceivedAt = importRequestReceivedAt;
-        this.importRequestReceivedBy = importRequestReceivedBy;
+        this.importRequestReceivedTime = importRequestReceivedTime;
+        this.importRequestUser = importRequestUser;
     }
 
     public String getImportId() {
@@ -56,11 +56,11 @@ public class AsyncImportStatus implements Serializable {
         return status;
     }
 
-    public String getImportRequestReceivedAt() {
-        return importRequestReceivedAt;
+    public String getImportRequestReceivedTime() {
+        return importRequestReceivedTime;
     }
 
-    public String getImportRequestReceivedBy() {
-        return importRequestReceivedBy;
+    public String getImportRequestUser() {
+        return importRequestUser;
     }
 }

@@ -196,7 +196,7 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
             notificationHookConsumer.startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, importRequest.getImportId(), importRequest.getTopicName());
 
             importRequest.setStatus(ImportStatus.PROCESSING);
-            importRequest.setStartedProcessingAt(System.currentTimeMillis());
+            importRequest.setProcessingStartTime(System.currentTimeMillis());
         } catch (Exception e) {
             LOG.error("Failed to start consumer for import: {}, marking import as failed", importRequest, e);
 

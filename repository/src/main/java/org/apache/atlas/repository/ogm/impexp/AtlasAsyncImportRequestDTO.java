@@ -49,17 +49,17 @@ import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus
 public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<AtlasAsyncImportRequest> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAsyncImportRequestDTO.class);
 
-    public static final String ASYNC_IMPORT_TYPE_NAME  = "__AtlasAsyncImportRequest";
-    public static final String IMPORT_RESULT_PROPERTY  = "importResult";
-    public static final String REQUEST_ID_PROPERTY     = "requestId";
-    public static final String IMPORT_ID_PROPERTY      = "importId";
-    public static final String SKIP_TO_PROPERTY        = "skipTo";
-    public static final String STATUS_PROPERTY         = "status";
-    public static final String IMPORT_DETAILS_PROPERTY = "importDetails";
-    public static final String RECEIVED_AT_PROPERTY    = "receivedAt";
-    public static final String STAGED_AT_PROPERTY      = "stagedAt";
-    public static final String STARTED_PROCESSING_AT   = "startedProcessingAt";
-    public static final String COMPLETED_AT            = "completedAt";
+    public static final String ASYNC_IMPORT_TYPE_NAME         = "__AtlasAsyncImportRequest";
+    public static final String IMPORT_RESULT_PROPERTY         = "importResult";
+    public static final String REQUEST_ID_PROPERTY            = "requestId";
+    public static final String IMPORT_ID_PROPERTY             = "importId";
+    public static final String START_ENTITY_POSITION_PROPERTY = "startEntityPosition";
+    public static final String STATUS_PROPERTY                = "status";
+    public static final String IMPORT_DETAILS_PROPERTY        = "importDetails";
+    public static final String RECEIVED_TIME_PROPERTY         = "receivedTime";
+    public static final String STAGED_TIME_PROPERTY           = "stagedTime";
+    public static final String PROCESSING_START_TIME          = "processingStartTime";
+    public static final String COMPLETED_TIME                 = "completedTime";
 
     @Inject
     public AtlasAsyncImportRequestDTO(AtlasTypeRegistry typeRegistry) {
@@ -79,25 +79,25 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
             String requestId           = (String) entity.getAttribute(REQUEST_ID_PROPERTY);
             String importId            = (String) entity.getAttribute(IMPORT_ID_PROPERTY);
             String status              = (String) entity.getAttribute(STATUS_PROPERTY);
-            int    skipTo              = Integer.parseInt((String) entity.getAttribute(SKIP_TO_PROPERTY));
+            int    startEntityPosition = Integer.parseInt((String) entity.getAttribute(START_ENTITY_POSITION_PROPERTY));
             String jsonImportDetails   = (String) entity.getAttribute(IMPORT_DETAILS_PROPERTY);
-            long   receivedAt          = objectToLong(entity.getAttribute(RECEIVED_AT_PROPERTY));
-            long   stagedAt            = objectToLong(entity.getAttribute(STAGED_AT_PROPERTY));
-            long   startedProcessingAt = objectToLong(entity.getAttribute(STARTED_PROCESSING_AT));
-            long   completedAt         = objectToLong(entity.getAttribute(COMPLETED_AT));
+            long   receivedTime        = objectToLong(entity.getAttribute(RECEIVED_TIME_PROPERTY));
+            long   stagedTime          = objectToLong(entity.getAttribute(STAGED_TIME_PROPERTY));
+            long   processingStartTime = objectToLong(entity.getAttribute(PROCESSING_START_TIME));
+            long   completedTime       = objectToLong(entity.getAttribute(COMPLETED_TIME));
 
             asyncImportRequest = new AtlasAsyncImportRequest(AtlasType.fromJson(jsonImportResult, AtlasImportResult.class));
 
             asyncImportRequest.setGuid(entity.getGuid());
             asyncImportRequest.getImportTrackingInfo().setRequestId(requestId);
             asyncImportRequest.setImportId(importId);
-            asyncImportRequest.getImportTrackingInfo().setSkipTo(skipTo);
+            asyncImportRequest.getImportTrackingInfo().setStartEntityPosition(startEntityPosition);
             asyncImportRequest.setStatus(ImportStatus.valueOf(status));
             asyncImportRequest.setImportDetails(StringUtils.isNotEmpty(jsonImportDetails) ? AtlasType.fromJson(jsonImportDetails, ImportDetails.class) : null);
-            asyncImportRequest.setReceivedAt(receivedAt);
-            asyncImportRequest.setStagedAt(stagedAt);
-            asyncImportRequest.setStartedProcessingAt(startedProcessingAt);
-            asyncImportRequest.setCompletedAt(completedAt);
+            asyncImportRequest.setReceivedTime(receivedTime);
+            asyncImportRequest.setStagedTime(stagedTime);
+            asyncImportRequest.setProcessingStartTime(processingStartTime);
+            asyncImportRequest.setCompletedTime(completedTime);
         }
 
         LOG.debug("<== AtlasAsyncImportRequestDTO.from(entity={}): ret={}", entity, asyncImportRequest);
@@ -131,11 +131,11 @@ public class AtlasAsyncImportRequestDTO extends AbstractDataTransferObject<Atlas
         entity.setAttribute(IMPORT_ID_PROPERTY, obj.getImportId());
         entity.setAttribute(STATUS_PROPERTY, obj.getStatus());
         entity.setAttribute(IMPORT_DETAILS_PROPERTY, AtlasType.toJson(obj.getImportDetails()));
-        entity.setAttribute(SKIP_TO_PROPERTY, String.valueOf(obj.getImportTrackingInfo().getSkipTo()));
-        entity.setAttribute(RECEIVED_AT_PROPERTY, String.valueOf(obj.getReceivedAt()));
-        entity.setAttribute(STAGED_AT_PROPERTY, String.valueOf(obj.getStagedAt()));
-        entity.setAttribute(STARTED_PROCESSING_AT, String.valueOf(obj.getStartedProcessingAt()));
-        entity.setAttribute(COMPLETED_AT, String.valueOf(obj.getCompletedAt()));
+        entity.setAttribute(START_ENTITY_POSITION_PROPERTY, String.valueOf(obj.getImportTrackingInfo().getStartEntityPosition()));
+        entity.setAttribute(RECEIVED_TIME_PROPERTY, String.valueOf(obj.getReceivedTime()));
+        entity.setAttribute(STAGED_TIME_PROPERTY, String.valueOf(obj.getStagedTime()));
+        entity.setAttribute(PROCESSING_START_TIME, String.valueOf(obj.getProcessingStartTime()));
+        entity.setAttribute(COMPLETED_TIME, String.valueOf(obj.getCompletedTime()));
 
         LOG.debug("<== AtlasAsyncImportRequestDTO.toEntity(obj={}): ret={}", obj, entity);
 

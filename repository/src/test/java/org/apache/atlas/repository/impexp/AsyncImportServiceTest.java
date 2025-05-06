@@ -203,7 +203,7 @@ public class AsyncImportServiceTest {
 
         request1.setImportId("guid1");
         request1.setStatus(AtlasAsyncImportRequest.ImportStatus.PROCESSING);
-        request1.setReceivedAt(System.currentTimeMillis());
+        request1.setReceivedTime(System.currentTimeMillis());
 
         doReturn("admin").when(mockImportResult).getUserName();
         request1.setImportResult(mockImportResult);
@@ -219,7 +219,7 @@ public class AsyncImportServiceTest {
 
             assertEquals(result.getList().size(), 1);
             assertEquals(result.getList().get(0).getImportId(), "guid1");
-            assertEquals(result.getList().get(0).getImportRequestReceivedBy(), "admin");
+            assertEquals(result.getList().get(0).getImportRequestUser(), "admin");
 
             verify(dataAccess, times(1)).load(anyList());
         }

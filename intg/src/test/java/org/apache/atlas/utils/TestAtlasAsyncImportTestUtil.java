@@ -53,11 +53,11 @@ public class TestAtlasAsyncImportTestUtil {
         AtlasAsyncImportRequest asyncRequest = new AtlasAsyncImportRequest(importResult);
 
         // Explicitly simulate timing scenario without dependency on actual clock
-        long simulatedReceivedAt = 10000L;       // Arbitrary, stable value
-        long simulatedCompletedAt = 11000L;      // Simulate completion after 1000ms (1 sec)
+        long simulatedReceivedTime = 10000L;       // Arbitrary, stable value
+        long simulatedCompletedTime = 11000L;      // Simulate completion after 1000ms (1 sec)
 
-        asyncRequest.setReceivedAt(simulatedReceivedAt);
-        asyncRequest.setCompletedAt(simulatedCompletedAt);
+        asyncRequest.setReceivedTime(simulatedReceivedTime);
+        asyncRequest.setCompletedTime(simulatedCompletedTime);
 
         long expectedWaitTime = 2000L;  // Min duration (3000ms) - elapsed (1000ms)
 
@@ -80,11 +80,11 @@ public class TestAtlasAsyncImportTestUtil {
         AtlasAsyncImportRequest asyncRequest = new AtlasAsyncImportRequest(importResult);
 
         // Explicit fixed timestamps to ensure stability
-        long simulatedReceivedAt = 10000L;          // arbitrary fixed start timestamp
-        long simulatedCompletedAt = 14000L;         // completed after 4000ms, exceeding the 3000ms min duration
+        long simulatedReceivedTime = 10000L;          // arbitrary fixed start timestamp
+        long simulatedCompletedTime = 14000L;         // completed after 4000ms, exceeding the 3000ms min duration
 
-        asyncRequest.setReceivedAt(simulatedReceivedAt);
-        asyncRequest.setCompletedAt(simulatedCompletedAt);
+        asyncRequest.setReceivedTime(simulatedReceivedTime);
+        asyncRequest.setCompletedTime(simulatedCompletedTime);
 
         long waitTimeInMs = AtlasAsyncImportTestUtil.intercept(asyncRequest);
 

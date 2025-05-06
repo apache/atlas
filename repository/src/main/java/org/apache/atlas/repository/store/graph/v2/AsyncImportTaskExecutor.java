@@ -76,7 +76,7 @@ public class AsyncImportTaskExecutor {
             } else {
                 // skip to the most recent published position
                 if (ObjectUtils.equals(importRequest.getStatus(), ImportStatus.STAGING)) {
-                    skipToPosition(importRequest, entityImportStream);
+                    skipToStartEntityPosition(importRequest, entityImportStream);
                 }
 
                 publishImportRequest(importRequest, entityImportStream);
@@ -136,7 +136,7 @@ public class AsyncImportTaskExecutor {
             publishTypeDefNotification(importRequest, entityImportStream.getTypesDef());
             publishEntityNotification(importRequest, entityImportStream);
 
-            importRequest.setStagedAt(System.currentTimeMillis());
+            importRequest.setStagedTime(System.currentTimeMillis());
 
             importService.updateImportRequest(importRequest);
 
@@ -156,9 +156,9 @@ public class AsyncImportTaskExecutor {
         int failedEntityCounter    = importRequest.getImportDetails().getFailedEntitiesCount();
 
         while (entityImportStream.hasNext()) {
-            AtlasEntityWithExtInfo entityWithExtInfo = entityImportStream.getNextEntityWithExtInfo();
-            AtlasEntity            entity            = entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
-            int                    position          = entityImportStream.getPosition();
+            AtlasEntityWithExtInfo entityWithExtInfo   = entityImportStream.getNextEntityWithExtInfo();
+            AtlasEntity            entity              = entityWithExtInfo != null ? entityWithExtInfo.getEntity() : null;
+            int                    startEntityPosition = entityImportStream.getPosition();
 
             try {
                 if (entity == null) {
@@ -181,7 +181,7 @@ public class AsyncImportTaskExecutor {
                 importRequest.getImportDetails().setFailedEntitiesCount(failedEntityCounter);
                 importRequest.getImportDetails().getFailures().put(entity.getGuid(), abe.getMessage());
             } finally {
-                importRequest.getImportTrackingInfo().setSkipTo(position);
+                importRequest.getImportTrackingInfo().setStartEntityPosition(startEntityPosition);
                 importRequest.getImportDetails().setPublishedEntityCount(publishedEntityCounter);
 
                 importService.updateImportRequest(importRequest);
@@ -192,16 +192,16 @@ public class AsyncImportTaskExecutor {
     }
 
     @VisibleForTesting
-    void skipToPosition(AtlasAsyncImportRequest importRequest, EntityImportStream entityImportStream) {
-        int skipTo = importRequest.getImportTrackingInfo().getSkipTo();
+    void skipToStartEntityPosition(AtlasAsyncImportRequest importRequest, EntityImportStream entityImportStream) {
+        int startEntityPosition = importRequest.getImportTrackingInfo().getStartEntityPosition();
 
-        LOG.info("==> skipToPosition(atlasAsyncImportRequest={}): position={}", importRequest, skipTo);
+        LOG.info("==> skipToStartEntityPosition(atlasAsyncImportRequest={}): position={}", importRequest, startEntityPosition);
 
-        while (entityImportStream.hasNext() && skipTo > entityImportStream.getPosition()) {
+        while (entityImportStream.hasNext() && startEntityPosition > entityImportStream.getPosition()) {
             entityImportStream.next();
         }
 
-        LOG.info("<== skipToPosition(atlasAsyncImportRequest={}): position={}", importRequest, skipTo);
+        LOG.info("<== skipToStartEntityPosition(atlasAsyncImportRequest={}): position={}", importRequest, startEntityPosition);
     }
 
     @VisibleForTesting
@@ -220,7 +220,7 @@ public class AsyncImportTaskExecutor {
                 AtlasAsyncImportRequest newImportRequest = new AtlasAsyncImportRequest(result);
 
                 newImportRequest.setImportId(importId);
-                newImportRequest.setReceivedAt(System.currentTimeMillis());
+                newImportRequest.setReceivedTime(System.currentTimeMillis());
                 newImportRequest.getImportDetails().setTotalEntitiesCount(totalEntities);
                 newImportRequest.getImportDetails().setCreationOrder(creationOrder);
 
@@ -231,7 +231,7 @@ public class AsyncImportTaskExecutor {
                 return newImportRequest;
             } else if (ObjectUtils.equals(existingImportRequest.getStatus(), ImportStatus.STAGING)) {
                 // if we are resuming staging, we need to update the latest request received at
-                existingImportRequest.setReceivedAt(System.currentTimeMillis());
+                existingImportRequest.setReceivedTime(System.currentTimeMillis());
 
                 importService.updateImportRequest(existingImportRequest);
             }

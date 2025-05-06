@@ -73,10 +73,10 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
     private String            importId;
     private ImportStatus      status;
     private ImportDetails     importDetails;
-    private long              receivedAt;
-    private long              stagedAt;
-    private long              startedProcessingAt;
-    private long              completedAt;
+    private long              receivedTime;
+    private long              stagedTime;
+    private long              processingStartTime;
+    private long              completedTime;
     private AtlasImportResult importResult;
 
     @JsonIgnore
@@ -91,10 +91,10 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
     public AtlasAsyncImportRequest(AtlasImportResult result) {
         this.importResult        = result;
         this.status              = ImportStatus.STAGING;
-        this.receivedAt          = 0L;
-        this.stagedAt            = 0L;
-        this.startedProcessingAt = 0L;
-        this.completedAt         = 0L;
+        this.receivedTime        = 0L;
+        this.stagedTime          = 0L;
+        this.processingStartTime = 0L;
+        this.completedTime       = 0L;
         this.importDetails       = new ImportDetails();
         this.importTrackingInfo  = new ImportTrackingInfo(null, 0);
 
@@ -129,28 +129,28 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         this.importDetails = importDetails;
     }
 
-    public long getReceivedAt() {
-        return receivedAt;
+    public long getReceivedTime() {
+        return receivedTime;
     }
 
-    public void setReceivedAt(long receivedAt) {
-        this.receivedAt = receivedAt;
+    public void setReceivedTime(long receivedTime) {
+        this.receivedTime = receivedTime;
     }
 
-    public long getStagedAt() {
-        return stagedAt;
+    public long getStagedTime() {
+        return stagedTime;
     }
 
-    public void setStagedAt(long stagedAt) {
-        this.stagedAt = stagedAt;
+    public void setStagedTime(long stagedTime) {
+        this.stagedTime = stagedTime;
     }
 
-    public long getStartedProcessingAt() {
-        return startedProcessingAt;
+    public long getProcessingStartTime() {
+        return processingStartTime;
     }
 
-    public void setStartedProcessingAt(long startedProcessingAt) {
-        this.startedProcessingAt = startedProcessingAt;
+    public void setProcessingStartTime(long processingStartTime) {
+        this.processingStartTime = processingStartTime;
     }
 
     @JsonIgnore
@@ -166,12 +166,12 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         this.importResult = importResult;
     }
 
-    public long getCompletedAt() {
-        return completedAt;
+    public long getCompletedTime() {
+        return completedTime;
     }
 
-    public void setCompletedAt(long completedAt) {
-        this.completedAt = completedAt;
+    public void setCompletedTime(long completedTime) {
+        this.completedTime = completedTime;
     }
 
     public ImportTrackingInfo getImportTrackingInfo() {
@@ -184,7 +184,7 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
 
     @JsonIgnore
     public AsyncImportStatus toImportMinInfo() {
-        return new AsyncImportStatus(this.getImportId(), status, toIsoDate(new Date(this.receivedAt)), importResult.getUserName());
+        return new AsyncImportStatus(this.getImportId(), status, toIsoDate(new Date(this.receivedTime)), importResult.getUserName());
     }
 
     private String toIsoDate(Date value) {
@@ -213,16 +213,16 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
                 Objects.equals(status, that.status) &&
                 Objects.equals(importDetails, that.importDetails) &&
                 (importTrackingInfo == null ? that.importTrackingInfo == null : (that.importTrackingInfo != null && Objects.equals(importTrackingInfo.getRequestId(), that.importTrackingInfo.getRequestId()))) &&
-                Objects.equals(receivedAt, that.receivedAt) &&
-                Objects.equals(stagedAt, that.stagedAt) &&
-                Objects.equals(startedProcessingAt, that.startedProcessingAt) &&
-                Objects.equals(completedAt, that.completedAt);
+                Objects.equals(receivedTime, that.receivedTime) &&
+                Objects.equals(stagedTime, that.stagedTime) &&
+                Objects.equals(processingStartTime, that.processingStartTime) &&
+                Objects.equals(completedTime, that.completedTime);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), importResult, importId, status, importDetails,
-                importTrackingInfo == null ? null : importTrackingInfo.getRequestId(), receivedAt, stagedAt, startedProcessingAt, completedAt);
+                importTrackingInfo == null ? null : importTrackingInfo.getRequestId(), receivedTime, stagedTime, processingStartTime, completedTime);
     }
 
     @Override
@@ -231,10 +231,10 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         sb.append(", requestId=").append(importTrackingInfo == null ? null : importTrackingInfo.getRequestId());
         sb.append(", importId=").append(importId);
         sb.append(", status=").append(status);
-        sb.append(", receivedAt=").append(receivedAt);
-        sb.append(", stagedAt=").append(stagedAt);
-        sb.append(", startedProcessingAt=").append(startedProcessingAt);
-        sb.append(", completedAt=").append(completedAt);
+        sb.append(", receivedTime=").append(receivedTime);
+        sb.append(", stagedTime=").append(stagedTime);
+        sb.append(", processingStartTime=").append(processingStartTime);
+        sb.append(", completedTime=").append(completedTime);
         sb.append(", importDetails=").append(importDetails);
 
         return sb;
@@ -369,14 +369,14 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
         private static final long serialVersionUID = 1L;
 
         private String requestId;
-        private int    skipTo;
+        private int    startEntityPosition;
 
         public ImportTrackingInfo() {
         }
 
-        public ImportTrackingInfo(String requestId, int skipTo) {
-            this.requestId = requestId;
-            this.skipTo    = skipTo;
+        public ImportTrackingInfo(String requestId, int startEntityPosition) {
+            this.requestId           = requestId;
+            this.startEntityPosition = startEntityPosition;
         }
 
         public String getRequestId() {
@@ -387,19 +387,19 @@ public class AtlasAsyncImportRequest extends AtlasBaseModelObject implements Ser
             this.requestId = requestId;
         }
 
-        public int getSkipTo() {
-            return skipTo;
+        public int getStartEntityPosition() {
+            return startEntityPosition;
         }
 
-        public void setSkipTo(int skipTo) {
-            this.skipTo = skipTo;
+        public void setStartEntityPosition(int startEntityPosition) {
+            this.startEntityPosition = startEntityPosition;
         }
 
         @Override
         public String toString() {
             return "ImportTrackingInfo{" +
                     "requestId='" + requestId + '\'' +
-                    ", skipTo=" + skipTo +
+                    ", startEntityPosition=" + startEntityPosition +
                     '}';
         }
     }

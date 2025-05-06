@@ -40,7 +40,7 @@ public class AtlasAsyncImportTestUtil {
 
                 if (importRequest != null) {
                     long minImportDurationInMs = Long.parseLong(importRequest.getOptions().getOrDefault(OPTION_KEY_ASYNC_IMPORT_MIN_DURATION_IN_MS, "0"));
-                    long waitTimeInMs          = minImportDurationInMs - (asyncImportRequest.getCompletedAt() - asyncImportRequest.getReceivedAt());
+                    long waitTimeInMs          = minImportDurationInMs - (asyncImportRequest.getCompletedTime() - asyncImportRequest.getReceivedTime());
 
                     if (waitTimeInMs > 0) {
                         try {

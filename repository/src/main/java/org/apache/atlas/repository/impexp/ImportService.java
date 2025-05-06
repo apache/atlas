@@ -320,7 +320,7 @@ public class ImportService implements AsyncImporter {
 
             result.incrementMeticsCounter("duration", getDuration(System.currentTimeMillis(), startTimestamp));
             importRequest.setImportResult(result);
-            importRequest.setCompletedAt(System.currentTimeMillis());
+            importRequest.setCompletedTime(System.currentTimeMillis());
 
             asyncImportService.updateImportRequest(importRequest);
 
