@@ -1,0 +1,102 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@use "sass:color";
+
+.svg-font-color svg > path {
+  fill: var(--ifm-font-color-base);
+}
+
+.donut-hole {
+  overflow-y: unset !important;
+}
+
+.queryBuilder {
+  min-width: 420px;
+}
+
+// Styles for when "Use validation" option is selected
+.validateQuery {
+  .queryBuilder {
+    // Invalid groups
+    .ruleGroup.queryBuilder-invalid {
+      background-color: #66339966; // transluscent rebeccapurple
+
+      // Bold the + Rule button if the group has no child rules or groups
+      .ruleGroup-addRule {
+        font-weight: bold !important;
+      }
+
+      // Message to user about empty groups
+      & > .ruleGroup-header::after {
+        content: "Empty groups are considered invalid. Avoid them by using addRuleToNewGroups.";
+        color: white;
+      }
+    }
+
+    // Invalid rules
+    .rule.queryBuilder-invalid {
+      // Purple background for empty text fields
+      .rule-value {
+        background-color: #66339966; // transluscent rebeccapurple
+        &::placeholder {
+          color: color.scale(rebeccapurple, $lightness: -30%);
+        }
+      }
+    }
+  }
+}
+
+// Styles for when "Use validation" option is selected (dark theme variations)
+html[data-theme="dark"] {
+  .validateQuery {
+    .queryBuilder {
+      .rule.queryBuilder-invalid {
+        .rule-value {
+          &::placeholder {
+            color: color.scale(rebeccapurple, $lightness: 30%);
+          }
+        }
+      }
+    }
+  }
+}
+
+// Styles for when "Justified layout" option is selected
+.justifiedLayout {
+  .queryBuilder {
+    // Push the clone, lock, and remove buttons to the right edge
+    .ruleGroup-addGroup {
+      & + button.ruleGroup-cloneGroup,
+      & + button.ruleGroup-lock,
+      & + button.ruleGroup-remove {
+        margin-left: auto !important;
+      }
+    }
+    .rule-operators,
+    .rule-value,
+    .control,
+    .chakra-select__wrapper,
+    .mantine-InputWrapper-root + input[type="hidden"] {
+      & + button.rule-cloneRule,
+      & + button.rule-lock,
+      & + button.rule-remove {
+        margin-left: auto !important;
+      }
+    }
+  }
+}

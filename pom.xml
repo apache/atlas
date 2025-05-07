@@ -57,6 +57,7 @@
         <module>build-tools</module>
         <module>client</module>
         <module>common</module>
+        <module>dashboard</module>
         <module>dashboardv2</module>
         <module>dashboardv3</module>
 
@@ -154,13 +155,16 @@
         <maven-plugin-sortpom.version>3.0.1</maven-plugin-sortpom.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <netty.version>4.1.118.Final</netty.version>
+        <node-for-v1.version>v22.14.0</node-for-v1.version>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
+        <npm-for-v1.version>10.9.2</npm-for-v1.version>
         <npm-for-v2.version>6.13.7</npm-for-v2.version>
         <okio.version>3.4.0</okio.version>
         <opencsv.version>5.0</opencsv.version>
         <paranamer.version>2.7</paranamer.version>
         <poi-ooxml.version>5.2.2</poi-ooxml.version>
         <poi.version>5.2.2</poi.version>
+        <project.build.dashboard.gruntBuild>run build</project.build.dashboard.gruntBuild>
         <project.build.dashboardv2.gruntBuild>build-minify</project.build.dashboardv2.gruntBuild>
         <project.build.dashboardv3.gruntBuild>build-minify</project.build.dashboardv3.gruntBuild>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -435,6 +439,13 @@
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-common</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-dashboard</artifactId>
+                <version>${project.version}</version>
+                <type>war</type>
             </dependency>
 
             <dependency>
