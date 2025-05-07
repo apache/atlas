@@ -412,16 +412,16 @@ public class TypesREST {
 
             Lock lock = redisService.acquireDistributedLockV2(ATLAS_TYPEDEF_LOCK);
             if (lock == null) {
-                LOG.info("Lock is already acquired. Returning now :: traceId {}", traceId);
+                LOG.info("Lock is already acquired. for key {} : Returning now :: traceId {}", ATLAS_TYPEDEF_LOCK, traceId);
                 throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK);
             }
-            LOG.info("successfully acquired lock :: traceId {}", traceId);
+            LOG.info("Successfully acquired lock with key {} :: traceId {}", ATLAS_TYPEDEF_LOCK, traceId);
             return lock;
         } catch (AtlasBaseException e) {
             throw e;
         } catch (Exception e) {
             LOG.error("Error while acquiring lock on type-defs :: traceId " + traceId + " ." + e.getMessage(), e);
-            throw new AtlasBaseException("Error while acquiring a lock on type-defs");
+            throw new AtlasBaseException("Error while acquiring a lock on type-defs", e);
         }
     }
 

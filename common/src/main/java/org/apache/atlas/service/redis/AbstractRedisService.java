@@ -67,9 +67,15 @@ public abstract class AbstractRedisService implements RedisService {
         RLock lock = null;
         try {
             lock = redisClient.getFairLock(key);
-            lock.tryLock(waitTimeInMS, leaseTimeInMS, TimeUnit.MILLISECONDS);
-            getLogger().info("Lock with key {} is acquired, host: {}.", key, getHostAddress());
-           return lock;
+            boolean isLockAcquired =  lock.tryLock(waitTimeInMS, leaseTimeInMS, TimeUnit.MILLISECONDS);
+
+            if (isLockAcquired){
+                getLogger().info("Lock with key {} is acquired, host: {}.", key, getHostAddress());
+                return lock;
+            }else {
+                getLogger().info("Attempt failed as fair lock {} is already acquired, host: {}.", key, getHostAddress());
+                return null;
+            }
 
         } catch (InterruptedException e) {
             getLogger().error("Failed to acquire distributed lock for {}, host: {}", key, getHostAddress(), e);
