@@ -4623,7 +4623,8 @@ public class EntityGraphMapper {
 
             if ((!Objects.equals(updatedRemovePropagations, currentRemovePropagations) ||
                     !Objects.equals(currentTagPropagation, updatedTagPropagation) ||
-                    !Objects.equals(currentRestrictPropagationThroughLineage, updatedRestrictPropagationThroughLineage)) &&
+                    !Objects.equals(currentRestrictPropagationThroughLineage, updatedRestrictPropagationThroughLineage) ||
+                    !Objects.equals(currentRestrictPropagationThroughHierarchy, updatedRestrictPropagationThroughHierarchy)) &&
                     taskManagement != null && DEFERRED_ACTION_ENABLED) {
 
                 propagationType = CLASSIFICATION_PROPAGATION_ADD;
