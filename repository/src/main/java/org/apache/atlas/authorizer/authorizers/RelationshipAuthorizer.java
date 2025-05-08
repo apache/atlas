@@ -53,33 +53,23 @@ public class RelationshipAuthorizer {
 
     private static AtlasAccessResult checkRelationshipAccessAllowedInMemory(String action, String relationshipType, AtlasEntityHeader endOneEntity,
                                                          AtlasEntityHeader endTwoEntity, String policyType) throws AtlasBaseException {
-        //Relationship add, update, remove access check in memory
+        // Relationship add, update, remove access check in memory
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("checkRelationshipAccessAllowedInMemory."+policyType);
         AtlasAccessResult result = new AtlasAccessResult();
 
         try {
             List<RangerPolicy> policies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
             if (!policies.isEmpty()) {
-                ObjectMapper mapper = new ObjectMapper();
                 AtlasVertex oneVertex = AtlasGraphUtilsV2.findByGuid(endOneEntity.getGuid());
                 AtlasVertex twoVertex = AtlasGraphUtilsV2.findByGuid(endTwoEntity.getGuid());
 
                 for (RangerPolicy policy : policies) {
-                    String filterCriteria = policy.getPolicyFilterCriteria();
-
                     boolean eval = false;
-                    JsonNode filterCriteriaNode = null;
-                    try {
-                        filterCriteriaNode = mapper.readTree(filterCriteria);
-                    } catch (JsonProcessingException e) {
-                        e.printStackTrace();
-                    }
-                    if (filterCriteriaNode != null && filterCriteriaNode.get("endOneEntity") != null) {
-                        JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("endOneEntity");
+                    JsonNode entityFilterCriteriaNode = policy.getPolicyParsedFilterCriteria("endOneEntity");
+                    if (entityFilterCriteriaNode != null) {
                         eval = validateEntityFilterCriteria(entityFilterCriteriaNode, endOneEntity, oneVertex);
-
                         if (eval) {
-                            entityFilterCriteriaNode = filterCriteriaNode.get("endTwoEntity");
+                            entityFilterCriteriaNode = policy.getPolicyParsedFilterCriteria("endTwoEntity");
                             eval = validateEntityFilterCriteria(entityFilterCriteriaNode, endTwoEntity, twoVertex);
                         }
                     }

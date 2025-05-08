@@ -107,8 +107,6 @@ public class AccessorsExtractor {
         List<RangerPolicy> matchedPolicies = new ArrayList<>();
         String action = request.getAction().getType();
 
-        ObjectMapper mapper = new ObjectMapper();
-
         if (ENTITY_ACTIONS.contains(action)) {
             AtlasEntityAccessRequest entityAccessRequest = (AtlasEntityAccessRequest) request;
 
@@ -119,24 +117,11 @@ public class AccessorsExtractor {
             }
 
             for (RangerPolicy policy : abacPolicies) {
-                String filterCriteria = policy.getPolicyFilterCriteria();
-                if (!StringUtils.isEmpty(filterCriteria)) {
-
-                    JsonNode filterCriteriaNode = null;
-                    try {
-                        filterCriteriaNode = mapper.readTree(policy.getPolicyFilterCriteria());
-                    } catch (JsonProcessingException e) {
-                        LOG.error("ABAC_AUTH: getAccessorsInMemoryForAbacPolicies.entity_actions: parsing filterCriteria failed for policy={}, filterCriteria={}", policy.getGuid(), policy.getPolicyFilterCriteria());
-                        continue;
-                    }
-
-                    if (filterCriteriaNode != null && filterCriteriaNode.get("entity") != null) {
-                        JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("entity");
-                        boolean matched = validateEntityFilterCriteria(entityFilterCriteriaNode, entity, vertex);
-
-                        if (matched) {
-                            matchedPolicies.add(policy);
-                        }
+                JsonNode entityFilterCriteriaNode = policy.getPolicyParsedFilterCriteria("entity");
+                if (entityFilterCriteriaNode != null) {
+                    boolean matched = validateEntityFilterCriteria(entityFilterCriteriaNode, entity, vertex);
+                    if (matched) {
+                        matchedPolicies.add(policy);
                     }
                 }
             }
@@ -157,29 +142,14 @@ public class AccessorsExtractor {
             }
 
             for (RangerPolicy policy : abacPolicies) {
-                String filterCriteria = policy.getPolicyFilterCriteria();
-                if (filterCriteria != null && !filterCriteria.isEmpty() ) {
-
-                    JsonNode filterCriteriaNode = null;
-                    try {
-                        filterCriteriaNode = mapper.readTree(policy.getPolicyFilterCriteria());
-                    } catch (JsonProcessingException e) {
-                        LOG.error("ABAC_AUTH: getAccessorsInMemoryForAbacPolicies.relationship_actions: parsing filterCriteria failed for policy={}, filterCriteria={}", policy.getGuid(), policy.getPolicyFilterCriteria());
-                    }
-
-                    if (filterCriteriaNode != null && filterCriteriaNode.get("endOneEntity") != null) {
-                        JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("endOneEntity");
-                        boolean matched = validateEntityFilterCriteria(entityFilterCriteriaNode, entityOne, vertexOne);
-
-                        if (matched) {
-                            entityFilterCriteriaNode = filterCriteriaNode.get("endTwoEntity");
-                            matched = validateEntityFilterCriteria(entityFilterCriteriaNode, entityTwo, vertexTwo);
-                        }
-
-                        if (matched) {
-                            matchedPolicies.add(policy);
-                        }
-                    }
+                JsonNode entityFilterCriteriaNode = policy.getPolicyParsedFilterCriteria("endOneEntity");
+                boolean matched = validateEntityFilterCriteria(entityFilterCriteriaNode, entityOne, vertexOne);
+                if (matched) {
+                    entityFilterCriteriaNode = policy.getPolicyParsedFilterCriteria("endTwoEntity");
+                    matched = validateEntityFilterCriteria(entityFilterCriteriaNode, entityTwo, vertexTwo);
+                }
+                if (matched) {
+                    matchedPolicies.add(policy);
                 }
             }
         }

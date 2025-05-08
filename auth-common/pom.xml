@@ -37,6 +37,12 @@
             <version>${jackson.databind.version}</version>
             <scope>compile</scope>
         </dependency>
+        <dependency>
+            <groupId>org.keycloak</groupId>
+            <artifactId>keycloak-core</artifactId>
+            <version>26.1.0</version>
+            <scope>compile</scope>
+        </dependency>
     </dependencies>
 
 </project>

@@ -1,7 +1,6 @@
 package org.apache.atlas.authorizer;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.RequestContext;
@@ -9,14 +8,15 @@ import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.keycloak.util.JsonSerialization.mapper;
+
 public class JsonToElasticsearchQuery {
     private static final Logger LOG = LoggerFactory.getLogger(JsonToElasticsearchQuery.class);
 
-    private static JsonNode convertConditionToQuery(String condition, JsonNode criterion, ObjectMapper mapper) {
+    private static JsonNode convertConditionToQuery(String condition, JsonNode criterion) {
         if (condition.equals("AND")) {
             return mapper.createObjectNode().set("bool", mapper.createObjectNode().set("filter", mapper.createArrayNode()));
         } else if (condition.equals("OR")) {
-            //JsonNode node = mapper.createObjectNode().set("bool", mapper.createObjectNode());
             return mapper.createObjectNode()
                     .set("bool", mapper.createObjectNode()
                     .set("should", mapper.createArrayNode()));
@@ -25,16 +25,16 @@ public class JsonToElasticsearchQuery {
         }
     }
 
-    public static JsonNode convertJsonToQuery(JsonNode data, ObjectMapper mapper) {
+    public static JsonNode convertJsonToQuery(JsonNode data) {
         AtlasPerfMetrics.MetricRecorder convertJsonToQueryMetrics = RequestContext.get().startMetricRecord("convertJsonToQuery");
         String condition = data.get("condition").asText();
         JsonNode criterion = data.get("criterion");
 
-        JsonNode query = convertConditionToQuery(condition, criterion, mapper);
+        JsonNode query = convertConditionToQuery(condition, criterion);
 
         for (JsonNode crit : criterion) {
             if (crit.has("condition")) {
-                JsonNode nestedQuery = convertJsonToQuery(crit, mapper);
+                JsonNode nestedQuery = convertJsonToQuery(crit);
                 if (condition.equals("AND")) {
                     ((ArrayNode) query.get("bool").get("filter")).add(nestedQuery);
                 } else {

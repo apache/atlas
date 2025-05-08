@@ -1,8 +1,6 @@
 package org.apache.atlas.authorizer.authorizers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAccessResult;
 import org.apache.atlas.authorizer.store.PoliciesStore;
@@ -63,21 +61,11 @@ public class EntityAuthorizer {
         AtlasAccessResult result = new AtlasAccessResult(false);
 
         AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entity.getGuid());
-        ObjectMapper mapper = new ObjectMapper();
 
         for (RangerPolicy policy : abacPolicies) {
-            String filterCriteria = policy.getPolicyFilterCriteria();
-
             boolean matched = false;
-            JsonNode filterCriteriaNode = null;
-            try {
-                filterCriteriaNode = mapper.readTree(filterCriteria);
-            } catch (JsonProcessingException e) {
-                LOG.error("ABAC_AUTH: parsing json filter criteria failed for policy={} filterCriteria={}", policy.getGuid(), filterCriteria);
-                return result;
-            }
-            if (filterCriteriaNode != null && filterCriteriaNode.get("entity") != null) {
-                JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("entity");
+            JsonNode entityFilterCriteriaNode = policy.getPolicyParsedFilterCriteria("entity");
+            if (entityFilterCriteriaNode != null) {
                 matched = validateEntityFilterCriteria(entityFilterCriteriaNode, entity, vertex);
             }
             if (matched) {

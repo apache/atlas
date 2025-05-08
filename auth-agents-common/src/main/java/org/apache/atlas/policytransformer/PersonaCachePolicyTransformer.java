@@ -56,6 +56,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyFilte
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResources;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyServiceName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
+import static org.keycloak.util.JsonSerialization.mapper;
 
 public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PersonaCachePolicyTransformer.class);
@@ -104,7 +105,6 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
 
                 if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
                     if (policyFilterCriteria != null && !policyFilterCriteria.isEmpty()) {
-                        ObjectMapper mapper = new ObjectMapper();
                         try {
                             JsonNode filterCriteriaNode = mapper.readTree(policyFilterCriteria);
                             if (filterCriteriaNode != null && filterCriteriaNode.get("entity") != null) {
@@ -112,7 +112,7 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                                 policyFilterCriteria = entityFilterCriteriaNode.toString();
                             }
                         } catch (JsonProcessingException e) {
-                            e.printStackTrace();
+                            LOG.error("ABAC_AUTH: PersonaCachePolicyTransformer.transform: parsing filterCriteria failed for policy={}, filterCriteria={}", atlasPolicy.getGuid(), policyFilterCriteria);
                         }
                     }
                     header.setAttribute(ATTR_POLICY_FILTER_CRITERIA,
