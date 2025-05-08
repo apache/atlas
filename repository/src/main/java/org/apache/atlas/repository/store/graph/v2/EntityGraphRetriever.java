@@ -1083,7 +1083,7 @@ public class EntityGraphRetriever {
             }
 
             if(getJanusOptimisationEnabled()) {
-                entity.setClassifications(tagDAO.getAllDirectTagsForVertex(entityVertex.getIdForDisplay()));
+                entity.setClassifications(tagDAO.getTagsForVertex(entityVertex.getIdForDisplay()));
             } else {
                 mapClassifications(entityVertex, entity);
             }
