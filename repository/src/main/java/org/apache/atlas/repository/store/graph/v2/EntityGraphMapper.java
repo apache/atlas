@@ -3850,8 +3850,9 @@ public class EntityGraphMapper {
                 List<AtlasEntity> propagatedEntitiesChunked = updateClassificationTextV2(classification, chunkedVerticesToPropagate, deNormAttributesMap, assetMinAttrsMap);
 
                 tagDAO.putPropagatedTags(entityVertex.getIdForDisplay(), classification.getTypeName(), deNormAttributesMap.keySet(), assetMinAttrsMap, classification);
-                ESConnector.writeTagProperties(deNormAttributesMap);
-
+                if (MapUtils.isNotEmpty(deNormAttributesMap)) {
+                    ESConnector.writeTagProperties(deNormAttributesMap);
+                }
                 entityChangeNotifier.onClassificationPropagationAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), true); // Async call
                 offset += CHUNK_SIZE;
                 LOG.info("offset {}, impactedVerticesSize: {}", offset, impactedVerticesSize);
@@ -4623,7 +4624,8 @@ public class EntityGraphMapper {
 
             if ((!Objects.equals(updatedRemovePropagations, currentRemovePropagations) ||
                     !Objects.equals(currentTagPropagation, updatedTagPropagation) ||
-                    !Objects.equals(currentRestrictPropagationThroughLineage, updatedRestrictPropagationThroughLineage)) &&
+                    !Objects.equals(currentRestrictPropagationThroughLineage, updatedRestrictPropagationThroughLineage) ||
+                    !Objects.equals(currentRestrictPropagationThroughHierarchy, updatedRestrictPropagationThroughHierarchy)) &&
                     taskManagement != null && DEFERRED_ACTION_ENABLED) {
 
                 propagationType = CLASSIFICATION_PROPAGATION_ADD;
@@ -4866,8 +4868,9 @@ public class EntityGraphMapper {
                 Map<String, Map<String, Object>> deNormMap = new HashMap<>();
                 updateClassificationTextV2(originalClassification, vertexIds, batchToDelete, deNormMap);
                 // push them to ES
-                ESConnector.writeTagProperties(deNormMap);
-
+                if (MapUtils.isNotEmpty(deNormMap)) {
+                    ESConnector.writeTagProperties(deNormMap);
+                }
                 // notify listeners (async)
                 entityChangeNotifier.onClassificationDeletedFromEntitiesV2(entities, originalClassification, true);
 
@@ -6082,8 +6085,9 @@ public class EntityGraphMapper {
                 updateClassificationTextV2(originalClassification, vertexIds, batchToUpdate, deNormMap);
 
                 // push them to ES
-                ESConnector.writeTagProperties(deNormMap);
-
+                if (MapUtils.isNotEmpty(deNormMap)) {
+                    ESConnector.writeTagProperties(deNormMap);
+                }
                 // notify listeners (async) that these entities got their classification text updated
                 entityChangeNotifier.onClassificationUpdatedToEntitiesV2(entities, originalClassification, true);
 
@@ -6171,8 +6175,9 @@ public class EntityGraphMapper {
         Map<String, Map<String, Object>> deNormMap = new HashMap<>();
         updateClassificationTextV2(tag, vertexIdsToDelete, tagsToRemove, deNormMap);
         // push them to ES
-        ESConnector.writeTagProperties(deNormMap);
-
+        if (MapUtils.isNotEmpty(deNormMap)) {
+            ESConnector.writeTagProperties(deNormMap);
+        }
         if (CollectionUtils.isEmpty(verticesToAddClassification)) {
             LOG.debug("propagateClassification(entityGuid={}, classificationTypeName={}): found no entities to propagate the classification", sourceEntityId, classificationTypeName);
             return;
