@@ -408,9 +408,10 @@ public class TypesREST {
 
     private Lock attemptAcquiringLockV2() throws AtlasBaseException {
         final String traceId = RequestContext.get().getTraceId();
+        Lock lock = null;
         try {
 
-            Lock lock = redisService.acquireDistributedLockV2(ATLAS_TYPEDEF_LOCK);
+            lock = redisService.acquireDistributedLockV2(ATLAS_TYPEDEF_LOCK);
             if (lock == null) {
                 LOG.info("Lock is already acquired. for key {} : Returning now :: traceId {}", ATLAS_TYPEDEF_LOCK, traceId);
                 throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK);
@@ -418,6 +419,7 @@ public class TypesREST {
             LOG.info("Successfully acquired lock with key {} :: traceId {}", ATLAS_TYPEDEF_LOCK, traceId);
             return lock;
         } catch (AtlasBaseException e) {
+            redisService.releaseDistributedLockV2(lock, ATLAS_TYPEDEF_LOCK);
             throw e;
         } catch (Exception e) {
             LOG.error("Error while acquiring lock on type-defs :: traceId " + traceId + " ." + e.getMessage(), e);
@@ -538,7 +540,7 @@ public class TypesREST {
             RequestContext.get().setAllowDuplicateDisplayName(allowDuplicateDisplayName);
             LOG.info("TypesRest.updateAtlasTypeDefs:: Typedef patch enabled:" + patch);
             AtlasTypesDef atlasTypesDef = typeDefStore.updateTypesDef(typesDef);
-            refreshAllHostCache();
+            refreshAllHostCache(RequestContext.get().getTraceId());
             LOG.info("TypesRest.updateAtlasTypeDefs:: Done");
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
@@ -654,12 +656,12 @@ public class TypesREST {
         return ret;
     }
 
-
-    private void refreshAllHostCache(){
+    private void refreshAllHostCache(String traceId){
         if (AtlasConfiguration.ENABLE_ASYNC_TYPE_UPDATE.getBoolean()){
             cacheRefreshExecutor.submit(() -> {
+                RequestContext.get().setTraceId(traceId);
                 try {
-                    int maxRetries = 3;
+                    int maxRetries = 5;
                     int retryCount = 0;
                     boolean success = false;
 
@@ -707,7 +709,7 @@ public class TypesREST {
             try {
                 LOG.info("Shutting down cache refresh executor");
                 cacheRefreshExecutor.shutdown();
-                if (!cacheRefreshExecutor.awaitTermination(30, TimeUnit.SECONDS)) {
+                if (!cacheRefreshExecutor.awaitTermination(10, TimeUnit.SECONDS)) {
                     LOG.warn("Cache refresh executor did not terminate in time - forcing shutdown");
                     cacheRefreshExecutor.shutdownNow();
                 }

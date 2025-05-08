@@ -67,18 +67,21 @@ public abstract class AbstractRedisService implements RedisService {
         RLock lock = null;
         try {
             lock = redisClient.getFairLock(key);
-            boolean isLockAcquired =  lock.tryLock(waitTimeInMS, leaseTimeInMS, TimeUnit.MILLISECONDS);
+            boolean isLockAcquired = lock.tryLock(waitTimeInMS, leaseTimeInMS, TimeUnit.MILLISECONDS);
 
-            if (isLockAcquired){
+            if (isLockAcquired) {
                 getLogger().info("Lock with key {} is acquired, host: {}.", key, getHostAddress());
                 return lock;
-            }else {
+            } else {
                 getLogger().info("Attempt failed as fair lock {} is already acquired, host: {}.", key, getHostAddress());
                 return null;
             }
 
         } catch (InterruptedException e) {
             getLogger().error("Failed to acquire distributed lock for {}, host: {}", key, getHostAddress(), e);
+            if (lock != null) {
+                lock.unlock();
+            }
             throw new AtlasException(e);
         }
     }
@@ -86,9 +89,9 @@ public abstract class AbstractRedisService implements RedisService {
 
     @Override
     public void releaseDistributedLock(String key) {
-            if (!keyLockMap.containsKey(key)) {
-                return;
-            }
+        if (!keyLockMap.containsKey(key)) {
+            return;
+        }
         try {
             RLock lock = keyLockMap.get(key);
             if (lock.isHeldByCurrentThread()) {
@@ -100,12 +103,12 @@ public abstract class AbstractRedisService implements RedisService {
         }
     }
 
-
     @Override
     public void releaseDistributedLockV2(Lock lock, String key) {
         try {
-
-            lock.unlock();
+            if (lock != null) {
+                lock.unlock();
+            }
         } catch (Exception e) {
             getLogger().error("Failed to release distributed lock for {}", key, e);
         }
