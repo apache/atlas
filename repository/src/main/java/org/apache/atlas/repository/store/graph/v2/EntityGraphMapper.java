@@ -4822,7 +4822,15 @@ public class EntityGraphMapper {
             List<Tag> batchToDelete = pageToDelete.getTags();
             int previousBatchSize = -1; // Track previous batch size for loop detection
             int loopDetectionCounter = 0;
-            AtlasClassification originalClassification = tagDAO.findDirectDeletedTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
+
+            AtlasClassification originalClassification;
+
+            AtlasClassification deletedClassification = tagDAO.findDirectDeletedTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
+            if (deletedClassification != null)
+                originalClassification = deletedClassification;
+            else
+                originalClassification = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
+
             if (originalClassification == null) {
                 LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): classification vertex not found", sourceEntityGuid, tagTypeName);
                 throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, tagTypeName=%s): classification vertex not found", sourceEntityGuid, tagTypeName));
