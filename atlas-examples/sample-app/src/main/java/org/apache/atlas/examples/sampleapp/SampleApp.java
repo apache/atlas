@@ -19,6 +19,7 @@ package org.apache.atlas.examples.sampleapp;
 
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.utils.AuthenticationUtil;
 
@@ -75,6 +76,18 @@ public class SampleApp {
             sampleApp.glossaryExample();
 
             entityExample.deleteEntities();
+
+            // Async Import Examples
+            AsyncImportApiExample   asyncImportApiExample = new AsyncImportApiExample(sampleApp.getClient());
+            AtlasAsyncImportRequest asyncRequest          = asyncImportApiExample.testImportAsyncWithZip();
+
+            asyncImportApiExample.testGetAsyncImportStatus();
+
+            String testImportId = asyncRequest.getImportId();
+
+            asyncImportApiExample.testGetAsyncImportStatusById(testImportId);
+
+            asyncImportApiExample.testAbortAsyncImportById(testImportId);
         } finally {
             if (sampleApp != null && sampleApp.getClient() != null) {
                 sampleApp.getClient().close();

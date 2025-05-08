@@ -87,6 +87,30 @@ public class AbstractNotificationTest {
         }
     }
 
+    @org.testng.annotations.Test
+    public void testSend3() throws Exception {
+        MessageSource    source        = new MessageSource();
+        Configuration    configuration = mock(Configuration.class);
+        TestNotification notification  = new TestNotification(configuration);
+        Test             message1      = new Test(HookNotificationType.IMPORT_ENTITY, "user1");
+        Test             message2      = new Test(HookNotificationType.IMPORT_TYPES_DEF, "user1");
+        String           topic         = "ATLAS_IMPORT_21334wqdrr";
+        List<Test>       messages      = Arrays.asList(message1, message2);
+        List<String>     messageJson   = new ArrayList<>();
+
+        AbstractNotification.createNotificationMessages(message1, messageJson, source);
+        AbstractNotification.createNotificationMessages(message2, messageJson, source);
+
+        notification.send(topic, messages, source);
+
+        assertEquals(notification.messages.size(), messageJson.size());
+        assertEquals(notification.topic, topic);
+
+        for (int i = 0; i < notification.messages.size(); i++) {
+            assertEqualsMessageJson(notification.messages.get(i), messageJson.get(i));
+        }
+    }
+
     // ignore msgCreationTime in Json
     private void assertEqualsMessageJson(String msgJsonActual, String msgJsonExpected) {
         Map<Object, Object> msgActual   = AtlasType.fromV1Json(msgJsonActual, Map.class);
@@ -106,6 +130,7 @@ public class AbstractNotificationTest {
 
     public static class TestNotification extends AbstractNotification {
         private NotificationType type;
+        private String           topic;
         private List<String>     messages;
 
         public TestNotification(Configuration applicationProperties) throws AtlasException {
@@ -115,6 +140,12 @@ public class AbstractNotificationTest {
         @Override
         public void sendInternal(NotificationType notificationType, List<String> notificationMessages) {
             type     = notificationType;
+            messages = notificationMessages;
+        }
+
+        @Override
+        public void sendInternal(String notificationTopic, List<String> notificationMessages) throws NotificationException {
+            topic    = notificationTopic;
             messages = notificationMessages;
         }
 
