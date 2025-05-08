@@ -1,7 +1,7 @@
 package org.apache.atlas.authorizer.store;
 
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.authorizer.authorizers.AuthorizerCommon;
+import org.apache.atlas.authorizer.authorizers.AuthorizerCommonUtil;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
@@ -79,7 +79,7 @@ public class PoliciesStore {
             filteredPolicies = getFilteredPoliciesForActions(filteredPolicies, actions, policyType);
 
             if (!ignoreUser) {
-                String user = AuthorizerCommon.getCurrentUserName();
+                String user = AuthorizerCommonUtil.getCurrentUserName();
                 LOG.info("ABAC_AUTH: Getting relevant policies for user: {}, service={}, policyType={}", user, serviceName, policyType);
 
                 RangerUserStore userStore = UsersStore.getUserStore();
@@ -142,7 +142,7 @@ public class PoliciesStore {
                 if (!policyItem.getAccesses().isEmpty()) {
                     policyActions = policyItem.getAccesses().stream().map(x -> x.getType()).collect(Collectors.toList());
                 }
-                if (AuthorizerCommon.arrayListContains(policyActions, actions)) {
+                if (AuthorizerCommonUtil.arrayListContains(policyActions, actions)) {
                     filteredPolicies.add(policy);
                 }
             }
@@ -179,8 +179,8 @@ public class PoliciesStore {
                 List<String> policyRoles = policyItem.getRoles();
                 if (policyUsers.contains(user)
                         || policyGroups.contains("public")
-                        || AuthorizerCommon.arrayListContains(policyGroups, groups)
-                        || AuthorizerCommon.arrayListContains(policyRoles, roles)) {
+                        || AuthorizerCommonUtil.arrayListContains(policyGroups, groups)
+                        || AuthorizerCommonUtil.arrayListContains(policyRoles, roles)) {
                     filterPolicies.add(policy);
                 }
             }

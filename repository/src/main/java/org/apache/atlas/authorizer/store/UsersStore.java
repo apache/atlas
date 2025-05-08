@@ -1,6 +1,6 @@
 package org.apache.atlas.authorizer.store;
 
-import org.apache.atlas.authorizer.authorizers.AuthorizerCommon;
+import org.apache.atlas.authorizer.authorizers.AuthorizerCommonUtil;
 import org.apache.atlas.plugin.model.RangerRole;
 import org.apache.atlas.plugin.util.RangerRoles;
 import org.apache.atlas.plugin.util.RangerUserStore;
@@ -64,7 +64,7 @@ public class UsersStore {
             for (RangerRole.RoleMember nestedRole : nestedRoles) {
                 nestedRolesName.add(nestedRole.getName());
             }
-            if (AuthorizerCommon.arrayListContains(userRoles, nestedRolesName)) {
+            if (AuthorizerCommonUtil.arrayListContains(userRoles, nestedRolesName)) {
                 ret.add(role.getName());
             }
         }

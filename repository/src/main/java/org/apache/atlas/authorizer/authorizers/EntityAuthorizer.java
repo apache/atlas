@@ -185,17 +185,17 @@ public class EntityAuthorizer {
                 }
                 break;
             case "STARTS_WITH":
-                if (AuthorizerCommon.listStartsWith(attributeValue, entityAttributeValues)) {
+                if (AuthorizerCommonUtil.listStartsWith(attributeValue, entityAttributeValues)) {
                     return true;
                 }
                 break;
             case "LIKE":
-                if (AuthorizerCommon.listMatchesWith(attributeValue, entityAttributeValues)) {
+                if (AuthorizerCommonUtil.listMatchesWith(attributeValue, entityAttributeValues)) {
                     return true;
                 }
                 break;
             case "ENDS_WITH":
-                if (AuthorizerCommon.listEndsWith(attributeValue, entityAttributeValues)) {
+                if (AuthorizerCommonUtil.listEndsWith(attributeValue, entityAttributeValues)) {
                     return true;
                 }
                 break;

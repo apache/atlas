@@ -197,7 +197,6 @@ public class AtlasAuthorizationUtils {
 
                 // if priority is override, then it's an explicit deny as implicit deny won't have priority set to override
                 if (!atlasPoliciesResult.isAllowed() && atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
-                    // 1
                     return false;
                 }
 
@@ -205,35 +204,45 @@ public class AtlasAuthorizationUtils {
                 metric = RequestContext.get().startMetricRecord("isAccessAllowed.abac");
                 AtlasAccessResult abacPoliciesResult = ABACAuthorizerUtils.isAccessAllowed(request.getEntity(), request.getAction());
 
-                // reference - https://docs.google.com/spreadsheets/d/1npyX1cpm8-a8LwzmObgf8U1hZh6bO7FF8cpXjHMMQ08/edit?usp=sharing
+                /* reference - https://docs.google.com/spreadsheets/d/1npyX1cpm8-a8LwzmObgf8U1hZh6bO7FF8cpXjHMMQ08/edit?usp=sharing
+                 * Result of Atlas policy engine and ABAC evaluator is merged with below priority
+                 * Decision hierarchy (highest to lowest precedence):
+                 * 1. Override priority with explicit deny
+                 * 2. Override priority allow
+                 * 3. Explicit deny (normal priority)
+                 * 4. Normal priority allow
+                 * 5. Implicit deny
+                 */
                 try {
-                    if (!atlasPoliciesResult.isAllowed()) { // atlas deny
-                        // 2
+                    if (!atlasPoliciesResult.isAllowed()) {
+                        // Atlas DENY
                         if (atlasPoliciesResult.isExplicitDeny()) {
+                            // Matrix row: DENY + DENY (explicit) case
                             if (abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
-                                finalResult = abacPoliciesResult;
+                                finalResult = abacPoliciesResult; // ABAC override DENY or ALLOW
                             } else {
-                                finalResult = atlasPoliciesResult;
+                                finalResult = atlasPoliciesResult; // Atlas DENY takes precedence
                             }
                         } else {
-                            finalResult = abacPoliciesResult;
+                            finalResult = abacPoliciesResult; // Not explicit deny by Atlas, use ABAC result
                         }
-                    } else { // atlas allow
+                    } else {
+                        // Atlas ALLOW
                         if (atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
-                            //3
+                            // Matrix rows: ALLOW (override) vs ABAC deny/allow
                             if (abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE && !abacPoliciesResult.isAllowed()) {
-                                finalResult = abacPoliciesResult;
+                                finalResult = abacPoliciesResult; // ABAC override DENY wins
                             } else {
-                                finalResult = atlasPoliciesResult;
+                                finalResult = atlasPoliciesResult; // Atlas override ALLOW wins
                             }
                         } else {
-                            //4
+                            // Atlas ALLOW (normal)
                             if (abacPoliciesResult.isExplicitDeny()) {
-                                finalResult = abacPoliciesResult;
+                                finalResult = abacPoliciesResult; // ABAC explicit DENY wins
                             } else if (abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
-                                finalResult = abacPoliciesResult;
+                                finalResult = abacPoliciesResult; // ABAC override ALLOW wins
                             } else {
-                                finalResult = atlasPoliciesResult;
+                                finalResult = atlasPoliciesResult; // Atlas normal ALLOW wins
                             }
                         }
                     }

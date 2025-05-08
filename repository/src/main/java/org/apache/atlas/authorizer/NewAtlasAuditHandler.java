@@ -10,7 +10,7 @@ import org.apache.atlas.authorize.AtlasAccessResult;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
-import org.apache.atlas.authorizer.authorizers.AuthorizerCommon;
+import org.apache.atlas.authorizer.authorizers.AuthorizerCommonUtil;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.plugin.model.NewAccessResourceImpl;
 import org.apache.atlas.plugin.model.RangerServiceDef;
@@ -193,7 +193,7 @@ class NewAtlasAuditHandler {
     }
 
     private void populateDefaults(AuthzAuditEvent auditEvent) {
-        auditEvent.setUser(AuthorizerCommon.getCurrentUserName());
+        auditEvent.setUser(AuthorizerCommonUtil.getCurrentUserName());
 
         if (auditEvent.getAgentHostname() == null || auditEvent.getAgentHostname().isEmpty()) {
             auditEvent.setAgentHostname(MiscUtil.getHostname());

@@ -1,7 +1,6 @@
 package org.apache.atlas.authorizer.authorizers;
 
 import org.apache.atlas.exception.AtlasBaseException;
-import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -13,7 +12,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.Collections;
@@ -23,15 +21,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-@Component
-public class AuthorizerCommon {
-    private static final Logger LOG = LoggerFactory.getLogger(AuthorizerCommon.class);
+public class AuthorizerCommonUtil {
+    private static final Logger LOG = LoggerFactory.getLogger(AuthorizerCommonUtil.class);
 
     private static AtlasTypeRegistry typeRegistry;
     private static EntityGraphRetriever entityRetriever;
 
     @Inject
-    public AuthorizerCommon(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
+    public AuthorizerCommonUtil(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
         this.typeRegistry = typeRegistry;
         this.entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true);
     }
@@ -114,7 +111,7 @@ public class AuthorizerCommon {
         if (!policyValues.contains("*")) {
             if (replaceUser) {
                 return policyValues.stream().anyMatch(x -> actualValue.matches(x
-                        .replace("{USER}", AuthorizerCommon.getCurrentUserName())
+                        .replace("{USER}", AuthorizerCommonUtil.getCurrentUserName())
                         .replace("*", ".*")));
             } else {
                 return policyValues.stream().anyMatch(x -> actualValue.matches(x.replace("*", ".*")));

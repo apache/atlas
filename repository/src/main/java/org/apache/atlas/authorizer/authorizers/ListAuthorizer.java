@@ -1,7 +1,6 @@
 package org.apache.atlas.authorizer.authorizers;
 
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.Lists;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorizer.JsonToElasticsearchQuery;
@@ -25,7 +24,7 @@ import static org.apache.atlas.authorizer.ABACAuthorizerUtils.DENY_POLICY_NAME_S
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.MAX_CLAUSE_LIMIT;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_DENY;
-import static org.apache.atlas.authorizer.authorizers.AuthorizerCommon.getMap;
+import static org.apache.atlas.authorizer.authorizers.AuthorizerCommonUtil.getMap;
 
 public class ListAuthorizer {
     private static final Logger LOG = LoggerFactory.getLogger(ListAuthorizer.class);
@@ -129,10 +128,7 @@ public class ListAuthorizer {
 
                 entities.remove("*");
                 entityTypesRaw.remove("*");
-
-                //Set<String> entityTypes = new HashSet<>();
-                //entityTypesRaw.forEach(x -> entityTypes.addAll(AuthorizerCommon.getTypeAndSupertypesList(x)));
-
+                
                 if (!entities.isEmpty() && entityTypesRaw.isEmpty()) {
                     combinedEntities.addAll(entities);
                 } else if (entities.isEmpty() && !entityTypesRaw.isEmpty()) {
