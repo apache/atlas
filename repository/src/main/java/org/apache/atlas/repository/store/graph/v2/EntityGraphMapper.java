@@ -3775,7 +3775,7 @@ public class EntityGraphMapper {
             } else {
                 LOG.info("Found {} vertexIds", impactedVertices.size());
             }
-
+            transactionInterceptHelper.intercept();
             processClassificationPropagationAdditionV2(parameters, entityVertex, impactedVertices, tag);
         } catch (Exception e) {
             LOG.error("propagateClassification(entityGuid={}, classificationTypeName={}): error while propagating classification", entityGuid, tagTypeName, e);
