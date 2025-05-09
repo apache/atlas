@@ -50,7 +50,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     private static final int BATCH_SIZE_LIMIT = 100;
 
     // Configuration constants
-    private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(10);
     private static final Duration HEARTBEAT_INTERVAL = Duration.ofSeconds(30);
 
     private final CqlSession cassSession;
