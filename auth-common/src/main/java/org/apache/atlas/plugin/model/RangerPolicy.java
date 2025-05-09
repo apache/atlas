@@ -25,7 +25,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.commons.collections.CollectionUtils;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import static org.keycloak.util.JsonSerialization.mapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
@@ -49,6 +49,8 @@ to avoid the circular dependency when ABAC authorizer was implemented.
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.FIELD)
 public class RangerPolicy extends RangerBaseModelObject implements java.io.Serializable {
+    private static final ObjectMapper mapper = new ObjectMapper();
+
     public static final String POLICY_TYPE_ACCESS    = "ACCESS";
     public static final String POLICY_TYPE_DATAMASK  = "DATA_MASK";
     public static final String POLICY_TYPE_ROWFILTER = "ROW_FILTER";

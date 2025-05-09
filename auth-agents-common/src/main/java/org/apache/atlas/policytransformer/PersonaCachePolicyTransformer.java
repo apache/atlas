@@ -56,10 +56,10 @@ import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyFilte
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResources;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyServiceName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
-import static org.keycloak.util.JsonSerialization.mapper;
 
 public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransformer {
     private static final Logger LOG = LoggerFactory.getLogger(PersonaCachePolicyTransformer.class);
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     private final static String TEMPLATE_SUFFIX = "persona";
 
