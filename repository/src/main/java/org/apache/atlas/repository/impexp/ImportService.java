@@ -327,8 +327,12 @@ public class ImportService implements AsyncImporter {
             LOG.info("<== onImportEntity(entityWithExtInfo={}, importId={}, position={})", entityWithExtInfo, importId, position);
         }
 
-        return importRequest.getImportDetails().getPublishedEntityCount() <=
-                importRequest.getImportDetails().getImportedEntitiesCount() + importRequest.getImportDetails().getFailedEntitiesCount();
+        if (importRequest.getImportDetails().getPublishedEntityCount() <=
+                importRequest.getImportDetails().getImportedEntitiesCount() + importRequest.getImportDetails().getFailedEntitiesCount()) {
+            onImportComplete(importId);
+            return true;
+        }
+        return false;
     }
 
     @Override
@@ -363,11 +367,19 @@ public class ImportService implements AsyncImporter {
             auditsWriter.write(result.getUserName(), result, result.getTimeStamp(), System.currentTimeMillis(), importRequest.getImportDetails().getCreationOrder());
 
             addToImportOperationAudits(result);
-        } finally {
-            asyncImportTaskExecutor.onCompleteImportRequest(importId);
-
+        }
+        finally {
             LOG.info("<== onImportComplete(importId={})", importId);
         }
+    }
+
+    @Override
+    public void onCompleteImportRequest(String importId) {
+        LOG.info("==> onCompleteImportRequest(importId={})", importId);
+
+        asyncImportTaskExecutor.onCompleteImportRequest(importId);
+
+        LOG.info("<== onCompleteImportRequest(importId={})", importId);
     }
 
     @VisibleForTesting

@@ -40,9 +40,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
-import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.ABORTED;
-import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.PROCESSING;
-import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.WAITING;
+import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus;
 import static org.apache.atlas.repository.Constants.PROPERTY_KEY_ASYNC_IMPORT_ID;
 import static org.apache.atlas.repository.Constants.PROPERTY_KEY_ASYNC_IMPORT_STATUS;
 import static org.apache.atlas.repository.ogm.impexp.AtlasAsyncImportRequestDTO.ASYNC_IMPORT_TYPE_NAME;
@@ -94,13 +92,13 @@ public class AsyncImportService {
 
     public List<String> fetchInProgressImportIds() {
         return AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(ASYNC_IMPORT_TYPE_NAME,
-                Collections.singletonMap(PROPERTY_KEY_ASYNC_IMPORT_STATUS, PROCESSING),
+                Collections.singletonMap(PROPERTY_KEY_ASYNC_IMPORT_STATUS, ImportStatus.PROCESSING),
                 PROPERTY_KEY_ASYNC_IMPORT_ID);
     }
 
     public List<String> fetchQueuedImportRequests() {
         return AtlasGraphUtilsV2.findEntityPropertyValuesByTypeAndAttributes(ASYNC_IMPORT_TYPE_NAME,
-                Collections.singletonMap(PROPERTY_KEY_ASYNC_IMPORT_STATUS, WAITING),
+                Collections.singletonMap(PROPERTY_KEY_ASYNC_IMPORT_STATUS, ImportStatus.WAITING),
                 PROPERTY_KEY_ASYNC_IMPORT_ID);
     }
 
@@ -120,8 +118,8 @@ public class AsyncImportService {
                 throw new AtlasBaseException(AtlasErrorCode.IMPORT_NOT_FOUND, importId);
             }
 
-            if (importRequestToKill.getStatus().equals(WAITING)) {
-                importRequestToKill.setStatus(ABORTED);
+            if (importRequestToKill.getStatus().equals(ImportStatus.STAGING) || importRequestToKill.getStatus().equals(ImportStatus.WAITING)) {
+                importRequestToKill.setStatus(ImportStatus.ABORTED);
 
                 saveImportRequest(importRequestToKill);
 

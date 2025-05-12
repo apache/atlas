@@ -457,7 +457,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     public void closeImportConsumer(String importId, String topic) {
         try {
             LOG.info("==> closeImportConsumer(importId={}, topic={})", importId, topic);
-
+//ATLAS_IMPORT_e22a73f9f6a16620a8655b36d71fb5be
             String                     consumerName      = ATLAS_IMPORT_CONSUMER_THREAD_PREFIX + importId;
             ListIterator<HookConsumer> consumersIterator = consumers.listIterator();
 
@@ -472,6 +472,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
             notificationInterface.closeConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, topic);
             notificationInterface.deleteTopic(NotificationInterface.NotificationType.ASYNC_IMPORT, topic);
+
+            lastCommittedPartitionOffset.entrySet().removeIf(entry -> topic.equals(entry.getKey().topic()));
         } catch (Exception e) {
             LOG.error("Could not cleanup consumers for importId: {}", importId, e);
         } finally {
@@ -1218,12 +1220,13 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
         @VisibleForTesting
         void handleMessage(AtlasKafkaMessage<HookNotification> kafkaMsg) {
-            AtlasPerfTracer  perf        = null;
-            HookNotification message     = kafkaMsg.getMessage();
-            String           messageUser = message.getUser();
-            long             startTime   = System.currentTimeMillis();
-            NotificationStat stats       = new NotificationStat();
-            AuditLog         auditLog    = null;
+            AtlasPerfTracer  perf                   = null;
+            HookNotification message                = kafkaMsg.getMessage();
+            String           messageUser            = message.getUser();
+            long             startTime              = System.currentTimeMillis();
+            NotificationStat stats                  = new NotificationStat();
+            AuditLog         auditLog               = null;
+            boolean          importRequestComplete  = false;
 
             if (authorizeUsingMessageUser) {
                 setCurrentUser(messageUser);
@@ -1427,8 +1430,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                     asyncImporter.onImportTypeDef(typesDef, importId);
                                 } catch (AtlasBaseException abe) {
                                     LOG.error("IMPORT_TYPE_DEF: {} failed to import type definition: {}", importId, typesDef);
-
                                     asyncImporter.onImportComplete(importId);
+                                    importRequestComplete = true;
                                 }
                             }
                             break;
@@ -1441,15 +1444,13 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                                 boolean                             completeImport           = false;
 
                                 try {
-                                    completeImport = asyncImporter.onImportEntity(entityWithExtInfo, importId, position);
+                                    importRequestComplete = asyncImporter.onImportEntity(entityWithExtInfo, importId, position);
                                 } catch (AtlasBaseException abe) {
-                                    completeImport = true;
+                                    importRequestComplete = true;
+
+                                    asyncImporter.onImportComplete(importId);
 
                                     LOG.error("IMPORT_ENTITY: {} failed to import entity: {}", importId, entityImportNotification);
-                                } finally {
-                                    if (completeImport) {
-                                        asyncImporter.onImportComplete(importId);
-                                    }
                                 }
                             }
                             break;
@@ -1553,6 +1554,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                     LOG.info("STATS: {}", AtlasJson.toJson(metricsUtil.getStats()));
 
                     nextStatsLogTime = AtlasMetricsCounter.getNextHourStartTime(now);
+                }
+
+                if (importRequestComplete) {
+                    asyncImporter.onCompleteImportRequest(((AtlasEntityImportNotification) message).getImportId());
                 }
             }
         }

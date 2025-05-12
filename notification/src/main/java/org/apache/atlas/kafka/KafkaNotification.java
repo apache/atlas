@@ -246,10 +246,6 @@ public class KafkaNotification extends AbstractNotification implements Service {
     public <T> List<NotificationConsumer<T>> createConsumers(NotificationType notificationType, int numConsumers, boolean autoCommitEnabled) {
         LOG.info("==> KafkaNotification.createConsumers(notificationType={}, numConsumers={}, autoCommitEnabled={})", notificationType, numConsumers, autoCommitEnabled);
 
-        if (!autoCommitEnabled && notificationType.equals(NotificationType.ASYNC_IMPORT)) {
-            autoCommitEnabled = true;
-        }
-
         List<String> topics = CONSUMER_TOPICS_MAP.getOrDefault(notificationType, Collections.emptyList());
 
         if (numConsumers < topics.size()) {

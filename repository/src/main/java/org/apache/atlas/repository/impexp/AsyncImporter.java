@@ -28,4 +28,6 @@ public interface AsyncImporter {
     Boolean onImportEntity(AtlasEntityWithExtInfo atlasEntityWithExtInfo, String importId, int position) throws AtlasBaseException;
 
     void onImportComplete(String importId) throws AtlasBaseException;
+
+    void onCompleteImportRequest(String importId);
 }
