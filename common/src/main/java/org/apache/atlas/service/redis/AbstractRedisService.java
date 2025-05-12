@@ -16,6 +16,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.locks.Lock;
 
 public abstract class AbstractRedisService implements RedisService {
 
@@ -27,8 +28,10 @@ public abstract class AbstractRedisService implements RedisService {
     private static final String ATLAS_REDIS_MASTER_NAME = "atlas.redis.master_name";
     private static final String ATLAS_REDIS_LOCK_WAIT_TIME_MS = "atlas.redis.lock.wait_time.ms";
     private static final String ATLAS_REDIS_LOCK_WATCHDOG_TIMEOUT_MS = "atlas.redis.lock.watchdog_timeout.ms";
+    private static final String ATLAS_REDIS_LEASE_TIME_MS = "atlas.redis.lease_time.ms";
     private static final int DEFAULT_REDIS_WAIT_TIME_MS = 15_000;
     private static final int DEFAULT_REDIS_LOCK_WATCHDOG_TIMEOUT_MS = 600_000;
+    private static final int DEFAULT_REDIS_LEASE_TIME_MS = 60_000;
     private static final String ATLAS_METASTORE_SERVICE = "atlas-metastore-service";
 
     RedissonClient redisClient;
@@ -36,6 +39,7 @@ public abstract class AbstractRedisService implements RedisService {
     Map<String, RLock> keyLockMap;
     Configuration atlasConfig;
     long waitTimeInMS;
+    long leaseTimeInMS;
     long watchdogTimeoutInMS;
 
     @Override
@@ -44,7 +48,7 @@ public abstract class AbstractRedisService implements RedisService {
         boolean isLockAcquired;
         try {
             RLock lock = redisClient.getFairLock(key);
-            isLockAcquired = lock.tryLock(waitTimeInMS, TimeUnit.MILLISECONDS);
+            isLockAcquired = lock.tryLock(waitTimeInMS, leaseTimeInMS, TimeUnit.MILLISECONDS);
             if (isLockAcquired) {
                 keyLockMap.put(key, lock);
             } else {
@@ -58,6 +62,32 @@ public abstract class AbstractRedisService implements RedisService {
     }
 
     @Override
+    public Lock acquireDistributedLockV2(String key) throws Exception {
+        getLogger().info("Attempting to acquire distributed lock for {}, host:{}", key, getHostAddress());
+        RLock lock = null;
+        try {
+            lock = redisClient.getFairLock(key);
+            boolean isLockAcquired = lock.tryLock(waitTimeInMS, leaseTimeInMS, TimeUnit.MILLISECONDS);
+
+            if (isLockAcquired) {
+                getLogger().info("Lock with key {} is acquired, host: {}.", key, getHostAddress());
+                return lock;
+            } else {
+                getLogger().info("Attempt failed as fair lock {} is already acquired, host: {}.", key, getHostAddress());
+                return null;
+            }
+
+        } catch (InterruptedException e) {
+            getLogger().error("Failed to acquire distributed lock for {}, host: {}", key, getHostAddress(), e);
+            if (lock != null) {
+                lock.unlock();
+            }
+            throw new AtlasException(e);
+        }
+    }
+
+
+    @Override
     public void releaseDistributedLock(String key) {
         if (!keyLockMap.containsKey(key)) {
             return;
@@ -65,6 +95,18 @@ public abstract class AbstractRedisService implements RedisService {
         try {
             RLock lock = keyLockMap.get(key);
             if (lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
+
+        } catch (Exception e) {
+            getLogger().error("Failed to release distributed lock for {}", key, e);
+        }
+    }
+
+    @Override
+    public void releaseDistributedLockV2(Lock lock, String key) {
+        try {
+            if (lock != null) {
                 lock.unlock();
             }
         } catch (Exception e) {
@@ -106,6 +148,7 @@ public abstract class AbstractRedisService implements RedisService {
         keyLockMap = new ConcurrentHashMap<>();
         atlasConfig = ApplicationProperties.get();
         waitTimeInMS = atlasConfig.getLong(ATLAS_REDIS_LOCK_WAIT_TIME_MS, DEFAULT_REDIS_WAIT_TIME_MS);
+        leaseTimeInMS = atlasConfig.getLong(ATLAS_REDIS_LEASE_TIME_MS, DEFAULT_REDIS_LEASE_TIME_MS);
         watchdogTimeoutInMS = atlasConfig.getLong(ATLAS_REDIS_LOCK_WATCHDOG_TIMEOUT_MS, DEFAULT_REDIS_LOCK_WATCHDOG_TIMEOUT_MS);
         Config redisConfig = new Config();
         redisConfig.setLockWatchdogTimeout(watchdogTimeoutInMS);
