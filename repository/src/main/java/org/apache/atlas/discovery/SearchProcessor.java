@@ -55,8 +55,10 @@ import org.slf4j.LoggerFactory;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
-import java.sql.Timestamp;
+import java.time.Clock;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -201,7 +203,7 @@ public abstract class SearchProcessor {
         SearchParameters.Operator op       = criteria.getOperator();
         String                    attrVal  = criteria.getAttributeValue();
         FilterCriteria            ret      = new FilterCriteria();
-        final LocalDateTime       now      = LocalDateTime.now();
+        final LocalDateTime now = LocalDateTime.now(Clock.systemUTC());
         final LocalDateTime       startTime;
         final LocalDateTime       endTime;
 
@@ -295,7 +297,9 @@ public abstract class SearchProcessor {
                 }
             }
         } else {
-            attrVal = Timestamp.valueOf(startTime).getTime() + ATTRIBUTE_VALUE_DELIMITER + Timestamp.valueOf(endTime).getTime();
+            Instant startTimeInstant = startTime.toInstant(ZoneOffset.UTC);
+            Instant endTimeInstant = endTime.toInstant(ZoneOffset.UTC);
+            attrVal = startTimeInstant.toEpochMilli() + ATTRIBUTE_VALUE_DELIMITER + endTimeInstant.toEpochMilli();
         }
 
         ret.setAttributeName(attrName);
