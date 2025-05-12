@@ -52,6 +52,7 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.List;
+import java.util.TimeZone;
 import java.util.stream.Collectors;
 
 import static org.testng.Assert.assertEquals;
@@ -88,6 +89,7 @@ public class EntitySearchProcessorTest extends BasicTestSetup {
         setupTestData();
         createJapaneseEntityWithDescription();
         createChineseEntityWithDescription();
+        FORMATTED_DATE.setTimeZone(TimeZone.getTimeZone("UTC"));
     }
 
     @Test
