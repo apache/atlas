@@ -1,4 +1,4 @@
-package org.apache.atlas.authorization.utils;
+package org.apache.atlas.constants;
 
 public class RangerAtlasConstants {
 
@@ -25,4 +25,4 @@ public class RangerAtlasConstants {
     public static final String ENTITY_NOT_CLASSIFIED          = "_NOT_CLASSIFIED";
 
     public static final String COMPONENT_ACCESSTYPE_SEPARATOR = ":";
-}
+} 

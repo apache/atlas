@@ -11,6 +11,7 @@ import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.authorizer.authorizers.AuthorizerCommonUtil;
+import static org.apache.atlas.constants.RangerAtlasConstants.*;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.plugin.model.NewAccessResourceImpl;
 import org.apache.atlas.plugin.model.RangerServiceDef;
@@ -27,58 +28,6 @@ import java.util.Set;
 
 class NewAtlasAuditHandler {
     private static final Logger LOG = LoggerFactory.getLogger(NewAtlasAuditHandler.class);
-
-    public static final String RESOURCE_SERVICE                       = "atlas-service";
-    public static final String RESOURCE_TYPE_CATEGORY                 = "type-category";
-    public static final String RESOURCE_TYPE_NAME                     = "type";
-    public static final String RESOURCE_ENTITY_TYPE                   = "entity-type";
-    public static final String RESOURCE_ENTITY_CLASSIFICATION         = "entity-classification";
-    public static final String RESOURCE_CLASSIFICATION                = "classification";
-    public static final String RESOURCE_ENTITY_ID                     = "entity";
-    public static final String RESOURCE_ENTITY_LABEL                  = "entity-label";
-    public static final String RESOURCE_ENTITY_BUSINESS_METADATA      = "entity-business-metadata";
-    public static final String RESOURCE_ENTITY_OWNER                  = "owner";
-    public static final String RESOURCE_RELATIONSHIP_TYPE             = "relationship-type";
-    public static final String RESOURCE_END_ONE_ENTITY_TYPE           = "end-one-entity-type";
-    public static final String RESOURCE_END_ONE_ENTITY_CLASSIFICATION = "end-one-entity-classification";
-    public static final String RESOURCE_END_ONE_ENTITY_ID             = "end-one-entity";
-    public static final String RESOURCE_END_TWO_ENTITY_TYPE           =  "end-two-entity-type";
-    public static final String RESOURCE_END_TWO_ENTITY_CLASSIFICATION = "end-two-entity-classification";
-    public static final String RESOURCE_END_TWO_ENTITY_ID             = "end-two-entity";
-    public static final String SEARCH_FEATURE_POLICY_NAME             = "Allow users to manage favorite searches";
-
-    public static final String ACCESS_TYPE_ENTITY_READ  = "entity-read";
-    public static final String ACCESS_TYPE_TYPE_READ = "type-read";
-    public static final String ACCESS_TYPE_ENTITY_CREATE  = "entity-create";
-    public static final String ACCESS_TYPE_ENTITY_UPDATE = "entity-update";
-    public static final String ACCESS_TYPE_ENTITY_DELETE = "entity-delete";
-    public static final String ADMIN_USERNAME_DEFAULT   = "admin";
-    public static final String TAGSYNC_USERNAME_DEFAULT = "rangertagsync";
-    public static final String ENTITY_TYPE_USER_PROFILE = "__AtlasUserProfile";
-    public static final String ENTITY_TYPE_SAVED_SEARCH = "__AtlasUserSavedSearch";
-
-
-    public static final String CONFIG_REST_ADDRESS            = "atlas.rest.address";
-    public static final String CONFIG_USERNAME                = "username";
-    public static final String CONFIG_PASSWORD                = "password";
-    public static final String ENTITY_NOT_CLASSIFIED          = "_NOT_CLASSIFIED";
-
-    private static final String TYPE_ENTITY             = "entity";
-    private static final String TYPE_CLASSIFICATION     = "classification";
-    private static final String TYPE_STRUCT             = "struct";
-    private static final String TYPE_ENUM               = "enum";
-    private static final String TYPE_RELATIONSHIP       = "relationship";
-    private static final String TYPE_BUSINESS_METADATA  = "business_metadata";
-
-    private static final String URL_LOGIN                = "/j_spring_security_check";
-    private static final String URL_GET_TYPESDEF_HEADERS = "/api/atlas/v2/types/typedefs/headers";
-    private static final String URl_ENTITY_SEARCH        = "v2/search/attribute?attrName=qualifiedName";
-
-    private static final String WEB_RESOURCE_CONTENT_TYPE = "application/x-www-form-urlencoded";
-    private static final String CONNECTION_ERROR_MSG      =   " You can still save the repository and start creating"
-            + " policies, but you would not be able to use autocomplete for"
-            + " resource names. Check ranger_admin.log for more info.";
-
 
     private final Map<String, AuthzAuditEvent> auditEvents;
     private final String                       resourcePath;
@@ -144,7 +93,6 @@ class NewAtlasAuditHandler {
         rangerResource.setValue(RESOURCE_END_TWO_ENTITY_TYPE, end2EntityTypeAndSuperTypes);
         rangerResource.setValue(RESOURCE_END_TWO_ENTITY_CLASSIFICATION, classificationsWithSuperTypesEnd2);
         rangerResource.setValue(RESOURCE_END_TWO_ENTITY_ID, end2EntityId);
-
 
         auditEvents  = new HashMap<>();
         resourceType = rangerResource.getLeafName();
