@@ -138,7 +138,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
         }
 
-        return new AtlasAccessResult(ret, null);
+        return new AtlasAccessResult(ret);
     }
 
     @Override
@@ -175,7 +175,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
         }
 
-        return new AtlasAccessResult(ret, null);
+        return new AtlasAccessResult(ret);
     }
 
     @Override
@@ -258,7 +258,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             }
         }
 
-        return new AtlasAccessResult(hasEnd1EntityAccess && hasEnd2EntityAccess, null);
+        return new AtlasAccessResult(hasEnd1EntityAccess && hasEnd2EntityAccess);
     }
 
     @Override
@@ -314,7 +314,7 @@ public final class AtlasSimpleAuthorizer implements AtlasAuthorizer {
             LOG.debug("<== SimpleAtlasAuthorizer.isAccessAllowed({}): {}", request, ret);
         }
 
-        return new AtlasAccessResult(ret, null);
+        return new AtlasAccessResult(ret);
     }
 
     @Override

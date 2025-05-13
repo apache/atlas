@@ -36,17 +36,17 @@ public class AtlasNoneAuthorizer implements AtlasAuthorizer {
     }
 
     public AtlasAccessResult isAccessAllowed(AtlasAdminAccessRequest request) throws AtlasAuthorizationException {
-        AtlasAccessResult result = new AtlasAccessResult(true, null);
+        AtlasAccessResult result = new AtlasAccessResult(true);
         return result;
     }
 
     public AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request, boolean isAuditEnabled) throws AtlasAuthorizationException {
-        AtlasAccessResult result = new AtlasAccessResult(true, null);
+        AtlasAccessResult result = new AtlasAccessResult(true);
         return result;
     }
 
     public AtlasAccessResult isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException {
-        AtlasAccessResult result = new AtlasAccessResult(true, null);
+        AtlasAccessResult result = new AtlasAccessResult(true);
         return result;
     }
 
@@ -72,7 +72,7 @@ public class AtlasNoneAuthorizer implements AtlasAuthorizer {
 
     @Override
     public AtlasAccessResult isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
-        AtlasAccessResult result = new AtlasAccessResult(true, null);
+        AtlasAccessResult result = new AtlasAccessResult(true);
         return result;
     }
 
