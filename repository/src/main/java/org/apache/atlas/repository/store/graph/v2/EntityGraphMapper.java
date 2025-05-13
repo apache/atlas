@@ -6151,6 +6151,7 @@ public class EntityGraphMapper {
                 .collect(Collectors.toSet());
         Set<String> impactedVertices = new HashSet<>();
         entityRetriever.traverseImpactedVerticesByLevelV2(sourceEntityVertex, null, null, impactedVertices, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, verticesIdsToAddClassification);
+        transactionInterceptHelper.intercept();
         verticesIdsToAddClassification.remove(sourceEntityVertexId);
 
         LOG.info("To add classification with typeName {} to {} vertices",classificationTypeName, verticesIdsToAddClassification.size());
