@@ -11,27 +11,34 @@ import java.util.Map;
 import java.util.Set;
 
 public class UsersStore {
+    private static final UsersStore INSTANCE = new UsersStore();
+    
+    private RangerUserStore userStore;
+    private RangerRoles allRoles;
 
-    private static RangerUserStore userStore;
-    private static RangerRoles allRoles;
+    private UsersStore() {} // private constructor
 
-    public static void setUserStore(RangerUserStore userStore) {
-        UsersStore.userStore = userStore;
+    public static UsersStore getInstance() {
+        return INSTANCE;
     }
 
-    public static RangerUserStore getUserStore() {
+    public void setUserStore(RangerUserStore userStore) {
+        this.userStore = userStore;
+    }
+
+    public RangerUserStore getUserStore() {
         return userStore;
     }
 
-    public static void setAllRoles(RangerRoles allRoles) {
-        UsersStore.allRoles = allRoles;
+    public void setAllRoles(RangerRoles allRoles) {
+        this.allRoles = allRoles;
     }
 
-    public static RangerRoles getAllRoles() {
+    public RangerRoles getAllRoles() {
         return allRoles;
     }
 
-    public static List<String> getGroupsForUser(String user, RangerUserStore userStore) {
+    public List<String> getGroupsForUser(String user, RangerUserStore userStore) {
         Map<String, Set<String>> userGroupMapping = userStore.getUserGroupMapping();
         List<String> groups = new ArrayList<>();
         Set<String> groupsSet = userGroupMapping.get(user);
@@ -41,7 +48,7 @@ public class UsersStore {
         return groups;
     }
 
-    public static List<String> getRolesForUser(String user, RangerRoles allRoles) {
+    public List<String> getRolesForUser(String user, RangerRoles allRoles) {
         List<String> roles = new ArrayList<>();
         Set<RangerRole> rangerRoles = allRoles.getRangerRoles();
         for (RangerRole role : rangerRoles) {
@@ -55,7 +62,7 @@ public class UsersStore {
         return roles;
     }
 
-    public static List<String> getNestedRolesForUser(List<String> userRoles, RangerRoles allRoles) {
+    public List<String> getNestedRolesForUser(List<String> userRoles, RangerRoles allRoles) {
         List<String> ret = new ArrayList<>();
         Set<RangerRole> rangerRoles = allRoles.getRangerRoles();
         for (RangerRole role : rangerRoles) {

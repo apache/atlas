@@ -45,6 +45,7 @@ import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 public class AccessorsExtractor {
 
     private static final Logger LOG = LoggerFactory.getLogger(AccessorsExtractor.class);
+    private static final PoliciesStore policiesStore = PoliciesStore.getInstance();
 
     private static final Set<String> ENTITY_ACTIONS = new HashSet<String>(){{
         add(ENTITY_READ.getType());
@@ -94,7 +95,7 @@ public class AccessorsExtractor {
 
         String action = request.getAction().getType();
 
-        List<RangerPolicy> abacPolicies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), null, true);
+        List<RangerPolicy> abacPolicies = policiesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), null, true);
 
         List<RangerPolicy> matchedPolicies = getAccessorsInMemoryForAbacPolicies(request, abacPolicies);
 

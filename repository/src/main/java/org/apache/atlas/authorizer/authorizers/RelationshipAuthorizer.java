@@ -1,8 +1,6 @@
 package org.apache.atlas.authorizer.authorizers;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAccessResult;
 import org.apache.atlas.authorizer.store.PoliciesStore;
@@ -26,6 +24,7 @@ import static org.apache.atlas.authorizer.authorizers.EntityAuthorizer.validateE
 public class RelationshipAuthorizer {
 
     private static final Logger LOG = LoggerFactory.getLogger(RelationshipAuthorizer.class);
+    private static final PoliciesStore policiesStore = PoliciesStore.getInstance();
 
     private static List<String> RELATIONSHIP_ENDS = new ArrayList<String>() {{
         add("end-one");
@@ -58,7 +57,7 @@ public class RelationshipAuthorizer {
         AtlasAccessResult result = new AtlasAccessResult();
 
         try {
-            List<RangerPolicy> policies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
+            List<RangerPolicy> policies = policiesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
             if (!policies.isEmpty()) {
                 AtlasVertex oneVertex = AtlasGraphUtilsV2.findByGuid(endOneEntity.getGuid());
                 AtlasVertex twoVertex = AtlasGraphUtilsV2.findByGuid(endTwoEntity.getGuid());

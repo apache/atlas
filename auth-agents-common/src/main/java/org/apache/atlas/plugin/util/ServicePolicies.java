@@ -47,6 +47,7 @@ import java.util.Map;
 public class ServicePolicies implements java.io.Serializable {
 	private static final long serialVersionUID = 1L;
 	private static final Log LOG = LogFactory.getLog(ServicePolicies.class);
+	private static final PoliciesStore policiesStore = PoliciesStore.getInstance();
 
 	private String             serviceName;
 	private String             serviceId;
@@ -573,7 +574,7 @@ public class ServicePolicies implements java.io.Serializable {
 		}
 
 		if (servicePolicies.getAbacPolicies() != null ) {
-			List<RangerPolicy> oldAbacPolicies = PoliciesStore.getAbacPolicies() != null ? PoliciesStore.getAbacPolicies() : new ArrayList<>();;
+			List<RangerPolicy> oldAbacPolicies = policiesStore.getAbacPolicies() != null ? policiesStore.getAbacPolicies() : new ArrayList<>();;
 			List<RangerPolicy> abacPoliciesAfterDelete =
 				RangerPolicyDeltaUtil.deletePoliciesByDelta(oldAbacPolicies, deletedDeltaMap);
 			List<RangerPolicy> newAbacPolicies =

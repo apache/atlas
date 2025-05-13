@@ -25,6 +25,7 @@ import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_DENY;
 public class EntityAuthorizer {
 
     private static final Logger LOG = LoggerFactory.getLogger(EntityAuthorizer.class);
+    private static final PoliciesStore policiesStore = PoliciesStore.getInstance();
 
     public static AtlasAccessResult isAccessAllowedInMemory(AtlasEntityHeader entity, String action) {
 
@@ -50,7 +51,7 @@ public class EntityAuthorizer {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("isAccessAllowedInMemory."+policyType);
         AtlasAccessResult result;
 
-        List<RangerPolicy> policies = PoliciesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
+        List<RangerPolicy> policies = policiesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
         result = evaluateABACPoliciesInMemory(policies, entity);
 
         RequestContext.get().endMetricRecord(recorder);

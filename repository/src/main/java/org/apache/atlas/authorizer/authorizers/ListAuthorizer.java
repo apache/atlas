@@ -28,6 +28,7 @@ import static org.apache.atlas.authorizer.authorizers.AuthorizerCommonUtil.getMa
 
 public class ListAuthorizer {
     private static final Logger LOG = LoggerFactory.getLogger(ListAuthorizer.class);
+    private static final PoliciesStore policiesStore = PoliciesStore.getInstance();
 
     public static Map<String, Object> getElasticsearchDSL(String persona, String purpose, List<String> actions) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("ListAuthorizer.getElasticsearchDSL");
@@ -50,9 +51,9 @@ public class ListAuthorizer {
                                                                        String policyType) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("ListAuthorizer.getElasticsearchDSLForPolicyType."+ policyType);
 
-        List<RangerPolicy> resourcePolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas", actions, policyType);
-        List<RangerPolicy> tagPolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas_tag", actions, policyType);
-        List<RangerPolicy> abacPolicies = PoliciesStore.getRelevantPolicies(persona, purpose, "atlas_abac", actions, policyType);
+        List<RangerPolicy> resourcePolicies = policiesStore.getRelevantPolicies(persona, purpose, "atlas", actions, policyType);
+        List<RangerPolicy> tagPolicies = policiesStore.getRelevantPolicies(persona, purpose, "atlas_tag", actions, policyType);
+        List<RangerPolicy> abacPolicies = policiesStore.getRelevantPolicies(persona, purpose, "atlas_abac", actions, policyType);
 
         List<Map<String, Object>> shouldClauses = new ArrayList<>();
         if (requestMatchedPolicyId) {

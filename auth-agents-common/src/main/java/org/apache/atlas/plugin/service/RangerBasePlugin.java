@@ -74,7 +74,9 @@ public class RangerBasePlugin {
 	private       RangerRoles                 roles;
 	private       RangerUserStore             userStore;
 	private final List<RangerChainedPlugin>   chainedPlugins;
-	private 	  AtlasTypeRegistry 		  typeRegistry = null;
+	private       AtlasTypeRegistry           typeRegistry = null;
+	private final UsersStore                  usersStore;
+	private final PoliciesStore               policiesStore;
 
 
 	public RangerBasePlugin(String serviceType, String appId) {
@@ -93,6 +95,8 @@ public class RangerBasePlugin {
 	public RangerBasePlugin(RangerPluginConfig pluginConfig) {
 		this.pluginConfig  = pluginConfig;
 		this.pluginContext = new RangerPluginContext(pluginConfig);
+		this.usersStore = UsersStore.getInstance();
+		this.policiesStore = PoliciesStore.getInstance();
 
 		Set<String> superUsers         = toSet(pluginConfig.get(pluginConfig.getPropertyPrefix() + ".super.users"));
 		Set<String> superGroups        = toSet(pluginConfig.get(pluginConfig.getPropertyPrefix() + ".super.groups"));
@@ -151,7 +155,7 @@ public class RangerBasePlugin {
 
 	public void setRoles(RangerRoles roles) {
 		this.roles = roles;
-		UsersStore.setAllRoles(roles);
+		this.usersStore.setAllRoles(roles);
 
 		RangerPolicyEngine policyEngine = this.policyEngine;
 
@@ -168,15 +172,7 @@ public class RangerBasePlugin {
 
 	public void setUserStore(RangerUserStore userStore) {
 		this.userStore = userStore;
-		UsersStore.setUserStore(userStore);
-
-		// RangerPolicyEngine policyEngine = this.policyEngine;
-
-		// if (policyEngine != null) {
-		// 	policyEngine.setUserStore(userStore);
-		// }
-
-		// pluginContext.notifyAuthContextChanged();
+		this.usersStore.setUserStore(userStore);
 	}
 
 	public void setAuditExcludedUsersGroupsRoles(Set<String> users, Set<String> groups, Set<String> roles) {
@@ -401,9 +397,9 @@ public class RangerBasePlugin {
 					if (usePolicyDeltas) {
 						abacPolicies = servicePolicies.getAbacPolicies() != null ? servicePolicies.getAbacPolicies().getPolicies() : new ArrayList<>();
 					}
-					PoliciesStore.setAbacPolicies(abacPolicies);
-					PoliciesStore.setResourcePolicies(this.policyEngine.getResourcePolicies());
-					PoliciesStore.setTagPolicies(this.policyEngine.getTagPolicies());
+					this.policiesStore.setAbacPolicies(abacPolicies);
+					this.policiesStore.setResourcePolicies(this.policyEngine.getResourcePolicies());
+					this.policiesStore.setTagPolicies(this.policyEngine.getTagPolicies());
 					LOG.info("PolicyRefresher: ABAC_AUTH: abac policies set: " + abacPolicies.size());
 				}
 

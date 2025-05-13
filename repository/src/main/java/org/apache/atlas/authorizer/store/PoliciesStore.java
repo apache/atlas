@@ -21,40 +21,47 @@ import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_DENY;
 public class PoliciesStore {
 
     private static final Logger LOG = LoggerFactory.getLogger(PoliciesStore.class);
+    private static final PoliciesStore INSTANCE = new PoliciesStore();
 
-    private static List<RangerPolicy> resourcePolicies;
-    private static List<RangerPolicy> tagPolicies;
-    private static List<RangerPolicy> abacPolicies;
+    private List<RangerPolicy> resourcePolicies;
+    private List<RangerPolicy> tagPolicies;
+    private List<RangerPolicy> abacPolicies;
 
-    public static void setResourcePolicies(List<RangerPolicy> resourcePolicies) {
-        PoliciesStore.resourcePolicies = resourcePolicies;
+    private PoliciesStore() {} // private constructor
+
+    public static PoliciesStore getInstance() {
+        return INSTANCE;
     }
 
-    private static List<RangerPolicy> getResourcePolicies() {
+    public void setResourcePolicies(List<RangerPolicy> resourcePolicies) {
+        this.resourcePolicies = resourcePolicies;
+    }
+
+    private List<RangerPolicy> getResourcePolicies() {
         return resourcePolicies;
     }
 
-    public static void setTagPolicies(List<RangerPolicy> tagPolicies) {
-        PoliciesStore.tagPolicies = tagPolicies;
+    public void setTagPolicies(List<RangerPolicy> tagPolicies) {
+        this.tagPolicies = tagPolicies;
     }
 
-    private static List<RangerPolicy> getTagPolicies() {
+    private List<RangerPolicy> getTagPolicies() {
         return tagPolicies;
     }
 
-    public static void setAbacPolicies(List<RangerPolicy> abacPolicies) {
-        PoliciesStore.abacPolicies = abacPolicies;
+    public void setAbacPolicies(List<RangerPolicy> abacPolicies) {
+        this.abacPolicies = abacPolicies;
     }
 
-    public static List<RangerPolicy> getAbacPolicies() {
+    public List<RangerPolicy> getAbacPolicies() {
         return abacPolicies;
     }
 
-    public static List<RangerPolicy> getRelevantPolicies(String persona, String purpose, String serviceName, List<String> actions, String policyType) {
-        return getRelevantPolicies(null, null, serviceName, actions, policyType, false);
+    public List<RangerPolicy> getRelevantPolicies(String persona, String purpose, String serviceName, List<String> actions, String policyType) {
+        return getRelevantPolicies(persona, purpose, serviceName, actions, policyType, false);
     }
 
-    public static List<RangerPolicy> getRelevantPolicies(String persona, String purpose, String serviceName, List<String> actions, String policyType, boolean ignoreUser) {
+    public List<RangerPolicy> getRelevantPolicies(String persona, String purpose, String serviceName, List<String> actions, String policyType, boolean ignoreUser) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getRelevantPolicies");
         String policyQualifiedNamePrefix = null;
         if (persona != null && !persona.isEmpty()) {
@@ -82,12 +89,13 @@ public class PoliciesStore {
                 String user = AuthorizerCommonUtil.getCurrentUserName();
                 LOG.info("ABAC_AUTH: Getting relevant policies for user: {}, service={}, policyType={}", user, serviceName, policyType);
 
-                RangerUserStore userStore = UsersStore.getUserStore();
-                List<String> groups = UsersStore.getGroupsForUser(user, userStore);
+                UsersStore usersStore = UsersStore.getInstance();
+                RangerUserStore userStore = usersStore.getUserStore();
+                List<String> groups = usersStore.getGroupsForUser(user, userStore);
 
-                RangerRoles allRoles = UsersStore.getAllRoles();
-                List<String> roles = UsersStore.getRolesForUser(user, allRoles);
-                roles.addAll(UsersStore.getNestedRolesForUser(roles, allRoles));
+                RangerRoles allRoles = usersStore.getAllRoles();
+                List<String> roles = usersStore.getRolesForUser(user, allRoles);
+                roles.addAll(usersStore.getNestedRolesForUser(roles, allRoles));
 
                 filteredPolicies = getFilteredPoliciesForUser(filteredPolicies, user, groups, roles, policyType);
             }
@@ -99,7 +107,7 @@ public class PoliciesStore {
         return filteredPolicies;
     }
 
-    static List<RangerPolicy> getFilteredPoliciesForQualifiedName(List<RangerPolicy> policies, String qualifiedNamePrefix) {
+    private List<RangerPolicy> getFilteredPoliciesForQualifiedName(List<RangerPolicy> policies, String qualifiedNamePrefix) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getFilteredPoliciesForQualifiedName");
         if (qualifiedNamePrefix != null && !qualifiedNamePrefix.isEmpty()) {
             List<RangerPolicy> filteredPolicies = new ArrayList<>();
