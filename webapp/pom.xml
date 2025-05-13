@@ -550,6 +550,13 @@
             <version>1.17.0</version>
         </dependency>
 
+        <!-- added for arm64 support - https://quarkus.io/version/main/guides/vertx-reference#brotli4j-and-cross-platform-support -->
+        <dependency>
+            <groupId>com.aayushatharva.brotli4j</groupId>
+            <artifactId>native-linux-aarch64</artifactId>
+            <version>1.17.0</version>
+        </dependency>
+
         <!-- OTEL integration in webapp/pom.xml -->
         <dependency>
             <groupId>io.opentelemetry</groupId>
