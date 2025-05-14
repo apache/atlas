@@ -792,7 +792,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     private static Map<String, Object> deepCopyMap(Map<String, Object> original) throws AtlasBaseException {
         try {
             String json = objectMapper.writeValueAsString(original);
-            return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+            return objectMapper.readValue(json, new TypeReference<>() {});
         } catch (JsonProcessingException e) {
             throw new AtlasBaseException("Error during deep copy of map", e);
         }

@@ -13,11 +13,14 @@ import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Component;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -28,11 +31,13 @@ import java.util.Map;
  * Used to ensure that classifications stored in Cassandra via v2 flow maintain the same
  * structure as classifications stored in JanusGraph via v1 flow.
  */
+@Component
 public class TagAttributeMapper {
     private static final Logger LOG = LoggerFactory.getLogger(TagAttributeMapper.class);
 
     private final AtlasTypeRegistry typeRegistry;
 
+    @Inject
     public TagAttributeMapper(AtlasTypeRegistry typeRegistry) {
         this.typeRegistry = typeRegistry;
     }
@@ -54,7 +59,7 @@ public class TagAttributeMapper {
         String typeName = classification.getTypeName();
         
         if (StringUtils.isEmpty(typeName)) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Classification typeName is empty");
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, "Classification typeName is empty");
         }
 
         AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(typeName);
@@ -97,43 +102,34 @@ public class TagAttributeMapper {
         }
 
         AtlasType attrType = attribute.getAttributeType();
-        TypeCategory typeCategory = attrType.getTypeCategory();
-
-        switch (typeCategory) {
-            case PRIMITIVE:
-            case ENUM:
-                return value;
-                
-            case ARRAY:
-                return mapArrayValue(attribute, value);
-                
-            case MAP:
-                return mapMapValue(attribute, value);
-                
-            case STRUCT:
-                return mapStructValue(attribute, value);
-                
-            default:
-                LOG.warn("Unsupported attribute type {}. Using original value.", typeCategory);
-                return value;
+        if (attrType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Attribute type is null for " + attribute.getName());
         }
+
+        return switch (attrType.getTypeCategory()) {
+            case PRIMITIVE, ENUM -> value;
+            case ARRAY -> mapArrayValue(attribute, value);
+            case MAP -> mapMapValue(attribute, value);
+            case STRUCT -> mapStructValue(attribute, value);
+            default -> {
+                LOG.warn("Unsupported attribute type {}. Using original value.", attrType.getTypeCategory());
+                yield value;
+            }
+        };
     }
 
     /**
      * Maps an array value to ensure proper structure with typeName fields for struct elements.
      */
+    @SuppressWarnings("unchecked")
     private Object mapArrayValue(AtlasAttribute attribute, Object value) throws AtlasBaseException {
-        if (value == null) {
-            return null;
-        }
-
-        if (!(value instanceof List)) {
+        if (!(value instanceof List<?>)) {
             LOG.warn("Expected a List for array attribute {}, but found: {}", attribute.getName(), value.getClass().getName());
             return value;
         }
 
-        List valueList = (List) value;
-        if (valueList.isEmpty()) {
+        List<Object> valueList = (List<Object>) value;
+        if (CollectionUtils.isEmpty(valueList)) {
             return valueList;
         }
 
@@ -149,41 +145,27 @@ public class TagAttributeMapper {
             }
 
             switch (elementTypeCategory) {
-                case PRIMITIVE:
-                    mappedList.add(element);
-                    break;
+                case PRIMITIVE, ENUM -> mappedList.add(element);
 
-                case STRUCT:
-                    if (element instanceof Map) {
-                        AtlasStructType structType = (AtlasStructType) elementType;
-                        Map<String, Object> structValue = (Map<String, Object>) element;
-                        Map<String, Object> mappedAttributes = mapStructAttributes(structType, structValue);
-                        
-                        // Create result with typeName field matching v1 format
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("typeName", structType.getTypeName());
-                        result.put("attributes", mappedAttributes);
-                        
-                        mappedList.add(result);
+                case STRUCT -> {
+                    if (element instanceof Map<?, ?> structMap) {
+                        mappedList.add(buildStructInstance((AtlasStructType) elementType, (Map<String, Object>) structMap));
                     } else {
-                        LOG.warn("Expected a Map for struct element in array attribute {}, but found: {}", 
-                                attribute.getName(), element.getClass().getName());
+                        LOG.warn("Expected a Map for struct element in array attribute {}, found: {}", attribute.getName(), element.getClass().getName());
                         mappedList.add(element);
                     }
-                    break;
+                }
 
-                case ARRAY:
-                case MAP:
-                    // Handle nested collections
-                    AtlasAttribute nestedAttribute = new AtlasAttribute(attribute.getDefinedInType(), 
+                case ARRAY, MAP -> {
+                    AtlasAttribute nestedAttr = new AtlasAttribute(attribute.getDefinedInType(),
                             new AtlasAttributeDef(attribute.getName(), elementType.getTypeName()), elementType);
-                    Object mappedElement = mapAttributeValue(nestedAttribute, element);
-                    mappedList.add(mappedElement);
-                    break;
+                    mappedList.add(mapAttributeValue(nestedAttr, element));
+                }
 
-                default:
+                default -> {
                     LOG.warn("Unhandled element type {} for array attribute {}", elementTypeCategory, attribute.getName());
                     mappedList.add(element);
+                }
             }
         }
 
@@ -193,33 +175,26 @@ public class TagAttributeMapper {
     /**
      * Maps a map value to ensure proper structure with typeName fields for struct values.
      */
+    @SuppressWarnings("unchecked")
     private Object mapMapValue(AtlasAttribute attribute, Object value) throws AtlasBaseException {
-        if (value == null) {
-            return null;
-        }
-
-        if (!(value instanceof Map)) {
+        if (!(value instanceof Map<?, ?> valueMap)) {
             LOG.warn("Expected a Map for map attribute {}, but found: {}", attribute.getName(), value.getClass().getName());
             return value;
         }
 
-        Map<String, Object> valueMap = (Map<String, Object>) value;
-        if (valueMap.isEmpty()) {
-            return valueMap;
-        }
+        if (valueMap.isEmpty()) return valueMap;
 
         AtlasMapType mapType = (AtlasMapType) attribute.getAttributeType();
         AtlasType valueType = mapType.getValueType();
-        TypeCategory valueTypeCategory = valueType.getTypeCategory();
+        TypeCategory valueCategory = valueType.getTypeCategory();
 
-        // If the map values are primitives, return as is
-        if (valueTypeCategory == TypeCategory.PRIMITIVE || valueTypeCategory == TypeCategory.ENUM) {
+        if (valueCategory == TypeCategory.PRIMITIVE || valueCategory == TypeCategory.ENUM) {
             return valueMap;
         }
 
         Map<String, Object> mappedMap = new HashMap<>();
-        for (Map.Entry<String, Object> entry : valueMap.entrySet()) {
-            String key = entry.getKey();
+        for (Map.Entry<?, ?> entry : valueMap.entrySet()) {
+            String key = String.valueOf(entry.getKey());
             Object mapValue = entry.getValue();
 
             if (mapValue == null) {
@@ -227,38 +202,26 @@ public class TagAttributeMapper {
                 continue;
             }
 
-            switch (valueTypeCategory) {
-                case STRUCT:
-                    AtlasStructType structType = (AtlasStructType) valueType;
-                    if (mapValue instanceof Map) {
-                        Map<String, Object> structValue = (Map<String, Object>) mapValue;
-                        Map<String, Object> mappedAttributes = mapStructAttributes(structType, structValue);
-                        
-                        // Create result with typeName field matching v1 format
-                        Map<String, Object> result = new HashMap<>();
-                        result.put("typeName", structType.getTypeName());
-                        result.put("attributes", mappedAttributes);
-                        
-                        mappedMap.put(key, result);
+            switch (valueCategory) {
+                case STRUCT -> {
+                    if (mapValue instanceof Map<?, ?> structMap) {
+                        mappedMap.put(key, buildStructInstance((AtlasStructType) valueType, (Map<String, Object>) structMap));
                     } else {
-                        LOG.warn("Expected a Map for struct value in map attribute {}, but found: {}", 
-                                attribute.getName(), mapValue.getClass().getName());
+                        LOG.warn("Expected a Map for struct value in map attribute {}, found: {}", attribute.getName(), mapValue.getClass().getName());
                         mappedMap.put(key, mapValue);
                     }
-                    break;
+                }
 
-                case ARRAY:
-                case MAP:
-                    // Create a new attribute for the map value and recursively map it
-                    AtlasAttribute valueAttribute = new AtlasAttribute(attribute.getDefinedInType(), 
+                case ARRAY, MAP -> {
+                    AtlasAttribute nestedAttr = new AtlasAttribute(attribute.getDefinedInType(),
                             new AtlasAttributeDef(attribute.getName(), valueType.getTypeName()), valueType);
-                    Object mappedValue = mapAttributeValue(valueAttribute, mapValue);
-                    mappedMap.put(key, mappedValue);
-                    break;
+                    mappedMap.put(key, mapAttributeValue(nestedAttr, mapValue));
+                }
 
-                default:
-                    LOG.warn("Unhandled value type {} for map attribute {}", valueTypeCategory, attribute.getName());
+                default -> {
+                    LOG.warn("Unhandled map value type {} for attribute {}", valueCategory, attribute.getName());
                     mappedMap.put(key, mapValue);
+                }
             }
         }
 
@@ -268,33 +231,15 @@ public class TagAttributeMapper {
     /**
      * Maps a struct value to ensure proper structure with typeName field.
      */
+    @SuppressWarnings("unchecked")
     private Object mapStructValue(AtlasAttribute attribute, Object value) throws AtlasBaseException {
-        if (value == null) {
-            return null;
-        }
-
-        AtlasStructType structType = null;
-        if (attribute.getAttributeType().getTypeCategory() == TypeCategory.STRUCT) {
-            structType = (AtlasStructType) attribute.getAttributeType();
-        } else {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, 
-                "Expected STRUCT type for attribute: " + attribute.getName());
-        }
-
-        if (value instanceof Map) {
-            Map<String, Object> structValue = (Map<String, Object>) value;
-            Map<String, Object> mappedAttributes = mapStructAttributes(structType, structValue);
-            
-            // Create result with typeName field matching v1 format
-            Map<String, Object> result = new HashMap<>();
-            result.put("typeName", structType.getTypeName());
-            result.put("attributes", mappedAttributes);
-            
-            return result;
-        } else {
-            LOG.warn("Expected a Map for struct attribute {}, but found: {}", attribute.getName(), value.getClass().getName());
+        if (!(value instanceof Map<?, ?> structMap)) {
+            LOG.warn("Expected a Map for struct attribute {}, found: {}", attribute.getName(), value.getClass().getName());
             return value;
         }
+
+        AtlasStructType structType = (AtlasStructType) attribute.getAttributeType();
+        return buildStructInstance(structType, (Map<String, Object>) structMap);
     }
 
     /**
@@ -312,7 +257,7 @@ public class TagAttributeMapper {
 
             AtlasAttribute attribute = structType.getAttribute(attrName);
             if (attribute == null) {
-                LOG.warn("Attribute {}.{} not found in type definition. Skipping.", structType.getTypeName(), attrName);
+                LOG.warn("Attribute {}.{} not found in struct definition. Skipping.", structType.getTypeName(), attrName);
                 continue;
             }
 
@@ -321,7 +266,14 @@ public class TagAttributeMapper {
                 mappedAttributes.put(attrName, mappedValue);
             }
         }
-
         return mappedAttributes;
     }
+
+    private Object buildStructInstance(AtlasStructType structType, Map<String, Object> attributes) throws AtlasBaseException {
+        Map<String, Object> result = new HashMap<>();
+        result.put("typeName", structType.getTypeName());
+        result.put("attributes", mapStructAttributes(structType, attributes));
+        return result;
+    }
+
 }

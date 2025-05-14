@@ -42,6 +42,7 @@ import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
+import org.apache.atlas.util.BeanUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
@@ -122,9 +123,26 @@ public final class GraphHelper {
 
     public static TagDAO getTagDAO() throws AtlasBaseException {
         if (tagDAO == null) {
-            synchronized (GraphHelper.class) {
+            try {
+                // Get the TagDAO from Spring context using BeanUtil
+                tagDAO = BeanUtil.getBean(TagDAO.class);
+
+                // Fallback if Spring context is not available (like in unit tests)
                 if (tagDAO == null) {
-                    tagDAO = new TagDAOCassandraImpl(); // Replace with the actual implementation
+                    LOG.warn("Could not get TagDAO from Spring context, creating a new instance");
+                    synchronized (GraphHelper.class) {
+                        if (tagDAO == null) {
+                            tagDAO = new TagDAOCassandraImpl();
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // Handle the case when Spring context is not initialized or available
+                LOG.warn("Error getting TagDAO from Spring context, creating a new instance", e);
+                synchronized (GraphHelper.class) {
+                    if (tagDAO == null) {
+                        tagDAO = new TagDAOCassandraImpl();
+                    }
                 }
             }
         }
