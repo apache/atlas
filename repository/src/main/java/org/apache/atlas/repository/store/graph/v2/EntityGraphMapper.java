@@ -23,6 +23,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+
+import com.google.common.collect.Lists;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -56,6 +58,7 @@ import org.apache.atlas.repository.store.graph.v2.tags.PaginatedTagResult;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
+import org.apache.atlas.repository.store.graph.v2.utils.TagAttributeMapper;
 import org.apache.atlas.repository.util.TagDeNormAttributesUtil;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.tasks.TaskManagement;
@@ -80,6 +83,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -199,6 +203,7 @@ public class EntityGraphMapper {
     private final TransactionInterceptHelper   transactionInterceptHelper;
     private final EntityGraphRetriever       retrieverNoRelation;
     private final TagDAO                    tagDAO;
+    private final TagAttributeMapper        tagAttributeMapper;
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(TYPE_GLOSSARY, TYPE_CATEGORY, TYPE_TERM, TYPE_PRODUCT, TYPE_DOMAIN));
 
     @Inject
@@ -206,7 +211,7 @@ public class EntityGraphMapper {
                              AtlasRelationshipStore relationshipStore, IAtlasEntityChangeNotifier entityChangeNotifier,
                              AtlasInstanceConverter instanceConverter, IFullTextMapper fullTextMapperV2,
                              TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper,
-                             EntityGraphRetriever entityRetriever, TagDAO tagDAO) {
+                             EntityGraphRetriever entityRetriever, TagDAO tagDAO, TagAttributeMapper tagAttributeMapper) {
         this.restoreHandlerV1 = restoreHandlerV1;
         this.graphHelper          = new GraphHelper(graph);
         this.deleteDelegate       = deleteDelegate;
@@ -221,6 +226,7 @@ public class EntityGraphMapper {
         this.taskManagement       = taskManagement;
         this.transactionInterceptHelper = transactionInterceptHelper;
         this.tagDAO = tagDAO;
+        this.tagAttributeMapper = tagAttributeMapper;
     }
 
     @VisibleForTesting
@@ -3535,6 +3541,8 @@ public class EntityGraphMapper {
                 validateClassificationTypeName(c);
             }
 
+            classifications = mapClassificationsV2(classifications);
+
             for (AtlasClassification c : classifications) {
                 AtlasClassification classification      = new AtlasClassification(c);
                 String              classificationName  = classification.getTypeName();
@@ -3668,6 +3676,18 @@ public class EntityGraphMapper {
 
             RequestContext.get().endMetricRecord(metric);
         }
+    }
+
+    @NotNull
+    private List<AtlasClassification> mapClassificationsV2(List<AtlasClassification> classifications) throws AtlasBaseException {
+        List<AtlasClassification> mappedClassifications = new ArrayList<>(classifications.size());
+        for (AtlasClassification c : classifications) {
+            // Apply attribute mapping to ensure schema compatibility with v1
+            AtlasClassification mappedClassification = tagAttributeMapper.mapClassificationAttributes(c);
+            mappedClassifications.add(mappedClassification);
+        }
+        classifications = mappedClassifications;
+        return classifications;
     }
 
     public List<String> propagateClassification(String entityGuid, String classificationVertexId, String relationshipGuid, Boolean previousRestrictPropagationThroughLineage,Boolean previousRestrictPropagationThroughHierarchy) throws AtlasBaseException {
@@ -4145,6 +4165,8 @@ public class EntityGraphMapper {
 
         if (RequestContext.get().isDelayTagNotifications()) {
             RequestContext.get().addDeletedClassificationAndVertices(currentClassification, Collections.singleton(entityVertex));
+        } else {
+            entityChangeNotifier.onClassificationDeletedFromEntities(Collections.singletonList(entityRetriever.toAtlasEntity(entityGuid)), currentClassification);
         }
         AtlasPerfTracer.log(perf);
     }
@@ -4462,20 +4484,20 @@ public class EntityGraphMapper {
 
     public void handleUpdateClassifications(EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (getJanusOptimisationEnabled()) {
-            updateClassificationsV2(context, guid, classifications);
+            updateClassificationsV2(guid, classifications);
         } else {
             updateClassificationsV1(context, guid, classifications);
         }
     }
 
-    public void updateClassificationsV2(EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
+    public void updateClassificationsV2(String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isEmpty(classifications)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_CLASSIFICATION_PARAMS, "update", guid);
         }
 
         AtlasPerfTracer perf = null;
         if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityGraphMapper.updateClassifications");
+            perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityGraphMapper.updateClassificationsV2");
         }
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
@@ -4493,9 +4515,11 @@ public class EntityGraphMapper {
             validateAndNormalizeForUpdate(classification);
         }
 
+        classifications = mapClassificationsV2(classifications);
+
         List<AtlasClassification> updatedClassifications = new ArrayList<>();
         List<AtlasVertex>         entitiesToPropagateTo  = new ArrayList<>();
-        Set<AtlasVertex>          notificationVertices   = new HashSet<AtlasVertex>() {{ add(entityVertex); }};
+        Set<AtlasVertex>          notificationVertices   = new HashSet<>() {{ add(entityVertex); }};
 
         Map<AtlasClassification, List<AtlasVertex>> removedPropagations = new HashMap<>();
         String propagationType;
@@ -4525,8 +4549,8 @@ public class EntityGraphMapper {
                     .collect(Collectors.toList());
             currentTags.add(classification);
             // Update tag
-            Map<String, Object> minAssetMAp = getMinimalAssetMap(entityVertex);
-            tagDAO.putDirectTag(entityVertex.getIdForDisplay(), classificationName, classification, minAssetMAp);
+            Map<String, Object> minAssetMap = getMinimalAssetMap(entityVertex);
+            tagDAO.putDirectTag(entityVertex.getIdForDisplay(), classificationName, classification, minAssetMap);
 
             RequestContext reqContext = RequestContext.get();
             // Record cassandra tag operation in RequestContext
@@ -4813,7 +4837,6 @@ public class EntityGraphMapper {
             AtlasVertex entityVertex = graphHelper.getVertexForGUID(sourceEntityGuid);
             if (entityVertex == null) {
                 LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): entity vertex not found", sourceEntityGuid, tagTypeName);
-
                 throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, tagTypeName=%s): entity vertex not found", sourceEntityGuid, tagTypeName));
             }
 
@@ -6151,6 +6174,7 @@ public class EntityGraphMapper {
                 .collect(Collectors.toSet());
         Set<String> impactedVertices = new HashSet<>();
         entityRetriever.traverseImpactedVerticesByLevelV2(sourceEntityVertex, null, null, impactedVertices, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, verticesIdsToAddClassification);
+        transactionInterceptHelper.intercept();
         verticesIdsToAddClassification.remove(sourceEntityVertexId);
 
         LOG.info("To add classification with typeName {} to {} vertices",classificationTypeName, verticesIdsToAddClassification.size());

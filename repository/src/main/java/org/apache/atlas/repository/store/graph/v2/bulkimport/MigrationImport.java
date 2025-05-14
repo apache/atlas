@@ -34,6 +34,7 @@ import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.pc.EntityConsumerBuilder;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.pc.EntityCreationManager;
+import org.apache.atlas.repository.store.graph.v2.utils.TagAttributeMapper;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -46,14 +47,16 @@ public class MigrationImport extends ImportStrategy {
     private final AtlasTypeRegistry typeRegistry;
     private final AtlasEntityChangeNotifier entityChangeNotifier;
     private final EntityGraphRetriever entityGraphRetriever;
+    private final TagAttributeMapper tagAttributeMapper;
 
     public MigrationImport(AtlasGraph graph, AtlasGraphProvider graphProvider,
-                           AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier, EntityGraphRetriever entityGraphRetriever) {
+                           AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier, EntityGraphRetriever entityGraphRetriever, TagAttributeMapper tagAttributeMapper) {
         this.graph = graph;
         this.graphProvider = graphProvider;
         this.typeRegistry = typeRegistry;
         this.entityChangeNotifier = entityChangeNotifier;
         this.entityGraphRetriever = entityGraphRetriever;
+        this.tagAttributeMapper = tagAttributeMapper;
         LOG.info("MigrationImport: Using bulkLoading...");
     }
 
@@ -128,7 +131,7 @@ public class MigrationImport extends ImportStrategy {
 
         AtlasRelationshipStore relationshipStore = new AtlasRelationshipStoreV2(graph, typeRegistry, deleteDelegate, entityChangeNotifier, null);
         EntityGraphMapper entityGraphMapper = new EntityGraphMapper(deleteDelegate, restoreHandlerV1, typeRegistry,
-                graph, relationshipStore, entityChangeNotifier, getInstanceConverter(graph), fullTextMapperV2, null, null, null, null);
+                graph, relationshipStore, entityChangeNotifier, getInstanceConverter(graph), fullTextMapperV2, null, null, null, null, tagAttributeMapper);
         AtlasRelationshipStoreV2 atlasRelationshipStoreV2 = new AtlasRelationshipStoreV2(graph, typeRegistry, deleteDelegate, entityChangeNotifier, null);
 
         return new AtlasEntityStoreV2(graph, deleteDelegate, restoreHandlerV1, typeRegistry, entityChangeNotifier, entityGraphMapper, null, atlasRelationshipStoreV2, null, null, null, null);
