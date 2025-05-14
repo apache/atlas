@@ -33,6 +33,7 @@ import org.apache.atlas.repository.store.graph.BulkImporter;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.ImportStrategy;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.MigrationImport;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.RegularImport;
+import org.apache.atlas.repository.store.graph.v2.utils.TagAttributeMapper;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.type.Constants;
@@ -56,15 +57,17 @@ public class BulkImporterImpl implements BulkImporter {
     private final AtlasTypeRegistry typeRegistry;
     private final AtlasEntityChangeNotifier entityChangeNotifier;
     private final EntityGraphRetriever entityGraphRetriever;
+    private final TagAttributeMapper tagAttributeMapper;
 
     @Inject
     public BulkImporterImpl(AtlasGraph atlasGraph, AtlasEntityStore entityStore,
-                            AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier, EntityGraphRetriever entityGraphRetriever) {
+                            AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier, EntityGraphRetriever entityGraphRetriever, TagAttributeMapper tagAttributeMapper) {
         this.atlasGraph = atlasGraph;
         this.entityStore = entityStore;
         this.typeRegistry = typeRegistry;
         this.entityChangeNotifier = entityChangeNotifier;
         this.entityGraphRetriever = entityGraphRetriever;
+        this.tagAttributeMapper = tagAttributeMapper;
     }
 
     @Override
@@ -73,7 +76,7 @@ public class BulkImporterImpl implements BulkImporter {
 
         if (importResult.getRequest().getOptions() != null &&
                 importResult.getRequest().getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION)) {
-            importStrategy = new MigrationImport(this.atlasGraph, new AtlasGraphProvider(), this.typeRegistry, entityChangeNotifier, entityGraphRetriever);
+            importStrategy = new MigrationImport(this.atlasGraph, new AtlasGraphProvider(), this.typeRegistry, entityChangeNotifier, entityGraphRetriever, tagAttributeMapper);
         } else {
             importStrategy = new RegularImport(this.atlasGraph, this.entityStore, this.typeRegistry, this.entityGraphRetriever);
         }
