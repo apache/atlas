@@ -138,12 +138,15 @@ public class EntityAuthorizer {
             if (attrValue instanceof Collection) {
                 entityAttributeValues.addAll((Collection<? extends String>) attrValue);
             } else {
-                entityAttributeValues.add((String) attrValue);
+                entityAttributeValues.add(String.valueOf(attrValue));
             }
         } else {
             // try fetching from vertex
             if (vertex != null) {
-                entityAttributeValues.addAll(vertex.getPropertyValues(attributeName, String.class));
+                Collection<?> values = vertex.getPropertyValues(attributeName, String.class);
+                for (Object value : values) {
+                    entityAttributeValues.add(String.valueOf(value));
+                }
             }
         }
 
