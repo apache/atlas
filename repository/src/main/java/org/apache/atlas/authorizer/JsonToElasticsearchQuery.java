@@ -58,7 +58,7 @@ public class JsonToElasticsearchQuery {
 
                     case "STARTS_WITH":
                         ObjectNode wildcardNode = ((ArrayNode) query.get("bool").get(condition.equals("AND") ? "filter" : "should")).addObject();
-                        wildcardNode.putObject("wildcard").put(attributeName, attributeValue + "*");
+                        wildcardNode.putObject("prefix").put(attributeName, attributeValue + "*");
                         break;
 
                     case "ENDS_WITH":
