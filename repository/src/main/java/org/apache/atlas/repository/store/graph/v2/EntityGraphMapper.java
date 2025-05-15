@@ -24,7 +24,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 
-import com.google.common.collect.Lists;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
@@ -5482,7 +5481,7 @@ public class EntityGraphMapper {
                 assetMinAttrsMap.put(vertex.getIdForDisplay(), assetMinAttrs);
 
                 //get current associated tags to asset ONLY from Cassandra namespace
-                List<Tag> tags = tagDAO.getTagsWithIsPropagatedByVertexId(vertex.getIdForDisplay());
+                List<Tag> tags = tagDAO.getAllTagsByVertexId(vertex.getIdForDisplay());
                 List<AtlasClassification> finalClassifications = tags.stream().map(t -> {
                     try {
                         return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
@@ -5523,7 +5522,7 @@ public class EntityGraphMapper {
 
                 Map<String, Object> deNormAttributes;
                 if (CollectionUtils.isEmpty(finalClassifications)) {
-                    deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForNoTags(currentTag.getTypeName());
+                    deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForNoTags();
                 } else {
                     deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForTags(currentTag, finalClassifications, finalPropagatedClassifications, typeRegistry, fullTextMapperV2);
                 }
@@ -5545,7 +5544,7 @@ public class EntityGraphMapper {
         if(CollectionUtils.isNotEmpty(propagatedVertexIds)) {
             for(Tag tagAttachment : propagatedTags) {
                 //get current associated tags to asset ONLY from Cassandra namespace
-                List<Tag> tags = tagDAO.getTagsWithIsPropagatedByVertexId(tagAttachment.getVertexId());
+                List<Tag> tags = tagDAO.getAllTagsByVertexId(tagAttachment.getVertexId());
 
                 List<AtlasClassification> finalClassifications = tags.stream().map(t -> {
                     try {
@@ -5566,7 +5565,7 @@ public class EntityGraphMapper {
 
                 Map<String, Object> deNormAttributes;
                 if (CollectionUtils.isEmpty(finalClassifications)) {
-                    deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForNoTags(currentTag.getTypeName());
+                    deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForNoTags();
                 } else {
                     deNormAttributes = TagDeNormAttributesUtil.getPropagatedAttributesForTags(currentTag, finalClassifications, propagatedClassifications, typeRegistry, fullTextMapperV2);
                 }

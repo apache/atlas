@@ -13,7 +13,7 @@ public interface TagDAO {
     List<AtlasClassification> getAllDirectTagsForVertex(String vertexId) throws AtlasBaseException;
     List<AtlasClassification> getTagsForVertex(String vertexId) throws AtlasBaseException;
     Tag getTagFromPK(String vertexId, String sourceId, String tagTypeName) throws AtlasBaseException;
-    List<Tag> getTagsWithIsPropagatedByVertexId(String vertexId) throws AtlasBaseException;
+    List<Tag> getAllTagsByVertexId(String vertexId) throws AtlasBaseException;
 
     AtlasClassification findDirectDeletedTagByVertexIdAndTagTypeName(String vertexId, String tagTypeName) throws AtlasBaseException;
 
