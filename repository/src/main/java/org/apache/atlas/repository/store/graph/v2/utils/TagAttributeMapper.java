@@ -43,8 +43,81 @@ public class TagAttributeMapper {
     }
 
     /**
+     * Maps the attributes of a classification to a normalized structure, ensuring all defined attributes
+     * are present with appropriate default values based on their type definitions.
+     * To be used in any read path for attributes.
+     *
+     * @param classification The classification whose attributes need to be mapped
+     * @param typeRegistry The type registry to look up type definitions
+     * @return Updated classification with properly mapped attributes and default values
+     * @throws AtlasBaseException If any error occurs during the mapping process
+     */
+    public static AtlasClassification mapClassificationAttributesWithDefaults(AtlasClassification classification, AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+        if (classification == null) {
+            return null;
+        }
+
+        AtlasClassification result = classification.deepCopy();
+        String typeName = classification.getTypeName();
+
+        if (StringUtils.isEmpty(typeName)) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, "Classification typeName is empty");
+        }
+
+        AtlasClassificationType classificationType = typeRegistry.getClassificationTypeByName(typeName);
+        if (classificationType == null) {
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, typeName);
+        }
+
+        // Get all defined attributes from the type
+        Map<String, AtlasAttribute> typeAttributes = classificationType.getAllAttributes();
+        if (MapUtils.isEmpty(typeAttributes)) {
+            return result;
+        }
+
+        Map<String, Object> attributes = result.getAttributes();
+        if (attributes == null) {
+            attributes = new HashMap<>();
+            result.setAttributes(attributes);
+        }
+
+        // Process each attribute defined in the type
+        for (AtlasAttribute attribute : typeAttributes.values()) {
+            String attrName = attribute.getName();
+            Object attrValue = attributes.get(attrName);
+
+            // If attribute value is null or empty, set appropriate default based on type
+            if (attrValue == null) {
+                AtlasType attrType = attribute.getAttributeType();
+                if (attrType != null) {
+                    switch (attrType.getTypeCategory()) {
+                        case PRIMITIVE, ENUM -> attributes.put(attrName, null);
+                        case ARRAY -> attributes.put(attrName, new ArrayList<>());
+                        case MAP -> attributes.put(attrName, new HashMap<>());
+                        case STRUCT -> {
+                            AtlasStructType structType = (AtlasStructType) attrType;
+                            Map<String, Object> structInstance = new HashMap<>();
+                            structInstance.put("typeName", structType.getTypeName());
+                            structInstance.put("attributes", new HashMap<>());
+                            attributes.put(attrName, structInstance);
+                        }
+                        default -> {
+                            LOG.warn("Unsupported attribute type {}. Using null as default.", attrType.getTypeCategory());
+                            attributes.put(attrName, null);
+                        }
+                    }
+                }
+            }
+        }
+
+        return result;
+    }
+
+
+    /**
      * Maps the attributes of a classification to a normalized structure, similar to how
      * they would be mapped in tag vertex in old v1 tags flow.
+     * To be used in any write path for attributes.
      * 
      * @param classification The classification whose attributes need to be mapped
      * @return Updated classification with properly mapped attributes

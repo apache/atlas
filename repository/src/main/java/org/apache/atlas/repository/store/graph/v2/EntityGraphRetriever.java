@@ -53,6 +53,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.*;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
+import org.apache.atlas.repository.store.graph.v2.utils.TagAttributeMapper;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
@@ -1632,10 +1633,25 @@ public class EntityGraphRetriever {
     public List<AtlasClassification> getAllClassifications_V2(AtlasVertex entityVertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getAllClassifications");
         try {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Performing getAllClassifications");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Performing getAllClassifications_V2");
+
+            List<AtlasClassification> classifications = tagDAO.getTagsForVertex(entityVertex.getIdForDisplay());
+
+            // Map each classification's attributes with defaults
+            if (CollectionUtils.isNotEmpty(classifications)) {
+                classifications = classifications.stream()
+                        .map(classification -> {
+                            try {
+                                return TagAttributeMapper.mapClassificationAttributesWithDefaults(classification, typeRegistry);
+                            } catch (AtlasBaseException e) {
+                                LOG.error("Error mapping classification attributes with defaults for classification: {}", classification.getTypeName(), e);
+                                return classification;
+                            }
+                        })
+                        .collect(Collectors.toList());
             }
-            return tagDAO.getTagsForVertex(entityVertex.getIdForDisplay());
+            return classifications;
         } catch (Exception e) {
             LOG.error("Error while getting all classifications", e);
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
