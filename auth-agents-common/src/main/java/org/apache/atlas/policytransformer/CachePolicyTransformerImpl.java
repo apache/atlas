@@ -682,7 +682,6 @@ public class CachePolicyTransformerImpl {
 
             List<Map<String, Object>> mustClauseList = new ArrayList<>();
 
-            mustClauseList.add(getMap("term", getMap(ATTR_POLICY_IS_ENABLED, true)));
             mustClauseList.add(getMap("match", getMap("__state", Id.EntityState.ACTIVE)));
 
             if (!policyGuids.isEmpty()) {
