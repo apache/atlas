@@ -61,6 +61,7 @@ import static java.util.Objects.isNull;
 import static java.util.Objects.nonNull;
 import static java.util.Objects.requireNonNull;
 import static org.apache.atlas.bulkimport.BulkImportResponse.ImportStatus.FAILED;
+import static org.apache.atlas.repository.graph.GraphHelper.updateModificationMetadata;
 
 public class GlossaryTermUtils extends GlossaryUtils {
     private static final Logger LOG = LoggerFactory.getLogger(GlossaryTermUtils.class);
@@ -131,6 +132,8 @@ public class GlossaryTermUtils extends GlossaryUtils {
             LOG.debug("Assigning term guid={}, to entity guid = {}", glossaryTerm.getGuid(), objectId.getGuid());
 
             createRelationship(defineTermAssignment(glossaryTerm.getGuid(), objectId));
+            AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(objectId.getGuid());
+            updateModificationMetadata(vertex);
         }
 
         LOG.debug("<== GlossaryTermUtils.processTermAssignments()");
@@ -162,6 +165,8 @@ public class GlossaryTermUtils extends GlossaryUtils {
 
                 if (CollectionUtils.isNotEmpty(assignedEntities) && isRelationshipGuidSame(existingTermRelation, relatedObjectId)) {
                     relationshipStore.deleteById(relatedObjectId.getRelationshipGuid(), true);
+                    AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(relatedObjectId.getGuid());
+                    updateModificationMetadata(vertex);
                 } else {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_TERM_DISSOCIATION, relatedObjectId.getRelationshipGuid(), glossaryTerm.getGuid(), relatedObjectId.getGuid());
                 }
