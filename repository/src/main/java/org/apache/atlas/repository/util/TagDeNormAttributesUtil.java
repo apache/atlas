@@ -186,14 +186,14 @@ public class TagDeNormAttributesUtil {
         return finalDeNormMap;
     }
 
-    public static Map<String, Object> getPropagatedAttributesForNoTags(String tagNamePropagated) {
+    public static Map<String, Object> getPropagatedAttributesForNoTags() {
         // Add tag Propagation, asset does not have any other tag
 
         Map<String, Object> deNormAttrs = new HashMap<>();
 
-        deNormAttrs.put(CLASSIFICATION_TEXT_KEY, tagNamePropagated + FULL_TEXT_DELIMITER);
-        deNormAttrs.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, Collections.singletonList(tagNamePropagated));
-        deNormAttrs.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, CLASSIFICATION_NAME_DELIMITER + tagNamePropagated);
+        deNormAttrs.put(CLASSIFICATION_TEXT_KEY, FULL_TEXT_DELIMITER);
+        deNormAttrs.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, List.of());
+        deNormAttrs.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, CLASSIFICATION_NAME_DELIMITER);
 
         return deNormAttrs;
     }

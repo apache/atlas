@@ -58,7 +58,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     // Prepared Statements
     private final PreparedStatement findAllTagsStmt;
-    private final PreparedStatement findTagsWithIsPropagatedByVertexIdStmt;
+    private final PreparedStatement findAllTagsByVertexIdStmt;
     private final PreparedStatement findTagAttachmentsByPK;
     private final PreparedStatement findAllDirectTagsStmt;
     private final PreparedStatement findADirectTagStmt;
@@ -122,7 +122,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                                     KEYSPACE, TABLE_NAME))
                     .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
                     .build();
-            findTagsWithIsPropagatedByVertexIdStmt = cassSession.prepare(findTagsWithIsPropagatedByVertexIdStatement);
+            findAllTagsByVertexIdStmt = cassSession.prepare(findTagsWithIsPropagatedByVertexIdStatement);
 
             // Find a direct tag
             SimpleStatement findADirectTagStatement = SimpleStatement.builder(
@@ -583,11 +583,11 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     }
 
     @Override
-    public List<Tag> getTagsWithIsPropagatedByVertexId(String vertexId) throws AtlasBaseException {
+    public List<Tag> getAllTagsByVertexId(String vertexId) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagsWithIsPropagatedByVertexId");
         int bucket = calculateBucket(vertexId);
         try {
-            BoundStatement bound = findTagsWithIsPropagatedByVertexIdStmt.bind(bucket, vertexId);
+            BoundStatement bound = findAllTagsByVertexIdStmt.bind(bucket, vertexId);
             ResultSet rs = executeWithRetry(bound);
 
             List<Tag> results = new ArrayList<>();
