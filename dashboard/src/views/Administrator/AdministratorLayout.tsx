@@ -25,7 +25,8 @@ import BusinessMetadataTab from "./BusinessMetadataTab";
 import Enumerations from "./Enumerations";
 import AdminAuditTable from "./Audits/AdminAuditTable";
 import BusinessMetaDataForm from "@views/BusinessMetadata/BusinessMetadataForm";
-// import { useAppSelector } from "@hooks/reducerHook";
+import { useAppSelector } from "@hooks/reducerHook";
+import TypeSystemTreeView from "./TypeSystemTreeView";
 
 const allTabs = ["businessMetadata", "enum", "audit", "typeSystem"];
 
@@ -33,8 +34,8 @@ const AdministratorLayout = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const searchParams = new URLSearchParams(location.search);
-  // const { entityData = {} }: any = useAppSelector((state: any) => state.entity);
-  // const { entityDefs = [] } = entityData || {};
+  const { entityData = {} }: any = useAppSelector((state: any) => state.entity);
+  const { entityDefs = [] } = entityData || {};
 
   const [form, setForm] = useState(false);
   const [bmAttribute, setBMAttribute] = useState({});
@@ -57,7 +58,7 @@ const AdministratorLayout = () => {
       searchParams.set("tabActive", currentTabName);
       navigate({
         pathname: `/administrator`,
-        search: searchParams.toString()
+        search: searchParams.toString(),
       });
     }
   };
@@ -87,8 +88,8 @@ const AdministratorLayout = () => {
             <LinkTab label="Business Metadata" />
             <LinkTab label="Enumerations" />
             <LinkTab label="Audits" />
+            <LinkTab label="Type System" />
           </Tabs>
-
           {(activeTab == undefined || activeTab === "businessMetadata") && (
             <BusinessMetadataTab
               setForm={setForm}
@@ -97,9 +98,9 @@ const AdministratorLayout = () => {
           )}
           {activeTab === "enum" && <Enumerations />}
           {activeTab === "audit" && <AdminAuditTable />}
-          {/* {activeTab === "typeSystem" && !isEmpty(entityDefs) && (
+          {activeTab === "typeSystem" && !isEmpty(entityDefs) && (
             <TypeSystemTreeView entityDefs={entityDefs} />
-          )} */}
+          )}
         </Stack>
       )}
     </Item>
