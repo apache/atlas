@@ -5,6 +5,7 @@ import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.*;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -473,6 +474,10 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
                     if(!exp.getAtlasErrorCode().equals(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND)){
                         throw exp;
                     }
+                }
+
+                if (hasLinkedAssets(productGuid, PRODUCT_GUIDS)) {
+                    throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "This product can't be deleted right now because it has linked assets that are in the process of being removed. Please try again shortly.");
                 }
             }
             if(RequestContext.get().getDeleteType() == DeleteType.SOFT || RequestContext.get().getDeleteType() == DeleteType.DEFAULT){

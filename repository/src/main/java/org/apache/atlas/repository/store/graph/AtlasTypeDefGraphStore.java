@@ -19,6 +19,7 @@ package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.GraphTransactionInterceptor;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasPrivilege;
@@ -37,6 +38,7 @@ import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasTypeRegistry.AtlasTransientTypeRegistry;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.Predicate;
 import org.apache.commons.lang3.StringUtils;
@@ -494,6 +496,8 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     @Override
     @GraphTransaction
     public AtlasTypesDef updateTypesDef(AtlasTypesDef typesDef) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("updateTypesDef");
+
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AtlasTypeDefGraphStore.updateTypesDef(enums={}, structs={}, classfications={}, entities={}, relationships{}, businessMetadataDefs={})",
                     CollectionUtils.size(typesDef.getEnumDefs()),
@@ -535,6 +539,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
                     CollectionUtils.size(typesDef.getBusinessMetadataDefs()));
         }
 
+        RequestContext.get().endMetricRecord(metricRecorder);
         return ret;
 
     }
@@ -839,9 +844,12 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     }
 
     private AtlasTransientTypeRegistry lockTypeRegistryAndReleasePostCommit() throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("lockTypeRegistryAndReleasePostCommit");
         AtlasTransientTypeRegistry ttr = typeRegistry.lockTypeRegistryForUpdate(typeUpdateLockMaxWaitTimeSeconds);
 
         new TypeRegistryUpdateHook(ttr);
+
+        RequestContext.get().endMetricRecord(metricRecorder);
 
         return ttr;
     }

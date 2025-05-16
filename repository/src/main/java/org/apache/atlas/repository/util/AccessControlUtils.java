@@ -70,6 +70,7 @@ public final class AccessControlUtils {
     public static final String ATTR_POLICY_GROUPS  = "policyGroups";
     public static final String ATTR_POLICY_ROLES  = "policyRoles";
     public static final String ATTR_POLICY_ACTIONS  = "policyActions";
+    public static final String ATTR_POLICY_CONDITIONS  = "policyConditions";
     public static final String ATTR_POLICY_CATEGORY  = "policyCategory";
     public static final String ATTR_POLICY_SUB_CATEGORY  = "policySubCategory";
     public static final String ATTR_POLICY_RESOURCES  = "policyResources";

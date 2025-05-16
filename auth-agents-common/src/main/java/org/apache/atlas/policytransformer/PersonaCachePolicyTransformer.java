@@ -40,6 +40,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CAT
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_ENTITY;
 import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_ENTITY_TYPE;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CONDITIONS;
 import static org.apache.atlas.repository.util.AccessControlUtils.getEntityByQualifiedName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getFilteredPolicyResources;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
@@ -123,6 +124,7 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                 header.setAttribute(ATTR_POLICY_RESOURCES, finalResources);
 
                 header.setAttribute(ATTR_NAME, "transformed_policy_persona");
+                header.setAttribute(ATTR_POLICY_CONDITIONS, templatePolicy.getPolicyConditions());
 
                 ret.add(header);
             }
