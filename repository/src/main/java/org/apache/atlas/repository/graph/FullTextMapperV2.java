@@ -162,7 +162,7 @@ public class FullTextMapperV2 implements IFullTextMapper {
             ret = sb.toString();
         }
 
-        LOG.info("FullTextMapperV2.getClassificationTextForEntity({}): {}", entity != null ? entity.getGuid() : "null", ret);
+        LOG.debug("FullTextMapperV2.getClassificationTextForEntity({}): {}", entity != null ? entity.getGuid() : "null", ret);
 
         return ret;
     }
