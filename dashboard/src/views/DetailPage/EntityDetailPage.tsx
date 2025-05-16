@@ -49,6 +49,7 @@ import AssignTerm from "@views/Glossary/AssignTerm";
 import { removeTerm } from "@api/apiMethods/glossaryApiMethod";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ShowMoreView from "@components/ShowMore/ShowMoreView";
+import LineageTab from "./EntityDetailTabs/LineageTab";
 
 const EntityDetailPage: React.FC = () => {
   const { guid } = useParams();
@@ -124,8 +125,7 @@ const EntityDetailPage: React.FC = () => {
   let tabsName = [...allTabs];
 
   const addTab = (tabs: string) => {
-    // return tabsName.splice(tabsName.includes("lineage") ? 5 : 4, 0, tabs);
-    return tabsName.splice(4, 0, tabs);
+    return tabsName.splice(tabsName.includes("lineage") ? 5 : 4, 0, tabs);
   };
 
   const removeTab = (tabs: string) => {
@@ -137,11 +137,11 @@ const EntityDetailPage: React.FC = () => {
     }
   };
 
-  // if (isLineageRender) {
-  //   tabsName.splice(1, 0, "lineage");
-  // } else {
-  //   removeTab("lineage");
-  // }
+  if (isLineageRender) {
+    tabsName.splice(1, 0, "lineage");
+  } else {
+    removeTab("lineage");
+  }
 
   if (!isEmpty(schemaElementsAttribute)) {
     addTab("schema");
@@ -218,7 +218,7 @@ const EntityDetailPage: React.FC = () => {
         loading={loading}
       />
     ),
-    // lineage: <LineageTab entity={entity} isProcess={isProcess} />
+    lineage: <LineageTab entity={entity} isProcess={isProcess} />,
     relationship: (
       <RelationshipsTab
         entity={entity}
@@ -508,7 +508,7 @@ const EntityDetailPage: React.FC = () => {
             data-cy="tab-list"
           >
             <LinkTab label="Properties" />-{" "}
-            {/* {isLineageRender && <LinkTab label="Lineage" />} */}
+            {isLineageRender && <LinkTab label="Lineage" />}
             <LinkTab label="Relationships" />
             <LinkTab label="Classifications" />
             <LinkTab label="Audits" />
