@@ -568,6 +568,24 @@
       "serviceType": "atlas_core",
       "typeVersion": "1.0",
       "attributeDefs": []
+    },
+    {
+      "name":        "__AtlasAsyncImportRequest",
+      "superTypes":  [ "__internal" ],
+      "serviceType": "atlas_core",
+      "typeVersion": "1.0",
+      "attributeDefs": [
+        { "name": "requestId",           "typeName": "string", "isOptional": false, "cardinality": "SINGLE", "isUnique": true,  "isIndexable": true },
+        { "name": "importId",            "typeName": "string", "isOptional": false, "cardinality": "SINGLE", "isUnique": false, "isIndexable": true },
+        { "name": "status",              "typeName": "string", "isOptional": false, "cardinality": "SINGLE", "isUnique": false, "isIndexable": true },
+        { "name": "importDetails",       "typeName": "string", "isOptional": true,  "cardinality": "SINGLE", "isUnique": false, "isIndexable": false },
+        { "name": "startEntityPosition", "typeName": "string", "isOptional": false, "cardinality": "SINGLE", "isUnique": false, "isIndexable": false },
+        { "name": "importResult",        "typeName": "string", "isOptional": false, "cardinality": "SINGLE", "isUnique": false, "isIndexable": false },
+        { "name": "receivedTime",        "typeName": "string", "isOptional": false, "cardinality": "SINGLE", "isUnique": false, "isIndexable": false },
+        { "name": "stagedTime",          "typeName": "string", "isOptional": false, "cardinality": "SINGLE", "isUnique": false, "isIndexable": false },
+        { "name": "processingStartTime", "typeName": "string", "isOptional": false, "cardinality": "SINGLE", "isUnique": false, "isIndexable": false },
+        { "name": "completedTime",       "typeName": "string", "isOptional": false, "cardinality": "SINGLE", "isUnique": false, "isIndexable": false }
+      ]
     }
   ],
   "relationshipDefs": [

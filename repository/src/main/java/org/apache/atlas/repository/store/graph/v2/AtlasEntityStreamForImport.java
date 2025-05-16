@@ -118,4 +118,9 @@ public class AtlasEntityStreamForImport extends AtlasEntityStream implements Ent
     @Override
     public void close() {
     }
+
+    @Override
+    public String getMd5Hash() {
+        return null;
+    }
 }
