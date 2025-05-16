@@ -20,7 +20,7 @@ package org.apache.atlas.repository.store.graph.v2;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasTypeAccessRequest;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEntityDef;
 import org.apache.atlas.repository.Constants;

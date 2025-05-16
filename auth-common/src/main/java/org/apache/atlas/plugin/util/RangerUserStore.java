@@ -59,7 +59,7 @@ public class RangerUserStore implements Serializable {
         setUserGroupMapping(userGroups);
         buildMap(users, groups);
     }
-    
+
     public String getServiceName() {
         return serviceName;
     }
@@ -67,7 +67,7 @@ public class RangerUserStore implements Serializable {
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
     }
-    
+
     public Long getUserStoreVersion() {
         return userStoreVersion;
     }

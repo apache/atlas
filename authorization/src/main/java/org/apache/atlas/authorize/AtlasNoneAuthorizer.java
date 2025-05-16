@@ -35,16 +35,19 @@ public class AtlasNoneAuthorizer implements AtlasAuthorizer {
         LOG.info("AtlasNoneAuthorizer.cleanUp()");
     }
 
-    public boolean isAccessAllowed(AtlasAdminAccessRequest request) throws AtlasAuthorizationException {
-        return true;
+    public AtlasAccessResult isAccessAllowed(AtlasAdminAccessRequest request) throws AtlasAuthorizationException {
+        AtlasAccessResult result = new AtlasAccessResult(true);
+        return result;
     }
 
-    public boolean isAccessAllowed(AtlasEntityAccessRequest request) throws AtlasAuthorizationException {
-        return true;
+    public AtlasAccessResult isAccessAllowed(AtlasEntityAccessRequest request, boolean isAuditEnabled) throws AtlasAuthorizationException {
+        AtlasAccessResult result = new AtlasAccessResult(true);
+        return result;
     }
 
-    public boolean isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException {
-        return true;
+    public AtlasAccessResult isAccessAllowed(AtlasTypeAccessRequest request) throws AtlasAuthorizationException {
+        AtlasAccessResult result = new AtlasAccessResult(true);
+        return result;
     }
 
     @Override
@@ -68,8 +71,9 @@ public class AtlasNoneAuthorizer implements AtlasAuthorizer {
     }
 
     @Override
-    public boolean isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
-        return true;
+    public AtlasAccessResult isAccessAllowed(AtlasRelationshipAccessRequest request) throws AtlasAuthorizationException {
+        AtlasAccessResult result = new AtlasAccessResult(true);
+        return result;
     }
 
     public void scrubSearchResults(AtlasSearchResultScrubRequest request) throws AtlasAuthorizationException {

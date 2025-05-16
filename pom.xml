@@ -798,6 +798,7 @@
         <module>authorization</module>
 <!--        <module>dashboardv2</module>-->
 
+        <module>auth-common</module>
         <module>auth-agents-common</module>
         <module>auth-audits</module>
         <module>auth-plugin-atlas</module>
@@ -1954,7 +1955,7 @@
                         <exclude>**/docz-lib/**</exclude>
                         <exclude>**/.docz/**</exclude>
                         <exclude>**/*.svg</exclude>
-                        
+
                     </excludes>
                 </configuration>
                 <executions>

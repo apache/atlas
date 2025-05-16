@@ -19,7 +19,7 @@
 
 package org.apache.atlas.plugin.policyengine;
 
-import org.apache.atlas.authorization.utils.RangerAtlasConstants;
+import org.apache.atlas.constants.RangerAtlasConstants;
 import org.apache.atlas.authorization.utils.RangerUtil;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
