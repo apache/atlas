@@ -249,12 +249,22 @@ public class ESAliasStore implements IndexAliasStore {
                     for (String asset : assets) {
                         if(!isAllDomain(asset)) {
                             terms.add(asset);
+
+                            // Add all parent domains in the hierarchy
+                            String currentPath = asset;
+                            while (currentPath.contains("/")) {
+                                allowClauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, currentPath)));
+                                currentPath = currentPath.substring(0, currentPath.lastIndexOf("/"));
+                            }
+
+                            if (!currentPath.isEmpty()) {
+                                allowClauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, currentPath)));
+                            }
                         } else {
                             asset = NEW_WILDCARD_DOMAIN_SUPER;
                         }
                         allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "*")));
                     }
-
                 } else if (policyActions.contains(ACCESS_READ_PERSONA_SUB_DOMAIN)) {
                     for (String asset : assets) {
                         //terms.add(asset);
