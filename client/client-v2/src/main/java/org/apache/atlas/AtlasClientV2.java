@@ -1057,14 +1057,22 @@ public class AtlasClientV2 extends AtlasBaseClient {
         return performAsyncImport(getImportRequestBodyPart(request), new StreamDataBodyPart(IMPORT_DATA_PARAMETER, stream));
     }
 
-    public PList<AsyncImportStatus> getAsyncImportStatus() throws AtlasServiceException {
-        return getAsyncImportStatus(0, 50);
-    }
-
+    /**
+     * Retrieves a list of asynchronous import statuses.
+     * If offset or limit is null, defaults to offset = 0 and limit = 50.
+     *
+     * @param offset Starting index for the result set
+     * @param limit  Maximum number of results to return
+     * @return A paginated list of asynchronous import statuses
+     * @throws AtlasServiceException if the request fails
+     */
     public PList<AsyncImportStatus> getAsyncImportStatus(Integer offset, Integer limit) throws AtlasServiceException {
+        int actualOffset = (offset != null) ? offset : 0;
+        int actualLimit = (limit != null) ? limit : 50;
+
         MultivaluedMap<String, String> queryParams = new MultivaluedMapImpl();
-        queryParams.add("offset", String.valueOf(offset));
-        queryParams.add("limit", String.valueOf(limit));
+        queryParams.add("offset", String.valueOf(actualOffset));
+        queryParams.add("limit", String.valueOf(actualLimit));
 
         return callAPI(API_V2.ASYNC_IMPORT_STATUS, new GenericType<PList<AsyncImportStatus>>() {}, queryParams);
     }

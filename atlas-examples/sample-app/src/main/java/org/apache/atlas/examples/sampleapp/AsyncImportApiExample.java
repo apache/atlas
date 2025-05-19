@@ -74,7 +74,7 @@ public class AsyncImportApiExample {
         System.out.println("Testing getAllAsyncImportStatus...");
 
         try {
-            PList<AsyncImportStatus> statuses = client.getAsyncImportStatus();
+            PList<AsyncImportStatus> statuses = client.getAsyncImportStatus(null, null);
 
             System.out.println("All Async Import Statuses:");
             for (AsyncImportStatus status : statuses.getList()) {
