@@ -2801,7 +2801,7 @@ public class EntityGraphMapper {
                     vertex.setProperty(CLASSIFICATION_TEXT_KEY, classificationTextForEntity);
                     propagatedEntities.add(entity);
 
-                    LOG.info("updateClassificationText: {}: {}", classification.getTypeName(), classificationTextForEntity);
+                    LOG.debug("updateClassificationText: {}: {}", classification.getTypeName(), classificationTextForEntity);
                 }
             }
         }
