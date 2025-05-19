@@ -1,5 +1,6 @@
 package org.apache.atlas.repository.store.graph.v2;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.CassandraTagOperation;
 import org.apache.atlas.model.ESDeferredOperation;
@@ -21,9 +22,6 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
     private static final Logger LOG = LoggerFactory.getLogger(EntityCreateOrUpdateMutationPostProcessor.class);
 
     private final TagDAO tagDAO;
-    private static final int ES_BULK_BATCH_SIZE = 500;
-    private static final int CASSANDRA_BATCH_SIZE = 100;
-
 
     public EntityCreateOrUpdateMutationPostProcessor(TagDAO tagDAO) {
         this.tagDAO = tagDAO;
@@ -54,8 +52,9 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
 
                 boolean upsert = (opType == ESDeferredOperation.OperationType.TAG_DENORM_FOR_ADD_CLASSIFICATIONS);
 
-                for (int i = 0; i < ops.size(); i += ES_BULK_BATCH_SIZE) {
-                    int end = Math.min(i + ES_BULK_BATCH_SIZE, ops.size());
+                int batchSize = AtlasConfiguration.ES_BULK_BATCH_SIZE.getInt();
+                for (int i = 0; i < ops.size(); i += batchSize) {
+                    int end = Math.min(i + batchSize, ops.size());
                     List<ESDeferredOperation> batch = ops.subList(i, end);
 
                     Map<String, Map<String, Object>> batchPayload = new HashMap<>();
@@ -91,7 +90,8 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
                     cassandraOps.values().stream().mapToInt(Stack::size).sum());
 
             // Collect tags to batch-delete
-            List<Tag> tagsToDelete = new ArrayList<>(CASSANDRA_BATCH_SIZE);
+            int batchSize = AtlasConfiguration.CASSANDRA_BATCH_SIZE.getInt();
+            List<Tag> tagsToDelete = new ArrayList<>(batchSize);
 
             for (Map.Entry<String, Stack<CassandraTagOperation>> entry : cassandraOps.entrySet()) {
                 Stack<CassandraTagOperation> operations = entry.getValue();
@@ -102,7 +102,7 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
                             // Construct Tag for batch delete
                             Tag tag = toTagForDelete(op);
                             tagsToDelete.add(tag);
-                            if (tagsToDelete.size() == CASSANDRA_BATCH_SIZE) {
+                            if (tagsToDelete.size() == batchSize) {
                                 tagDAO.deleteTags(tagsToDelete);
                                 tagsToDelete.clear();
                             }

@@ -35,8 +35,7 @@ public class FeatureFlagStore {
             {
                 return ret;
             }
-            String value = redisService.getValue(addFeatureFlagNamespace(key));
-            return value;
+            return redisService.getValue(addFeatureFlagNamespace(key));
         } catch (Exception e) {
             return ret;
         }

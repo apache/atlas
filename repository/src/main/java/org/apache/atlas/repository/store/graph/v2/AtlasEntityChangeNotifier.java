@@ -274,7 +274,6 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     @Override
-//    @Async
     public void onClassificationUpdatedToEntities(List<AtlasEntity> entities, AtlasClassification updatedClassification) throws AtlasBaseException {
         for (AtlasEntity entity : entities) {
             onClassificationUpdatedToEntity(entity, Collections.singletonList(updatedClassification));

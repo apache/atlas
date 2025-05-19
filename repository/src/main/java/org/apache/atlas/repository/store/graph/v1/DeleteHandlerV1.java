@@ -1352,19 +1352,17 @@ public abstract class DeleteHandlerV1 {
         RequestContext.get().queueTask(task);
     }
 
-    public void createAndQueueTaskWithoutCheckV2(String taskType, AtlasVertex entityVertex, String classificationTypeName, String relationshipGuid) throws AtlasBaseException {
+    public void createAndQueueTaskWithoutCheckV2(String taskType, AtlasVertex entityVertex, String classificationTypeName) {
         String              currentUser = RequestContext.getCurrentUser();
         String              entityGuid  = GraphHelper.getGuid(entityVertex);
 
-        Map<String, Object> taskParams  = new HashMap<String, Object>() {{
+        Map<String, Object> taskParams  = new HashMap<>() {{
             put(PARAM_ENTITY_GUID, entityGuid);
             put(TASK_CLASSIFICATION_TYPENAME, classificationTypeName);
         }};
 
         AtlasTask task = taskManagement.createTaskV2(taskType, currentUser, taskParams, classificationTypeName, entityGuid);
-
         AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
-
         RequestContext.get().queueTask(task);
     }
 

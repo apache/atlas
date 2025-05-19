@@ -3548,13 +3548,13 @@ public class EntityGraphMapper {
 
     public void handleAddClassifications(final EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
         if(getJanusOptimisationEnabled()){
-            addClassificationsV2_(context, guid, classifications);
+            addClassificationsV2(context, guid, classifications);
         } else {
             addClassificationsV1(context, guid, classifications);
         }
     }
 
-    public void addClassificationsV2_(final EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
+    public void addClassificationsV2(final EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("addClassifications");
 
@@ -3666,7 +3666,7 @@ public class EntityGraphMapper {
                 }
 
                 if (propagateTags && taskManagement != null && DEFERRED_ACTION_ENABLED) {
-                    deleteDelegate.getHandler().createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_ADD, entityVertex, classificationName, null);
+                    deleteDelegate.getHandler().createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_ADD, entityVertex, classificationName);
                 }
 
                 // add the attributes for the trait instance

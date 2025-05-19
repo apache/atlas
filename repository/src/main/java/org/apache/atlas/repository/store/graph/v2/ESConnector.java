@@ -23,14 +23,9 @@ import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_TEXT_KEY;
@@ -39,7 +34,7 @@ import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPE
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;import static org.apache.atlas.repository.audit.ESBasedAuditRepository.getHttpHosts;
 
-public class ESConnector {
+public class ESConnector implements Closeable {
     private static final Logger LOG      = LoggerFactory.getLogger(ESConnector.class);
 
     private static RestClient lowLevelClient;
@@ -47,37 +42,33 @@ public class ESConnector {
     private static Set<String> DENORM_ATTRS;
     private static String GET_DOCS_BY_ID = VERTEX_INDEX_NAME + "/_mget";
 
-    static {
-        try {
-            if (lowLevelClient == null) {
-                try {
-                    LOG.info("ESBasedAuditRepo - setLowLevelClient!");
-                    List<HttpHost> httpHosts = getHttpHosts();
+    public ESConnector() throws AtlasException {
+        lowLevelClient = initializeClient();
+        DENORM_ATTRS = initializeDenormAttributes();
+    }
 
-                    RestClientBuilder builder = RestClient.builder(httpHosts.get(0));
-                    builder.setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
+    private RestClient initializeClient() throws AtlasException {
+        try {
+            List<HttpHost> httpHosts = getHttpHosts();
+            RestClientBuilder builder = RestClient.builder(httpHosts.get(0))
+                    .setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
                             .setConnectTimeout(AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
                             .setSocketTimeout(AtlasConfiguration.INDEX_CLIENT_SOCKET_TIMEOUT.getInt()));
 
-                    lowLevelClient = builder.build();
-
-                    DENORM_ATTRS = new HashSet<>();
-                    DENORM_ATTRS.add(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY); //List
-                    DENORM_ATTRS.add(PROPAGATED_CLASSIFICATION_NAMES_KEY); //String
-                    DENORM_ATTRS.add(CLASSIFICATION_TEXT_KEY);//String
-
-                    DENORM_ATTRS.add(TRAIT_NAMES_PROPERTY_KEY); //List
-                    DENORM_ATTRS.add(CLASSIFICATION_NAMES_KEY); //String
-
-                } catch (AtlasException e) {
-                    LOG.error("Failed to initialize low level rest client for ES");
-                    throw new AtlasException(e);
-                }
-            }
-
+            return builder.build();
         } catch (Exception e) {
-            throw new RuntimeException(e);
+            throw new AtlasException("Failed to initialize Elasticsearch client", e);
         }
+    }
+
+    private Set<String> initializeDenormAttributes() {
+        Set<String> attrs = new HashSet<>();
+        attrs.add(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
+        attrs.add(PROPAGATED_CLASSIFICATION_NAMES_KEY);
+        attrs.add(CLASSIFICATION_TEXT_KEY);
+        attrs.add(TRAIT_NAMES_PROPERTY_KEY);
+        attrs.add(CLASSIFICATION_NAMES_KEY);
+        return Collections.unmodifiableSet(attrs);
     }
 
     public static void writeTagProperties(Map<String, Map<String, Object>> entitiesMap) {
@@ -112,17 +103,16 @@ public class ESConnector {
                 toUpdate.put("__modificationTimestamp", System.currentTimeMillis());
 
 
-                long vertexId = Long.valueOf(assetVertexId);
+                long vertexId = Long.parseLong(assetVertexId);
                 String docId = LongEncoding.encode(vertexId);
-                bulkRequestBody.append("{\"update\":{\"_index\":\"janusgraph_vertex_index\",\"_id\":\"" + docId + "\" }}\n");
+                bulkRequestBody.append("{\"update\":{\"_index\":\"janusgraph_vertex_index\",\"_id\":\"").append(docId).append("\" }}\n");
 
                 bulkRequestBody.append("{");
-
                 String attrsToUpdate = AtlasType.toJson(toUpdate);
-                bulkRequestBody.append("\"doc\":" + attrsToUpdate);
+                bulkRequestBody.append("\"doc\":").append(attrsToUpdate);
 
                 if (upsert) {
-                    bulkRequestBody.append(",\"upsert\":" + attrsToUpdate);
+                    bulkRequestBody.append(",\"upsert\":").append(attrsToUpdate);
                 }
 
                 bulkRequestBody.append("}\n");
@@ -195,5 +185,12 @@ public class ESConnector {
         }
 
         return ret;
+    }
+
+    @Override
+    public void close() throws IOException {
+        if (lowLevelClient != null) {
+            lowLevelClient.close();
+        }
     }
 }

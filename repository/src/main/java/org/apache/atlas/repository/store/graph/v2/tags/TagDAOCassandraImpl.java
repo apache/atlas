@@ -30,8 +30,6 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import static org.apache.atlas.repository.store.graph.v2.CassandraConnector.CASSANDRA_HOSTNAME_PROPERTY;
-import static org.apache.atlas.repository.store.graph.v2.CassandraConnector.CASSANDRA_REPLICATION_FACTOR_PROPERTY;
 import static org.apache.atlas.repository.store.graph.v2.tags.CassandraTagConfig.*;
 
 /**
