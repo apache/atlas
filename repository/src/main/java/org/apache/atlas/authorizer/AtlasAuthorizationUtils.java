@@ -255,10 +255,6 @@ public class AtlasAuthorizationUtils {
                         auditHandler.flushAudit();
                     }
 
-                    LOG.info("ABAC_AUTH: authorizer results final={} atlas={} policy={} abac={} policy={}",
-                            finalResult.isAllowed(), atlasPoliciesResult.isAllowed(), atlasPoliciesResult.getPolicyId(),
-                            abacPoliciesResult.isAllowed(), abacPoliciesResult.getPolicyId());
-
                     return finalResult.isAllowed();
                 } finally {
                     RequestContext.get().endMetricRecord(metric);
