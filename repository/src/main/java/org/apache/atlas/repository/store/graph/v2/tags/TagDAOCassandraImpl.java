@@ -50,6 +50,8 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     // Configuration constants
     private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration HEARTBEAT_INTERVAL = Duration.ofSeconds(30);
+    public static final String DEFAULT_HOST = "localhost";
+    public static final String DATACENTER = "datacenter1";
 
     private final CqlSession cassSession;
     private static final ObjectMapper objectMapper = new ObjectMapper();
@@ -71,8 +73,8 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     public TagDAOCassandraImpl() throws AtlasBaseException {
         try {
-            String hostname = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, "localhost");
-            Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", ApplicationProperties.get().getString(CASSANDRA_REPLICATION_FACTOR_PROPERTY, "1"));
+            String hostname = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, DEFAULT_HOST);
+            Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", ApplicationProperties.get().getString(CASSANDRA_REPLICATION_FACTOR_PROPERTY, "3"));
 
             DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
                     // Connection timeouts
@@ -89,7 +91,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             cassSession = CqlSession.builder()
                     .addContactPoint(new InetSocketAddress(hostname, CASSANDRA_PORT))
                     .withConfigLoader(configLoader)
-                    .withLocalDatacenter("datacenter1")
+                    .withLocalDatacenter(DATACENTER)
                     .build();
 
             // Initialize keyspace and table
@@ -151,7 +153,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
             // Find all propagated tags
             SimpleStatement findAllPropagatedTagsStatement = SimpleStatement.builder(
-                            String.format("SELECT tag_meta_json FROM %s.%s " +
+                            String.format("SELECT id, source_id, tag_meta_json FROM %s.%s " +
                                             "WHERE bucket = ? AND id = ? AND is_propagated = true AND is_deleted = false ALLOW FILTERING",
                                     KEYSPACE, TABLE_NAME))
                     .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
@@ -296,7 +298,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         executeWithRetry(SimpleStatement.builder(createIsPropagatedIndex).build());
     }
 
-    // TODO : Checked
     @Override
     public void putDirectTag(String assetId,
                              String tagTypeName,
@@ -329,7 +330,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         }
     }
 
-    // TODO : Not being used as far as i saw
     @Override
     public List<AtlasClassification> getPropagationsForAttachment(String vertexId,
                                                                   String sourceEntityGuid) throws AtlasBaseException {
@@ -337,7 +337,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 RequestContext.get().startMetricRecord("getPropagationsForAttachment");
         try {
             // Fetch all (direct + propagated) tags on this vertex
-            List<AtlasClassification> allTags = getTagsForVertex(vertexId);
+            List<AtlasClassification> allTags = getAllClassificationsForVertex(vertexId);
 
             // Return only those whose classification origin (entityGuid) matches our source
             return allTags.stream()
@@ -401,30 +401,8 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         return classification;
     }
 
-//    private Tag extractTag(Row row) throws AtlasBaseException {
-//        String sourceId = row.getString("source_id");
-//        String id = row.getString("id");
-//
-//        if (sourceId == null || id == null) {
-//            throw new AtlasBaseException("id or sourceId not present in Row");
-//        }
-//        Tag tag = new Tag();
-//        tag.setTagTypeName(row.getString("tag_type_name"));
-//        tag.setTagMetaJson(objectMapper.readValue(row.getString("tag_meta_json"), Map.class));
-//        if (!sourceId.equals(id)) {
-//            AtlasClassification atlasClassification = null;
-//            String typeName = classification.getTypeName();
-//            atlasClassification = getTagFromPK(sourceId, sourceId, typeName);
-//            if (atlasClassification != null) {
-//                classification = atlasClassification;
-//            }
-//        }
-//        return classification;
-//    }
-
-    //TODO : Done
     @Override
-    public List<AtlasClassification> getTagsForVertex(String vertexId) throws AtlasBaseException {
+    public List<AtlasClassification> getAllClassificationsForVertex(String vertexId) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagsForAsset");
         List<AtlasClassification> tags = new ArrayList<>();
         try {

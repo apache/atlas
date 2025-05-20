@@ -149,7 +149,7 @@ public class TagDeNormAttributesUtil {
             Map<String, Object> deNormAttrs = new HashMap<>();
 
             for(String vertexId : propagatedVertexIds) {
-                List<AtlasClassification> finalTags = tagDAO.getTagsForVertex(vertexId);
+                List<AtlasClassification> finalTags = tagDAO.getAllClassificationsForVertex(vertexId);
 
                 if (CollectionUtils.isNotEmpty(finalTags)) {
                     deNormAttrs.put(CLASSIFICATION_TEXT_KEY, getClassificationTextKey(finalTags, typeRegistry, fullTextMapperV2));

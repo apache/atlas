@@ -1084,7 +1084,7 @@ public class EntityGraphRetriever {
             }
 
             if(getJanusOptimisationEnabled()) {
-                entity.setClassifications(tagDAO.getTagsForVertex(entityVertex.getIdForDisplay()));
+                entity.setClassifications(tagDAO.getAllClassificationsForVertex(entityVertex.getIdForDisplay()));
             } else {
                 mapClassifications(entityVertex, entity);
             }
@@ -1646,7 +1646,7 @@ public class EntityGraphRetriever {
             if (LOG.isDebugEnabled())
                 LOG.debug("Performing getAllClassifications_V2");
 
-            List<AtlasClassification> classifications = tagDAO.getTagsForVertex(entityVertex.getIdForDisplay());
+            List<AtlasClassification> classifications = tagDAO.getAllClassificationsForVertex(entityVertex.getIdForDisplay());
 
             // Map each classification's attributes with defaults
             if (CollectionUtils.isNotEmpty(classifications)) {

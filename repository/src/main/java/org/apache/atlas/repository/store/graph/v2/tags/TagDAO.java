@@ -11,7 +11,7 @@ import java.util.Set;
 public interface TagDAO {
 
     List<AtlasClassification> getAllDirectTagsForVertex(String vertexId) throws AtlasBaseException;
-    List<AtlasClassification> getTagsForVertex(String vertexId) throws AtlasBaseException;
+    List<AtlasClassification> getAllClassificationsForVertex(String vertexId) throws AtlasBaseException;
     Tag getTagFromPK(String vertexId, String sourceId, String tagTypeName) throws AtlasBaseException;
     List<Tag> getAllTagsByVertexId(String vertexId) throws AtlasBaseException;
 

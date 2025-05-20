@@ -3630,7 +3630,7 @@ public class EntityGraphMapper {
                 Map<String, Object> minAssetMap = getMinimalAssetMap(entityVertex);
 
                 //addToClassificationNames(entityVertex, classificationName);
-                List<AtlasClassification> currentTags = tagDAO.getTagsForVertex(entityVertex.getIdForDisplay());
+                List<AtlasClassification> currentTags = tagDAO.getAllClassificationsForVertex(entityVertex.getIdForDisplay());
                 currentTags.add(classification);
 
                 // add a new AtlasVertex for the struct or trait instance
@@ -4175,7 +4175,7 @@ public class EntityGraphMapper {
                         currentTag.getAssetMetadata())
         );
 
-        List<AtlasClassification> currentTags = tagDAO.getTagsForVertex(entityVertex.getIdForDisplay());
+        List<AtlasClassification> currentTags = tagDAO.getAllClassificationsForVertex(entityVertex.getIdForDisplay());
 
         Map<String, Map<String, Object>> deNormMap = new HashMap<>();
         deNormMap.put(entityVertex.getIdForDisplay(), TagDeNormAttributesUtil.getDirectTagAttachmentAttributesForDeleteTag(currentClassification, currentTags, typeRegistry, fullTextMapperV2));
@@ -4571,7 +4571,7 @@ public class EntityGraphMapper {
                 LOG.debug("Updating classification {} for entity {}", classification, guid);
             }
 
-            List<AtlasClassification> currentTags = tagDAO.getTagsForVertex(entityVertex.getIdForDisplay());
+            List<AtlasClassification> currentTags = tagDAO.getAllClassificationsForVertex(entityVertex.getIdForDisplay());
             currentTags = currentTags.stream()
                     .filter(tag -> !(tag.getEntityGuid().equals(classification.getEntityGuid()) && tag.getTypeName().equals(classification.getTypeName())))
                     .collect(Collectors.toList());
