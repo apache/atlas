@@ -51,6 +51,7 @@ public class ListAuthorizer {
                                                                        String policyType) {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("ListAuthorizer.getElasticsearchDSLForPolicyType."+ policyType);
 
+        // TODO: consider resource and tag policies only if persona / purpose are empty, otherwise the alias will anyway take care of these policies
         List<RangerPolicy> resourcePolicies = policiesStore.getRelevantPolicies(persona, purpose, "atlas", actions, policyType);
         List<RangerPolicy> tagPolicies = policiesStore.getRelevantPolicies(persona, purpose, "atlas_tag", actions, policyType);
         List<RangerPolicy> abacPolicies = policiesStore.getRelevantPolicies(persona, purpose, "atlas_abac", actions, policyType);
@@ -68,8 +69,6 @@ public class ListAuthorizer {
             }
             shouldClauses.addAll(getDSLForAbacPolicies(abacPolicies));
         }
-
-        LOG.info("Applicable policies to user resource={}, tag={}, abac={}", resourcePolicies.size(), tagPolicies.size(), abacPolicies.size());
 
         Map<String, Object> boolClause = new HashMap<>();
         if (shouldClauses.isEmpty()) {
