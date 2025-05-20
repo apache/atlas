@@ -252,13 +252,12 @@ public class ESAliasStore implements IndexAliasStore {
 
                             // Add all parent domains in the hierarchy
                             String currentPath = asset;
-                            while (currentPath.contains("/")) {
+                            while (currentPath.contains("/domain/")) {
                                 allowClauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, currentPath)));
-                                currentPath = currentPath.substring(0, currentPath.lastIndexOf("/"));
-                            }
-
-                            if (!currentPath.isEmpty()) {
-                                allowClauseList.add(mapOf("term", mapOf(QUALIFIED_NAME, currentPath)));
+                                int lastDomainIndex = currentPath.lastIndexOf("/domain/");
+                                if (lastDomainIndex != -1) {
+                                    currentPath = currentPath.substring(0, lastDomainIndex);
+                                }
                             }
                         } else {
                             asset = NEW_WILDCARD_DOMAIN_SUPER;
