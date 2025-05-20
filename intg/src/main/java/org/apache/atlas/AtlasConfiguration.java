@@ -149,10 +149,10 @@ public enum AtlasConfiguration {
     MAX_THREADS_TYPE_UPDATE("atlas.types.update.thread.count", 3),
 
     // Classification propagation thread pool configuration
-    CLASSIFICATION_PROPAGATION_CORE_POOL_SIZE("atlas.classification.propagation.core.pool.size", 32),
-    CLASSIFICATION_PROPAGATION_MAX_POOL_SIZE("atlas.classification.propagation.max.pool.size", 200),
-    CLASSIFICATION_PROPAGATION_QUEUE_CAPACITY("atlas.classification.propagation.queue.capacity", 1000),
-    CLASSIFICATION_PROPAGATION_KEEP_ALIVE_SECONDS("atlas.classification.propagation.keep.alive.seconds", 300),
+    TAG_ASYNC_NOTIFIER_CORE_POOL_SIZE("atlas.classification.propagation.core.pool.size", 32),
+    TAG_ASYNC_NOTIFIER_MAX_POOL_SIZE("atlas.classification.propagation.max.pool.size", 200),
+    TAG_ASYNC_NOTIFIER_QUEUE_CAPACITY("atlas.classification.propagation.queue.capacity", 1000),
+    TAG_ASYNC_NOTIFIER_KEEP_ALIVE_SECONDS("atlas.classification.propagation.keep.alive.seconds", 300),
 
     // ES and Cassandra batch operation configurations
     ES_BULK_BATCH_SIZE("atlas.es.bulk.batch.size", 500),

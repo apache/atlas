@@ -147,23 +147,9 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
     @VisibleForTesting
     static JanusGraph initJanusGraph(Configuration config) {
-
         org.apache.commons.configuration2.Configuration conf2 = createConfiguration2(config);
         try {
             return AtlasJanusGraphFactory.open(conf2);
-            //return JanusGraphFactory.open(conf2);
-
-            /*JanusGraph graph = JanusGraphFactory.open(conf2);
-
-            StandardJanusGraph standardJanusGraph = (StandardJanusGraph) graph;
-
-            Field indexSerializerField = StandardJanusGraph.class.getDeclaredField("indexSerializer");
-            indexSerializerField.setAccessible(true);
-
-            CustomIndexSerializer customSerializer = new CustomIndexSerializer(standardJanusGraph);
-            indexSerializerField.set(standardJanusGraph, customSerializer);
-
-            return standardJanusGraph;*/
         } catch (JanusGraphException e) {
             LOG.warn("JanusGraphException: {}", e.getMessage());
             if (e.getMessage().startsWith(OLDER_STORAGE_EXCEPTION)) {

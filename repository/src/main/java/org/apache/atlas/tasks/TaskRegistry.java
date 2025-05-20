@@ -542,7 +542,7 @@ public class TaskRegistry {
 
     public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters, String classificationId,String classificationTypeName, String entityGuid) {
         AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, null,  entityGuid);
-        ret.setClassificationTypeName(classificationTypeName);
+        ret.setTagTypeName(classificationTypeName);
         createVertex(ret);
 
         return ret;
@@ -624,7 +624,7 @@ public class TaskRegistry {
 
         String classificationName = v.getProperty(Constants.TASK_CLASSIFICATION_TYPENAME, String.class);
         if (classificationName != null) {
-            ret.setClassificationTypeName(classificationName);
+            ret.setTagTypeName(classificationName);
         }
 
         String entityGuid = v.getProperty(Constants.TASK_ENTITY_GUID, String.class);

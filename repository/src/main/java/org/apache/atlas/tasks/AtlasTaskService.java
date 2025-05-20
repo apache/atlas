@@ -9,7 +9,6 @@ import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.tasks.TaskSearchParams;
 import org.apache.atlas.model.tasks.TaskSearchResult;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory;
@@ -150,7 +149,7 @@ public class AtlasTaskService implements TaskService {
                     throw new AtlasBaseException(AtlasErrorCode.TASK_TYPE_NOT_SUPPORTED, task.getType());
                 }
                 if (isClassificationTaskType(taskType) && !taskType.equals(ClassificationPropagateTaskFactory.CLEANUP_CLASSIFICATION_PROPAGATION)) {
-                    String classificationName = task.getClassificationTypeName();
+                    String classificationName = task.getTagTypeName();
                     String entityGuid = task.getEntityGuid();
                     String classificationId = StringUtils.isEmpty(task.getClassificationId()) ? resolveAndReturnClassificationId(classificationName, entityGuid) : task.getClassificationId();
                     if (StringUtils.isEmpty(classificationId)) {
@@ -236,8 +235,8 @@ public class AtlasTaskService implements TaskService {
         setEncodedProperty(ret, Constants.TASK_CREATED_TIME, task.getCreatedTime());
         setEncodedProperty(ret, Constants.TASK_UPDATED_TIME, task.getUpdatedTime());
 
-        if (task.getClassificationTypeName() != null) {
-            setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_TYPENAME, task.getClassificationTypeName());
+        if (task.getTagTypeName() != null) {
+            setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_TYPENAME, task.getTagTypeName());
         }
 
         if (task.getClassificationId() != null) {

@@ -20,7 +20,6 @@ package org.apache.atlas.repository.store.graph.v2.tasks;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.tasks.AtlasTask;
-import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
@@ -41,7 +40,7 @@ public class ClassificationPropagationTasks {
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
             String entityGuid               = (String) parameters.get(PARAM_ENTITY_GUID);
-            String tagTypeName              = getTaskDef().getClassificationTypeName();
+            String tagTypeName              = getTaskDef().getTagTypeName();
 
             Boolean previousRestrictPropagationThroughLineage = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
             Boolean previousRestrictPropagationThroughHierarchy = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
@@ -65,7 +64,7 @@ public class ClassificationPropagationTasks {
 
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
-            String tagTypeName              = getTaskDef().getClassificationTypeName();
+            String tagTypeName              = getTaskDef().getTagTypeName();
             String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
 
             if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
@@ -87,7 +86,7 @@ public class ClassificationPropagationTasks {
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
             String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
-            String tagTypeName              = getTaskDef().getClassificationTypeName();
+            String tagTypeName              = getTaskDef().getTagTypeName();
 
             if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
                 LOG.info("via JANUS_OPTIMISATION_ENABLED mode");
@@ -106,7 +105,7 @@ public class ClassificationPropagationTasks {
 
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
-            String classificationTypeName = getTaskDef().getClassificationTypeName();
+            String classificationTypeName = getTaskDef().getTagTypeName();
             String sourceEntity = getTaskDef().getEntityGuid();
             if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
                 entityGraphMapper.classificationRefreshPropagationV2(parameters, sourceEntity, classificationTypeName);

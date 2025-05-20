@@ -38,12 +38,12 @@ public class AtlasTask {
     @JsonIgnore
     public static final int MAX_ATTEMPT_COUNT = 3;
 
-    public String getClassificationTypeName() {
-        return classificationTypeName;
+    public String getTagTypeName() {
+        return tagTypeName;
     }
 
-    public void setClassificationTypeName(String classificationTypeName) {
-        this.classificationTypeName = classificationTypeName;
+    public void setTagTypeName(String tagTypeName) {
+        this.tagTypeName = tagTypeName;
     }
 
     public enum Status {
@@ -94,13 +94,13 @@ public class AtlasTask {
     private Status              status;
     private String              classificationId;
     private String              entityGuid;
-    private String              classificationTypeName;
+    private String tagTypeName;
 
     public AtlasTask() {
     }
 
     public AtlasTask(String type, String createdBy, Map<String, Object> parameters,
-                     String classificationId, String classificationTypeName,
+                     String classificationId, String tagTypeName,
                      String entityGuid) {
         this.guid               = UUID.randomUUID().toString();
         this.type               = type;
@@ -112,7 +112,7 @@ public class AtlasTask {
         this.attemptCount       = 0;
         this.classificationId   = classificationId;
         this.entityGuid         = entityGuid;
-        this.classificationTypeName = classificationTypeName;
+        this.tagTypeName = tagTypeName;
     }
 
     public String getGuid() {
