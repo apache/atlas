@@ -17,12 +17,27 @@
  * limitations under the License.
  */
 
-package org.apache.atlas.authorize;
+package org.apache.atlas.authorizer;
 
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAccessRequest;
+import org.apache.atlas.authorize.AtlasAccessResult;
+import org.apache.atlas.authorize.AtlasAccessorResponse;
+import org.apache.atlas.authorize.AtlasAdminAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizationException;
+import org.apache.atlas.authorize.AtlasAuthorizer;
+import org.apache.atlas.authorize.AtlasAuthorizerFactory;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
+import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
+import org.apache.atlas.authorize.AtlasTypeAccessRequest;
+import org.apache.atlas.authorize.AtlasTypesDefFilterRequest;
+import org.apache.atlas.authorizer.authorizers.ListAuthorizer;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.lang.StringUtils;
@@ -35,8 +50,15 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import javax.servlet.http.HttpServletRequest;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
+import static org.apache.atlas.authorizer.ABACAuthorizerUtils.SERVICE_DEF_ATLAS;
+import static org.apache.atlas.authorizer.ABACAuthorizerUtils.isABACAuthorizerEnabled;
 import static org.apache.atlas.repository.Constants.SKIP_DELETE_AUTH_CHECK_TYPES;
 import static org.apache.atlas.repository.Constants.SKIP_UPDATE_AUTH_CHECK_TYPES;
 
@@ -133,7 +155,9 @@ public class AtlasAuthorizationUtils {
                 request.setClientIPAddress(RequestContext.get().getClientIPAddress());
                 request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
                 request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
-                ret = authorizer.isAccessAllowed(request);
+                AtlasAccessResult atlasPoliciesResult = authorizer.isAccessAllowed(request);
+
+                ret = atlasPoliciesResult.isAllowed();
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);
             }
@@ -147,9 +171,12 @@ public class AtlasAuthorizationUtils {
     }
 
     public static boolean isAccessAllowed(AtlasEntityAccessRequest request) {
+        return isAccessAllowed(request, true);
+    }
+
+    public static boolean isAccessAllowed(AtlasEntityAccessRequest request, boolean isAuditLogEnabled) {
         MetricRecorder metric = RequestContext.get().startMetricRecord("isAccessAllowed");
 
-        boolean ret      = false;
         String  userName = getCurrentUserName();
 
         if (StringUtils.isNotEmpty(userName) && !RequestContext.get().isImportInProgress()) {
@@ -160,17 +187,88 @@ public class AtlasAuthorizationUtils {
                 request.setClientIPAddress(RequestContext.get().getClientIPAddress());
                 request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
                 request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
-                ret = authorizer.isAccessAllowed(request);
+                AtlasAccessResult atlasPoliciesResult =  authorizer.isAccessAllowed(request, isAuditLogEnabled);
+
+                RequestContext.get().endMetricRecord(metric);
+                if (!isABACAuthorizerEnabled()) {
+                    return atlasPoliciesResult.isAllowed();
+                }
+
+
+                // if priority is override, then it's an explicit deny as implicit deny won't have priority set to override
+                if (!atlasPoliciesResult.isAllowed() && atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+                    return false;
+                }
+
+                AtlasAccessResult finalResult = null;
+                metric = RequestContext.get().startMetricRecord("isAccessAllowed.abac");
+                AtlasAccessResult abacPoliciesResult = ABACAuthorizerUtils.isAccessAllowed(request.getEntity(), request.getAction());
+
+                /* reference - https://docs.google.com/spreadsheets/d/1npyX1cpm8-a8LwzmObgf8U1hZh6bO7FF8cpXjHMMQ08/edit?usp=sharing
+                 * Result of Atlas policy engine and ABAC evaluator is merged with below priority
+                 * Decision hierarchy (highest to lowest precedence):
+                 * 1. Override priority with explicit deny
+                 * 2. Override priority allow
+                 * 3. Explicit deny (normal priority)
+                 * 4. Normal priority allow
+                 * 5. Implicit deny
+                 */
+                try {
+                    if (!atlasPoliciesResult.isAllowed()) {
+                        // Atlas DENY
+                        if (atlasPoliciesResult.isExplicitDeny()) {
+                            // Matrix row: DENY + DENY (explicit) case
+                            if (abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+                                finalResult = abacPoliciesResult; // ABAC override DENY or ALLOW
+                            } else {
+                                finalResult = atlasPoliciesResult; // Atlas DENY takes precedence
+                            }
+                        } else {
+                            finalResult = abacPoliciesResult; // Not explicit deny by Atlas, use ABAC result
+                        }
+                    } else {
+                        // Atlas ALLOW
+                        if (atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+                            // Matrix rows: ALLOW (override) vs ABAC deny/allow
+                            if (abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE && !abacPoliciesResult.isAllowed()) {
+                                finalResult = abacPoliciesResult; // ABAC override DENY wins
+                            } else {
+                                finalResult = atlasPoliciesResult; // Atlas override ALLOW wins
+                            }
+                        } else {
+                            // Atlas ALLOW (normal)
+                            if (abacPoliciesResult.isExplicitDeny()) {
+                                finalResult = abacPoliciesResult; // ABAC explicit DENY wins
+                            } else if (abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+                                finalResult = abacPoliciesResult; // ABAC override ALLOW wins
+                            } else {
+                                finalResult = atlasPoliciesResult; // Atlas normal ALLOW wins
+                            }
+                        }
+                    }
+
+                    // log final result audit
+                    NewAtlasAuditHandler auditHandler = new NewAtlasAuditHandler(request, SERVICE_DEF_ATLAS);
+                    try {
+                        auditHandler.processResult(finalResult, request);
+                    } finally {
+                        auditHandler.flushAudit();
+                    }
+
+                    return finalResult.isAllowed();
+                } finally {
+                    RequestContext.get().endMetricRecord(metric);
+                }
+
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);
             }
         } else {
-            ret = true;
+            return true;
         }
 
-        RequestContext.get().endMetricRecord(metric);
-
-        return ret;
+        LOG.warn("ABAC_AUTH: authorizer returning false by default, no case matched");
+        return false;
     }
 
     public static boolean isAccessAllowed(AtlasTypeAccessRequest request) {
@@ -187,7 +285,9 @@ public class AtlasAuthorizationUtils {
                 request.setClientIPAddress(RequestContext.get().getClientIPAddress());
                 request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
                 request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
-                ret = authorizer.isAccessAllowed(request);
+                AtlasAccessResult atlasPoliciesResult = authorizer.isAccessAllowed(request);
+
+                ret = atlasPoliciesResult.isAllowed();
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);
             }
@@ -203,7 +303,6 @@ public class AtlasAuthorizationUtils {
     public static boolean isAccessAllowed(AtlasRelationshipAccessRequest request) {
         MetricRecorder metric = RequestContext.get().startMetricRecord("isAccessAllowed");
 
-        boolean ret      = false;
         String  userName = getCurrentUserName();
 
         if (StringUtils.isNotEmpty(userName) && !RequestContext.get().isImportInProgress()) {
@@ -214,17 +313,55 @@ public class AtlasAuthorizationUtils {
                 request.setClientIPAddress(RequestContext.get().getClientIPAddress());
                 request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
                 request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
-                ret = authorizer.isAccessAllowed(request);
+                AtlasAccessResult atlasPoliciesResult = authorizer.isAccessAllowed(request);
+
+                RequestContext.get().endMetricRecord(metric);
+
+                if (!atlasPoliciesResult.isAllowed() && atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+                    // 1
+                    return false;
+                }
+
+                metric = RequestContext.get().startMetricRecord("isAccessAllowed.abac");
+                AtlasAccessResult abacPoliciesResult = ABACAuthorizerUtils.isAccessAllowed(request.getRelationshipType(),
+                        request.getEnd1Entity(),
+                        request.getEnd2Entity(),
+                        request.getAction());
+
+                // reference - https://docs.google.com/spreadsheets/d/1npyX1cpm8-a8LwzmObgf8U1hZh6bO7FF8cpXjHMMQ08/edit?usp=sharing
+                try {
+                    if (!atlasPoliciesResult.isAllowed()) {
+                        // 2
+                        if (atlasPoliciesResult.isExplicitDeny()) {
+                            return abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE;
+                        } else {
+                            return abacPoliciesResult.isAllowed();
+                        }
+                    } else {
+                        if (atlasPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE) {
+                            //3
+                            return !(!abacPoliciesResult.isAllowed() && abacPoliciesResult.getPolicyPriority() == RangerPolicy.POLICY_PRIORITY_OVERRIDE);
+                        } else {
+                            //4
+                            if (abacPoliciesResult.isExplicitDeny()) {
+                                return abacPoliciesResult.isAllowed();
+                            } else {
+                                return atlasPoliciesResult.isAllowed();
+                            }
+                        }
+                    }
+                } finally {
+                    RequestContext.get().endMetricRecord(metric);
+                }
+
             } catch (AtlasAuthorizationException e) {
                 LOG.error("Unable to obtain AtlasAuthorizer", e);
             }
         } else {
-            ret = true;
+            return true;
         }
 
-        RequestContext.get().endMetricRecord(metric);
-
-        return ret;
+        return false;
     }
 
     public static AtlasAccessorResponse getAccessors(AtlasEntityAccessRequest request) {
@@ -237,6 +374,17 @@ public class AtlasAuthorizationUtils {
             ret = authorizer.getAccessors(request);
         } catch (AtlasAuthorizationException e) {
             LOG.error("Unable to obtain AtlasAuthorizer", e);
+        }
+
+        AtlasAccessorResponse abacAccessors = ABACAuthorizerUtils.getAccessors(request);
+        if (abacAccessors != null) {
+            ret.getUsers().addAll(abacAccessors.getUsers());
+            ret.getRoles().addAll(abacAccessors.getRoles());
+            ret.getGroups().addAll(abacAccessors.getGroups());
+
+            ret.getDenyUsers().addAll(abacAccessors.getDenyUsers());
+            ret.getDenyGroups().addAll(abacAccessors.getDenyGroups());
+            ret.getDenyRoles().addAll(abacAccessors.getDenyRoles());
         }
 
         return ret;
@@ -362,5 +510,11 @@ public class AtlasAuthorizationUtils {
         request.setClientIPAddress(RequestContext.get().getClientIPAddress());
         request.setForwardedAddresses(RequestContext.get().getForwardedAddresses());
         request.setRemoteIPAddress(RequestContext.get().getClientIPAddress());
+    }
+
+    public static Map<String, Object> getPreFilterDsl(String persona, String purpose, List<String> actions) {
+        Map<String, Object> filterDsl = ListAuthorizer.getElasticsearchDSL(persona, purpose, actions);
+        LOG.info("ABAC_AUTH: FULL_RESTRICTION: indexsearch query prefilter={}", filterDsl);
+        return filterDsl;
     }
 }

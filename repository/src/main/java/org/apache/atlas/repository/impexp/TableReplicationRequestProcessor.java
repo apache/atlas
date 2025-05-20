@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.repository.impexp;
 
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
+import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.AtlasSearchResult;

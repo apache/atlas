@@ -17,11 +17,14 @@
  */
 package org.apache.atlas.discovery;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
-import org.apache.atlas.authorize.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasSearchResultScrubRequest;
+import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
 import org.apache.atlas.model.discovery.AtlasSearchResult.AtlasFullTextResult;
@@ -1011,6 +1014,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             String indexName = getIndexName(params);
 
             indexQuery = graph.elasticsearchQuery(indexName);
+
+            if (searchParams.getEnableFullRestriction()) {
+                addPreFiltersToSearchQuery(searchParams);
+            }
+
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
             if (indexQueryResult == null) {
@@ -1155,7 +1163,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         } catch (Exception e) {
                 throw e;
         }
-        scrubSearchResults(ret, searchParams.getSuppressLogs());
+
+        if (!searchParams.getEnableFullRestriction()) {
+            scrubSearchResults(ret, searchParams.getSuppressLogs());
+        }
     }
 
     private Map<String, Object> getMap(String key, Object value) {
@@ -1241,7 +1252,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         )));
         mustClauses.add(mustClause);
 
-        List<Map<String, Object>>filterClauses = new ArrayList<>();
+        List<Map<String, Object>> filterClauses = new ArrayList<>();
         filterClauses.add(getMap("terms", getMap("_index", Collections.singletonList(VERTEX_INDEX_NAME))));
 
         Map<String, Object> boolQuery = new HashMap<>();
@@ -1249,5 +1260,42 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         boolQuery.put("filter", filterClauses);
 
         return getMap("bool", boolQuery);
+    }
+
+    private void addPreFiltersToSearchQuery(SearchParams searchParams) {
+        try {
+            String persona = ((IndexSearchParams) searchParams).getPersona();
+            String purpose = ((IndexSearchParams) searchParams).getPurpose();
+
+            AtlasPerfMetrics.MetricRecorder addPreFiltersToSearchQueryMetric = RequestContext.get().startMetricRecord("addPreFiltersToSearchQuery");
+            ObjectMapper mapper = new ObjectMapper();
+            List<Map<String, Object>> mustClauseList = new ArrayList<>();
+
+            List<String> actions = new ArrayList<>();
+            actions.add("entity-read");
+
+            Map<String, Object> allPreFiltersBoolClause = AtlasAuthorizationUtils.getPreFilterDsl(persona, purpose, actions);
+            mustClauseList.add(allPreFiltersBoolClause);
+
+            String dslString = searchParams.getQuery();
+            JsonNode node = mapper.readTree(dslString);
+            JsonNode userQueryNode = node.get("query");
+            if (userQueryNode != null) {
+
+                String userQueryString = userQueryNode.toString();
+
+                String userQueryBase64 = Base64.getEncoder().encodeToString(userQueryString.getBytes());
+                mustClauseList.add(getMap("wrapper", getMap("query", userQueryBase64)));
+            }
+
+            JsonNode updateQueryNode = mapper.valueToTree(getMap("bool", getMap("must", mustClauseList)));
+
+            ((ObjectNode) node).set("query", updateQueryNode);
+            searchParams.setQuery(node.toString());
+            RequestContext.get().endMetricRecord(addPreFiltersToSearchQueryMetric);
+
+        } catch (Exception e) {
+            LOG.error("Error -> addPreFiltersToSearchQuery!", e);
+        }
     }
 }
