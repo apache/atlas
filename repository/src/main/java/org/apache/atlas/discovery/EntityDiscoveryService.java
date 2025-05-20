@@ -997,7 +997,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
 
             String indexName = getIndexName(params);
-            LOG.info("ABAC_AUTH: FULL_RESTRICTION: Using index name: {} overrideUserQuery: {}", indexName, ((IndexSearchParams) searchParams).getOverrideUserQuery());
 
             indexQuery = graph.elasticsearchQuery(indexName);
 
@@ -1186,7 +1185,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             return vertexIndexName;
         }
 
-        if (params.getOverrideUserQuery()) {
+        if (params.getEnableFullRestriction()) {
             return vertexIndexName;
         }
 

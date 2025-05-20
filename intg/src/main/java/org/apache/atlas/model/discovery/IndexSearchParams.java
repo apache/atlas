@@ -18,7 +18,6 @@ public class IndexSearchParams extends SearchParams {
     private String purpose;
     private String persona;
     private String queryString;
-    private Boolean overrideUserQuery; // if true, don't use alias for indexsearch
 
     /*
     * Indexsearch includes all relations (if requested with param attributes) even if relationshipStatus is DELETED
@@ -81,10 +80,6 @@ public class IndexSearchParams extends SearchParams {
         this.persona = persona;
     }
 
-    public Boolean getOverrideUserQuery() { return overrideUserQuery; }
-
-    public void setOverrideUserQuery(Boolean overrideUserQuery) { this.overrideUserQuery = overrideUserQuery; }
-
     public void setRelationAttributes(Set<String> relationAttributes) {
         this.relationAttributes = relationAttributes;
     }
@@ -109,7 +104,6 @@ public class IndexSearchParams extends SearchParams {
                 ", includeRelationshipAttributes=" + includeRelationshipAttributes +
                 ", utmTags="+ getUtmTags() +
                 ", enableFullRestriction="+ enableFullRestriction +
-                ", overrideUserQuery="+ overrideUserQuery +
                 '}';
     }
 
