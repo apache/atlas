@@ -105,6 +105,7 @@ public enum AtlasErrorCode {
     SAVED_SEARCH_CHANGE_USER(400, "ATLAS-400-00-056", "saved-search {0} can not be moved from user {1} to {2}"),
     INVALID_QUERY_PARAM_LENGTH(400, "ATLAS-400-00-057", "Length of query param {0} exceeds the limit"),
     INVALID_QUERY_LENGTH(400, "ATLAS-400-00-058", "Invalid query length, update {0} to change the limit"),
+    INCORRECT_OZONE_PATH(400, "ATLAS-400-00-058", "Empty Ozone Path"),
     // DSL related error codes
     INVALID_DSL_QUERY(400, "ATLAS-400-00-059", "Invalid DSL query: {0} | Reason: {1}. Please refer to Atlas DSL grammar for more information"),
     INVALID_DSL_GROUPBY(400, "ATLAS-400-00-05A", "DSL Semantic Error - GroupBy attribute {0} is non-primitive"),
