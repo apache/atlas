@@ -1,6 +1,7 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorizer.JsonToElasticsearchQuery;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -174,16 +175,21 @@ public class AuthPolicyValidator {
 
 
                 if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
-                    validateOperation (!AtlasEntity.Status.ACTIVE.equals(accessControl.getStatus()), accessControl.getTypeName() + " is not Active");
+                    validateOperation(!AtlasEntity.Status.ACTIVE.equals(accessControl.getStatus()), accessControl.getTypeName() + " is not Active");
 
-                    validateParam (!PERSONA_ENTITY_TYPE.equals(accessControl.getTypeName()),  "Please provide Persona as accesscontrol");
+                    validateParam(!PERSONA_ENTITY_TYPE.equals(accessControl.getTypeName()), "Please provide Persona as accesscontrol");
 
-                    validateParam (!PERSONA_POLICY_VALID_SUB_CATEGORIES.contains(policySubCategory),
-                            "Please provide valid value for attribute " + ATTR_POLICY_SUB_CATEGORY + ":"+ PERSONA_POLICY_VALID_SUB_CATEGORIES);
+                    validateParam(!PERSONA_POLICY_VALID_SUB_CATEGORIES.contains(policySubCategory),
+                            "Please provide valid value for attribute " + ATTR_POLICY_SUB_CATEGORY + ":" + PERSONA_POLICY_VALID_SUB_CATEGORIES);
 
 
                     List<String> resources = getPolicyResources(policy);
-                    validateParam (CollectionUtils.isEmpty(resources), "Please provide attribute " + ATTR_POLICY_RESOURCES);
+                    if (isABACPolicyService(policy)) {
+                        String policyFilterCriteria = getPolicyFilterCriteria(policy);
+                        validateParam(JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, "entity") != null, "Invalid filter criteria");
+                    } else {
+                        validateParam(CollectionUtils.isEmpty(resources), "Please provide attribute " + ATTR_POLICY_RESOURCES);
+                    }
 
                     //validate persona policy resources keys
                     Set<String> policyResourceKeys = resources.stream().map(x -> x.split(RESOURCES_SPLITTER)[0]).collect(Collectors.toSet());
@@ -193,12 +199,14 @@ public class AuthPolicyValidator {
 
 
                     if (POLICY_SUB_CATEGORY_DATA.equals(policySubCategory)) {
-                        validateParam (!POLICY_RESOURCE_CATEGORY_PERSONA_ENTITY.equals(getPolicyResourceCategory(policy)), "Invalid resource category for Persona");
+                        validateParam(!POLICY_RESOURCE_CATEGORY_PERSONA_ENTITY.equals(getPolicyResourceCategory(policy)), "Invalid resource category for Persona");
                         validateConnection(getPolicyConnectionQN(policy), resources);
 
                     } else if (POLICY_SUB_CATEGORY_METADATA.equals(policySubCategory)) {
                         validateParam(!POLICY_RESOURCE_CATEGORY_PERSONA_CUSTOM.equals(getPolicyResourceCategory(policy)), "Invalid resource category for Persona");
-                        validateConnection(getPolicyConnectionQN(policy), resources);
+                        if (!isABACPolicyService(policy)) {
+                            validateConnection(getPolicyConnectionQN(policy), resources);
+                        }
 
                     } else if (POLICY_SUB_CATEGORY_GLOSSARY.equals(policySubCategory)) {
 
@@ -209,8 +217,8 @@ public class AuthPolicyValidator {
                     Set<String> validActions = PERSONA_POLICY_VALID_ACTIONS.get(policySubCategory);
                     List<String> copyOfActions = new ArrayList<>(policyActions);
                     copyOfActions.removeAll(validActions);
-                    validateParam (CollectionUtils.isNotEmpty(copyOfActions),
-                            "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS + ": Invalid actions "+ copyOfActions);
+                    validateParam(CollectionUtils.isNotEmpty(copyOfActions),
+                            "Please provide valid values for attribute " + ATTR_POLICY_ACTIONS + ": Invalid actions " + copyOfActions);
                 }
 
                 if (POLICY_CATEGORY_PURPOSE.equals(policyCategory)) {
@@ -273,8 +281,13 @@ public class AuthPolicyValidator {
 
                 if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
                     List<String> resources = getPolicyResources(policy);
-                    validateParam (policy.hasAttribute(ATTR_POLICY_RESOURCES) && CollectionUtils.isEmpty(resources),
+                    if (isABACPolicyService(policy)) {
+                        String policyFilterCriteria = getPolicyFilterCriteria(policy);
+                        validateParam(JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, "entity") == null, "Invalid filter criteria");
+                    } else {
+                        validateParam (policy.hasAttribute(ATTR_POLICY_RESOURCES) && CollectionUtils.isEmpty(resources),
                             "Please provide attribute " + ATTR_POLICY_RESOURCES);
+                    }
 
                     //validate persona policy resources keys
                     Set<String> policyResourceKeys = resources.stream().map(x -> x.split(RESOURCES_SPLITTER)[0]).collect(Collectors.toSet());
@@ -283,7 +296,9 @@ public class AuthPolicyValidator {
                             "Please provide valid policy resources" + PERSONA_POLICY_VALID_RESOURCE_KEYS);
 
                     String newConnectionQn = getPolicyConnectionQN(policy);
-                    if (POLICY_SUB_CATEGORY_METADATA.equals(policySubCategory) || POLICY_SUB_CATEGORY_DATA.equals(policySubCategory)) {
+                    if (StringUtils.equals(getPolicyServiceName(policy), POLICY_SERVICE_NAME_ABAC)) {
+
+                    } else if (POLICY_SUB_CATEGORY_METADATA.equals(policySubCategory) || POLICY_SUB_CATEGORY_DATA.equals(policySubCategory)) {
                         validateParam(StringUtils.isEmpty(newConnectionQn), "Please provide attribute " + ATTR_POLICY_CONNECTION_QN);
 
                         String existingConnectionQn = getPolicyConnectionQN(existingPolicy);

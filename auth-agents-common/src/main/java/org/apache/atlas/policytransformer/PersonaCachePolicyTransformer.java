@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorizer.JsonToElasticsearchQuery;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -104,19 +105,15 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                 header.setAttribute(ATTR_POLICY_CONDITIONS, templatePolicy.getPolicyConditions());
 
                 if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
-                    if (policyFilterCriteria != null && !policyFilterCriteria.isEmpty()) {
-                        try {
-                            JsonNode filterCriteriaNode = mapper.readTree(policyFilterCriteria);
-                            if (filterCriteriaNode != null && filterCriteriaNode.get("entity") != null) {
-                                JsonNode entityFilterCriteriaNode = filterCriteriaNode.get("entity");
-                                policyFilterCriteria = entityFilterCriteriaNode.toString();
-                            }
-                        } catch (JsonProcessingException e) {
-                            LOG.error("ABAC_AUTH: PersonaCachePolicyTransformer.transform: parsing filterCriteria failed for policy={}, filterCriteria={}", atlasPolicy.getGuid(), policyFilterCriteria);
-                        }
+                    if (JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, "entity") == null) {
+                        LOG.error("PolicyRefresher: PersonaCachePolicyTransformer: error parsing policyFilterCriteria for policyId={}, policyFilterCriteria={}", header.getGuid(), policyFilterCriteria);
+                        continue;
                     }
-                    header.setAttribute(ATTR_POLICY_FILTER_CRITERIA,
-                            templatePolicy.getPolicyFilterCriteria().replace(PLACEHOLDER_FILTER_CRITERIA, policyFilterCriteria));
+//                  header.setAttribute(ATTR_POLICY_FILTER_CRITERIA, templatePolicy.getPolicyFilterCriteria().replace(PLACEHOLDER_FILTER_CRITERIA, policyFilterCriteria));
+                    header.setAttribute(ATTR_POLICY_FILTER_CRITERIA, templatePolicy.getPolicyFilterCriteria() != null
+                            ? templatePolicy.getPolicyFilterCriteria().replace(PLACEHOLDER_FILTER_CRITERIA, policyFilterCriteria)
+                            : policyFilterCriteria);
+                    header.setAttribute(ATTR_POLICY_RESOURCES, new ArrayList<>());
                 } else {
                     String subCategory = getPolicySubCategory(atlasPolicy);
 
@@ -151,6 +148,7 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                         }
                     }
                     header.setAttribute(ATTR_POLICY_RESOURCES, finalResources);
+                    header.setAttribute(ATTR_POLICY_FILTER_CRITERIA, "");
                 }
                 ret.add(header);
             }

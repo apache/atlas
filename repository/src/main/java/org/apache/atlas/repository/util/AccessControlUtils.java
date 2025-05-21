@@ -38,6 +38,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasErrorCode.ACCESS_CONTROL_ALREADY_EXISTS;
@@ -447,5 +448,9 @@ public final class AccessControlUtils {
         }
 
         return false;
+    }
+
+    public static boolean isABACPolicyService(AtlasEntity entity) {
+        return Objects.equals(getPolicyServiceName(entity), POLICY_SERVICE_NAME_ABAC);
     }
 }
