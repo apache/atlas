@@ -146,7 +146,7 @@ public enum AtlasConfiguration {
     ATLAS_BULK_API_MAX_ENTITIES_ALLOWED("atlas.bulk.api.max.entities.allowed", 10000),
 
     ENABLE_ASYNC_TYPE_UPDATE("atlas.types.update.async.enable", false),
-    MAX_THREADS_TYPE_UPDATE("atlas.types.update.thread.count", 3);
+    MAX_THREADS_TYPE_UPDATE("atlas.types.update.thread.count", 4);
 
 
     private static final Configuration APPLICATION_PROPERTIES;
