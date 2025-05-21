@@ -91,6 +91,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
   const [updateTable, setUpdateTable] = useState(moment.now());
   const { entityData } = useSelector((state: EntityState) => state.entity);
   const [pageCount, setPageCount] = useState<number>(0);
+  const [isEmptyData, setIsEmptyData] = useState(false);
   const [checkedEntities, setCheckedEntities] = useState<any>(
     !isEmpty(searchParams.get("includeDE"))
       ? searchParams.get("includeDE")
@@ -139,9 +140,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
     async ({ pagination }: { pagination?: any }) => {
       setLoader(true);
       const { pageSize, pageIndex } = pagination || {};
-      if (pageIndex > 1) {
-        searchParams.set("pageOffset", `${pageSize * pageIndex}`);
-      }
+
       let params: Params | any = {
         excludeDeletedEntities: !isEmpty(searchParams.get("includeDE"))
           ? !searchParams.get("includeDE")
@@ -210,7 +209,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
       let searchTypeParams =
         searchParams.get("searchType") == "dsl" ? dslParams : params;
       try {
-        let searchResp = await getBasicSearchResult(
+        const searchResp = await getBasicSearchResult(
           {
             data:
               (searchParams.get("searchType") == "basic" ||
@@ -220,12 +219,28 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
           },
           searchParams.get("searchType") || "basic"
         );
-        let totalCount = searchResp.data.approximateCount;
-        setSearchData(searchResp.data);
-        setPageCount(Math.ceil(totalCount / pagination.pageSize));
-        setLoader(false);
+        const { data = {} } = searchResp || {};
+        const { approximateCount, entities } = data || {};
+        let totalCount = approximateCount;
+        let dataLength;
+        if (entities) {
+          dataLength = entities?.length;
+        } else {
+          dataLength = searchResp?.data?.length;
+        }
+        if (!dataLength) {
+          setIsEmptyData(true);
+          setLoader(false);
+        } else {
+          setSearchData(searchResp.data);
+          setPageCount(Math.ceil(totalCount / pagination.pageSize));
+          setLoader(false);
+        }
       } catch (error: any) {
-        console.error("Error fetching data:", error.response.data.errorMessage);
+        console.error(
+          "Error fetching data:",
+          error?.response?.data?.errorMessage
+        );
         toast.dismiss(toastId.current);
         serverError(error, toastId);
         setLoader(false);
@@ -451,7 +466,6 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
                   obj.name === superTypesEntityData.name
               );
             if (referredEntities == -1) {
-              // let referredEntities = searchData.referredEntities[obj?.guid];
               superTypesObj = {
                 accessorFn: (row: any) =>
                   row.attributes[superTypesEntityData.name],
@@ -765,17 +779,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
   const getDefaultSort = useMemo(() => [{ id: "name", asc: true }], []);
 
   return (
-    <Stack
-      // paddingTop={
-      //   isEmpty(classificationParams || glossaryTypeParams) ? 0 : "40px"
-      // }
-      // marginTop={
-      //   isEmpty(classificationParams || glossaryTypeParams) ? 0 : "20px"
-      // }
-      // padding="16px"
-      position="relative"
-      gap={"1rem"}
-    >
+    <Stack position="relative" gap={"1rem"}>
       {!isEmpty(classificationParams || glossaryTypeParams) && (
         <Stack
           direction="row"
@@ -825,9 +829,6 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
         </Stack>
       )}
 
-      {/* {loader ? (
-        <CircularProgress />
-      ) : ( */}
       <TableLayout
         fetchData={fetchSearchResult}
         data={searchData.entities || []}
@@ -863,11 +864,12 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
         allTableFilters={true}
         setUpdateTable={setUpdateTable}
         isfilterQuery={true}
+        isEmptyData={isEmptyData}
+        setIsEmptyData={setIsEmptyData}
+        showGoToPage={true}
       />
-      {/* )} */}
     </Stack>
   );
-  // );
 };
 
 export default SearchResult;

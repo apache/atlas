@@ -39,6 +39,8 @@ import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDown
 
 const AdminAuditTable = () => {
   const [searchParams] = useSearchParams();
+  const offsetParam = searchParams.get("pageOffset");
+  const limitParam = searchParams.get("pageLimit");
   const toastId: any = useRef(null);
   const [loader, setLoader] = useState<boolean>(true);
   const [auditData, setAuditData] = useState([]);
@@ -53,13 +55,14 @@ const AdminAuditTable = () => {
     async ({ pagination }: { pagination?: any }) => {
       const { pageSize, pageIndex } = pagination || {};
       if (pageIndex > 1) {
-        searchParams.set("pageOffset", `${pageSize * pageIndex}`);
+        searchParams.set("pageOffset", `${pageSize + pageIndex}`);
       }
+
       let params: any = {
         auditFilters: !isEmpty(queryApiObj) ? queryApiObj : null,
-        limit: pageSize,
+        limit: !isEmpty(limitParam) ? limitParam : pageSize,
         sortOrder: "DESCENDING",
-        offset: pageIndex * pageSize,
+        offset: !isEmpty(offsetParam) ? offsetParam : pageIndex + pageSize,
         sortBy: "startTime"
       };
 

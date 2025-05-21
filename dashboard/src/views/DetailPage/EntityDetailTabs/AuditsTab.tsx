@@ -35,6 +35,7 @@ const AuditsTab = ({
   auditResultGuid
 }: any) => {
   const [searchParams] = useSearchParams();
+  const offsetParam = searchParams.get("pageOffset");
   const { guid } = useParams();
   const toastId: any = useRef(null);
   const [loader, setLoader] = useState<boolean>(true);
@@ -50,14 +51,11 @@ const AuditsTab = ({
     }) => {
       const { pageSize, pageIndex } = pagination || {};
       if (pageIndex > 1) {
-        searchParams.set("pageOffset", `${pageSize * pageIndex}`);
+        searchParams.set("pageOffset", `${pageSize + pageIndex}`);
       }
       let params: any = {
         sortOrder: sorting[0]?.desc == false ? "asc" : "desc",
-        offset:
-          searchParams.get("pageOffset") != null
-            ? Number(searchParams.get("pageOffset"))
-            : pageIndex * pageSize,
+        offset: !isEmpty(offsetParam) ? offsetParam : pageIndex + pageSize,
         count: pageSize,
         sortBy: sorting[0]?.id || "timestamp"
       };

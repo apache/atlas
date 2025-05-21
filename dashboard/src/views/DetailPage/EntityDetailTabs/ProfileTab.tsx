@@ -85,17 +85,15 @@ const ProfileTab: React.FC<EntityDetailTabProps> = ({ entity }) => {
       sorting: [{ id: string; desc: boolean }];
     }) => {
       const { pageSize, pageIndex } = pagination || {};
+      const offsetParam = searchParams.get("pageOffset");
+      const limitParam = searchParams.get("pageLimit");
       if (pageIndex > 1) {
-        searchParams.set("pageOffset", `${pageSize * pageIndex}`);
+        searchParams.set("pageOffset", `${pageSize + pageIndex}`);
       }
       let params: any = {
         order: sorting[0]?.desc == false ? "asc" : "desc",
-        offset:
-          searchParams.get("pageOffset") !== undefined &&
-          searchParams.get("pageOffset") !== null
-            ? Number(searchParams.get("pageOffset"))
-            : pageIndex * pageSize,
-        limit: pageSize,
+        offset: !isEmpty(offsetParam) ? offsetParam : pageIndex + pageSize,
+        limit: !isEmpty(limitParam) ? limitParam : pageSize,
         sort_by: sorting[0]?.id || "timestamp",
         guid: guid,
         relation:
