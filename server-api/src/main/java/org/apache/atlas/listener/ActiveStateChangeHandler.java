@@ -34,7 +34,8 @@ public interface ActiveStateChangeHandler {
         DEFAULT_METADATA_SERVICE(4),
         NOTIFICATION_HOOK_CONSUMER(5),
         TASK_MANAGEMENT(6),
-        INDEX_RECOVERY(7);
+        INDEX_RECOVERY(7),
+        IMPORT_TASK_LISTENER(8);
 
         private final int order;
 

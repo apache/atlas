@@ -29,10 +29,12 @@ import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import static org.mockito.Mockito.mock;
 import static org.testng.Assert.assertEquals;
@@ -182,6 +184,16 @@ public class AbstractNotificationConsumerTest {
 
         @Override
         public void wakeup() {
+        }
+
+        @Override
+        public Set<TopicPartition> getTopicPartition() {
+            return Collections.emptySet();
+        }
+
+        @Override
+        public Set<String> subscription() {
+            return Collections.emptySet();
         }
 
         @Override

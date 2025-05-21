@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Kafka specific notification consumer.
@@ -56,6 +57,16 @@ public class AtlasKafkaConsumer<T> extends AbstractNotificationConsumer<T> {
         this.autoCommitEnabled       = autoCommitEnabled;
         this.kafkaConsumer           = kafkaConsumer;
         this.pollTimeoutMilliSeconds = pollTimeoutMilliSeconds;
+    }
+
+    @Override
+    public Set<TopicPartition> getTopicPartition() {
+        return kafkaConsumer != null ? kafkaConsumer.assignment() : null;
+    }
+
+    @Override
+    public Set<String> subscription() {
+        return kafkaConsumer != null ? kafkaConsumer.subscription() : null;
     }
 
     @Override

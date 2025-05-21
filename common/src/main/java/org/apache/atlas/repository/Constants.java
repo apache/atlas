@@ -229,6 +229,14 @@ public final class Constants {
     public static final String PROPERTY_KEY_GUIDS_TO_AGEOUT_BY_CUSTOM  = encodePropertyKey(AUDIT_REDUCTION_PREFIX + "custom");
     public static final String PROPERTY_KEY_GUIDS_TO_SWEEPOUT          = encodePropertyKey(AUDIT_REDUCTION_PREFIX + "sweepout");
 
+    /**
+     * Atlas Async Import vertex property keys.
+     */
+    public static final String ATLAS_ASYNC_IMPORT_PREFIX                            = INTERNAL_PROPERTY_KEY_PREFIX + "AtlasAsyncImportRequest.";
+    public static final String PROPERTY_KEY_RECEIVED_TIME                            = encodePropertyKey(ATLAS_ASYNC_IMPORT_PREFIX + "receivedTime");
+    public static final String PROPERTY_KEY_ASYNC_IMPORT_STATUS                     = encodePropertyKey(ATLAS_ASYNC_IMPORT_PREFIX + "status");
+    public static final String PROPERTY_KEY_ASYNC_IMPORT_ID                         = encodePropertyKey(ATLAS_ASYNC_IMPORT_PREFIX + "importId");
+
     public static final String SQOOP_SOURCE      = "sqoop";
     public static final String FALCON_SOURCE     = "falcon";
     public static final String HBASE_SOURCE      = "hbase";

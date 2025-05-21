@@ -43,6 +43,7 @@ import org.apache.atlas.model.notification.HookNotification.EntityDeleteRequestV
 import org.apache.atlas.model.notification.HookNotification.EntityPartialUpdateRequestV2;
 import org.apache.atlas.model.notification.HookNotification.EntityUpdateRequestV2;
 import org.apache.atlas.model.notification.HookNotification.HookNotificationType;
+import org.apache.atlas.model.notification.ImportNotification;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.v1.model.instance.AtlasSystemAttributes;
 import org.apache.atlas.v1.model.instance.Id;
@@ -381,6 +382,14 @@ public class AtlasJson {
 
                     case ENTITY_DELETE_V2:
                         ret = mapper.treeToValue(root, EntityDeleteRequestV2.class);
+                        break;
+
+                    case IMPORT_TYPES_DEF:
+                        ret = mapper.treeToValue(root, ImportNotification.AtlasTypesDefImportNotification.class);
+                        break;
+
+                    case IMPORT_ENTITY:
+                        ret = mapper.treeToValue(root, ImportNotification.AtlasEntityImportNotification.class);
                         break;
                 }
             }
