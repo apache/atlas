@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -53,6 +55,7 @@ public class ZipSource implements EntityImportStream {
     private       ImportTransforms        importTransform;
     private       List<BaseEntityHandler> entityHandlers;
     private       int                     currentPosition;
+    private       String                  md5Hash;
 
     public ZipSource(InputStream inputStream) throws IOException, AtlasBaseException {
         this(inputStream, null);
@@ -245,30 +248,43 @@ public class ZipSource implements EntityImportStream {
     }
 
     private void updateGuidZipEntryMap() throws IOException {
-        ZipInputStream zipInputStream = new ZipInputStream(inputStream);
-        ZipEntry       zipEntry       = zipInputStream.getNextEntry();
+        try (ZipInputStream zipInputStream = new ZipInputStream(inputStream)) {
+            MessageDigest md5Digest = MessageDigest.getInstance("MD5");
+            ZipEntry      zipEntry  = zipInputStream.getNextEntry();
 
-        while (zipEntry != null) {
-            String entryName = zipEntry.getName().replace(".json", "");
+            while (zipEntry != null) {
+                String entryName = zipEntry.getName().replace(".json", "");
 
-            if (guidEntityJsonMap.containsKey(entryName)) {
-                continue;
+                if (guidEntityJsonMap.containsKey(entryName)) {
+                    continue;
+                }
+
+                byte[]                buf = new byte[1024];
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                int                   n;
+
+                while ((n = zipInputStream.read(buf, 0, 1024)) > -1) {
+                    md5Digest.update(buf, 0, n);
+                    bos.write(buf, 0, n);
+                }
+
+                guidEntityJsonMap.put(entryName, bos.toString());
+
+                zipEntry = zipInputStream.getNextEntry();
             }
 
-            byte[]                buf = new byte[1024];
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            int                   n;
+            // Compute the final MD5 hash after processing the entire ZIP file
+            byte[]        hashBytes = md5Digest.digest();
+            StringBuilder md5Hash   = new StringBuilder();
 
-            while ((n = zipInputStream.read(buf, 0, 1024)) > -1) {
-                bos.write(buf, 0, n);
+            for (byte b : hashBytes) {
+                md5Hash.append(String.format("%02x", b));
             }
 
-            guidEntityJsonMap.put(entryName, bos.toString());
-
-            zipEntry = zipInputStream.getNextEntry();
+            this.md5Hash = md5Hash.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IOException(e);
         }
-
-        zipInputStream.close();
     }
 
     private void applyTransformers(AtlasEntityWithExtInfo entityWithExtInfo) {
@@ -327,5 +343,10 @@ public class ZipSource implements EntityImportStream {
         }
 
         return null;
+    }
+
+    @Override
+    public String getMd5Hash() {
+        return this.md5Hash;
     }
 }

@@ -29,6 +29,7 @@ import org.apache.atlas.notification.NotificationConsumer;
 import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.utils.AuthenticationUtil;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.NotImplementedException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,6 +83,11 @@ public class RestNotification extends AbstractNotification {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    @Override
+    public void sendInternal(String topic, List<String> messages) throws NotificationException {
+        throw new NotImplementedException("sendInternal method is not implemented.");
     }
 
     @Override
