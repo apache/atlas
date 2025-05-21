@@ -79,7 +79,7 @@ const RelationShipSearch: React.FC = () => {
     async ({ pagination }: { pagination?: any }) => {
       const { pageSize, pageIndex } = pagination || {};
       if (pageIndex > 1) {
-        searchParams.set("pageOffset", `${pageSize * pageIndex}`);
+        searchParams.set("pageOffset", `${pageSize + pageIndex}`);
       }
       let params: Params = {
         attributes: !isEmpty(attributesParams)
@@ -90,8 +90,8 @@ const RelationShipSearch: React.FC = () => {
           : [],
         limit: !isEmpty(limitParams) ? Number(limitParams) : pageSize,
         offset: !isEmpty(offsetParams)
-          ? Number(searchParams.get("pageOffset"))
-          : pageIndex * pageSize,
+          ? Number(offsetParams)
+          : pageIndex + pageSize,
         relationshipFilters: !isEmpty(relationshipFiltersParams)
           ? relationshipFiltersParams
           : null,

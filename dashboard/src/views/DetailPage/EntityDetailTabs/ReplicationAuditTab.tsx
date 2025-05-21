@@ -32,6 +32,7 @@ import RauditsTableResults from "./RauditsTableResults";
 const ReplicationAuditTable = (props: any) => {
   const { entity = {}, referredEntities = {}, loading } = props;
   const [searchParams] = useSearchParams();
+  const limitParam = searchParams.get("pageLimit");
   const { guid } = useParams();
   const toastId: any = useRef(null);
   const [loader, setLoader] = useState<boolean>(false);
@@ -52,7 +53,7 @@ const ReplicationAuditTable = (props: any) => {
 
       let params: any = {
         serverName: name,
-        limit: pageSize
+        limit: !isEmpty(limitParam) ? limitParam : pageSize
       };
 
       setLoader(true);
