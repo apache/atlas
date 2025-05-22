@@ -320,22 +320,9 @@ const ClassificationForm = ({
                           />
                         </div>
                       ) : (
-                        // <TextArea
-                        //   {...field}
-                        //   minRows={4}
-                        //   placeholder={"Description required"}
-                        //   value={sanitizeHtmlContent(descriptionValue)}
-                        //   onChange={(e) => {
-                        //     e.stopPropagation();
-                        //     const value = e.target.value;
-                        //     field.onChange(value);
-                        //     setValue("description", value);
-                        //   }}
-                        //   style={{ width: "100%" }}
-                        //   />
-
                         <textarea
                           {...field}
+                          className="form-textarea-field"
                           placeholder={"Long Description"}
                           value={sanitizeHtmlContent(descriptionValue)}
                           onChange={(e) => {

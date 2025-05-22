@@ -353,17 +353,6 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
                           <>
                             <div style={{ flex: "1" }}>
                               <textarea
-                                style={{
-                                  height: "34px",
-                                  borderRadius: "3px",
-                                  outline: "none",
-                                  border: "1px solid rgba(0,0,0,0.12)",
-                                  padding: "6px 12px",
-                                  minHeight: "34px",
-                                  width: "100%",
-                                  marginTop: "8px !important",
-                                  marginBottom: "8px !important"
-                                }}
                                 maxRows={3}
                                 rows={1}
                                 aria-label="maximum height"

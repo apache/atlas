@@ -50,15 +50,6 @@ const FormTextArea = ({ data, control }: any) => {
             </LightTooltip>
           </div>
           <div className="w-100">
-            {/* <TextArea
-              maxRows={4}
-              aria-label="maximum height"
-              placeholder={name}
-              onChange={onChange}
-              minRows={2}
-              className="form-textfield form-textarea-field"
-              value={value}
-            /> */}
             <textarea
               placeholder={name}
               onChange={onChange}
