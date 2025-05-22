@@ -1726,6 +1726,11 @@ public abstract class DeleteHandlerV1 {
     }
 
     private void cleanupDenormalizedProductReferences(AtlasVertex vertex) {
+        DeleteType deleteType = RequestContext.get().getDeleteType();
+        if (deleteType != DeleteType.HARD && deleteType != DeleteType.PURGE) {
+            return;
+        }
+
         if (isAssetType(vertex)) {
             String guid = GraphHelper.getGuid(vertex);
             
