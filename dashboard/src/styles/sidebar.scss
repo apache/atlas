@@ -86,6 +86,7 @@
 
 .menuitem-icon {
   color: v.$text-green;
+  margin-bottom: 2px;
 }
 .menuitem-label {
   color: v.$text-grey;
@@ -157,8 +158,8 @@
   text-overflow: ellipsis;
   overflow: hidden;
   font-size: 14px;
-  line-height: 26px;
-  height: 26px;
+  line-height: 29px;
+  height: 29px;
 }
 
 .sidebar-wrapper {
@@ -209,15 +210,6 @@
   padding-bottom: 1.5rem;
 }
 
-// .custom-treeitem-label.selected .Mui-selected .MuiTreeItem-contentBar {
-//   background-color: rgba(255, 255, 255, 0.08);
-//   border-left: 4px solid #2ccebb;
-// }
-
-// .custom-treeitem-label .Mui-selected .MuiTreeItem-contentBar {
-//   background-color: rgba(255, 255, 255, 0.08);
-//   border-left: 4px solid #2ccebb;
-
 button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-more-label {
   font-size: 1.25rem !important;
 }
@@ -226,4 +218,8 @@ button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-m
   svg.MuiSvgIcon-root {
   font-size: 1.25rem !important;
   color: white !important;
+}
+
+.sidebar-menu-item {
+  padding: 4px 10px !important;
 }
