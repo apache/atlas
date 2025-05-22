@@ -77,6 +77,7 @@ import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.OUTPUT_PORT_GUIDS_ATTR;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_REFRESH_PROPAGATION;
@@ -1735,13 +1736,13 @@ public abstract class DeleteHandlerV1 {
             String guid = GraphHelper.getGuid(vertex);
             
             Iterator<AtlasVertex> products = graph.query()
-                .has("__typeName", "DataProduct")
-                .has("daapOutputPortGuids", guid)
+                .has("__typeName", DATA_PRODUCT_ENTITY_TYPE)
+                .has(OUTPUT_PORT_GUIDS_ATTR, guid)
                 .vertices().iterator();
                 
             while (products.hasNext()) {
                 AtlasVertex product = products.next();
-                AtlasGraphUtilsV2.removeItemFromListPropertyValue(product, "daapOutputPortGuids", guid);
+                AtlasGraphUtilsV2.removeItemFromListPropertyValue(product, OUTPUT_PORT_GUIDS_ATTR, guid);
             }
         }
     }
