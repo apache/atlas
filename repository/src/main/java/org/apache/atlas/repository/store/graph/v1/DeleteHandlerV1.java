@@ -1066,6 +1066,8 @@ public abstract class DeleteHandlerV1 {
             }
         }
 
+        cleanupDenormalizedProductReferences(instanceVertex);
+
         _deleteVertex(instanceVertex, force);
     }
 
@@ -1721,5 +1723,28 @@ public abstract class DeleteHandlerV1 {
                     // Check if this edge has lineage
                     return Boolean.TRUE.equals(edge.get(HAS_LINEAGE));
                 });
+    }
+
+    private void cleanupDenormalizedProductReferences(AtlasVertex vertex) {
+        if (isAssetType(vertex)) {
+            String guid = GraphHelper.getGuid(vertex);
+            
+            Iterator<AtlasVertex> products = graph.query()
+                .has("__typeName", "DataProduct")
+                .has("daapOutputPortGuids", guid)
+                .vertices().iterator();
+                
+            while (products.hasNext()) {
+                AtlasVertex product = products.next();
+                AtlasGraphUtilsV2.removeItemFromListPropertyValue(product, "daapOutputPortGuids", guid);
+            }
+        }
+    }
+
+    private boolean isAssetType(AtlasVertex vertex) {
+        String typeName = GraphHelper.getTypeName(vertex);
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+        
+        return entityType != null && entityType.getTypeAndAllSuperTypes().contains("Asset");
     }
 }
