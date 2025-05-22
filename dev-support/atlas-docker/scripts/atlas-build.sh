@@ -86,9 +86,14 @@ else
   done
 fi
 
-mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean package
+echo "mvn -T 8 ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean verify --no-transfer-progress -B -V"
 
-mv -f distro/target/apache-atlas-${ATLAS_VERSION}-server.tar.gz     /home/atlas/dist/
-mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz  /home/atlas/dist/
-mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hbase-hook.tar.gz /home/atlas/dist/
-mv -f distro/target/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz /home/atlas/dist/
+mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean verify
+
+if [ "${PROFILE}" != "" ]
+then
+	mv -f distro/target/apache-atlas-${ATLAS_VERSION}-server.tar.gz     /home/atlas/dist/
+	mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz  /home/atlas/dist/
+	mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hbase-hook.tar.gz /home/atlas/dist/
+	mv -f distro/target/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz /home/atlas/dist/
+fi
