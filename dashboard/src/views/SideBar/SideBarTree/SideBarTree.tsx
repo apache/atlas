@@ -94,7 +94,7 @@ const CustomContentRoot = styled("div")<CustomContentRootProps>(
     ".MuiTreeItem-contentBar": {
       position: "absolute",
       width: "100%",
-      height: 24,
+      height: 29,
       left: 0
     },
     ".MuiTreeItem-iconContainer": {
@@ -1019,7 +1019,7 @@ const BarTreeView: FC<{
                         }
                       }}
                       data-cy="groupOrFlatTreeView"
-                      sx={{ padding: "4px 10px" }}
+                      className="sidebar-menu-item"
                     >
                       <ListItemIcon
                         sx={{ minWidth: "28px !important" }}
@@ -1054,7 +1054,7 @@ const BarTreeView: FC<{
                         }
                       }}
                       data-cy="createClassification"
-                      sx={{ padding: "4px 10px" }}
+                      className="sidebar-menu-item"
                     >
                       <ListItemIcon
                         sx={{ minWidth: "28px !important" }}
@@ -1082,7 +1082,7 @@ const BarTreeView: FC<{
                           ? true
                           : false
                       }
-                      sx={{ padding: "4px 10px" }}
+                      className="sidebar-menu-item"
                     >
                       <ListItemIcon sx={{ minWidth: "28px !important" }}>
                         <FileDownloadIcon
@@ -1107,7 +1107,7 @@ const BarTreeView: FC<{
                           ? true
                           : false
                       }
-                      sx={{ padding: "4px 10px" }}
+                      className="sidebar-menu-item"
                     >
                       <ListItemIcon sx={{ minWidth: "28px !important" }}>
                         <FileUploadIcon
