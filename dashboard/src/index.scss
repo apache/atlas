@@ -230,3 +230,7 @@ textarea {
 .hide {
   display: none !important;
 }
+
+textarea::placeholder {
+  opacity: 0.7;
+}

@@ -199,7 +199,7 @@ export const ExtractObject = (props: any) => {
                 }}
                 style={{
                   width: "unset !important",
-                  whiteSpace: "nowrap",
+                  whiteSpace: "normal",
                   color: deleteIcon ? "#bb5838" : "#4a90e2"
                 }}
               >
