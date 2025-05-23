@@ -57,8 +57,9 @@ const ClassificationForm = ({
   subAdd,
   node
 }: any) => {
-  const { tagName } = useParams<paramsType>();
   const dispatchApi = useAppDispatch();
+  const { tagName } = useParams<paramsType>();
+  const currentTagName = node?.text || tagName;
   const { classificationData }: any = useAppSelector(
     (state: any) => state.classification
   );
@@ -66,9 +67,9 @@ const ClassificationForm = ({
   const [alignment, setAlignment] = useState<string>("formatted");
   const toastId: any = useRef(null);
   const { enumDefs } = enumObj.data;
-  const classificationObj = !isEmpty(tagName)
+  const classificationObj = !isEmpty(currentTagName)
     ? classificationData.classificationDefs.find(
-        (obj: { name: string }) => obj.name == tagName
+        (obj: { name: string }) => obj.name == currentTagName
       )
     : {};
 
@@ -79,24 +80,31 @@ const ClassificationForm = ({
   defaultValue["name"] = isAdd ? "" : name;
   defaultValue["description"] = isAdd ? "" : description;
 
+  let defaultAddValues = {};
+  if (isAdd && !isEmpty(node)) {
+    defaultAddValues["classifications"] = !isEmpty(node)
+      ? [{ label: currentTagName, value: currentTagName }]
+      : [];
+  }
+
   const {
     control,
     handleSubmit,
     watch,
+    reset,
     setValue,
     register,
     isDirty,
     formState: { isSubmitting }
   } = useForm({
-    defaultValues: isAdd ? {} : defaultValue,
+    defaultValues: isAdd ? defaultAddValues : defaultValue,
     mode: "onChange",
     shouldUnregister: true
   });
 
   useEffect(() => {
-    setValue("name", isAdd ? "" : name);
-    setValue("description", isAdd ? "" : description);
-  }, [setValue]);
+    reset(isAdd ? defaultAddValues : defaultValue);
+  }, []);
 
   const handleChange = (
     event: React.MouseEvent<HTMLElement>,
@@ -252,11 +260,9 @@ const ClassificationForm = ({
                         }}
                         disabled={isAdd ? false : true}
                         value={nameValue}
-                        // inputProps={{ readOnly: isAdd ? false : true }}
                         variant="outlined"
                         size="small"
                         placeholder={"Name required"}
-                        // helperText={error ? "This field is required" : ""}
                         className="form-textfield"
                       />
                     </>
@@ -320,20 +326,6 @@ const ClassificationForm = ({
                           />
                         </div>
                       ) : (
-                        // <TextArea
-                        //   {...field}
-                        //   minRows={4}
-                        //   placeholder={"Description required"}
-                        //   value={sanitizeHtmlContent(descriptionValue)}
-                        //   onChange={(e) => {
-                        //     e.stopPropagation();
-                        //     const value = e.target.value;
-                        //     field.onChange(value);
-                        //     setValue("description", value);
-                        //   }}
-                        //   style={{ width: "100%" }}
-                        //   />
-
                         <textarea
                           {...field}
                           placeholder={"Long Description"}
@@ -356,9 +348,6 @@ const ClassificationForm = ({
                   <Controller
                     control={control}
                     name={"classifications"}
-                    defaultValue={
-                      subAdd ? [{ label: node.text, value: node.text }] : []
-                    }
                     render={({
                       field: { onChange, value },
                       fieldState: { error }
@@ -401,9 +390,6 @@ const ClassificationForm = ({
                                   ...params.InputProps
                                 }}
                                 placeholder={`Search Classification`}
-                                // helperText={
-                                //   error ? "This field is required" : ""
-                                // }
                               />
                             )}
                           />
