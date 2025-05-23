@@ -41,7 +41,6 @@ import { removeTermorCategory } from "@api/apiMethods/glossaryApiMethod";
 import { StyledPaper } from "@utils/Muiutils";
 import ShowMoreView from "@components/ShowMore/ShowMoreView";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
-import { useAppSelector } from "@hooks/reducerHook";
 import AddTag from "@views/Classification/AddTag";
 import AddTagAttributes from "@views/Classification/AddTagAttributes";
 import AssignCategory from "@views/Glossary/AssignCategory";
@@ -69,11 +68,7 @@ const DetailPageAttribute = ({
   const [attributeModal, setAttributeModal] = useState<boolean>(false);
   const [openAddTermModal, setOpenAddTermModal] = useState<boolean>(false);
 
-  const { detailPageData }: any = useAppSelector(
-    (state: any) => state.detailPage
-  );
   const [categoryModal, setCategoryModal] = useState<boolean>(false);
-  const { entity }: any = detailPageData || {};
 
   const handleCloseTermModal = () => {
     setOpenAddTermModal(false);
@@ -653,7 +648,7 @@ const DetailPageAttribute = ({
         <AddTag
           open={openAddTagModal}
           isAdd={true}
-          entityData={entity}
+          entityData={data}
           onClose={handleCloseAddTagModal}
           setUpdateTable={undefined}
           setRowSelection={undefined}
