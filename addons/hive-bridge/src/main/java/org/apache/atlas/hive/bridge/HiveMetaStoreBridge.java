@@ -711,6 +711,9 @@ public class HiveMetaStoreBridge {
     private AtlasEntityWithExtInfo toTableEntity(AtlasEntity database, final Table hiveTable, AtlasEntityWithExtInfo table) throws AtlasHookException {
         if (table == null) {
             table = new AtlasEntityWithExtInfo(new AtlasEntity(HiveDataTypes.HIVE_TABLE.getName()));
+        } else if (table.getEntity().getAttribute(ATTRIBUTE_NAME) == null) {
+            table.getEntity().setAttribute(ATTRIBUTE_NAME, hiveTable.getTableName().toLowerCase());
+            table.getEntity().setIsIncomplete(false);
         }
 
         AtlasEntity tableEntity        = table.getEntity();
