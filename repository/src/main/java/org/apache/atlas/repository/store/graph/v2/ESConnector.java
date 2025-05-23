@@ -42,12 +42,16 @@ public class ESConnector implements Closeable {
     private static Set<String> DENORM_ATTRS;
     private static String GET_DOCS_BY_ID = VERTEX_INDEX_NAME + "/_mget";
 
-    public ESConnector() throws AtlasException {
-        lowLevelClient = initializeClient();
-        DENORM_ATTRS = initializeDenormAttributes();
+    static {
+        try {
+            lowLevelClient = initializeClient();
+            DENORM_ATTRS = initializeDenormAttributes();
+        } catch (AtlasException e) {
+            throw new RuntimeException("Failed to initialize ESConnector", e);
+        }
     }
 
-    private RestClient initializeClient() throws AtlasException {
+    private static RestClient initializeClient() throws AtlasException {
         try {
             List<HttpHost> httpHosts = getHttpHosts();
             RestClientBuilder builder = RestClient.builder(httpHosts.get(0))
@@ -61,7 +65,7 @@ public class ESConnector implements Closeable {
         }
     }
 
-    private Set<String> initializeDenormAttributes() {
+    private static Set<String> initializeDenormAttributes() {
         Set<String> attrs = new HashSet<>();
         attrs.add(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY);
         attrs.add(PROPAGATED_CLASSIFICATION_NAMES_KEY);
