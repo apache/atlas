@@ -1067,7 +1067,7 @@ public abstract class DeleteHandlerV1 {
             }
         }
 
-        cleanupDenormalizedProductReferences(instanceVertex);
+        cleanupDenormalizedAssetReferencesFromProduct(instanceVertex);
 
         _deleteVertex(instanceVertex, force);
     }
@@ -1726,24 +1726,39 @@ public abstract class DeleteHandlerV1 {
                 });
     }
 
-    private void cleanupDenormalizedProductReferences(AtlasVertex vertex) {
-        DeleteType deleteType = RequestContext.get().getDeleteType();
-        if (deleteType != DeleteType.HARD && deleteType != DeleteType.PURGE) {
-            return;
-        }
-
-        if (isAssetType(vertex)) {
-            String guid = GraphHelper.getGuid(vertex);
-            
-            Iterator<AtlasVertex> products = graph.query()
-                .has("__typeName", DATA_PRODUCT_ENTITY_TYPE)
-                .has(OUTPUT_PORT_GUIDS_ATTR, guid)
-                .vertices().iterator();
-                
-            while (products.hasNext()) {
-                AtlasVertex product = products.next();
-                AtlasGraphUtilsV2.removeItemFromListPropertyValue(product, OUTPUT_PORT_GUIDS_ATTR, guid);
+    private void cleanupDenormalizedAssetReferencesFromProduct(AtlasVertex vertex) {
+        try {
+            DeleteType deleteType = RequestContext.get().getDeleteType();
+            if (deleteType != DeleteType.HARD && deleteType != DeleteType.PURGE) {
+                return;
             }
+
+            if (isAssetType(vertex)) {
+                String guid = GraphHelper.getGuid(vertex);
+                int productRefsRemoved = 0;
+
+                try {
+                    Iterator<AtlasVertex> products = graph.query()
+                        .has("__typeName", DATA_PRODUCT_ENTITY_TYPE)
+                        .has(OUTPUT_PORT_GUIDS_ATTR, guid)
+                        .vertices().iterator();
+
+                    while (products.hasNext()) {
+                        AtlasVertex product = products.next();
+                        AtlasGraphUtilsV2.removeItemFromListPropertyValue(product, OUTPUT_PORT_GUIDS_ATTR, guid);
+                        productRefsRemoved++;
+                    }
+
+                    if (productRefsRemoved > 0) {
+                        LOG.info("cleanupDenormalizedProductReferences: successfully cleaned up {} product references for asset: {}", productRefsRemoved, guid);
+                    }
+                } catch (Exception e) {
+                    LOG.error("cleanupDenormalizedAssetReferencesFromProduct: failed to cleanup reference for asset {} from individual product", guid, e);
+                }
+            }
+        }
+        catch (Exception e) {
+            LOG.error("cleanupDenormalizedAssetReferencesFromProduct: unexpected error during cleanup", e);
         }
     }
 

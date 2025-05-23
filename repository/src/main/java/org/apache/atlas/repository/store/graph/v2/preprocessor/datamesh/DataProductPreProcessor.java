@@ -11,10 +11,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
-import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
-import org.apache.atlas.repository.store.graph.v2.EntityStream;
+import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
 import org.apache.atlas.repository.util.AtlasEntityUtils;
 import org.apache.atlas.type.AtlasEntityType;
@@ -451,6 +448,82 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         return isDaapVisibilityChanged;
     }
 
+    private void cleanupProductReferencesFromAssets(String productGuid) throws AtlasBaseException {
+        if (productGuid == null) {
+            LOG.warn("Cannot cleanup product references: product GUID is null");
+            return;
+        }
+
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("cleanupProductReferencesFromAssets");
+        int productRefsRemoved = 0;
+        int outputProductRefsRemoved = 0;
+
+        try {
+            LOG.info("Cleaning up asset references to product with GUID: {}", productGuid);
+
+            try {
+                Iterator<AtlasVertex> assetsWithProductRefs = graph.query()
+                        .has(PRODUCT_GUIDS_ATTR, productGuid)
+                        .vertices().iterator();
+
+                while (assetsWithProductRefs.hasNext()) {
+                    try {
+                        AtlasVertex asset = assetsWithProductRefs.next();
+                        String assetGuid = asset.getProperty("__guid", String.class);
+
+                        AtlasGraphUtilsV2.removeItemFromListPropertyValue(asset, PRODUCT_GUIDS_ATTR, productGuid);
+                        productRefsRemoved++;
+
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Removed product {} reference from asset {}",
+                                    productGuid, assetGuid);
+                        }
+                    } catch (Exception e) {
+                        LOG.error("Error removing product reference from asset", e);
+                    }
+                }
+            } catch (Exception e) {
+                LOG.error("Error querying assets with product references", e);
+            }
+
+            try {
+                Iterator<AtlasVertex> assetsWithOutputProductRefs = graph.query()
+                        .has(PRODUCT_ASSET_OUTPUT_PORT_ATTR, productGuid)
+                        .vertices().iterator();
+
+                while (assetsWithOutputProductRefs.hasNext()) {
+                    try {
+                        AtlasVertex asset = assetsWithOutputProductRefs.next();
+                        String assetGuid = asset.getProperty("__guid", String.class);
+
+                        AtlasGraphUtilsV2.removeItemFromListPropertyValue(asset, PRODUCT_ASSET_OUTPUT_PORT_ATTR, productGuid);
+                        outputProductRefsRemoved++;
+
+                        if (LOG.isDebugEnabled()) {
+                            LOG.debug("Removed output product {} reference from asset {}",
+                                    productGuid, assetGuid);
+                        }
+                    } catch (Exception e) {
+                        LOG.error("Error removing output product reference from asset", e);
+                    }
+                }
+            } catch (Exception e) {
+                LOG.error("Error querying assets with output product references", e);
+            }
+
+            LOG.info("Cleanup complete for product {}: removed {} productGuids references and {} outputProductGuids references",
+                    productGuid, productRefsRemoved, outputProductRefsRemoved);
+
+        } catch (Exception e) {
+            LOG.error("Error during product reference cleanup for GUID: {}", productGuid, e);
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR,
+                    "Error cleaning up product references: " + e.getMessage());
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
+
     public static boolean compareLists(List<String> list1, List<String> list2) {
         return !CollectionUtils.disjunction(list1, list2).isEmpty();
     }
@@ -478,6 +551,15 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
                 if (hasLinkedAssets(productGuid, PRODUCT_GUIDS)) {
                     throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "This product can't be deleted right now because it has linked assets that are in the process of being removed. Please try again shortly.");
+                }
+
+                try {
+                    cleanupProductReferencesFromAssets(productGuid);
+                } catch (AtlasBaseException e) {
+                    LOG.error("Error during cleanup of product references for product {}: {}", productGuid, e.getMessage());
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Stack trace:", e);
+                    }
                 }
             }
             if(RequestContext.get().getDeleteType() == DeleteType.SOFT || RequestContext.get().getDeleteType() == DeleteType.DEFAULT){
