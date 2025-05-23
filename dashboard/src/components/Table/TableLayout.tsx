@@ -352,18 +352,23 @@ const TableLayout: FC<TableProps> = ({
   showPagination,
   setUpdateTable,
   isfilterQuery,
-  isClientSidePagination
+  isClientSidePagination,
+  isEmptyData,
+  setIsEmptyData,
+  showGoToPage
 }) => {
   let defaultHideColumns = { ...defaultColumnVisibility };
   const location = useLocation();
   const memoizedData = useMemo(() => data, [data]);
   const memoizedColumns = useMemo(() => columns, [columns]);
   const [searchParams] = useSearchParams();
-
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 25
   });
+
+  const [goToPageVal, setGoToPageVal] = useState<any>("");
+
   const [rowSelection, setRowSelection] = useState({});
   const [sorting, setSorting] = useState<SortingState>(
     !isEmpty(defaultSortCol) ? defaultSortCol : []
@@ -432,14 +437,17 @@ const TableLayout: FC<TableProps> = ({
   });
 
   useEffect(() => {
-    if (!isEmpty(fetchData)) {
-      fetchData({ pagination, sorting });
+    if (typeof fetchData === "function") {
+      fetchData({
+        pagination,
+        sorting
+      });
     }
   }, [
     fetchData,
     pagination.pageIndex,
     pagination.pageSize,
-    !clientSideSorting && sorting
+    clientSideSorting ? null : sorting
   ]);
 
   function handleDragEnd(event: DragEndEvent) {
@@ -459,30 +467,17 @@ const TableLayout: FC<TableProps> = ({
     useSensor(KeyboardSensor, {})
   );
 
+  const [, setSearchParams] = useSearchParams();
+
   useEffect(() => {
     resetSorting(true);
     resetRowSelection(true);
     setRowSelection({});
     setSorting(!isEmpty(defaultSortCol) ? defaultSortCol : []);
-    // setColumnVisibility(defaultHideColumns);
-  }, [typeParam]);
-
-  // if (fetchData != undefined) {
-
-  // }
+  }, [typeParam, defaultSortCol, setSearchParams]);
 
   let currentPageOffset = searchParams.get("pageOffset") || 0;
   let isFirstPage = currentPageOffset == 0;
-
-  // const filteredParams = Array.from(searchParams.entries())
-  //   .filter(([key]) => ["type", "tag", "term"].includes(key))
-  //   .map(([key, value]) => ({
-  //     keyName:
-  //       key === "tag"
-  //         ? "Classification"
-  //         : key.charAt(0).toUpperCase() + key.slice(1),
-  //     value
-  //   }));
 
   const handleCloseTagModal = () => {
     setTagModal(false);
@@ -669,11 +664,6 @@ const TableLayout: FC<TableProps> = ({
               </MuiTable>
             </DndContext>
           </TableContainer>
-          {/* {noDataFound && (
-            <Stack my={2} textAlign="center">
-              {emptyText}
-            </Stack>
-          )} */}
 
           {showPagination && (
             <TablePagination
@@ -694,6 +684,11 @@ const TableLayout: FC<TableProps> = ({
               setRowSelection={setRowSelection}
               isClientSidePagination={isClientSidePagination}
               setPagination={setPagination}
+              isEmptyData={isEmptyData}
+              goToPageVal={goToPageVal}
+              setGoToPageVal={setGoToPageVal}
+              setIsEmptyData={setIsEmptyData}
+              showGoToPage={showGoToPage}
             />
           )}
         </Paper>
