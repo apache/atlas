@@ -77,6 +77,7 @@ import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.INPUT_PORT_GUIDS_ATTR;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.OUTPUT_PORT_GUIDS_ATTR;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
@@ -1748,12 +1749,27 @@ public abstract class DeleteHandlerV1 {
                         AtlasGraphUtilsV2.removeItemFromListPropertyValue(product, OUTPUT_PORT_GUIDS_ATTR, guid);
                         productRefsRemoved++;
                     }
+                } catch (Exception e) {
+                    LOG.error("cleanupDenormalizedAssetReferencesFromProduct: failed to cleanup reference for outputPort asset {} from individual product", guid, e);
+                }
 
-                    if (productRefsRemoved > 0) {
-                        LOG.info("cleanupDenormalizedProductReferences: successfully cleaned up {} product references for asset: {}", productRefsRemoved, guid);
+                try {
+                    Iterator<AtlasVertex> products = graph.query()
+                            .has("__typeName", DATA_PRODUCT_ENTITY_TYPE)
+                            .has(INPUT_PORT_GUIDS_ATTR, guid)
+                            .vertices().iterator();
+
+                    while (products.hasNext()) {
+                        AtlasVertex product = products.next();
+                        AtlasGraphUtilsV2.removeItemFromListPropertyValue(product, INPUT_PORT_GUIDS_ATTR, guid);
+                        productRefsRemoved++;
                     }
                 } catch (Exception e) {
-                    LOG.error("cleanupDenormalizedAssetReferencesFromProduct: failed to cleanup reference for asset {} from individual product", guid, e);
+                    LOG.error("cleanupDenormalizedAssetReferencesFromProduct: failed to cleanup reference for inputPort asset {} from individual product", guid, e);
+                }
+
+                if (productRefsRemoved > 0) {
+                    LOG.info("cleanupDenormalizedProductReferences: successfully cleaned up {} product references for asset: {}", productRefsRemoved, guid);
                 }
             }
         }

@@ -143,11 +143,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                     return null;
                 }
 
-                productVertex = entityRetriever.getEntityVertex(productGuid);
-                if (productVertex == null) {
-                    LOG.warn("Product not found for productGuid: {}", productGuid);
-                    return null;
-                }
+//                Removed null check for product to handle product hard delete scenario
             } catch (AtlasBaseException e){
                 LOG.warn("Entity Vertex not found", e);
                 return null;
