@@ -59,7 +59,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PE
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_AI_MODEL;
 import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
-import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PURPOSE_METADATA;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SERVICE_NAME_ABAC;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_FILTER_CRITERIA;
 import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionQualifiedNameFromPolicyAssets;
@@ -72,6 +72,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResou
 import static org.apache.atlas.repository.util.AccessControlUtils.getFilteredPolicyResources;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyConnectionQN;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPurposeTags;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 
@@ -227,6 +228,11 @@ public class ESAliasStore implements IndexAliasStore {
                 }
 
                 if (policyActions.contains(ACCESS_READ_PERSONA_METADATA)) {
+
+                    if (!POLICY_SUB_CATEGORY_METADATA.equals(getPolicySubCategory(policy))) {
+                        terms.addAll(assets);
+                        continue;
+                    }
 
                     String connectionQName = getPolicyConnectionQN(policy);
                     if (StringUtils.isEmpty(connectionQName)) {
