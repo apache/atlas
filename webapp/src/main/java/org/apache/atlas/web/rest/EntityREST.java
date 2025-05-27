@@ -75,6 +75,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasErrorCode.BAD_REQUEST;
@@ -102,13 +103,9 @@ public class EntityREST {
     private static final int HUNDRED_THOUSAND = 100000;
     private static final int TWO_MILLION = HUNDRED_THOUSAND * 10 * 2;
     private static  final int  ENTITIES_ALLOWED_IN_BULK = AtlasConfiguration.ATLAS_BULK_API_MAX_ENTITIES_ALLOWED.getInt();
-    private static final Set<String> ATTRS_WITH_TWO_MILLION_LIMIT = new HashSet<String>() {{
-        add("rawQueryText");
-        add("variablesSchemaBase64");
-        add("visualBuilderSchemaBase64");
-        add(ATTR_CONTRACT);
-        add(ATTR_CONTRACT_JSON);
-    }};
+    private static final Set<String> ATTRS_WITH_TWO_MILLION_LIMIT = Arrays.stream(AtlasConfiguration.ATLAS_ENTITIES_ATTRIBUTE_ALLOWED_LARGE_ATTRIBUTES
+            .getStringArray())
+            .collect(Collectors.toSet());
 
 
     private final AtlasTypeRegistry      typeRegistry;
