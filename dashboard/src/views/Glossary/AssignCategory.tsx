@@ -182,6 +182,7 @@ const AssignCategory = ({
           return {
             id: obj?.name,
             label: obj?.name,
+            text: obj?.name ?? null,
             children:
               obj?.children != undefined
                 ? child(
@@ -204,6 +205,7 @@ const AssignCategory = ({
       serviceTypeData.map((entity: any) => ({
         id: entity[Object.keys(entity)[0]].name,
         label: entity[Object.keys(entity)[0]].name,
+        text: entity[Object.keys(entity)[0]].name ?? null,
         children: child(
           entity[Object.keys(entity)[0]].children as ChildrenInterfaces[]
         ),

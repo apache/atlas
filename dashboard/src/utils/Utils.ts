@@ -440,7 +440,13 @@ let groupBy = function (xs: any[], key: string) {
 };
 
 const noTreeData = () => {
-  return [{ id: "No Records Found", label: "No Records Found" }];
+  return [
+    {
+      id: "No Records Found",
+      label: "No Records Found",
+      text: "No Records Found"
+    }
+  ];
 };
 
 const sanitizeHtmlContent = (htmlContent: HTMLElement | string | any) => {
