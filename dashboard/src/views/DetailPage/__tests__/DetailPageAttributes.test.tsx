@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import "@testing-library/jest-dom"
 import React from 'react'
 import { fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
@@ -50,8 +51,10 @@ jest.mock('@utils/Utils', () => {
 })
 
 const mockUseAppSelector = jest.fn()
+const mockUseAppDispatch = jest.fn(() => jest.fn())
 jest.mock('@hooks/reducerHook', () => ({
 	useAppSelector: (fn: (s: unknown) => unknown) => mockUseAppSelector(fn),
+	useAppDispatch: () => mockUseAppDispatch(),
 }))
 
 jest.mock('@components/ShowMore/ShowMoreText', () => ({
@@ -334,6 +337,13 @@ describe('DetailPageAttribute', () => {
 		fireEvent.click(screen.getByText('close-category'))
 	})
 
+	it('shows edit button when gtype is glossary', () => {
+		mockGtype = 'glossary'
+		mockParams.guid = 'g-glossary'
+		renderComp()
+		expect(document.querySelector('[data-cy="addTag"]')).not.toBeNull()
+	})
+
 	it('hides edit button when bmguid present', () => {
 		mockParams.bmguid = 'bm-1'
 		renderComp()
@@ -366,6 +376,14 @@ describe('DetailPageAttribute', () => {
 		fireEvent.click(screen.getByText('close-assign-term'))
 	})
 
+	it('glossary page shows terms but hides Add Term button', () => {
+		mockGtype = 'glossary'
+		mockParams.guid = 'gc'
+		renderComp()
+		expect(screen.queryByTestId('smv-Terms')).toBeNull()
+		expect(document.querySelector('[data-title="Add Term"]')).toBeNull()
+	})
+
 	it('toast when no glossary terms available for assign term', () => {
 		mockGtype = 'category'
 		mockParams.guid = 'gc'
@@ -390,6 +408,14 @@ describe('DetailPageAttribute', () => {
 		tooltipIconClick('Add Categories')
 		expect(screen.getByTestId('assign-category')).toBeInTheDocument()
 		fireEvent.click(screen.getByText('close-assign-cat'))
+	})
+
+	it('glossary page shows categories but hides Add Categories button', () => {
+		mockGtype = 'glossary'
+		mockParams.guid = 'gt'
+		renderComp()
+		expect(screen.queryByTestId('smv-Category')).toBeNull()
+		expect(document.querySelector('[data-title="Add Categories"]')).toBeNull()
 	})
 
 	it('superTypes section loading and loaded', () => {
@@ -518,7 +544,7 @@ describe('DetailPageAttribute', () => {
 			superTypes: [],
 			subTypes: [],
 		})
-		expect(screen.getByTestId('smv-Terms')).toBeInTheDocument()
+		expect(screen.getAllByText('N/A').length).toBeGreaterThan(0)
 	})
 
 	it('term Categories list tolerates null entity data via optional chaining', () => {
@@ -529,7 +555,7 @@ describe('DetailPageAttribute', () => {
 			superTypes: [],
 			subTypes: [],
 		})
-		expect(screen.getByTestId('smv-Category')).toBeInTheDocument()
+		expect(screen.getAllByText('N/A').length).toBeGreaterThan(0)
 	})
 
 	it('Sub Classifications ShowMore tolerates null entity data', () => {

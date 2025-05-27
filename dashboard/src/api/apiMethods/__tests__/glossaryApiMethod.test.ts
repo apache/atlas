@@ -40,7 +40,8 @@ import {
 	assignTermstoCategory,
 	assignGlossaryType,
 	removeTermorCategory,
-	deleteGlossaryorType
+	deleteGlossaryorType,
+	deleteCategory
 } from '../glossaryApiMethod'
 import { _delete, _get, _post, _put } from '../apiMethod'
 // Import URL helpers - they will be mocked
@@ -57,7 +58,8 @@ import {
 	assignTermtoEntitiesUrl,
 	assignTermtoCategoryUrl,
 	assignGlossaryTypeUrl,
-	removeTermorCatgeoryUrl
+	removeTermorCatgeoryUrl,
+	deleteCategoryUrl
 } from '../../../api/apiUrlLinks/glossaryUrl'
 
 // Mock dependencies
@@ -81,21 +83,23 @@ const mockAssignTermtoEntitiesUrl = jest.fn((termId: string) => `/api/glossary/t
 const mockAssignTermtoCategoryUrl = jest.fn((categoryId: string) => `/api/glossary/category/${categoryId}`)
 const mockAssignGlossaryTypeUrl = jest.fn((guid: string) => `/api/glossary/type/${guid}`)
 const mockRemoveTermorCatgeoryUrl = jest.fn((guid: string, type: string) => `/api/glossary/${type}/${guid}`)
+const mockDeleteCategoryUrl = jest.fn((guid: string) => `/api/glossary/category/${guid}`)
 
 jest.mock('../../../api/apiUrlLinks/glossaryUrl', () => ({
-	removeTermUrl: (...args: any[]) => mockRemoveTermUrl(...args),
-	glossaryUrl: (...args: any[]) => mockGlossaryUrl(...args),
-	glossaryImportTempUrl: (...args: any[]) => mockGlossaryImportTempUrl(...args),
-	glossaryImportUrl: (...args: any[]) => mockGlossaryImportUrl(...args),
-	glossaryTypeUrl: (...args: any[]) => mockGlossaryTypeUrl(...args),
-	createTermorCategoryUrl: (...args: any[]) => mockCreateTermorCategoryUrl(...args),
-	editGlossaryUrl: (...args: any[]) => mockEditGlossaryUrl(...args),
-	editTermorCategoryUrl: (...args: any[]) => mockEditTermorCategoryUrl(...args),
-	deleteGlossaryorTermUrl: (...args: any[]) => mockDeleteGlossaryorTermUrl(...args),
-	assignTermtoEntitiesUrl: (...args: any[]) => mockAssignTermtoEntitiesUrl(...args),
-	assignTermtoCategoryUrl: (...args: any[]) => mockAssignTermtoCategoryUrl(...args),
-	assignGlossaryTypeUrl: (...args: any[]) => mockAssignGlossaryTypeUrl(...args),
-	removeTermorCatgeoryUrl: (...args: any[]) => mockRemoveTermorCatgeoryUrl(...args)
+	removeTermUrl: (...args: any[]) => (mockRemoveTermUrl as any)(...args),
+	glossaryUrl: (...args: any[]) => (mockGlossaryUrl as any)(...args),
+	glossaryImportTempUrl: (...args: any[]) => (mockGlossaryImportTempUrl as any)(...args),
+	glossaryImportUrl: (...args: any[]) => (mockGlossaryImportUrl as any)(...args),
+	glossaryTypeUrl: (...args: any[]) => (mockGlossaryTypeUrl as any)(...args),
+	createTermorCategoryUrl: (...args: any[]) => (mockCreateTermorCategoryUrl as any)(...args),
+	editGlossaryUrl: (...args: any[]) => (mockEditGlossaryUrl as any)(...args),
+	editTermorCategoryUrl: (...args: any[]) => (mockEditTermorCategoryUrl as any)(...args),
+	deleteGlossaryorTermUrl: (...args: any[]) => (mockDeleteGlossaryorTermUrl as any)(...args),
+	assignTermtoEntitiesUrl: (...args: any[]) => (mockAssignTermtoEntitiesUrl as any)(...args),
+	assignTermtoCategoryUrl: (...args: any[]) => (mockAssignTermtoCategoryUrl as any)(...args),
+	assignGlossaryTypeUrl: (...args: any[]) => (mockAssignGlossaryTypeUrl as any)(...args),
+	removeTermorCatgeoryUrl: (...args: any[]) => (mockRemoveTermorCatgeoryUrl as any)(...args),
+	deleteCategoryUrl: (...args: any[]) => (mockDeleteCategoryUrl as any)(...args)
 }))
 
 describe('glossaryApiMethod', () => {
@@ -117,7 +121,7 @@ describe('glossaryApiMethod', () => {
 		mockPost.mockResolvedValue(mockResponse)
 		mockPut.mockResolvedValue(mockResponse)
 		mockDelete.mockResolvedValue(mockResponse)
-		
+
 		// Reset URL helper mocks to return correct values
 		mockRemoveTermUrl.mockImplementation((termId: string) => `/api/glossary/term/${termId}`)
 		mockGlossaryUrl.mockImplementation(() => '/api/glossary')
@@ -132,6 +136,7 @@ describe('glossaryApiMethod', () => {
 		mockAssignTermtoCategoryUrl.mockImplementation((categoryId: string) => `/api/glossary/category/${categoryId}`)
 		mockAssignGlossaryTypeUrl.mockImplementation((guid: string) => `/api/glossary/type/${guid}`)
 		mockRemoveTermorCatgeoryUrl.mockImplementation((guid: string, type: string) => `/api/glossary/${type}/${guid}`)
+		mockDeleteCategoryUrl.mockImplementation((guid: string) => `/api/glossary/category/${guid}`)
 	})
 
 	describe('removeTerm', () => {
@@ -294,6 +299,20 @@ describe('glossaryApiMethod', () => {
 
 			expect(mockAssignGlossaryTypeUrl).toHaveBeenCalledWith(guid)
 			expect(mockDelete).toHaveBeenCalledWith('/api/glossary/type/type-123', {
+				method: 'DELETE',
+				params: {}
+			})
+			expect(result).toEqual(mockResponse)
+		})
+	})
+
+	describe('deleteCategory', () => {
+		it('should call _delete with correct URL for deleting category', async () => {
+			const guid = 'category-123'
+			const result = await deleteCategory(guid)
+
+			expect(mockDeleteCategoryUrl).toHaveBeenCalledWith(guid)
+			expect(mockDelete).toHaveBeenCalledWith('/api/glossary/category/category-123', {
 				method: 'DELETE',
 				params: {}
 			})

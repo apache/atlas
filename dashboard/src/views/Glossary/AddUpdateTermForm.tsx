@@ -37,8 +37,9 @@ const AddUpdateTermForm = (props: {
   isAdd: any;
   node: Record<string, any> | undefined;
   dataObj: any;
+  updatedData?: any;
 }) => {
-  const { open, onClose, isAdd, node, dataObj } = props;
+  const { open, onClose, isAdd, node, dataObj, updatedData } = props;
   const { id, parent } = node || {};
   const dispatchApi = useAppDispatch();
   const location = useLocation();
@@ -114,12 +115,21 @@ const AddUpdateTermForm = (props: {
       }
       if (isAdd) {
         dispatchApi(fetchGlossaryData());
+        if (gType && entityGuid) {
+          let params: any = { gtype: gType, guid: entityGuid };
+          dispatchApi(fetchGlossaryDetails(params));
+          dispatchApi(fetchDetailPageData(entityGuid as string));
+        }
       } else {
         if (!isEmpty(dataObj)) {
           let params: any = { gtype: gType, guid: entityGuid };
           dispatchApi(fetchGlossaryData());
-          dispatchApi(fetchGlossaryDetails(params));
-          dispatchApi(fetchDetailPageData(dataObj.guid as string));
+          if (updatedData) {
+            updatedData();
+          } else {
+            dispatchApi(fetchGlossaryDetails(params));
+            dispatchApi(fetchDetailPageData(dataObj.guid as string));
+          }
         }
       }
       toast.dismiss(toastId.current);

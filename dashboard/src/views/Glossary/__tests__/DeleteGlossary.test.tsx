@@ -37,6 +37,7 @@ const mockSetExpandNode = jest.fn();
 const mockUpdatedData = jest.fn();
 const mockDeleteGlossaryorTerm = jest.fn();
 const mockDeleteGlossaryorType = jest.fn();
+const mockDeleteCategory = jest.fn();
 const mockFetchGlossaryData = jest.fn();
 const mockIsEmpty = jest.fn();
 const mockServerError = jest.fn();
@@ -51,7 +52,7 @@ let mockLocation = {
 };
 
 // Mock params state
-let mockParams = { guid: undefined };
+let mockParams: { guid: string | undefined } = { guid: undefined };
 
 // Mock toast
 const mockToastSuccess = jest.fn();
@@ -67,23 +68,24 @@ jest.mock('react-router-dom', () => ({
 }));
 
 // Mock API methods
-jest.mock('@api/apiMethods/glossaryApiMethod', () => ({
+jest.mock('../../../api/apiMethods/glossaryApiMethod', () => ({
 	deleteGlossaryorTerm: (...args: any[]) => mockDeleteGlossaryorTerm(...args),
-	deleteGlossaryorType: (...args: any[]) => mockDeleteGlossaryorType(...args)
+	deleteGlossaryorType: (...args: any[]) => mockDeleteGlossaryorType(...args),
+	deleteCategory: (...args: any[]) => mockDeleteCategory(...args)
 }));
 
 // Mock Redux hooks
-jest.mock('@hooks/reducerHook', () => ({
+jest.mock('../../../hooks/reducerHook', () => ({
 	useAppDispatch: () => mockDispatch
 }));
 
 // Mock Redux slice
-jest.mock('@redux/slice/glossarySlice', () => ({
+jest.mock('../../../redux/slice/glossarySlice', () => ({
 	fetchGlossaryData: jest.fn(() => ({ type: 'glossary/fetchGlossaryData' }))
 }));
 
 // Mock utils
-jest.mock('@utils/Utils', () => ({
+jest.mock('../../../utils/Utils', () => ({
 	isEmpty: (...args: any[]) => mockIsEmpty(...args),
 	serverError: (...args: any[]) => mockServerError(...args)
 }));
@@ -98,18 +100,18 @@ jest.mock('react-toastify', () => ({
 }));
 
 // Mock CustomModal
-jest.mock('@components/Modal', () => ({
+jest.mock('../../../components/Modal', () => ({
 	__esModule: true,
-	default: ({ 
-		open, 
-		onClose, 
-		title, 
-		titleIcon, 
-		button1Label, 
-		button1Handler, 
-		button2Label, 
-		button2Handler, 
-		children 
+	default: ({
+		open,
+		onClose,
+		title,
+		titleIcon,
+		button1Label,
+		button1Handler,
+		button2Label,
+		button2Handler,
+		children
 	}: any) =>
 		open ? (
 			<div data-testid="custom-modal">
@@ -160,6 +162,13 @@ describe('DeleteGlossary', () => {
 		types: 'term'
 	};
 
+	const categoryNode = {
+		id: 'test-category-1',
+		guid: 'test-category-guid-123',
+		cGuid: 'test-category-cguid-456',
+		types: 'Category'
+	};
+
 	beforeEach(() => {
 		jest.clearAllMocks();
 		mockLocation = {
@@ -173,6 +182,7 @@ describe('DeleteGlossary', () => {
 		mockDispatch.mockResolvedValue(undefined);
 		mockDeleteGlossaryorTerm.mockResolvedValue({});
 		mockDeleteGlossaryorType.mockResolvedValue({});
+		mockDeleteCategory.mockResolvedValue({});
 		mockIsEmpty.mockReturnValue(true);
 		mockFetchGlossaryData.mockReturnValue({ type: 'glossary/fetchGlossaryData' });
 	});
@@ -206,6 +216,12 @@ describe('DeleteGlossary', () => {
 			render(<DeleteGlossary {...defaultProps} node={termNode} />);
 
 			expect(screen.getByText(/Are you sure you want to delete Term/i)).toBeInTheDocument();
+		});
+
+		it('should display correct text for category deletion', () => {
+			render(<DeleteGlossary {...defaultProps} node={categoryNode} />);
+
+			expect(screen.getByText(/Are you sure you want to delete Category/i)).toBeInTheDocument();
 		});
 
 		it('should render Cancel and Ok buttons', () => {
@@ -250,7 +266,7 @@ describe('DeleteGlossary', () => {
 			render(<DeleteGlossary {...defaultProps} />);
 
 			const okButton = screen.getByTestId('modal-button-2');
-			
+
 			await act(async () => {
 				fireEvent.click(okButton);
 			});
@@ -281,40 +297,14 @@ describe('DeleteGlossary', () => {
 			});
 		});
 
-		it('should navigate to home when glossaryGuid is not empty after successful deletion', async () => {
-			mockParams = { guid: 'existing-guid' };
+		it('should navigate to home when the currently viewed glossary is deleted', async () => {
+			mockParams = { guid: 'test-guid-123' };
 			mockIsEmpty.mockReturnValue(false);
 
 			render(<DeleteGlossary {...defaultProps} />);
 
 			const okButton = screen.getByTestId('modal-button-2');
-			
-			await act(async () => {
-				fireEvent.click(okButton);
-			});
 
-			await waitFor(() => {
-				expect(mockNavigate).toHaveBeenCalledWith(
-					{ pathname: '/' },
-					{ replace: true }
-				);
-			});
-		});
-
-		it('should navigate to home when glossaryType is not empty after successful deletion', async () => {
-			mockLocation = {
-				pathname: '/glossary',
-				search: '?gtype=term',
-				hash: '',
-				state: null,
-				key: 'test-key'
-			};
-			mockIsEmpty.mockReturnValue(false);
-
-			render(<DeleteGlossary {...defaultProps} />);
-
-			const okButton = screen.getByTestId('modal-button-2');
-			
 			await act(async () => {
 				fireEvent.click(okButton);
 			});
@@ -341,7 +331,7 @@ describe('DeleteGlossary', () => {
 			render(<DeleteGlossary {...defaultProps} />);
 
 			const okButton = screen.getByTestId('modal-button-2');
-			
+
 			await act(async () => {
 				fireEvent.click(okButton);
 			});
@@ -361,7 +351,7 @@ describe('DeleteGlossary', () => {
 			render(<DeleteGlossary {...defaultProps} node={termNode} />);
 
 			const okButton = screen.getByTestId('modal-button-2');
-			
+
 			await act(async () => {
 				fireEvent.click(okButton);
 			});
@@ -392,14 +382,74 @@ describe('DeleteGlossary', () => {
 			});
 		});
 
-		it('should navigate to home when glossaryGuid is not empty after term deletion', async () => {
-			mockParams = { guid: 'existing-guid' };
+		it('should navigate to home when the currently viewed term is deleted', async () => {
+			mockParams = { guid: 'test-term-cguid-456' };
 			mockIsEmpty.mockReturnValue(false);
 
 			render(<DeleteGlossary {...defaultProps} node={termNode} />);
 
 			const okButton = screen.getByTestId('modal-button-2');
-			
+
+			await act(async () => {
+				fireEvent.click(okButton);
+			});
+
+			await waitFor(() => {
+				expect(mockNavigate).toHaveBeenCalledWith(
+					{ pathname: '/' },
+					{ replace: true }
+				);
+			});
+		});
+	});
+
+	describe('Delete Category Functionality', () => {
+		it('should delete category successfully when Ok button is clicked', async () => {
+			mockDispatch.mockResolvedValue(undefined);
+
+			render(<DeleteGlossary {...defaultProps} node={categoryNode} />);
+
+			const okButton = screen.getByTestId('modal-button-2');
+
+			await act(async () => {
+				fireEvent.click(okButton);
+			});
+
+			await waitFor(() => {
+				expect(mockDeleteCategory).toHaveBeenCalledWith('test-category-cguid-456');
+				expect(mockDeleteGlossaryorType).not.toHaveBeenCalled();
+				expect(mockDeleteGlossaryorTerm).not.toHaveBeenCalled();
+			});
+
+			await waitFor(() => {
+				expect(mockUpdatedData).toHaveBeenCalledTimes(1);
+			});
+
+			await waitFor(() => {
+				expect(mockDispatch).toHaveBeenCalled();
+			});
+
+			await waitFor(() => {
+				expect(mockToastSuccess).toHaveBeenCalledWith('Category test-category-1 was deleted successfully');
+			});
+
+			await waitFor(() => {
+				expect(mockOnClose).toHaveBeenCalledTimes(1);
+			});
+
+			await waitFor(() => {
+				expect(mockSetExpandNode).toHaveBeenCalledWith(null);
+			});
+		});
+
+		it('should navigate to home when the currently viewed category is deleted', async () => {
+			mockParams = { guid: 'test-category-cguid-456' };
+			mockIsEmpty.mockReturnValue(false);
+
+			render(<DeleteGlossary {...defaultProps} node={categoryNode} />);
+
+			const okButton = screen.getByTestId('modal-button-2');
+
 			await act(async () => {
 				fireEvent.click(okButton);
 			});
@@ -421,7 +471,7 @@ describe('DeleteGlossary', () => {
 			render(<DeleteGlossary {...defaultProps} />);
 
 			const okButton = screen.getByTestId('modal-button-2');
-			
+
 			await act(async () => {
 				fireEvent.click(okButton);
 			});
@@ -441,7 +491,27 @@ describe('DeleteGlossary', () => {
 			render(<DeleteGlossary {...defaultProps} node={termNode} />);
 
 			const okButton = screen.getByTestId('modal-button-2');
-			
+
+			await act(async () => {
+				fireEvent.click(okButton);
+			});
+
+			await waitFor(() => {
+				expect(mockServerError).toHaveBeenCalledWith(mockError, expect.any(Object));
+			});
+
+			expect(mockOnClose).not.toHaveBeenCalled();
+			expect(mockSetExpandNode).not.toHaveBeenCalled();
+		});
+
+		it('should handle error when deleting category fails', async () => {
+			const mockError = new Error('Delete failed');
+			mockDeleteCategory.mockRejectedValue(mockError);
+
+			render(<DeleteGlossary {...defaultProps} node={categoryNode} />);
+
+			const okButton = screen.getByTestId('modal-button-2');
+
 			await act(async () => {
 				fireEvent.click(okButton);
 			});
@@ -489,7 +559,7 @@ describe('DeleteGlossary', () => {
 			render(<DeleteGlossary {...defaultProps} node={nodeWithEmptyId} />);
 
 			const okButton = screen.getByTestId('modal-button-2');
-			
+
 			await act(async () => {
 				fireEvent.click(okButton);
 			});
@@ -500,13 +570,13 @@ describe('DeleteGlossary', () => {
 		});
 
 		it('should handle fetchCurrentData being called', async () => {
-			const { fetchGlossaryData } = require('@redux/slice/glossarySlice');
+			const { fetchGlossaryData } = require('../../../redux/slice/glossarySlice');
 			mockDispatch.mockResolvedValue(undefined);
 
 			render(<DeleteGlossary {...defaultProps} />);
 
 			const okButton = screen.getByTestId('modal-button-2');
-			
+
 			await act(async () => {
 				fireEvent.click(okButton);
 			});

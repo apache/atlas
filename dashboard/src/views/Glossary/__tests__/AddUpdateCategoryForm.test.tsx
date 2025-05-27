@@ -27,9 +27,9 @@ import { Provider } from 'react-redux';
 import { configureStore } from '@reduxjs/toolkit';
 import { MemoryRouter } from 'react-router-dom';
 import AddUpdateCategoryForm from '../AddUpdateCategoryForm';
-import * as glossarySlice from '@redux/slice/glossarySlice';
-import * as glossaryDetailsSlice from '@redux/slice/glossaryDetailsSlice';
-import * as detailPageSlice from '@redux/slice/detailPageSlice';
+import * as glossarySlice from '../../../redux/slice/glossarySlice';
+import * as glossaryDetailsSlice from '../../../redux/slice/glossaryDetailsSlice';
+import * as detailPageSlice from '../../../redux/slice/detailPageSlice';
 
 // Mock functions
 const mockOnClose = jest.fn();
@@ -59,34 +59,34 @@ const mockToastSuccess = jest.fn();
 const mockToastDismiss = jest.fn();
 jest.mock('react-toastify', () => ({
 	toast: {
-		success: (...args: any[]) => mockToastSuccess(...args),
-		dismiss: (...args: any[]) => mockToastDismiss(...args),
+		success: function() { return mockToastSuccess.apply(null, arguments as any); },
+		dismiss: function() { return mockToastDismiss.apply(null, arguments as any); },
 		error: jest.fn()
 	}
 }));
 
 // Mock API methods
-jest.mock('@api/apiMethods/glossaryApiMethod', () => ({
-	createTermorCategory: (...args: any[]) => mockCreateTermorCategory(...args),
-	editTermorCatgeory: (...args: any[]) => mockEditTermorCatgeory(...args)
+jest.mock('../../../api/apiMethods/glossaryApiMethod', () => ({
+	createTermorCategory: function() { return mockCreateTermorCategory.apply(null, arguments as any); },
+	editTermorCatgeory: function() { return mockEditTermorCatgeory.apply(null, arguments as any); }
 }));
 
 // Mock Redux slices
-jest.mock('@redux/slice/glossarySlice', () => ({
+jest.mock('../../../redux/slice/glossarySlice', () => ({
 	fetchGlossaryData: jest.fn()
 }));
 
-jest.mock('@redux/slice/glossaryDetailsSlice', () => ({
+jest.mock('../../../redux/slice/glossaryDetailsSlice', () => ({
 	fetchGlossaryDetails: jest.fn()
 }));
 
-jest.mock('@redux/slice/detailPageSlice', () => ({
+jest.mock('../../../redux/slice/detailPageSlice', () => ({
 	fetchDetailPageData: jest.fn()
 }));
 
 // Mock Utils
-jest.mock('@utils/Utils', () => {
-	const actualUtils = jest.requireActual('@utils/Utils');
+jest.mock('../../../utils/Utils', () => {
+	const actualUtils = jest.requireActual('../../../utils/Utils');
 	return {
 		...actualUtils,
 		isEmpty: (value: any) => {
@@ -95,12 +95,12 @@ jest.mock('@utils/Utils', () => {
 			if (typeof value === 'string' && value.trim().length === 0) return true;
 			return false;
 		},
-		serverError: (...args: any[]) => mockServerError(...args)
+		serverError: function() { return mockServerError.apply(null, arguments as any); }
 	};
 });
 
 // Mock CustomModal
-jest.mock('@components/Modal', () => ({
+jest.mock('../../../components/Modal', () => ({
 	__esModule: true,
 	default: ({ open, onClose, children, title, button1Handler, button2Handler, button2Label, disableButton2 }: any) =>
 		open ? (
@@ -222,18 +222,18 @@ describe('AddUpdateCategoryForm', () => {
 		mockToastSuccess.mockReturnValue('toast-id-123');
 		
 		// Set up Redux action mocks
-		(glossarySlice.fetchGlossaryData as jest.Mock).mockImplementation((...args: any[]) => {
-			mockFetchGlossaryData(...args);
+		(glossarySlice.fetchGlossaryData as unknown as jest.Mock).mockImplementation(function() {
+			mockFetchGlossaryData.apply(null, arguments as any);
 			return { type: 'FETCH_GLOSSARY_DATA' };
 		});
 		
-		(glossaryDetailsSlice.fetchGlossaryDetails as jest.Mock).mockImplementation((...args: any[]) => {
-			mockFetchGlossaryDetails(...args);
+		(glossaryDetailsSlice.fetchGlossaryDetails as unknown as jest.Mock).mockImplementation(function() {
+			mockFetchGlossaryDetails.apply(null, arguments as any);
 			return { type: 'FETCH_GLOSSARY_DETAILS' };
 		});
 		
-		(detailPageSlice.fetchDetailPageData as jest.Mock).mockImplementation((...args: any[]) => {
-			mockFetchDetailPageData(...args);
+		(detailPageSlice.fetchDetailPageData as unknown as jest.Mock).mockImplementation(function() {
+			mockFetchDetailPageData.apply(null, arguments as any);
 			return { type: 'FETCH_DETAIL_PAGE_DATA' };
 		});
 	});
@@ -387,6 +387,44 @@ describe('AddUpdateCategoryForm', () => {
 			// Verify modal was closed
 			expect(mockOnClose).toHaveBeenCalled();
 		}, 30000);
+
+		it('should dispatch fetchGlossaryDetails and fetchDetailPageData when creating category successfully in add mode and URL has gtype and guid', async () => {
+			mockLocation = { search: '?gtype=glossary' };
+			mockParams = { guid: 'entity-guid-456' };
+
+			const store = createStore([
+				{
+					name: 'Parent Glossary',
+					guid: 'parent-guid',
+					shortDescription: 'Parent Short Desc',
+					longDescription: 'Parent Long Desc'
+				}
+			]);
+
+			render(
+				<Provider store={store}>
+					<MemoryRouter>
+						<AddUpdateCategoryForm
+							open={true}
+							onClose={mockOnClose}
+							isAdd={true}
+							node={{ id: 'test-id', parent: 'Parent Glossary' }}
+							dataObj={{ name: 'Test Category' }}
+						/>
+					</MemoryRouter>
+				</Provider>
+			);
+
+			await fillFormAndSubmit('Test Category');
+
+			await waitFor(() => {
+				expect(mockFetchGlossaryDetails).toHaveBeenCalledWith({ gtype: 'glossary', guid: 'entity-guid-456' });
+			}, { timeout: 10000 });
+
+			await waitFor(() => {
+				expect(mockFetchDetailPageData).toHaveBeenCalledWith('entity-guid-456');
+			}, { timeout: 10000 });
+		});
 
 		it('should create child category with parentCategory in add mode', async () => {
 			mockParams = { guid: 'glossary-type-guid' };
