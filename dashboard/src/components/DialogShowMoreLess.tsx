@@ -30,15 +30,17 @@ import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import MoreHorizIcon from "@mui/icons-material/MoreHoriz";
 import AddTag from "@views/Classification/AddTag";
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
-import AssignTerm from "@views/Glossary/AssignTerm";
-import AssignCategory from "@views/Glossary/AssignCategory";
 import AddTagAttributes from "@views/Classification/AddTagAttributes";
 import { fetchGlossaryDetails } from "@redux/slice/glossaryDetailsSlice";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { fetchGlossaryData } from "@redux/slice/glossarySlice";
+import AssignGlossaryItem from "@views/Glossary/AssignGlossaryItem";
+import {
+  assignGlossaryType,
+  assignTermstoEntites
+} from "@api/apiMethods/glossaryApiMethod";
 
 const CHIP_MAX_WIDTH = "200px";
-const ITEM_HEIGHT = 48;
 
 const DialogShowMoreLess = ({
   value,
@@ -81,14 +83,12 @@ const DialogShowMoreLess = ({
   const toastId: any = useRef(null);
   const { guid }: any = useParams();
   const dispatchApi = useAppDispatch();
-  // const navigate = useNavigate();
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const gType = searchParams.get("gtype");
   const [openModal, setOpenModal] = useState<boolean>(false);
   const [tagModal, setTagModal] = useState<boolean>(false);
   const [termModal, setTermModal] = useState<boolean>(false);
-  const [categoryModal, setCategoryModal] = useState<boolean>(false);
   const [attributeModal, setAttributeModal] = useState<boolean>(false);
   const [removeLoader, setRemoveLoader] = useState(false);
 
@@ -99,9 +99,7 @@ const DialogShowMoreLess = ({
   const handleCloseTermModal = () => {
     setTermModal(false);
   };
-  const handleCloseCategoryModal = () => {
-    setCategoryModal(false);
-  };
+
   const handleCloseAttributeModal = () => {
     setAttributeModal(false);
   };
@@ -131,7 +129,7 @@ const DialogShowMoreLess = ({
       setRemoveLoader(true);
       if (colName == "Classification") {
         await removeApiMethod(
-          detailPage ? entity.guid : value.guid,
+          entity?.guid || value.guid,
           currentValue.selectedValue
         );
       } else if (colName == "Term" || colName == "Category") {
@@ -149,28 +147,30 @@ const DialogShowMoreLess = ({
             }
           }
         );
-        if (isEmpty(guid) || detailPage) {
+        if ((isEmpty(guid) || detailPage) && !relatedTerm) {
           await removeApiMethod(
-            detailPage ? selectedTerm.guid : selectedTerm.termGuid,
+            selectedTerm?.guid || selectedTerm.termGuid,
 
             {
-              guid: detailPage ? entity.guid : value.guid,
-              relationshipGuid: detailPage
-                ? selectedTerm.relationshipGuid
-                : selectedTerm.relationGuid
+              guid: entity?.guid || value.guid,
+              relationshipGuid:
+                selectedTerm?.relationshipGuid || selectedTerm.relationGuid
             }
           );
-        } else if (!detailPage && !isShowMoreLess) {
+        } else if ((!detailPage && !isShowMoreLess) || relatedTerm) {
           let values = { ...value };
           let data;
           if (colName == "Term") {
             data = values?.[columnVal].filter(
-              (obj: { displayText: string }) => {
-                return obj.displayText != currentValue.selectedValue;
+              (obj: { qualifiedName: string }) => {
+                return obj.qualifiedName != currentValue.selectedValue;
               }
             );
-
-            values["terms"] = data;
+            if (relatedTerm) {
+              values[columnVal] = data;
+            } else {
+              values["terms"] = data;
+            }
           } else {
             data = values?.[columnVal].filter(
               (obj: { displayText: string }) => {
@@ -180,11 +180,7 @@ const DialogShowMoreLess = ({
             values["categories"] = data;
           }
 
-          await removeApiMethod(
-            guid,
-            colName == "Term" ? "category" : "term",
-            values
-          );
+          await removeApiMethod(guid, values);
         }
       }
       setOpenModal(false);
@@ -238,9 +234,7 @@ const DialogShowMoreLess = ({
     if (colName == "Classification" || colName == "Propagated Classification") {
       let keys = Array.from(searchParams.keys());
       for (let i = 0; i < keys.length; i++) {
-        // if (keys[i] != "searchType") {
         searchParams.delete(keys[i]);
-        // }
       }
       searchParams.set("tag", values);
 
@@ -285,20 +279,26 @@ const DialogShowMoreLess = ({
   };
 
   const assignTitle = () => {
-    if (colName == "Classification") {
-      return "Add Classification";
-    } else if (colName == "Term") {
-      return "Add Term";
+    switch (colName) {
+      case "Classification":
+        return "Add Classification";
+      case "Term":
+        return "Add Term";
+      default:
+        return "";
     }
   };
 
   const removeTitle = () => {
-    if (colName == "Classification") {
-      return "Remove Classification Assignment";
-    } else if (colName == "Term") {
-      return "Remove Term Assignment";
-    } else if (colName == "Category") {
-      return "Remove Category Assignment";
+    switch (colName) {
+      case "Classification":
+        return "Remove Classification Assignment";
+      case "Term":
+        return "Remove Term Assignment";
+      case "Category":
+        return "Remove Category Assignment";
+      default:
+        return "";
     }
   };
 
@@ -425,14 +425,18 @@ const DialogShowMoreLess = ({
                 color="primary"
                 size="small"
                 onClick={() => {
-                  if (colName == "Classification") {
-                    setTagModal(true);
-                  } else if (colName == "Term") {
-                    setTermModal(true);
-                  } else if (colName == "Category") {
-                    setCategoryModal(true);
-                  } else if (colName == "Attribute") {
-                    setAttributeModal(true);
+                  switch (colName) {
+                    case "Classification":
+                      setTagModal(true);
+                      break;
+                    case "Term":
+                      setTermModal(true);
+                      break;
+                    case "Attribute":
+                      setAttributeModal(true);
+                      break;
+                    default:
+                      break;
                   }
                 }}
               >
@@ -449,11 +453,6 @@ const DialogShowMoreLess = ({
             anchorEl={openMenu}
             open={open}
             onClose={handleClose}
-            PaperProps={{
-              style: {
-                maxHeight: ITEM_HEIGHT * 4.5
-              }
-            }}
           >
             {value?.[columnVal].map((obj: any, index: number) => {
               if (index > 0) {
@@ -513,14 +512,18 @@ const DialogShowMoreLess = ({
               color="primary"
               size="small"
               onClick={() => {
-                if (colName == "Classification") {
-                  setTagModal(true);
-                } else if (colName == "Term") {
-                  setTermModal(true);
-                } else if (colName == "Category") {
-                  setCategoryModal(true);
-                } else if (colName == "Attribute") {
-                  setAttributeModal(true);
+                switch (colName) {
+                  case "Classification":
+                    setTagModal(true);
+                    break;
+                  case "Term":
+                    setTermModal(true);
+                    break;
+                  case "Attribute":
+                    setAttributeModal(true);
+                    break;
+                  default:
+                    break;
                 }
               }}
             >
@@ -564,35 +567,33 @@ const DialogShowMoreLess = ({
           setRowSelection={undefined}
         />
       )}
+
       {termModal && colName == "Term" && !relatedTerm && (
-        <AssignTerm
+        <AssignGlossaryItem
           open={termModal}
-          // glossaryType={colName}
           onClose={handleCloseTermModal}
           data={value}
-          relatedTerm={relatedTerm}
+          relatedItem={relatedTerm}
           updateTable={setUpdateTable}
+          itemType="term"
+          dataKey="terms"
+          assignApiMethod={assignTermstoEntites}
+          treeLabel="Term"
         />
       )}
 
       {termModal && colName == "Term" && relatedTerm && (
-        <AssignTerm
+        <AssignGlossaryItem
           open={termModal}
-          // glossaryType={colName}
           onClose={handleCloseTermModal}
           data={value}
-          relatedTerm={relatedTerm}
+          relatedItem={relatedTerm}
           updateTable={setUpdateTable}
           columnVal={columnVal}
-        />
-      )}
-
-      {categoryModal && colName == "Category" && (
-        <AssignCategory
-          open={categoryModal}
-          onClose={handleCloseCategoryModal}
-          data={value}
-          updateTable={setUpdateTable}
+          itemType="term"
+          dataKey="terms"
+          assignApiMethod={assignGlossaryType}
+          treeLabel="Term"
         />
       )}
 

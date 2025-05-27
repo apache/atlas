@@ -440,7 +440,13 @@ let groupBy = function (xs: any[], key: string) {
 };
 
 const noTreeData = () => {
-  return [{ id: "No Records Found", label: "No Records Found" }];
+  return [
+    {
+      id: "No Records Found",
+      label: "No Records Found",
+      text: "No Records Found"
+    }
+  ];
 };
 
 const sanitizeHtmlContent = (htmlContent: HTMLElement | string | any) => {
@@ -797,6 +803,16 @@ const globalSearchParams = {
   dslParams: {}
 };
 
+const showToastError = (msg: string, toastId: any) => {
+  toast.dismiss(toastId.current);
+  toastId.current = toast.error(msg);
+};
+
+const showToastSuccess = (msg: string, toastId: any) => {
+  toast.dismiss(toastId.current);
+  toastId.current = toast.success(msg);
+};
+
 export {
   customSortBy,
   customSortByObjectKeys,
@@ -835,5 +851,7 @@ export {
   setNavigate,
   getNavigate,
   globalSearchParams,
-  globalSearchFilterInitialQuery
+  globalSearchFilterInitialQuery,
+  showToastError,
+  showToastSuccess
 };
