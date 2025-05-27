@@ -90,7 +90,6 @@ public class RepairIndex {
                 }
             }
         }
-        //mutator.getIndexTransaction(indexType.getBackingIndexName()).restore(documentsPerStore);
         searchIndex.restore(documentsPerStore, indexSerializer.getIndexInfoRetriever(tx).get("search"));
     }
 

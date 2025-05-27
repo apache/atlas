@@ -104,7 +104,7 @@ public class ESConnector implements Closeable {
                 Map<String, Object> toUpdate = new HashMap<>();
 
                 DENORM_ATTRS.stream().filter(entry::containsKey).forEach(x -> toUpdate.put(x, entry.get(x)));
-                toUpdate.put("__modificationTimestamp", System.currentTimeMillis());
+//                toUpdate.put("__modificationTimestamp", System.currentTimeMillis());
 
 
                 long vertexId = Long.parseLong(assetVertexId);

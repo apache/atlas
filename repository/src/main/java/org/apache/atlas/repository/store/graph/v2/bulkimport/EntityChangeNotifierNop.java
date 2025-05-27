@@ -83,7 +83,7 @@ public class EntityChangeNotifierNop implements IAtlasEntityChangeNotifier {
     }
 
     @Override
-    public void onClassificationDeletedFromEntityV2(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException {
+    public void onClassificationDeletedFromEntity(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException {
 
     }
 
@@ -113,7 +113,7 @@ public class EntityChangeNotifierNop implements IAtlasEntityChangeNotifier {
     }
 
     @Override
-    public void onClassificationUpdatedToEntityV2(AtlasEntity entity, List<AtlasClassification> updatedClassifications, boolean forceInline) throws AtlasBaseException {
+    public void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications, boolean forceInline) throws AtlasBaseException {
 
     }
 

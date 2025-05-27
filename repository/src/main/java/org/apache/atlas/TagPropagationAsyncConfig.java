@@ -18,7 +18,7 @@ public class TagPropagationAsyncConfig implements AsyncConfigurer {
     private static final Logger LOG = LoggerFactory.getLogger(TagPropagationAsyncConfig.class);
 
     @Bean(destroyMethod = "shutdown")
-    public Executor classificationPropagationExecutor() {
+    public Executor tagPropagationNotifierExecutor() {
         ThreadPoolTaskExecutor executor = new ThreadPoolTaskExecutor();
         executor.setCorePoolSize(AtlasConfiguration.TAG_ASYNC_NOTIFIER_CORE_POOL_SIZE.getInt());
         executor.setMaxPoolSize(AtlasConfiguration.TAG_ASYNC_NOTIFIER_MAX_POOL_SIZE.getInt());

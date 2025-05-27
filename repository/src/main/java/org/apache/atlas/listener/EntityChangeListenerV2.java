@@ -94,7 +94,7 @@ public interface EntityChangeListenerV2 {
      * @throws AtlasBaseException if the listener notification fails
      */
     void onClassificationsUpdated(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException;
-    void onClassificationsUpdatedV2(AtlasEntity entity, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException;
+    void onClassificationPropagationUpdated(AtlasEntity entity, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException;
 
     /**
      * This is upon deleting classifications from an entity.

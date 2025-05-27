@@ -246,12 +246,11 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     @Override
-    public void onClassificationUpdatedToEntityV2(AtlasEntity entity, List<AtlasClassification> updatedClassifications, boolean forceInline) throws AtlasBaseException {
-        doFullTextMapping(entity.getGuid());
+    public void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications, boolean forceInline) throws AtlasBaseException {
 
         if (isV2EntityNotificationEnabled) {
             for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
-                listener.onClassificationsUpdatedV2(entity, updatedClassifications, forceInline);
+                listener.onClassificationPropagationUpdated(entity, updatedClassifications, forceInline);
             }
         } else {
             if (instanceConverter != null) {
@@ -284,7 +283,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     @Async
     public void onClassificationUpdatedToEntitiesV2(List<AtlasEntity> entities, AtlasClassification updatedClassification, boolean forceInline) throws AtlasBaseException {
         for (AtlasEntity entity : entities) {
-            onClassificationUpdatedToEntityV2(entity, Collections.singletonList(updatedClassification), forceInline);
+            onClassificationUpdatedToEntity(entity, Collections.singletonList(updatedClassification), forceInline);
         }
     }
 
@@ -361,12 +360,12 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     @Async
     public void onClassificationDeletedFromEntitiesV2(List<AtlasEntity> entities, AtlasClassification deletedClassification, boolean forceInline) throws AtlasBaseException {
         for (AtlasEntity entity : entities) {
-            onClassificationDeletedFromEntityV2(entity, Collections.singletonList(deletedClassification), forceInline);
+            onClassificationDeletedFromEntity(entity, Collections.singletonList(deletedClassification), forceInline);
         }
     }
 
     @Override
-    public void onClassificationDeletedFromEntityV2(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException {
+    public void onClassificationDeletedFromEntity(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException {
         doFullTextMapping(entity.getGuid());
 
         if (isV2EntityNotificationEnabled) {

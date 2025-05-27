@@ -25,7 +25,6 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.notification.EntityNotification;
-import org.springframework.scheduling.annotation.Async;
 
 import java.util.List;
 import java.util.Map;
@@ -51,7 +50,7 @@ public interface IAtlasEntityChangeNotifier {
 
     void onClassificationDeletedFromEntitiesV2(List<AtlasEntity> entities, AtlasClassification deletedClassification, boolean forceInline) throws AtlasBaseException;
 
-    void onClassificationDeletedFromEntityV2(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException;
+    void onClassificationDeletedFromEntity(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException;
 
     void onTermAddedToEntities(AtlasGlossaryTerm term, List<AtlasRelatedObjectId> entityIds) throws AtlasBaseException;
 
@@ -63,7 +62,7 @@ public interface IAtlasEntityChangeNotifier {
 
     void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications) throws AtlasBaseException;
 
-    void onClassificationUpdatedToEntityV2(AtlasEntity entity, List<AtlasClassification> updatedClassifications, boolean forceInline) throws AtlasBaseException;
+    void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications, boolean forceInline) throws AtlasBaseException;
 
     void onClassificationUpdatedToEntities(List<AtlasEntity> entities, AtlasClassification updatedClassification) throws AtlasBaseException;
 
