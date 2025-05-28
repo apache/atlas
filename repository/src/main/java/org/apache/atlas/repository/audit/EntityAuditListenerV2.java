@@ -139,6 +139,7 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
             FixedBufferList<EntityAuditEventV2> updatedEvents = getAuditEventsList();
             for (AtlasEntity entity : updatedEntites) {
                 final EntityAuditActionV2 action;
+                boolean generateBMUpdateEvent = false;
 
                 if (isImport) {
                     action = ENTITY_IMPORT_UPDATE;
@@ -150,10 +151,21 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
                     action = ENTITY_UPDATE;
                 }
 
+                // If action is not BUSINESS_ATTRIBUTE_UPDATE and it has BUSINESS ATTRIBUTE UPDATE , create another BM update event
+                if(action != BUSINESS_ATTRIBUTE_UPDATE && MapUtils.isNotEmpty(entity.getBusinessAttributes())) {
+                    generateBMUpdateEvent = true;
+                }
+
                 long auditMaxSize = getAuditMaxSize(auditRepository, entities.size());
                 if (DIFFERENTIAL_AUDITS) {
+                    if (generateBMUpdateEvent) {
+                        createEvent(updatedEvents.next(), entity, entitiesMap.get(entity.getGuid()), BUSINESS_ATTRIBUTE_UPDATE, auditMaxSize);
+                    }
                     createEvent(updatedEvents.next(), entity, entitiesMap.get(entity.getGuid()), action, auditMaxSize);
                 } else {
+                    if (generateBMUpdateEvent) {
+                        createEvent(updatedEvents.next(), entity, null, BUSINESS_ATTRIBUTE_UPDATE, auditMaxSize);
+                    }
                     createEvent(updatedEvents.next(), entity, action, auditMaxSize);
                 }
             }

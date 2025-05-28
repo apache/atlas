@@ -144,8 +144,10 @@ public enum AtlasConfiguration {
     OTEL_SERVICE_NAME(" OTEL_SERVICE_NAME", "atlas"),
     OTEL_EXPORTER_OTLP_ENDPOINT("OTEL_EXPORTER_OTLP_ENDPOINT", "http://localhost:4317"),
     ATLAS_BULK_API_MAX_ENTITIES_ALLOWED("atlas.bulk.api.max.entities.allowed", 10000),
+    ATLAS_ENTITIES_ATTRIBUTE_ALLOWED_LARGE_ATTRIBUTES("atlas.entities.attribute.allowed.large.attributes", "rawQueryText,variablesSchemaBase64,visualBuilderSchemaBase64,dataContractSpec,dataContractJson"),
 
     ENABLE_ASYNC_TYPE_UPDATE("atlas.types.update.async.enable", false),
+    MAX_THREADS_TYPE_UPDATE("atlas.types.update.thread.count", 4);
     MAX_THREADS_TYPE_UPDATE("atlas.types.update.thread.count", 3),
 
     // Classification propagation thread pool configuration
