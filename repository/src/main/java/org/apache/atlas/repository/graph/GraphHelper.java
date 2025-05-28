@@ -957,7 +957,7 @@ public final class GraphHelper {
                                      .collect(Collectors.toList());
             }
         } catch (AtlasBaseException e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
         return ret;
     }

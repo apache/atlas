@@ -71,7 +71,7 @@ public abstract class ClassificationTask extends AbstractTask {
                               DeleteHandlerDelegate deleteDelegate,
                               AtlasRelationshipStore relationshipStore) {
         super(task);
-        this.JANUS_OPTIMISATION_ENABLED = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
+        JANUS_OPTIMISATION_ENABLED = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
         this.graph             = graph;
         this.entityGraphMapper = entityGraphMapper;
         this.deleteDelegate    = deleteDelegate;
