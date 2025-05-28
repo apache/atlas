@@ -46,12 +46,10 @@ public class ClassificationPropagationTasks {
             Boolean previousRestrictPropagationThroughHierarchy = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
 
             if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
-                LOG.info("via JANUS_OPTIMISATION_ENABLED mode");
                 entityGraphMapper.propagateClassificationV2(parameters, entityGuid, tagTypeName);
             } else {
                 String classificationVertexId   = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 String relationshipGuid         = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
-                LOG.info("via old mode");
                 entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage, previousRestrictPropagationThroughHierarchy);
             }
         }
@@ -68,11 +66,9 @@ public class ClassificationPropagationTasks {
             String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
 
             if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
-                LOG.info("via JANUS_OPTIMISATION_ENABLED mode");
                 entityGraphMapper.updateClassificationTextPropagationV2(entityGuid, tagTypeName);
             } else {
                 String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
-                LOG.info("via old mode");
                 entityGraphMapper.updateClassificationTextPropagation(classificationVertexId);
             }
         }
@@ -89,7 +85,6 @@ public class ClassificationPropagationTasks {
             String tagTypeName              = getTaskDef().getTagTypeName();
 
             if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
-                LOG.info("via JANUS_OPTIMISATION_ENABLED mode");
                 entityGraphMapper.deleteClassificationPropagationV2(entityGuid, tagTypeName);
             } else {
                 String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);

@@ -4923,7 +4923,7 @@ public class EntityGraphMapper {
                     ESConnector.writeTagProperties(deNormMap);
                 }
                 // notify listeners (async)
-                entityChangeNotifier.onClassificationDeletedFromEntitiesV2(entities, originalClassification, true);
+                entityChangeNotifier.onClassificationPropagationDeleted(entities, originalClassification, true);
 
                 totalDeleted += batchToDelete.size();
                 // grab next batch

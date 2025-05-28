@@ -8,6 +8,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.MapUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.entity.ContentType;
@@ -97,6 +98,9 @@ public class ESConnector implements Closeable {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("writeTagPropertiesES");
 
         try {
+            if (MapUtils.isEmpty(entitiesMap))
+                return;
+
             StringBuilder bulkRequestBody = new StringBuilder();
 
             for (String assetVertexId : entitiesMap.keySet()) {
