@@ -276,19 +276,7 @@ public class ESAliasStore implements IndexAliasStore {
                     for (String asset : assets) {
                         if(!isAllDomain(asset)) {
                             terms.add(asset);
-
-                            // Add all parent domains in the hierarchy
-                            String currentPath = asset;
-                            while (currentPath.contains("/domain/")) {
-                                int lastDomainIndex = currentPath.lastIndexOf("/domain/");
-                                if (lastDomainIndex != -1) {
-                                    currentPath = currentPath.substring(0, lastDomainIndex);
-                                    if (currentPath.endsWith("default")) {
-                                        continue;
-                                    }
-                                    terms.add(currentPath);
-                                }
-                            }
+                            terms.addAll(getParentDomainPaths(asset)); // Add all parent domains in the hierarchy
                         } else {
                             asset = NEW_WILDCARD_DOMAIN_SUPER;
                         }
@@ -334,6 +322,27 @@ public class ESAliasStore implements IndexAliasStore {
         if (CollectionUtils.isNotEmpty(glossaryQualifiedNames)) {
             allowClauseList.add(mapOf("terms", mapOf(GLOSSARY_PROPERTY_KEY, new ArrayList<>(glossaryQualifiedNames))));
         }
+    }
+
+    private List<String> getParentDomainPaths(String asset) {
+        List<String> domainPaths = new ArrayList<>();
+        String currentPath = asset;
+        while (true) {
+            int lastDomainIndex = currentPath.lastIndexOf("/domain/");
+            int lastProductIndex = currentPath.lastIndexOf("/product/");
+            int lastIndex = Math.max(lastDomainIndex, lastProductIndex);
+
+            if (lastIndex == -1) {
+                break;
+            }
+
+            currentPath = currentPath.substring(0, lastIndex);
+            if (currentPath.endsWith("default")) {
+                break;
+            }
+            domainPaths.add(currentPath);
+        }
+        return domainPaths;
     }
 
     private boolean isAllDomain(String asset) {
