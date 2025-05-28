@@ -147,8 +147,7 @@ public enum AtlasConfiguration {
     ATLAS_ENTITIES_ATTRIBUTE_ALLOWED_LARGE_ATTRIBUTES("atlas.entities.attribute.allowed.large.attributes", "rawQueryText,variablesSchemaBase64,visualBuilderSchemaBase64,dataContractSpec,dataContractJson"),
 
     ENABLE_ASYNC_TYPE_UPDATE("atlas.types.update.async.enable", false),
-    MAX_THREADS_TYPE_UPDATE("atlas.types.update.thread.count", 4);
-    MAX_THREADS_TYPE_UPDATE("atlas.types.update.thread.count", 3),
+    MAX_THREADS_TYPE_UPDATE("atlas.types.update.thread.count", 4),
 
     // Classification propagation thread pool configuration
     TAG_ASYNC_NOTIFIER_CORE_POOL_SIZE("atlas.classification.propagation.core.pool.size", 32),
