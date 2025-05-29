@@ -44,6 +44,7 @@ import { GlobalQueryState, isEmpty } from "@utils/Utils";
 import { attributeFilter } from "@utils/CommonViewFunction";
 import { cloneDeep } from "@utils/Helper";
 import { timeRangeOptions } from "@utils/Enum";
+import CustomDatepicker from "@components/DatePicker/CustomDatePicker";
 
 const customOperators: Operator[] = [
   ...defaultOperators,
@@ -80,6 +81,7 @@ const CustomValueEditor: React.FC<ValueEditorProps> = (props) => {
     return (
       <div>
         <select
+          className="rule-operators"
           value={value}
           onChange={(e) => handleTimeRangeChange(e.target.value)}
         >
@@ -91,13 +93,14 @@ const CustomValueEditor: React.FC<ValueEditorProps> = (props) => {
           ))}
         </select>
         {showDatePicker && (
-          <DatePicker
+          <CustomDatepicker
             selectsRange
-            showTimeSelect
+            timeIntervals={1}
+            timeFormat="hh:mm aa"
+            timeCaption="Time"
+            shoowTimeInput
             showPopperArrow={false}
             popperProps={{ strategy: "fixed" }}
-            showYearDropdown
-            showMonthDropdown
             startDate={
               moment(startDate).isValid()
                 ? moment(startDate).toDate()
@@ -107,10 +110,20 @@ const CustomValueEditor: React.FC<ValueEditorProps> = (props) => {
               moment(endDate).isValid() ? moment(endDate).toDate() : undefined
             }
             onChange={(update: [Date | null, Date | null] | null) => {
-              setDateRange(update);
-              props.handleOnChange(update).join(",");
+              const safeUpdate: [Date | null, Date | null] = update ?? [
+                null,
+                null
+              ];
+              setDateRange(safeUpdate);
+              if (safeUpdate[0] && safeUpdate[1]) {
+                const startEpoch = moment(safeUpdate[0]).valueOf();
+                const endEpoch = moment(safeUpdate[1]).valueOf();
+                props.handleOnChange(`${startEpoch},${endEpoch}`);
+              } else {
+                props.handleOnChange("");
+              }
             }}
-            isClearable={true}
+            selected={undefined}
           />
         )}
       </div>
@@ -119,15 +132,12 @@ const CustomValueEditor: React.FC<ValueEditorProps> = (props) => {
 
   if (props.inputType == "datetime-local") {
     return (
-      <DatePicker
-        showTimeSelect
+      <CustomDatepicker
         timeIntervals={1}
         timeFormat="hh:mm aa"
         timeCaption="Time"
         showPopperArrow={false}
         popperProps={{ strategy: "fixed" }}
-        showYearDropdown
-        showMonthDropdown
         selected={
           selectedDateValue && moment(selectedDateValue).isValid()
             ? moment(selectedDateValue).toDate()

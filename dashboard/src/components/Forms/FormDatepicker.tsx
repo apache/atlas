@@ -21,7 +21,7 @@ import { Controller } from "react-hook-form";
 import { LightTooltip } from "@components/muiComponents";
 import moment from "moment-timezone";
 import { useEffect, useState } from "react";
-import DatePicker from "react-datepicker";
+import CustomDatepicker from "@components/DatePicker/CustomDatePicker";
 
 const FormDatepicker = ({ data, control, fieldName }: any) => {
   const { name, isOptional, typeName } = data;
@@ -71,17 +71,15 @@ const FormDatepicker = ({ data, control, fieldName }: any) => {
               </LightTooltip>
             </div>
             <div className="w-100">
-              <DatePicker
+              <CustomDatepicker
                 showPopperArrow={false}
                 popperProps={{ strategy: "fixed" }}
-                showYearDropdown
-                showMonthDropdown
                 selected={
                   value && moment(value).isValid()
                     ? moment(value).toDate()
                     : moment().toDate()
                 }
-                onChange={(date) => {
+                onChange={(date: { getTime: () => any }) => {
                   onChange(date ? date.getTime() : null);
                 }}
                 ref={ref}

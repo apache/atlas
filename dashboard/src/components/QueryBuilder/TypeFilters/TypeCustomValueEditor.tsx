@@ -15,13 +15,13 @@
  * limitations under the License.
  */
 
+import CustomDatepicker from "@components/DatePicker/CustomDatePicker";
 import { useAppSelector } from "@hooks/reducerHook";
 import { Autocomplete, TextField } from "@mui/material";
 import { timeRangeOptions } from "@utils/Enum";
 import { isEmpty } from "@utils/Utils";
 import moment from "moment";
 import { useState } from "react";
-import DatePicker from "react-datepicker";
 import { ValueEditorProps, ValueEditor } from "react-querybuilder";
 
 export const TypeCustomValueEditor = (props: ValueEditorProps) => {
@@ -155,13 +155,14 @@ export const TypeCustomValueEditor = (props: ValueEditorProps) => {
           ))}
         </select>
         {showDatePicker && (
-          <DatePicker
+          <CustomDatepicker
             selectsRange
-            showTimeSelect
+            timeIntervals={1}
+            timeFormat="hh:mm aa"
+            timeCaption="Time"
+            shoowTimeInput
             showPopperArrow={false}
             popperProps={{ strategy: "fixed" }}
-            showYearDropdown
-            showMonthDropdown
             startDate={
               moment(startDate).isValid()
                 ? moment(startDate).toDate()
@@ -184,6 +185,7 @@ export const TypeCustomValueEditor = (props: ValueEditorProps) => {
                 props.handleOnChange("");
               }
             }}
+            selected={undefined}
           />
         )}
       </div>
@@ -197,15 +199,12 @@ export const TypeCustomValueEditor = (props: ValueEditorProps) => {
       props.handleOnChange(now.valueOf());
     }
     return (
-      <DatePicker
-        showTimeSelect
+      <CustomDatepicker
         timeIntervals={1}
         timeFormat="hh:mm aa"
         timeCaption="Time"
         showPopperArrow={false}
         popperProps={{ strategy: "fixed" }}
-        showYearDropdown
-        showMonthDropdown
         selected={
           selectedDateValue && moment(selectedDateValue).isValid()
             ? moment(selectedDateValue).toDate()
@@ -222,42 +221,5 @@ export const TypeCustomValueEditor = (props: ValueEditorProps) => {
     );
   }
 
-  if (props.inputType == "datetime-local") {
-    if (selectedDateValue) {
-      const now = moment();
-      setSelectedDateValue(now);
-      props.handleOnChange(now.toISOString());
-    }
-    return (
-      <DatePicker
-        showTimeSelect
-        timeIntervals={1}
-        timeFormat="hh:mm aa"
-        timeCaption="Time"
-        showPopperArrow={false}
-        popperProps={{ strategy: "fixed" }}
-        showYearDropdown
-        showMonthDropdown
-        startDate={
-          moment(startDate).isValid() ? moment(startDate).toDate() : undefined
-        }
-        endDate={
-          moment(endDate).isValid() ? moment(endDate).toDate() : undefined
-        }
-        selected={
-          selectedDateValue && moment(selectedDateValue).isValid()
-            ? moment(selectedDateValue).toDate()
-            : moment().toDate()
-        }
-        onChange={(date: Date | null) => {
-          const value = date ? moment(date) : moment();
-          setSelectedDateValue(value);
-          props.handleOnChange(value.valueOf());
-        }}
-        dateFormat="MM/dd/yyyy h:mm:ss aa"
-        showTimeInput
-      />
-    );
-  }
   return <ValueEditor {...props} />;
 };

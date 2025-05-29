@@ -30,10 +30,10 @@ import AddIcon from "@mui/icons-material/Add";
 import moment from "moment";
 import ClearOutlinedIcon from "@mui/icons-material/ClearOutlined";
 import { useAppSelector } from "@hooks/reducerHook";
-import DatePicker from "react-datepicker";
 
 // Start Date Picker Component
 import { Control } from "react-hook-form";
+import CustomDatepicker from "@components/DatePicker/CustomDatePicker";
 
 interface StartDatePickerProps {
   control: Control<any>;
@@ -48,18 +48,19 @@ const StartDatePicker = ({ control, name }: StartDatePickerProps) => (
     render={({ field: { onChange, value, ref } }) => (
       <Stack minWidth={210}>
         <InputLabel required={true}>Start Time</InputLabel>
-        <DatePicker
-          showTimeSelect
+        <CustomDatepicker
           timeIntervals={1}
           timeFormat="hh:mm aa"
           timeCaption="Time"
           showPopperArrow={false}
           popperProps={{ strategy: "fixed" }}
-          showYearDropdown
-          showMonthDropdown
-          selected={value ? moment(value).toDate() : null}
+          selected={
+            value && moment(value).isValid()
+              ? moment(value).toDate()
+              : moment().toDate()
+          }
           ref={ref}
-          onChange={(date) => {
+          onChange={(date: { toISOString: () => any }) => {
             onChange(date ? date.toISOString() : null);
           }}
           showTimeInput
@@ -84,18 +85,19 @@ const EndDatePicker = ({ control, name }: EndDatePickerProps) => (
     render={({ field: { onChange, value, ref } }) => (
       <Stack minWidth={210}>
         <InputLabel required={true}>End Time</InputLabel>
-        <DatePicker
-          showTimeSelect
+        <CustomDatepicker
           timeIntervals={1}
           timeFormat="hh:mm aa"
           timeCaption="Time"
           showPopperArrow={false}
           popperProps={{ strategy: "fixed" }}
-          showYearDropdown
-          showMonthDropdown
-          selected={value ? moment(value).toDate() : null}
+          selected={
+            value && moment(value).isValid()
+              ? moment(value).toDate()
+              : moment().toDate()
+          }
           ref={ref}
-          onChange={(date) => {
+          onChange={(date: { toISOString: () => any }) => {
             onChange(date ? date.toISOString() : null);
           }}
           showTimeInput

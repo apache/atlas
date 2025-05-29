@@ -15,6 +15,7 @@
  * limitations under the License.
  */
 
+import CustomDatepicker from "@components/DatePicker/CustomDatePicker";
 import { useAppSelector } from "@hooks/reducerHook";
 import {
   Select,
@@ -27,7 +28,6 @@ import {
 } from "@mui/material";
 import { isEmpty } from "@utils/Utils";
 import moment from "moment";
-import DatePicker from "react-datepicker";
 import { Controller } from "react-hook-form";
 import ReactQuill from "react-quill-new";
 
@@ -79,35 +79,31 @@ const BMAttributesFields = ({ obj, control, index }: any) => {
           }
 
           return typeName === "date" ? (
-            <DatePicker
+            <CustomDatepicker
               showPopperArrow={false}
               popperProps={{ strategy: "fixed" }}
-              showYearDropdown
-              showMonthDropdown
               selected={
                 value && moment(value).isValid()
                   ? moment(value).toDate()
                   : moment().toDate()
               }
-              onChange={(date) => {
+              onChange={(date: { getTime: () => any }) => {
                 onChange(date ? date.getTime() : null);
               }}
               ref={ref}
               dateFormat="MM/dd/yyyy"
             />
           ) : (
-            <DatePicker
+            <CustomDatepicker
               showPopperArrow={false}
               popperProps={{ strategy: "fixed" }}
-              showYearDropdown
-              showMonthDropdown
               selectsMultiple
               selectedDates={
                 Array.isArray(value)
                   ? value.map((d: string | number | Date) => new Date(d))
                   : []
               }
-              onChange={(dates) => {
+              onChange={(dates: any[]) => {
                 onChange(
                   Array.isArray(dates)
                     ? dates.map((date) => date.getTime())
