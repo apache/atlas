@@ -13,6 +13,7 @@ on:
       - mlh40java17
       - dq651
       - poctagprophashedrebased
+      - idonlycanary
     types:
       - completed
 
