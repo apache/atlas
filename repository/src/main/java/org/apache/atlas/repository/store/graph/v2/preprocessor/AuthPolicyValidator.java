@@ -186,7 +186,7 @@ public class AuthPolicyValidator {
                     List<String> resources = getPolicyResources(policy);
                     if (isABACPolicyService(policy)) {
                         String policyFilterCriteria = getPolicyFilterCriteria(policy);
-                        validateParam(JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, "entity") != null, "Invalid filter criteria");
+                        validateParam(JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, "entity") == null, "Invalid filter criteria");
                     } else {
                         validateParam(CollectionUtils.isEmpty(resources), "Please provide attribute " + ATTR_POLICY_RESOURCES);
                     }
