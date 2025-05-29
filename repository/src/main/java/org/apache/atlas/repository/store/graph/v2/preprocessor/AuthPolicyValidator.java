@@ -186,7 +186,7 @@ public class AuthPolicyValidator {
                     List<String> resources = getPolicyResources(policy);
                     if (isABACPolicyService(policy)) {
                         String policyFilterCriteria = getPolicyFilterCriteria(policy);
-                        validateParam(JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, "entity") != null, "Invalid filter criteria");
+                        validateParam(JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, "entity") == null, "Invalid filter criteria");
                     } else {
                         validateParam(CollectionUtils.isEmpty(resources), "Please provide attribute " + ATTR_POLICY_RESOURCES);
                     }
@@ -296,9 +296,7 @@ public class AuthPolicyValidator {
                             "Please provide valid policy resources" + PERSONA_POLICY_VALID_RESOURCE_KEYS);
 
                     String newConnectionQn = getPolicyConnectionQN(policy);
-                    if (StringUtils.equals(getPolicyServiceName(policy), POLICY_SERVICE_NAME_ABAC)) {
-
-                    } else if (POLICY_SUB_CATEGORY_METADATA.equals(policySubCategory) || POLICY_SUB_CATEGORY_DATA.equals(policySubCategory)) {
+                    if (!isABACPolicyService(policy) && (POLICY_SUB_CATEGORY_METADATA.equals(policySubCategory) || POLICY_SUB_CATEGORY_DATA.equals(policySubCategory))) {
                         validateParam(StringUtils.isEmpty(newConnectionQn), "Please provide attribute " + ATTR_POLICY_CONNECTION_QN);
 
                         String existingConnectionQn = getPolicyConnectionQN(existingPolicy);

@@ -218,8 +218,6 @@ public class ESAliasStore implements IndexAliasStore {
 
                     try {
                         JsonNode dsl = JsonToElasticsearchQuery.convertJsonToQuery(entityFilterCriteriaNode);
-//                        String policyDSLBase64 = Base64.getEncoder().encodeToString(dsl.toString().getBytes());
-//                        allowClauseList.add(mapOf("wrapper", mapOf("query", policyDSLBase64)));
                         allowClauseList.add(mapOf("bool", dsl.get("bool")));
                     } catch (Exception e) {
                         LOG.error("Error processing ABAC policy filter criteria for policy {}", policy.getGuid(), e);

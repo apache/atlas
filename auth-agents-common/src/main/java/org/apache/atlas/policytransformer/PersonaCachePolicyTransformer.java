@@ -109,7 +109,6 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                         LOG.error("PolicyRefresher: PersonaCachePolicyTransformer: error parsing policyFilterCriteria for policyId={}, policyFilterCriteria={}", header.getGuid(), policyFilterCriteria);
                         continue;
                     }
-//                  header.setAttribute(ATTR_POLICY_FILTER_CRITERIA, templatePolicy.getPolicyFilterCriteria().replace(PLACEHOLDER_FILTER_CRITERIA, policyFilterCriteria));
                     header.setAttribute(ATTR_POLICY_FILTER_CRITERIA, templatePolicy.getPolicyFilterCriteria() != null
                             ? templatePolicy.getPolicyFilterCriteria().replace(PLACEHOLDER_FILTER_CRITERIA, policyFilterCriteria)
                             : policyFilterCriteria);
