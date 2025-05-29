@@ -168,10 +168,13 @@ const DrawerBodyChipView = ({
 
       dispatchApi(fetchDetailPageData(guid as string));
       if (!isEmpty(guid)) {
-        let params: any = { gtype: gType, guid: guid };
-        dispatchApi(fetchGlossaryData());
-        dispatchApi(fetchGlossaryDetails(params));
         dispatchApi(fetchDetailPageData(guid as string));
+
+        if (!isEmpty(gType)) {
+          const params = { gtype: gType, guid };
+          dispatchApi(fetchGlossaryData());
+          dispatchApi(fetchGlossaryDetails(params));
+        }
       }
     } catch (error) {
       setRemoveLoader(false);
