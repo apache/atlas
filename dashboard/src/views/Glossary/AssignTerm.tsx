@@ -344,12 +344,16 @@ const AssignTerm = ({
       if (!isEmpty(updateTable)) {
         updateTable(moment.now());
       }
-      if (!isEmpty(entityGuid)) {
+      if (!isEmpty(entityGuid) && !isEmpty(gType)) {
         let params: any = { gtype: gType, guid: entityGuid };
         dispatchApi(fetchGlossaryData());
         dispatchApi(fetchGlossaryDetails(params));
+      }
+
+      if (!isEmpty(entityGuid)) {
         dispatchApi(fetchDetailPageData(entityGuid as string));
       }
+
       if (!isEmpty(setRowSelection)) {
         setRowSelection({});
       }

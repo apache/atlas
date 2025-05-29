@@ -170,10 +170,12 @@ const ShowMoreView = ({
       toast.dismiss(toastId.current);
       toastId.current = toast.success(`${title}  was removed successfully`);
       dispatchApi(fetchDetailPageData(guid as string));
-      if (!isEmpty(guid)) {
+      if (!isEmpty(guid) && !isEmpty(gType)) {
         let params: any = { gtype: gType, guid: guid };
         dispatchApi(fetchGlossaryData());
         dispatchApi(fetchGlossaryDetails(params));
+      }
+      if (!isEmpty(guid)) {
         dispatchApi(fetchDetailPageData(guid as string));
       }
     } catch (error) {
