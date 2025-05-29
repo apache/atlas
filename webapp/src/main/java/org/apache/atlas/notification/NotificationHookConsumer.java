@@ -163,6 +163,7 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     public static final String CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS          = "atlas.notification.consumer.preprocess.hive_types.remove.ownedref.attrs";
     public static final String CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS         = "atlas.notification.consumer.preprocess.rdbms_types.remove.ownedref.attrs";
     public static final String CONSUMER_PREPROCESS_S3_V2_DIRECTORY_PRUNE_OBJECT_PREFIX       = "atlas.notification.consumer.preprocess.s3_v2_directory.prune.object_prefix";
+    public static final String CONSUMER_PREPROCESS_SPARK_PROCESS_ATTRIBUTES                  = "atlas.notification.consumer.preprocess.spark_process.attributes";
     public static final String CONSUMER_AUTHORIZE_USING_MESSAGE_USER                         = "atlas.notification.authorize.using.message.user";
     public static final String CONSUMER_AUTHORIZE_AUTHN_CACHE_TTL_SECONDS                    = "atlas.notification.authorize.authn.cache.ttl.seconds";
     public static final int    SERVER_READY_WAIT_TIME_MS                                     = 1000;
@@ -209,6 +210,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
     private final boolean                       preprocessEnabled;
     private final boolean                       createShellEntityForNonExistingReference;
     private final boolean                       authorizeUsingMessageUser;
+    private final boolean                       sparkProcessAttributes;
+
     private final Map<String, Authentication>   authnCache;
     private final NotificationInterface         notificationInterface;
     private final Configuration                 applicationProperties;
@@ -367,8 +370,8 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
         hiveTypesRemoveOwnedRefAttrs   = applicationProperties.getBoolean(CONSUMER_PREPROCESS_HIVE_TYPES_REMOVE_OWNEDREF_ATTRS, true);
         rdbmsTypesRemoveOwnedRefAttrs  = applicationProperties.getBoolean(CONSUMER_PREPROCESS_RDBMS_TYPES_REMOVE_OWNEDREF_ATTRS, true);
         s3V2DirectoryPruneObjectPrefix = applicationProperties.getBoolean(CONSUMER_PREPROCESS_S3_V2_DIRECTORY_PRUNE_OBJECT_PREFIX, true);
-
-        preprocessEnabled        = skipHiveColumnLineageHive20633 || updateHiveProcessNameWithQualifiedName || hiveTypesRemoveOwnedRefAttrs || rdbmsTypesRemoveOwnedRefAttrs || s3V2DirectoryPruneObjectPrefix || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty();
+        sparkProcessAttributes      = this.applicationProperties.getBoolean(CONSUMER_PREPROCESS_SPARK_PROCESS_ATTRIBUTES, false);
+        preprocessEnabled        = skipHiveColumnLineageHive20633 || updateHiveProcessNameWithQualifiedName || hiveTypesRemoveOwnedRefAttrs || rdbmsTypesRemoveOwnedRefAttrs || s3V2DirectoryPruneObjectPrefix || !hiveTablesToIgnore.isEmpty() || !hiveTablesToPrune.isEmpty() || !hiveDummyDatabasesToIgnore.isEmpty() || !hiveDummyTablesToIgnore.isEmpty() || !hiveTablePrefixesToIgnore.isEmpty() || sparkProcessAttributes;
         entityCorrelationManager = new EntityCorrelationManager(entityCorrelationStore);
 
         LOG.info("{}={}", CONSUMER_SKIP_HIVE_COLUMN_LINEAGE_HIVE_20633, skipHiveColumnLineageHive20633);
@@ -680,6 +683,10 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
                 pruneObjectPrefixForS3V2Directory(context);
             }
 
+            if (sparkProcessAttributes) {
+                preprocessSparkProcessAttributes(context);
+            }
+
             context.moveRegisteredReferredEntities();
 
             if (context.isHivePreprocessEnabled() && CollectionUtils.isNotEmpty(context.getEntities()) && context.getEntities().size() > 1) {
@@ -785,6 +792,21 @@ public class NotificationHookConsumer implements Service, ActiveStateChangeHandl
 
             if (ignoredEntities > 0 || prunedEntities > 0) {
                 LOG.info("preprocess: ignored entities={}; pruned entities={}. topic-offset={}, partition={}", ignoredEntities, prunedEntities, context.getKafkaMessageOffset(), context.getKafkaPartition());
+            }
+        }
+    }
+
+    private void preprocessSparkProcessAttributes(PreprocessorContext context) {
+        List<AtlasEntity> entities = context.getEntities();
+
+        if (entities != null) {
+            for (int i = 0; i < entities.size(); i++) {
+                AtlasEntity entity = entities.get(i);
+                EntityPreprocessor preprocessor = EntityPreprocessor.getSparkPreprocessor(entity.getTypeName());
+
+                if (preprocessor != null) {
+                    preprocessor.preprocess(entity, context);
+                }
             }
         }
     }
