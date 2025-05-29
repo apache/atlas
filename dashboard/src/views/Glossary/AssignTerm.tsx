@@ -275,6 +275,7 @@ const AssignTerm = ({
     return (serviceTypeData: ServiceTypeInterface[]) =>
       serviceTypeData.map((entity: any) => ({
         id: entity[Object.keys(entity)[0]].name,
+        text: entity[Object.keys(entity)[0]].name,
         label: entity[Object.keys(entity)[0]].name,
         children: child(
           entity[Object.keys(entity)[0]].children as ChildrenInterfaces[]

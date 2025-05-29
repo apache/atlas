@@ -46,6 +46,7 @@ import AddTagAttributes from "@views/Classification/AddTagAttributes";
 import AssignCategory from "@views/Glossary/AssignCategory";
 import AssignTerm from "@views/Glossary/AssignTerm";
 import ShowMoreText from "@components/ShowMore/ShowMoreText";
+import AddUpdateGlossaryForm from "@views/Glossary/AddUpdateGlossaryForm";
 
 const DetailPageAttribute = ({
   data,
@@ -63,12 +64,16 @@ const DetailPageAttribute = ({
   const [tagModal, setTagModal] = useState<boolean>(false);
   const [editTermModal, setEditTermModal] = useState(false);
   const [editCategoryModal, setEditCategoryModal] = useState(false);
-
+  const [glossaryModal, setGlossaryModal] = useState<boolean>(false);
   const [openAddTagModal, setOpenAddTagModal] = useState<boolean>(false);
   const [attributeModal, setAttributeModal] = useState<boolean>(false);
   const [openAddTermModal, setOpenAddTermModal] = useState<boolean>(false);
 
   const [categoryModal, setCategoryModal] = useState<boolean>(false);
+
+  const handleCloseGlossaryModal = () => {
+    setGlossaryModal(false);
+  };
 
   const handleCloseTermModal = () => {
     setOpenAddTermModal(false);
@@ -140,6 +145,9 @@ const DetailPageAttribute = ({
                     if (!isEmpty(tagName)) {
                       setTagModal(true);
                     }
+                    if (!isEmpty(guid) && gtypeParams == "glossary") {
+                      setGlossaryModal(true);
+                    }
                     if (!isEmpty(guid) && gtypeParams == "term") {
                       setEditTermModal(true);
                     }
@@ -147,7 +155,7 @@ const DetailPageAttribute = ({
                       setEditCategoryModal(true);
                     }
                   }}
-                  data-cy="addTag"
+                  data-cy="editButton"
                 >
                   <EditOutlinedIcon className="table-filter-refresh" />
                 </CustomButton>
@@ -694,6 +702,15 @@ const DetailPageAttribute = ({
           data={data || {}}
           updateTable={undefined}
           relatedTerm={undefined}
+        />
+      )}
+
+      {glossaryModal && (
+        <AddUpdateGlossaryForm
+          open={glossaryModal}
+          isAdd={false}
+          onClose={handleCloseGlossaryModal}
+          node={data || {}}
         />
       )}
     </>
