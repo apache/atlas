@@ -370,12 +370,13 @@ const SideBarBody = (props: {
           </div>
           <div
             style={{
-              width: "100%",
+              width: "inherit",
               textAlign: "right",
-              padding: "4px 0",
-              position: "sticky",
+              padding: "8px",
+              position: "fixed",
               bottom: "0px",
-              marginTop: "64px",
+              zIndex: "9",
+              left: "0",
               background: "#034858"
             }}
           >

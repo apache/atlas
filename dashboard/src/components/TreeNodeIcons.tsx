@@ -217,10 +217,6 @@ const TreeNodeIcons = (props: {
         sx={{
           "& .MuiPaper-root": {
             transition: "none !important"
-          },
-          "& .MuiList-padding": {
-            paddingBottom: "0 !important",
-            paddingTop: "0 !important"
           }
         }}
       >
@@ -251,8 +247,8 @@ const TreeNodeIcons = (props: {
                 setCategoryModal(true);
               }
             }}
+            className="sidebar-menu-item"
             data-cy="createClassification"
-            sx={{ paddingRight: "10px", paddingLeft: "10px" }}
           >
             <ListItemIcon sx={{ minWidth: "28px !important" }}>
               <AddIcon fontSize="small" className="menuitem-icon" />
@@ -309,7 +305,7 @@ const TreeNodeIcons = (props: {
               }
             }}
             data-cy="createClassification"
-            sx={{ paddingRight: "10px", paddingLeft: "10px" }}
+            className="sidebar-menu-item"
           >
             <ListItemIcon sx={{ minWidth: "28px !important" }}>
               <ListAltOutlinedIcon fontSize="small" className="menuitem-icon" />
@@ -346,7 +342,7 @@ const TreeNodeIcons = (props: {
               }
             }}
             data-cy="createClassification"
-            sx={{ paddingRight: "10px", paddingLeft: "10px" }}
+            className="sidebar-menu-item"
           >
             <ListItemIcon sx={{ minWidth: "28px !important" }}>
               <DeleteOutlineOutlinedIcon
@@ -389,7 +385,7 @@ const TreeNodeIcons = (props: {
               });
             }}
             data-cy="createClassification"
-            sx={{ paddingRight: "10px", paddingLeft: "10px" }}
+            className="sidebar-menu-item"
           >
             <ListItemIcon sx={{ minWidth: "24px !important" }}>
               <SearchOutlinedIcon fontSize="small" className="menuitem-icon" />
@@ -413,7 +409,7 @@ const TreeNodeIcons = (props: {
                 setCategoryModal(true);
               }}
               data-cy="createClassification"
-              sx={{ paddingRight: "10px", paddingLeft: "10px" }}
+              className="sidebar-menu-item"
             >
               <ListItemIcon sx={{ minWidth: "24px !important" }}>
                 <ListAltIcon fontSize="small" className="menuitem-icon" />
@@ -433,6 +429,7 @@ const TreeNodeIcons = (props: {
               setRenameModal(true);
             }}
             data-cy="createClassification"
+            className="sidebar-menu-item"
           >
             <ListItemIcon>
               <EditOutlinedIcon fontSize="small" className="menuitem-icon" />
@@ -448,6 +445,7 @@ const TreeNodeIcons = (props: {
               setDeleteModal(true);
             }}
             data-cy="downloadBusinessMetadata"
+            className="sidebar-menu-item"
           >
             <ListItemIcon>
               <DeleteOutlineOutlinedIcon
