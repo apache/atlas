@@ -24,9 +24,9 @@ import { useAppDispatch } from "@hooks/reducerHook";
 import ErrorRoundedIcon from "@mui/icons-material/ErrorRounded";
 import { Typography } from "@mui/material";
 import { fetchGlossaryData } from "@redux/slice/glossarySlice";
-import { serverError } from "@utils/Utils";
+import { isEmpty, serverError } from "@utils/Utils";
 import { useRef } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 
 const DeleteGlossary = (props: {
@@ -37,9 +37,14 @@ const DeleteGlossary = (props: {
   updatedData: any;
 }) => {
   const { open, onClose, setExpandNode, node, updatedData } = props;
-  const { id, guid, cGuid, type } = node;
+  const { id, guid, cGuid, types } = node;
   const gtype: string | undefined | null =
-    type != "parents" ? "term" : "glossary";
+    types != "parent" ? "term" : "glossary";
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const glossaryType = searchParams.get("gtype");
+  const { guid: glossaryGuid } = useParams();
+
   const navigate = useNavigate();
   const dispatchApi = useAppDispatch();
   const toastId: any = useRef(null);
@@ -60,12 +65,14 @@ const DeleteGlossary = (props: {
           gtype == "term" ? "Term" : "Glossary"
         } ${id} was deleted successfully`
       );
-      navigate(
-        {
-          pathname: "/"
-        },
-        { replace: true }
-      );
+      if (!isEmpty(glossaryGuid) || !isEmpty(glossaryType)) {
+        navigate(
+          {
+            pathname: "/"
+          },
+          { replace: true }
+        );
+      }
       onClose();
       setExpandNode(null);
     } catch (error) {
