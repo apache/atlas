@@ -46,6 +46,13 @@
   width: 100%;
   flex: 1;
   margin-bottom: 0.5rem !important;
+  height: 34px;
+  border-radius: 3px;
+  outline: none;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  padding: 6px 12px;
+  min-height: 34px;
+  width: 100%;
 }
 
 .form-textfield-label {

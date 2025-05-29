@@ -328,6 +328,7 @@ const ClassificationForm = ({
                       ) : (
                         <textarea
                           {...field}
+                          className="form-textarea-field"
                           placeholder={"Long Description"}
                           value={sanitizeHtmlContent(descriptionValue)}
                           onChange={(e) => {

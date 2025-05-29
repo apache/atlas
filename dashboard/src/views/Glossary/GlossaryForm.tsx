@@ -153,20 +153,9 @@ const GlossaryForm = (props: {
                       />
                     </div>
                   ) : (
-                    // <TextArea
-                    //   {...field}
-                    //   minRows={4}
-                    //   placeholder={"Long Description"}
-                    //   onChange={(e) => {
-                    //     e.stopPropagation();
-                    //     const value = e.target.value;
-                    //     field.onChange(value);
-                    //     setValue("description", value);
-                    //   }}
-                    //   style={{ width: "100%" }}
-                    //   />
                     <textarea
                       {...field}
+                      className="form-textarea-field"
                       placeholder={"Long Description"}
                       onChange={(e) => {
                         e.stopPropagation();
