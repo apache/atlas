@@ -900,7 +900,7 @@
       ],
       "description": "Atlan Type representing parent model for Persona, Purpose",
       "serviceType": "atlan",
-      "typeVersion": "1.5",
+      "typeVersion": "1.6",
       "attributeDefs": [
         {
           "name": "isAccessControlEnabled",
@@ -909,6 +909,17 @@
           "isIndexable": false,
           "isOptional": true,
           "defaultValue": true,
+          "isUnique": false,
+          "skipScrubbing": true,
+          "includeInNotification": false
+        },
+        {
+          "name": "denySidebarTabs",
+          "typeName": "array<string>",
+          "indexType": "STRING",
+          "cardinality": "SET",
+          "isIndexable": false,
+          "isOptional": true,
           "isUnique": false,
           "skipScrubbing": true,
           "includeInNotification": false
