@@ -774,15 +774,6 @@
       "policyType": "ACCESS",
       "resources": [
         "entity:{entity}/*product/*",
-        "entity-type:DataProduct",
-        "entity-classification:*"
-      ],
-      "actions": ["entity-read"]
-    },
-    {
-      "policyResourceCategory": "ENTITY",
-      "policyType": "ACCESS",
-      "resources": [
         "entity:{entity}",
         "entity-type:DataProduct",
         "entity-classification:*"
@@ -845,6 +836,7 @@
       "policyType": "ACCESS",
       "resources": [
         "entity:{entity}/*product/*",
+        "entity:{entity}",
         "entity-type:DataProduct",
         "entity-classification:*",
         "classification:*"
@@ -870,6 +862,7 @@
 
         "end-two-entity-type:DataProduct",
         "end-two-entity-classification:*",
+        "end-two-entity:{entity}",
         "end-two-entity:{entity}/*product/*"
       ],
 
@@ -885,6 +878,7 @@
 
         "end-one-entity-type:DataProduct",
         "end-one-entity-classification:*",
+        "end-one-entity:{entity}",
         "end-one-entity:{entity}/*product/*",
 
         "end-two-entity-type:Asset",
@@ -892,56 +886,6 @@
         "end-two-entity:*"
       ],
 
-      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
-    },
-    {
-      "policyResourceCategory": "ENTITY",
-      "policyType": "ACCESS",
-      "resources": [
-        "entity:{entity}",
-        "entity-type:DataProduct",
-        "entity-classification:*",
-        "classification:*"
-      ],
-      "actions": [
-        "entity-update",
-        "entity-add-classification",
-        "entity-update-classification",
-        "entity-remove-classification"
-      ]
-    },
-    {
-      "policyResourceCategory": "RELATIONSHIP",
-      "policyType": "ACCESS",
-      "description": "Link/unlink any Asset to this DataProduct",
-      "resources": [
-        "relationship-type:*",
-
-        "end-one-entity-type:Asset",
-        "end-one-entity-classification:*",
-        "end-one-entity:*",
-
-        "end-two-entity-type:DataProduct",
-        "end-two-entity-classification:*",
-        "end-two-entity:{entity}"
-      ],
-      "actions": ["add-relationship", "update-relationship", "remove-relationship"]
-    },
-    {
-      "policyResourceCategory": "RELATIONSHIP",
-      "policyType": "ACCESS",
-      "description": "Link/unlink any Asset to this DataProduct",
-      "resources": [
-        "relationship-type:*",
-
-        "end-one-entity-type:DataProduct",
-        "end-one-entity-classification:*",
-        "end-one-entity:{entity}",
-
-        "end-two-entity-type:Asset",
-        "end-two-entity-classification:*",
-        "end-two-entity:*"
-      ],
       "actions": ["add-relationship", "update-relationship", "remove-relationship"]
     }
   ],
@@ -951,15 +895,6 @@
       "policyType": "ACCESS",
       "resources": [
         "entity:{entity}/*product/*",
-        "entity-type:DataProduct",
-        "entity-classification:*"
-      ],
-      "actions": ["entity-delete"]
-    },
-    {
-      "policyResourceCategory": "ENTITY",
-      "policyType": "ACCESS",
-      "resources": [
         "entity:{entity}",
         "entity-type:DataProduct",
         "entity-classification:*"
@@ -973,16 +908,6 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}/*product/*",
-        "entity-type:DataProduct",
-        "entity-classification:*",
-        "entity-business-metadata:*"
-      ],
-      "actions": ["entity-update-business-metadata"]
-    },
-    {
-      "policyType": "ACCESS",
-      "policyResourceCategory": "ENTITY",
-      "resources": [
         "entity:{entity}",
         "entity-type:DataProduct",
         "entity-classification:*",
