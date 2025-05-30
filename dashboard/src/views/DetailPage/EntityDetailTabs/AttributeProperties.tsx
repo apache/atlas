@@ -225,62 +225,64 @@ const AttributeProperties = ({
                     ? properties
                     : nonEmptyValueProperty
                   : properties
-              )
-                ? Object.entries(
-                    !auditDetails
-                      ? checked
-                        ? properties
-                        : nonEmptyValueProperty
-                      : properties
-                  )
-                    .sort()
-                    .map(([keys, value]: [string, any]) => {
-                      return (
-                        <>
-                          <Stack
-                            direction="row"
-                            spacing={4}
-                            marginBottom={1}
-                            marginTop={1}
+              ) ? (
+                Object.entries(
+                  !auditDetails
+                    ? checked
+                      ? properties
+                      : nonEmptyValueProperty
+                    : properties
+                )
+                  .sort()
+                  .map(([keys, value]: [string, any]) => {
+                    return (
+                      <>
+                        <Stack
+                          direction="row"
+                          spacing={4}
+                          marginBottom={1}
+                          marginTop={1}
+                        >
+                          <div
+                            style={{
+                              flexBasis: "30%",
+                              wordBreak: "break-all",
+                              textAlign: "left",
+                              fontWeight: "600"
+                            }}
                           >
-                            <div
-                              style={{
-                                flexBasis: "30%",
-                                wordBreak: "break-all",
-                                textAlign: "left",
-                                fontWeight: "600"
-                              }}
-                            >
-                              {`${keys} ${
-                                isArray(value) ? `(${value.length})` : ""
-                              }`}
-                            </div>
-                            <div
-                              style={{
-                                flex: 1,
-                                wordBreak: "break-all",
-                                textAlign: "left",
-                                margin: "0"
-                              }}
-                              className="attribute-value-text"
-                            >
-                              {getValues(
-                                value,
-                                properties,
-                                typeDefEntityData,
-                                undefined,
-                                "properties",
-                                referredEntities,
-                                entity,
-                                keys
-                              )}
-                            </div>
-                          </Stack>
-                          <Divider />
-                        </>
-                      );
-                    })
-                : "No Record Found"}
+                            {`${keys} ${
+                              isArray(value) ? `(${value.length})` : ""
+                            }`}
+                          </div>
+                          <div
+                            style={{
+                              flex: 1,
+                              wordBreak: "break-all",
+                              textAlign: "left",
+                              margin: "0"
+                            }}
+                            className="attribute-value-text"
+                          >
+                            {getValues(
+                              value,
+                              properties,
+                              typeDefEntityData,
+                              undefined,
+                              "properties",
+                              referredEntities,
+                              entity,
+                              keys
+                            )}
+                          </div>
+                        </Stack>
+                        <Divider />
+                      </>
+                    );
+                  })
+              ) : (
+                <Stack textAlign="center">No Record Found</Stack>
+              )}
             </Stack>
           )}
         </AccordionDetails>
