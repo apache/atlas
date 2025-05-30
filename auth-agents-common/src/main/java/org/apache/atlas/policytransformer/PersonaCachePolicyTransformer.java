@@ -105,14 +105,8 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                 header.setAttribute(ATTR_POLICY_CONDITIONS, templatePolicy.getPolicyConditions());
 
                 if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
-                    if (JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, "entity") == null) {
-                        LOG.error("PolicyRefresher: PersonaCachePolicyTransformer: error parsing policyFilterCriteria for policyId={}, policyFilterCriteria={}", header.getGuid(), policyFilterCriteria);
-                        continue;
-                    }
-                    header.setAttribute(ATTR_POLICY_FILTER_CRITERIA, templatePolicy.getPolicyFilterCriteria() != null
-                            ? templatePolicy.getPolicyFilterCriteria().replace(PLACEHOLDER_FILTER_CRITERIA, policyFilterCriteria)
-                            : policyFilterCriteria);
-                    header.setAttribute(ATTR_POLICY_RESOURCES, new ArrayList<>());
+                    header.setAttribute(ATTR_POLICY_FILTER_CRITERIA, policyFilterCriteria);
+                    header.setAttribute(ATTR_POLICY_RESOURCES, new ArrayList<>(0));
                 } else {
                     String subCategory = getPolicySubCategory(atlasPolicy);
 
@@ -147,7 +141,6 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
                         }
                     }
                     header.setAttribute(ATTR_POLICY_RESOURCES, finalResources);
-                    header.setAttribute(ATTR_POLICY_FILTER_CRITERIA, "");
                 }
                 ret.add(header);
             }
