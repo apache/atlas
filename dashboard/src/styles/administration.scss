@@ -32,11 +32,11 @@
   padding-left: 20px;
 }
 
-.audit-results-lsit-item {
-  display: list-item;
-  padding-left: 0;
-}
-
 .audit-results-entityid {
   display: block;
+}
+
+.enum-value-selector {
+  display: inline-grid !important;
+  grid-template-columns: 1fr !important;
 }
