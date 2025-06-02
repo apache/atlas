@@ -1068,7 +1068,9 @@ public abstract class DeleteHandlerV1 {
             }
         }
 
-        cleanupDenormalizedAssetReferencesFromProduct(instanceVertex);
+        cleanupEntityAttributeReferences(instanceVertex, DATA_PRODUCT_ENTITY_TYPE, OUTPUT_PORT_GUIDS_ATTR);
+
+        cleanupEntityAttributeReferences(instanceVertex, DATA_PRODUCT_ENTITY_TYPE, INPUT_PORT_GUIDS_ATTR);
 
         _deleteVertex(instanceVertex, force);
     }
@@ -1727,7 +1729,7 @@ public abstract class DeleteHandlerV1 {
                 });
     }
 
-    private void cleanupDenormalizedAssetReferencesFromProduct(AtlasVertex vertex) {
+    private void cleanupEntityAttributeReferences(AtlasVertex vertex, String typeName, String attributeName) {
         try {
             DeleteType deleteType = RequestContext.get().getDeleteType();
             if (deleteType != DeleteType.HARD && deleteType != DeleteType.PURGE) {
@@ -1736,45 +1738,30 @@ public abstract class DeleteHandlerV1 {
 
             if (isAssetType(vertex)) {
                 String guid = GraphHelper.getGuid(vertex);
-                int productRefsRemoved = 0;
+                int attributeRefsRemoved = 0;
 
                 try {
-                    Iterator<AtlasVertex> products = graph.query()
-                        .has("__typeName", DATA_PRODUCT_ENTITY_TYPE)
-                        .has(OUTPUT_PORT_GUIDS_ATTR, guid)
+                    Iterator<AtlasVertex> entities = graph.query()
+                        .has("__typeName", typeName)
+                        .has(attributeName, guid)
                         .vertices().iterator();
 
-                    while (products.hasNext()) {
-                        AtlasVertex product = products.next();
-                        AtlasGraphUtilsV2.removeItemFromListPropertyValue(product, OUTPUT_PORT_GUIDS_ATTR, guid);
-                        productRefsRemoved++;
+                    while (entities.hasNext()) {
+                        AtlasVertex entity = entities.next();
+                        AtlasGraphUtilsV2.removeItemFromListPropertyValue(entity, attributeName, guid);
+                        attributeRefsRemoved++;
                     }
                 } catch (Exception e) {
-                    LOG.error("cleanupDenormalizedAssetReferencesFromProduct: failed to cleanup reference for outputPort asset {} from individual product", guid, e);
+                    LOG.error("cleanupEntityAttributeReferences: failed to cleanup attribute reference for asset {} from individual entity", guid, e);
                 }
 
-                try {
-                    Iterator<AtlasVertex> products = graph.query()
-                            .has("__typeName", DATA_PRODUCT_ENTITY_TYPE)
-                            .has(INPUT_PORT_GUIDS_ATTR, guid)
-                            .vertices().iterator();
-
-                    while (products.hasNext()) {
-                        AtlasVertex product = products.next();
-                        AtlasGraphUtilsV2.removeItemFromListPropertyValue(product, INPUT_PORT_GUIDS_ATTR, guid);
-                        productRefsRemoved++;
-                    }
-                } catch (Exception e) {
-                    LOG.error("cleanupDenormalizedAssetReferencesFromProduct: failed to cleanup reference for inputPort asset {} from individual product", guid, e);
-                }
-
-                if (productRefsRemoved > 0) {
-                    LOG.info("cleanupDenormalizedProductReferences: successfully cleaned up {} product references for asset: {}", productRefsRemoved, guid);
+                if (attributeRefsRemoved > 0) {
+                    LOG.info("cleanupEntityAttributeReferences: successfully cleaned up {} attribute references for asset: {}", attributeRefsRemoved, guid);
                 }
             }
         }
         catch (Exception e) {
-            LOG.error("cleanupDenormalizedAssetReferencesFromProduct: unexpected error during cleanup", e);
+            LOG.error("cleanupEntityAttributeReferences: unexpected error during cleanup", e);
         }
     }
 
