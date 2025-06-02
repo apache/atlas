@@ -17,10 +17,12 @@
  */
 package org.apache.atlas.repository.store.aliasstore;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.ESAliasRequestBuilder;
 import org.apache.atlas.ESAliasRequestBuilder.AliasAction;
+import org.apache.atlas.authorizer.JsonToElasticsearchQuery;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -40,7 +42,6 @@ import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.ADD;
 import static org.apache.atlas.repository.Constants.PERSONA_ENTITY_TYPE;
@@ -49,8 +50,6 @@ import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
 import static org.apache.atlas.repository.Constants.QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.AI_APPLICATION;
-import static org.apache.atlas.repository.Constants.AI_MODEL;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_DOMAIN;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_METADATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_GLOSSARY;
@@ -59,6 +58,10 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PE
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_AI_APP;
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_AI_MODEL;
 import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_ENTITY_TYPE;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
+import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PURPOSE_METADATA;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SERVICE_NAME_ABAC;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_FILTER_CRITERIA;
 import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionQualifiedNameFromPolicyAssets;
 import static org.apache.atlas.repository.util.AccessControlUtils.getESAliasName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsAllowPolicy;
@@ -196,14 +199,31 @@ public class ESAliasStore implements IndexAliasStore {
         for (AtlasEntity policy: policies) {
 
             if (policy.getStatus() == null || AtlasEntity.Status.ACTIVE.equals(policy.getStatus())) {
-                List<String> assets = getPolicyAssets(policy);
-
                 if (!getIsAllowPolicy(policy)) {
                     continue;
                 }
 
+                List<String> assets = getPolicyAssets(policy);
                 List<String> policyActions = getPolicyActions(policy);
-                
+                String policyServiceName = (String) policy.getAttribute(ATTR_POLICY_SERVICE_NAME);
+
+
+                // Handle ABAC policies
+                if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
+                    String policyFilterCriteria = (String) policy.getAttribute(ATTR_POLICY_FILTER_CRITERIA);
+                    JsonNode entityFilterCriteriaNode = JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, "entity");
+
+                    if (entityFilterCriteriaNode == null) continue;
+
+                    try {
+                        JsonNode dsl = JsonToElasticsearchQuery.convertJsonToQuery(entityFilterCriteriaNode);
+                        allowClauseList.add(mapOf("bool", dsl.get("bool")));
+                    } catch (Exception e) {
+                        LOG.error("Error processing ABAC policy filter criteria for policy {}", policy.getGuid(), e);
+                    }
+                    continue;
+                }
+
                 if (policyActions.contains(ACCESS_READ_PERSONA_METADATA)) {
 
                     String connectionQName = getPolicyConnectionQN(policy);
@@ -239,7 +259,6 @@ public class ESAliasStore implements IndexAliasStore {
                     }
 
                     terms.add(connectionQName);
-
                 } else if (policyActions.contains(ACCESS_READ_PERSONA_GLOSSARY)) {
                     if (CollectionUtils.isNotEmpty(assets)) {
                         terms.addAll(assets);
@@ -269,16 +288,13 @@ public class ESAliasStore implements IndexAliasStore {
                     }
                 } else if (policyActions.contains(ACCESS_READ_PERSONA_SUB_DOMAIN)) {
                     for (String asset : assets) {
-                        //terms.add(asset);
                         List<Map<String, Object>> mustMap = new ArrayList<>();
                         mustMap.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*domain/*")));
                         mustMap.add(mapOf("term", mapOf("__typeName.keyword", "DataDomain")));
                         allowClauseList.add(mapOf("bool", mapOf("must", mustMap)));
                     }
-
                 } else if (policyActions.contains(ACCESS_READ_PERSONA_PRODUCT)) {
                     for (String asset : assets) {
-                        //terms.add(asset);
                         List<Map<String, Object>> mustMap = new ArrayList<>();
                         mustMap.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*product/*")));
                         mustMap.add(mapOf("term", mapOf("__typeName.keyword", "DataProduct")));
@@ -301,11 +317,12 @@ public class ESAliasStore implements IndexAliasStore {
             }
         }
 
-        allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, new ArrayList<>(terms))));
+        if (!terms.isEmpty()) {
+            allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, new ArrayList<>(terms))));
+        }
         if (CollectionUtils.isNotEmpty(metadataPolicyQualifiedNames)) {
             allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, new ArrayList<>(metadataPolicyQualifiedNames))));
         }
-        
         if (CollectionUtils.isNotEmpty(glossaryQualifiedNames)) {
             allowClauseList.add(mapOf("terms", mapOf(GLOSSARY_PROPERTY_KEY, new ArrayList<>(glossaryQualifiedNames))));
         }

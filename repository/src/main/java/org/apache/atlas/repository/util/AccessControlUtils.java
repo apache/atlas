@@ -448,4 +448,8 @@ public final class AccessControlUtils {
 
         return false;
     }
+
+    public static boolean isABACPolicyService(AtlasEntity entity) {
+        return POLICY_SERVICE_NAME_ABAC.equals(getPolicyServiceName(entity));
+    }
 }
