@@ -266,7 +266,8 @@ public enum AtlasErrorCode {
     FAILED_TO_CREATE_GLOSSARY_TERM(500, "ATLAS-500-00-016", "Error occurred while creating glossary term: {0}"),
     FAILED_TO_UPDATE_GLOSSARY_TERM(500, "ATLAS-500-00-017", "Error occurred while updating glossary term: {0}"),
     REPAIR_INDEX_FAILED(500, "ATLAS-500-00-018", "Error occurred while repairing indices: {0}"),
-    INDEX_SEARCH_FAILED(400, "ATLAS-400-00-102", "Error occurred while running direct index query on ES: {0}"),
+    INDEX_SEARCH_FAILED(500, "ATLAS-500-00-102", "Error occurred while running direct index query on ES: {0}"),
+    INDEX_SEARCH_CLIENT_NOT_INITIATED(500, "ATLAS-500-00-103", "Error occurred while running direct index query on ES: restClient is not initiated"),
 
     INDEX_SEARCH_FAILED_DUE_TO_TIMEOUT(429, "ATLAS-400-00-502", "ES query exceeded timeout: {0}"),
     INDEX_SEARCH_GATEWAY_TIMEOUT(504, "ATLAS-504-00-001", "ES query gateway timeout: {0}"),
