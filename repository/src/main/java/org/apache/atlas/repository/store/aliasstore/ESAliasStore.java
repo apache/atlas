@@ -59,7 +59,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PE
 import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PERSONA_AI_MODEL;
 import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_SERVICE_NAME;
-import static org.apache.atlas.repository.util.AccessControlUtils.ACCESS_READ_PURPOSE_METADATA;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CATEGORY_METADATA;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SERVICE_NAME_ABAC;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_FILTER_CRITERIA;
 import static org.apache.atlas.repository.util.AccessControlUtils.getConnectionQualifiedNameFromPolicyAssets;
@@ -72,6 +72,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyResou
 import static org.apache.atlas.repository.util.AccessControlUtils.getFilteredPolicyResources;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPolicyConnectionQN;
 import static org.apache.atlas.repository.util.AccessControlUtils.getPurposeTags;
+import static org.apache.atlas.repository.util.AccessControlUtils.getPolicySubCategory;
 import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.type.Constants.GLOSSARY_PROPERTY_KEY;
 
@@ -226,6 +227,11 @@ public class ESAliasStore implements IndexAliasStore {
 
                 if (policyActions.contains(ACCESS_READ_PERSONA_METADATA)) {
 
+                    if (!POLICY_SUB_CATEGORY_METADATA.equals(getPolicySubCategory(policy))) {
+                        terms.addAll(assets);
+                        continue;
+                    }
+
                     String connectionQName = getPolicyConnectionQN(policy);
                     if (StringUtils.isEmpty(connectionQName)) {
                         connectionQName = getConnectionQualifiedNameFromPolicyAssets(entityRetriever, assets);
@@ -268,19 +274,7 @@ public class ESAliasStore implements IndexAliasStore {
                     for (String asset : assets) {
                         if(!isAllDomain(asset)) {
                             terms.add(asset);
-
-                            // Add all parent domains in the hierarchy
-                            String currentPath = asset;
-                            while (currentPath.contains("/domain/")) {
-                                int lastDomainIndex = currentPath.lastIndexOf("/domain/");
-                                if (lastDomainIndex != -1) {
-                                    currentPath = currentPath.substring(0, lastDomainIndex);
-                                    if (currentPath.endsWith("default")) {
-                                        continue;
-                                    }
-                                    terms.add(currentPath);
-                                }
-                            }
+                            terms.addAll(getParentDomainPaths(asset)); // Add all parent domains in the hierarchy
                         } else {
                             asset = NEW_WILDCARD_DOMAIN_SUPER;
                         }
@@ -326,6 +320,27 @@ public class ESAliasStore implements IndexAliasStore {
         if (CollectionUtils.isNotEmpty(glossaryQualifiedNames)) {
             allowClauseList.add(mapOf("terms", mapOf(GLOSSARY_PROPERTY_KEY, new ArrayList<>(glossaryQualifiedNames))));
         }
+    }
+
+    private List<String> getParentDomainPaths(String asset) {
+        List<String> domainPaths = new ArrayList<>();
+        String currentPath = asset;
+        while (true) {
+            int lastDomainIndex = currentPath.lastIndexOf("/domain/");
+            int lastProductIndex = currentPath.lastIndexOf("/product/");
+            int lastIndex = Math.max(lastDomainIndex, lastProductIndex);
+
+            if (lastIndex == -1) {
+                break;
+            }
+
+            currentPath = currentPath.substring(0, lastIndex);
+            if (currentPath.endsWith("default")) {
+                break;
+            }
+            domainPaths.add(currentPath);
+        }
+        return domainPaths;
     }
 
     private boolean isAllDomain(String asset) {
