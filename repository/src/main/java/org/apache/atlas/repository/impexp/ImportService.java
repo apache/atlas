@@ -20,6 +20,7 @@ package org.apache.atlas.repository.impexp;
 import com.google.common.annotations.VisibleForTesting;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.entitytransform.BaseEntityHandler;
 import org.apache.atlas.entitytransform.TransformerContext;
@@ -232,7 +233,7 @@ public class ImportService {
         importTypeDefProcessor.processTypes(typeDefinitionMap, result);
     }
 
-    private void processEntities(String userName, EntityImportStream importSource, AtlasImportResult result) throws AtlasBaseException {
+    private void processEntities(String userName, EntityImportStream importSource, AtlasImportResult result) throws AtlasBaseException, AtlasException {
         result.setExportResult(importSource.getExportResult());
         this.bulkImporter.bulkImport(importSource, result);
 

@@ -25,8 +25,10 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -38,10 +40,7 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.graphdb.AtlasEdge;
-import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
-import org.apache.atlas.repository.graphdb.AtlasGraph;
-import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
@@ -82,6 +81,7 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_REFRESH_PROPAGATION;
+import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
@@ -99,15 +99,17 @@ public abstract class DeleteHandlerV1 {
     protected final GraphHelper          graphHelper;
     private   final AtlasTypeRegistry    typeRegistry;
     protected   final EntityGraphRetriever entityRetriever;
+    protected final EntityDiscoveryService discovery;
     private   final boolean              shouldUpdateInverseReferences;
     private   final boolean              softDelete;
     private   final TaskManagement       taskManagement;
     private   final AtlasGraph           graph;
     private   final TaskUtil             taskUtil;
 
-    public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
+    public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) throws AtlasException {
         this.typeRegistry                  = typeRegistry;
         this.graphHelper                   = new GraphHelper(graph);
+        this.discovery                     = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
         this.entityRetriever               = new EntityGraphRetriever(graph, typeRegistry);
         this.shouldUpdateInverseReferences = shouldUpdateInverseReference;
         this.softDelete                    = softDelete;
@@ -1068,9 +1070,12 @@ public abstract class DeleteHandlerV1 {
             }
         }
 
-        cleanupEntityAttributeReferences(instanceVertex, DATA_PRODUCT_ENTITY_TYPE, OUTPUT_PORT_GUIDS_ATTR);
+        DeleteType deleteType = RequestContext.get().getDeleteType();
+        if (deleteType.equals(DeleteType.HARD) || deleteType.equals(DeleteType.PURGE)) {
+            cleanupEntityAttributeReferences(instanceVertex, DATA_PRODUCT_ENTITY_TYPE, OUTPUT_PORT_GUIDS_ATTR);
 
-        cleanupEntityAttributeReferences(instanceVertex, DATA_PRODUCT_ENTITY_TYPE, INPUT_PORT_GUIDS_ATTR);
+            cleanupEntityAttributeReferences(instanceVertex, DATA_PRODUCT_ENTITY_TYPE, INPUT_PORT_GUIDS_ATTR);
+        }
 
         _deleteVertex(instanceVertex, force);
     }
@@ -1731,25 +1736,23 @@ public abstract class DeleteHandlerV1 {
 
     private void cleanupEntityAttributeReferences(AtlasVertex vertex, String typeName, String attributeName) {
         try {
-            DeleteType deleteType = RequestContext.get().getDeleteType();
-            if (deleteType != DeleteType.HARD && deleteType != DeleteType.PURGE) {
-                return;
-            }
-
             if (isAssetType(vertex)) {
                 String guid = GraphHelper.getGuid(vertex);
                 int attributeRefsRemoved = 0;
 
                 try {
-                    Iterator<AtlasVertex> entities = graph.query()
-                        .has("__typeName", typeName)
-                        .has(attributeName, guid)
-                        .vertices().iterator();
+                    List<AtlasEntityHeader> entities = fetchEntitiesUsingIndexSearch(typeName, attributeName, guid);
 
-                    while (entities.hasNext()) {
-                        AtlasVertex entity = entities.next();
-                        AtlasGraphUtilsV2.removeItemFromListPropertyValue(entity, attributeName, guid);
-                        attributeRefsRemoved++;
+                    for (AtlasEntityHeader entity: entities) {
+                        String entityGuid = entity.getGuid();
+                        AtlasVertex entityVertex = entityRetriever.getEntityVertex(entityGuid);
+
+                        AtlasGraphUtilsV2.removeItemFromListPropertyValue(
+                                entityVertex,
+                                attributeName,
+                                guid
+                        );
+                        attributeRefsRemoved += 1;
                     }
                 } catch (Exception e) {
                     LOG.error("cleanupEntityAttributeReferences: failed to cleanup attribute reference for asset {} from individual entity", guid, e);
@@ -1764,6 +1767,32 @@ public abstract class DeleteHandlerV1 {
             LOG.error("cleanupEntityAttributeReferences: unexpected error during cleanup", e);
         }
     }
+
+    private List<AtlasEntityHeader> fetchEntitiesUsingIndexSearch(String typeName, String attributeName, String guid) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("findProductsWithPortGuid");
+        try {
+            List<Map<String, Object>> shouldClauses = new ArrayList<>();
+            shouldClauses.add(mapOf("term", mapOf(attributeName, guid)));
+
+            List<Map<String, Object>> mustClauses = new ArrayList<>();
+            mustClauses.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
+            mustClauses.add(mapOf("term", mapOf("__state", "ACTIVE")));
+
+            Map<String, Object> bool = new HashMap<>();
+            bool.put("must", mustClauses);
+            bool.put("should", shouldClauses);
+
+            Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
+
+            IndexSearchParams searchParams = new IndexSearchParams();
+            searchParams.setDsl(dsl);
+
+            return discovery.directIndexSearch(searchParams).getEntities();
+
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+}
 
     private boolean isAssetType(AtlasVertex vertex) {
         String typeName = GraphHelper.getTypeName(vertex);
