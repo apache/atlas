@@ -459,7 +459,7 @@ public class TypesREST {
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
             AtlasTypesDef atlasTypesDef = typeDefStore.createTypesDef(typesDef);
-            typeCacheRefresher.refreshAllHostCache();
+            refreshAllHostCache(RequestContext.get().getTraceId());
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.createAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
@@ -584,7 +584,7 @@ public class TypesREST {
             }
             lock = attemptAcquiringLockV2();
             typeDefStore.deleteTypesDef(typesDef);
-            typeCacheRefresher.refreshAllHostCache();
+            refreshAllHostCache(RequestContext.get().getTraceId());
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.deleteAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
             throw atlasBaseException;

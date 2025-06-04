@@ -774,6 +774,7 @@
       "policyType": "ACCESS",
       "resources": [
         "entity:{entity}/*product/*",
+        "entity:{entity}",
         "entity-type:DataProduct",
         "entity-classification:*"
       ],
@@ -835,6 +836,7 @@
       "policyType": "ACCESS",
       "resources": [
         "entity:{entity}/*product/*",
+        "entity:{entity}",
         "entity-type:DataProduct",
         "entity-classification:*",
         "classification:*"
@@ -860,6 +862,7 @@
 
         "end-two-entity-type:DataProduct",
         "end-two-entity-classification:*",
+        "end-two-entity:{entity}",
         "end-two-entity:{entity}/*product/*"
       ],
 
@@ -875,6 +878,7 @@
 
         "end-one-entity-type:DataProduct",
         "end-one-entity-classification:*",
+        "end-one-entity:{entity}",
         "end-one-entity:{entity}/*product/*",
 
         "end-two-entity-type:Asset",
@@ -891,6 +895,7 @@
       "policyType": "ACCESS",
       "resources": [
         "entity:{entity}/*product/*",
+        "entity:{entity}",
         "entity-type:DataProduct",
         "entity-classification:*"
       ],
@@ -903,6 +908,7 @@
       "policyResourceCategory": "ENTITY",
       "resources": [
         "entity:{entity}/*product/*",
+        "entity:{entity}",
         "entity-type:DataProduct",
         "entity-classification:*",
         "entity-business-metadata:*"
