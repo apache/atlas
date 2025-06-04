@@ -1781,7 +1781,6 @@ public abstract class DeleteHandlerV1 {
 
             List<Map<String, Object>> mustClauses = new ArrayList<>();
             mustClauses.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
-            mustClauses.add(mapOf("term", mapOf("__state", "ACTIVE")));
 
             Map<String, Object> bool = new HashMap<>();
             bool.put("must", mustClauses);

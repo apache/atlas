@@ -150,7 +150,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                         return null;
                     }
                 }
-                // For REMOVE operations, we also want to handle product hard deletion case so productVertex is not fetched
+                // For REMOVE operation, we are not fetching the product vertex because we are also handling DataProduct hard deletion in REMOVE flow.
             } catch (AtlasBaseException e){
                 LOG.warn("Entity Vertex not found", e);
                 return null;
