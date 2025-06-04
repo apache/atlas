@@ -76,8 +76,7 @@ import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.INPUT_PORT_GUIDS_ATTR;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.OUTPUT_PORT_GUIDS_ATTR;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_REFRESH_PROPAGATION;
@@ -1776,22 +1775,19 @@ public abstract class DeleteHandlerV1 {
     private List<AtlasEntityHeader> fetchEntitiesUsingIndexSearch(String typeName, String attributeName, String guid) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("findProductsWithPortGuid");
         try {
-            List<Map<String, Object>> shouldClauses = new ArrayList<>();
-            shouldClauses.add(mapOf("term", mapOf(attributeName, guid)));
-
             List<Map<String, Object>> mustClauses = new ArrayList<>();
             mustClauses.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
+            mustClauses.add(mapOf("bool", mapOf(attributeName, guid)));
 
             Map<String, Object> bool = new HashMap<>();
             bool.put("must", mustClauses);
-            bool.put("should", shouldClauses);
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
             IndexSearchParams searchParams = new IndexSearchParams();
             searchParams.setDsl(dsl);
 
-            return discovery.directIndexSearch(searchParams).getEntities();
+            return indexSearchPaginated(dsl, null, discovery);
 
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
