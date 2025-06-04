@@ -19,7 +19,6 @@
 package org.apache.atlas.repository.store.graph.v2.bulkimport;
 
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
 import org.apache.atlas.model.impexp.AtlasImportResult;
@@ -56,7 +55,7 @@ public class MigrationImport extends ImportStrategy {
         LOG.info("MigrationImport: Using bulkLoading...");
     }
 
-    public EntityMutationResponse run(EntityImportStream entityStream, AtlasImportResult importResult) throws AtlasBaseException, AtlasException {
+    public EntityMutationResponse run(EntityImportStream entityStream, AtlasImportResult importResult) throws AtlasBaseException {
         if (entityStream == null || !entityStream.hasNext()) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "no entities to create/update.");
         }
@@ -94,7 +93,7 @@ public class MigrationImport extends ImportStrategy {
     }
 
     private EntityCreationManager createEntityCreationManager(AtlasImportResult importResult,
-                                                              DataMigrationStatusService dataMigrationStatusService) throws AtlasException {
+                                                              DataMigrationStatusService dataMigrationStatusService) {
         AtlasGraph graphBulk = graphProvider.getBulkLoading();
 
         EntityGraphRetriever entityGraphRetriever = new EntityGraphRetriever(this.graph, typeRegistry);
@@ -120,7 +119,7 @@ public class MigrationImport extends ImportStrategy {
         return ret;
     }
 
-    private AtlasEntityStoreV2 createEntityStore(AtlasGraph graph, AtlasTypeRegistry typeRegistry) throws AtlasException {
+    private AtlasEntityStoreV2 createEntityStore(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
         FullTextMapperV2Nop fullTextMapperV2 = new FullTextMapperV2Nop();
         DeleteHandlerDelegate deleteDelegate = new DeleteHandlerDelegate(graph, typeRegistry, null);
         RestoreHandlerV1 restoreHandlerV1 = new RestoreHandlerV1(graph, typeRegistry);

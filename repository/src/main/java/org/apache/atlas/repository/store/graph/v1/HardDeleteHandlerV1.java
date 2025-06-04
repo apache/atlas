@@ -18,7 +18,6 @@
 
 package org.apache.atlas.repository.store.graph.v1;
 
-import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -38,7 +37,7 @@ import javax.inject.Inject;
 public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
 
     @Inject
-    public HardDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement) throws AtlasException {
+    public HardDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement) {
         super(graph, typeRegistry, true, false, taskManagement);
     }
 
