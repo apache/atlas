@@ -37,6 +37,15 @@
             "type": "keyword"
           }
         }
+      },
+      {
+        "suppress_attribute_hashes": {
+          "path_match": "detail.classifications.properties.attributes.*",
+          "mapping": {
+            "type": "object",
+            "enabled": false
+          }
+        }
       }
     ],
     "date_detection": false,
