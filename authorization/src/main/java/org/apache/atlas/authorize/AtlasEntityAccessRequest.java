@@ -22,6 +22,8 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.lang.StringUtils;
 
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Set;
 
 public class AtlasEntityAccessRequest extends AtlasAccessRequest {
@@ -76,7 +78,7 @@ public class AtlasEntityAccessRequest extends AtlasAccessRequest {
         this.businessMetadata      = businessMetadata;
         this.attributeName         = attributeName;
         this.typeRegistry          = typeRegistry;
-        this.entityClassifications = super.getClassificationNames(entity);
+        this.entityClassifications = (entity != null && entity.getClassificationNames() != null) ? new HashSet<>(entity.getClassificationNames()) : Collections.emptySet();
     }
 
     public AtlasEntityHeader getEntity() {
