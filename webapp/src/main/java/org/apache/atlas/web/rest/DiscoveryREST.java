@@ -892,27 +892,48 @@ public class DiscoveryREST {
 
     private void validateEntityFilter(SearchParameters parameters) throws AtlasBaseException {
         FilterCriteria entityFilter = parameters.getEntityFilters();
+        FilterCriteria tagFilter = parameters.getTagFilters();
 
-        if (entityFilter == null) {
-            return;
+        if (isNotEmpty(entityFilter) ) {
+            validateNestedCriteria(entityFilter);
         }
 
-        if (entityFilter.getCriterion() != null &&
-                !entityFilter.getCriterion().isEmpty()) {
-            if (entityFilter.getCondition() == null || StringUtils.isEmpty(entityFilter.getCondition().toString())) {
-                throw new AtlasBaseException("Condition (AND/OR) must be specified when using multiple filters.");
-            }
-
-            for (FilterCriteria filterCriteria : entityFilter.getCriterion()) {
-                validateCriteria(filterCriteria);
-            }
-        }
-        else {
-            validateCriteria(entityFilter);
+        if (isNotEmpty(tagFilter)) {
+            validateNestedCriteria(tagFilter);
         }
     }
 
-    private void validateCriteria(SearchParameters.FilterCriteria criteria) throws AtlasBaseException {
+    private boolean isNotEmpty(FilterCriteria filter) {
+        if (filter == null) {
+            return false;
+        }
+
+        if (filter.getAttributeName() != null && filter.getOperator() != null && filter.getAttributeValue() != null) {
+            return true;
+        }
+
+        return filter.getCriterion() != null && !filter.getCriterion().isEmpty();
+    }
+
+    private void validateNestedCriteria(SearchParameters.FilterCriteria criteria) throws AtlasBaseException {
+        if (criteria.getCriterion() != null &&
+                !criteria.getCriterion().isEmpty()) {
+            if (criteria.getCondition() == null || StringUtils.isEmpty(criteria.getCondition().toString())) {
+                throw new AtlasBaseException("Condition (AND/OR) must be specified when using multiple filters.");
+            }
+
+            for (FilterCriteria filterCriteria : criteria.getCriterion()) {
+                if (filterCriteria != null) {
+                    validateNestedCriteria(filterCriteria);
+                }
+            }
+        }
+        else {
+            validateLeafFilterCriteria(criteria);
+        }
+    }
+
+    private void validateLeafFilterCriteria(SearchParameters.FilterCriteria criteria) throws AtlasBaseException {
         if (criteria.getOperator() == null) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_OPERATOR, criteria.getAttributeName());
         }
