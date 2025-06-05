@@ -28,7 +28,6 @@ import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
-import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
@@ -1777,15 +1776,12 @@ public abstract class DeleteHandlerV1 {
         try {
             List<Map<String, Object>> mustClauses = new ArrayList<>();
             mustClauses.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
-            mustClauses.add(mapOf("bool", mapOf(attributeName, guid)));
+            mustClauses.add(mapOf("term", mapOf(attributeName, guid)));
 
             Map<String, Object> bool = new HashMap<>();
             bool.put("must", mustClauses);
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
-
-            IndexSearchParams searchParams = new IndexSearchParams();
-            searchParams.setDsl(dsl);
 
             return indexSearchPaginated(dsl, null, discovery);
 
