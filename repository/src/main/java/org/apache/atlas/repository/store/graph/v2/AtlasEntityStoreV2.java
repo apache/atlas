@@ -694,7 +694,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
                 }
 
-                AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeaderWithClassifications(entityVertex);
+                AtlasEntityHeader entityHeader = entityRetriever.toAtlasEntityHeader(entityVertex);
 
                 AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, entityHeader, classification),
                         "add classification: guid=", guid, ", classification=", classification.getTypeName());
