@@ -1,34 +1,157 @@
-[  {
-  "testDescription": "hive_table contains testtable or retentionSize != 0",
-  "searchParameters": {
-    "typeName": "hive_table",
-    "excludeDeletedEntities": true,
-    "classification": "",
-    "query": "",
-    "limit": 25,
-    "offset": 0,
-    "entityFilters": {
-      "attributeName": "",
-      "attributeValue": "",
-      "condition" : "AND",
-      "criterion" : [
-        {
-          "attributeName": "",
-          "operator": "eq",
-          "attributeValue": "testtable"
-        },
-        {
-          "attributeName": "retention",
-          "operator": "neq",
-          "attributeValue": "0"
-        }
-      ]
-    },
-    "tagFilters": null,
-    "attributes": [
-      ""
-    ]
+[
+  {
+    "testDescription": "Invalid attribute name is empty",
+    "searchParameters": {
+      "typeName": "hive_table",
+      "excludeDeletedEntities": true,
+      "limit": 25,
+      "offset": 0,
+      "entityFilters": {
+        "condition": "AND",
+        "criterion": [
+          {
+            "attributeName": "",
+            "operator": "eq",
+            "attributeValue": "testtable"
+          },
+          {
+            "attributeName": "",
+            "operator": "neq",
+            "attributeValue": "0"
+          }
+        ]
+      },
+      "tagFilters": null,
+      "attributes": [""]
+    }
   },
-  "expectedCount": 0
-}
+  {
+    "testDescription": "Nested invalid attribute names",
+    "searchParameters": {
+      "typeName": "hive_table",
+      "excludeDeletedEntities": true,
+      "limit": 25,
+      "offset": 0,
+      "entityFilters": {
+        "condition": "AND",
+        "criterion": [
+          {
+            "condition": "AND",
+            "criterion": [
+              {
+                "attributeName": "",
+                "operator": "eq",
+                "attributeValue": "hive"
+              },
+              {
+                "attributeName": "",
+                "operator": "neq",
+                "attributeValue": "hive"
+              }
+            ]
+          },
+          {
+            "attributeName": "",
+            "operator": "neq",
+            "attributeValue": ""
+          }
+        ]
+      },
+      "tagFilters": null,
+      "attributes": [""]
+    }
+  },
+  {
+    "testDescription": "Only nested tagFilters with invalid (empty) attribute names",
+    "searchParameters": {
+      "typeName": "hive_column",
+      "excludeDeletedEntities": true,
+      "limit": 25,
+      "offset": 0,
+      "entityFilters": null,
+      "tagFilters": {
+        "condition": "AND",
+        "criterion": [
+          {
+            "condition": "OR",
+            "criterion": [
+              {
+                "attributeName": "",
+                "operator": "eq",
+                "attributeValue": "admin"
+              },
+              {
+                "attributeName": "",
+                "operator": "neq",
+                "attributeValue": "test_value"
+              }
+            ]
+          },
+          {
+            "attributeName": "",
+            "operator": "eq",
+            "attributeValue": "someValue"
+          }
+        ]
+      },
+      "attributes": [""],
+      "classification": "_ALL_CLASSIFICATION_TYPES"
+    }
+  },
+  {
+    "testDescription": "Nested entityFilters and tagFilters with invalid (empty) attribute names",
+    "searchParameters": {
+      "typeName": "hive_table",
+      "excludeDeletedEntities": true,
+      "limit": 25,
+      "offset": 0,
+      "entityFilters": {
+        "condition": "AND",
+        "criterion": [
+          {
+            "condition": "AND",
+            "criterion": [
+              {
+                "attributeName": "",
+                "operator": "eq",
+                "attributeValue": "testtable"
+              },
+              {
+                "attributeName": "",
+                "operator": "eq",
+                "attributeValue": "testuser"
+              }
+            ]
+          },
+          {
+            "attributeName": "",
+            "operator": "neq",
+            "attributeValue": "0"
+          }
+        ]
+      },
+      "tagFilters": {
+        "condition": "AND",
+        "criterion": [
+          {
+            "condition": "OR",
+            "criterion": [
+              {
+                "attributeName": "",
+                "operator": "eq",
+                "attributeValue": "v1"
+              },
+              {
+                "attributeName": "",
+                "operator": "eq",
+                "attributeValue": "someValue"
+              }
+            ]
+          }
+        ]
+      },
+      "attributes": [""],
+      "classification": "_ALL_CLASSIFICATION_TYPES"
+    }
+  }
 ]
