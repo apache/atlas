@@ -59,8 +59,8 @@ public class RelationshipAuthorizer {
         try {
             List<RangerPolicy> policies = policiesStore.getRelevantPolicies(null, null, "atlas_abac", Arrays.asList(action), policyType);
             if (!policies.isEmpty()) {
-                AtlasVertex oneVertex = AtlasGraphUtilsV2.findByGuid(endOneEntity.getGuid());
-                AtlasVertex twoVertex = AtlasGraphUtilsV2.findByGuid(endTwoEntity.getGuid());
+                AtlasVertex oneVertex = endOneEntity.getGuid() != null ? AtlasGraphUtilsV2.findByGuid(endOneEntity.getGuid()) : null;
+                AtlasVertex twoVertex = endTwoEntity.getGuid() != null ? AtlasGraphUtilsV2.findByGuid(endTwoEntity.getGuid()) : null;
 
                 for (RangerPolicy policy : policies) {
                     boolean eval = false;

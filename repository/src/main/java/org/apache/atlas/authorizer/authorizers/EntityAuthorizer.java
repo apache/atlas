@@ -154,8 +154,15 @@ public class EntityAuthorizer {
             entityAttributeValues = handleSpecialAttributes(entity, attributeName);
         }
 
+        JsonNode attributeValueNode = crit.get("attributeValue");
+        String attributeValue = attributeValueNode.asText();
         String operator = crit.get("operator").asText();
-        String attributeValue = crit.get("attributeValue").asText();
+
+        // incase attributeValue is an array
+        List<String> attributeValues = new ArrayList<>();
+        if (attributeValueNode.isArray()) {
+            attributeValueNode.elements().forEachRemaining(node -> attributeValues.add(node.asText()));
+        }
 
         switch (operator) {
             case "EQUALS":
@@ -183,12 +190,16 @@ public class EntityAuthorizer {
                     return true;
                 }
                 break;
-/*
             case "IN":
+                if (AuthorizerCommonUtil.arrayListContains(attributeValues, entityAttributeValues)) {
+                    return true;
+                }
                 break;
             case "NOT_IN":
+                if (!AuthorizerCommonUtil.arrayListContains(attributeValues, entityAttributeValues)) {
+                    return true;
+                }
                 break;
-*/
 
             default: LOG.warn("Found unknown operator {}", operator);
         }
