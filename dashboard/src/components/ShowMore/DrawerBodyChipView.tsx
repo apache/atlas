@@ -25,7 +25,7 @@ import IconButton from "@mui/material/IconButton";
 import Stack from "@mui/material/Stack";
 import Chip from "@mui/material/Chip";
 import Typography from "@mui/material/Typography";
-import { ClearIcon } from "@mui/x-date-pickers/icons";
+import ClearIcon from "@mui/icons-material/Clear";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import { fetchGlossaryDetails } from "@redux/slice/glossaryDetailsSlice";
 import { fetchGlossaryData } from "@redux/slice/glossarySlice";
