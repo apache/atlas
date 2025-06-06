@@ -17,6 +17,7 @@
  * limitations under the License.
  */
 
+import { useMemo } from "react";
 import {
   extractFromUrlForSearch,
   queryBuilderApiOperatorToUI,
@@ -26,6 +27,7 @@ import {
 } from "./Enum";
 import {
   convertToValidDate,
+  customSortBy,
   formatedDate,
   getUrlState,
   isEmpty,
@@ -304,4 +306,41 @@ export const generateObjectForSaveSearchApi = (options) => {
 
     return obj;
   }
+};
+
+export const getGlossaryChildrenData = (serviceTypeData: any[]) => {
+  const child = (childs: any): any[] => {
+    if (isEmpty(childs)) return [];
+
+    return customSortBy(
+      childs.map((obj: any) => {
+        const { name = "", children, types = "", parent = "" } = obj;
+        return {
+          id: name,
+          label: name,
+          text: name,
+          children: !isEmpty(children) ? child(children.filter(Boolean)) : [],
+          types,
+          parent,
+          guid: obj?.guid || "",
+          cGuid: obj?.cGuid || ""
+        };
+      }),
+      ["label"]
+    );
+  };
+
+  return serviceTypeData.map((entity: any) => {
+    const key = Object.keys(entity || {})?.[0] ?? {};
+    const value = entity?.[key] ?? {};
+    return {
+      id: value?.name ?? "",
+      label: value?.name ?? "",
+      text: value?.name ?? "",
+      children: child(value?.children ?? []),
+      types: value?.types ?? "",
+      parent: value?.parent ?? "",
+      guid: value?.guid ?? ""
+    };
+  });
 };

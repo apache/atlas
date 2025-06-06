@@ -17,17 +17,10 @@
 
 import { useState, useEffect, useMemo } from "react";
 import SideBarTree from "../../SideBar/SideBarTree/SideBarTree.tsx";
-import {
-  customSortBy,
-  customSortByObjectKeys,
-  isEmpty,
-  noTreeData
-} from "@utils/Utils";
+import { customSortByObjectKeys, isEmpty, noTreeData } from "@utils/Utils";
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
 import type { Props } from "@models/treeStructureType.ts";
 import {
-  ChildrenInterface,
-  ChildrenInterfaces,
   ServiceTypeArrType,
   ServiceTypeInterface
 } from "@models/entityTreeType.ts";
@@ -36,6 +29,7 @@ import {
   EnumCategoryRelations
 } from "@models/glossaryTreeType.ts";
 import { fetchGlossaryData } from "@redux/slice/glossarySlice.ts";
+import { getGlossaryChildrenData } from "@utils/CommonViewFunction.ts";
 
 const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
   const dispatch = useAppDispatch();
@@ -43,7 +37,7 @@ const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
     (state: any) => state.glossary
   );
   const [glossaryType, setGlossaryType] = useState<boolean>(true);
-  const [glossaryTypeData, setGlossaryData] = useState<
+  const [glossaryTypeData, setGlossaryTypeData] = useState<
     ServiceTypeArrType<typeof glossaryType>
   >([]);
 
@@ -70,9 +64,14 @@ const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
               terms: EnumCategoryRelation[];
             }) => {
               let categoryRelation: EnumCategoryRelation[] = [];
-
-              glossary?.categories?.map((obj: EnumCategoryRelations) => {
-                if (obj.parentCategoryGuid != undefined) {
+              const {
+                categories = [],
+                terms = [],
+                name = "",
+                guid = ""
+              } = glossary;
+              categories?.map((obj: EnumCategoryRelations) => {
+                if (!isEmpty(obj.parentCategoryGuid)) {
                   categoryRelation.push(obj as EnumCategoryRelations);
                 }
               });
@@ -81,42 +80,51 @@ const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
                 children: EnumCategoryRelation[];
                 parent: string;
               }) => {
-                return !isEmpty(glossaries.children)
-                  ? glossaries.children
+                const { children = [], parent = "" } = glossaries;
+                return !isEmpty(children)
+                  ? children
                       .map((glossariesType: any) => {
                         const getChild = () => {
                           return categoryRelation
                             .map((obj: EnumCategoryRelations) => {
+                              const {
+                                displayText = "",
+                                termGuid = "",
+                                categoryGuid = "",
+                                parentCategoryGuid = ""
+                              } = obj || {};
                               if (
-                                obj.parentCategoryGuid ==
-                                glossariesType.categoryGuid
+                                parentCategoryGuid ==
+                                glossariesType?.categoryGuid
                               ) {
                                 return {
-                                  ["name"]: obj.displayText,
-                                  id: obj.displayText,
+                                  ["name"]: displayText,
+                                  id: displayText,
                                   ["children"]: [],
                                   types: "child",
-                                  parent: glossaries.parent,
-                                  cGuid: glossaryType
-                                    ? obj.termGuid
-                                    : obj.categoryGuid,
-                                  guid: glossary.guid
+                                  parent: parent,
+                                  cGuid: glossaryType ? termGuid : categoryGuid,
+                                  guid: guid
                                 };
                               }
                             })
                             .filter(Boolean);
                         };
-                        if (glossariesType.parentCategoryGuid == undefined) {
+                        const {
+                          parentCategoryGuid = "",
+                          displayText = "",
+                          termGuid = "",
+                          categoryGuid = ""
+                        } = glossariesType || {};
+                        if (isEmpty(parentCategoryGuid)) {
                           return {
-                            ["name"]: glossariesType.displayText,
-                            id: glossariesType.displayText,
+                            ["name"]: displayText,
+                            id: displayText,
                             ["children"]: getChild(),
                             types: "child",
-                            parent: glossaries.parent,
-                            cGuid: glossaryType
-                              ? glossariesType.termGuid
-                              : glossariesType.categoryGuid,
-                            guid: glossary.guid
+                            parent: parent,
+                            cGuid: glossaryType ? termGuid : categoryGuid,
+                            guid: guid
                           };
                         }
                       })
@@ -124,75 +132,36 @@ const GlossaryTree = ({ sideBarOpen, searchTerm }: Props) => {
                   : [];
               };
 
-              let name: string = glossary.name,
-                children: any = glossaryType
-                  ? getChildren({
-                      children: glossary?.terms,
-                      parent: glossary.name
-                    })
-                  : getChildren({
-                      children: glossary?.categories,
-                      parent: glossary.name
-                    });
+              let children: any = glossaryType
+                ? getChildren({
+                    children: terms,
+                    parent: name
+                  })
+                : getChildren({
+                    children: categories,
+                    parent: name
+                  });
 
               return {
                 [name]: {
-                  ["name"]: name,
+                  ["name"]: name || "",
                   ["children"]: children || [],
-                  id: glossary.guid,
+                  id: guid || "",
                   types: "parent",
-                  parent: name,
-                  guid: glossary.guid
+                  parent: name || "",
+                  guid: guid || ""
                 }
               };
             }
           )
         : [];
 
-    setGlossaryData(newServiceTypeArr);
+    setGlossaryTypeData(newServiceTypeArr);
   }, [glossaryData, glossaryType]);
-
-  const generateChildrenData = useMemo(() => {
-    const child = (childs: any) => {
-      return customSortBy(
-        childs.map((obj: ChildrenInterface) => {
-          return {
-            id: obj?.name,
-            label: obj?.name,
-            children:
-              obj?.children != undefined
-                ? child(
-                    obj.children.filter(
-                      Boolean
-                    ) as unknown as ChildrenInterfaces[]
-                  )
-                : [],
-            types: obj?.types,
-            parent: obj?.parent,
-            guid: obj?.guid,
-            cGuid: obj?.cGuid
-          };
-        }),
-        ["label"]
-      );
-    };
-
-    return (serviceTypeData: ServiceTypeInterface[]) =>
-      serviceTypeData.map((entity: any) => ({
-        id: entity[Object.keys(entity)[0]].name,
-        label: entity[Object.keys(entity)[0]].name,
-        children: child(
-          entity[Object.keys(entity)[0]].children as ChildrenInterfaces[]
-        ),
-        types: entity[Object.keys(entity)[0]].types,
-        parent: entity[Object.keys(entity)[0]].parent,
-        guid: entity[Object.keys(entity)[0]].guid
-      }));
-  }, [glossaryType]);
 
   const treeData = useMemo(() => {
     return !isEmpty(glossaryData)
-      ? generateChildrenData(
+      ? getGlossaryChildrenData(
           customSortByObjectKeys(glossaryTypeData as ServiceTypeInterface[])
         )
       : noTreeData();
