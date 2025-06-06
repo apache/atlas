@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_DENY;
@@ -236,9 +237,8 @@ public class EntityAuthorizer {
 
             case "__typeName":
                 String typeName = entity.getTypeName();
-                if (StringUtils.isNotEmpty(typeName)) {
-                    entityAttributeValues.add(typeName);
-                }
+                Set<String> allValidTypes = AuthorizerCommonUtil.getTypeAndSupertypesList(typeName);
+                entityAttributeValues.addAll(allValidTypes);
                 break;
 
             default:

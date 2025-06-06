@@ -12,6 +12,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
 import java.util.Collections;
@@ -21,6 +22,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+@Component
 public class AuthorizerCommonUtil {
     private static final Logger LOG = LoggerFactory.getLogger(AuthorizerCommonUtil.class);
 
@@ -29,8 +31,8 @@ public class AuthorizerCommonUtil {
 
     @Inject
     public AuthorizerCommonUtil(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
-        this.typeRegistry = typeRegistry;
-        this.entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true);
+        AuthorizerCommonUtil.typeRegistry = typeRegistry;
+        entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true);
     }
 
     public static String getCurrentUserName() {
