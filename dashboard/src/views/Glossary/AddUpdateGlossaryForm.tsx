@@ -27,6 +27,9 @@ import { toast } from "react-toastify";
 import { useRef } from "react";
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
 import { fetchGlossaryData } from "@redux/slice/glossarySlice";
+import { useLocation, useParams } from "react-router-dom";
+import { fetchGlossaryDetails } from "@redux/slice/glossaryDetailsSlice";
+import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 
 const AddUpdateGlossaryForm = (props: {
   open: any;
@@ -35,15 +38,19 @@ const AddUpdateGlossaryForm = (props: {
   node: Record<string, any> | undefined;
 }) => {
   const { open, onClose, isAdd, node } = props;
+  const { guid: glossaryGuid } = useParams();
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+  const gType: string | undefined | null = searchParams.get("gtype");
   const dispatch = useAppDispatch();
   const toastId: any = useRef(null);
   const { glossaryData }: any = useAppSelector((state: any) => state.glossary);
-  const { id } = node || {};
+  const { name: glossaryName } = node || {};
   let defaultValue: Record<string, string> = {};
   let glossaryObj: Record<string, string> = {};
   if (!isAdd) {
     glossaryObj = glossaryData.find((obj: { name: string }) => {
-      return obj.name == id;
+      return obj.name == glossaryName;
     });
     const { name, shortDescription, longDescription } = glossaryObj || {};
 
@@ -90,6 +97,16 @@ const AddUpdateGlossaryForm = (props: {
       }
 
       await dispatch(fetchGlossaryData());
+
+      dispatch(fetchGlossaryData());
+
+      if (!isAdd) {
+        let params: any = { gtype: gType, guid: glossaryGuid };
+
+        dispatch(fetchGlossaryDetails(params));
+        dispatch(fetchDetailPageData(glossaryGuid as string));
+      }
+
       toast.dismiss(toastId.current);
       toastId.current = toast.success(
         `Glossary ${name} was ${isAdd ? "created" : "updated"} successfully`
@@ -109,7 +126,7 @@ const AddUpdateGlossaryForm = (props: {
       <CustomModal
         open={open}
         onClose={onClose}
-        title={isAdd ? "Create Glossary" : "Edit Glossary"}
+        title={isAdd ? "Create Glossary" : "Update Glossary"}
         button1Label="Cancel"
         button1Handler={onClose}
         button2Label={isAdd ? "Create" : "Update"}
