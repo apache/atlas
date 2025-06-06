@@ -150,33 +150,8 @@ public class EntityAuthorizer {
             }
         }
 
-        if (entityAttributeValues.size() == 0) {
-            switch (attributeName) {
-                case "__traitNames":
-                    List<AtlasClassification> tags = entity.getClassifications();
-                    if (tags != null) {
-                        for (AtlasClassification tag : tags) {
-                            if (StringUtils.isEmpty(tag.getEntityGuid()) || tag.getEntityGuid().equals(entity.getGuid())) {
-                                entityAttributeValues.add(tag.getTypeName());
-                            }
-                        }
-                    }
-                    break;
-
-                case "__propagatedTraitNames":
-                    tags = entity.getClassifications();
-                    if (tags != null) {
-                        for (AtlasClassification tag : tags) {
-                            if (StringUtils.isNotEmpty(tag.getEntityGuid()) && !tag.getEntityGuid().equals(entity.getGuid())) {
-                                entityAttributeValues.add(tag.getTypeName());
-                            }
-                        }
-                    }
-                    break;
-
-                default:
-                    LOG.warn("Value for attribute {} not found", attributeName);
-            }
+        if (entityAttributeValues.isEmpty()) {
+            entityAttributeValues = handleSpecialAttributes(entity, attributeName);
         }
 
         String operator = crit.get("operator").asText();
@@ -220,5 +195,45 @@ public class EntityAuthorizer {
 
         RequestContext.get().endMetricRecord(recorder);
         return false;
+    }
+
+    private static List<String> handleSpecialAttributes(AtlasEntityHeader entity, String attributeName) {
+        List<String> entityAttributeValues = new ArrayList<>();
+
+        switch (attributeName) {
+            case "__traitNames":
+                List<AtlasClassification> tags = entity.getClassifications();
+                if (tags != null) {
+                    for (AtlasClassification tag : tags) {
+                        if (StringUtils.isEmpty(tag.getEntityGuid()) || tag.getEntityGuid().equals(entity.getGuid())) {
+                            entityAttributeValues.add(tag.getTypeName());
+                        }
+                    }
+                }
+                break;
+
+            case "__propagatedTraitNames":
+                tags = entity.getClassifications();
+                if (tags != null) {
+                    for (AtlasClassification tag : tags) {
+                        if (StringUtils.isNotEmpty(tag.getEntityGuid()) && !tag.getEntityGuid().equals(entity.getGuid())) {
+                            entityAttributeValues.add(tag.getTypeName());
+                        }
+                    }
+                }
+                break;
+
+            case "__typeName":
+                String typeName = entity.getTypeName();
+                if (StringUtils.isNotEmpty(typeName)) {
+                    entityAttributeValues.add(typeName);
+                }
+                break;
+
+            default:
+                LOG.warn("Value for attribute {} not found", attributeName);
+        }
+
+        return entityAttributeValues;
     }
 }
