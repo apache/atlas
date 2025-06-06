@@ -344,12 +344,17 @@ const AssignTerm = ({
       if (!isEmpty(updateTable)) {
         updateTable(moment.now());
       }
+
       if (!isEmpty(entityGuid)) {
-        let params: any = { gtype: gType, guid: entityGuid };
-        dispatchApi(fetchGlossaryData());
-        dispatchApi(fetchGlossaryDetails(params));
         dispatchApi(fetchDetailPageData(entityGuid as string));
+
+        if (!isEmpty(gType)) {
+          const params = { gtype: gType, entityGuid };
+          dispatchApi(fetchGlossaryData());
+          dispatchApi(fetchGlossaryDetails(params));
+        }
       }
+
       if (!isEmpty(setRowSelection)) {
         setRowSelection({});
       }
