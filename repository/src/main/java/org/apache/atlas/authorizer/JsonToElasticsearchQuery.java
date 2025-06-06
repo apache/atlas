@@ -98,7 +98,7 @@ public class JsonToElasticsearchQuery {
         }
 
         if (filterCriteriaNode != null) {
-            return filterCriteriaNode.get(rootKey);
+            return StringUtils.isNotEmpty(rootKey) ? filterCriteriaNode.get(rootKey) : filterCriteriaNode;
         }
         return null;
     }

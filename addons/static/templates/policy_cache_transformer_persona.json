@@ -1338,6 +1338,82 @@
       ],
       "actions": ["entity-delete"]
     }
-  ]
+  ],
 
+  "persona-abac-read": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-read"]
+    }
+  ],
+  "persona-abac-update": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-update"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{\"endOneEntity\":\"{criteria}\",\"endTwoEntity\":\"{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": [\"Catalog\", \"Connection\", \"Process\", \"Namespace\", \"ProcessExecution\"], \"operator\": \"IN\"}]}",
+      "actions": ["add-relationship", "remove-relationship"]
+    },
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{\"endOneEntity\":\"{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": [\"Catalog\", \"Connection\", \"Process\", \"Namespace\", \"ProcessExecution\"], \"operator\": \"IN\"}],\"endTwoEntity\":\"{criteria}\"}",
+      "actions": ["add-relationship", "remove-relationship"]
+    }
+  ],
+  "persona-abac-delete": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-delete"]
+    }
+  ],
+  "persona-abac-update-business-metadata": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-update-business-metadata"]
+    }
+  ],
+  "persona-abac-add-classification": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-add-classification", "entity-update-classification"]
+    }
+  ],
+  "persona-abac-remove-classification": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-update-classification", "entity-remove-classification"]
+    }
+  ],
+  "persona-abac-add-terms": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyFilterCriteria": "{\"endOneEntity\":\"{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": \"AtlasGlossaryTerm\",\"operator\": \"EQUALS\"}],\"endTwoEntity\":\"{criteria}\"}",
+      "actions": ["add-relationship", "update-relationship"]
+    }
+  ],
+  "persona-abac-remove-terms": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "RELATIONSHIP",
+      "policyFilterCriteria": "{\"endOneEntity\":\"{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": \"AtlasGlossaryTerm\",\"operator\": \"EQUALS\"}],\"endTwoEntity\":\"{criteria}\"}",
+      "actions": ["remove-relationship"]
+    }
+  ]
 }

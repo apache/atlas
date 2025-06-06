@@ -112,11 +112,24 @@ public class AuthPolicyValidator {
         add("persona-ai-model-remove-classification"); 
     }};
 
+    private static final Set<String> PERSONA_METADATA_ABAC_POLICY_ACTIONS = new HashSet<>(){{
+        add("persona-abac-read");
+        add("persona-abac-update");
+        add("persona-abac-update-business-metadata");
+        add("persona-abac-add-classification");
+        add("persona-abac-remove-classification");
+        add("persona-abac-add-terms");
+        add("persona-abac-remove-terms");
+        add("persona-abac-delete");
+    }};
+
     private static final Map<String, Set<String>> PERSONA_POLICY_VALID_ACTIONS = new HashMap<String, Set<String>>(){{
-        put(POLICY_SUB_CATEGORY_METADATA, PERSONA_METADATA_POLICY_ACTIONS);
-        put(POLICY_SUB_CATEGORY_DATA, DATA_POLICY_ACTIONS);
-        put(POLICY_SUB_CATEGORY_GLOSSARY, PERSONA_GLOSSARY_POLICY_ACTIONS);
-        put(POLICY_SUB_CATEGORY_AI, AI_POLICY_ACTIONS);
+        put(POLICY_SERVICE_NAME_ATLAS + POLICY_SUB_CATEGORY_METADATA, PERSONA_METADATA_POLICY_ACTIONS);
+        put(POLICY_SERVICE_NAME_ATLAS + POLICY_SUB_CATEGORY_DATA, DATA_POLICY_ACTIONS);
+        put(POLICY_SERVICE_NAME_ATLAS + POLICY_SUB_CATEGORY_GLOSSARY, PERSONA_GLOSSARY_POLICY_ACTIONS);
+        put(POLICY_SERVICE_NAME_ATLAS + POLICY_SUB_CATEGORY_AI, AI_POLICY_ACTIONS);
+
+        put(POLICY_SERVICE_NAME_ABAC + POLICY_SUB_CATEGORY_METADATA, PERSONA_METADATA_ABAC_POLICY_ACTIONS);
     }};
 
     private static final Set<String> PURPOSE_METADATA_POLICY_ACTIONS = new HashSet<String>(){{
@@ -214,7 +227,7 @@ public class AuthPolicyValidator {
                     }
 
                     //validate persona policy actions
-                    Set<String> validActions = PERSONA_POLICY_VALID_ACTIONS.get(policySubCategory);
+                    Set<String> validActions = PERSONA_POLICY_VALID_ACTIONS.get(getPolicyServiceName(policy) + policySubCategory);
                     List<String> copyOfActions = new ArrayList<>(policyActions);
                     copyOfActions.removeAll(validActions);
                     validateParam(CollectionUtils.isNotEmpty(copyOfActions),
@@ -307,7 +320,7 @@ public class AuthPolicyValidator {
 
 
                     //validate persona policy actions
-                    Set<String> validActions = PERSONA_POLICY_VALID_ACTIONS.get(policySubCategory);
+                    Set<String> validActions = PERSONA_POLICY_VALID_ACTIONS.get(getPolicyServiceName(policy) + policySubCategory);
                     List<String> copyOfActions = new ArrayList<>(policyActions);
                     copyOfActions.removeAll(validActions);
                     validateParam (CollectionUtils.isNotEmpty(copyOfActions),

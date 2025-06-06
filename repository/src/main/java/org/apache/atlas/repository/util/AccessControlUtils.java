@@ -131,6 +131,7 @@ public final class AccessControlUtils {
     public static final String INSTANCE_DOMAIN_KEY = "instance";
 
     public static final String POLICY_SERVICE_NAME_ABAC  = "atlas_abac";
+    public static final String POLICY_SERVICE_NAME_ATLAS  = "atlas";
 
     private AccessControlUtils() {}
 
