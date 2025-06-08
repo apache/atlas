@@ -46,6 +46,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+
 import org.apache.atlas.repository.patches.PatchContext;
 import org.apache.atlas.repository.patches.ReIndexPatch;
 import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
@@ -96,6 +97,8 @@ import javax.inject.Inject;
 import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import org.apache.tinkerpop.gremlin.structure.Direction;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.ATLAS_DISTRIBUTED_TASK_ENABLED;
@@ -2724,40 +2727,130 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     private void repairHasLineageForAsset(AtlasHasLineageRequest request) {
-        //only supports repairing scenario mentioned here - https://atlanhq.atlassian.net/browse/DG-128?focusedCommentId=20652
+        //supports repairing scenario mentioned here - https://atlanhq.atlassian.net/browse/DG-128?focusedCommentId=20652
+        //Enhanced to support both directions: setting hasLineage false->true and true->false
 
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageForAssetGetById");
         AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, request.getAssetGuid());
         RequestContext.get().endMetricRecord(metricRecorder);
 
-        if (getEntityHasLineage(assetVertex)) {
-            metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageForAssetGetRelations");
-            Iterator<AtlasEdge> lineageEdges = assetVertex.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
+        if (assetVertex == null) {
+            LOG.warn("repairHasLineage: Asset vertex not found for guid: {}", request.getAssetGuid());
+            return;
+        }
+
+        boolean currentHasLineage = getEntityHasLineage(assetVertex);
+        boolean shouldHaveLineage = checkIfAssetShouldHaveLineage(assetVertex);
+
+        if (currentHasLineage && !shouldHaveLineage) {
+            // Case 1: hasLineage is true but should be false
+            metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageSetFalse");
+            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
+            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE_VALID, true);
+            LOG.info("repairHasLineage: Set hasLineage=false for asset: {}", request.getAssetGuid());
             RequestContext.get().endMetricRecord(metricRecorder);
-            boolean foundActiveRel = false;
+        } else if (!currentHasLineage && shouldHaveLineage) {
+            // Case 2: hasLineage is false but should be true
+            metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageSetTrue");
+            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
+            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE_VALID, true);
+            LOG.info("repairHasLineage: Set hasLineage=true for asset: {}", request.getAssetGuid());
+            RequestContext.get().endMetricRecord(metricRecorder);
+        } else {
+            LOG.debug("repairHasLineage: No repair needed for asset: {}, hasLineage={}", request.getAssetGuid(), currentHasLineage);
+        }
+    }
 
-            while (lineageEdges.hasNext()) {
-                AtlasEdge edge = lineageEdges.next();
-                if (getStatus(edge) == ACTIVE) {
-                    AtlasVertex vertexB = edge.getOutVertex();
-                    if (vertexB.equals(assetVertex)) {
-                        vertexB = edge.getInVertex();
-                    }
+    /**
+     * Determines if an asset should have lineage based on its active relationships with processes
+     * @param assetVertex The asset vertex to check
+     * @return true if the asset should have hasLineage=true, false otherwise
+     */
+    private boolean checkIfAssetShouldHaveLineage(AtlasVertex assetVertex) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("checkIfAssetShouldHaveLineage");
+        
+        try {
+            return checkAssetLineageStatusV2(assetVertex);
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
 
-                    if (getStatus(vertexB) == ACTIVE) {
-                        foundActiveRel = true;
-                        break;
-                    }
+    /**
+     * V2 logic to check if asset should have lineage using optimized approach
+     */
+    private boolean checkAssetLineageStatusV2(AtlasVertex assetVertex) {
+        // Check for active lineage in both directions
+        return hasActiveLineageConnectionV2(assetVertex, Direction.OUT) || 
+               hasActiveLineageConnectionV2(assetVertex, Direction.IN);
+    }
+
+    /**
+     * Helper method to check for active lineage connections in a specific direction (V2)
+     */
+    private boolean hasActiveLineageConnectionV2(AtlasVertex assetVertex, Direction direction) {
+        Iterator<AtlasEdge> edgeIterator;
+        
+        if (direction.equals(Direction.OUT)) {
+            edgeIterator = assetVertex.query()
+                    .direction(AtlasEdgeDirection.OUT)
+                    .label(PROCESS_EDGE_LABELS)
+                    .has(STATE_PROPERTY_KEY, ACTIVE.name())
+                    .edges()
+                    .iterator();
+        } else {
+            edgeIterator = assetVertex.query()
+                    .direction(AtlasEdgeDirection.IN)
+                    .label(PROCESS_EDGE_LABELS)
+                    .has(STATE_PROPERTY_KEY, ACTIVE.name())
+                    .edges()
+                    .iterator();
+        }
+
+        while (edgeIterator.hasNext()) {
+            AtlasEdge edge = edgeIterator.next();
+            AtlasVertex processVertex = direction.equals(Direction.OUT) ? edge.getInVertex() : edge.getOutVertex();
+            
+            if (getStatus(processVertex) == ACTIVE) {
+                // Check if process has lineage or should have lineage
+                if (getEntityHasLineage(processVertex) || processHasValidLineageConnections(processVertex)) {
+                    return true;
                 }
             }
+        }
+        return false;
+    }
 
-            if (!foundActiveRel) {
-                metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageForRequiredAsset");
-                AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
-                LOG.info("repairHasLineage: repairHasLineageForAsset: Repaired {}", request.getAssetGuid());
-                RequestContext.get().endMetricRecord(metricRecorder);
+    /**
+     * Check if a process vertex has valid lineage connections (both inputs and outputs)
+     * This helps identify processes that should have hasLineage=true
+     */
+    private boolean processHasValidLineageConnections(AtlasVertex processVertex) {
+        boolean hasInputs = false;
+        boolean hasOutputs = false;
+
+        // Check for inputs
+        Iterator<AtlasEdge> inputEdges = processVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_INPUTS).iterator();
+        while (inputEdges.hasNext()) {
+            AtlasEdge inputEdge = inputEdges.next();
+            if (getStatus(inputEdge) == ACTIVE && getStatus(inputEdge.getInVertex()) == ACTIVE) {
+                hasInputs = true;
+                break;
             }
         }
+
+        // Check for outputs
+        Iterator<AtlasEdge> outputEdges = processVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_OUTPUTS).iterator();
+        while (outputEdges.hasNext()) {
+            AtlasEdge outputEdge = outputEdges.next();
+            if (getStatus(outputEdge) == ACTIVE && getStatus(outputEdge.getInVertex()) == ACTIVE) {
+                hasOutputs = true;
+                break;
+            }
+        }
+
+        // A process should have lineage if it has both inputs and outputs
+        return hasInputs && hasOutputs;
     }
 
     public void repairHasLineageWithAtlasEdges(Set<AtlasEdge> inputOutputEdges) {
