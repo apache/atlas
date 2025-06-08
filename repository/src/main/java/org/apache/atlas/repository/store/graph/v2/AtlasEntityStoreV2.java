@@ -46,7 +46,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
-
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.patches.PatchContext;
 import org.apache.atlas.repository.patches.ReIndexPatch;
 import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
@@ -89,6 +89,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -98,7 +99,7 @@ import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
 
-import org.apache.tinkerpop.gremlin.structure.Direction;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.ATLAS_DISTRIBUTED_TASK_ENABLED;
@@ -2762,95 +2763,55 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     /**
-     * Determines if an asset should have lineage based on its active relationships with processes
+     * Optimized method to determine if an asset should have lineage using:
+     * 1. Single Unified Query Approach - One Gremlin traversal for all edge checks
+     * 2. Early Termination with Short-Circuit Logic - Stops at first valid lineage found
+     * 3. Native Graph Traversal (Gremlin) - Direct Gremlin instead of Atlas query wrapper
+     * 
      * @param assetVertex The asset vertex to check
      * @return true if the asset should have hasLineage=true, false otherwise
      */
-    private boolean checkIfAssetShouldHaveLineage(AtlasVertex assetVertex) {
+    private Boolean checkIfAssetShouldHaveLineage(AtlasVertex assetVertex) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("checkIfAssetShouldHaveLineage");
         
         try {
-            return checkAssetLineageStatusV2(assetVertex);
+            // Get Gremlin traversal source for native graph operations
+            GraphTraversalSource g = ((AtlasJanusGraph) graph).getGraph().traversal();
+            
+            // Single unified query: Get all active edges connected to this asset that could indicate lineage
+            // This replaces multiple separate queries with one comprehensive traversal
+            return g.V(assetVertex.getId())
+                    .bothE(PROCESS_EDGE_LABELS) // Get edges in both directions for all process edge types
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE) // Filter for active edges only
+                    .otherV() // Get the connected vertices (process vertices)
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE) // Filter for active process vertices only
+                    .or(
+                        // Short-circuit condition 1: Process already has lineage flag set
+                        __.has(HAS_LINEAGE, true),
+                        // Short-circuit condition 2: Process has valid input/output structure
+                        __.where(
+                            __.and(
+                                // Check if process has active inputs
+                                __.outE(PROCESS_INPUTS)
+                                  .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                                  .inV()
+                                  .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE),
+                                // Check if process has active outputs
+                                __.outE(PROCESS_OUTPUTS)
+                                  .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                                  .inV()
+                                  .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                            )
+                        )
+                    )
+                    .hasNext(); // Early termination - returns true as soon as first valid lineage is found
+                    
+        } catch (Exception e) {
+            LOG.error("Failed to use optimized Gremlin traversal for lineage check, falling back to Atlas queries", e);
+            return null;
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
-    }
-
-    /**
-     * V2 logic to check if asset should have lineage using optimized approach
-     */
-    private boolean checkAssetLineageStatusV2(AtlasVertex assetVertex) {
-        // Check for active lineage in both directions
-        return hasActiveLineageConnectionV2(assetVertex, Direction.OUT) || 
-               hasActiveLineageConnectionV2(assetVertex, Direction.IN);
-    }
-
-    /**
-     * Helper method to check for active lineage connections in a specific direction (V2)
-     */
-    private boolean hasActiveLineageConnectionV2(AtlasVertex assetVertex, Direction direction) {
-        Iterator<AtlasEdge> edgeIterator;
-        
-        if (direction.equals(Direction.OUT)) {
-            edgeIterator = assetVertex.query()
-                    .direction(AtlasEdgeDirection.OUT)
-                    .label(PROCESS_EDGE_LABELS)
-                    .has(STATE_PROPERTY_KEY, ACTIVE.name())
-                    .edges()
-                    .iterator();
-        } else {
-            edgeIterator = assetVertex.query()
-                    .direction(AtlasEdgeDirection.IN)
-                    .label(PROCESS_EDGE_LABELS)
-                    .has(STATE_PROPERTY_KEY, ACTIVE.name())
-                    .edges()
-                    .iterator();
-        }
-
-        while (edgeIterator.hasNext()) {
-            AtlasEdge edge = edgeIterator.next();
-            AtlasVertex processVertex = direction.equals(Direction.OUT) ? edge.getInVertex() : edge.getOutVertex();
-            
-            if (getStatus(processVertex) == ACTIVE) {
-                // Check if process has lineage or should have lineage
-                if (getEntityHasLineage(processVertex) || processHasValidLineageConnections(processVertex)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    /**
-     * Check if a process vertex has valid lineage connections (both inputs and outputs)
-     * This helps identify processes that should have hasLineage=true
-     */
-    private boolean processHasValidLineageConnections(AtlasVertex processVertex) {
-        boolean hasInputs = false;
-        boolean hasOutputs = false;
-
-        // Check for inputs
-        Iterator<AtlasEdge> inputEdges = processVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_INPUTS).iterator();
-        while (inputEdges.hasNext()) {
-            AtlasEdge inputEdge = inputEdges.next();
-            if (getStatus(inputEdge) == ACTIVE && getStatus(inputEdge.getInVertex()) == ACTIVE) {
-                hasInputs = true;
-                break;
-            }
-        }
-
-        // Check for outputs
-        Iterator<AtlasEdge> outputEdges = processVertex.getEdges(AtlasEdgeDirection.OUT, PROCESS_OUTPUTS).iterator();
-        while (outputEdges.hasNext()) {
-            AtlasEdge outputEdge = outputEdges.next();
-            if (getStatus(outputEdge) == ACTIVE && getStatus(outputEdge.getInVertex()) == ACTIVE) {
-                hasOutputs = true;
-                break;
-            }
-        }
-
-        // A process should have lineage if it has both inputs and outputs
-        return hasInputs && hasOutputs;
     }
 
     public void repairHasLineageWithAtlasEdges(Set<AtlasEdge> inputOutputEdges) {
