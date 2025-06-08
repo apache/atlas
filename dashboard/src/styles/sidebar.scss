@@ -1,0 +1,225 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@use "variables" as v;
+
+.sidebar-box {
+  display: flex !important;
+  height: 100%;
+  // margin-bottom: 20px;
+}
+
+.sidebar-appbar {
+  width: auto !important;
+  left: 0 !important;
+  right: unset !important;
+  box-shadow: none !important;
+  z-index: 12000 !important;
+  background: transparent !important;
+  color: #4a90e2 !important;
+  top: 60px !important;
+}
+
+.sidebar-toggle {
+  margin: 0 !important;
+  border: 1px solid #4a90e2 !important;
+  background: white !important;
+}
+
+.sidebar-toolbar {
+  padding: 0 8px !important;
+}
+
+.sidebar-tree-box {
+  // min-height: 180px;
+  flex-grow: 1;
+  // position: fixed;
+  top: 128px;
+  overflow-y: auto;
+  // height: calc(100vh - 128px);
+  width: inherit;
+}
+.loader-box {
+  min-height: 180px;
+  flex-grow: 1;
+  max-width: 400px;
+  position: fixed;
+  top: 128px;
+  overflow-y: auto;
+  height: calc(100vh - 128px);
+  width: 100%;
+}
+.sidebar-treeview {
+  position: relative;
+}
+
+// .sidebar-refresh {
+//   height: 30px !important;
+//   width: 30px !important;
+//   padding: 6px;
+// }
+
+.sidebar-divider {
+  background-color: #ddd;
+  height: 20px !important;
+  align-self: center !important;
+  margin: 0px 4px !important;
+}
+
+.treeitem-dropdown-toggle {
+  color: v.$text-green;
+}
+
+.menuitem-icon {
+  color: v.$text-green;
+  margin-bottom: 2px;
+}
+.menuitem-label {
+  color: v.$text-grey;
+}
+.custom-treeitem-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.custom-treeitem-icon {
+  display: block;
+}
+
+.treeitem-loader {
+  width: 20px !important;
+  position: absolute;
+  height: 20px !important;
+  top: 50px;
+  left: 50%;
+}
+
+.modal-title {
+  color: #686868;
+  font-weight: 600 !important;
+  font-size: 18px !important;
+  display: flex;
+  align-items: center;
+}
+
+.modal-error-title {
+  color: #686868;
+  font-weight: 600 !important;
+  font-size: 18px !important;
+  display: flex;
+  align-items: center;
+  padding: 8px 16px 8px 8px !important;
+}
+.modal-close-icon {
+  position: absolute !important;
+  right: 12px;
+  top: 5px;
+}
+
+.dropzone-listitem {
+  color: v.$text-grey;
+}
+
+.sidebar-dragger {
+  position: inherit;
+  min-width: 2px;
+  width: 2px;
+  background-color: #f4f7f9;
+  cursor: col-resize;
+  padding: 4px 0 0;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 999;
+  clear: both;
+}
+
+.sidebar-dragger:hover {
+  background: #4a90e2;
+}
+
+.tree-item-label {
+  width: calc(100% - 50px);
+  text-overflow: ellipsis;
+  overflow: hidden;
+  font-size: 14px;
+  line-height: 29px;
+  height: 29px;
+}
+
+.sidebar-wrapper {
+  background: #034858 !important;
+  position: fixed;
+  top: 20px;
+  height: 100%;
+  overflow-y: auto;
+  padding-bottom: 16px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.tree-item-loader {
+  z-index: 999;
+  width: 20px !important;
+  height: 20px !important;
+  left: 50%;
+  color: white !important;
+  margin-top: -20px;
+  margin-left: -20px;
+  position: absolute;
+  top: 40px;
+}
+
+.tree-item-loader-box {
+  position: relative;
+  display: inline-flex;
+  justify-content: center;
+  width: 100%;
+  height: 60px;
+}
+
+.tree-item-parent-label {
+  border-bottom: "1px solid rgba(25,255,255,0.1)";
+}
+
+.sidebar-searchbar {
+  background: #f1f1f1 !important;
+  display: flex;
+  justify-content: space-between;
+  padding: 0 10px 0 16px;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 14px;
+}
+
+.sidebar-treeview-container {
+  padding-bottom: 1.5rem;
+}
+
+button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-more-label {
+  font-size: 1.25rem !important;
+}
+
+button.MuiButtonBase-root.MuiIconButton-root.MuiIconButton-sizeSmall.tree-item-more-label
+  svg.MuiSvgIcon-root {
+  font-size: 1.25rem !important;
+  color: white !important;
+}
+
+.sidebar-menu-item {
+  padding: 4px 10px !important;
+}

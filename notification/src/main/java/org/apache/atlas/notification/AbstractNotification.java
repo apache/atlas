@@ -176,6 +176,16 @@ public abstract class AbstractNotification implements NotificationInterface {
      */
     public abstract void sendInternal(NotificationType type, List<String> messages) throws NotificationException;
 
+    /**
+     * Send the given messages to given topic.
+     *
+     * @param topic     the kafka topic
+     * @param messages  the array of messages to send
+     *
+     * @throws NotificationException if an error occurs while sending
+     */
+    public abstract void sendInternal(String topic, List<String> messages) throws NotificationException;
+
     private static String getHostAddress() {
         if (StringUtils.isEmpty(localHostAddress)) {
             try {
@@ -222,6 +232,17 @@ public abstract class AbstractNotification implements NotificationInterface {
         }
 
         sendInternal(type, strMessages);
+    }
+
+    @Override
+    public <T> void send(String topic, List<T> messages, MessageSource source) throws NotificationException {
+        List<String> strMessages = new ArrayList<>(messages.size());
+
+        for (T message : messages) {
+            createNotificationMessages(message, strMessages, source);
+        }
+
+        sendInternal(topic, strMessages);
     }
 
     private static String getNextMessageId() {

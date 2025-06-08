@@ -22,6 +22,7 @@ import org.apache.kafka.common.TopicPartition;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Atlas notification consumer.  This consumer blocks until a notification can be read.
@@ -68,4 +69,8 @@ public interface NotificationConsumer<T> {
      * @return List containing kafka message and partitionId and offset.
      */
     List<AtlasKafkaMessage<T>> receiveRawRecordsWithCheckedCommit(Map<TopicPartition, Long> lastCommittedPartitionOffset);
+
+    Set<TopicPartition> getTopicPartition();
+
+    Set<String> subscription();
 }

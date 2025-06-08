@@ -19,8 +19,13 @@ package org.apache.atlas.repository.store.graph;
 
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.impexp.AtlasImportResult;
+import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.store.graph.v2.EntityImportStream;
+import org.apache.atlas.v1.typesystem.types.utils.TypesUtil;
+
+import java.util.List;
+import java.util.Set;
 
 public interface BulkImporter {
     /**
@@ -30,4 +35,6 @@ public interface BulkImporter {
      * @throws AtlasBaseException
      */
     EntityMutationResponse bulkImport(EntityImportStream entityStream, AtlasImportResult importResult) throws AtlasBaseException;
+
+    TypesUtil.Pair<EntityMutationResponse, Float> asyncImport(AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo, EntityMutationResponse entityMutationResponse, AtlasImportResult importResult, Set<String> processedGuids, List<String> failedGuids, int entityPosition, int totalEntities, float importProgress) throws AtlasBaseException;
 }

@@ -1,0 +1,50 @@
+// Licensed to the Apache Software Foundation (ASF) under one
+// or more contributor license agreements.  See the NOTICE file
+// distributed with this work for additional information
+// regarding copyright ownership.  The ASF licenses this file
+// to you under the Apache License, Version 2.0 (the
+// "License"); you may not use this file except in compliance
+// with the License.  You may obtain a copy of the License at
+
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+.relationship-box,
+.lineage-box {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  z-index: 1;
+
+  .relationship-link {
+    fill: none;
+    stroke-width: 1.5px;
+  }
+}
+
+.relationship-node-details {
+  &.box-panel {
+    top: 0;
+  }
+}
+.relationship-link {
+  fill: none;
+  stroke-width: 1.5px;
+}
+
+.relationship-properties-accordion .MuiAccordion-root:not(:last-child) {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.12);
+}
+
+.value-text {
+  a {
+    width: 100% !important;
+    word-break: break-all;
+  }
+}

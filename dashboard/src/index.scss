@@ -1,0 +1,232 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
+@use "@styles/variables.scss" as *;
+@use "@styles/header.scss" as *;
+@use "@styles/sidebar.scss" as *;
+@use "@styles/layout.scss" as *;
+@use "@styles/muicomponents.scss" as *;
+@use "@styles/commonComponents.scss" as *;
+@use "@styles/globalSearch.scss" as *;
+@use "@styles/detailPage.scss" as *;
+@use "@styles/propertiesTab.scss" as *;
+@use "@styles/entityForm.scss" as *;
+@use "@styles/formFields.scss" as *;
+@use "@styles/classificationForm.scss" as *;
+@use "@styles/relationshipLineage.scss" as *;
+@use "@styles/filterQueryBuilder.scss" as *;
+@use "@styles/filterQuery.scss" as *;
+@use "@styles/stats.scss" as *;
+@use "@styles/filters.scss" as *;
+@use "@styles/errorPage.scss" as *;
+@use "@styles/errorPage.scss" as *;
+@use "@styles/customdatepPicker.scss" as *;
+
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("/fonts/source-sans-3/SourceSans3-Regular.woff2") format("woff2");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("/fonts/source-sans-3/SourceSans3-Medium.woff2") format("woff2");
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Source Sans 3";
+  src: url("/fonts/source-sans-3/SourceSans3-SemiBold.woff2") format("woff2");
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "FontAwesome";
+  src: url("/fonts/fontawesome/fontawesome-webfont.woff2") format("woff2");
+  font-weight: normal;
+  font-style: normal;
+}
+
+body {
+  font-family: "Source Sans 3", sans-serif;
+  font-weight: 400;
+}
+
+.fa {
+  font-family: "FontAwesome";
+  font-weight: 400;
+}
+
+root {
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(255, 255, 255, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.app-loader {
+  display: flex;
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #aaaaaa;
+  -webkit-border-radius: 1ex;
+}
+
+::-webkit-scrollbar-corner {
+  background: #000;
+}
+.text-grey {
+  color: #686868;
+}
+.cursor-pointer {
+  cursor: pointer !important;
+}
+.cursor-not-allowed {
+  cursor: not-allowed !important;
+}
+
+.text-color-green {
+  color: #37bb9b;
+}
+.text-grey {
+  color: #686868;
+}
+.text-blue {
+  color: #1976d2;
+}
+.text-red {
+  color: #bb5838 !important;
+}
+
+.text-decoration-none {
+  text-decoration: none !important;
+}
+
+.text-decoration-none:hover {
+  text-decoration: underline;
+}
+
+.m-b-1 {
+  margin-bottom: 1rem;
+}
+
+.max-100 {
+  max-width: 100% !important;
+}
+
+.w-100 {
+  width: 100% !important;
+}
+
+.opacity-05 {
+  opacity: 0.5 !important;
+}
+
+.opacity-07 {
+  opacity: 0.7 !important;
+}
+
+.m-0 {
+  margin: 0 !important;
+}
+
+.mr-0 {
+  margin-right: 0 !important;
+}
+
+.mt-0 {
+  margin-top: 0 !important;
+}
+
+.mb-0 {
+  margin-bottom: 0 !important;
+}
+
+.my-0 {
+  margin-bottom: 0 !important;
+  margin-top: 0 !important;
+}
+
+.p-0 {
+  padding: 0 !important;
+}
+.pb-1 {
+  padding-bottom: 1rem !important;
+}
+
+.py-0 {
+  padding-bottom: 0 !important;
+  padding-top: 0 !important;
+}
+
+.flex-1 {
+  flex: 1 !important;
+}
+.text-center {
+  text-align: center !important;
+}
+
+.align-self-end {
+  align-self: flex-end !important;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+}
+textarea {
+  resize: vertical;
+}
+
+.text-black-default {
+  color: rgba(0, 0, 0, 0.7) !important;
+}
+
+.no-wrap {
+  white-space: nowrap;
+}
+
+.hide {
+  display: none !important;
+}
+
+textarea::placeholder {
+  opacity: 0.7;
+}
