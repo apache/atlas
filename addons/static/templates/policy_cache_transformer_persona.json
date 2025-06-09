@@ -1358,13 +1358,13 @@
     {
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
-      "policyFilterCriteria": "{\"endOneEntity\":\"{criteria}\",\"endTwoEntity\":\"{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": [\"Catalog\", \"Connection\", \"Process\", \"Namespace\", \"ProcessExecution\"], \"operator\": \"IN\"}]}",
+      "policyFilterCriteria": "{\"endOneEntity\":{entity-criteria},\"endTwoEntity\":{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": [\"Catalog\", \"Connection\", \"Process\", \"Namespace\", \"ProcessExecution\"], \"operator\": \"IN\"}]}}",
       "actions": ["add-relationship", "remove-relationship"]
     },
     {
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
-      "policyFilterCriteria": "{\"endOneEntity\":\"{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": [\"Catalog\", \"Connection\", \"Process\", \"Namespace\", \"ProcessExecution\"], \"operator\": \"IN\"}],\"endTwoEntity\":\"{criteria}\"}",
+      "policyFilterCriteria": "{\"endOneEntity\":{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": [\"Catalog\", \"Connection\", \"Process\", \"Namespace\", \"ProcessExecution\"], \"operator\": \"IN\"}]},\"endTwoEntity\":{entity-criteria}}",
       "actions": ["add-relationship", "remove-relationship"]
     }
   ],
@@ -1404,7 +1404,7 @@
     {
       "policyType": "ACCESS",
       "policyResourceCategory": "RELATIONSHIP",
-      "policyFilterCriteria": "{\"endOneEntity\":\"{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": \"AtlasGlossaryTerm\",\"operator\": \"EQUALS\"}],\"endTwoEntity\":\"{criteria}\"}",
+      "policyFilterCriteria": "{\"endOneEntity\":{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": \"AtlasGlossaryTerm\",\"operator\": \"EQUALS\"}]},\"endTwoEntity\":{entity-criteria}}",
       "actions": ["add-relationship", "update-relationship"]
     }
   ],
@@ -1412,7 +1412,7 @@
     {
       "policyType": "ACCESS",
       "policyResourceCategory": "RELATIONSHIP",
-      "policyFilterCriteria": "{\"endOneEntity\":\"{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": \"AtlasGlossaryTerm\",\"operator\": \"EQUALS\"}],\"endTwoEntity\":\"{criteria}\"}",
+      "policyFilterCriteria": "{\"endOneEntity\":{\"condition\": \"AND\", \"criterion\": [{\"attributeName\": \"__typeName\", \"attributeValue\": \"AtlasGlossaryTerm\",\"operator\": \"EQUALS\"}]},\"endTwoEntity\":{entity-criteria}}",
       "actions": ["remove-relationship"]
     }
   ]

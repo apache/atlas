@@ -31,6 +31,7 @@ public abstract class AbstractCachePolicyTransformer implements CachePolicyTrans
     public static final String PLACEHOLDER_ENTITY      = "{entity}";
     public static final String PLACEHOLDER_ENTITY_TYPE = "{entity-type}";
     public static final String PLACEHOLDER_FILTER_CRITERIA = "{criteria}";
+    public static final String PLACEHOLDER_FILTER_ENTITY_CRITERIA = "{entity-criteria}";
     public static final String PLACEHOLDER_TAG = "{tag}";
 
     private static Map<String, PolicyTransformerTemplate> TEMPLATES = new HashMap<>();

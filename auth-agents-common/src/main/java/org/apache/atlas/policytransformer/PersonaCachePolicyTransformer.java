@@ -49,6 +49,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SUB_CAT
 import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_ENTITY;
 import static org.apache.atlas.repository.util.AccessControlUtils.RESOURCES_ENTITY_TYPE;
 import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_POLICY_CONDITIONS;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_ENTITY;
 import static org.apache.atlas.repository.util.AccessControlUtils.getEntityByQualifiedName;
 import static org.apache.atlas.repository.util.AccessControlUtils.getFilteredPolicyResources;
 import static org.apache.atlas.repository.util.AccessControlUtils.getIsPolicyEnabled;
@@ -108,12 +109,13 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
 
                 if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
                     String templateFilterCriteria = templatePolicy.getPolicyFilterCriteria();
-                    if (StringUtils.isNotEmpty(templateFilterCriteria)) {
-                        // TODO: parse and extract value of "entity" key in filter criteria
-                        policyFilterCriteria = templateFilterCriteria.replace(PLACEHOLDER_FILTER_CRITERIA, policyFilterCriteria);
+                    JsonNode entityCriteria = JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, POLICY_FILTER_CRITERIA_ENTITY);
+                    if (entityCriteria != null && StringUtils.isNotEmpty(templateFilterCriteria)) {
+                        templateFilterCriteria = templateFilterCriteria.replace(PLACEHOLDER_FILTER_CRITERIA, policyFilterCriteria);
+                        templateFilterCriteria = templateFilterCriteria.replace(PLACEHOLDER_FILTER_ENTITY_CRITERIA, entityCriteria.toString());
+                        header.setAttribute(ATTR_POLICY_FILTER_CRITERIA, templateFilterCriteria);
+                        header.setAttribute(ATTR_POLICY_RESOURCES, new ArrayList<>(0));
                     }
-                    header.setAttribute(ATTR_POLICY_FILTER_CRITERIA, policyFilterCriteria);
-                    header.setAttribute(ATTR_POLICY_RESOURCES, new ArrayList<>(0));
                 } else {
                     String subCategory = getPolicySubCategory(atlasPolicy);
 
