@@ -3842,7 +3842,7 @@ public class EntityGraphMapper {
 
         try {
             do {
-                toIndex = ((offset + CHUNK_SIZE > impactedVerticesSize) ? impactedVerticesSize : (offset + CHUNK_SIZE));
+                toIndex = offset + CHUNK_SIZE > impactedVerticesSize ? impactedVerticesSize : offset + CHUNK_SIZE;
                 List<AtlasVertex> chunkedVerticesToPropagate = verticesToPropagate.subList(offset, toIndex);
 
                 AtlasPerfMetrics.MetricRecorder metricRecorder  = RequestContext.get().startMetricRecord("lockObjectsAfterTraverse");
