@@ -252,6 +252,8 @@ public class ExportService {
                 processEntityGuid(guid, context);
             }
 
+            // Continue processing as long as there are GUIDs to process or lineage information to process.
+            // This ensures that all related entities and their lineage are handled.
             while (!context.guidsToProcess.isEmpty() || !context.lineageToProcess.isEmpty()) {
                 while (!context.guidsToProcess.isEmpty()) {
                     String guid = context.guidsToProcess.remove(0);
