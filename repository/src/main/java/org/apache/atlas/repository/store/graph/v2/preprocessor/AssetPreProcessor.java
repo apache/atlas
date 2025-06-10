@@ -1,19 +1,25 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor ;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.DeleteType;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.model.instance.EntityMutations;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.EntityMutationContext;
+import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections4.CollectionUtils;
@@ -23,6 +29,8 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
+import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 
 public class AssetPreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AssetPreProcessor.class);
@@ -31,6 +39,9 @@ public class AssetPreProcessor implements PreProcessor {
     private AtlasTypeRegistry typeRegistry;
     private EntityGraphRetriever entityRetriever;
     private EntityGraphRetriever retrieverNoRelation = null;
+    private EntityDiscoveryService discovery;
+    private final Set<String> referenceAttributeNames = new HashSet<>(Arrays.asList(OUTPUT_PORT_GUIDS_ATTR, INPUT_PORT_GUIDS_ATTR));
+    private final Set<String> referencingEntityTypes = new HashSet<>(Arrays.asList(DATA_PRODUCT_ENTITY_TYPE));
 
 
     private static final Set<String> excludedTypes = new HashSet<>(Arrays.asList(ATLAS_GLOSSARY_ENTITY_TYPE, ATLAS_GLOSSARY_TERM_ENTITY_TYPE, ATLAS_GLOSSARY_CATEGORY_ENTITY_TYPE, DATA_PRODUCT_ENTITY_TYPE, DATA_DOMAIN_ENTITY_TYPE));
@@ -39,6 +50,12 @@ public class AssetPreProcessor implements PreProcessor {
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
         this.retrieverNoRelation = new EntityGraphRetriever(graph, typeRegistry, true);
+
+        try {
+            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
+        } catch (AtlasException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -132,6 +149,105 @@ public class AssetPreProcessor implements PreProcessor {
                 "read on source Entity, link/unlink operation denied: ", sourceEntity.getAttribute(NAME));
     }
 
+    @Override
+    public void processDelete(AtlasVertex vertex) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processDeleteAsset");
+
+        try {
+            DeleteType deleteType = RequestContext.get().getDeleteType();
+            if (deleteType.equals(DeleteType.HARD) || deleteType.equals(DeleteType.PURGE)) {
+                removeAssetGuidFromAttributeReferences(vertex, referencingEntityTypes, referenceAttributeNames);
+            } else {
+                LOG.info("processDeleteAsset: Skipping cleanup for soft delete of asset: {}", GraphHelper.getGuid(vertex));
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
+    private void removeAssetGuidFromAttributeReferences(AtlasVertex vertex, Set<String> referencingEntityTypes, Set<String> referenceAttributeNames) {
+        try {
+            if (isAssetType(vertex)) {
+                String guid = GraphHelper.getGuid(vertex);
+                int totalAttributeRefsRemoved = 0;
+
+                if (CollectionUtils.isEmpty(referencingEntityTypes) || CollectionUtils.isEmpty(referenceAttributeNames)) {
+                    LOG.warn("removeAssetGuidFromAttributeReferences: Empty entity types or attribute names set for asset: {}", guid);
+                    return;
+                }
+
+                for (String entityType: referencingEntityTypes) {
+                    int currentEntityRefcount = 0;
+
+                    for (String attributeName: referenceAttributeNames) {
+                        int currentAttributeRefcount = 0;
+
+                        try {
+                            List<AtlasEntityHeader> entities = fetchEntitiesUsingIndexSearch(entityType, attributeName, guid);
+
+                            for (AtlasEntityHeader entity: entities) {
+                                String entityGuid = entity.getGuid();
+                                AtlasVertex entityVertex = entityRetriever.getEntityVertex(entityGuid);
+
+                                AtlasGraphUtilsV2.removeItemFromListPropertyValue(
+                                        entityVertex,
+                                        attributeName,
+                                        guid
+                                );
+                                currentAttributeRefcount += 1;
+                                currentEntityRefcount += 1;
+                                totalAttributeRefsRemoved += 1;
+                            }
+                        } catch (Exception e) {
+                            LOG.error("removeAssetGuidFromAttributeReferences: failed to cleanup attribute reference for asset {} from individual entity", guid, e);
+                        }
+
+                        if (currentAttributeRefcount > 0) {
+                            LOG.info("removeAssetGuidFromAttributeReferences: removed {} references for attribute {} in entity type {} for asset: {}", 
+                                currentAttributeRefcount, attributeName, entityType, guid);
+                        }
+                    }
+
+                    if (currentEntityRefcount > 0) {
+                        LOG.info("removeAssetGuidFromAttributeReferences: removed {} total references for entity type {} for asset: {}", 
+                            currentEntityRefcount, entityType, guid);
+                    }
+                }
+
+                if (totalAttributeRefsRemoved > 0) {
+                    LOG.info("removeAssetGuidFromAttributeReferences: successfully cleaned up {} total attribute references for asset: {}", 
+                        totalAttributeRefsRemoved, guid);
+                }
+            }
+        }
+        catch (Exception e) {
+            LOG.error("removeAssetGuidFromAttributeReferences: unexpected error during cleanup", e);
+        }
+    }
+
+    private List<AtlasEntityHeader> fetchEntitiesUsingIndexSearch(String typeName, String attributeName, String guid) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("findProductsWithPortGuid");
+        try {
+            List<Map<String, Object>> mustClauses = new ArrayList<>();
+            mustClauses.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
+            mustClauses.add(mapOf("term", mapOf(attributeName, guid)));
+
+            Map<String, Object> bool = new HashMap<>();
+            bool.put("must", mustClauses);
+
+            Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
+
+            return indexSearchPaginated(dsl, null, discovery);
+
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
+    private boolean isAssetType(AtlasVertex vertex) {
+        String typeName = GraphHelper.getTypeName(vertex);
+        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
+
+        return entityType != null && entityType.getTypeAndAllSuperTypes().contains("Asset");
+    }
 }
-
-

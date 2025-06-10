@@ -25,7 +25,6 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
-import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -39,7 +38,10 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.graph.GraphHelper;
-import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
+import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
@@ -75,11 +77,9 @@ import static org.apache.atlas.model.typedef.AtlasRelationshipDef.PropagateTags.
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_REFRESH_PROPAGATION;
-import static org.apache.atlas.repository.util.AtlasEntityUtils.mapOf;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
@@ -97,7 +97,6 @@ public abstract class DeleteHandlerV1 {
     protected final GraphHelper          graphHelper;
     private   final AtlasTypeRegistry    typeRegistry;
     protected   final EntityGraphRetriever entityRetriever;
-    protected EntityDiscoveryService discovery;
     private   final boolean              shouldUpdateInverseReferences;
     private   final boolean              softDelete;
     private   final TaskManagement       taskManagement;
@@ -113,12 +112,6 @@ public abstract class DeleteHandlerV1 {
         this.taskManagement                = taskManagement;
         this.graph                         = graph;
         this.taskUtil                      = new TaskUtil(graph);
-
-        try {
-            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
-        } catch (AtlasException e) {
-            e.printStackTrace();
-        }
     }
 
     /**
@@ -1073,13 +1066,6 @@ public abstract class DeleteHandlerV1 {
             }
         }
 
-        DeleteType deleteType = RequestContext.get().getDeleteType();
-        if (deleteType.equals(DeleteType.HARD) || deleteType.equals(DeleteType.PURGE)) {
-            cleanupEntityAttributeReferences(instanceVertex, DATA_PRODUCT_ENTITY_TYPE, OUTPUT_PORT_GUIDS_ATTR);
-
-            cleanupEntityAttributeReferences(instanceVertex, DATA_PRODUCT_ENTITY_TYPE, INPUT_PORT_GUIDS_ATTR);
-        }
-
         _deleteVertex(instanceVertex, force);
     }
 
@@ -1735,65 +1721,5 @@ public abstract class DeleteHandlerV1 {
                     // Check if this edge has lineage
                     return Boolean.TRUE.equals(edge.get(HAS_LINEAGE));
                 });
-    }
-
-    private void cleanupEntityAttributeReferences(AtlasVertex vertex, String typeName, String attributeName) {
-        try {
-            if (isAssetType(vertex)) {
-                String guid = GraphHelper.getGuid(vertex);
-                int attributeRefsRemoved = 0;
-
-                try {
-                    List<AtlasEntityHeader> entities = fetchEntitiesUsingIndexSearch(typeName, attributeName, guid);
-
-                    for (AtlasEntityHeader entity: entities) {
-                        String entityGuid = entity.getGuid();
-                        AtlasVertex entityVertex = entityRetriever.getEntityVertex(entityGuid);
-
-                        AtlasGraphUtilsV2.removeItemFromListPropertyValue(
-                                entityVertex,
-                                attributeName,
-                                guid
-                        );
-                        attributeRefsRemoved += 1;
-                    }
-                } catch (Exception e) {
-                    LOG.error("cleanupEntityAttributeReferences: failed to cleanup attribute reference for asset {} from individual entity", guid, e);
-                }
-
-                if (attributeRefsRemoved > 0) {
-                    LOG.info("cleanupEntityAttributeReferences: successfully cleaned up {} attribute references for asset: {}", attributeRefsRemoved, guid);
-                }
-            }
-        }
-        catch (Exception e) {
-            LOG.error("cleanupEntityAttributeReferences: unexpected error during cleanup", e);
-        }
-    }
-
-    private List<AtlasEntityHeader> fetchEntitiesUsingIndexSearch(String typeName, String attributeName, String guid) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("findProductsWithPortGuid");
-        try {
-            List<Map<String, Object>> mustClauses = new ArrayList<>();
-            mustClauses.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
-            mustClauses.add(mapOf("term", mapOf(attributeName, guid)));
-
-            Map<String, Object> bool = new HashMap<>();
-            bool.put("must", mustClauses);
-
-            Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
-
-            return indexSearchPaginated(dsl, null, discovery);
-
-        } finally {
-            RequestContext.get().endMetricRecord(metricRecorder);
-        }
-}
-
-    private boolean isAssetType(AtlasVertex vertex) {
-        String typeName = GraphHelper.getTypeName(vertex);
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
-        
-        return entityType != null && entityType.getTypeAndAllSuperTypes().contains("Asset");
     }
 }
