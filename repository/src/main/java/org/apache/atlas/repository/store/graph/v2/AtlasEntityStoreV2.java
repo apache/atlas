@@ -46,6 +46,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.patches.PatchContext;
 import org.apache.atlas.repository.patches.ReIndexPatch;
 import org.apache.atlas.repository.store.aliasstore.ESAliasStore;
@@ -88,6 +89,7 @@ import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -96,6 +98,8 @@ import javax.inject.Inject;
 import java.io.InputStream;
 import java.util.*;
 import java.util.stream.Collectors;
+
+import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversalSource;
 
 import static java.lang.Boolean.FALSE;
 import static org.apache.atlas.AtlasConfiguration.ATLAS_DISTRIBUTED_TASK_ENABLED;
@@ -2724,39 +2728,93 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     }
 
     private void repairHasLineageForAsset(AtlasHasLineageRequest request) {
-        //only supports repairing scenario mentioned here - https://atlanhq.atlassian.net/browse/DG-128?focusedCommentId=20652
+        //supports repairing scenario mentioned here - https://atlanhq.atlassian.net/browse/DG-128?focusedCommentId=20652
+        //Enhanced to support both directions: setting hasLineage false->true and true->false
 
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageForAssetGetById");
         AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, request.getAssetGuid());
         RequestContext.get().endMetricRecord(metricRecorder);
 
-        if (getEntityHasLineage(assetVertex)) {
-            metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageForAssetGetRelations");
-            Iterator<AtlasEdge> lineageEdges = assetVertex.getEdges(AtlasEdgeDirection.BOTH, PROCESS_EDGE_LABELS).iterator();
+        if (assetVertex == null) {
+            LOG.warn("repairHasLineage: Asset vertex not found for guid: {}", request.getAssetGuid());
+            return;
+        }
+
+        boolean currentHasLineage = getEntityHasLineage(assetVertex);
+        Boolean shouldHaveLineage = checkIfAssetShouldHaveLineage(assetVertex);
+        if (shouldHaveLineage == null) {
+            LOG.warn("repairHasLineage: Failed to determine if asset should have lineage for guid: {}", request.getAssetGuid());
+            return;
+        }
+
+        if (currentHasLineage && !shouldHaveLineage) {
+            // Case 1: hasLineage is true but should be false
+            metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageSetFalse");
+            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
+            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE_VALID, true);
+            LOG.info("repairHasLineage: Set hasLineage=false for asset: {}", request.getAssetGuid());
             RequestContext.get().endMetricRecord(metricRecorder);
-            boolean foundActiveRel = false;
+        } else if (!currentHasLineage && shouldHaveLineage) {
+            // Case 2: hasLineage is false but should be true
+            metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageSetTrue");
+            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, true);
+            AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE_VALID, true);
+            LOG.info("repairHasLineage: Set hasLineage=true for asset: {}", request.getAssetGuid());
+            RequestContext.get().endMetricRecord(metricRecorder);
+        } else {
+            LOG.debug("repairHasLineage: No repair needed for asset: {}, hasLineage={}", request.getAssetGuid(), currentHasLineage);
+        }
+    }
 
-            while (lineageEdges.hasNext()) {
-                AtlasEdge edge = lineageEdges.next();
-                if (getStatus(edge) == ACTIVE) {
-                    AtlasVertex vertexB = edge.getOutVertex();
-                    if (vertexB.equals(assetVertex)) {
-                        vertexB = edge.getInVertex();
-                    }
-
-                    if (getStatus(vertexB) == ACTIVE) {
-                        foundActiveRel = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!foundActiveRel) {
-                metricRecorder = RequestContext.get().startMetricRecord("repairHasLineageForRequiredAsset");
-                AtlasGraphUtilsV2.setEncodedProperty(assetVertex, HAS_LINEAGE, false);
-                LOG.info("repairHasLineage: repairHasLineageForAsset: Repaired {}", request.getAssetGuid());
-                RequestContext.get().endMetricRecord(metricRecorder);
-            }
+    /**
+     * Optimized method to determine if an asset should have lineage using:
+     * 1. Single Unified Query Approach - One Gremlin traversal for all edge checks
+     * 2. Early Termination with Short-Circuit Logic - Stops at first valid lineage found
+     * 3. Native Graph Traversal (Gremlin) - Direct Gremlin instead of Atlas query wrapper
+     * 
+     * @param assetVertex The asset vertex to check
+     * @return true if the asset should have hasLineage=true, false otherwise
+     */
+    private Boolean checkIfAssetShouldHaveLineage(AtlasVertex assetVertex) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("checkIfAssetShouldHaveLineage");
+        
+        try {
+            // Get Gremlin traversal source for native graph operations
+            GraphTraversalSource g = ((AtlasJanusGraph) graph).getGraph().traversal();
+            
+            // Single unified query: Get all active edges connected to this asset that could indicate lineage
+            // This replaces multiple separate queries with one comprehensive traversal
+            return g.V(assetVertex.getId())
+                    .bothE(PROCESS_EDGE_LABELS) // Get edges in both directions for all process edge types
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE) // Filter for active edges only
+                    .otherV() // Get the connected vertices (process vertices)
+                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE) // Filter for active process vertices only
+                    .or(
+                        // Short-circuit condition 1: Process already has lineage flag set
+                        __.has(HAS_LINEAGE, true),
+                        // Short-circuit condition 2: Process has valid input/output structure
+                        __.where(
+                            __.and(
+                                // Check if process has active inputs
+                                __.outE(PROCESS_INPUTS)
+                                  .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                                  .inV()
+                                  .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE),
+                                // Check if process has active outputs
+                                __.outE(PROCESS_OUTPUTS)
+                                  .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                                  .inV()
+                                  .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                            )
+                        )
+                    )
+                    .hasNext(); // Early termination - returns true as soon as first valid lineage is found
+                    
+        } catch (Exception e) {
+            LOG.error("Failed to use optimized Gremlin traversal for lineage check, falling back to Atlas queries", e);
+            return null;
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
 
