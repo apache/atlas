@@ -289,15 +289,8 @@ public class ExportService {
     private void processEntityGuid(String guid, ExportContext context) throws AtlasBaseException {
         LOG.debug("==> processEntityGuid({})", guid);
 
-        boolean resumeExportForStartingEntity = false;
-        if ((context.fetchType == ExportFetchType.CONNECTED
-                || (context.fetchType == ExportFetchType.INCREMENTAL && context.changeMarker <= 0))
-                && guid.equals(context.startingEntityGuid)) {
-            resumeExportForStartingEntity = true;
-        }
-
         if (context.guidsProcessed.contains(guid)) {
-            if (resumeExportForStartingEntity) {
+            if (guid.equals(context.startingEntityGuid) && (context.fetchType == ExportFetchType.CONNECTED || (context.fetchType == ExportFetchType.INCREMENTAL && context.changeMarker <= 0))) {
                 LOG.info("Resuming export for {}", guid);
             } else {
                 return;
