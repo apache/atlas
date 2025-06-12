@@ -185,7 +185,7 @@ public class ESAliasStore implements IndexAliasStore {
     private Map<String, Object> getFilterForPurpose(AtlasEntity purpose) throws AtlasBaseException {
 
         List<Map<String, Object>> allowClauseList = new ArrayList<>();
-        List<Map<String, Object>> denyClauseList = new ArrayList<>();
+        List<Map<String, Object>> denyClauseList = new ArrayList<>(); // deny policies are not include for purpose
 
         List<String> tags = getPurposeTags(purpose);
         addPurposeMetadataFilterClauses(tags, allowClauseList);
@@ -195,23 +195,18 @@ public class ESAliasStore implements IndexAliasStore {
 
     private void personaPolicyToESDslClauses(List<AtlasEntity> policies,
                                              List<Map<String, Object>> allowClauseList, List<Map<String, Object>> denyClauseList, boolean useHierarchicalQualifiedNameFilter) throws AtlasBaseException {
-        Set<String> allowTerms = new HashSet<>();
-        Set<String> allowGlossaryQualifiedNames = new HashSet<>();
-        Set<String> allowMetadataPolicyQualifiedNames = new HashSet<>();
         
-        Set<String> denyTerms = new HashSet<>();
-        Set<String> denyGlossaryQualifiedNames = new HashSet<>();
-        Set<String> denyMetadataPolicyQualifiedNames = new HashSet<>();
+        // Group related collections together
+        TermCollections allowCollections = new TermCollections();
+        TermCollections denyCollections = new TermCollections();
         
         for (AtlasEntity policy: policies) {
 
             if (policy.getStatus() == null || AtlasEntity.Status.ACTIVE.equals(policy.getStatus())) {
                 boolean isAllowPolicy = getIsAllowPolicy(policy);
                 
-                // Set reference to the appropriate collections based on policy type
-                Set<String> terms = isAllowPolicy ? allowTerms : denyTerms;
-                Set<String> glossaryQualifiedNames = isAllowPolicy ? allowGlossaryQualifiedNames : denyGlossaryQualifiedNames;
-                Set<String> metadataPolicyQualifiedNames = isAllowPolicy ? allowMetadataPolicyQualifiedNames : denyMetadataPolicyQualifiedNames;
+                // Select the appropriate terms and clause list based on policy type
+                TermCollections terms = isAllowPolicy ? allowCollections : denyCollections;
                 List<Map<String, Object>> clauseList = isAllowPolicy ? allowClauseList : denyClauseList;
 
                 List<String> assets = getPolicyAssets(policy);
@@ -238,7 +233,7 @@ public class ESAliasStore implements IndexAliasStore {
                 if (policyActions.contains(ACCESS_READ_PERSONA_METADATA)) {
 
                     if (!POLICY_SUB_CATEGORY_METADATA.equals(getPolicySubCategory(policy))) {
-                        terms.addAll(assets);
+                        terms.qualifiedNames.addAll(assets);
                         continue;
                     }
 
@@ -264,9 +259,9 @@ public class ESAliasStore implements IndexAliasStore {
                         if (isWildcard) {
                             clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset)));
                         } else if (useHierarchicalQualifiedNameFilter) {
-                            metadataPolicyQualifiedNames.add(asset);
+                            terms.metadataPolicyQualifiedNames.add(asset);
                         } else {
-                            terms.add(asset);
+                            terms.qualifiedNames.add(asset);
                         }
 
                         if (!useHierarchicalQualifiedNameFilter || isWildcard) {
@@ -274,17 +269,17 @@ public class ESAliasStore implements IndexAliasStore {
                         }
                     }
 
-                    terms.add(connectionQName);
+                    terms.qualifiedNames.add(connectionQName);
                 } else if (policyActions.contains(ACCESS_READ_PERSONA_GLOSSARY)) {
                     if (CollectionUtils.isNotEmpty(assets)) {
-                        terms.addAll(assets);
-                        glossaryQualifiedNames.addAll(assets);
+                        terms.qualifiedNames.addAll(assets);
+                        terms.glossaryQualifiedNames.addAll(assets);
                     }
                 } else if (policyActions.contains(ACCESS_READ_PERSONA_DOMAIN)) {
                     for (String asset : assets) {
                         if(!isAllDomain(asset)) {
-                            terms.add(asset);
-                            terms.addAll(getParentDomainPaths(asset)); // Add all parent domains in the hierarchy
+                            terms.qualifiedNames.add(asset);
+                            terms.qualifiedNames.addAll(getParentDomainPaths(asset)); // Add all parent domains in the hierarchy
                         } else {
                             asset = NEW_WILDCARD_DOMAIN_SUPER;
                         }
@@ -315,21 +310,28 @@ public class ESAliasStore implements IndexAliasStore {
                     }
                 }
 
-                if (terms.size() > assetsMaxLimit) {
-                    throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(terms.size()));
+                if (terms.qualifiedNames.size() > assetsMaxLimit) {
+                    throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(terms.qualifiedNames.size()));
                 }
             }
         }
 
         // Add allow terms to allow clauses
-        addTermsClause(allowClauseList, allowTerms, QUALIFIED_NAME);
-        addTermsClause(allowClauseList, allowMetadataPolicyQualifiedNames, QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY);
-        addTermsClause(allowClauseList, allowGlossaryQualifiedNames, GLOSSARY_PROPERTY_KEY);
+        addTermsClause(allowClauseList, allowCollections.qualifiedNames, QUALIFIED_NAME);
+        addTermsClause(allowClauseList, allowCollections.metadataPolicyQualifiedNames, QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY);
+        addTermsClause(allowClauseList, allowCollections.glossaryQualifiedNames, GLOSSARY_PROPERTY_KEY);
 
         // Add deny terms to deny clauses
-        addTermsClause(denyClauseList, denyTerms, QUALIFIED_NAME);
-        addTermsClause(denyClauseList, denyMetadataPolicyQualifiedNames, QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY);
-        addTermsClause(denyClauseList, denyGlossaryQualifiedNames, GLOSSARY_PROPERTY_KEY);
+        addTermsClause(denyClauseList, denyCollections.qualifiedNames, QUALIFIED_NAME);
+        addTermsClause(denyClauseList, denyCollections.metadataPolicyQualifiedNames, QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY);
+        addTermsClause(denyClauseList, denyCollections.glossaryQualifiedNames, GLOSSARY_PROPERTY_KEY);
+    }
+
+    // Inner class to group related collections
+    private static class TermCollections {
+        Set<String> qualifiedNames = new HashSet<>();
+        Set<String> glossaryQualifiedNames = new HashSet<>();
+        Set<String> metadataPolicyQualifiedNames = new HashSet<>();
     }
 
     // addTermsClause set the terms to the clauseList argument itself
@@ -369,10 +371,6 @@ public class ESAliasStore implements IndexAliasStore {
         if (CollectionUtils.isNotEmpty(allowClauseList)) {
             boolQuery.put("should", allowClauseList);
             boolQuery.put("minimum_should_match", 1);
-        }
-        
-        if (CollectionUtils.isNotEmpty(denyClauseList)) {
-            boolQuery.put("must_not", denyClauseList);
         }
         
         // If we have no allow clauses and no deny clauses, return null (no filter)
