@@ -1,5 +1,6 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorizer.JsonToElasticsearchQuery;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -164,6 +165,9 @@ public class AuthPolicyValidator {
         add("entity-type");
     }};
 
+    private static final String INVALID_FILTER_CRITERIA = "Invalid filter criteria: ";
+    private static final int FILTER_CRITERIA_MAX_NESTING_LEVEL = 2;
+
     public void validate(AtlasEntity policy, AtlasEntity existingPolicy,
                          AtlasEntity accessControl, EntityMutations.EntityOperation operation) throws AtlasBaseException {
         String policyCategory = null;
@@ -198,8 +202,7 @@ public class AuthPolicyValidator {
 
                     List<String> resources = getPolicyResources(policy);
                     if (isABACPolicyService(policy)) {
-                        String policyFilterCriteria = getPolicyFilterCriteria(policy);
-                        validateParam(JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, POLICY_FILTER_CRITERIA_ENTITY) == null, "Invalid filter criteria");
+                        validatePolicyFilterCriteria(getPolicyFilterCriteria(policy));
                     } else {
                         validateParam(CollectionUtils.isEmpty(resources), "Please provide attribute " + ATTR_POLICY_RESOURCES);
                     }
@@ -295,8 +298,7 @@ public class AuthPolicyValidator {
                 if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
                     List<String> resources = getPolicyResources(policy);
                     if (isABACPolicyService(policy)) {
-                        String policyFilterCriteria = getPolicyFilterCriteria(policy);
-                        validateParam(JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, POLICY_FILTER_CRITERIA_ENTITY) == null, "Invalid filter criteria");
+                        validatePolicyFilterCriteria(getPolicyFilterCriteria(policy));
                     } else {
                         validateParam (policy.hasAttribute(ATTR_POLICY_RESOURCES) && CollectionUtils.isEmpty(resources),
                             "Please provide attribute " + ATTR_POLICY_RESOURCES);
@@ -416,5 +418,27 @@ public class AuthPolicyValidator {
     private static void validateOperation(boolean isInvalid, String errorMessage) throws AtlasBaseException {
         if (isInvalid)
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, errorMessage);
+    }
+
+    private static void validatePolicyFilterCriteria(String filterCriteria) throws AtlasBaseException {
+        JsonNode entityCriteriaNode = JsonToElasticsearchQuery.parseFilterJSON(filterCriteria, POLICY_FILTER_CRITERIA_ENTITY);
+        validateParam(entityCriteriaNode == null, INVALID_FILTER_CRITERIA + "must contain entity root key");
+
+        validateCriterionArray(entityCriteriaNode, 1);
+    }
+
+    private static void validateCriterionArray(JsonNode criteriaNode, int currentDepth) throws AtlasBaseException {
+
+        JsonNode criterionArray = criteriaNode.get(POLICY_FILTER_CRITERIA_CRITERION);
+        if (criterionArray == null) return; // Leaf node - no further validation needed
+
+        validateParam(currentDepth > FILTER_CRITERIA_MAX_NESTING_LEVEL, INVALID_FILTER_CRITERIA + "maximum supported nesting depth exceeded");
+        validateParam(!criterionArray.isArray(), INVALID_FILTER_CRITERIA + "criterion must be array");
+        validateParam(criterionArray.size() > 3, INVALID_FILTER_CRITERIA + "maximum of 3 conditions are supported currently");
+
+        // Recursively validate nested criterion
+        for (JsonNode nestedCriteriaNode : criterionArray) {
+            validateCriterionArray(nestedCriteriaNode, currentDepth + 1);
+        }
     }
 }

@@ -137,6 +137,9 @@ public final class AccessControlUtils {
     public static final String POLICY_FILTER_CRITERIA_END1 = "endOneEntity";
     public static final String POLICY_FILTER_CRITERIA_END2 = "endTwoEntity";
 
+    public static final String POLICY_FILTER_CRITERIA_CRITERION = "criterion";
+    public static final String POLICY_FILTER_CRITERIA_CONDITION = "condition";
+
     private AccessControlUtils() {}
 
     public static String getEntityName(AtlasEntity entity) {
