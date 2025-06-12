@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 
 public class SparkPreprocessor {
     private static final Logger LOG = LoggerFactory.getLogger(SparkPreprocessor.class);
+
     static class SparkProcessPreprocessor extends EntityPreprocessor {
         public SparkProcessPreprocessor() {
             super(TYPE_SPARK_PROCESS);
