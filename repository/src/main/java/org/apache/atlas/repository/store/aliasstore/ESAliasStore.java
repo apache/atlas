@@ -164,6 +164,7 @@ public class ESAliasStore implements IndexAliasStore {
 
     private Map<String, Object> getFilterForPersona(AtlasEntity.AtlasEntityWithExtInfo persona, AtlasEntity policy) throws AtlasBaseException {
         List<Map<String, Object>> allowClauseList = new ArrayList<>();
+        List<Map<String, Object>> denyClauseList = new ArrayList<>();
 
         if (policy == null && persona == null){
             return getEmptyFilter();
@@ -175,34 +176,43 @@ public class ESAliasStore implements IndexAliasStore {
         }
         if (CollectionUtils.isNotEmpty(policies)) {
             boolean useHierarchicalQualifiedNameFilter =  FeatureFlagStore.evaluate(ENABLE_PERSONA_HIERARCHY_FILTER, "true");
-            personaPolicyToESDslClauses(policies, allowClauseList, useHierarchicalQualifiedNameFilter);
+            personaPolicyToESDslClauses(policies, allowClauseList, denyClauseList, useHierarchicalQualifiedNameFilter);
         }
 
-        return esClausesToFilter(allowClauseList);
+        return esClausesToFilter(allowClauseList, denyClauseList);
     }
 
     private Map<String, Object> getFilterForPurpose(AtlasEntity purpose) throws AtlasBaseException {
 
         List<Map<String, Object>> allowClauseList = new ArrayList<>();
+        List<Map<String, Object>> denyClauseList = new ArrayList<>();
 
         List<String> tags = getPurposeTags(purpose);
         addPurposeMetadataFilterClauses(tags, allowClauseList);
 
-        return esClausesToFilter(allowClauseList);
+        return esClausesToFilter(allowClauseList, denyClauseList);
     }
 
     private void personaPolicyToESDslClauses(List<AtlasEntity> policies,
-                                             List<Map<String, Object>> allowClauseList, boolean useHierarchicalQualifiedNameFilter) throws AtlasBaseException {
-        Set<String> terms = new HashSet<>();
-        Set<String> glossaryQualifiedNames =new HashSet<>();
-        Set<String> metadataPolicyQualifiedNames = new HashSet<>();
+                                             List<Map<String, Object>> allowClauseList, List<Map<String, Object>> denyClauseList, boolean useHierarchicalQualifiedNameFilter) throws AtlasBaseException {
+        Set<String> allowTerms = new HashSet<>();
+        Set<String> allowGlossaryQualifiedNames = new HashSet<>();
+        Set<String> allowMetadataPolicyQualifiedNames = new HashSet<>();
+        
+        Set<String> denyTerms = new HashSet<>();
+        Set<String> denyGlossaryQualifiedNames = new HashSet<>();
+        Set<String> denyMetadataPolicyQualifiedNames = new HashSet<>();
         
         for (AtlasEntity policy: policies) {
 
             if (policy.getStatus() == null || AtlasEntity.Status.ACTIVE.equals(policy.getStatus())) {
-                if (!getIsAllowPolicy(policy)) {
-                    continue;
-                }
+                boolean isAllowPolicy = getIsAllowPolicy(policy);
+                
+                // Set reference to the appropriate collections based on policy type
+                Set<String> terms = isAllowPolicy ? allowTerms : denyTerms;
+                Set<String> glossaryQualifiedNames = isAllowPolicy ? allowGlossaryQualifiedNames : denyGlossaryQualifiedNames;
+                Set<String> metadataPolicyQualifiedNames = isAllowPolicy ? allowMetadataPolicyQualifiedNames : denyMetadataPolicyQualifiedNames;
+                List<Map<String, Object>> clauseList = isAllowPolicy ? allowClauseList : denyClauseList;
 
                 List<String> assets = getPolicyAssets(policy);
                 List<String> policyActions = getPolicyActions(policy);
@@ -218,7 +228,7 @@ public class ESAliasStore implements IndexAliasStore {
 
                     try {
                         JsonNode dsl = JsonToElasticsearchQuery.convertJsonToQuery(entityFilterCriteriaNode);
-                        allowClauseList.add(mapOf("bool", dsl.get("bool")));
+                        clauseList.add(mapOf("bool", dsl.get("bool")));
                     } catch (Exception e) {
                         LOG.error("Error processing ABAC policy filter criteria for policy {}", policy.getGuid(), e);
                     }
@@ -252,7 +262,7 @@ public class ESAliasStore implements IndexAliasStore {
                         }
                         boolean isWildcard = asset.contains("*") || asset.contains("?");
                         if (isWildcard) {
-                            allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset)));
+                            clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset)));
                         } else if (useHierarchicalQualifiedNameFilter) {
                             metadataPolicyQualifiedNames.add(asset);
                         } else {
@@ -260,7 +270,7 @@ public class ESAliasStore implements IndexAliasStore {
                         }
 
                         if (!useHierarchicalQualifiedNameFilter || isWildcard) {
-                            allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
+                            clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*")));
                         }
                     }
 
@@ -278,21 +288,21 @@ public class ESAliasStore implements IndexAliasStore {
                         } else {
                             asset = NEW_WILDCARD_DOMAIN_SUPER;
                         }
-                        allowClauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "*")));
+                        clauseList.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "*")));
                     }
                 } else if (policyActions.contains(ACCESS_READ_PERSONA_SUB_DOMAIN)) {
                     for (String asset : assets) {
                         List<Map<String, Object>> mustMap = new ArrayList<>();
                         mustMap.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*domain/*")));
                         mustMap.add(mapOf("term", mapOf("__typeName.keyword", "DataDomain")));
-                        allowClauseList.add(mapOf("bool", mapOf("must", mustMap)));
+                        clauseList.add(mapOf("bool", mapOf("must", mustMap)));
                     }
                 } else if (policyActions.contains(ACCESS_READ_PERSONA_PRODUCT)) {
                     for (String asset : assets) {
                         List<Map<String, Object>> mustMap = new ArrayList<>();
                         mustMap.add(mapOf("wildcard", mapOf(QUALIFIED_NAME, asset + "/*product/*")));
                         mustMap.add(mapOf("term", mapOf("__typeName.keyword", "DataProduct")));
-                        allowClauseList.add(mapOf("bool", mapOf("must", mustMap)));
+                        clauseList.add(mapOf("bool", mapOf("must", mustMap)));
                     }
                 } else if (policyActions.contains(ACCESS_READ_PERSONA_AI_APP) || policyActions.contains(ACCESS_READ_PERSONA_AI_MODEL)) {
                     // access is given across the resource as per entity-type for AI asset
@@ -301,24 +311,31 @@ public class ESAliasStore implements IndexAliasStore {
                     List<Map<String, Object>> mustMap = new ArrayList<>();
                     if (CollectionUtils.isNotEmpty(typeResources)) {
                         mustMap.add(mapOf("terms", mapOf("__typeName.keyword", typeResources)));
-                        allowClauseList.add(mapOf("bool", mapOf("must", mustMap)));
+                        clauseList.add(mapOf("bool", mapOf("must", mustMap)));
                     }
                 }
-            }
 
-            if (terms.size() > assetsMaxLimit) {
-                throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(terms.size()));
+                if (terms.size() > assetsMaxLimit) {
+                    throw new AtlasBaseException(AtlasErrorCode.PERSONA_POLICY_ASSETS_LIMIT_EXCEEDED, String.valueOf(assetsMaxLimit), String.valueOf(terms.size()));
+                }
             }
         }
 
+        // Add allow terms to allow clauses
+        addTermsClause(allowClauseList, allowTerms, QUALIFIED_NAME);
+        addTermsClause(allowClauseList, allowMetadataPolicyQualifiedNames, QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY);
+        addTermsClause(allowClauseList, allowGlossaryQualifiedNames, GLOSSARY_PROPERTY_KEY);
+
+        // Add deny terms to deny clauses
+        addTermsClause(denyClauseList, denyTerms, QUALIFIED_NAME);
+        addTermsClause(denyClauseList, denyMetadataPolicyQualifiedNames, QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY);
+        addTermsClause(denyClauseList, denyGlossaryQualifiedNames, GLOSSARY_PROPERTY_KEY);
+    }
+
+    // addTermsClause set the terms to the clauseList argument itself
+    private void addTermsClause(List<Map<String, Object>> clauseList, Set<String> terms, String propertyKey) {
         if (!terms.isEmpty()) {
-            allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME, new ArrayList<>(terms))));
-        }
-        if (CollectionUtils.isNotEmpty(metadataPolicyQualifiedNames)) {
-            allowClauseList.add(mapOf("terms", mapOf(QUALIFIED_NAME_HIERARCHY_PROPERTY_KEY, new ArrayList<>(metadataPolicyQualifiedNames))));
-        }
-        if (CollectionUtils.isNotEmpty(glossaryQualifiedNames)) {
-            allowClauseList.add(mapOf("terms", mapOf(GLOSSARY_PROPERTY_KEY, new ArrayList<>(glossaryQualifiedNames))));
+            clauseList.add(mapOf("terms", mapOf(propertyKey, new ArrayList<>(terms))));
         }
     }
 
@@ -346,11 +363,29 @@ public class ESAliasStore implements IndexAliasStore {
     private boolean isAllDomain(String asset) {
         return asset.equals("*/super") || asset.equals("*") || asset.equals(NEW_WILDCARD_DOMAIN_SUPER);
     }
-    private Map<String, Object> esClausesToFilter(List<Map<String, Object>> allowClauseList) {
+    private Map<String, Object> esClausesToFilter(List<Map<String, Object>> allowClauseList, List<Map<String, Object>> denyClauseList) {
+        Map<String, Object> boolQuery = new HashMap<>();
+        
         if (CollectionUtils.isNotEmpty(allowClauseList)) {
-            return mapOf("bool", mapOf("should", allowClauseList));
+            boolQuery.put("should", allowClauseList);
+            boolQuery.put("minimum_should_match", 1);
         }
-        return null;
+        
+        if (CollectionUtils.isNotEmpty(denyClauseList)) {
+            boolQuery.put("must_not", denyClauseList);
+        }
+        
+        // If we have no allow clauses and no deny clauses, return null (no filter)
+        if (boolQuery.isEmpty()) {
+            return null;
+        }
+        
+        // If we only have deny clauses without allow clauses, we need to match all documents except those denied
+        if (!boolQuery.containsKey("should") && boolQuery.containsKey("must_not")) {
+            boolQuery.put("must", mapOf("match_all", new HashMap<>()));
+        }
+        
+        return mapOf("bool", boolQuery);
     }
 
     private Map<String, Object> getEmptyFilter() {
