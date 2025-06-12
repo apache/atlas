@@ -276,6 +276,7 @@ atlas.graph.storage.hbase.regions-per-server=1
                                         <!--<descriptor>src/main/assemblies/migration-exporter.xml</descriptor>-->
                                         <descriptor>src/main/assemblies/classification-updater.xml</descriptor>
                                         <descriptor>src/main/assemblies/notification-analyzer.xml</descriptor>
+                                        <descriptor>src/main/assemblies/atlas-trino-extractor.xml</descriptor>
                                     </descriptors>
                                     <finalName>apache-atlas-${project.version}</finalName>
                                     <tarLongFileMode>gnu</tarLongFileMode>
