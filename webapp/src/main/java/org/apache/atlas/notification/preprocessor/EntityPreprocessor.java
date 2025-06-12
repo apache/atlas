@@ -183,7 +183,7 @@ public abstract class EntityPreprocessor {
                 new AWSS3V2Preprocessor.AWSS3V2DirectoryPreprocessor()
         };
 
-        EntityPreprocessor[] sparkPreprocessors = new EntityPreprocessor[]{
+        EntityPreprocessor[] sparkPreprocessors = new EntityPreprocessor[] {
                 new SparkPreprocessor.SparkProcessPreprocessor()
         };
 

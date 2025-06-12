@@ -27,11 +27,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testng.annotations.Test;
 
-import java.util.Map;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.ArrayList;
-
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import static org.testng.Assert.assertEquals;
@@ -80,7 +79,7 @@ public class SparkPreprocessorTest {
         attributes.put(ATTRIBUTE_QUERYTEXT, null);
         attributes.put(ATTRIBUTE_CURRUSER, "spark");
 
-        return new Object[][] { { attributes } };
+        return new Object[][] {{attributes}};
     }
 
     @Test
