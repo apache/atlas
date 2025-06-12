@@ -430,7 +430,13 @@ public class AuthPolicyValidator {
     private static void validateCriterionArray(JsonNode criteriaNode, int currentDepth) throws AtlasBaseException {
 
         JsonNode criterionArray = criteriaNode.get(POLICY_FILTER_CRITERIA_CRITERION);
-        if (criterionArray == null) return; // Leaf node - no further validation needed
+        if (criterionArray == null) { // Leaf node
+            JsonNode operator = criteriaNode.get(POLICY_FILTER_CRITERIA_OPERATAOR);
+            validateParam(operator == null, INVALID_FILTER_CRITERIA + "operator is required");
+            validateParam(!POLICY_FILTER_CRITERIA_VAID_OPS.contains(operator.asText()), 
+                INVALID_FILTER_CRITERIA + "operator must be one of: " + POLICY_FILTER_CRITERIA_VAID_OPS);
+            return;
+        }
 
         validateParam(currentDepth > FILTER_CRITERIA_MAX_NESTING_LEVEL, INVALID_FILTER_CRITERIA + "maximum supported nesting depth exceeded");
         validateParam(!criterionArray.isArray(), INVALID_FILTER_CRITERIA + "criterion must be array");
