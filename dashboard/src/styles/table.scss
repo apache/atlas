@@ -91,18 +91,22 @@
   align-items: center;
   width: 150px;
   border: 1px solid rgba(0, 0, 0, 0.23);
-  height: 32px;
+  height: 27px;
 }
 
-.pagination-previous-btn {
-  height: 32px;
-  width: 32px;
+.pagination-page-change-btn {
+  height: 24px;
+  width: 24px;
 }
 
 .table-pagination-gotopage-input {
   margin-left: 5px;
   flex: 1px;
 }
+.table-pagination-gotopage-input input {
+  padding: 0 4px !important;
+}
+
 .table-pagination-gotopage-button {
   padding: 6px !important;
   border-radius: 0 !important;
@@ -111,20 +115,11 @@
 }
 .table-pagination-page {
   border-radius: 4px !important;
-  height: 24px;
-  width: 24px;
+  height: 20px;
   color: #37bb9b !important;
   border: 1px solid #37bb9b !important;
   margin: 0 0.5rem !important;
-}
-
-.pagination-page-limit .MuiInputBase-fullWidth {
-  padding-top: 3.5px !important;
-  padding-bottom: 3.5px !important;
-}
-
-.pagination-page-limit input {
-  height: 20px;
+  font-size: 0.875rem !important;
 }
 
 /* table-flters */
