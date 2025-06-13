@@ -1,17 +1,20 @@
 package org.apache.atlas.authorizer;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.keycloak.util.JsonSerialization.mapper;
 
 public class JsonToElasticsearchQuery {
     private static final Logger LOG = LoggerFactory.getLogger(JsonToElasticsearchQuery.class);
+    private static final ObjectMapper mapper = new ObjectMapper();
 
     private static JsonNode convertConditionToQuery(String condition, JsonNode criterion) {
         if (condition.equals("AND")) {
@@ -82,5 +85,21 @@ public class JsonToElasticsearchQuery {
         }
         RequestContext.get().endMetricRecord(convertJsonToQueryMetrics);
         return query;
+    }
+
+    public static JsonNode parseFilterJSON(String policyFilterCriteria, String rootKey) {
+        JsonNode filterCriteriaNode = null;
+        if (!StringUtils.isEmpty(policyFilterCriteria)) {
+            try {
+                filterCriteriaNode = mapper.readTree(policyFilterCriteria);
+            } catch (JsonProcessingException e) {
+                LOG.error("ABAC_AUTH: parsing filterCriteria failed, filterCriteria={}", policyFilterCriteria);
+            }
+        }
+
+        if (filterCriteriaNode != null) {
+            return StringUtils.isNotEmpty(rootKey) ? filterCriteriaNode.get(rootKey) : filterCriteriaNode;
+        }
+        return null;
     }
 }

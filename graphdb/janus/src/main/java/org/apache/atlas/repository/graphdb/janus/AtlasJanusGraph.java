@@ -95,7 +95,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static org.apache.atlas.AtlasErrorCode.INDEX_SEARCH_FAILED;
+import static org.apache.atlas.AtlasErrorCode.INDEX_SEARCH_CLIENT_NOT_INITIATED;
 import static org.apache.atlas.AtlasErrorCode.RELATIONSHIP_CREATE_INVALID_PARAMS;
 import static org.apache.atlas.ESAliasRequestBuilder.ESAliasAction.REMOVE;
 import static org.apache.atlas.repository.Constants.*;
@@ -331,7 +331,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     public AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> elasticsearchQuery(String indexName, SearchParams searchParams) throws AtlasBaseException {
         if (restClient == null) {
             LOG.error("restClient is not initiated, failed to run query on ES");
-            throw new AtlasBaseException(INDEX_SEARCH_FAILED, "restClient is not initiated");
+            throw new AtlasBaseException(INDEX_SEARCH_CLIENT_NOT_INITIATED);
         }
         return new AtlasElasticsearchQuery(this, restClient, INDEX_PREFIX + indexName, searchParams, esUiClusterClient, esNonUiClusterClient);
     }
@@ -387,7 +387,7 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     public AtlasIndexQuery elasticsearchQuery(String indexName) throws AtlasBaseException {
         if (restClient == null) {
             LOG.error("restClient is not initiated, failed to run query on ES");
-            throw new AtlasBaseException(INDEX_SEARCH_FAILED, "restClient is not initiated");
+            throw new AtlasBaseException(INDEX_SEARCH_CLIENT_NOT_INITIATED);
         }
         return new AtlasElasticsearchQuery(this, indexName, restClient, esUiClusterClient, esNonUiClusterClient);
     }

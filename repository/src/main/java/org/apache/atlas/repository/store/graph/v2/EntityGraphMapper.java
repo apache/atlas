@@ -2072,9 +2072,9 @@ public class EntityGraphMapper {
         }
 
         switch (ctx.getAttribute().getRelationshipEdgeLabel()) {
-            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, newElementsCreated, removedElements);
+            case TERM_ASSIGNMENT_LABEL:
+                 addMeaningsToEntity(ctx, newElementsCreated, new ArrayList<>(0), false);
                 break;
-
             case CATEGORY_TERMS_EDGE_LABEL: addCategoriesToTermEntity(ctx, newElementsCreated, removedElements);
                 break;
 
@@ -2166,7 +2166,8 @@ public class EntityGraphMapper {
         }
 
         switch (ctx.getAttribute().getRelationshipEdgeLabel()) {
-            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, newElementsCreated, new ArrayList<>(0), true);
+            case TERM_ASSIGNMENT_LABEL:
+                addMeaningsToEntity(ctx, newElementsCreated, new ArrayList<>(0), true);
                 break;
 
             case CATEGORY_TERMS_EDGE_LABEL: addCategoriesToTermEntity(ctx, newElementsCreated, new ArrayList<>(0));
@@ -2242,9 +2243,9 @@ public class EntityGraphMapper {
 
 
         switch (ctx.getAttribute().getRelationshipEdgeLabel()) {
-            case TERM_ASSIGNMENT_LABEL: addMeaningsToEntity(ctx, new ArrayList<>(0) , removedElements, true);
+            case TERM_ASSIGNMENT_LABEL:
+                addMeaningsToEntity(ctx, new ArrayList<>(0), removedElements, true);
                 break;
-
             case CATEGORY_TERMS_EDGE_LABEL: addCategoriesToTermEntity(ctx, new ArrayList<>(0), removedElements);
                 break;
 
@@ -2638,12 +2639,79 @@ public class EntityGraphMapper {
         RequestContext.get().endMetricRecord(metricRecorder);
     }
 
-    private void addMeaningsToEntity(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) {
-        addMeaningsToEntity(ctx, createdElements, deletedElements, false);
+    /**
+     * Add meanings to entity relations.
+     * @param ctx
+     * @param createdElements
+     * @param deletedElements
+     *
+     * Notes : This case exists when user requests to add a meaning to multiple assets at a time.
+     * TODO: Term.relationshipAttributes.assignedEntities case is not handled
+     *
+     */
+    private void addMeaningsToEntityRelations(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) {
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addMeaningsToEntityRelations");
+        List<AtlasVertex> assignedEntitiesVertices ;
+        List<String> currentMeaningsQNames ;
+        String newMeaningName = ctx.referringVertex.getProperty(NAME, String.class);
+        String newMeaningPropertyKey = ctx.referringVertex.getProperty(QUALIFIED_NAME, String.class);
+
+        // createdElements = all the entities user passes in assignedEntities
+        // it may contain entities which are already assigned to the relations
+        if (!createdElements.isEmpty()) {
+
+            assignedEntitiesVertices = createdElements.stream()
+                    .map(x -> ((AtlasEdge) x).getInVertex())
+                    .filter(x -> ACTIVE.name().equals(x.getProperty(STATE_PROPERTY_KEY, String.class)))
+                    .collect(Collectors.toList());
+
+            for (AtlasVertex relationVertex : assignedEntitiesVertices) {
+                currentMeaningsQNames = relationVertex.getMultiValuedProperty(MEANINGS_PROPERTY_KEY, String.class);
+
+                if (!currentMeaningsQNames.contains(newMeaningPropertyKey)) {
+                    addMeaningsAttributes(relationVertex, newMeaningPropertyKey, newMeaningName);
+                }
+            }
+        }
+
+        if (CollectionUtils.isNotEmpty(deletedElements)) {
+            List<AtlasVertex> relations = deletedElements.stream().map(x -> x.getInVertex())
+                    .collect(Collectors.toList());
+            relations.forEach(relationVertex -> {
+                removeMeaningsAttribute(relationVertex, MEANINGS_PROPERTY_KEY, newMeaningPropertyKey);
+                removeMeaningsAttribute(relationVertex, MEANINGS_TEXT_PROPERTY_KEY, newMeaningName);
+                removeMeaningsAttribute(relationVertex, MEANING_NAMES_PROPERTY_KEY, newMeaningName);
+            });
+        }
+
+        RequestContext.get().endMetricRecord(metricRecorder);
+    }
+
+    private void addMeaningsAttributes(AtlasVertex atlasVertex, String newMeaningPropertyKey, String newMeaningName){
+        addMeaningsAttribute(atlasVertex, MEANINGS_PROPERTY_KEY, newMeaningPropertyKey);
+        addMeaningsAttribute(atlasVertex, MEANINGS_TEXT_PROPERTY_KEY, newMeaningName);
+        addMeaningsAttribute(atlasVertex, MEANING_NAMES_PROPERTY_KEY, newMeaningName);
     }
 
     private void addMeaningsToEntity(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements, boolean isAppend) {
-        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addMeaningsToEntity");
+        if (ctx.getReferringVertex().getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class).equals(ATLAS_GLOSSARY_TERM_ENTITY_TYPE) && isAppend) {
+            addMeaningsToEntityRelations(ctx, createdElements, deletedElements);
+        } else {
+            addMeaningsToEntityV1(ctx, createdElements, deletedElements, isAppend);
+        }
+    }
+
+    /***
+     * Add meanings to entity.
+     * @param ctx
+     * @param createdElements
+     * @param deletedElements
+     * @param isAppend
+     *
+     * Notes : This case exists when user requests to add multiple meanings to an asset at a time.
+     */
+    private void addMeaningsToEntityV1(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements, boolean isAppend) {
+        MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addMeaningsToEntityV1");
         // handle __terms attribute of entity
         List<AtlasVertex> meanings = createdElements.stream()
                 .map(x -> ((AtlasEdge) x).getOutVertex())
@@ -2690,6 +2758,49 @@ public class EntityGraphMapper {
 
         RequestContext.get().endMetricRecord(metricRecorder);
     }
+
+    private void addMeaningsAttribute(AtlasVertex vertex, String propName, String propValue) {
+        if (MEANINGS_PROPERTY_KEY.equals(propName)) {
+            AtlasGraphUtilsV2.addEncodedProperty(vertex, propName, propValue);
+
+        } else if (MEANINGS_TEXT_PROPERTY_KEY.equals(propName)) {
+            String names = AtlasGraphUtilsV2.getProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, String.class);
+
+            if (org.apache.commons.lang3.StringUtils.isNotEmpty(names)) {
+                propValue = propValue + "," + names;
+            }
+
+            AtlasGraphUtilsV2.setEncodedProperty(vertex, MEANINGS_TEXT_PROPERTY_KEY, propValue);
+        } else if (MEANING_NAMES_PROPERTY_KEY.equals(propName)){
+
+            AtlasGraphUtilsV2.addListProperty(vertex, MEANING_NAMES_PROPERTY_KEY, propValue,true);
+        }
+    }
+
+    private void removeMeaningsAttribute(AtlasVertex vertex, String propName, String propValue) {
+        if (MEANINGS_PROPERTY_KEY.equals(propName) || CATEGORIES_PROPERTY_KEY.equals(propName)) {
+            AtlasGraphUtilsV2.removeItemFromListPropertyValue(vertex, propName, propValue);
+
+        }  else if (MEANINGS_TEXT_PROPERTY_KEY.equals(propName)) {
+            String names = AtlasGraphUtilsV2.getProperty(vertex, propName, String.class);
+
+            if (org.apache.commons.lang.StringUtils.isNotEmpty(names)){
+                List<String> nameList = new ArrayList<>(Arrays.asList(names.split(",")));
+                Iterator<String> iterator = nameList.iterator();
+                while (iterator.hasNext()) {
+                    if (propValue.equals(iterator.next())) {
+                        iterator.remove();
+                        break;
+                    }
+                }
+                AtlasGraphUtilsV2.setEncodedProperty(vertex, propName, org.apache.commons.lang3.StringUtils.join(nameList, ","));
+            }
+        } else if (MEANING_NAMES_PROPERTY_KEY.equals(propName)){
+            AtlasGraphUtilsV2.removeItemFromListPropertyValue(vertex, MEANING_NAMES_PROPERTY_KEY, propValue);
+
+        }
+    }
+
 
     private boolean getAppendOptionForRelationship(AtlasVertex entityVertex, String relationshipAttributeName) {
         boolean                             ret                       = false;
