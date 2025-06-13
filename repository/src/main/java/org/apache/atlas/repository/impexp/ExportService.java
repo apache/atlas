@@ -248,10 +248,13 @@ public class ExportService {
                 AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(guid);
                 String typeName = GraphHelper.getTypeName(vertex);
                 context.startingEntityType = typeName;
+                context.startingEntityGuid = guid;
                 processEntityGuid(guid, context);
             }
 
-            while (!context.guidsToProcess.isEmpty()) {
+            // Continue processing as long as there are GUIDs to process or lineage information to process.
+            // This ensures that all related entities and their lineage are handled.
+            while (!context.guidsToProcess.isEmpty() || !context.lineageToProcess.isEmpty()) {
                 while (!context.guidsToProcess.isEmpty()) {
                     String guid = context.guidsToProcess.remove(0);
 
@@ -289,7 +292,11 @@ public class ExportService {
         LOG.debug("==> processEntityGuid({})", guid);
 
         if (context.guidsProcessed.contains(guid)) {
-            return;
+            if (guid.equals(context.startingEntityGuid) && (context.fetchType == ExportFetchType.CONNECTED || (context.fetchType == ExportFetchType.INCREMENTAL && context.changeMarker <= 0))) {
+                LOG.info("Resuming export for {}", guid);
+            } else {
+                return;
+            }
         }
 
         if (context.fetchType == ExportFetchType.INCREMENTAL && context.startingEntityType.equals(ATLAS_TYPE_HIVE_DB) && !context.skipLineage) {
@@ -472,6 +479,7 @@ public class ExportService {
         boolean isSkipConnectedFetch;
         private int progressReportCount;
         public String startingEntityType;
+        public String startingEntityGuid;
 
         ExportContext(AtlasExportResult result, ZipSink sink) {
             this.result = result;
@@ -512,6 +520,7 @@ public class ExportService {
             guidsProcessed.clear();
             guidDirection.clear();
             startingEntityType = null;
+            startingEntityGuid = null;
         }
 
         public void addToBeProcessed(boolean isSuperTypeProcess, String guid, TraversalDirection direction) {
