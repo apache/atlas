@@ -27,6 +27,7 @@ export interface TypeHeaderState {
 }
 
 export interface TreeNode {
+  text?: string | null;
   id: string;
   label: string;
   children?: TreeNode[];
