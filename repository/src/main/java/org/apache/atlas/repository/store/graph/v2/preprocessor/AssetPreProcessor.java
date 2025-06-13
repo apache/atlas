@@ -246,6 +246,10 @@ public class AssetPreProcessor implements PreProcessor {
 
     private boolean isAssetType(AtlasVertex vertex) {
         String typeName = GraphHelper.getTypeName(vertex);
+        if (excludedTypes.contains(typeName)) {
+            return false;
+        }
+
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
 
         return entityType != null && entityType.getTypeAndAllSuperTypes().contains("Asset");
