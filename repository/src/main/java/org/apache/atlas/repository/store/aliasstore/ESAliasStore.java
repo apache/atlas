@@ -372,15 +372,14 @@ public class ESAliasStore implements IndexAliasStore {
             boolQuery.put("should", allowClauseList);
             boolQuery.put("minimum_should_match", 1);
         }
+
+        if (CollectionUtils.isNotEmpty(denyClauseList)) {
+            boolQuery.put("must_not", denyClauseList);
+        }
         
         // If we have no allow clauses and no deny clauses, return null (no filter)
         if (boolQuery.isEmpty()) {
             return null;
-        }
-        
-        // If we only have deny clauses without allow clauses, we need to match all documents except those denied
-        if (!boolQuery.containsKey("should") && boolQuery.containsKey("must_not")) {
-            boolQuery.put("must", mapOf("match_all", new HashMap<>()));
         }
         
         return mapOf("bool", boolQuery);
