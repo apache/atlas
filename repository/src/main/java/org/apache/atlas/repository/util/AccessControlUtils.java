@@ -131,6 +131,22 @@ public final class AccessControlUtils {
     public static final String INSTANCE_DOMAIN_KEY = "instance";
 
     public static final String POLICY_SERVICE_NAME_ABAC  = "atlas_abac";
+    public static final String POLICY_SERVICE_NAME_ATLAS  = "atlas";
+
+    public static final String POLICY_FILTER_CRITERIA_ENTITY = "entity";
+    public static final String POLICY_FILTER_CRITERIA_END1 = "endOneEntity";
+    public static final String POLICY_FILTER_CRITERIA_END2 = "endTwoEntity";
+
+    public static final String POLICY_FILTER_CRITERIA_CRITERION = "criterion";
+    public static final String POLICY_FILTER_CRITERIA_CONDITION = "condition";
+    public static final String POLICY_FILTER_CRITERIA_OPERATAOR = "operator";
+    public static final String POLICY_FILTER_CRITERIA_EQUALS = "EQUALS";
+    public static final String POLICY_FILTER_CRITERIA_NOT_EQUALS = "NOT_EQUALS";
+    public static final String POLICY_FILTER_CRITERIA_IN = "IN";
+    public static final String POLICY_FILTER_CRITERIA_NOT_IN = "NOT_IN";
+    public static final Set<String> POLICY_FILTER_CRITERIA_VAID_OPS = Set.of(POLICY_FILTER_CRITERIA_EQUALS,
+            POLICY_FILTER_CRITERIA_NOT_EQUALS, POLICY_FILTER_CRITERIA_IN, POLICY_FILTER_CRITERIA_NOT_IN);
+
 
     private AccessControlUtils() {}
 

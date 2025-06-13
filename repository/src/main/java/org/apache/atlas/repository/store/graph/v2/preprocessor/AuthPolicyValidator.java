@@ -1,5 +1,6 @@
 package org.apache.atlas.repository.store.graph.v2.preprocessor;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorizer.JsonToElasticsearchQuery;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -112,11 +113,24 @@ public class AuthPolicyValidator {
         add("persona-ai-model-remove-classification"); 
     }};
 
+    private static final Set<String> PERSONA_METADATA_ABAC_POLICY_ACTIONS = new HashSet<>(){{
+        add("persona-abac-read");
+        add("persona-abac-update");
+        add("persona-abac-update-business-metadata");
+        add("persona-abac-add-classification");
+        add("persona-abac-remove-classification");
+        add("persona-abac-add-terms");
+        add("persona-abac-remove-terms");
+        add("persona-abac-delete");
+    }};
+
     private static final Map<String, Set<String>> PERSONA_POLICY_VALID_ACTIONS = new HashMap<String, Set<String>>(){{
-        put(POLICY_SUB_CATEGORY_METADATA, PERSONA_METADATA_POLICY_ACTIONS);
-        put(POLICY_SUB_CATEGORY_DATA, DATA_POLICY_ACTIONS);
-        put(POLICY_SUB_CATEGORY_GLOSSARY, PERSONA_GLOSSARY_POLICY_ACTIONS);
-        put(POLICY_SUB_CATEGORY_AI, AI_POLICY_ACTIONS);
+        put(POLICY_SERVICE_NAME_ATLAS + POLICY_SUB_CATEGORY_METADATA, PERSONA_METADATA_POLICY_ACTIONS);
+        put(POLICY_SERVICE_NAME_ATLAS + POLICY_SUB_CATEGORY_DATA, DATA_POLICY_ACTIONS);
+        put(POLICY_SERVICE_NAME_ATLAS + POLICY_SUB_CATEGORY_GLOSSARY, PERSONA_GLOSSARY_POLICY_ACTIONS);
+        put(POLICY_SERVICE_NAME_ATLAS + POLICY_SUB_CATEGORY_AI, AI_POLICY_ACTIONS);
+
+        put(POLICY_SERVICE_NAME_ABAC + POLICY_SUB_CATEGORY_METADATA, PERSONA_METADATA_ABAC_POLICY_ACTIONS);
     }};
 
     private static final Set<String> PURPOSE_METADATA_POLICY_ACTIONS = new HashSet<String>(){{
@@ -150,6 +164,9 @@ public class AuthPolicyValidator {
         add("entity");
         add("entity-type");
     }};
+
+    private static final String INVALID_FILTER_CRITERIA = "Invalid filter criteria: ";
+    private static final int FILTER_CRITERIA_MAX_NESTING_LEVEL = 2;
 
     public void validate(AtlasEntity policy, AtlasEntity existingPolicy,
                          AtlasEntity accessControl, EntityMutations.EntityOperation operation) throws AtlasBaseException {
@@ -185,8 +202,7 @@ public class AuthPolicyValidator {
 
                     List<String> resources = getPolicyResources(policy);
                     if (isABACPolicyService(policy)) {
-                        String policyFilterCriteria = getPolicyFilterCriteria(policy);
-                        validateParam(JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, "entity") == null, "Invalid filter criteria");
+                        validatePolicyFilterCriteria(getPolicyFilterCriteria(policy));
                     } else {
                         validateParam(CollectionUtils.isEmpty(resources), "Please provide attribute " + ATTR_POLICY_RESOURCES);
                     }
@@ -214,7 +230,7 @@ public class AuthPolicyValidator {
                     }
 
                     //validate persona policy actions
-                    Set<String> validActions = PERSONA_POLICY_VALID_ACTIONS.get(policySubCategory);
+                    Set<String> validActions = PERSONA_POLICY_VALID_ACTIONS.get(getPolicyServiceName(policy) + policySubCategory);
                     List<String> copyOfActions = new ArrayList<>(policyActions);
                     copyOfActions.removeAll(validActions);
                     validateParam(CollectionUtils.isNotEmpty(copyOfActions),
@@ -282,8 +298,7 @@ public class AuthPolicyValidator {
                 if (POLICY_CATEGORY_PERSONA.equals(policyCategory)) {
                     List<String> resources = getPolicyResources(policy);
                     if (isABACPolicyService(policy)) {
-                        String policyFilterCriteria = getPolicyFilterCriteria(policy);
-                        validateParam(JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, "entity") == null, "Invalid filter criteria");
+                        validatePolicyFilterCriteria(getPolicyFilterCriteria(policy));
                     } else {
                         validateParam (policy.hasAttribute(ATTR_POLICY_RESOURCES) && CollectionUtils.isEmpty(resources),
                             "Please provide attribute " + ATTR_POLICY_RESOURCES);
@@ -307,7 +322,7 @@ public class AuthPolicyValidator {
 
 
                     //validate persona policy actions
-                    Set<String> validActions = PERSONA_POLICY_VALID_ACTIONS.get(policySubCategory);
+                    Set<String> validActions = PERSONA_POLICY_VALID_ACTIONS.get(getPolicyServiceName(policy) + policySubCategory);
                     List<String> copyOfActions = new ArrayList<>(policyActions);
                     copyOfActions.removeAll(validActions);
                     validateParam (CollectionUtils.isNotEmpty(copyOfActions),
@@ -403,5 +418,33 @@ public class AuthPolicyValidator {
     private static void validateOperation(boolean isInvalid, String errorMessage) throws AtlasBaseException {
         if (isInvalid)
             throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, errorMessage);
+    }
+
+    private static void validatePolicyFilterCriteria(String filterCriteria) throws AtlasBaseException {
+        JsonNode entityCriteriaNode = JsonToElasticsearchQuery.parseFilterJSON(filterCriteria, POLICY_FILTER_CRITERIA_ENTITY);
+        validateParam(entityCriteriaNode == null, INVALID_FILTER_CRITERIA + "must contain entity root key");
+
+        validateCriterionArray(entityCriteriaNode, 1);
+    }
+
+    private static void validateCriterionArray(JsonNode criteriaNode, int currentDepth) throws AtlasBaseException {
+
+        JsonNode criterionArray = criteriaNode.get(POLICY_FILTER_CRITERIA_CRITERION);
+        if (criterionArray == null) { // Leaf node
+            JsonNode operator = criteriaNode.get(POLICY_FILTER_CRITERIA_OPERATAOR);
+            validateParam(operator == null, INVALID_FILTER_CRITERIA + "operator is required");
+            validateParam(!POLICY_FILTER_CRITERIA_VAID_OPS.contains(operator.asText()), 
+                INVALID_FILTER_CRITERIA + "operator must be one of: " + POLICY_FILTER_CRITERIA_VAID_OPS);
+            return;
+        }
+
+        validateParam(currentDepth > FILTER_CRITERIA_MAX_NESTING_LEVEL, INVALID_FILTER_CRITERIA + "maximum supported nesting depth exceeded");
+        validateParam(!criterionArray.isArray(), INVALID_FILTER_CRITERIA + "criterion must be array");
+        validateParam(criterionArray.size() > 3, INVALID_FILTER_CRITERIA + "maximum of 3 conditions are supported currently");
+
+        // Recursively validate nested criterion
+        for (JsonNode nestedCriteriaNode : criterionArray) {
+            validateCriterionArray(nestedCriteriaNode, currentDepth + 1);
+        }
     }
 }

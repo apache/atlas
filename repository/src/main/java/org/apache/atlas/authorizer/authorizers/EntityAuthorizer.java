@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Set;
 
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_DENY;
@@ -150,37 +151,19 @@ public class EntityAuthorizer {
             }
         }
 
-        if (entityAttributeValues.size() == 0) {
-            switch (attributeName) {
-                case "__traitNames":
-                    List<AtlasClassification> tags = entity.getClassifications();
-                    if (tags != null) {
-                        for (AtlasClassification tag : tags) {
-                            if (StringUtils.isEmpty(tag.getEntityGuid()) || tag.getEntityGuid().equals(entity.getGuid())) {
-                                entityAttributeValues.add(tag.getTypeName());
-                            }
-                        }
-                    }
-                    break;
-
-                case "__propagatedTraitNames":
-                    tags = entity.getClassifications();
-                    if (tags != null) {
-                        for (AtlasClassification tag : tags) {
-                            if (StringUtils.isNotEmpty(tag.getEntityGuid()) && !tag.getEntityGuid().equals(entity.getGuid())) {
-                                entityAttributeValues.add(tag.getTypeName());
-                            }
-                        }
-                    }
-                    break;
-
-                default:
-                    LOG.warn("Value for attribute {} not found", attributeName);
-            }
+        if (entityAttributeValues.isEmpty()) {
+            entityAttributeValues = handleSpecialAttributes(entity, attributeName);
         }
 
+        JsonNode attributeValueNode = crit.get("attributeValue");
+        String attributeValue = attributeValueNode.asText();
         String operator = crit.get("operator").asText();
-        String attributeValue = crit.get("attributeValue").asText();
+
+        // incase attributeValue is an array
+        List<String> attributeValues = new ArrayList<>();
+        if (attributeValueNode.isArray()) {
+            attributeValueNode.elements().forEachRemaining(node -> attributeValues.add(node.asText()));
+        }
 
         switch (operator) {
             case "EQUALS":
@@ -208,17 +191,60 @@ public class EntityAuthorizer {
                     return true;
                 }
                 break;
-/*
             case "IN":
+                if (AuthorizerCommonUtil.arrayListContains(attributeValues, entityAttributeValues)) {
+                    return true;
+                }
                 break;
             case "NOT_IN":
+                if (!AuthorizerCommonUtil.arrayListContains(attributeValues, entityAttributeValues)) {
+                    return true;
+                }
                 break;
-*/
 
             default: LOG.warn("Found unknown operator {}", operator);
         }
 
         RequestContext.get().endMetricRecord(recorder);
         return false;
+    }
+
+    private static List<String> handleSpecialAttributes(AtlasEntityHeader entity, String attributeName) {
+        List<String> entityAttributeValues = new ArrayList<>();
+
+        switch (attributeName) {
+            case "__traitNames":
+                List<AtlasClassification> tags = entity.getClassifications();
+                if (tags != null) {
+                    for (AtlasClassification tag : tags) {
+                        if (StringUtils.isEmpty(tag.getEntityGuid()) || tag.getEntityGuid().equals(entity.getGuid())) {
+                            entityAttributeValues.add(tag.getTypeName());
+                        }
+                    }
+                }
+                break;
+
+            case "__propagatedTraitNames":
+                tags = entity.getClassifications();
+                if (tags != null) {
+                    for (AtlasClassification tag : tags) {
+                        if (StringUtils.isNotEmpty(tag.getEntityGuid()) && !tag.getEntityGuid().equals(entity.getGuid())) {
+                            entityAttributeValues.add(tag.getTypeName());
+                        }
+                    }
+                }
+                break;
+
+            case "__typeName":
+                String typeName = entity.getTypeName();
+                Set<String> allValidTypes = AuthorizerCommonUtil.getTypeAndSupertypesList(typeName);
+                entityAttributeValues.addAll(allValidTypes);
+                break;
+
+            default:
+                LOG.warn("Value for attribute {} not found", attributeName);
+        }
+
+        return entityAttributeValues;
     }
 }
