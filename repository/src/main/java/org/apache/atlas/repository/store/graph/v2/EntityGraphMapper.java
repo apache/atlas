@@ -519,26 +519,24 @@ public class EntityGraphMapper {
             }
         }
 
-
         // If an entity is both appended and removed, remove it from both lists
         if (CollectionUtils.isNotEmpty(appendEntities) && CollectionUtils.isNotEmpty(removeEntities)) {
             Set<String> appendGuids = appendEntities.stream()
-                    .map(AtlasEntity::getGuid)
-                    .collect(Collectors.toSet());
-
+                .map(AtlasEntity::getGuid)
+                .collect(Collectors.toSet());
+            
             Set<String> removeGuids = removeEntities.stream()
-                    .map(AtlasEntity::getGuid)
-                    .collect(Collectors.toSet());
-
+                .map(AtlasEntity::getGuid)
+                .collect(Collectors.toSet());
+            
             Set<String> commonGuids = new HashSet<>(appendGuids);
             commonGuids.retainAll(removeGuids);
-
+            
             if (!commonGuids.isEmpty()) {
                 appendEntities.removeIf(entity -> commonGuids.contains(entity.getGuid()));
                 removeEntities.removeIf(entity -> commonGuids.contains(entity.getGuid()));
             }
         }
-
         if (CollectionUtils.isNotEmpty(appendEntities)) {
             for (AtlasEntity entity : appendEntities) {
                 String guid = entity.getGuid();
@@ -1853,6 +1851,7 @@ public class EntityGraphMapper {
                 AtlasRelationship relationship = new AtlasRelationship(relationshipName, relationshipAttributes);
 
                 if (createEdge) {
+                    purgeDeletedRelationshipEdges(fromVertex, toVertex, relationship.getTypeName(), relationshipStore, deleteDelegate);
                     edge = relationshipStore.getOrCreate(fromVertex, toVertex, relationship, false);
                     boolean isCreated = graphHelper.getCreatedTime(edge) == RequestContext.get().getRequestTime();
 
@@ -5382,6 +5381,32 @@ public class EntityGraphMapper {
         return vertex;
     }
 
-
+    /**
+     * Purge all deleted relationship edges between two vertices for a given relationship type.
+     */
+    private static void purgeDeletedRelationshipEdges(
+            AtlasVertex fromVertex,
+            AtlasVertex toVertex,
+            String relationshipTypeName,
+            AtlasRelationshipStore relationshipStore,
+            DeleteHandlerDelegate deleteDelegate) throws AtlasBaseException {
+        String relationshipLabel = null;
+        try {
+            relationshipLabel = ((AtlasRelationshipStoreV2)relationshipStore).getRelationshipEdgeLabel(fromVertex, toVertex, relationshipTypeName);
+        } catch (Exception e) {
+            // fallback: skip purging if label can't be determined
+        }
+        if (relationshipLabel != null) {
+            LOG.info("relationshipLabel exists hence purging it: {}", relationshipLabel);
+            Iterator<AtlasEdge> edges = fromVertex.getEdges(AtlasEdgeDirection.OUT, relationshipLabel).iterator();
+            while (edges.hasNext()) {
+                AtlasEdge edge = edges.next();
+                if (edge.getInVertex().equals(toVertex) && GraphHelper.getStatus(edge) == AtlasEntity.Status.DELETED) {
+                    // Hard delete the edge
+                    deleteDelegate.getHandler(DeleteType.HARD).deleteRelationship(edge);
+                }
+            }
+        }
+    }
 
 }
