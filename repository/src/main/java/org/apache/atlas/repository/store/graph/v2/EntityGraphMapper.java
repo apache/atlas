@@ -5394,7 +5394,7 @@ public class EntityGraphMapper {
         try {
             relationshipLabel = ((AtlasRelationshipStoreV2)relationshipStore).getRelationshipEdgeLabel(fromVertex, toVertex, relationshipTypeName);
         } catch (Exception e) {
-            // fallback: skip purging if label can't be determined
+              throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_LABEL_NOT_FOUND, relationshipTypeName, e.getMessage());
         }
         if (relationshipLabel != null) {
             LOG.info("relationshipLabel exists hence purging it: {}", relationshipLabel);
