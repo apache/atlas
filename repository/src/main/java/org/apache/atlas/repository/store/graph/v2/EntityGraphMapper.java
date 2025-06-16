@@ -519,6 +519,26 @@ public class EntityGraphMapper {
             }
         }
 
+
+        // If an entity is both appended and removed, remove it from both lists
+        if (CollectionUtils.isNotEmpty(appendEntities) && CollectionUtils.isNotEmpty(removeEntities)) {
+            Set<String> appendGuids = appendEntities.stream()
+                    .map(AtlasEntity::getGuid)
+                    .collect(Collectors.toSet());
+
+            Set<String> removeGuids = removeEntities.stream()
+                    .map(AtlasEntity::getGuid)
+                    .collect(Collectors.toSet());
+
+            Set<String> commonGuids = new HashSet<>(appendGuids);
+            commonGuids.retainAll(removeGuids);
+
+            if (!commonGuids.isEmpty()) {
+                appendEntities.removeIf(entity -> commonGuids.contains(entity.getGuid()));
+                removeEntities.removeIf(entity -> commonGuids.contains(entity.getGuid()));
+            }
+        }
+
         if (CollectionUtils.isNotEmpty(appendEntities)) {
             for (AtlasEntity entity : appendEntities) {
                 String guid = entity.getGuid();
