@@ -39,6 +39,12 @@ services:
     hostname: atlas-db.example.com
     networks:
       - atlas
+    healthcheck:
+      test: [ "CMD-SHELL", "su hdfs -c \"/opt/hadoop/bin/hdfs dfsadmin -report | grep -q 'Live datanodes'\"" ]
+      interval: 30s
+      timeout: 10s
+      retries: 30
+      start_period: 40s
 
 networks:
   atlas:
