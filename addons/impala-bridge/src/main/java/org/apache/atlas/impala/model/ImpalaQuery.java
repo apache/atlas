@@ -18,93 +18,95 @@
 
 package org.apache.atlas.impala.model;
 
-import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
-import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import java.util.List;
+
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 
 /**
  * Represent an Impala lineage record in lineage log.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ImpalaQuery {
-  private String queryText;
-  private String queryId;
-  private String hash;
-  private String user;
+    private String queryText;
+    private String queryId;
+    private String hash;
+    private String user;
 
   // the time stamp is in seconds. It is Unix epoch, which is the number of seconds that have
   // elapsed since January 1, 1970 (midnight UTC/GMT), not counting leap seconds
-  private Long timestamp;
-  private Long endTime;
-  private List<LineageEdge> edges;
-  private List<LineageVertex> vertices;
+    private Long timestamp;
+    private Long endTime;
+    private List<LineageEdge> edges;
+    private List<LineageVertex> vertices;
 
-  public List<LineageEdge> getEdges() {
-    return edges;
-  }
+    public List<LineageEdge> getEdges() {
+        return edges;
+    }
 
-  public List<LineageVertex> getVertices() {
-    return vertices;
-  }
+    public List<LineageVertex> getVertices() {
+        return vertices;
+    }
 
-  public Long getEndTime() {
-    return endTime;
-  }
+    public Long getEndTime() {
+        return endTime;
+    }
 
-  public String getHash() {
-    return hash;
-  }
+    public String getHash() {
+        return hash;
+    }
 
-  public String getQueryId() {
-    return queryId;
-  }
+    public String getQueryId() {
+        return queryId;
+    }
 
-  public String getQueryText() {
-    return queryText;
-  }
+    public String getQueryText() {
+        return queryText;
+    }
 
-  public Long getTimestamp() {
-    return timestamp;
-  }
+    public Long getTimestamp() {
+        return timestamp;
+    }
 
-  public String getUser() {
-    return user;
-  }
+    public String getUser() {
+        return user;
+    }
 
-  public void setEdges(List<LineageEdge> edges) {
-    this.edges = edges;
-  }
+    public void setEdges(List<LineageEdge> edges) {
+        this.edges = edges;
+    }
 
-  public void setEndTime(Long endTime) {
-    this.endTime = endTime;
-  }
+    public void setEndTime(Long endTime) {
+        this.endTime = endTime;
+    }
 
-  public void setHash(String hash) {
-    this.hash = hash;
-  }
+    public void setHash(String hash) {
+        this.hash = hash;
+    }
 
-  public void setQueryId(String queryId) {
-    this.queryId = queryId;
-  }
+    public void setQueryId(String queryId) {
+        this.queryId = queryId;
+    }
 
-  public void setQueryText(String queryText) {
-    this.queryText = queryText;
-  }
+    public void setQueryText(String queryText) {
+        this.queryText = queryText;
+    }
 
-  public void setTimestamp(Long timestamp) { this.timestamp = timestamp; }
+    public void setTimestamp(Long timestamp) {
+        this.timestamp = timestamp;
+    }
 
-  public void setUser(String user) {
-    this.user = user;
-  }
+    public void setUser(String user) {
+        this.user = user;
+    }
 
-  public void setVertices(List<LineageVertex> vertices) {
-    this.vertices = vertices;
-  }
-
+    public void setVertices(List<LineageVertex> vertices) {
+        this.vertices = vertices;
+    }
 }
