@@ -269,7 +269,9 @@ const TreeNodeIcons = (props: {
         )}
         {((treeName == "Classifications" &&
           !addOnClassification.includes(node.id)) ||
-          (treeName == "Glossary" && isEmptyServicetype)) && (
+          (treeName == "Glossary" &&
+            node.types != "parent" &&
+            isEmptyServicetype)) && (
           <MenuItem
             onClick={(_e) => {
               if (treeName == "Classifications") {
@@ -287,7 +289,23 @@ const TreeNodeIcons = (props: {
                 setExpandNode(null);
               }
               if (treeName == "Glossary" && node.types == "parent") {
-                setGlossaryModal(true);
+                // setGlossaryModal(true);
+                const searchParams = new URLSearchParams(location.search);
+                searchParams.set(
+                  "gId",
+                  node.cGuid !== undefined ? node.cGuid : node.guid || ""
+                );
+                searchParams.set("gtype", "glossary");
+                searchParams.set("viewType", "term");
+                navigate(
+                  {
+                    pathname: `glossary/${
+                      node.cGuid !== undefined ? node.cGuid : node.guid
+                    }`,
+                    search: searchParams.toString()
+                  },
+                  { replace: true }
+                );
               }
               if (treeName == "Glossary" && node.types == "child") {
                 const searchParams = new URLSearchParams();
@@ -314,13 +332,7 @@ const TreeNodeIcons = (props: {
               className="menuitem-label"
               sx={{ fontSize: "0.875rem" }}
             >
-              {`View/Edit ${
-                treeName == "Glossary"
-                  ? node.types == "parent"
-                    ? "Glossary"
-                    : "Term"
-                  : ""
-              }`}
+              {`View/Edit Term`}
             </Typography>
           </MenuItem>
         )}
