@@ -20,6 +20,7 @@ package org.apache.atlas.utils;
 
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.fs.Path;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,7 +29,6 @@ import org.testng.annotations.Test;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
@@ -101,11 +101,11 @@ public class AtlasPathExtractorUtilTest {
         assertNotNull(entity);
         verifyOzoneKeyEntity(entity, validator);
 
-        if (entity.getTypeName() == OZONE_KEY) {
+        if (StringUtils.equals(entity.getTypeName(), OZONE_KEY)) {
             verifyReferredAndKnownEntities(entityWithExtInfo, extractorContext, validator, validator.knownEntitiesCountTillKey, 2);
-        } else if (entity.getTypeName() == OZONE_BUCKET) {
+        } else if (StringUtils.equals(entity.getTypeName(), OZONE_BUCKET)) {
             verifyReferredAndKnownEntities(entityWithExtInfo, extractorContext, validator, validator.knownEntitiesCountTillBucket, 2);
-        } else if (entity.getTypeName() == OZONE_VOLUME) {
+        } else if (StringUtils.equals(entity.getTypeName(), OZONE_VOLUME)) {
             verifyReferredAndKnownEntities(entityWithExtInfo, extractorContext, validator, validator.knownEntitiesCountTillVolume, 1);
         }
     }
@@ -340,14 +340,11 @@ public class AtlasPathExtractorUtilTest {
     }
 
     private void verifyOzoneKeyEntity(AtlasEntity entity, OzoneKeyValidator validator) {
-        if (Objects.equals(entity.getTypeName(), OZONE_KEY)) {
-            assertEquals(entity.getTypeName(), OZONE_KEY);
+        if (StringUtils.equals(entity.getTypeName(), OZONE_KEY)) {
             assertTrue(validator.validateNameQName(entity));
-        } else if (Objects.equals(entity.getTypeName(), OZONE_BUCKET)) {
-            assertEquals(entity.getTypeName(), OZONE_BUCKET);
+        } else if (StringUtils.equals(entity.getTypeName(), OZONE_BUCKET)) {
             assertTrue(validator.validateNameQName(entity));
-        } else if (Objects.equals(entity.getTypeName(), OZONE_VOLUME)) {
-            assertEquals(entity.getTypeName(), OZONE_VOLUME);
+        } else if (StringUtils.equals(entity.getTypeName(), OZONE_VOLUME)) {
             assertTrue(validator.validateNameQName(entity));
         }
     }
