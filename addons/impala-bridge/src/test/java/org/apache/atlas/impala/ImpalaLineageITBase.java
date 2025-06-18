@@ -18,20 +18,6 @@
 
 package org.apache.atlas.impala;
 
-import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_QUALIFIED_NAME;
-import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_QUERY_TEXT;
-import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_RECENT_QUERIES;
-import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.HIVE_TYPE_DB;
-import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.HIVE_TYPE_TABLE;
-import static org.testng.Assert.assertEquals;
-import static org.testng.Assert.assertNotNull;
-import static org.testng.Assert.fail;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClientV2;
 import org.apache.atlas.impala.hook.AtlasImpalaHookContext;
@@ -49,11 +35,24 @@ import org.apache.hadoop.hive.conf.HiveConf;
 import org.apache.hadoop.hive.ql.Driver;
 import org.apache.hadoop.hive.ql.processors.CommandProcessorResponse;
 import org.apache.hadoop.hive.ql.session.SessionState;
-import org.testng.annotations.BeforeClass;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testng.Assert;
+import org.testng.annotations.BeforeClass;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_QUALIFIED_NAME;
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_QUERY_TEXT;
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_RECENT_QUERIES;
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.HIVE_TYPE_DB;
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.HIVE_TYPE_TABLE;
+import static org.testng.Assert.assertEquals;
+import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.fail;
 
 public class ImpalaLineageITBase {
     private static final Logger LOG = LoggerFactory.getLogger(ImpalaLineageITBase.class);
@@ -77,7 +76,6 @@ public class ImpalaLineageITBase {
     protected static SessionState        ss;
     protected static HiveConf            conf;
 
-
     @BeforeClass
     public void setUp() throws Exception {
         //Set-up hive session
@@ -90,42 +88,40 @@ public class ImpalaLineageITBase {
         driverWithoutContext = new Driver(conf);
 
         Configuration configuration = ApplicationProperties.get();
-
         String[] atlasEndPoint = configuration.getStringArray(ImpalaLineageHook.ATLAS_ENDPOINT);
         if (atlasEndPoint == null || atlasEndPoint.length == 0) {
-            atlasEndPoint = new String[]{DGI_URL};
+            atlasEndPoint = new String[] {DGI_URL};
         }
 
         if (!AuthenticationUtil.isKerberosAuthenticationEnabled()) {
-            atlasClientV2 = new AtlasClientV2(atlasEndPoint, new String[]{"admin", "admin"});
+            atlasClientV2 = new AtlasClientV2(atlasEndPoint, new String[] {"admin", "admin"});
         } else {
             atlasClientV2 = new AtlasClientV2(atlasEndPoint);
         }
-
     }
 
     // return guid of the entity
     protected String assertEntityIsRegistered(final String typeName, final String property, final String value,
-        final AssertPredicate assertPredicate) throws Exception {
+            final AssertPredicate assertPredicate) throws Exception {
         waitFor(100000, new Predicate() {
             @Override
             public void evaluate() throws Exception {
                 AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = atlasClientV2.getEntityByAttribute(typeName, Collections
-                    .singletonMap(property,value));
+                        .singletonMap(property, value));
                 AtlasEntity entity = atlasEntityWithExtInfo.getEntity();
                 assertNotNull(entity);
-                if (assertPredicate != null) {
-                    assertPredicate.assertOnEntity(entity);
-                }
+                    if (assertPredicate != null) {
+                        assertPredicate.assertOnEntity(entity);
+                    }
             }
         });
-        AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = atlasClientV2.getEntityByAttribute(typeName, Collections.singletonMap(property,value));
+        AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = atlasClientV2.getEntityByAttribute(typeName, Collections.singletonMap(property, value));
         AtlasEntity entity = atlasEntityWithExtInfo.getEntity();
         return (String) entity.getGuid();
     }
 
     protected String assertEntityIsRegistered(final String typeName, List<String> processQFNames,
-        final AssertPredicates assertPredicates) throws Exception {
+            final AssertPredicates assertPredicates) throws Exception {
         List<Map<String, String>> attributesList = new ArrayList<>();
 
         for (String processName : processQFNames) {
@@ -148,7 +144,7 @@ public class ImpalaLineageITBase {
     }
 
     protected String assertEntityIsRegisteredViaGuid(String guid,
-        final AssertPredicate assertPredicate) throws Exception {
+            final AssertPredicate assertPredicate) throws Exception {
         waitFor(80000, new Predicate() {
             @Override
             public void evaluate() throws Exception {
@@ -158,14 +154,12 @@ public class ImpalaLineageITBase {
                 if (assertPredicate != null) {
                     assertPredicate.assertOnEntity(entity);
                 }
-
             }
         });
         AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = atlasClientV2.getEntityByGuid(guid);
         AtlasEntity entity = atlasEntityWithExtInfo.getEntity();
         return (String) entity.getGuid();
     }
-
 
     protected String assertProcessIsRegistered(List<String> processQFNames, String queryString) throws Exception {
         try {
@@ -178,17 +172,17 @@ public class ImpalaLineageITBase {
                 public String assertOnEntities(final List<AtlasEntity> entities) throws Exception {
                     for (AtlasEntity entity : entities) {
                         List<String> recentQueries = (List<String>) entity
-                            .getAttribute(ATTRIBUTE_RECENT_QUERIES);
+                                .getAttribute(ATTRIBUTE_RECENT_QUERIES);
 
-                        if (queryString.equalsIgnoreCase(recentQueries.get(0)))
+                        if (queryString.equalsIgnoreCase(recentQueries.get(0))) {
                             return entity.getGuid();
-
+                        }
                     }
 
                     throw new IllegalStateException("Not found entity with matching query");
                 }
             });
-        } catch(Exception e) {
+        } catch (Exception e) {
             LOG.error("Exception : ", e);
             throw e;
         }
@@ -205,10 +199,10 @@ public class ImpalaLineageITBase {
                 public void assertOnEntity(final AtlasEntity entity) throws Exception {
                     List<String> recentQueries = (List<String>) entity.getAttribute(ATTRIBUTE_RECENT_QUERIES);
 
-                    Assert.assertEquals(recentQueries.get(0), lower(queryString));
+                    assertEquals(recentQueries.get(0), lower(queryString));
                 }
             });
-        } catch(Exception e) {
+        } catch (Exception e) {
             LOG.error("Exception : ", e);
             throw e;
         }
@@ -220,10 +214,9 @@ public class ImpalaLineageITBase {
 
             String guid = "";
             List<AtlasObjectId> processExecutions = toAtlasObjectIdList(impalaProcess.getRelationshipAttribute(
-                BaseImpalaEvent.ATTRIBUTE_PROCESS_EXECUTIONS));
+                    BaseImpalaEvent.ATTRIBUTE_PROCESS_EXECUTIONS));
             for (AtlasObjectId processExecution : processExecutions) {
-                AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = atlasClientV2.
-                    getEntityByGuid(processExecution.getGuid());
+                AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = atlasClientV2.getEntityByGuid(processExecution.getGuid());
 
                 AtlasEntity entity = atlasEntityWithExtInfo.getEntity();
                 if (String.valueOf(entity.getAttribute(ATTRIBUTE_QUERY_TEXT)).equals(queryString.toLowerCase().trim())) {
@@ -236,10 +229,10 @@ public class ImpalaLineageITBase {
                 @Override
                 public void assertOnEntity(final AtlasEntity entity) throws Exception {
                     String queryText = (String) entity.getAttribute(ATTRIBUTE_QUERY_TEXT);
-                    Assert.assertEquals(queryText, queryString.toLowerCase().trim());
+                    assertEquals(queryText, queryString.toLowerCase().trim());
                 }
             });
-        } catch(Exception e) {
+        } catch (Exception e) {
             LOG.error("Exception : ", e);
             throw e;
         }
@@ -291,7 +284,6 @@ public class ImpalaLineageITBase {
         return ret;
     }
 
-
     protected String assertDatabaseIsRegistered(String dbName) throws Exception {
         return assertDatabaseIsRegistered(dbName, null);
     }
@@ -300,7 +292,7 @@ public class ImpalaLineageITBase {
         LOG.debug("Searching for database: {}", dbName);
 
         String dbQualifiedName = dbName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
-            CLUSTER_NAME;
+                CLUSTER_NAME;
 
         dbQualifiedName = dbQualifiedName.toLowerCase();
 
@@ -327,7 +319,7 @@ public class ImpalaLineageITBase {
         LOG.debug("Searching for table {}", fullTableName);
 
         String tableQualifiedName = (fullTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE).toLowerCase() +
-            CLUSTER_NAME;
+                CLUSTER_NAME;
 
         return assertEntityIsRegistered(HIVE_TYPE_TABLE, REFERENCEABLE_ATTRIBUTE_NAME, tableQualifiedName,
             assertPredicate);
@@ -427,7 +419,7 @@ public class ImpalaLineageITBase {
             try {
                 predicate.evaluate();
                 return;
-            } catch(Error | Exception e) {
+            } catch (Error | Exception e) {
                 if (System.currentTimeMillis() >= mustEnd) {
                     fail("Assertions failed. Failing after waiting for timeout " + timeout + " msecs", e);
                 }
@@ -450,7 +442,7 @@ public class ImpalaLineageITBase {
         while (true) {
             try {
                 return predicate.evaluate();
-            } catch(Error | Exception e) {
+            } catch (Error | Exception e) {
                 if (System.currentTimeMillis() >= mustEnd) {
                     fail("Assertions failed. Failing after waiting for timeout " + timeout + " msecs", e);
                 }
@@ -491,5 +483,8 @@ public class ImpalaLineageITBase {
     protected String tableName() {
         return "table_" + random();
     }
-    protected String dbName() {return "db_" + random();}
+
+    protected String dbName() {
+        return "db_" + random();
+    }
 }

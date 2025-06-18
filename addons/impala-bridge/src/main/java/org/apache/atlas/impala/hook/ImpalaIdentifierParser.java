@@ -35,9 +35,7 @@ public class ImpalaIdentifierParser {
     // add "." to allow <dbName>.<tableName>
     public static final String VALID_IMPALA_IDENTIFIER_REGEX = "^[a-zA-Z][a-zA-Z0-9_.]{0,127}$";
 
-    private ImpalaIdentifierParser() {
-        throw new UnsupportedOperationException("ImpalaIdentifierParser");
-    }
+    private ImpalaIdentifierParser() {}
 
     public static boolean isTableNameValid(String inTableName) {
         if (StringUtils.isEmpty(inTableName)) {

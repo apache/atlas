@@ -25,16 +25,13 @@ import org.slf4j.LoggerFactory;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.fail;
 
 public class ImpalaLineageHookTest {
     private static final Logger LOG = LoggerFactory.getLogger(ImpalaLineageHookTest.class);
 
- @Test(dataProvider = "queryDataProvider")
+    @Test(dataProvider = "queryDataProvider")
     public void testAllImpalaOperationTypes(String query, ImpalaOperationType expectedOperationType) {
         try {
             ImpalaOperationType operationType = ImpalaOperationParser.getImpalaOperationType(query);
@@ -50,11 +47,11 @@ public class ImpalaLineageHookTest {
         String table2 = "table_" + random();
 
         return new Object[][] {
-                { "CREATE VIEW my_view AS SELECT id, name FROM " + table1, ImpalaOperationType.CREATEVIEW },
-                { "CREATE TABLE " + table1 + " AS SELECT id, name FROM " + table1, ImpalaOperationType.CREATETABLE_AS_SELECT },
-                { "ALTER VIEW my_view AS SELECT id, name FROM " + table1, ImpalaOperationType.ALTERVIEW_AS },
-                { "INSERT INTO " + table1 + " SELECT id, name FROM " + table1, ImpalaOperationType.QUERY },
-                { "WITH filtered_data AS (SELECT id, name, amount FROM " + table1 + " WHERE amount > 100) " +
+                {"CREATE VIEW my_view AS SELECT id, name FROM " + table1, ImpalaOperationType.CREATEVIEW },
+                {"CREATE TABLE " + table1 + " AS SELECT id, name FROM " + table1, ImpalaOperationType.CREATETABLE_AS_SELECT },
+                {"ALTER VIEW my_view AS SELECT id, name FROM " + table1, ImpalaOperationType.ALTERVIEW_AS },
+                {"INSERT INTO " + table1 + " SELECT id, name FROM " + table1, ImpalaOperationType.QUERY },
+                {"WITH filtered_data AS (SELECT id, name, amount FROM " + table1 + " WHERE amount > 100) " +
                         "INSERT INTO " + table2 + " SELECT id, name, amount FROM filtered_data", ImpalaOperationType.QUERY_WITH_CLAUSE }
         };
     }
