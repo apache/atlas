@@ -44,6 +44,29 @@ then
 
   echo ""                                                     >> /opt/atlas/conf/atlas-application.properties
   echo "atlas.graph.storage.hbase.compression-algorithm=NONE" >> /opt/atlas/conf/atlas-application.properties
+  echo "atlas.graph.graph.replace-instance-if-exists=true"    >> /opt/atlas/conf/atlas-application.properties
+
+  if [ "${ATLAS_BACKEND}" == "postgres" ]
+  then
+    # set RDBMS as backend and entity-audit store
+    sed -i "s/^atlas.graph.storage.backend=hbase2/# atlas.graph.storage.backend=hbase2/"                                                            /opt/atlas/conf/atlas-application.properties
+    sed -i "s/atlas.EntityAuditRepository.impl=.*$/# atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository/" /opt/atlas/conf/atlas-application.properties
+
+    cat <<EOF >> /opt/atlas/conf/atlas-application.properties
+
+atlas.graph.storage.backend=rdbms
+atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.dialect=org.eclipse.persistence.platform.database.PostgreSQLPlatform
+atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.driver=org.postgresql.Driver
+atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.url=jdbc:postgresql://atlas-db/atlas
+atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.user=atlas
+atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.password=atlasR0cks!
+atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.database.action=create
+atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-database-schemas=true
+atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-source=script-then-metadata
+atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-script-source=META-INF/postgres/create_sequences.sql
+atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.rdbms.RdbmsBasedAuditRepository
+EOF
+  fi
 
   chown -R atlas:atlas ${ATLAS_HOME}/
 

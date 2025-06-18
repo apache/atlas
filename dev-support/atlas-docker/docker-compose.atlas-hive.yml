@@ -18,7 +18,7 @@ services:
       - "10000:10000"
     depends_on:
       atlas-db:
-        condition: service_started
+        condition: service_healthy
       atlas-hadoop:
         condition: service_healthy
       atlas-zk:
@@ -30,21 +30,15 @@ services:
       - HIVE_VERSION
       - ATLAS_VERSION
 
+  atlas-hadoop:
+    extends:
+      service: atlas-hadoop
+      file: docker-compose.atlas-hadoop.yml
+
   atlas-db:
-    build:
-      context: .
-      dockerfile: Dockerfile.atlas-db
-    image: atlas-db
-    container_name: atlas-db
-    hostname: atlas-db.example.com
-    networks:
-      - atlas
-    healthcheck:
-      test: [ "CMD-SHELL", "su hdfs -c \"/opt/hadoop/bin/hdfs dfsadmin -report | grep -q 'Live datanodes'\"" ]
-      interval: 30s
-      timeout: 10s
-      retries: 30
-      start_period: 40s
+    extends:
+      service: atlas-db
+      file: docker-compose.atlas-db.yml
 
 networks:
   atlas:
