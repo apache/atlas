@@ -463,7 +463,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             }
 
         } catch (Exception e) {
-            LOG.error("getTagFromPK=getTagFromPK: Error fetching tag for vertexId={}, sourceId={}, tagTypeName={}", vertexId, sourceId, tagTypeName, e);
+            LOG.error("getTagFromPK=getTagFromPK Error fetching tag for vertexId={}, sourceId={}, tagTypeName={}", vertexId, sourceId, tagTypeName, e);
             throw new AtlasBaseException("Error fetching tags", e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);

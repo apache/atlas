@@ -6292,8 +6292,8 @@ public class EntityGraphMapper {
         entity.setCreatedBy((String) assetMetadata.get(CREATED_BY_KEY));
         entity.setUpdatedBy((String) assetMetadata.get(MODIFIED_BY_KEY));
 
-        entity.setCreateTime(safeParseDate(assetMetadata.get(TIMESTAMP_PROPERTY_KEY), "createTime"));
-        entity.setUpdateTime(safeParseDate(assetMetadata.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY), "updateTime"));
+        entity.setCreateTime(safeParseDate(assetMetadata.get(TIMESTAMP_PROPERTY_KEY), TIMESTAMP_PROPERTY_KEY));
+        entity.setUpdateTime(safeParseDate(assetMetadata.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY), MODIFICATION_TIMESTAMP_PROPERTY_KEY));
 
         return entity;
     }
