@@ -90,7 +90,7 @@ public class AtlasPathExtractorUtil {
     }
 
     public static AtlasEntityWithExtInfo getPathEntity(Path path, PathExtractorContext context) {
-        if (StringUtils.isEmpty(path.toString())) {
+        if (path == null || StringUtils.isEmpty(path.toString())) {
             throw new IllegalArgumentException("Invalid Input: Path is Null");
         }
 
@@ -500,7 +500,7 @@ public class AtlasPathExtractorUtil {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== addOzonePathEntity(strPath={})", path.toString());
+            LOG.debug("<== addOzonePathEntity(strPath={})", path);
         }
 
         return currentOfsKeyEntity;
@@ -555,7 +555,7 @@ public class AtlasPathExtractorUtil {
         }
 
         if (LOG.isDebugEnabled()) {
-            LOG.debug("<== addOzonePathEntity(strPath={})", path.toString());
+            LOG.debug("<== addOzonePathEntity(strPath={})", path);
         }
 
         return currentO3fsKeyEntity;
