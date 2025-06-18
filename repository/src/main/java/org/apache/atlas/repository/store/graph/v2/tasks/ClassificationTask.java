@@ -106,10 +106,8 @@ public abstract class ClassificationTask extends AbstractTask {
 
             setStatus(COMPLETE);
         } catch (AtlasBaseException e) {
-            LOG.error("Task: {}: Error performing task!", getTaskGuid(), e);
-
+            LOG.error("Task: {}: Error performing task! Task details: {}", getTaskGuid(), getTask(), e);
             setStatus(FAILED);
-
             throw e;
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);

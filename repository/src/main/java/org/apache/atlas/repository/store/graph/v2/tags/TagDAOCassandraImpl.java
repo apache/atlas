@@ -339,10 +339,14 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             // Fetch all (direct + propagated) tags on this vertex
             List<AtlasClassification> allTags = getAllClassificationsForVertex(vertexId);
 
-            // Return only those whose classification origin (entityGuid) matches our source
-            return allTags.stream()
+            List<AtlasClassification> matchingTags = allTags.stream()
                     .filter(tag -> sourceEntityGuid.equals(tag.getEntityGuid()))
                     .collect(Collectors.toList());
+
+            if (matchingTags.isEmpty()) {
+                LOG.info("No propagated tags found for vertexId: {}, sourceEntityGuid: {}", vertexId, sourceEntityGuid);
+            }
+            return matchingTags;
         } catch (AtlasBaseException abe) {
             throw abe;
         } catch (Exception e) {
@@ -370,6 +374,11 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 AtlasClassification classification = convertToAtlasClassification(row.getString("tag_meta_json"));
                 tags.add(classification);
             }
+
+            if (tags.isEmpty()) {
+                LOG.warn("No direct tags found for vertexId: {}, bucket: {}", vertexId, bucket);
+            }
+
         } catch (Exception e) {
             throw new AtlasBaseException("Error fetching direct tags", e);
         } finally {
@@ -414,6 +423,10 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 AtlasClassification classification = extractClassification(row);
                 tags.add(classification);
             }
+
+            if (tags.isEmpty())
+                LOG.warn("getAllClassificationsForVertex: No classifications found for vertexId={}", vertexId);
+
         } catch(Exception e){
             throw new AtlasBaseException("Error fetching tags", e);
         } finally{
@@ -421,6 +434,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         }
         return tags;
     }
+
     @Override
     public Tag getTagFromPK(String vertexId, String sourceId, String tagTypeName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagsFromPK");
@@ -439,14 +453,21 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 tag.setTagMetaJson(objectMapper.readValue(row.getString("tag_meta_json"), Map.class));
                 tags.add(tag);
             }
+
+            if (tags.isEmpty()) {
+                LOG.warn("getTagFromPK: No tag found for vertexId={}, sourceId={}, tagTypeName={}", vertexId, sourceId, tagTypeName);
+                return null;
+            }
+
         } catch (Exception e) {
+            LOG.error("getTagFromPK: Error fetching tag for vertexId={}, sourceId={}, tagTypeName={}", vertexId, sourceId, tagTypeName, e);
             throw new AtlasBaseException("Error fetching tags", e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
-
         return tags.get(0);
     }
+
     public AtlasClassification getClassificationFromPK(String vertexId, String sourceId, String tagTypeName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagFromPK");
         List<AtlasClassification> classifications = new ArrayList<>();
@@ -456,15 +477,19 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             BoundStatement bound = findTagAttachmentsByPK.bind(bucket, vertexId, sourceId, tagTypeName);
 
             ResultSet rs = executeWithRetry(bound);
-
             for (Row row : rs) {
                 AtlasClassification classification = convertToAtlasClassification(row.getString("tag_meta_json"));
                 classifications.add(classification);
             }
         } catch (Exception e) {
+            LOG.error("Error fetching classification for vertexId={}, sourceId={}, tagTypeName={}", vertexId, sourceId, tagTypeName, e);
             throw new AtlasBaseException("Error fetching tags", e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
+        }
+
+        if (classifications.isEmpty()) {
+            LOG.warn("No classification found for vertexId={}, sourceId={}, tagTypeName={}", vertexId, sourceId, tagTypeName);
         }
 
         return classifications.get(0);
@@ -490,6 +515,8 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             RequestContext.get().endMetricRecord(recorder);
         }
 
+        if (tags.isEmpty())
+            LOG.warn("No propagated tags found for vertexId={}", vertexId);
         return tags;
     }
 
@@ -504,7 +531,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             for (Row row : rs) {
                 return convertToAtlasClassification(row.getString("tag_meta_json"));
             }
-            LOG.info("No tags found for id: {}, tag type: {}, bucket {}, returning null", vertexId, tagTypeName, bucket);
+            LOG.warn("No direct tag found for vertexId={}, tagTypeName={}, bucket={}", vertexId, tagTypeName, bucket);
         } catch (Exception e) {
             throw new AtlasBaseException(String.format("Error fetching tag for asset: %s and tag type: %s, bucket: %s", vertexId, tagTypeName, bucket), e);
         } finally {
@@ -524,7 +551,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             for (Row row : rs) {
                 return convertToAtlasClassification(row.getString("tag_meta_json"));
             }
-            LOG.info("No tags found for id: {}, tag type: {}, bucket {}, returning null", vertexId, tagTypeName, bucket);
+            LOG.warn("No deleted tag found for vertexId={}, tagTypeName={}, bucket={}", vertexId, tagTypeName, bucket);
         } catch (Exception e) {
             throw new AtlasBaseException(String.format("Error fetching tag for asset: %s and tag type: %s, bucket: %s", vertexId, tagTypeName, bucket), e);
         } finally {
@@ -549,7 +576,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 tag.setAssetMetadata(objectMapper.readValue(row.getString("asset_metadata"), Map.class));
                 return tag;
             }
-            LOG.info("No tags found for id: {}, tag type: {}, bucket {}, returning null", vertexId, tagTypeName, bucket);
+            LOG.warn("No direct tag with asset metadata found for vertexId={}, tagTypeName={}, bucket={}", vertexId, tagTypeName, bucket);
         } catch (Exception e) {
             throw new AtlasBaseException(String.format("Error fetching tag for asset: %s and tag type: %s, bucket: %s", vertexId, tagTypeName, bucket), e);
         } finally {
@@ -567,7 +594,10 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             ResultSet rs = executeWithRetry(bound);
 
             List<Tag> results = new ArrayList<>();
+            int rowCount = 0;
+
             for (Row row : rs) {
+                rowCount++;
                 Tag tag = new Tag();
                 tag.setVertexId(vertexId);
                 tag.setPropagated(row.getBoolean("is_propagated"));
@@ -577,6 +607,11 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 tag.setTagMetaJson(sourceTag.getTagMetaJson());
                 results.add(tag);
             }
+
+            if (rowCount == 0) {
+                LOG.warn("No tag rows found for vertexId={}, bucket={}", vertexId, bucket);
+            }
+
             return results;
         } catch (Exception e) {
             throw new AtlasBaseException(String.format("Error fetching tag for id: %s and bucket: %s", vertexId, bucket), e);

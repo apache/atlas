@@ -272,6 +272,9 @@ public class AtlasTask {
                 ", attemptCount=" + attemptCount +
                 ", errorMessage='" + errorMessage + '\'' +
                 ", status=" + status +
+                ", classificationId='" + classificationId + '\'' +
+                ", entityGuid='" + entityGuid + '\'' +
+                ", tagTypeName='" + tagTypeName + '\'' +
                 '}';
     }
 }

@@ -6282,7 +6282,7 @@ public class EntityGraphMapper {
         }
     }
 
-    private AtlasEntity getEntityForNotification(Map<String, Object> assetMetadata) {
+    private static AtlasEntity getEntityForNotification(Map<String, Object> assetMetadata) {
         AtlasEntity entity = new AtlasEntity();
         entity.setAttribute(NAME, assetMetadata.get(NAME));
         entity.setAttribute(QUALIFIED_NAME, assetMetadata.get(QUALIFIED_NAME));
@@ -6298,7 +6298,7 @@ public class EntityGraphMapper {
         return entity;
     }
 
-    private Date safeParseDate(Object value, String fieldName) {
+    private static Date safeParseDate(Object value, String fieldName) {
         if (value instanceof Long) {
             return new Date((Long) value);
         } else if (value instanceof Integer) {
@@ -6407,7 +6407,5 @@ public class EntityGraphMapper {
 
         return vertex;
     }
-
-
 
 }
