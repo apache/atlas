@@ -5006,8 +5006,7 @@ public class EntityGraphMapper {
                 if (batchSize == previousBatchSize) {
                     loopDetectionCounter++;
                     if (loopDetectionCounter > 3) {
-                        LOG.warn("Possible infinite loop detected in tag propagation for entity {}, tag type {}. Processed {} batches so far.",
-                                sourceEntityGuid, tagTypeName, totalDeleted / batchSize);
+                        LOG.warn("Possible infinite loop detected in tag propagation for entity {}, tag type {}. Processed {} batches so far.", sourceEntityGuid, tagTypeName, totalDeleted / batchSize);
                         break;
                     }
                 } else {
@@ -6292,14 +6291,29 @@ public class EntityGraphMapper {
         entity.setTypeName((String) assetMetadata.get(TYPE_NAME_PROPERTY_KEY));
         entity.setCreatedBy((String) assetMetadata.get(CREATED_BY_KEY));
         entity.setUpdatedBy((String) assetMetadata.get(MODIFIED_BY_KEY));
-        Long ts = (Long) assetMetadata.get(TIMESTAMP_PROPERTY_KEY);
-        Date created = new Date(ts);
-        entity.setCreateTime(created);
 
-        Long tsModified = (Long) assetMetadata.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY);
-        Date modified = new Date(tsModified);
-        entity.setUpdateTime(modified);
+        entity.setCreateTime(safeParseDate(assetMetadata.get(TIMESTAMP_PROPERTY_KEY), "createTime"));
+        entity.setUpdateTime(safeParseDate(assetMetadata.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY), "updateTime"));
+
         return entity;
+    }
+
+    private Date safeParseDate(Object value, String fieldName) {
+        if (value instanceof Long) {
+            return new Date((Long) value);
+        } else if (value instanceof Integer) {
+            return new Date(((Integer) value).longValue());
+        } else if (value instanceof String) {
+            try {
+                return new Date(Long.parseLong((String) value));
+            } catch (NumberFormatException e) {
+                LOG.warn("Invalid string timestamp for {}: '{}'", fieldName, value);
+            }
+        } else if (value != null) {
+            LOG.warn("Unexpected type for {}: {}", fieldName, value.getClass().getName());
+        }
+        // Fallback: return null (or new Date(0) if a default is needed)
+        return null;
     }
 
     public void classificationRefreshPropagationV2(Map<String, Object> parameters, String sourceEntityId, String classificationTypeName) throws AtlasBaseException {
