@@ -19,7 +19,7 @@ services:
       - "21000:21000"
     depends_on:
       atlas-hbase:
-        condition: service_started
+        condition: service_healthy
       atlas-kafka:
         condition: service_started
       atlas-solr:
