@@ -82,7 +82,7 @@ jobs:
       - name: Upload Code Coverage Results
         uses: actions/upload-artifact@v4
         with:
-          name: jacoco
+          name: coverage
           path: dev-support/atlas-docker/dist/coverage/*
 
       - name: Cache downloaded archives
