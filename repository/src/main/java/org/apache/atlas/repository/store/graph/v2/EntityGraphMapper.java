@@ -6299,20 +6299,33 @@ public class EntityGraphMapper {
     }
 
     private static Date safeParseDate(Object value, String fieldName) {
+        long minValidTimestamp = 0L; // Jan 1, 1970 UTC
+        long maxValidTimestamp = 4102444800000L; // Jan 1, 2100
+
+        Long timestamp = null;
         if (value instanceof Long) {
-            return new Date((Long) value);
+            timestamp = (Long) value;
         } else if (value instanceof Integer) {
-            return new Date(((Integer) value).longValue());
+            timestamp = ((Integer) value).longValue();
         } else if (value instanceof String) {
             try {
-                return new Date(Long.parseLong((String) value));
+                timestamp = Long.parseLong((String) value);
             } catch (NumberFormatException e) {
                 LOG.warn("Invalid string timestamp for {}: '{}'", fieldName, value);
+                return null;
             }
         } else if (value != null) {
             LOG.warn("Unexpected type for {}: {}", fieldName, value.getClass().getName());
+            return null;
         }
-        // Fallback: return null (or new Date(0) if a default is needed)
+
+        if (timestamp != null) {
+            if (timestamp < minValidTimestamp || timestamp > maxValidTimestamp) {
+                LOG.warn("Timestamp out of expected range for {}: {}", fieldName, timestamp);
+                return null;
+            }
+            return new Date(timestamp);
+        }
         return null;
     }
 
