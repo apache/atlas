@@ -535,6 +535,12 @@ public class EntityGraphMapper {
                 AtlasVertex vertex = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
                 mapAppendRemoveRelationshipAttributes(entity, entityType, vertex, UPDATE, context, true, false);
+
+                // Update __hasLineage for edges impacted during append operation
+                Set<AtlasEdge> newlyCreatedEdges = getNewCreatedInputOutputEdges(guid);
+                if (CollectionUtils.isNotEmpty(newlyCreatedEdges)) {
+                    addHasLineage(newlyCreatedEdges, false);
+                }
             }
         }
 
@@ -544,6 +550,12 @@ public class EntityGraphMapper {
                 AtlasVertex vertex = context.getVertex(guid);
                 AtlasEntityType entityType = context.getType(guid);
                 mapAppendRemoveRelationshipAttributes(entity, entityType, vertex, UPDATE, context, false, true);
+
+                // Update __hasLineage for edges impacted during remove operation
+                Set<AtlasEdge> removedEdges = getRemovedInputOutputEdges(guid);
+                if (CollectionUtils.isNotEmpty(removedEdges)) {
+                    deleteDelegate.getHandler().resetHasLineageOnInputOutputDelete(removedEdges, null);
+                }
             }
         }
 
