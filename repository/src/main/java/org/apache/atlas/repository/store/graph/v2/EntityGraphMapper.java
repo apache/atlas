@@ -5006,8 +5006,7 @@ public class EntityGraphMapper {
                 if (batchSize == previousBatchSize) {
                     loopDetectionCounter++;
                     if (loopDetectionCounter > 3) {
-                        LOG.warn("Possible infinite loop detected in tag propagation for entity {}, tag type {}. Processed {} batches so far.",
-                                sourceEntityGuid, tagTypeName, totalDeleted / batchSize);
+                        LOG.warn("Possible infinite loop detected in tag propagation for entity {}, tag type {}. Processed {} batches so far.", sourceEntityGuid, tagTypeName, totalDeleted / batchSize);
                         break;
                     }
                 } else {
@@ -6283,7 +6282,7 @@ public class EntityGraphMapper {
         }
     }
 
-    private AtlasEntity getEntityForNotification(Map<String, Object> assetMetadata) {
+    private static AtlasEntity getEntityForNotification(Map<String, Object> assetMetadata) {
         AtlasEntity entity = new AtlasEntity();
         entity.setAttribute(NAME, assetMetadata.get(NAME));
         entity.setAttribute(QUALIFIED_NAME, assetMetadata.get(QUALIFIED_NAME));
@@ -6292,14 +6291,42 @@ public class EntityGraphMapper {
         entity.setTypeName((String) assetMetadata.get(TYPE_NAME_PROPERTY_KEY));
         entity.setCreatedBy((String) assetMetadata.get(CREATED_BY_KEY));
         entity.setUpdatedBy((String) assetMetadata.get(MODIFIED_BY_KEY));
-        Long ts = (Long) assetMetadata.get(TIMESTAMP_PROPERTY_KEY);
-        Date created = new Date(ts);
-        entity.setCreateTime(created);
 
-        Long tsModified = (Long) assetMetadata.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY);
-        Date modified = new Date(tsModified);
-        entity.setUpdateTime(modified);
+        entity.setCreateTime(safeParseDate(assetMetadata.get(TIMESTAMP_PROPERTY_KEY), TIMESTAMP_PROPERTY_KEY));
+        entity.setUpdateTime(safeParseDate(assetMetadata.get(MODIFICATION_TIMESTAMP_PROPERTY_KEY), MODIFICATION_TIMESTAMP_PROPERTY_KEY));
+
         return entity;
+    }
+
+    private static Date safeParseDate(Object value, String fieldName) {
+        long minValidTimestamp = 0L; // Jan 1, 1970 UTC
+        long maxValidTimestamp = 4102444800000L; // Jan 1, 2100
+
+        Long timestamp = null;
+        if (value instanceof Long) {
+            timestamp = (Long) value;
+        } else if (value instanceof Integer) {
+            timestamp = ((Integer) value).longValue();
+        } else if (value instanceof String) {
+            try {
+                timestamp = Long.parseLong((String) value);
+            } catch (NumberFormatException e) {
+                LOG.warn("Invalid string timestamp for {}: '{}'", fieldName, value);
+                return null;
+            }
+        } else if (value != null) {
+            LOG.warn("Unexpected type for {}: {}", fieldName, value.getClass().getName());
+            return null;
+        }
+
+        if (timestamp != null) {
+            if (timestamp < minValidTimestamp || timestamp > maxValidTimestamp) {
+                LOG.warn("Timestamp out of expected range for {}: {}", fieldName, timestamp);
+                return null;
+            }
+            return new Date(timestamp);
+        }
+        return null;
     }
 
     public void classificationRefreshPropagationV2(Map<String, Object> parameters, String sourceEntityId, String classificationTypeName) throws AtlasBaseException {
@@ -6393,7 +6420,5 @@ public class EntityGraphMapper {
 
         return vertex;
     }
-
-
 
 }
