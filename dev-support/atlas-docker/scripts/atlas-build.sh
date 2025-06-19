@@ -96,6 +96,8 @@ mv -f distro/target/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz /home/atlas/
 # Run code coverage and generate reports
 ./dev-support/checks/coverage.sh
 status=$?
+
+ls -lrt target/coverage
 # save coverage reports to the dist directory before container shutdown
 mv -f target/coverage /home/atlas/dist/ || true
 exit $status

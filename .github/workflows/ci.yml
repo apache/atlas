@@ -79,6 +79,9 @@ jobs:
             exit 1
           fi
 
+      - name: List coverage files
+        run: ls -alh dist/coverage/
+
       - name: Upload Code Coverage Results
         uses: actions/upload-artifact@v4
         with:
