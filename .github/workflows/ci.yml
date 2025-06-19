@@ -83,7 +83,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: jacoco
-          path: dev-support/atlas-docker/jacoco/coverage/*
+          path: dev-support/atlas-docker/dist/coverage/*
 
       - name: Cache downloaded archives
         if: success()

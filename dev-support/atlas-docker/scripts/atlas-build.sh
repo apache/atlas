@@ -98,5 +98,5 @@ mv -f distro/target/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz /home/atlas/
 status=$?
 
 # save coverage reports to the dist directory before container shutdown
-mv -f target/coverage /home/atlas/jacoco/
+mv -f target/coverage /home/atlas/dist/
 exit $status
