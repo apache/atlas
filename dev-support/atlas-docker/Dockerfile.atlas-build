@@ -32,6 +32,7 @@ RUN update-java-alternatives --set /usr/lib/jvm/java-1.${ATLAS_BUILD_JAVA_VERSIO
 # setup atlas group, and users
 RUN mkdir -p /home/atlas/git && \
     mkdir -p /home/atlas/.m2 && \
+    mkdir -p /home/atlas/jacoco && \
     chown -R atlas:atlas /home/atlas
 
 COPY ./scripts/atlas-build.sh /home/atlas/scripts/
