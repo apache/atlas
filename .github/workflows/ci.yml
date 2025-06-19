@@ -69,6 +69,7 @@ jobs:
           cd dev-support/atlas-docker
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
+          mkdir -p ${{ github.workspace }}/jacoco
           SKIPTESTS=false docker compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
           ATLAS_BUILD_CONTAINER=$(docker ps -a -q --filter "name=atlas-build")
           EXIT_CODE=$(docker inspect --format '{{.State.ExitCode}}' "$ATLAS_BUILD_CONTAINER")
@@ -79,14 +80,11 @@ jobs:
             exit 1
           fi
 
-      - name: List coverage files
-        run: ls -alh dist/coverage/
-
       - name: Upload Code Coverage Results
         uses: actions/upload-artifact@v4
         with:
           name: jacoco
-          path: dist/coverage/*
+          path: ${{ github.workspace }}/jacoco/coverage/*
 
       - name: Cache downloaded archives
         if: success()

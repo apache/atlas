@@ -86,7 +86,7 @@ else
   done
 fi
 
-mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean package
+mvn ${ARG_PROFILES} ${ARG_SKIPTESTS} -DskipDocs clean package -pl 'server-api'
 
 mv -f distro/target/apache-atlas-${ATLAS_VERSION}-server.tar.gz     /home/atlas/dist/
 mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz  /home/atlas/dist/
@@ -97,7 +97,6 @@ mv -f distro/target/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz /home/atlas/
 ./dev-support/checks/coverage.sh
 status=$?
 
-ls -lrt target/coverage
 # save coverage reports to the dist directory before container shutdown
-mv -f target/coverage /home/atlas/dist/ || true
+mv -f target/coverage ${{ github.workspace }}/jacoco
 exit $status
