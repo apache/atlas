@@ -29,11 +29,10 @@ import { toast } from "react-toastify";
 const DeleteTag = (props: {
   open: boolean;
   onClose: () => void;
-  setExpandNode: any;
   node: any;
   updatedData: any;
 }) => {
-  const { open, onClose, setExpandNode, node, updatedData } = props;
+  const { open, onClose, node, updatedData } = props;
   const navigate = useNavigate();
   const dispatchApi = useAppDispatch();
   const toastId: any = useRef(null);
@@ -57,9 +56,9 @@ const DeleteTag = (props: {
         { replace: true }
       );
       onClose();
-      setExpandNode(null);
     } catch (error) {
       setLoader(false);
+      onClose();
       console.log(`Error occur while removing ${node.id}`, error);
       serverError(error, toastId);
     }
