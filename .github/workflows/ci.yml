@@ -79,6 +79,12 @@ jobs:
             exit 1
           fi
 
+      - name: Upload Code Coverage Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco
+          path: /home/atlas/dist/coverage/*
+
       - name: Cache downloaded archives
         if: success()
         uses: actions/cache@v4
