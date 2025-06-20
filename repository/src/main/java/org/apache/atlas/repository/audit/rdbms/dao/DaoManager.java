@@ -52,20 +52,22 @@ public class DaoManager {
 
         config.put(PersistenceUnitProperties.ECLIPSELINK_PERSISTENCE_XML, "META-INF/atlas-persistence.xml");
 
-        LOG.warn("DaoManager: config={}", config);
+        LOG.debug("DaoManager: config={}", config);
 
         PersistenceProviderResolver resolver = PersistenceProviderResolverHolder.getPersistenceProviderResolver();
+        EntityManagerFactory        emf      = null;
 
         for (PersistenceProvider provider : resolver.getPersistenceProviders()) {
-            LOG.warn("PersistenceProvider: {}", provider.toString());
+            LOG.debug("PersistenceProvider: {}", provider);
 
-            EntityManagerFactory emf = provider.createEntityManagerFactory("atlasPU", config);
+            emf = provider.createEntityManagerFactory("atlasPU", config);
+
             if (emf != null) {
                 break;
             }
         }
 
-        emFactory = Persistence.createEntityManagerFactory("atlasPU", config);
+        emFactory = emf;
     }
 
     public EntityManagerFactory getEntityManagerFactory() {

@@ -126,18 +126,14 @@ public class RdbmsStoreManager extends AbstractStoreManager implements KeyColumn
 
     @Override
     public StoreTransaction beginTransaction(BaseTransactionConfig baseTransactionConfig) throws BackendException {
-        LOG.debug("==> RdbmsStoreManager.beginTransaction()");
+        LOG.debug("RdbmsStoreManager.beginTransaction()");
 
-        StoreTransaction ret = new RdbmsTransaction(baseTransactionConfig, this.daoManager);
-
-        LOG.debug("<== RdbmsStoreManager.beginTransaction()");
-
-        return ret;
+        return new RdbmsTransaction(baseTransactionConfig, this.daoManager);
     }
 
     @Override
     public void close() throws BackendException {
-        LOG.debug("==> RdbmsStoreManager.close()");
+        LOG.debug("RdbmsStoreManager.close()");
 
         synchronized (this) {
             for (RdbmsStore store : stores.values()) {
@@ -147,12 +143,12 @@ public class RdbmsStoreManager extends AbstractStoreManager implements KeyColumn
             stores.clear();
             daoManager.close();
         }
-
-        LOG.debug("<== RdbmsStoreManager.close()");
     }
 
     @Override
     public void clearStorage() throws BackendException {
+        LOG.debug("RdbmsStoreManager.clearStorage(): UnsupportedOperation");
+
         throw new UnsupportedOperationException();
     }
 
@@ -173,6 +169,8 @@ public class RdbmsStoreManager extends AbstractStoreManager implements KeyColumn
 
     @Override
     public List<KeyRange> getLocalKeyPartition() throws BackendException {
+        LOG.debug("RdbmsStoreManager.getLocalKeyPartition(): UnsupportedOperation");
+
         throw new UnsupportedOperationException();
     }
 }

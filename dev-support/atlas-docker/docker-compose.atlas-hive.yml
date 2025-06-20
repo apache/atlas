@@ -17,8 +17,6 @@ services:
     ports:
       - "10000:10000"
     depends_on:
-      atlas-db:
-        condition: service_healthy
       atlas-hadoop:
         condition: service_healthy
       atlas-zk:
@@ -34,11 +32,6 @@ services:
     extends:
       service: atlas-hadoop
       file: docker-compose.atlas-hadoop.yml
-
-  atlas-db:
-    extends:
-      service: atlas-db
-      file: docker-compose.atlas-db.yml
 
 networks:
   atlas:

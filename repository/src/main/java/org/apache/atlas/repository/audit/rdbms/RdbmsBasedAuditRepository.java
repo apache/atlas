@@ -65,22 +65,20 @@ public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditReposito
     @Override
     public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
         try (RdbmsTransaction trx = new RdbmsTransaction(daoManager.getEntityManagerFactory())) {
-            try {
-                DbEntityAuditDao dao = daoManager.getEntityAuditDao(trx.getEntityManager());
+            DbEntityAuditDao dao = daoManager.getEntityAuditDao(trx.getEntityManager());
 
-                for (int i = 0; i < events.size(); i++) {
-                    EntityAuditEventV2 event   = events.get(i);
-                    DbEntityAudit      dbEvent = toDbEntityAudit(event);
+            for (int i = 0; i < events.size(); i++) {
+                EntityAuditEventV2 event   = events.get(i);
+                DbEntityAudit      dbEvent = toDbEntityAudit(event);
 
-                    dbEvent.setEventIndex(i);
+                dbEvent.setEventIndex(i);
 
-                    dao.create(dbEvent);
-                }
-            } catch (Exception excp) {
-                trx.setFailed(true);
-
-                throw new AtlasBaseException("Error while persisting audit events", excp);
+                dao.create(dbEvent);
             }
+
+            trx.commit();
+        } catch (Exception excp) {
+            throw new AtlasBaseException("Error while persisting audit events", excp);
         }
     }
 
@@ -89,15 +87,11 @@ public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditReposito
         try (RdbmsTransaction trx = new RdbmsTransaction(daoManager.getEntityManagerFactory())) {
             DbEntityAuditDao dao = daoManager.getEntityAuditDao(trx.getEntityManager());
 
-            try {
-                List<DbEntityAudit> dbEvents = dao.getByEntityIdActionStartTimeStartIdx(entityId, auditAction, getTimestampFromKey(startKey), getIndexFromKey(startKey), maxResultCount);
+            List<DbEntityAudit> dbEvents = dao.getByEntityIdActionStartTimeStartIdx(entityId, auditAction, getTimestampFromKey(startKey), getIndexFromKey(startKey), maxResultCount);
 
-                return dbEvents.stream().map(RdbmsBasedAuditRepository::fromDbEntityAudit).collect(Collectors.toList());
-            } catch (Exception excp) {
-                trx.setFailed(true);
-
-                throw new AtlasBaseException("Error while retrieving audit events", excp);
-            }
+            return dbEvents.stream().map(RdbmsBasedAuditRepository::fromDbEntityAudit).collect(Collectors.toList());
+        } catch (Exception excp) {
+            throw new AtlasBaseException("Error while retrieving audit events", excp);
         }
     }
 
@@ -106,15 +100,11 @@ public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditReposito
         try (RdbmsTransaction trx = new RdbmsTransaction(daoManager.getEntityManagerFactory())) {
             DbEntityAuditDao dao = daoManager.getEntityAuditDao(trx.getEntityManager());
 
-            try {
-                List<DbEntityAudit> dbEvents = dao.getByEntityIdAction(entityId, auditAction, offset, limit);
+            List<DbEntityAudit> dbEvents = dao.getByEntityIdAction(entityId, auditAction, offset, limit);
 
-                return dbEvents.stream().map(RdbmsBasedAuditRepository::fromDbEntityAudit).collect(Collectors.toList());
-            } catch (Exception excp) {
-                trx.setFailed(true);
-
-                throw new AtlasBaseException("Error while retrieving audit events", excp);
-            }
+            return dbEvents.stream().map(RdbmsBasedAuditRepository::fromDbEntityAudit).collect(Collectors.toList());
+        } catch (Exception excp) {
+            throw new AtlasBaseException("Error while retrieving audit events", excp);
         }
     }
 

@@ -71,14 +71,13 @@ public class DaoManager {
 
         config.put(PersistenceUnitProperties.ECLIPSELINK_PERSISTENCE_XML, "META-INF/janus-persistence.xml");
 
-        LOG.warn("DaoManager: config={}", config);
+        LOG.debug("DaoManager: config={}", config);
 
         PersistenceProviderResolver resolver = PersistenceProviderResolverHolder.getPersistenceProviderResolver();
-
-        EntityManagerFactory emf = null;
+        EntityManagerFactory        emf      = null;
 
         for (PersistenceProvider provider : resolver.getPersistenceProviders()) {
-            LOG.warn("PersistenceProvider: " + provider.toString());
+            LOG.debug("PersistenceProvider: {}", provider);
 
             emf = provider.createEntityManagerFactory("janusPU", config);
 
@@ -90,7 +89,7 @@ public class DaoManager {
         emFactory = emf;
     }
 
-    public EntityManager getEntityManager() {
+    public EntityManager createEntityManager() {
         return emFactory.createEntityManager();
     }
 

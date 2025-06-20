@@ -116,7 +116,7 @@ public class RdbmsStore implements KeyColumnValueStore {
             ret = Collections.emptyMap();
         }
 
-        LOG.debug("<== RdbmsStore.getSlice(name={}, len(keys)={}, query={}, trx={})", name, keys.size(), query, trx);
+        LOG.debug("<== RdbmsStore.getSlice(name={}, len(keys)={}, query={}, trx={}): ret={}", name, keys.size(), query, trx, ret);
 
         return ret;
     }
@@ -144,6 +144,8 @@ public class RdbmsStore implements KeyColumnValueStore {
 
     @Override
     public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction trx) {
+        LOG.debug("RdbmsStore.acquireLock(key={}, column={}, expectedValue={}, trx={}): UnsupportedOperation", key, column, expectedValue, trx);
+
         throw new UnsupportedOperationException();
     }
 
@@ -161,7 +163,7 @@ public class RdbmsStore implements KeyColumnValueStore {
             ret = JanusColumnDao.EMPTY_KEY_ITERATOR;
         }
 
-        LOG.debug("<== RdbmsStore.debug(name={}, query={}, trx={})", name, query, trx);
+        LOG.debug("<== RdbmsStore.debug(name={}, query={}, trx={}): ret={}", name, query, trx, ret);
 
         return ret;
     }
@@ -180,13 +182,15 @@ public class RdbmsStore implements KeyColumnValueStore {
             ret = JanusColumnDao.EMPTY_KEY_ITERATOR;
         }
 
-        LOG.debug("<== RdbmsStore.debug(name={}, query={}, trx={})", name, query, trx);
+        LOG.debug("<== RdbmsStore.debug(name={}, query={}, trx={}): ret={}", name, query, trx, ret);
 
         return ret;
     }
 
     @Override
     public KeySlicesIterator getKeys(MultiSlicesQuery query, StoreTransaction trx) {
+        LOG.debug("RdbmsStore.getKeys(query={}, trx={}): UnsupportedOperation", query, trx);
+
         throw new UnsupportedOperationException();
     }
 
@@ -317,6 +321,8 @@ public class RdbmsStore implements KeyColumnValueStore {
 
                 @Override
                 public Object getMetaData(JanusColumnValue janusColumnValue, EntryMetaData entryMetaData) {
+                    LOG.debug("RdbmsStore.getMetaData(janusColumnValue={}, entryMetaData={}): UnsupportedOperation", janusColumnValue, entryMetaData);
+
                     return new UnsupportedOperationException();
                 }
             };

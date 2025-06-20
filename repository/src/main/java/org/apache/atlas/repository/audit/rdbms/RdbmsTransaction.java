@@ -24,7 +24,6 @@ import javax.persistence.EntityTransaction;
 public class RdbmsTransaction implements AutoCloseable {
     private final EntityManager     em;
     private final EntityTransaction trx;
-    private       boolean           isFailed;
 
     public RdbmsTransaction(EntityManagerFactory emf) {
         this.em  = emf.createEntityManager();
@@ -37,18 +36,16 @@ public class RdbmsTransaction implements AutoCloseable {
         return em;
     }
 
-    public void setFailed(boolean isFailed) {
-        this.isFailed = isFailed;
+    public void commit() {
+        if (trx.isActive()) {
+            trx.commit();
+        }
     }
 
     @Override
     public void close() {
         if (trx.isActive()) {
-            if (isFailed) {
-                trx.rollback();
-            } else {
-                trx.commit();
-            }
+            trx.rollback();
         }
 
         em.close();

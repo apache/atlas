@@ -20,6 +20,8 @@ package org.janusgraph.diskstorage.rdbms;
 import org.janusgraph.diskstorage.BaseTransactionConfig;
 import org.janusgraph.diskstorage.common.AbstractStoreTransaction;
 import org.janusgraph.diskstorage.rdbms.dao.DaoManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
@@ -32,13 +34,15 @@ import java.io.IOException;
  *
  */
 public class RdbmsTransaction extends AbstractStoreTransaction implements Closeable {
+    private static final Logger LOG = LoggerFactory.getLogger(RdbmsTransaction.class);
+
     private final EntityManager     em;
     private final EntityTransaction trx;
 
     public RdbmsTransaction(BaseTransactionConfig trxConfig, DaoManager daoManager) {
         super(trxConfig);
 
-        em  = daoManager.getEntityManager();
+        em  = daoManager.createEntityManager();
         trx = em.getTransaction();
 
         trx.begin();
@@ -50,6 +54,8 @@ public class RdbmsTransaction extends AbstractStoreTransaction implements Closea
 
     @Override
     public void commit() {
+        LOG.debug("RdbmsTransaction.commit()");
+
         try {
             if (trx.isActive()) {
                 trx.commit();
@@ -61,6 +67,8 @@ public class RdbmsTransaction extends AbstractStoreTransaction implements Closea
 
     @Override
     public void rollback() {
+        LOG.debug("RdbmsTransaction.rollback()");
+
         try {
             if (trx.isActive()) {
                 trx.rollback();
@@ -72,6 +80,8 @@ public class RdbmsTransaction extends AbstractStoreTransaction implements Closea
 
     @Override
     public void close() throws IOException {
+        LOG.debug("RdbmsTransaction.close()");
+
         IOException ret = null;
 
         if (trx.isActive()) {

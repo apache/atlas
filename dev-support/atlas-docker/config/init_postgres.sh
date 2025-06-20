@@ -27,4 +27,10 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-E
     CREATE USER atlas WITH PASSWORD 'atlasR0cks!';
     CREATE DATABASE atlas;
     GRANT ALL PRIVILEGES ON DATABASE atlas TO atlas;
+
+    \c hive
+    GRANT ALL ON SCHEMA public TO public;
+
+    \c atlas
+    GRANT ALL ON SCHEMA public TO public;
 EOSQL

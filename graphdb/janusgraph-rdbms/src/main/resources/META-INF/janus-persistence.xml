@@ -29,16 +29,4 @@
             <property name="eclipselink.jdbc.batch-writing" value="jdbc"/>
         </properties>
     </persistence-unit>
-
-    <persistence-unit name="defaultPU">
-        <mapping-file>META-INF/janus-jpa_named_queries.xml</mapping-file>
-
-        <class>org.apache.atlas.repository.audit.rdbms.entity.DbEntityAudit</class>
-        <shared-cache-mode>NONE</shared-cache-mode>
-
-        <properties>
-            <property name="eclipselink.logging.level"      value="WARNING"/>
-            <property name="eclipselink.jdbc.batch-writing" value="jdbc"/>
-        </properties>
-    </persistence-unit>
 </persistence>
