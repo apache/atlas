@@ -30,7 +30,6 @@ import java.io.IOException;
 /**
  * Store transaction implementation for RDBMS
  *
- * @author Madhan Neethiraj &lt;madhan@apache.org&gt;
  */
 public class RdbmsTransaction extends AbstractStoreTransaction implements Closeable {
     private final EntityManager     em;

@@ -25,7 +25,6 @@ import javax.persistence.EntityManager;
 /**
  * Base DAO to access entities stored in RDBMS
  *
- * @author Madhan Neethiraj &lt;madhan@apache.org&gt;
  */
 public abstract class BaseDao<T> {
     protected final EntityManager em;

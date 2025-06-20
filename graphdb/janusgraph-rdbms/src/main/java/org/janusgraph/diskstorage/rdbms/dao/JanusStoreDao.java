@@ -26,7 +26,6 @@ import javax.persistence.NoResultException;
 /**
  * DAO to access Store entities stored in RDBMS
  *
- * @author Madhan Neethiraj &lt;madhan@apache.org&gt;
  */
 public class JanusStoreDao extends BaseDao<JanusStore> {
     public JanusStoreDao(RdbmsTransaction trx) {

@@ -26,7 +26,6 @@ import javax.persistence.NoResultException;
 /**
  * DAO to access Key entities stored in RDBMS
  *
- * @author Madhan Neethiraj &lt;madhan@apache.org&gt;
  */
 public class JanusKeyDao extends BaseDao<JanusKey> {
     public JanusKeyDao(RdbmsTransaction trx) {

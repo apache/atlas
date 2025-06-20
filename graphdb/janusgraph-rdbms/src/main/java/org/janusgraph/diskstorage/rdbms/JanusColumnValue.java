@@ -23,7 +23,6 @@ import org.janusgraph.diskstorage.util.StaticArrayBuffer;
 /**
  * ColumnValue stored in RDBMS
  *
- * @author Madhan Neethiraj &lt;madhan@apache.org&gt;
  */
 public class JanusColumnValue {
     private final byte[] column;

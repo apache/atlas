@@ -44,7 +44,6 @@ import java.util.Map;
 /**
  * Storage Manager for RDBMS
  *
- * @author Madhan Neethiraj &lt;madhan@apache.org&gt;
  */
 @PreInitializeConfigOptions
 public class RdbmsStoreManager extends AbstractStoreManager implements KeyColumnValueStoreManager {

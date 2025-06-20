@@ -24,7 +24,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
 import javax.persistence.spi.PersistenceProvider;
 import javax.persistence.spi.PersistenceProviderResolver;
 import javax.persistence.spi.PersistenceProviderResolverHolder;
@@ -46,7 +45,6 @@ import java.util.Map;
  *   storage.rdbms.jpa.javax.persistence.schema-generation.create-database-schemas=true
  *   storage.rdbms.jpa.javax.persistence.schema-generation.create-source=metadata
  *
- * @author Madhan Neethiraj &lt;madhan@apache.org&gt;
  */
 public class DaoManager {
     private static final Logger LOG = LoggerFactory.getLogger(DaoManager.class);
@@ -77,16 +75,19 @@ public class DaoManager {
 
         PersistenceProviderResolver resolver = PersistenceProviderResolverHolder.getPersistenceProviderResolver();
 
+        EntityManagerFactory emf = null;
+
         for (PersistenceProvider provider : resolver.getPersistenceProviders()) {
             LOG.warn("PersistenceProvider: " + provider.toString());
 
-            EntityManagerFactory emf = provider.createEntityManagerFactory("janusPU", config);
+            emf = provider.createEntityManagerFactory("janusPU", config);
+
             if (emf != null) {
                 break;
             }
         }
 
-        emFactory = Persistence.createEntityManagerFactory("janusPU", config);
+        emFactory = emf;
     }
 
     public EntityManager getEntityManager() {

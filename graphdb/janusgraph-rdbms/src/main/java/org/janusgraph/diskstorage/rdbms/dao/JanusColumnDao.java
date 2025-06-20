@@ -38,7 +38,6 @@ import java.util.List;
 /**
  * DAO to access Column entities stored in RDBMS
  *
- * @author Madhan Neethiraj &lt;madhan@apache.org&gt;
  */
 public class JanusColumnDao extends BaseDao<JanusColumn> {
     private final RdbmsStore store;

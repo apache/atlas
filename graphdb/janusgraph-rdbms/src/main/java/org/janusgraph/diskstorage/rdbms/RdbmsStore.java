@@ -41,6 +41,7 @@ import org.janusgraph.diskstorage.util.StaticArrayEntryList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -49,10 +50,14 @@ import java.util.TreeMap;
 /**
  * KeyColumnValue store backed by RDBMS
  *
- * @author Madhan Neethiraj &lt;madhan@apache.org&gt;
  */
 public class RdbmsStore implements KeyColumnValueStore {
     private static final Logger LOG = LoggerFactory.getLogger(RdbmsStore.class);
+
+    private static final int STORE_CREATE_MAX_ATTEMPTS   = 10;
+    private static final int STORE_CREATE_RETRY_DELAY_MS = 100;
+    private static final int KEY_CREATE_MAX_ATTEMPTS     = 10;
+    private static final int KEY_CREATE_RETRY_DELAY_MS   = 100;
 
     private final String          name;
     private final DaoManager      daoManager;
@@ -69,7 +74,7 @@ public class RdbmsStore implements KeyColumnValueStore {
     }
 
     @Override
-    public EntryList getSlice(KeySliceQuery query, StoreTransaction trx) throws BackendException {
+    public EntryList getSlice(KeySliceQuery query, StoreTransaction trx) {
         LOG.debug("==> RdbmsStore.getSlice(name={}, query={}, trx={})", name, query, trx);
 
         final EntryList ret;
@@ -96,7 +101,7 @@ public class RdbmsStore implements KeyColumnValueStore {
     }
 
     @Override
-    public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction trx) throws BackendException {
+    public Map<StaticBuffer, EntryList> getSlice(List<StaticBuffer> keys, SliceQuery query, StoreTransaction trx) {
         LOG.debug("==> RdbmsStore.getSlice(name={}, len(keys)={}, query={}, trx={})", name, keys.size(), query, trx);
 
         final Map<StaticBuffer, EntryList> ret;
@@ -117,11 +122,11 @@ public class RdbmsStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction trx) throws BackendException {
+    public void mutate(StaticBuffer key, List<Entry> additions, List<StaticBuffer> deletions, StoreTransaction trx) {
         LOG.debug("==> RdbmsStore.mutate(name={}, key={}, additions={}, deletions={}, trx={})", name, key, additions, deletions, trx);
 
         byte[]         keyName   = toBytes(key);
-        Long           keyId     = getKeyIdOrCreate(keyName, trx);
+        long           keyId     = getKeyIdOrCreate(keyName, trx);
         JanusColumnDao columnDao = new JanusColumnDao((RdbmsTransaction) trx, this);
 
         for (StaticBuffer column : deletions) {
@@ -138,12 +143,12 @@ public class RdbmsStore implements KeyColumnValueStore {
     }
 
     @Override
-    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction trx) throws BackendException {
+    public void acquireLock(StaticBuffer key, StaticBuffer column, StaticBuffer expectedValue, StoreTransaction trx) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction trx) throws BackendException {
+    public KeyIterator getKeys(KeyRangeQuery query, StoreTransaction trx) {
         LOG.debug("==> RdbmsStore.getKeys(name={}, query={}, trx={})", name, query, trx);
 
         final KeyIterator ret;
@@ -162,7 +167,7 @@ public class RdbmsStore implements KeyColumnValueStore {
     }
 
     @Override
-    public KeyIterator getKeys(SliceQuery query, StoreTransaction trx) throws BackendException {
+    public KeyIterator getKeys(SliceQuery query, StoreTransaction trx) {
         LOG.debug("==> RdbmsStore.getKeys(name={}, query={}, trx={})", name, query, trx);
 
         final KeyIterator ret;
@@ -181,7 +186,7 @@ public class RdbmsStore implements KeyColumnValueStore {
     }
 
     @Override
-    public KeySlicesIterator getKeys(MultiSlicesQuery query, StoreTransaction trx) throws BackendException {
+    public KeySlicesIterator getKeys(MultiSlicesQuery query, StoreTransaction trx) {
         throw new UnsupportedOperationException();
     }
 
@@ -192,21 +197,23 @@ public class RdbmsStore implements KeyColumnValueStore {
 
     @Override
     public void close() throws BackendException {
-        LOG.debug("==> RdbmsStore.close(name={})", name);
-
-        LOG.debug("<== RdbmsStore.close(name={})", name);
+        LOG.debug("RdbmsStore.close(name={})", name);
     }
 
     private boolean isStorePresent(StoreTransaction trx) {
-        if (this.storeId == null) {
+        Long storeId = this.storeId;
+
+        if (storeId == null) {
             JanusStoreDao storeDao = new JanusStoreDao((RdbmsTransaction) trx);
 
-            this.storeId = storeDao.getIdByName(name);
+            storeId = storeDao.getIdByName(name);
 
-            return this.storeId != null;
+            if (storeId != null) {
+                this.storeId = storeId;
+            }
         }
 
-        return true;
+        return storeId != null;
     }
 
     private static byte[] toBytes(StaticBuffer val) {
@@ -216,36 +223,41 @@ public class RdbmsStore implements KeyColumnValueStore {
     private Long getStoreIdOrCreate(StoreTransaction trx) {
         Long ret = this.storeId;
 
-        while (ret == null) {
+        if (ret == null) {
             JanusStoreDao dao = new JanusStoreDao((RdbmsTransaction) trx);
 
             ret = dao.getIdByName(name);
 
-            if (ret == null) {
-                RdbmsTransaction trx2 = new RdbmsTransaction(trx.getConfiguration(), daoManager);
-                JanusStoreDao    dao2 = new JanusStoreDao(trx2);
-
-                try {
-                    LOG.debug("Creating store={}", name);
-
-                    dao2.create(new JanusStore(name));
+            for (int attempt = 1; ret == null; attempt++) {
+                try (RdbmsTransaction trx2 = new RdbmsTransaction(trx.getConfiguration(), daoManager)) {
+                    JanusStoreDao dao2  = new JanusStoreDao(trx2);
+                    JanusStore    store = dao2.create(new JanusStore(name));
 
                     trx2.commit();
 
-                    ret = dao.getIdByName(name);
+                    ret = store != null ? store.getId() : null;
 
-                    this.storeId = ret;
-
-                    LOG.debug("Created store={}: id={}", name, ret);
-                } catch (Exception excp) {
-                    LOG.warn("Failed to create store={}", name, excp);
-                } finally {
-                    try {
-                        trx2.close();
-                    } catch (Exception excp) {
-                        // ignore
-                    }
+                    LOG.debug("attempt #{}: created store(name={}): id={}", attempt, name, ret);
+                } catch (IOException excp) {
+                    LOG.error("attempt #{}: failed to create store(name={})", attempt, name, excp);
                 }
+
+                if (ret != null || attempt >= STORE_CREATE_MAX_ATTEMPTS) {
+                    break;
+                }
+
+                try {
+                    Thread.sleep(STORE_CREATE_RETRY_DELAY_MS);
+                } catch (InterruptedException excp) {
+                    LOG.error("Thread interrupted while waiting to retry store creation(name={})", name, excp);
+                    Thread.currentThread().interrupt();
+                }
+            }
+
+            if (ret != null) {
+                this.storeId = ret;
+            } else {
+                LOG.error("Failed to create store(name={}) after {} attempts", name, STORE_CREATE_MAX_ATTEMPTS);
             }
         }
 
@@ -253,36 +265,33 @@ public class RdbmsStore implements KeyColumnValueStore {
     }
 
     private Long getKeyIdOrCreate(byte[] key, StoreTransaction trx) {
-        Long        ret     = null;
-        JanusKeyDao dao     = new JanusKeyDao((RdbmsTransaction) trx);
         Long        storeId = getStoreIdOrCreate(trx);
+        JanusKeyDao dao     = new JanusKeyDao((RdbmsTransaction) trx);
+        Long        ret     = dao.getIdByStoreIdAndName(storeId, key);
 
-        while (ret == null) {
-            ret = dao.getIdByStoreIdAndName(storeId, key);
+        for (int attempt = 1; ret == null; attempt++) {
+            try (RdbmsTransaction trx2 = new RdbmsTransaction(trx.getConfiguration(), daoManager)) {
+                JanusKeyDao dao2       = new JanusKeyDao(trx2);
+                JanusKey    createdKey = dao2.create(new JanusKey(storeId, key));
 
-            if (ret == null) {
-                RdbmsTransaction trx2 = new RdbmsTransaction(trx.getConfiguration(), daoManager);
-                JanusKeyDao      dao2 = new JanusKeyDao(trx2);
+                trx2.commit();
 
-                try {
-                    LOG.debug("Creating key: storeId={}, key={}", storeId, key);
+                ret = createdKey != null ? createdKey.getId() : null;
 
-                    dao2.create(new JanusKey(storeId, key));
+                LOG.debug("attempt #{}: created key(storeId={}, key={}): id={}", attempt, storeId, key, ret);
+            } catch (IOException excp) {
+                LOG.error("attempt #{}: failed to create key(storeId={}, key={})", attempt, storeId, key, excp);
+            }
 
-                    trx2.commit();
+            if (ret != null || attempt >= KEY_CREATE_MAX_ATTEMPTS) {
+                break;
+            }
 
-                    ret = dao.getIdByStoreIdAndName(storeId, key);
-
-                    LOG.debug("Created key: storeId={}, key={}: id={}", storeId, key, ret);
-                } catch (Exception excp) {
-                    LOG.warn("Failed to create key: storeId={}, key={}", storeId, key, excp);
-                } finally {
-                    try {
-                        trx2.close();
-                    } catch (Exception excp) {
-                        // ignore
-                    }
-                }
+            try {
+                Thread.sleep(KEY_CREATE_RETRY_DELAY_MS);
+            } catch (InterruptedException excp) {
+                LOG.error("Thread interrupted while waiting to retry key creation(storeId={}, key={})", storeId, key, excp);
+                Thread.currentThread().interrupt();
             }
         }
 
