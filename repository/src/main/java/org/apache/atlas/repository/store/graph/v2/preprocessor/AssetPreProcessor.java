@@ -183,11 +183,9 @@ public class AssetPreProcessor implements PreProcessor {
                         int currentAttributeRefcount = 0;
 
                         try {
-                            List<AtlasEntityHeader> entities = fetchEntitiesUsingIndexSearch(entityType, attributeName, guid);
+                            List<AtlasVertex> entityVertices = fetchEntityVerticesUsingIndexSearch(entityType, attributeName, guid);
 
-                            for (AtlasEntityHeader entity: entities) {
-                                String entityGuid = entity.getGuid();
-                                AtlasVertex entityVertex = entityRetriever.getEntityVertex(entityGuid);
+                            for (AtlasVertex entityVertex: entityVertices) {
 
                                 AtlasGraphUtilsV2.removeItemFromListPropertyValue(
                                         entityVertex,
@@ -225,7 +223,7 @@ public class AssetPreProcessor implements PreProcessor {
         }
     }
 
-    private List<AtlasEntityHeader> fetchEntitiesUsingIndexSearch(String typeName, String attributeName, String guid) throws AtlasBaseException {
+    private List<AtlasVertex> fetchEntityVerticesUsingIndexSearch(String typeName, String attributeName, String guid) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("findProductsWithPortGuid");
         try {
             List<Map<String, Object>> mustClauses = new ArrayList<>();
@@ -237,7 +235,7 @@ public class AssetPreProcessor implements PreProcessor {
 
             Map<String, Object> dsl = mapOf("query", mapOf("bool", bool));
 
-            return indexSearchPaginated(dsl, null, discovery);
+            return retrieveVerticesFromIndexSearchPaginated(dsl, null, discovery);
 
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);

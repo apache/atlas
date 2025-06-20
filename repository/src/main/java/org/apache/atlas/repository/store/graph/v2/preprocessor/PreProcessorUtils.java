@@ -205,6 +205,42 @@ public class PreProcessorUtils {
         return ret;
     }
 
+    public static List<AtlasVertex> retrieveVerticesFromIndexSearchPaginated(Map<String, Object> dsl, Set<String> attributes, EntityDiscoveryService discovery) throws AtlasBaseException {
+        IndexSearchParams searchParams = new IndexSearchParams();
+        List<AtlasVertex> ret = new ArrayList<>();
+
+        if (CollectionUtils.isNotEmpty(attributes)) {
+            searchParams.setAttributes(attributes);
+        }
+
+        List<Map> sortList = new ArrayList<>(0);
+        sortList.add(mapOf("__timestamp", mapOf("order", "asc")));
+        sortList.add(mapOf("__guid", mapOf("order", "asc")));
+        dsl.put("sort", sortList);
+
+        int from = 0;
+        int size = 100;
+        boolean hasMore = true;
+        do {
+            dsl.put("from", from);
+            dsl.put("size", size);
+            searchParams.setDsl(dsl);
+
+            List<AtlasVertex> vertices = discovery.directIndexSearchForVertices(searchParams);
+
+            if (CollectionUtils.isNotEmpty(vertices)) {
+                ret.addAll(vertices);
+            } else {
+                hasMore = false;
+            }
+
+            from += size;
+
+        } while (hasMore);
+
+        return ret;
+    }
+
     public static void verifyDuplicateAssetByName(String typeName, String assetName, EntityDiscoveryService discovery, String errorMessage) throws AtlasBaseException {
         List<Map<String, Object>> mustClauseList = new ArrayList();
         mustClauseList.add(mapOf("term", mapOf("__typeName.keyword", typeName)));
