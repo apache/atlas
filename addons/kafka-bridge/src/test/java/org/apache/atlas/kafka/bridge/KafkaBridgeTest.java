@@ -28,8 +28,8 @@ import org.apache.atlas.utils.KafkaUtils;
 import org.apache.avro.Schema;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpStatus;
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.StatusLine;
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.mockito.ArgumentCaptor;
@@ -43,7 +43,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 
-
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.mock;
@@ -52,7 +51,6 @@ import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 
 public class KafkaBridgeTest {
-
     private static final String TEST_TOPIC_NAME = "test_topic";
     private static final String CLUSTER_NAME = "primary";
     private static final String TOPIC_QUALIFIED_NAME = KafkaBridge.getTopicQualifiedName(CLUSTER_NAME, TEST_TOPIC_NAME);
@@ -309,7 +307,7 @@ public class KafkaBridgeTest {
         when(mockResponse.getEntity())
                 .thenReturn(mock(HttpEntity.class));
         when(mockResponse.getEntity().getContent())
-                .thenReturn(new ByteArrayInputStream(new String("{\"subject\":\"test-value\",\"version\":1,\"id\":1,\"schema\":"+ TEST_SCHEMA +"}").getBytes(StandardCharsets.UTF_8)));
+                .thenReturn(new ByteArrayInputStream(new String("{\"subject\":\"test-value\",\"version\":1,\"id\":1,\"schema\":" + TEST_SCHEMA + "}").getBytes(StandardCharsets.UTF_8)));
 
         CloseableHttpClient mockHttpClient = mock(CloseableHttpClient.class);
         when(mockHttpClient.execute(any()))
@@ -317,7 +315,7 @@ public class KafkaBridgeTest {
         when(mockHttpClient.getConnectionManager())
                 .thenReturn(mock(ClientConnectionManager.class));
 
-        String ret = SchemaRegistryConnector.getSchemaFromKafkaSchemaRegistry(mockHttpClient, TEST_SCHEMA_NAME,TEST_SCHEMA_VERSION);
+        String ret = SchemaRegistryConnector.getSchemaFromKafkaSchemaRegistry(mockHttpClient, TEST_SCHEMA_NAME, TEST_SCHEMA_VERSION);
 
         assertEquals(TEST_SCHEMA, ret);
     }
@@ -344,5 +342,4 @@ public class KafkaBridgeTest {
 
         assertEquals(TEST_SCHEMA_VERSION_LIST, ret);
     }
-
 }
