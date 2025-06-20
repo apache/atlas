@@ -2011,7 +2011,7 @@ public final class GraphHelper {
                                 .direction(direction)
                                 .label(childrenEdgeLabel)
                                 .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
-                                .edges()
+                                .edges(MAX_EDGES_SUPER_VERTEX.getInt())
                                 .iterator();
 
                         List<AtlasEdge> edgeList = new ArrayList<>();
