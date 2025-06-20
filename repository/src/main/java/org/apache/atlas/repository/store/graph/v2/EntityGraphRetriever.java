@@ -54,7 +54,6 @@ import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
-import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasMapType;
 import org.apache.atlas.type.AtlasRelationshipType;
@@ -87,7 +86,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
-import java.util.stream.StreamSupport;
 
 import static org.apache.atlas.AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
@@ -1168,7 +1166,9 @@ public class EntityGraphRetriever {
         boolean isS3Bucket = StringUtils.isNotEmpty(typeName)
                 && typeName.equals("S3Bucket");
 
-        boolean shouldPrefetch = RequestContext.get().isInvokedByIndexSearch()
+        boolean shouldPrefetch = (RequestContext.get().isInvokedByIndexSearch()
+                || (RequestContext.get().isInvokedByLineage()
+                && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_LINEAGE.getBoolean()))
                 && !isS3Bucket
                 && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION.getBoolean();
 

@@ -131,6 +131,9 @@ public enum AtlasConfiguration {
     ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION("atlas.indexsearch.enable.janus.optimization", false),
     ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_RELATIONS("atlas.indexsearch.enable.janus.optimization.for.relationship", false),
     ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS("atlas.indexsearch.enable.janus.optimization.for.classifications", false),
+    ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_LINEAGE("atlas.indexsearch.enable.janus.optimization.for.lineage", false),
+
+    ATLAS_LINEAGE_ENABLE_CONNECTION_LINEAGE("atlas.lineage.enable.connection.lineage", false),
     ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_EXTENDED("atlas.indexsearch.enable.janus.optimization.extended", false),
     ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false),
     DELTA_BASED_REFRESH_ENABLED("atlas.authorizer.enable.delta_based_refresh", false),
@@ -147,8 +150,9 @@ public enum AtlasConfiguration {
     ATLAS_ENTITIES_ATTRIBUTE_ALLOWED_LARGE_ATTRIBUTES("atlas.entities.attribute.allowed.large.attributes", "rawQueryText,variablesSchemaBase64,visualBuilderSchemaBase64,dataContractSpec,dataContractJson"),
 
     ENABLE_ASYNC_TYPE_UPDATE("atlas.types.update.async.enable", false),
-    MAX_THREADS_TYPE_UPDATE("atlas.types.update.thread.count", 4);
-
+    MAX_THREADS_TYPE_UPDATE("atlas.types.update.thread.count", 4),
+    MAX_EDGES_SUPER_VERTEX("atlas.jg.super.vertex.edge.count", 10000),
+    TIMEOUT_SUPER_VERTEX_FETCH("atlas.jg.super.vertex.edge.timeout", 60);
 
     private static final Configuration APPLICATION_PROPERTIES;
 

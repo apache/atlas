@@ -115,6 +115,7 @@ public class RequestContext {
     private boolean delayTagNotifications = false;
     private boolean skipHasLineageCalculation = false;
     private boolean isInvokedByIndexSearch = false;
+    private boolean isInvokedByLineage = false;
     private Map<AtlasClassification, Collection<Object>> deletedClassificationAndVertices = new HashMap<>();
     private Map<AtlasClassification, Collection<Object>> addedClassificationAndVertices = new HashMap<>();
 
@@ -811,6 +812,14 @@ public class RequestContext {
 
     public boolean isInvokedByIndexSearch() {
         return isInvokedByIndexSearch;
+    }
+
+    public void setIsInvokedByLineage(boolean isInvokedByLineage) {
+        this.isInvokedByLineage = isInvokedByLineage;
+    }
+
+    public boolean isInvokedByLineage() {
+        return isInvokedByLineage;
     }
 
     public class EntityGuidPair {

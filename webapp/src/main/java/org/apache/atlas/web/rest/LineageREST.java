@@ -137,7 +137,7 @@ public class LineageREST {
 
         RequestContext.get().setIncludeMeanings(!lineageListRequest.isExcludeMeanings());
         RequestContext.get().setIncludeClassifications(!lineageListRequest.isExcludeClassifications());
-
+        RequestContext.get().setIsInvokedByLineage(true);
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "LineageREST.getLineageList(" + guid + "," + lineageListRequest + ")");

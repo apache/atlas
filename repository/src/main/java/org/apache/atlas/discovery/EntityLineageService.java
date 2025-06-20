@@ -130,24 +130,26 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasLineageContext lineageRequestContext = new AtlasLineageContext(lineageRequest, atlasTypeRegistry);
         RequestContext.get().setRelationAttrsForSearch(lineageRequest.getRelationAttributes());
 
-        AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
+        AtlasVertex entity = AtlasGraphUtilsV2.findByGuid(guid);
+        String entityTypeName = entity.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
 
-        AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(entity.getTypeName());
+
+        AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(entityTypeName);
 
         if (entityType == null) {
-            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, entity.getTypeName());
+            throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_NOT_FOUND, entityTypeName);
         }
 
         boolean isProcess = entityType.getTypeAndAllSuperTypes().contains(PROCESS_SUPER_TYPE);
         if (isProcess) {
             if (lineageRequest.isHideProcess()) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE_HIDE_PROCESS, guid, entity.getTypeName());
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE_HIDE_PROCESS, guid, entityTypeName);
             }
             lineageRequestContext.setProcess(true);
         }else {
             boolean isDataSet = entityType.getTypeAndAllSuperTypes().contains(DATA_SET_SUPER_TYPE);
             if (!isDataSet) {
-                throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, entity.getTypeName());
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_LINEAGE_ENTITY_TYPE, guid, entityTypeName);
             }
             lineageRequestContext.setDataset(true);
         }
