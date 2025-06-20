@@ -1166,7 +1166,9 @@ public class EntityGraphRetriever {
         boolean isS3Bucket = StringUtils.isNotEmpty(typeName)
                 && typeName.equals("S3Bucket");
 
-        boolean shouldPrefetch = (RequestContext.get().isInvokedByIndexSearch() || AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_LINEAGE.getBoolean())
+        boolean shouldPrefetch = (RequestContext.get().isInvokedByIndexSearch()
+                || (RequestContext.get().isInvokedByLineage()
+                && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_LINEAGE.getBoolean()))
                 && !isS3Bucket
                 && AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION.getBoolean();
 
