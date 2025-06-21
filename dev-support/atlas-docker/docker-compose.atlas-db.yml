@@ -1,0 +1,20 @@
+services:
+  atlas-db:
+    build:
+      context: .
+      dockerfile: Dockerfile.atlas-db
+    image: atlas-db
+    container_name: atlas-db
+    hostname: atlas-db.example.com
+    networks:
+      - atlas
+    healthcheck:
+      test: 'su -c "pg_isready -q" postgres'
+      interval: 30s
+      timeout: 10s
+      retries: 30
+      start_period: 40s
+
+networks:
+  atlas:
+    name: atlasnw
