@@ -98,7 +98,7 @@ jobs:
           cd dev-support/atlas-docker
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
-	  docker-compose \
+	  docker compose \
 	  -f docker-compose.atlas.yml \
 	  -f docker-compose.atlas-hive.yml \
 	  -f docker-compose.atlas-hadoop.yml \
