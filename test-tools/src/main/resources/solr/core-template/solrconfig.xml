@@ -445,7 +445,9 @@
          -->
         <lst name="defaults">
             <str name="defType">edismax</str>
+
             <str name="qf">35x_t 5j9_t 7wl_t a9x_t but_t dfp_l f0l_t i6d_l iyt_l jr9_t kjp_s lc5_t m4l_s mx1_t ohx_t xz9_i 1151_t 12px_t 14at_l 15vp_t 1891_t 19tx_t 1bet_t 1czp_t 1ekl_t 1gxx_t 1iit_l 1k3p_t 1lol_t 1o1x_t 1qf9_t 1ssl_t 1v5x_t 1wqt_t 1z45_t 20p1_t 2rk5_l 2t51_l 581x_t 5kp1_s 5j45_s 5gqt_s 5f5x_s 5ibp_t 5q85_t 5m9x_t 5nut_l 5on9_t 5uyt_t 5tdx_t 5wjp_t 63np_t 696t_t 6dxh_t 6bk5_t 6ccl_t 6arp_t 6k91_t 6jgl_t 6rd1_l 6sxx_l 6l1h_t 6qkl_t 71mt_l 737p_l 701x_t 6yh1_t 74sl_t 6uit_t 6vb9_t 6ww5_t 7f2d_t 7fut_l 7bwl_t 78qt_l 7abp_l 7hfp_t 75l1_t 7dhh_t 7shx_t 7tad_t 7uv9_t 7klh_t 7wg5_t 7rph_t 7u2t_t 7vnp_t 7q4l_t amf9_t aeit_t ao05_t ak1x_t an7p_t almt_t axhh_t apl1_t azut_t av45_t awp1_t az2d_t b9c5_t b1fp_t b6yt_t b8jp_t fmkl_t ffgl_t fk79_t fls5_t fimd_t fdvp_l fh1h_t fjet_t feo5_l fo5h_l fsw5_t ftol_t fnd1_l foxx_t fpqd_i fs3p_t fwud_t fw1x_t fxmt_t fz7p_i g35x_t g4qt_t g8p1_t g9hh_i g745_t gb2d_t ga9x_t gft1_t gi6d_t gdfp_t gglh_t gf0l_t gbut_l ghdx_t gcn9_l i70l_l i3ut_t i5fp_l iayt_l ibr9_t iex1_i ihad_t idc5_t jk05_t jvut_l jxfp_i jqbp_t jy85_i jz0l_i jzt1_f k64l_d k5c5_l</str>
+
             <str name="hl.fl">*</str>
             <bool name="hl.requireFieldMatch">true</bool>
             <bool name="lowercaseOperators">true</bool>
