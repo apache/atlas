@@ -21,6 +21,8 @@ package org.apache.atlas.repository.graph;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.AtlasException;
@@ -71,8 +73,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.*;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.*;
 
+import static org.apache.atlas.AtlasConfiguration.MAX_EDGES_SUPER_VERTEX;
+import static org.apache.atlas.AtlasConfiguration.TIMEOUT_SUPER_VERTEX_FETCH;
 import static org.apache.atlas.AtlasErrorCode.RELATIONSHIP_CREATE_INVALID_PARAMS;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
@@ -2081,7 +2087,7 @@ public final class GraphHelper {
     }
 
     /**
-     * Get all the active edges
+     * Get all the active edges and cap number of edges to avoid excessive processing.
      * @param vertex entity vertex
      * @param childrenEdgeLabel Edge label of children
      * @return Iterator of children edges
@@ -2090,17 +2096,41 @@ public final class GraphHelper {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.getActiveEdges");
 
         try {
-            return vertex.query()
-                    .direction(direction)
-                    .label(childrenEdgeLabel)
-                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
-                    .edges()
-                    .iterator();
-        } catch (Exception e) {
-            LOG.error("Error while getting active edges of vertex for edge label " + childrenEdgeLabel, e);
-            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
-        }
-        finally {
+            return Single.fromCallable(() -> {
+                        Iterator<AtlasEdge> it = vertex.query()
+                                .direction(direction)
+                                .label(childrenEdgeLabel)
+                                .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                                .edges(MAX_EDGES_SUPER_VERTEX.getInt())
+                                .iterator();
+
+                        List<AtlasEdge> edgeList = new ArrayList<>();
+                        while (it.hasNext()) {
+                            edgeList.add(it.next());
+                            // Optional: cap edge count to avoid excessive processing
+                            if (edgeList.size() > MAX_EDGES_SUPER_VERTEX.getLong()) {
+                                LOG.warn("Super vertex detected: vertex id = {}, edge label = {}, edge count = {}",
+                                        vertex.getId(), childrenEdgeLabel, edgeList.size());
+                                break;
+                            }
+                        }
+
+                        return edgeList.iterator();
+                    })
+                    .timeout(TIMEOUT_SUPER_VERTEX_FETCH.getLong(), TimeUnit.SECONDS)
+                    .onErrorReturn(throwable -> {
+                        if (throwable instanceof TimeoutException) {
+                            LOG.warn("Timeout while getting active edges for vertex id: {}", vertex.getId());
+                        } else {
+                            LOG.error("Error while getting active edges of vertex for edge label: {}, vertex id: {}",
+                                    childrenEdgeLabel, vertex.getId(), throwable);
+                        }
+                        return Collections.emptyIterator();
+                    })
+                    .subscribeOn(Schedulers.io())
+                    .blockingGet();
+
+        } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
     }

@@ -29,6 +29,7 @@ on:
       - lineageondemand
       - optimise_classifications_fetch
       - poctagprophashedrebased
+      - staging
 
 jobs:
   build:
