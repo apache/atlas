@@ -182,7 +182,16 @@ public enum AtlasErrorCode {
     INVALID_OPERATOR(400, "ATLAS-400-00-103", "Invalid operator specified for attribute: {0}"),
     BLANK_NAME_ATTRIBUTE(400, "ATLAS-400-00-104", "Name Attribute can't be empty!"),
     BLANK_VALUE_ATTRIBUTE(400, "ATLAS-400-00-105", "Value Attribute can't be empty!"),
-
+    CUSTOM_AUDIT_FILTERS_NOT_ENABLED(400, "ATLAS-400-00-106", "Custom Audit Filters config: {0} is not enabled "),
+    INVALID_RULE_ACTION(400, "ATLAS-400-00-107", "Invalid action. Allowed values are ACCEPT or DISCARD"),
+    MISSING_ATTRIBUTE_NAME_IN_RULE_EXPR(400, "ATLAS-400-00-108", "attributeName is missing/null in specified criteria"),
+    MISSING_ATTRIBUTE_VALUE_IN_RULE_EXPR(400, "ATLAS-400-00-109", "attributeValue is missing/null for attributeName {0}"),
+    MISSING_CRITERIA_CONDITION(400, "ATLAS-400-00-110", "{0} is missing; specify condition along with criteria for multiple conditions"),
+    MISSING_MANDATORY_TYPENAME_IN_RULE_EXPR(400, "ATLAS-400-00-111", "typeName is required for every rule expression"),
+    MISSING_MANDATORY_OPERATOR_IN_RULE_EXPR_CRITERIA(400, "ATLAS-400-00-112", "operator is missing in specified criteria"),
+    INVALID_OPERATOR_ON_ATTRIBUTE(400, "ATLAS-400-00-113", "Operator {0} can not be applied on attribute {1}"),
+    DUPLICATE_TYPENAME_IN_RULE_EXPR(400, "ATLAS-400-00-114", "Duplicate value {0} found for typeName in same rule expression."),
+    DUPLICATE_CONDITION_IN_SAME_RULE_EXPR(400, "ATLAS-400-00-115", "Duplicate condition mentioned in same rule expression object."),
     UNAUTHORIZED_ACCESS(403, "ATLAS-403-00-001", "{0} is not authorized to perform {1}"),
 
     // All Not found enums go here
@@ -228,6 +237,8 @@ public enum AtlasErrorCode {
     METRICSSTAT_ALREADY_EXISTS(409, "ATLAS-409-00-012", "Metric Statistics already collected at {0}"),
     PENDING_TASKS_ALREADY_IN_PROGRESS(409, "ATLAS-409-00-013", "There are already {0} pending tasks in queue"),
     IMPORT_ABORT_NOT_ALLOWED(409, "ATLAS-409-00-016", "Import id {0} is currently in state {1}, cannot be aborted"),
+    RULE_NAME_ALREADY_EXISTS(410, "ATLAS-409-00-014", "Rule with given ruleName {0} already exists"),
+    RULE_EXPRESSION_ALREADY_EXISTS(411, "ATLAS-409-00-015", "Rule expression already exists for rule {0}"),
 
     // All internal errors go here
     INTERNAL_ERROR(500, "ATLAS-500-00-001", "Internal server error {0}"),

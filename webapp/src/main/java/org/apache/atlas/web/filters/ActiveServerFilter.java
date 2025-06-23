@@ -55,7 +55,7 @@ public class ActiveServerFilter implements Filter {
 
     private final String[]            adminUriNotFiltered = {"/admin/export", "/admin/import", "/admin/importfile", "/admin/audits",
             "/admin/purge", "/admin/expimp/audit", "/admin/metrics", "/admin/server", "/admin/audit/", "admin/tasks",
-            "/admin/debug/metrics", "/admin/audits/ageout", "admin/async/import", "admin/async/import/status"};
+            "/admin/debug/metrics", "/admin/audits/ageout", "admin/async/import", "admin/async/import/status", "/admin/audits/rules"};
     private final ActiveInstanceState activeInstanceState;
     private final ServiceState        serviceState;
 

@@ -50,6 +50,7 @@ import org.apache.atlas.model.instance.AtlasCheckStateRequest;
 import org.apache.atlas.model.instance.AtlasCheckStateResult;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
+import org.apache.atlas.model.instance.AtlasRule;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.metrics.AtlasMetricsMapToChart;
@@ -67,6 +68,7 @@ import org.apache.atlas.repository.impexp.MigrationProgressService;
 import org.apache.atlas.repository.impexp.ZipSink;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.rulesengine.AtlasEntityAuditFilterService;
 import org.apache.atlas.services.MetricsService;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasType;
@@ -89,6 +91,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.Authentication;
@@ -192,6 +195,7 @@ public class AdminResource {
     private final boolean                    isUiTasksTabEnabled;
     private final AtlasAuditReductionService auditReductionService;
     private       Response                   version;
+    private final AtlasEntityAuditFilterService entityAuditFilterService;
 
     @Context
     private HttpServletRequest httpServletRequest;
@@ -205,7 +209,7 @@ public class AdminResource {
             MigrationProgressService migrationProgressService, AtlasServerService serverService,
             ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
             AtlasPatchManager patchManager, AtlasAuditService auditService, EntityAuditRepository auditRepository,
-            TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink, AtlasAuditReductionService atlasAuditReductionService, AtlasMetricsUtil atlasMetricsUtil) {
+            TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink, AtlasAuditReductionService atlasAuditReductionService, AtlasMetricsUtil atlasMetricsUtil, @Lazy AtlasEntityAuditFilterService entityAuditFilterService) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;
         this.exportService             = exportService;
@@ -224,6 +228,7 @@ public class AdminResource {
         this.debugMetricsRESTSink      = debugMetricsRESTSink;
         this.auditReductionService     = atlasAuditReductionService;
         this.atlasMetricsUtil          = atlasMetricsUtil;
+        this.entityAuditFilterService  = entityAuditFilterService;
 
         if (atlasProperties != null) {
             this.defaultUIVersion            = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
@@ -1095,6 +1100,180 @@ public class AdminResource {
             LOG.error("Service is not ready to accept client requests");
 
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Service not ready to accept client requests");
+        }
+    }
+
+    /**
+     * Create a rule
+     *
+     * @param atlasRule rule definition,
+     * @return
+     * @throws AtlasBaseException
+     * @HTTP 200 If rule creation was successful
+     * @HTTP 400 If rule definition has invalid or missing information
+     * @HTTP 409 If rule definition already exists (duplicate qualifiedName)
+     */
+    @POST
+    @Path("/audits/rules")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasRule createRule(AtlasRule atlasRule) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "Admin Entity Audit Custom Filters");
+
+        if (!AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getBoolean()) {
+            LOG.warn("AdminResource.createRule() : " + AtlasErrorCode.CUSTOM_AUDIT_FILTERS_NOT_ENABLED.getFormattedErrorMessage(AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getPropertyName()));
+            throw new AtlasBaseException(AtlasErrorCode.CUSTOM_AUDIT_FILTERS_NOT_ENABLED, AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getPropertyName());
+        }
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.createRule()");
+            }
+            return entityAuditFilterService.createRule(atlasRule);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @GET
+    @Path("/audits/rules")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public List<AtlasRule> getRules() throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "Admin Entity Audit Custom Filters");
+
+        if (!AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getBoolean()) {
+            LOG.warn("AdminResource.getRules() : " + AtlasErrorCode.CUSTOM_AUDIT_FILTERS_NOT_ENABLED.getFormattedErrorMessage(AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getPropertyName()));
+            throw new AtlasBaseException(AtlasErrorCode.CUSTOM_AUDIT_FILTERS_NOT_ENABLED, AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getPropertyName());
+        }
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getRules()");
+            }
+
+            return entityAuditFilterService.fetchRules();
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Update the given rule
+     *
+     * @param ruleGuid unique identifier for rule
+     * @param updatedRule Updated rule definition
+     * @return Rule
+     * @throws AtlasBaseException
+     * @HTTP 200 If rule update was successful
+     * @HTTP 404 If rule guid in invalid
+     * @HTTP 400 If rule definition has invalid or missing information
+     */
+    @PUT
+    @Path("/audits/rules/{ruleGuid}")
+    @Consumes({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasRule updateRule(@PathParam("ruleGuid") String ruleGuid, AtlasRule updatedRule) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "Admin Entity Audit Custom Filters");
+
+        if (!AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getBoolean()) {
+            LOG.warn("AdminResource.updateRule() : " + AtlasErrorCode.CUSTOM_AUDIT_FILTERS_NOT_ENABLED.getFormattedErrorMessage(AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getPropertyName()));
+            throw new AtlasBaseException(AtlasErrorCode.CUSTOM_AUDIT_FILTERS_NOT_ENABLED, AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getPropertyName());
+        }
+        Servlets.validateQueryParamLength("ruleGuid", ruleGuid);
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.updateRule(" + ruleGuid + ")");
+            }
+            updatedRule.setGuid(ruleGuid);
+            return entityAuditFilterService.updateRule(updatedRule);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Delete a rule
+     *
+     * @param ruleGuid unique identifier for rule
+     * @throws AtlasBaseException
+     * @HTTP 204 If rule delete was successful
+     * @HTTP 404 If rule guid in invalid
+     */
+    @DELETE
+    @Path("/audits/rules/guid/{ruleGuid}")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public EntityMutationResponse deleteRule(@PathParam("ruleGuid") String ruleGuid) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "Admin Entity Audit Custom Filters");
+
+        if (!AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getBoolean()) {
+            LOG.warn("AdminResource.deleteRule() : " + AtlasErrorCode.CUSTOM_AUDIT_FILTERS_NOT_ENABLED.getFormattedErrorMessage(AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getPropertyName()));
+            throw new AtlasBaseException(AtlasErrorCode.CUSTOM_AUDIT_FILTERS_NOT_ENABLED, AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getPropertyName());
+        }
+        Servlets.validateQueryParamLength("ruleGuid", ruleGuid);
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.deleteRule(" + ruleGuid + ")");
+            }
+
+            return entityAuditFilterService.deleteRule(ruleGuid);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @DELETE
+    @Path("/audits/rules")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public EntityMutationResponse deleteRules(List<String> ruleGuids) throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "Admin Entity Audit Custom Filters");
+
+        if (!AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getBoolean()) {
+            LOG.warn("AdminResource.deleteRules() : " + AtlasErrorCode.CUSTOM_AUDIT_FILTERS_NOT_ENABLED.getFormattedErrorMessage(AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getPropertyName()));
+            throw new AtlasBaseException(AtlasErrorCode.CUSTOM_AUDIT_FILTERS_NOT_ENABLED, AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getPropertyName());
+        }
+
+        if (CollectionUtils.isNotEmpty(ruleGuids)) {
+            for (String ruleGuid : ruleGuids) {
+                Servlets.validateQueryParamLength("ruleGuids", ruleGuid);
+            }
+        }
+
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.deleteRules(" + ruleGuids + ")");
+            }
+
+            return entityAuditFilterService.deleteRules(ruleGuids);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @DELETE
+    @Path("/audits/rules/all")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public EntityMutationResponse deleteAllRules() throws AtlasBaseException {
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_AUDITS), "Admin Entity Audit Custom Filters");
+
+        if (!AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getBoolean()) {
+            LOG.warn("AdminResource.deleteAllRules() : " + AtlasErrorCode.CUSTOM_AUDIT_FILTERS_NOT_ENABLED.getFormattedErrorMessage(AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getPropertyName()));
+            throw new AtlasBaseException(AtlasErrorCode.CUSTOM_AUDIT_FILTERS_NOT_ENABLED, AtlasConfiguration.ENTITY_AUDIT_FILTER_ENABLED.getPropertyName());
+        }
+
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.deleteAllRules()");
+            }
+
+            return entityAuditFilterService.deleteAllRules();
+        } finally {
+            AtlasPerfTracer.log(perf);
         }
     }
 

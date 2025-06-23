@@ -115,7 +115,9 @@ public enum AtlasConfiguration {
     ATLAS_ASYNC_IMPORT_MIN_DURATION_OVERRIDE_TEST_AUTOMATION("atlas.async.import.min.duration.override.test.automation", false),
     ASYNC_IMPORT_TOPIC_PREFIX("atlas.async.import.topic.prefix", "ATLAS_IMPORT_"),
     ASYNC_IMPORT_REQUEST_ID_PREFIX("atlas.async.import.request_id.prefix", "async_import_"),
-    REPLACE_HUGE_SPARK_PROCESS_ATTRIBUTES_PATCH("atlas.process.spark.attributes.update.patch", false);
+    REPLACE_HUGE_SPARK_PROCESS_ATTRIBUTES_PATCH("atlas.process.spark.attributes.update.patch", false),
+    ENTITY_AUDIT_FILTER_ENABLED("atlas.entity.audit.filter.enabled", false),
+    DEFAULT_ENTITY_AUDIT_FILTER_ACTION("atlas.entity.audit.filter.default.action", "ACCEPT");
     private static final Configuration APPLICATION_PROPERTIES;
 
     private final String propertyName;

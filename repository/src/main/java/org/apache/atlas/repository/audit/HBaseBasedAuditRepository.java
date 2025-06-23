@@ -283,6 +283,11 @@ public class HBaseBasedAuditRepository extends AbstractStorageBasedAuditReposito
             for (int index = 0; index < events.size(); index++) {
                 EntityAuditEventV2 event = events.get(index);
 
+                if (event.isDiscarded()) {
+                    LOG.debug("Discarding entity audit event {}", event);
+                    continue;
+                }
+
                 LOG.debug("Adding entity audit event {}", event);
 
                 Put put = new Put(getKey(event.getEntityId(), event.getTimestamp(), index));
