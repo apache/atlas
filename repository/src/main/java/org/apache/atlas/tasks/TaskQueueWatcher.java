@@ -90,12 +90,15 @@ public class TaskQueueWatcher implements Runnable {
         if (LOG.isDebugEnabled()) {
             LOG.debug("TaskQueueWatcher: running {}:{}", Thread.currentThread().getName(), Thread.currentThread().getId());
         }
+        LOG.info("TaskQueueWatcher: Time constants - pollInterval: {}, TASK_WAIT_TIME_MS: {}", pollInterval, AtlasConstants.TASK_WAIT_TIME_MS);
+
         while (shouldRun.get()) {
             RequestContext requestContext = RequestContext.get();
             requestContext.setMetricRegistry(this.metricRegistry);
             TasksFetcher fetcher = new TasksFetcher(registry);
             try {
                 if (!redisService.acquireDistributedLock(ATLAS_TASK_LOCK)) {
+                    LOG.info("TaskQueueWatcher: Failed to acquire distributed lock, sleeping for TASK_WAIT_TIME_MS: {}", AtlasConstants.TASK_WAIT_TIME_MS);
                     Thread.sleep(AtlasConstants.TASK_WAIT_TIME_MS);
                     continue;
                 }
@@ -108,8 +111,10 @@ public class TaskQueueWatcher implements Runnable {
                     LOG.info("Submitted {} tasks to the queue", tasks.size());
                     waitForTasksToComplete(latch);
                 } else {
+                    LOG.info("TaskQueueWatcher: Released Task Lock due to empty ES fetch", pollInterval);
                     redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
                 }
+                LOG.info("TaskQueueWatcher: Sleeping for pollInterval: {}", pollInterval);
                 Thread.sleep(pollInterval);
             } catch (InterruptedException interruptedException) {
                 LOG.error("TaskQueueWatcher: Interrupted: thread is terminated, new tasks will not be loaded into the queue until next restart");
@@ -117,6 +122,7 @@ public class TaskQueueWatcher implements Runnable {
             } catch (Exception e) {
                 LOG.error("TaskQueueWatcher: Exception occurred " + e.getMessage(), e);
             } finally {
+                LOG.info("TaskQueueWatcher: Released Task Lock in finally", pollInterval);
                 redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
                 fetcher.clearTasks();
             }

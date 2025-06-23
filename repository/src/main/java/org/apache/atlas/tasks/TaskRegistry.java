@@ -346,13 +346,20 @@ public class TaskRegistry {
     }
 
     public List<AtlasTask> getTasksForReQueue() {
+        LOG.info("getTasksForReQueue: Starting to fetch tasks for re-queue");
+
         List<AtlasTask> ret = null;
 
         if (useGraphQuery) {
+            LOG.info("getTasksForReQueue: Using Graph Query to fetch tasks");
             ret = getTasksForReQueueGraphQuery();
         } else {
+            LOG.info("getTasksForReQueue: Using Index Search to fetch tasks");
             ret = getTasksForReQueueIndexSearch();
         }
+
+        LOG.info("getTasksForReQueue: Completed fetching tasks for re-queue, total tasks fetched: {}",
+                 ret != null ? ret.size() : 0);
 
         return ret;
     }
