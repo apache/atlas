@@ -49,6 +49,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasConfiguration.ASYNC_IMPORT_TOPIC_PREFIX;
 import static org.apache.atlas.AtlasErrorCode.IMPORT_QUEUEING_FAILED;
@@ -59,15 +60,15 @@ import static org.apache.atlas.AtlasErrorCode.IMPORT_QUEUEING_FAILED;
 public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler, ImportTaskListener {
     private static final Logger LOG = LoggerFactory.getLogger(ImportTaskListenerImpl.class);
 
-    private static final String THREADNAME_PREFIX    = ImportTaskListener.class.getSimpleName();
-    private static final int    ASYNC_IMPORT_PERMITS = 1; // Only one asynchronous import task is permitted
+    private static final String THREADNAME_PREFIX = ImportTaskListener.class.getSimpleName();
+    private static final int ASYNC_IMPORT_PERMITS = 1; // Only one asynchronous import task is permitted
 
-    private final BlockingQueue<String>    requestQueue;    // Blocking queue for requests
-    private final ExecutorService          executorService; // Single-thread executor for sequential processing
-    private final AsyncImportService       asyncImportService;
+    private final BlockingQueue<String> requestQueue;    // Blocking queue for requests
+    private final ExecutorService executorService; // Single-thread executor for sequential processing
+    private final AsyncImportService asyncImportService;
     private final NotificationHookConsumer notificationHookConsumer;
-    private final Semaphore                asyncImportSemaphore;
-    private final Configuration            applicationProperties;
+    private final Semaphore asyncImportSemaphore;
+    private final Configuration applicationProperties;
 
     @Inject
     public ImportTaskListenerImpl(AsyncImportService asyncImportService, NotificationHookConsumer notificationHookConsumer) throws AtlasException {
@@ -75,12 +76,12 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     }
 
     public ImportTaskListenerImpl(AsyncImportService asyncImportService, NotificationHookConsumer notificationHookConsumer, BlockingQueue<String> requestQueue) throws AtlasException {
-        this.asyncImportService       = asyncImportService;
+        this.asyncImportService = asyncImportService;
         this.notificationHookConsumer = notificationHookConsumer;
-        this.requestQueue             = requestQueue;
-        this.asyncImportSemaphore     = new Semaphore(ASYNC_IMPORT_PERMITS);
-        this.applicationProperties    = ApplicationProperties.get();
-        this.executorService          = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d")
+        this.requestQueue = requestQueue;
+        this.asyncImportSemaphore = new Semaphore(ASYNC_IMPORT_PERMITS);
+        this.applicationProperties = ApplicationProperties.get();
+        this.executorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d")
                 .setUncaughtExceptionHandler((thread, throwable) -> LOG.error("Uncaught exception in thread {}: {}", thread.getName(), throwable.getMessage(), throwable)).build());
     }
 
@@ -95,26 +96,14 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
         startInternal();
     }
 
-    private void startInternal() {
-        CompletableFuture<Void> populateTask = CompletableFuture.runAsync(this::populateRequestQueue)
-                .exceptionally(ex -> {
-                    LOG.error("Failed to populate request queue", ex);
-                    return null;
-                });
-
-        CompletableFuture<Void> resumeTask = CompletableFuture.runAsync(this::resumeInProgressImports)
-                .exceptionally(ex -> {
-                    LOG.error("Failed to resume in-progress imports", ex);
-                    return null;
-                });
-
-        // Wait for both tasks to complete before proceeding
-        CompletableFuture.allOf(populateTask, resumeTask)
-                .thenRun(this::startNextImportInQueue)
+    @VisibleForTesting
+    void startInternal() {
+        populateRequestQueue();
+        CompletableFuture.runAsync(this::startNextImportInQueue)
                 .exceptionally(ex -> {
                     LOG.error("Failed to start next import in queue", ex);
                     return null;
-                }).join();
+                });
     }
 
     @Override
@@ -153,7 +142,8 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
         }
     }
 
-    private void startNextImportInQueue() {
+    @VisibleForTesting
+    void startNextImportInQueue() {
         LOG.info("==> startNextImportInQueue()");
 
         startAsyncImportIfAvailable(null);
@@ -216,8 +206,8 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     AtlasAsyncImportRequest getNextImportFromQueue() {
         LOG.info("==> getNextImportFromQueue()");
 
-        final int               maxRetries = 5;
-        int                     retryCount = 0;
+        final int maxRetries = 5;
+        int retryCount = 0;
         AtlasAsyncImportRequest nextImport = null;
 
         while (retryCount < maxRetries) {
@@ -280,50 +270,30 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     void populateRequestQueue() {
         LOG.info("==> populateRequestQueue()");
 
-        List<String> importRequests = asyncImportService.fetchQueuedImportRequests();
+        List<String> queuedImports = asyncImportService.fetchQueuedImportRequests();
+        List<String> inProgressImports = asyncImportService.fetchInProgressImportIds();
 
         try {
-            if (!importRequests.isEmpty()) {
-                for (String request : importRequests) {
-                    try {
-                        if (!requestQueue.offer(request, 5, TimeUnit.SECONDS)) { // Wait up to 5 sec
-                            LOG.warn("populateRequestQueue(): Request {} could not be added to the queue", request);
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-
-                        LOG.error("populateRequestQueue(): Failed to add requests to queue");
-
-                        break; // Exit loop on interruption
-                    }
-                }
-
-                LOG.info("populateRequestQueue(): Added {} requests to queue", importRequests.size());
-            } else {
+            if (queuedImports.isEmpty() && inProgressImports.isEmpty()) {
                 LOG.warn("populateRequestQueue(): No queued requests found.");
+                return;
             }
+
+            Stream.concat(inProgressImports.stream(), queuedImports.stream())
+                    .forEach(this::enqueueImportId);
         } finally {
             LOG.info("<== populateRequestQueue()");
         }
     }
 
-    private void resumeInProgressImports() {
-        LOG.info("==> resumeInProgressImports()");
-
+    private void enqueueImportId(String importId) {
         try {
-            String importId = asyncImportService.fetchInProgressImportIds().stream().findFirst().orElse(null);
-
-            if (importId == null) {
-                LOG.warn("No imports found to resume");
-
-                return;
+            if (!requestQueue.offer(importId, 5, TimeUnit.SECONDS)) {
+                LOG.warn("populateRequestQueue(): Import {} enqueue timed out", importId);
             }
-
-            LOG.info("Resuming import id={}", importId);
-
-            startAsyncImportIfAvailable(importId);
-        } finally {
-            LOG.info("<== resumeInProgressImports()");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOG.error("populateRequestQueue(): Failed to add import {} to the queue", importId, e);
         }
     }
 

@@ -36,9 +36,11 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.ABORTED;
 import static org.apache.atlas.model.impexp.AtlasAsyncImportRequest.ImportStatus.FAILED;
@@ -60,6 +62,7 @@ import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class ImportTaskListenerImplTest {
@@ -514,6 +517,52 @@ public class ImportTaskListenerImplTest {
         }
 
         verify(asyncImportSemaphore, times(1)).release();
+    }
+
+    @Test
+    public void testStartInternalIsNonBlocking() throws InterruptedException {
+        // Setup synchronization latches
+        CountDownLatch populateDoneLatch = new CountDownLatch(1);
+        CountDownLatch startNextStartedLatch = new CountDownLatch(1);
+        CountDownLatch blockStartNextLatch = new CountDownLatch(1);
+        CountDownLatch methodReturnedLatch = new CountDownLatch(1);
+
+        AtomicBoolean populateCompleted = new AtomicBoolean(false);
+
+        ImportTaskListenerImpl importTaskListenerSpy = Mockito.spy(importTaskListener);
+
+        // Mock populateRequestQueue()
+        doAnswer(invocation -> {
+            populateCompleted.set(true);
+            populateDoneLatch.countDown();
+            return null;
+        }).when(importTaskListenerSpy).populateRequestQueue();
+
+        // Mock startNextImportInQueue()
+        doAnswer(invocation -> {
+            assertTrue(populateCompleted.get(), "populateRequestQueue must finish before startNextImportInQueue");
+            startNextStartedLatch.countDown();
+            blockStartNextLatch.await();  // block until test releases it
+            return null;
+        }).when(importTaskListenerSpy).startNextImportInQueue();
+
+        // Run startInternal() in a separate thread to track non-blocking behavior
+        new Thread(() -> {
+            importTaskListenerSpy.startInternal();
+            methodReturnedLatch.countDown();  // signal that method returned
+        }, "test-startInternal-thread").start();
+
+        // Wait for populateRequestQueue() to be called
+        assertTrue(populateDoneLatch.await(1, TimeUnit.SECONDS), "populateRequestQueue didn't complete");
+
+        // Wait for startNextImportInQueue() to start (which confirms async call happened)
+        assertTrue(startNextStartedLatch.await(1, TimeUnit.SECONDS), "startNextImportInQueue didn't start");
+
+        // Ensure startInternal() already returned
+        assertTrue(methodReturnedLatch.await(1, TimeUnit.SECONDS), "startInternal() should return promptly");
+
+        // Unblock async method so thread can exit
+        blockStartNextLatch.countDown();
     }
 
     private void setExecutorServiceAndSemaphore(ImportTaskListenerImpl importTaskListener, ExecutorService mockExecutor, Semaphore mockSemaphore) {
