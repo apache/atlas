@@ -4024,7 +4024,7 @@ public class EntityGraphMapper {
                 if (MapUtils.isNotEmpty(deNormAttributesMap)) {
                     ESConnector.writeTagProperties(deNormAttributesMap);
                 }
-                entityChangeNotifier.onClassificationPropagationAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), true); // Async call
+                entityChangeNotifier.onClassificationPropagationAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), true, RequestContext.get()); // Async call
                 offset += CHUNK_SIZE;
                 LOG.info("offset {}, impactedVerticesSize: {}", offset, impactedVerticesSize);
             } while (offset < impactedVerticesSize);
@@ -5045,7 +5045,7 @@ public class EntityGraphMapper {
                     ESConnector.writeTagProperties(deNormMap);
                 }
                 // notify listeners (async)
-                entityChangeNotifier.onClassificationPropagationDeleted(entities, originalClassification, true);
+                entityChangeNotifier.onClassificationPropagationDeleted(entities, originalClassification, true, RequestContext.get());
 
                 totalDeleted += batchToDelete.size();
                 // grab next batch
@@ -6272,7 +6272,7 @@ public class EntityGraphMapper {
                     ESConnector.writeTagProperties(deNormMap);
                 }
                 // notify listeners (async) that these entities got their classification text updated
-                entityChangeNotifier.onClassificationUpdatedToEntitiesV2(entities, originalClassification, true);
+                entityChangeNotifier.onClassificationUpdatedToEntitiesV2(entities, originalClassification, true, RequestContext.get());
 
                 totalUpdated += batchToUpdate.size();
                 // grab next batch

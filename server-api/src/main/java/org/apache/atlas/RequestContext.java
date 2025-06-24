@@ -677,6 +677,12 @@ public class RequestContext {
         }
     }
 
+    public void setRequestContextHeaders(Map<String, String> requestContextHeaders) {
+        if (requestContextHeaders != null) {
+            this.requestContextHeaders.putAll(requestContextHeaders);
+        }
+    }
+
     public Map<String, String> getRequestContextHeaders() {
         return requestContextHeaders;
     }

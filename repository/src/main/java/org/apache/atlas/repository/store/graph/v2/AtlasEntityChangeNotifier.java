@@ -210,7 +210,8 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
 
     @Override
     @Async
-    public void onClassificationPropagationAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications, boolean forceInline) throws AtlasBaseException {
+    public void onClassificationPropagationAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+        setRequestContext(requestContext);
         for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
             listener.onClassificationPropagationsAdded(entities, addedClassifications, forceInline);
         }
@@ -281,7 +282,8 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
 
     @Override
     @Async
-    public void onClassificationUpdatedToEntitiesV2(List<AtlasEntity> entities, AtlasClassification updatedClassification, boolean forceInline) throws AtlasBaseException {
+    public void onClassificationUpdatedToEntitiesV2(List<AtlasEntity> entities, AtlasClassification updatedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+        setRequestContext(requestContext);
         for (AtlasEntity entity : entities) {
             onClassificationUpdatedToEntity(entity, Collections.singletonList(updatedClassification), forceInline);
         }
@@ -358,10 +360,16 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
 
     @Override
     @Async
-    public void onClassificationPropagationDeleted(List<AtlasEntity> entities, AtlasClassification deletedClassification, boolean forceInline) throws AtlasBaseException {
+    public void onClassificationPropagationDeleted(List<AtlasEntity> entities, AtlasClassification deletedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+        setRequestContext(requestContext);
         for (AtlasEntity entity : entities) {
             onClassificationPropagationDeleted(entity, Collections.singletonList(deletedClassification), forceInline);
         }
+    }
+    
+    public void setRequestContext(RequestContext requestContext) {
+        RequestContext.get().setRequestContextHeaders(requestContext.getRequestContextHeaders());
+        RequestContext.get().setUser(requestContext.getUser(), requestContext.getUserGroups());
     }
 
     @Override
