@@ -1021,7 +1021,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return ret;
     }
 
-    public List<AtlasVertex> directIndexSearchForVertices(SearchParams searchParams) throws AtlasBaseException {
+    public List<AtlasVertex> directVerticesIndexSearch(SearchParams searchParams) throws AtlasBaseException {
         IndexSearchParams params = (IndexSearchParams) searchParams;
         RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
         RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
