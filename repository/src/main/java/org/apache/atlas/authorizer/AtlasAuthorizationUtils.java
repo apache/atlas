@@ -19,6 +19,7 @@
 
 package org.apache.atlas.authorizer;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.authorize.AtlasAccessRequest;
@@ -59,11 +60,17 @@ import java.util.Set;
 
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.SERVICE_DEF_ATLAS;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.isABACAuthorizerEnabled;
+import static org.apache.atlas.constants.RangerAtlasConstants.READ_RESTRICTION_LEVEL_FULL;
 import static org.apache.atlas.repository.Constants.SKIP_DELETE_AUTH_CHECK_TYPES;
 import static org.apache.atlas.repository.Constants.SKIP_UPDATE_AUTH_CHECK_TYPES;
 
 public class AtlasAuthorizationUtils {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasAuthorizationUtils.class);
+    public static final String READ_RESTRICTION_LEVEL = AtlasConfiguration.READ_RESTRICTION_LEVEL.getString();
+
+    public static boolean isFullRestrictionConfigured() {
+        return READ_RESTRICTION_LEVEL.equals(READ_RESTRICTION_LEVEL_FULL);
+    }
 
     public static void verifyAccess(AtlasAdminAccessRequest request, Object... errorMsgParams) throws AtlasBaseException {
         if (! isAccessAllowed(request)) {

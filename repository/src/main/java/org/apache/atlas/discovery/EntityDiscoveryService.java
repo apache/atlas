@@ -439,7 +439,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             indexQuery = graph.elasticsearchQuery(indexName);
 
-            if (searchParams.getEnableFullRestriction()) {
+            if (searchParams.getEnableFullRestriction() || AtlasAuthorizationUtils.isFullRestrictionConfigured()) {
                 addPreFiltersToSearchQuery(searchParams);
             }
 
@@ -618,7 +618,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             RequestContext.get().endMetricRecord(prepareSearchResultMetrics);
         }
 
-        if (!searchParams.getEnableFullRestriction()) {
+        if (!searchParams.getEnableFullRestriction() && !AtlasAuthorizationUtils.isFullRestrictionConfigured()) {
             scrubSearchResults(ret, searchParams.getSuppressLogs());
         }
     }
