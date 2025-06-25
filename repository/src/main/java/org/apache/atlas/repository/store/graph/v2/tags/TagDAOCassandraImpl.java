@@ -77,7 +77,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     // Prepared Statements for new 'propagated_tags_by_source' table
     private final PreparedStatement findPropagationsBySourceStmt;
-    private final PreparedStatement insertPropagationStmt;
+    private final PreparedStatement insertPropagationBySourceStmt;
     private final PreparedStatement deletePropagationStmt;
 
 
@@ -136,7 +136,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             findPropagationsBySourceStmt = prepare(String.format(
                     "SELECT propagated_asset_id, asset_metadata FROM %s.%s WHERE source_id = ? AND tag_type_name = ?", KEYSPACE, PROPAGATED_TAGS_TABLE_NAME));
 
-            insertPropagationStmt = prepare(String.format(
+            insertPropagationBySourceStmt = prepare(String.format(
                     "INSERT INTO %s.%s (source_id, tag_type_name, propagated_asset_id, asset_metadata, updated_at) VALUES (?, ?, ?, ?, ?)",
                     KEYSPACE, PROPAGATED_TAGS_TABLE_NAME));
 
@@ -256,7 +256,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                             .setInstant("updated_at", now));
 
                     // 2. Insert into propagated_tags_by_source
-                    batchBuilder.addStatement(insertPropagationStmt.bind()
+                    batchBuilder.addStatement(insertPropagationBySourceStmt.bind()
                             .setString("source_id", sourceAssetId)
                             .setString("tag_type_name", tagTypeName)
                             .setString("propagated_asset_id", propagatedAssetId)
