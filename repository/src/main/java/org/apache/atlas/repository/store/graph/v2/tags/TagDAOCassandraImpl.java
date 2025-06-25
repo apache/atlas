@@ -311,9 +311,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                     finalTags.add(convertToAtlasClassification(row.getString("tag_meta_json")));
                 }
             }
-            if (finalTags.isEmpty()) {
-                LOG.warn("No active classifications found for vertexId={}, bucket={}", vertexId, bucket);
-            }
             return finalTags;
         } catch (Exception e) {
             LOG.error("Error fetching all classifications for vertexId={}", vertexId, e);
@@ -416,17 +413,27 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                     .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 
             for (Tag tag : tagsToDelete) {
+                int bucket = calculateBucket(tag.getVertexId());
+                boolean isPropagated = !Objects.equals(tag.getSourceVertexId(), tag.getVertexId());
+
+                if (tag.isPropagated() != isPropagated) {
+                    LOG.warn("Discrepancy in is_propagated flag for tag delete operation. " +
+                                    "Tag object passed by caller had is_propagated={}, but derived value is {}. " +
+                                    "Proceeding with derived value. vertexId={}, sourceVertexId={}",
+                            tag.isPropagated(), isPropagated, tag.getVertexId(), tag.getSourceVertexId());
+                }
+
                 // 1. Soft delete from tags_by_id
                 batchBuilder.addStatement(deleteEffectiveTagStmt.bind()
                         .setInstant("updated_at", now)
-                        .setInt("bucket", tag.getBucket())
+                        .setInt("bucket", bucket)
                         .setString("id", tag.getVertexId())
-                        .setBoolean("is_propagated", tag.isPropagated())
+                        .setBoolean("is_propagated", isPropagated)
                         .setString("source_id", tag.getSourceVertexId())
                         .setString("tag_type_name", tag.getTagTypeName()));
 
                 // 2. If it's a propagated tag, HARD delete from the lookup table
-                if (tag.isPropagated()) {
+                if (isPropagated) {
                     batchBuilder.addStatement(deletePropagationStmt.bind()
                             .setString("source_id", tag.getSourceVertexId())
                             .setString("tag_type_name", tag.getTagTypeName())
