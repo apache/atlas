@@ -17,8 +17,10 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
 
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_DENY;
@@ -28,7 +30,6 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_STARTS_WITH;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_IN;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_NOT_IN;
-
 
 public class EntityAuthorizer {
 
@@ -156,35 +157,37 @@ public class EntityAuthorizer {
 
         switch (operator) {
             case POLICY_FILTER_CRITERIA_EQUALS:
-                if (entityAttributeValues.contains(attributeValue)) {
-                    return true;
-                }
-                break;
+                return attributeValues.isEmpty() 
+                    ? entityAttributeValues.contains(attributeValue)
+                    : new HashSet<>(entityAttributeValues).containsAll(attributeValues);
+
             case POLICY_FILTER_CRITERIA_STARTS_WITH:
                 if (AuthorizerCommonUtil.listStartsWith(attributeValue, entityAttributeValues)) {
                     return true;
                 }
                 break;
-            case "LIKE":
-                if (AuthorizerCommonUtil.listMatchesWith(attributeValue, entityAttributeValues)) {
-                    return true;
-                }
-                break;
+            // case "LIKE":
+            //     if (AuthorizerCommonUtil.listMatchesWith(attributeValue, entityAttributeValues)) {
+            //         return true;
+            //     }
+            //     break;
             case POLICY_FILTER_CRITERIA_ENDS_WITH:
                 if (AuthorizerCommonUtil.listEndsWith(attributeValue, entityAttributeValues)) {
                     return true;
                 }
                 break;
+
             case POLICY_FILTER_CRITERIA_NOT_EQUALS:
-                if (!entityAttributeValues.contains(attributeValue)) {
-                    return true;
-                }
-                break;
+                return attributeValues.isEmpty()
+                    ? !entityAttributeValues.contains(attributeValue)
+                    : Collections.disjoint(entityAttributeValues, attributeValues);
+
             case POLICY_FILTER_CRITERIA_IN:
                 if (AuthorizerCommonUtil.arrayListContains(attributeValues, entityAttributeValues)) {
                     return true;
                 }
                 break;
+
             case POLICY_FILTER_CRITERIA_NOT_IN:
                 if (!AuthorizerCommonUtil.arrayListContains(attributeValues, entityAttributeValues)) {
                     return true;

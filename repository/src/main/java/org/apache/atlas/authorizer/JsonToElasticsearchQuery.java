@@ -87,11 +87,22 @@ public class JsonToElasticsearchQuery {
         String attributeValue = attributeValueNode.asText();
         switch (operator) {
             case POLICY_FILTER_CRITERIA_EQUALS:
-                queryNode.putObject("term").put(attributeName, attributeValue);
+                if (attributeValueNode.isArray()) {
+                    ArrayNode filterArray = queryNode.putObject("bool").putArray("filter");
+                    for (JsonNode valueNode : attributeValueNode) {
+                        filterArray.addObject().putObject("term").put(attributeName, valueNode.asText());
+                    }
+                } else {
+                    queryNode.putObject("term").put(attributeName, attributeValue);
+                }
                 break;
 
             case POLICY_FILTER_CRITERIA_NOT_EQUALS:
-                queryNode.putObject("bool").putObject("must_not").putObject("term").put(attributeName, attributeValue);
+                if (attributeValueNode.isArray()) {
+                    queryNode.putObject("bool").putObject("must_not").putObject("terms").set(attributeName, attributeValueNode);
+                } else {
+                    queryNode.putObject("bool").putObject("must_not").putObject("term").put(attributeName, attributeValue);
+                }
                 break;
 
             case POLICY_FILTER_CRITERIA_STARTS_WITH:
