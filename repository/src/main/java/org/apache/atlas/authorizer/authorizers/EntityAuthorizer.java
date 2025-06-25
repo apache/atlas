@@ -22,6 +22,13 @@ import java.util.Set;
 
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_DENY;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_EQUALS;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_ENDS_WITH;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_NOT_EQUALS;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_STARTS_WITH;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_IN;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_NOT_IN;
+
 
 public class EntityAuthorizer {
 
@@ -148,12 +155,12 @@ public class EntityAuthorizer {
         }
 
         switch (operator) {
-            case "EQUALS":
+            case POLICY_FILTER_CRITERIA_EQUALS:
                 if (entityAttributeValues.contains(attributeValue)) {
                     return true;
                 }
                 break;
-            case "STARTS_WITH":
+            case POLICY_FILTER_CRITERIA_STARTS_WITH:
                 if (AuthorizerCommonUtil.listStartsWith(attributeValue, entityAttributeValues)) {
                     return true;
                 }
@@ -163,22 +170,22 @@ public class EntityAuthorizer {
                     return true;
                 }
                 break;
-            case "ENDS_WITH":
+            case POLICY_FILTER_CRITERIA_ENDS_WITH:
                 if (AuthorizerCommonUtil.listEndsWith(attributeValue, entityAttributeValues)) {
                     return true;
                 }
                 break;
-            case "NOT_EQUALS":
+            case POLICY_FILTER_CRITERIA_NOT_EQUALS:
                 if (!entityAttributeValues.contains(attributeValue)) {
                     return true;
                 }
                 break;
-            case "IN":
+            case POLICY_FILTER_CRITERIA_IN:
                 if (AuthorizerCommonUtil.arrayListContains(attributeValues, entityAttributeValues)) {
                     return true;
                 }
                 break;
-            case "NOT_IN":
+            case POLICY_FILTER_CRITERIA_NOT_IN:
                 if (!AuthorizerCommonUtil.arrayListContains(attributeValues, entityAttributeValues)) {
                     return true;
                 }
@@ -253,7 +260,7 @@ public class EntityAuthorizer {
         return entityAttributeValues;
     }
 
-    private static List<String> getRelatedAttributes(String attributeName) {
+    public static List<String> getRelatedAttributes(String attributeName) {
         List<String> relatedAttributes = new ArrayList<>();
 
         // Define sets of related attributes
