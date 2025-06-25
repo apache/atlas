@@ -132,25 +132,7 @@ public class EntityAuthorizer {
             attributeName = attributeName.replace(".keyword", "");
         }
 
-        List<String> entityAttributeValues = new ArrayList<>();
-
-        Object attrValue = entity.getAttribute(attributeName);
-        if (attrValue != null) {
-            if (attrValue instanceof Collection) {
-                entityAttributeValues.addAll((Collection<? extends String>) attrValue);
-            } else {
-                entityAttributeValues.add(String.valueOf(attrValue));
-            }
-        } else {
-            // try fetching from vertex
-            if (vertex != null) {
-                Collection<?> values = vertex.getPropertyValues(attributeName, String.class);
-                for (Object value : values) {
-                    entityAttributeValues.add(String.valueOf(value));
-                }
-            }
-        }
-
+        List<String> entityAttributeValues = getAttributeValue(entity, attributeName, vertex);
         if (entityAttributeValues.isEmpty()) {
             entityAttributeValues = handleSpecialAttributes(entity, attributeName);
         }
@@ -246,5 +228,48 @@ public class EntityAuthorizer {
         }
 
         return entityAttributeValues;
+    }
+
+    private static List<String> getAttributeValue(AtlasEntityHeader entity, String attributeName, AtlasVertex vertex) {
+        List<String> entityAttributeValues = new ArrayList<>();
+
+        List<String> relatedAttributes = getRelatedAttributes(attributeName);
+        for (String relatedAttribute : relatedAttributes) {
+            Object attrValue = entity.getAttribute(relatedAttribute);
+            if (attrValue != null) {
+                if (attrValue instanceof Collection) {
+                    entityAttributeValues.addAll((Collection<? extends String>) attrValue);
+                } else {
+                    entityAttributeValues.add(String.valueOf(attrValue));
+                }
+            } else if (vertex != null) {
+                // try fetching from vertex
+                Collection<?> values = vertex.getPropertyValues(relatedAttribute, String.class);
+                for (Object value : values) {
+                    entityAttributeValues.add(String.valueOf(value));
+                }
+            }
+        }
+        return entityAttributeValues;
+    }
+
+    private static List<String> getRelatedAttributes(String attributeName) {
+        List<String> relatedAttributes = new ArrayList<>();
+
+        // Define sets of related attributes
+        List<Set<String>> relatedAttributeSets = Arrays.asList(
+                Set.of("ownerUsers", "ownerGroups"),
+                Set.of("__traitNames", "__propagatedTraitNames")
+        );
+
+        // Check if attributeName exists in any set and add the entire set
+        for (Set<String> attributeSet : relatedAttributeSets) {
+            if (attributeSet.contains(attributeName)) {
+                relatedAttributes.addAll(attributeSet);
+                break;
+            }
+        }
+
+        return relatedAttributes;
     }
 }
