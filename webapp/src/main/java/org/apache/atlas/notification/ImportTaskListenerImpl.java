@@ -60,7 +60,7 @@ import static org.apache.atlas.AtlasErrorCode.IMPORT_QUEUEING_FAILED;
 public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler, ImportTaskListener {
     private static final Logger LOG = LoggerFactory.getLogger(ImportTaskListenerImpl.class);
 
-    private static final String THREADNAME_PREFIX = ImportTaskListener.class.getSimpleName();
+    private static final String THREADNAME_PREFIX    = ImportTaskListener.class.getSimpleName();
     private static final int    ASYNC_IMPORT_PERMITS = 1; // Only one asynchronous import task is permitted
 
     private final BlockingQueue<String>    requestQueue;    // Blocking queue for requests
@@ -76,12 +76,12 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     }
 
     public ImportTaskListenerImpl(AsyncImportService asyncImportService, NotificationHookConsumer notificationHookConsumer, BlockingQueue<String> requestQueue) throws AtlasException {
-        this.asyncImportService = asyncImportService;
+        this.asyncImportService       = asyncImportService;
         this.notificationHookConsumer = notificationHookConsumer;
-        this.requestQueue = requestQueue;
-        this.asyncImportSemaphore = new Semaphore(ASYNC_IMPORT_PERMITS);
-        this.applicationProperties = ApplicationProperties.get();
-        this.executorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d")
+        this.requestQueue             = requestQueue;
+        this.asyncImportSemaphore     = new Semaphore(ASYNC_IMPORT_PERMITS);
+        this.applicationProperties    = ApplicationProperties.get();
+        this.executorService          = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d")
                 .setUncaughtExceptionHandler((thread, throwable) -> LOG.error("Uncaught exception in thread {}: {}", thread.getName(), throwable.getMessage(), throwable)).build());
     }
 
@@ -206,8 +206,8 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     AtlasAsyncImportRequest getNextImportFromQueue() {
         LOG.info("==> getNextImportFromQueue()");
 
-        final int maxRetries = 5;
-        int retryCount = 0;
+        final int               maxRetries = 5;
+        int                     retryCount = 0;
         AtlasAsyncImportRequest nextImport = null;
 
         while (retryCount < maxRetries) {
