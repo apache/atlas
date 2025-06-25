@@ -68,7 +68,7 @@ public class TagDAOCassandraImplTest {
     @BeforeEach
     void clearTablesAndRequestContext() {
         // Truncate tables before each test to ensure a clean slate.
-        testSession.execute(String.format("TRUNCATE TABLE %s.%s", KEYSPACE, TABLE_NAME));
+        testSession.execute(String.format("TRUNCATE TABLE %s.%s", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
         testSession.execute(String.format("TRUNCATE TABLE %s.%s", KEYSPACE, PROPAGATED_TAGS_TABLE_NAME));
 
         // Reset RequestContext before each test as the DAO uses it for timestamps.
@@ -102,7 +102,7 @@ public class TagDAOCassandraImplTest {
         AtlasClassification expectedClassification = objectMapper.readValue(directTagMetaJson, AtlasClassification.class);
 
         SimpleStatement insert = SimpleStatement.builder(
-                        "INSERT INTO tags_v2.effective_tags (bucket, id, is_propagated, source_id, tag_type_name, tag_meta_json, asset_metadata, is_deleted, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
+                        "INSERT INTO tags.tags_by_id (bucket, id, is_propagated, source_id, tag_type_name, tag_meta_json, asset_metadata, is_deleted, updated_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
                 .addPositionalValue(bucket)
                 .addPositionalValue(assetId)
                 .addPositionalValue(false) // Direct tag
@@ -116,7 +116,7 @@ public class TagDAOCassandraImplTest {
         testSession.execute(insert);
 
         // --- 2. Validation: Verify updated_at is set in the database ---
-        SimpleStatement selectStmt = SimpleStatement.builder("SELECT updated_at FROM tags_v2.effective_tags WHERE bucket = ? AND id = ? AND is_propagated = false AND source_id = ? AND tag_type_name = ?")
+        SimpleStatement selectStmt = SimpleStatement.builder("SELECT updated_at FROM tags.tags_by_id WHERE bucket = ? AND id = ? AND is_propagated = false AND source_id = ? AND tag_type_name = ?")
                 .addPositionalValue(bucket)
                 .addPositionalValue(assetId)
                 .addPositionalValue(assetId)

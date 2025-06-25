@@ -39,7 +39,7 @@ import static org.apache.atlas.repository.store.graph.v2.tags.CassandraTagConfig
  * This implementation uses a two-table design to optimize for different query patterns
  * and avoid the use of 'ALLOW FILTERING', ensuring scalability.
 
- * 1.  effective_tags: Stores all tags (direct and propagated). Optimized for finding
+ * 1.  tags_by_id: Stores all tags (direct and propagated). Optimized for finding
  * all tags for a given asset. Uses soft deletes.
  * -   PK: ((bucket, id), is_propagated, source_id, tag_type_name)
  * -   Compaction: SizeTieredCompactionStrategy (STCS)
@@ -63,13 +63,9 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     public static final String DEFAULT_HOST = "localhost";
     public static final String DATACENTER = "datacenter1";
 
-    // New table name for optimized propagation lookups
-    public static final String PROPAGATED_TAGS_TABLE_NAME = "propagated_tags_by_source";
-
-
     private final CqlSession cassSession;
 
-    // Prepared Statements for 'effective_tags' table
+    // Prepared Statements for 'tags_by_id' table
     private final PreparedStatement findAllTagsForAssetStmt;
     private final PreparedStatement findDirectTagsForAssetStmt;
     private final PreparedStatement findPropagatedTagsForAssetStmt;
@@ -107,34 +103,34 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
             initializeSchema(replicationConfig);
 
-            // === Statements for 'effective_tags' table ===
+            // === Statements for 'tags_by_id' table ===
             insertEffectiveTagStmt = prepare(String.format(
                     "INSERT INTO %s.%s (bucket, id, is_propagated, source_id, tag_type_name, tag_meta_json, asset_metadata, is_deleted, updated_at) " +
-                            "VALUES (?, ?, ?, ?, ?, ?, ?, false, ?)", KEYSPACE, TABLE_NAME));
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, false, ?)", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
 
             deleteEffectiveTagStmt = prepare(String.format(
                     "UPDATE %s.%s SET is_deleted = true, updated_at = ? WHERE bucket = ? AND id = ? AND is_propagated = ? AND source_id = ? AND tag_type_name = ?",
-                    KEYSPACE, TABLE_NAME));
+                    KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
 
             findAllTagsForAssetStmt = prepare(String.format(
-                    "SELECT tag_meta_json, is_deleted FROM %s.%s WHERE bucket = ? AND id = ?", KEYSPACE, TABLE_NAME));
+                    "SELECT tag_meta_json, is_deleted FROM %s.%s WHERE bucket = ? AND id = ?", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
 
             findAllTagDetailsForAssetStmt = prepare(String.format(
-                    "SELECT tag_meta_json, is_propagated, tag_type_name, is_deleted FROM %s.%s WHERE bucket = ? AND id = ?", KEYSPACE, TABLE_NAME));
+                    "SELECT tag_meta_json, is_propagated, tag_type_name, is_deleted FROM %s.%s WHERE bucket = ? AND id = ?", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
 
             findDirectTagsForAssetStmt = prepare(String.format(
-                    "SELECT tag_meta_json, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = false", KEYSPACE, TABLE_NAME));
+                    "SELECT tag_meta_json, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = false", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
 
             findPropagatedTagsForAssetStmt = prepare(String.format(
-                    "SELECT tag_meta_json, source_id, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = true", KEYSPACE, TABLE_NAME));
+                    "SELECT tag_meta_json, source_id, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = true", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
 
             findSpecificDirectTagStmt = prepare(String.format(
                     "SELECT tag_meta_json, asset_metadata, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = false AND source_id = ? AND tag_type_name = ?",
-                    KEYSPACE, TABLE_NAME));
+                    KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
 
             findSpecificDeletedTagStmt = prepare(String.format(
                     "SELECT tag_meta_json, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = false AND source_id = ? AND tag_type_name = ?",
-                    KEYSPACE, TABLE_NAME));
+                    KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
 
             // === Statements for 'propagated_tags_by_source' table (using HARD DELETES) ===
             findPropagationsBySourceStmt = prepare(String.format(
@@ -170,7 +166,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         executeWithRetry(SimpleStatement.builder(createKeyspaceQuery).setConsistencyLevel(DefaultConsistencyLevel.ALL).build());
         LOG.info("Ensured keyspace {} exists", KEYSPACE);
 
-        // Create 'effective_tags' table with STCS (good for general writes)
+        // Create 'tags_by_id' table with STCS (good for general writes)
         String createEffectiveTagsTable = String.format(
                 "CREATE TABLE IF NOT EXISTS %s.%s (" +
                         "id text, " +
@@ -184,9 +180,9 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                         "is_deleted boolean, " +
                         "PRIMARY KEY ((bucket, id), is_propagated, source_id, tag_type_name)" +
                         ") WITH compaction = {'class': 'SizeTieredCompactionStrategy'};",
-                KEYSPACE, TABLE_NAME);
+                KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME);
         executeWithRetry(SimpleStatement.builder(createEffectiveTagsTable).setConsistencyLevel(DefaultConsistencyLevel.ALL).build());
-        LOG.info("Ensured table {}.{} exists with SizeTieredCompactionStrategy", KEYSPACE, TABLE_NAME);
+        LOG.info("Ensured table {}.{} exists with SizeTieredCompactionStrategy", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME);
 
 
         // Create 'propagated_tags_by_source' table with LCS and hard deletes for optimal read performance
@@ -248,7 +244,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                     int bucket = calculateBucket(propagatedAssetId);
                     String assetMetadataJson = AtlasType.toJson(assetMinAttrsMap.get(propagatedAssetId));
 
-                    // 1. Insert into effective_tags
+                    // 1. Insert into tags_by_id
                     batchBuilder.addStatement(insertEffectiveTagStmt.bind()
                             .setInt("bucket", bucket)
                             .setString("id", propagatedAssetId)
@@ -420,7 +416,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                     .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 
             for (Tag tag : tagsToDelete) {
-                // 1. Soft delete from effective_tags
+                // 1. Soft delete from tags_by_id
                 batchBuilder.addStatement(deleteEffectiveTagStmt.bind()
                         .setInstant("updated_at", now)
                         .setInt("bucket", tag.getBucket())
@@ -617,7 +613,8 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 tag.setPropagated(row.getBoolean("is_propagated"));
 
                 try {
-                    tag.setTagMetaJson(objectMapper.readValue(row.getString("tag_meta_json"), new TypeReference<Map<String, Object>>() {}));
+                    tag.setTagMetaJson(objectMapper.readValue(row.getString("tag_meta_json"), new TypeReference<>() {
+                    }));
                 } catch (JsonProcessingException e) {
                     LOG.error("Error parsing tag_meta_json in getAllTagsByVertexId for vertexId: {}", vertexId, e);
                     continue;
@@ -638,14 +635,15 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     private <T extends Statement<T>> ResultSet executeWithRetry(Statement<T> statement) throws AtlasBaseException {
         int retryCount = 0;
-        Exception lastException = null;
+        Exception lastException;
 
-        while (retryCount < MAX_RETRIES) {
+        while (true) {
             try {
                 return cassSession.execute(statement);
             } catch (DriverTimeoutException | WriteTimeoutException | NoHostAvailableException e) {
                 lastException = e;
                 retryCount++;
+                LOG.warn("Retry attempt {} for statement execution due to exception: {}", retryCount, e.toString());
                 if (retryCount >= MAX_RETRIES) {
                     break;
                 }
@@ -706,3 +704,4 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         }
     }
 }
+
