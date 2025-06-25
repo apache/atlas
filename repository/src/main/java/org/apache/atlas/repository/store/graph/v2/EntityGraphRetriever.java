@@ -142,6 +142,7 @@ public class EntityGraphRetriever {
     private final AtlasTypeRegistry typeRegistry;
 
     private final boolean ignoreRelationshipAttr;
+    private final boolean onlyMandatoryRelationshipAttr;
     private final AtlasGraph graph;
 
     @Inject
@@ -154,7 +155,15 @@ public class EntityGraphRetriever {
         this.graphHelper            = new GraphHelper(graph);
         this.typeRegistry           = typeRegistry;
         this.ignoreRelationshipAttr = ignoreRelationshipAttr;
+        this.onlyMandatoryRelationshipAttr = false;
+    }
 
+    public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean ignoreRelationshipAttr, boolean onlyMandatoryRelationshipAttr) {
+        this.graph                  = graph;
+        this.graphHelper            = new GraphHelper(graph);
+        this.typeRegistry           = typeRegistry;
+        this.ignoreRelationshipAttr = ignoreRelationshipAttr;
+        this.onlyMandatoryRelationshipAttr = onlyMandatoryRelationshipAttr;
     }
 
     public AtlasEntity toAtlasEntity(String guid, boolean includeReferences) throws AtlasBaseException {
@@ -979,7 +988,13 @@ public class EntityGraphRetriever {
             mapAttributes(entityVertex, entity, entityExtInfo, isMinExtInfo, includeReferences);
 
             if (!ignoreRelationshipAttr) { // only map when really needed
-                mapRelationshipAttributes(entityVertex, entity, entityExtInfo, isMinExtInfo);
+                if (onlyMandatoryRelationshipAttr) {
+                    // map only mandatory relationships
+                    mapMandatoryRelationshipAttributes(entityVertex, entity);
+                } else {
+                    // map all relationships
+                    mapRelationshipAttributes(entityVertex, entity, entityExtInfo, isMinExtInfo);
+                }
             }
 
             mapClassifications(entityVertex, entity);
@@ -2185,6 +2200,29 @@ public class EntityGraphRetriever {
 
             for (String attributeName : entityType.getRelationshipAttributes().keySet()) {
                 mapVertexToRelationshipAttribute(entityVertex, entityType, attributeName, entity, entityExtInfo, isMinExtInfo);
+            }
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
+    private void mapMandatoryRelationshipAttributes(AtlasVertex entityVertex, AtlasEntity entity) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("EntityGraphRetriever.mapMandatoryRelationshipAttributes");
+
+        try {
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+
+            if (entityType == null) {
+                throw new AtlasBaseException(AtlasErrorCode.TYPE_NAME_INVALID, entity.getTypeName());
+            }
+
+            for (Map<String, AtlasAttribute> attrs : entityType.getRelationshipAttributes().values()) {
+                for (AtlasAttribute attr : attrs.values()) {
+                    if (!attr.getAttributeDef().getIsOptional()) {
+                        String attrName = attr.getAttributeDef().getName();
+                        mapVertexToRelationshipAttribute(entityVertex, entityType, attrName, entity, null, false);
+                    }
+                }
             }
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
