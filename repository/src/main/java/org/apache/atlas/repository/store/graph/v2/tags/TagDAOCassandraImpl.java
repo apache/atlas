@@ -90,9 +90,12 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", ApplicationProperties.get().getString(CASSANDRA_REPLICATION_FACTOR_PROPERTY, "3"));
 
             DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
+                    // Connection timeouts
                     .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, CONNECTION_TIMEOUT)
                     .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, CONNECTION_TIMEOUT)
                     .withDuration(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, CONNECTION_TIMEOUT)
+
+                    // Connection pool settings
                     .withInt(DefaultDriverOption.CONNECTION_POOL_LOCAL_SIZE, calculateOptimalLocalPoolSize())
                     .withInt(DefaultDriverOption.CONNECTION_POOL_REMOTE_SIZE, calculateOptimalRemotePoolSize())
                     .withDuration(DefaultDriverOption.HEARTBEAT_INTERVAL, HEARTBEAT_INTERVAL)
@@ -104,6 +107,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                     .withLocalDatacenter(DATACENTER)
                     .build();
 
+            // Initialize keyspace and table
             initializeSchema(replicationConfig);
 
             // === Statements for 'effective_tags' table ===
@@ -169,7 +173,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         executeWithRetry(SimpleStatement.builder(createKeyspaceQuery).setConsistencyLevel(DefaultConsistencyLevel.ALL).build());
         LOG.info("Ensured keyspace {} exists", KEYSPACE);
 
-        // Create 'effective_tags' table with STCS (good for general writes)
+        // Create 'effective_tags' table
         String createEffectiveTagsTable = String.format(
                 "CREATE TABLE IF NOT EXISTS %s.%s (" +
                         "id text, " +
@@ -188,7 +192,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         LOG.info("Ensured table {}.{} exists with SizeTieredCompactionStrategy", KEYSPACE, TABLE_NAME);
 
 
-        // Create 'propagated_tags_by_source' table with LCS and hard deletes for optimal read performance
+        // Create 'propagated_tags_by_source' table
         String createPropagatedTagsTable = String.format(
                 "CREATE TABLE IF NOT EXISTS %s.%s (" +
                         "source_id text, " +

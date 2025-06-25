@@ -44,13 +44,6 @@
             </exclusions>
         </dependency>
 
-        <!-- This version is compatible with Cassandra Driver 3.x -->
-        <dependency>
-            <groupId>com.google.guava</groupId>
-            <artifactId>guava</artifactId>
-            <version>16.0.1</version>
-        </dependency>
-
         <dependency>
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-server-api</artifactId>
