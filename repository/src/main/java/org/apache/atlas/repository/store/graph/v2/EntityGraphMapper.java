@@ -5700,20 +5700,12 @@ public class EntityGraphMapper {
                 //get current associated tags to asset ONLY from Cassandra namespace
                 List<Tag> tags = tagDAO.getAllTagsByVertexId(vertex.getIdForDisplay());
                 List<AtlasClassification> finalClassifications = tags.stream().map(t -> {
-                    try {
-                        return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
-                    } catch (AtlasBaseException e) {
-                        throw new RuntimeException(e);
-                    }
+                    return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
                 }).collect(Collectors.toList());
 
                 tags = tags.stream().filter(Tag::isPropagated).toList();
                 List<AtlasClassification> finalPropagatedClassifications = tags.stream().map(t -> {
-                    try {
-                        return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
-                    } catch (AtlasBaseException e) {
-                        throw new RuntimeException(e);
-                    }
+                    return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
                 }).collect(Collectors.toList());
 
                 AtlasClassification copiedPropagatedClassification = new AtlasClassification(currentTag);
@@ -5764,20 +5756,12 @@ public class EntityGraphMapper {
                 List<Tag> tags = tagDAO.getAllTagsByVertexId(tagAttachment.getVertexId());
 
                 List<AtlasClassification> finalClassifications = tags.stream().map(t -> {
-                    try {
-                        return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
-                    } catch (AtlasBaseException e) {
-                        throw new RuntimeException(e);
-                    }
+                    return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
                 }).collect(Collectors.toList());
 
                 tags = tags.stream().filter(Tag::isPropagated).toList();
                 List<AtlasClassification> propagatedClassifications = tags.stream().map(t -> {
-                    try {
-                        return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
-                    } catch (AtlasBaseException e) {
-                        throw new RuntimeException(e);
-                    }
+                    return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
                 }).collect(Collectors.toList());
 
                 Map<String, Object> deNormAttributes;

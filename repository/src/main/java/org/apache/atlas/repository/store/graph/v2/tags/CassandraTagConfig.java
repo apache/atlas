@@ -20,7 +20,7 @@ public class CassandraTagConfig {
 
     static {
         try {
-            KEYSPACE = ApplicationProperties.get().getString(CASSANDRA_NEW_KEYSPACE_PROPERTY, "tags");
+            KEYSPACE = ApplicationProperties.get().getString(CASSANDRA_NEW_KEYSPACE_PROPERTY, "tags_v2");
             TABLE_NAME = ApplicationProperties.get().getString(CASSANDRA_TAG_TABLE_NAME, "effective_tags");
             HOST_NAME = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, "localhost");
         } catch (AtlasException e) {

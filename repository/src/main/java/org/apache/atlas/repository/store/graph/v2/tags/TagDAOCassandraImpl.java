@@ -10,7 +10,6 @@ import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
 import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.datastax.oss.driver.api.core.cql.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.RequestContext;
@@ -34,42 +33,55 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.repository.store.graph.v2.tags.CassandraTagConfig.*;
 
 /**
- * Data Access Object for tag operations in Cassandra
+ * Data Access Object for tag operations in Cassandra.
+
+ * This implementation uses a two-table design to optimize for different query patterns
+ * and avoid the use of 'ALLOW FILTERING', ensuring scalability.
+
+ * 1.  effective_tags: Stores all tags (direct and propagated). Optimized for finding
+ * all tags for a given asset. Uses soft deletes.
+ * -   PK: ((bucket, id), is_propagated, source_id, tag_type_name)
+ * -   Compaction: SizeTieredCompactionStrategy (STCS)
+
+ * 2.  propagated_tags_by_source: A query-optimized table for finding all assets that
+ * have a specific propagated tag. This table is optimized for reads and uses hard deletes.
+ * -   PK: ((source_id, tag_type_name), propagated_asset_id)
+ * -   Compaction: LeveledCompactionStrategy (LCS)
  */
 @Repository
 public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(TagDAOCassandraImpl.class);
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     // Configuration constants
-    // Retry Configuration
     private static final int MAX_RETRIES = 3;
     private static final Duration INITIAL_BACKOFF = Duration.ofMillis(100);
-
-    // Batch Configuration
     private static final int BATCH_SIZE_LIMIT = 100;
-
-    // Configuration constants
     private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration HEARTBEAT_INTERVAL = Duration.ofSeconds(30);
     public static final String DEFAULT_HOST = "localhost";
     public static final String DATACENTER = "datacenter1";
 
-    private final CqlSession cassSession;
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    // New table name for optimized propagation lookups
+    public static final String PROPAGATED_TAGS_TABLE_NAME = "propagated_tags_by_source";
 
-    // Prepared Statements
-    private final PreparedStatement findAllTagsStmt;
-    private final PreparedStatement findAllTagsByVertexIdStmt;
-    private final PreparedStatement findTagAttachmentsByPK;
-    private final PreparedStatement findAllDirectTagsStmt;
-    private final PreparedStatement findADirectTagStmt;
-    private final PreparedStatement findADirectTagWithAssetMetadataRowStmt;
-    private final PreparedStatement findAllPropagatedTagsStmt;
-    private final PreparedStatement findAllPropagatedTagsByTypeNameStmt;
-    private final PreparedStatement findAllPropagatedTagsOptStmt;
-    private final PreparedStatement findADirectDeletedTagStmt;
-    private final PreparedStatement insertTagStmt;
-    private final PreparedStatement deleteTagStmt;
+
+    private final CqlSession cassSession;
+
+    // Prepared Statements for 'effective_tags' table
+    private final PreparedStatement findAllTagsForAssetStmt;
+    private final PreparedStatement findDirectTagsForAssetStmt;
+    private final PreparedStatement findPropagatedTagsForAssetStmt;
+    private final PreparedStatement findSpecificDirectTagStmt;
+    private final PreparedStatement findSpecificDeletedTagStmt;
+    private final PreparedStatement insertEffectiveTagStmt;
+    private final PreparedStatement deleteEffectiveTagStmt;
+    private final PreparedStatement findAllTagDetailsForAssetStmt;
+
+    // Prepared Statements for new 'propagated_tags_by_source' table
+    private final PreparedStatement findPropagationsBySourceStmt;
+    private final PreparedStatement insertPropagationStmt;
+    private final PreparedStatement deletePropagationStmt;
 
 
     public TagDAOCassandraImpl() throws AtlasBaseException {
@@ -78,12 +90,9 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", ApplicationProperties.get().getString(CASSANDRA_REPLICATION_FACTOR_PROPERTY, "3"));
 
             DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
-                    // Connection timeouts
                     .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, CONNECTION_TIMEOUT)
                     .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, CONNECTION_TIMEOUT)
                     .withDuration(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, CONNECTION_TIMEOUT)
-
-                    // Connection pool settings
                     .withInt(DefaultDriverOption.CONNECTION_POOL_LOCAL_SIZE, calculateOptimalLocalPoolSize())
                     .withInt(DefaultDriverOption.CONNECTION_POOL_REMOTE_SIZE, calculateOptimalRemotePoolSize())
                     .withDuration(DefaultDriverOption.HEARTBEAT_INTERVAL, HEARTBEAT_INTERVAL)
@@ -95,121 +104,47 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                     .withLocalDatacenter(DATACENTER)
                     .build();
 
-            // Initialize keyspace and table
             initializeSchema(replicationConfig);
 
-            // Find all direct tags
-            SimpleStatement findAllDirectTagsStatement = SimpleStatement.builder(
-                            String.format("SELECT tag_meta_json FROM %s.%s " +
-                                            "WHERE bucket = ? AND id = ? AND source_id = ? AND is_deleted = false",
-                                    KEYSPACE, TABLE_NAME))
-                    .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
-                    .build();
-            findAllDirectTagsStmt = cassSession.prepare(findAllDirectTagsStatement);
+            // === Statements for 'effective_tags' table ===
+            insertEffectiveTagStmt = prepare(String.format(
+                    "INSERT INTO %s.%s (bucket, id, is_propagated, source_id, tag_type_name, tag_meta_json, asset_metadata, is_deleted, updated_at) " +
+                            "VALUES (?, ?, ?, ?, ?, ?, ?, false, ?)", KEYSPACE, TABLE_NAME));
 
-            // Find all tags
-            SimpleStatement findAllTagsStatement = SimpleStatement.builder(
-                            String.format("SELECT id, source_id, tag_meta_json FROM %s.%s " +
-                                            "WHERE bucket = ? AND id = ? AND is_deleted = false",
-                                    KEYSPACE, TABLE_NAME))
-                    .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
-                    .build();
-            findAllTagsStmt = cassSession.prepare(findAllTagsStatement);
+            deleteEffectiveTagStmt = prepare(String.format(
+                    "UPDATE %s.%s SET is_deleted = true, updated_at = ? WHERE bucket = ? AND id = ? AND is_propagated = ? AND source_id = ? AND tag_type_name = ?",
+                    KEYSPACE, TABLE_NAME));
 
-            // Find all tags with additional is_propagated key
-            SimpleStatement findTagsWithIsPropagatedByVertexIdStatement = SimpleStatement.builder(
-                            String.format("SELECT id, source_id, tag_meta_json, is_propagated, tag_type_name FROM %s.%s " +
-                                            "WHERE bucket = ? AND id = ? AND is_deleted = false",
-                                    KEYSPACE, TABLE_NAME))
-                    .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
-                    .build();
-            findAllTagsByVertexIdStmt = cassSession.prepare(findTagsWithIsPropagatedByVertexIdStatement);
+            findAllTagsForAssetStmt = prepare(String.format(
+                    "SELECT tag_meta_json, is_deleted FROM %s.%s WHERE bucket = ? AND id = ?", KEYSPACE, TABLE_NAME));
 
-            // Find a direct tag
-            SimpleStatement findADirectTagStatement = SimpleStatement.builder(
-                            String.format("SELECT tag_meta_json FROM %s.%s " +
-                                            "WHERE bucket = ? AND id = ? AND source_id = ? AND tag_type_name = ? AND is_deleted = false",
-                                    KEYSPACE, TABLE_NAME))
-                    .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
-                    .build();
-            findADirectTagStmt = cassSession.prepare(findADirectTagStatement);
+            findDirectTagsForAssetStmt = prepare(String.format(
+                    "SELECT tag_meta_json, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = false", KEYSPACE, TABLE_NAME));
 
-            // Find a deleted direct tag
-            SimpleStatement findADirectDeletedTagStatement = SimpleStatement.builder(
-                            String.format("SELECT tag_meta_json FROM %s.%s " +
-                                            "WHERE bucket = ? AND id = ? AND source_id = ? AND tag_type_name = ? AND is_deleted = true",
-                                    KEYSPACE, TABLE_NAME))
-                    .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
-                    .build();
-            findADirectDeletedTagStmt = cassSession.prepare(findADirectDeletedTagStatement);
+            findPropagatedTagsForAssetStmt = prepare(String.format(
+                    "SELECT tag_meta_json, source_id, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = true", KEYSPACE, TABLE_NAME));
 
-            // Find a direct tag with asset metadata
-            SimpleStatement findADirectTagWithAssetMetadata = SimpleStatement.builder(
-                            String.format("SELECT tag_meta_json, asset_metadata FROM %s.%s " +
-                                            "WHERE bucket = ? AND id = ? AND source_id = ? AND tag_type_name = ? AND is_deleted = false",
-                                    KEYSPACE, TABLE_NAME))
-                    .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
-                    .build();
-            findADirectTagWithAssetMetadataRowStmt = cassSession.prepare(findADirectTagWithAssetMetadata);
+            findSpecificDirectTagStmt = prepare(String.format(
+                    "SELECT tag_meta_json, asset_metadata, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = false AND source_id = ? AND tag_type_name = ?",
+                    KEYSPACE, TABLE_NAME));
 
-            // Find all propagated tags
-            SimpleStatement findAllPropagatedTagsStatement = SimpleStatement.builder(
-                            String.format("SELECT id, source_id, tag_meta_json FROM %s.%s " +
-                                            "WHERE bucket = ? AND id = ? AND is_propagated = true AND is_deleted = false ALLOW FILTERING",
-                                    KEYSPACE, TABLE_NAME))
-                    .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
-                    .build();
-            findAllPropagatedTagsStmt = cassSession.prepare(findAllPropagatedTagsStatement);
+            findSpecificDeletedTagStmt = prepare(String.format(
+                    "SELECT tag_meta_json, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = false AND source_id = ? AND tag_type_name = ?",
+                    KEYSPACE, TABLE_NAME));
 
-            // Find all propagated tags by type name
-            SimpleStatement findAllPropagatedTagsByTypeNameStatement = SimpleStatement.builder(
-                            String.format("SELECT bucket, id, source_id, tag_type_name, asset_metadata FROM %s.%s " +
-                                            "WHERE source_id = ? AND tag_type_name = ? AND is_propagated = true AND is_deleted = false ALLOW FILTERING",
-                                    KEYSPACE, TABLE_NAME))
-                    .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
-                    .build();
-            findAllPropagatedTagsByTypeNameStmt = cassSession.prepare(findAllPropagatedTagsByTypeNameStatement);
+            findAllTagDetailsForAssetStmt = prepare(String.format(
+                    "SELECT tag_meta_json, is_propagated, tag_type_name, is_deleted FROM %s.%s WHERE bucket = ? AND id = ?", KEYSPACE, TABLE_NAME));
 
-            // Find all propagated tags optimized
-            SimpleStatement findAllPropagatedTagsOptStatement = SimpleStatement.builder(
-                            String.format("SELECT bucket, id, source_id, tag_type_name FROM %s.%s " +
-                                            "WHERE source_id = ? AND tag_type_name = ? AND is_propagated = true AND is_deleted = false ALLOW FILTERING",
-                                    KEYSPACE, TABLE_NAME))
-                    .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
-                    .build();
-            findAllPropagatedTagsOptStmt = cassSession.prepare(findAllPropagatedTagsOptStatement);
+            // === Statements for 'propagated_tags_by_source' table (using HARD DELETES) ===
+            findPropagationsBySourceStmt = prepare(String.format(
+                    "SELECT propagated_asset_id, asset_metadata FROM %s.%s WHERE source_id = ? AND tag_type_name = ?", KEYSPACE, PROPAGATED_TAGS_TABLE_NAME));
 
-            // Insert tag
-            SimpleStatement insertTagStatement = SimpleStatement.builder(
-                            String.format("INSERT INTO %s.%s " +
-                                            "(bucket, id, source_id, tag_type_name, is_propagated, is_deleted, updated_at, asset_metadata, tag_meta_json) " +
-                                            "VALUES (?, ?, ?, ?, ?, false, ?, ?, ?)",
-                                    KEYSPACE, TABLE_NAME))
-                    .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
-                    .build();
-            insertTagStmt = cassSession.prepare(insertTagStatement);
+            insertPropagationStmt = prepare(String.format(
+                    "INSERT INTO %s.%s (source_id, tag_type_name, propagated_asset_id, asset_metadata, updated_at) VALUES (?, ?, ?, ?, ?)",
+                    KEYSPACE, PROPAGATED_TAGS_TABLE_NAME));
 
-            // Soft delete tag
-            SimpleStatement softDeleteTagStatement = SimpleStatement.builder(
-                            String.format("UPDATE %s.%s " +
-                                            "SET is_deleted = true, updated_at = ? " +
-                                            "WHERE bucket = ? AND id = ? AND source_id = ? AND tag_type_name = ?",
-                                    KEYSPACE, TABLE_NAME))
-                    .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
-                    .build();
-            deleteTagStmt = cassSession.prepare(softDeleteTagStatement);
-
-            // To Fetch a tag row with PK
-            // Find all tags with additional is_propagated key
-            SimpleStatement findTagByPK = SimpleStatement.builder(
-                            String.format(
-                                    "SELECT tag_meta_json FROM %s.%s " +
-                                            "WHERE bucket = ? AND id = ? AND source_id = ? AND tag_type_name = ?",
-                                    KEYSPACE, TABLE_NAME))
-                    .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
-                    .build();
-
-            findTagAttachmentsByPK = cassSession.prepare(findTagByPK);
+            deletePropagationStmt = prepare(String.format(
+                    "DELETE FROM %s.%s WHERE source_id = ? AND tag_type_name = ? AND propagated_asset_id = ?", KEYSPACE, PROPAGATED_TAGS_TABLE_NAME));
 
         } catch (Exception e) {
             LOG.error("Failed to initialize TagDAO", e);
@@ -217,19 +152,10 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         }
     }
 
-    // Helper method to calculate optimal local pool size
-    private int calculateOptimalLocalPoolSize() {
-        int cores = Runtime.getRuntime().availableProcessors();
-        double targetUtilization = 0.75;
-        int baseConnections = (int) Math.ceil(cores * targetUtilization);
-
-        // Minimum of 4, maximum of 8 connections per host
-        return Math.min(Math.max(baseConnections, 4), 8);
-    }
-
-    // Helper method to calculate optimal remote pool size
-    private int calculateOptimalRemotePoolSize() {
-        return Math.max(calculateOptimalLocalPoolSize() / 2, 2);
+    private PreparedStatement prepare(String cql) {
+        return cassSession.prepare(SimpleStatement.builder(cql)
+                .setConsistencyLevel(DefaultConsistencyLevel.LOCAL_QUORUM)
+                .build());
     }
 
     private void initializeSchema(Map<String, String> replicationConfig) throws AtlasBaseException {
@@ -237,92 +163,62 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 .map(entry -> String.format("'%s': '%s'", entry.getKey(), entry.getValue()))
                 .collect(Collectors.joining(", "));
 
-        // Create keyspace
         String createKeyspaceQuery = String.format(
                 "CREATE KEYSPACE IF NOT EXISTS %s WITH replication = {%s} AND durable_writes = true;",
                 KEYSPACE, replicationConfigString);
-        SimpleStatement keyspaceStmt = SimpleStatement.builder(createKeyspaceQuery)
-                .setConsistencyLevel(DefaultConsistencyLevel.ALL)
-                .build();
-
-        executeWithRetry(keyspaceStmt);
+        executeWithRetry(SimpleStatement.builder(createKeyspaceQuery).setConsistencyLevel(DefaultConsistencyLevel.ALL).build());
         LOG.info("Ensured keyspace {} exists", KEYSPACE);
 
-        // Create table if not exists
-        String createTableQuery = String.format(
+        // Create 'effective_tags' table with STCS (good for general writes)
+        String createEffectiveTagsTable = String.format(
                 "CREATE TABLE IF NOT EXISTS %s.%s (" +
                         "id text, " +
                         "bucket int, " +
-                        "property_name text, " +
-                        "tag_type_name text, " +
                         "is_propagated boolean, " +
                         "source_id text, " +
+                        "tag_type_name text, " +
                         "tag_meta_json text, " +
                         "asset_metadata text, " +
                         "updated_at timestamp, " +
                         "is_deleted boolean, " +
-                        "PRIMARY KEY ((bucket), id, source_id, tag_type_name)" +
-                        ") WITH compaction = {" +
-                        "'class': 'SizeTieredCompactionStrategy', " +
-                        "'min_threshold': 4, " +
-                        "'max_threshold': 32" +
-                        "};",
+                        "PRIMARY KEY ((bucket, id), is_propagated, source_id, tag_type_name)" +
+                        ") WITH compaction = {'class': 'SizeTieredCompactionStrategy'};",
                 KEYSPACE, TABLE_NAME);
+        executeWithRetry(SimpleStatement.builder(createEffectiveTagsTable).setConsistencyLevel(DefaultConsistencyLevel.ALL).build());
+        LOG.info("Ensured table {}.{} exists with SizeTieredCompactionStrategy", KEYSPACE, TABLE_NAME);
 
-        SimpleStatement tableStmt = SimpleStatement.builder(createTableQuery)
-                .setConsistencyLevel(DefaultConsistencyLevel.ALL)
-                .build();
 
-        executeWithRetry(tableStmt);
-        LOG.info("Ensured table {}.{} exists", KEYSPACE, TABLE_NAME);
-
-        // Create necessary indexes
-        String createIsDeletedIndex = String.format(
-                "CREATE INDEX IF NOT EXISTS idx_is_deleted ON %s.%s (is_deleted);",
-                KEYSPACE, TABLE_NAME);
-        executeWithRetry(SimpleStatement.builder(createIsDeletedIndex).build());
-        LOG.info("Created index on is_deleted column");
-
-        String createSourceIdIndex = String.format(
-                "CREATE INDEX IF NOT EXISTS idx_source_id ON %s.%s (source_id);",
-                KEYSPACE, TABLE_NAME);
-        executeWithRetry(SimpleStatement.builder(createSourceIdIndex).build());
-
-        String createTagTypeNameIndex = String.format(
-                "CREATE INDEX IF NOT EXISTS idx_tag_type_name ON %s.%s (tag_type_name);",
-                KEYSPACE, TABLE_NAME);
-        executeWithRetry(SimpleStatement.builder(createTagTypeNameIndex).build());
-
-        String createIsPropagatedIndex = String.format(
-                "CREATE INDEX IF NOT EXISTS idx_is_propagated ON %s.%s (is_propagated);",
-                KEYSPACE, TABLE_NAME);
-        executeWithRetry(SimpleStatement.builder(createIsPropagatedIndex).build());
+        // Create 'propagated_tags_by_source' table with LCS and hard deletes for optimal read performance
+        String createPropagatedTagsTable = String.format(
+                "CREATE TABLE IF NOT EXISTS %s.%s (" +
+                        "source_id text, " +
+                        "tag_type_name text, " +
+                        "propagated_asset_id text, " +
+                        "asset_metadata text, " +
+                        "updated_at timestamp, " +
+                        "PRIMARY KEY ((source_id, tag_type_name), propagated_asset_id)" +
+                        ") WITH compaction = {'class': 'LeveledCompactionStrategy'};",
+                KEYSPACE, PROPAGATED_TAGS_TABLE_NAME);
+        executeWithRetry(SimpleStatement.builder(createPropagatedTagsTable).setConsistencyLevel(DefaultConsistencyLevel.ALL).build());
+        LOG.info("Ensured table {}.{} exists with LeveledCompactionStrategy and hard deletes", KEYSPACE, PROPAGATED_TAGS_TABLE_NAME);
     }
 
     @Override
-    public void putDirectTag(String assetId,
-                             String tagTypeName,
-                             AtlasClassification tag,
-                             Map<String, Object> assetMetadata) throws AtlasBaseException {
+    public void putDirectTag(String assetId, String tagTypeName, AtlasClassification tag, Map<String, Object> assetMetadata) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("putDirectTag");
-
         try {
             int bucket = calculateBucket(assetId);
-            // Use prepared statement with bound values
-            BoundStatement bound = insertTagStmt.bind()
-                    .setInt(0, bucket)                                    // bucket
-                    .setString(1, assetId)                               // id
-                    .setString(2, assetId)                               // source_id
-                    .setString(3, tagTypeName)                           // tag_type_name
-                    .setBoolean(4, false)                                // is_propagated
-                    // is_deleted is hardcoded as false in the query
-                    .setInstant(5, Instant.ofEpochMilli(RequestContext.get().getRequestTime()))   // updated_at
-                    .setString(6, AtlasType.toJson(assetMetadata))      // asset_metadata
-                    .setString(7, AtlasType.toJson(tag));               // tag_meta_json
-
+            BoundStatement bound = insertEffectiveTagStmt.bind()
+                    .setInt("bucket", bucket)
+                    .setString("id", assetId)
+                    .setBoolean("is_propagated", false)
+                    .setString("source_id", assetId) // For direct tags, source_id is the asset itself
+                    .setString("tag_type_name", tagTypeName)
+                    .setString("tag_meta_json", AtlasType.toJson(tag))
+                    .setString("asset_metadata", AtlasType.toJson(assetMetadata))
+                    .setInstant("updated_at", Instant.ofEpochMilli(RequestContext.get().getRequestTime()));
 
             executeWithRetry(bound);
-
         } catch (Exception e) {
             LOG.error("Error in putDirectTag for assetId: {}, tagTypeName: {}", assetId, tagTypeName, e);
             throw new AtlasBaseException("Error executing direct tag insert", e);
@@ -332,29 +228,49 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     }
 
     @Override
-    public List<AtlasClassification> getPropagationsForAttachment(String vertexId,
-                                                                  String sourceEntityGuid) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder =
-                RequestContext.get().startMetricRecord("getPropagationsForAttachment");
+    public void putPropagatedTags(String sourceAssetId, String tagTypeName, Set<String> propagatedAssetVertexIds,
+                                  Map<String, Map<String, Object>> assetMinAttrsMap, AtlasClassification tag) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("putPropagatedTags");
         try {
-            // Fetch all (direct + propagated) tags on this vertex
-            List<AtlasClassification> allTags = getAllClassificationsForVertex(vertexId);
+            List<String> vertexIds = new ArrayList<>(propagatedAssetVertexIds);
+            Instant now = Instant.ofEpochMilli(RequestContext.get().getRequestTime());
+            String tagJson = AtlasType.toJson(tag);
 
-            List<AtlasClassification> matchingTags = allTags.stream()
-                    .filter(tag -> sourceEntityGuid.equals(tag.getEntityGuid()))
-                    .collect(Collectors.toList());
+            for (int i = 0; i < vertexIds.size(); i += BATCH_SIZE_LIMIT) {
+                // Use a LOGGED batch to ensure atomicity across the two tables
+                BatchStatementBuilder batchBuilder = BatchStatement.builder(DefaultBatchType.LOGGED)
+                        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 
-            if (matchingTags.isEmpty()) {
-                LOG.info("getPropagationsForAttachment - No propagated tags found for vertexId: {}, sourceEntityGuid: {}", vertexId, sourceEntityGuid);
+                int endIndex = Math.min(i + BATCH_SIZE_LIMIT, vertexIds.size());
+                for (int j = i; j < endIndex; j++) {
+                    String propagatedAssetId = vertexIds.get(j);
+                    int bucket = calculateBucket(propagatedAssetId);
+                    String assetMetadataJson = AtlasType.toJson(assetMinAttrsMap.get(propagatedAssetId));
+
+                    // 1. Insert into effective_tags
+                    batchBuilder.addStatement(insertEffectiveTagStmt.bind()
+                            .setInt("bucket", bucket)
+                            .setString("id", propagatedAssetId)
+                            .setBoolean("is_propagated", true)
+                            .setString("source_id", sourceAssetId)
+                            .setString("tag_type_name", tagTypeName)
+                            .setString("tag_meta_json", tagJson)
+                            .setString("asset_metadata", assetMetadataJson)
+                            .setInstant("updated_at", now));
+
+                    // 2. Insert into propagated_tags_by_source
+                    batchBuilder.addStatement(insertPropagationStmt.bind()
+                            .setString("source_id", sourceAssetId)
+                            .setString("tag_type_name", tagTypeName)
+                            .setString("propagated_asset_id", propagatedAssetId)
+                            .setString("asset_metadata", assetMetadataJson)
+                            .setInstant("updated_at", now));
+                }
+                executeWithRetry(batchBuilder.build());
             }
-            return matchingTags;
-        } catch (AtlasBaseException abe) {
-            throw abe;
         } catch (Exception e) {
-            throw new AtlasBaseException(
-                    String.format("getPropagationsForAttachment=Error fetching propagations for attachment: vertexId=%s, sourceEntityGuid=%s",
-                            vertexId, sourceEntityGuid),
-                    e);
+            LOG.error("Error in putPropagatedTags for sourceAssetId: {}, tagTypeName: {}", sourceAssetId, tagTypeName, e);
+            throw new AtlasBaseException("Error executing batch propagation insert", e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
@@ -362,579 +278,256 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     @Override
     public List<AtlasClassification> getAllDirectTagsForVertex(String vertexId) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getAllDirectTagsForVertex");
+        BoundStatement bound = findDirectTagsForAssetStmt.bind(calculateBucket(vertexId), vertexId);
+        ResultSet rs = executeWithRetry(bound);
         List<AtlasClassification> tags = new ArrayList<>();
-
-        try {
-            int bucket = calculateBucket(vertexId);
-            BoundStatement bound = findAllDirectTagsStmt.bind(bucket, vertexId, vertexId);
-
-            ResultSet rs = executeWithRetry(bound);
-
-            for (Row row : rs) {
-                AtlasClassification classification = convertToAtlasClassification(row.getString("tag_meta_json"));
-                tags.add(classification);
+        for (Row row : rs) {
+            if (!row.getBoolean("is_deleted")) {
+                tags.add(convertToAtlasClassification(row.getString("tag_meta_json")));
             }
-
-            if (tags.isEmpty()) {
-                LOG.warn("getAllDirectTagsForVertex - No direct tags found for vertexId: {}, bucket: {}", vertexId, bucket);
-            }
-
-        } catch (Exception e) {
-            LOG.error("getAllDirectTagsForVertex=Error while fetching direct tags for vertexId={}", vertexId, e);
-            throw new AtlasBaseException("getAllDirectTagsForVertex - Error fetching direct tags", e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
         }
-
         return tags;
-    }
-
-    /**
-     * Extracts or resolves an AtlasClassification for the given row, loading direct tags if needed.
-     */
-    private AtlasClassification extractClassification(Row row) throws AtlasBaseException {
-        String sourceId = row.getString("source_id");
-        String id = row.getString("id");
-
-        if (sourceId == null || id == null) {
-            throw new AtlasBaseException("id or sourceId not present in Row");
-        }
-        AtlasClassification classification = convertToAtlasClassification(row.getString("tag_meta_json"));
-        if (!sourceId.equals(id)) {
-            AtlasClassification atlasClassification = null;
-            String typeName = classification.getTypeName();
-            atlasClassification = getClassificationFromPK(sourceId, sourceId, typeName);
-            if (atlasClassification != null) {
-                classification = atlasClassification;
-            }
-        }
-        return classification;
     }
 
     @Override
     public List<AtlasClassification> getAllClassificationsForVertex(String vertexId) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagsForAsset");
-        List<AtlasClassification> tags = new ArrayList<>();
-        try {
-            int bucket = calculateBucket(vertexId);
-            BoundStatement bound = findAllTagsStmt.bind(bucket, vertexId);
+        BoundStatement bound = findAllTagsForAssetStmt.bind(calculateBucket(vertexId), vertexId);
+        ResultSet rs = executeWithRetry(bound);
 
-            ResultSet rs = executeWithRetry(bound);
-            for (Row row : rs) {
-                AtlasClassification classification = extractClassification(row);
-                tags.add(classification);
+        final List<AtlasClassification> finalTags = new ArrayList<>();
+        for (Row row : rs) {
+            if (!row.getBoolean("is_deleted")) {
+                finalTags.add(convertToAtlasClassification(row.getString("tag_meta_json")));
             }
-
-            if (tags.isEmpty())
-                LOG.warn("getAllClassificationsForVertex: No classifications found for vertexId={}", vertexId);
-
-        } catch(Exception e){
-            LOG.error("getAllClassificationsForVertex=Error fetching tags for vertexId={}", vertexId, e);
-            throw new AtlasBaseException("getAllClassificationsForVertex - Error fetching tags", e);
-        } finally{
-            RequestContext.get().endMetricRecord(recorder);
         }
-        return tags;
-    }
-
-    @Override
-    public Tag getTagFromPK(String vertexId, String sourceId, String tagTypeName) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagsFromPK");
-        List<Tag> tags = new ArrayList<>();
-
-        try {
-            int bucket = calculateBucket(vertexId);
-            BoundStatement bound = findTagAttachmentsByPK.bind(bucket, vertexId, sourceId, tagTypeName);
-
-            ResultSet rs = executeWithRetry(bound);
-
-            for (Row row : rs) {
-                Tag tag = new Tag();
-                tag.setVertexId(vertexId);
-                tag.setTagTypeName(tagTypeName);
-                tag.setTagMetaJson(objectMapper.readValue(row.getString("tag_meta_json"), Map.class));
-                tags.add(tag);
-            }
-
-            if (tags.isEmpty()) {
-                LOG.warn("getTagFromPK: No tag found for vertexId={}, sourceId={}, tagTypeName={}", vertexId, sourceId, tagTypeName);
-                return null;
-            }
-
-        } catch (Exception e) {
-            LOG.error("getTagFromPK=getTagFromPK Error fetching tag for vertexId={}, sourceId={}, tagTypeName={}", vertexId, sourceId, tagTypeName, e);
-            throw new AtlasBaseException("Error fetching tags", e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-        return tags.get(0);
-    }
-
-    public AtlasClassification getClassificationFromPK(String vertexId, String sourceId, String tagTypeName) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagFromPK");
-        List<AtlasClassification> classifications = new ArrayList<>();
-
-        try {
-            int bucket = calculateBucket(vertexId);
-            BoundStatement bound = findTagAttachmentsByPK.bind(bucket, vertexId, sourceId, tagTypeName);
-
-            ResultSet rs = executeWithRetry(bound);
-            for (Row row : rs) {
-                AtlasClassification classification = convertToAtlasClassification(row.getString("tag_meta_json"));
-                classifications.add(classification);
-            }
-        } catch (Exception e) {
-            LOG.error("getClassificationFromPK=Error fetching classification for vertexId={}, sourceId={}, tagTypeName={}", vertexId, sourceId, tagTypeName, e);
-            throw new AtlasBaseException("Error fetching tags", e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-
-        if (classifications.isEmpty()) {
-            LOG.warn("No classification found for vertexId={}, sourceId={}, tagTypeName={}", vertexId, sourceId, tagTypeName);
-        }
-
-        return classifications.get(0);
-    }
-
-    @Override
-    public List<AtlasClassification> findByVertexIdAndPropagated(String vertexId) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getPropagatedTagsForVertex");
-        List<AtlasClassification> tags = new ArrayList<>();
-
-        int bucket = calculateBucket(vertexId);
-        try {
-            BoundStatement bound = findAllPropagatedTagsStmt.bind(bucket, vertexId);
-            ResultSet rs = executeWithRetry(bound);
-
-            for (Row row : rs) {
-                AtlasClassification classification = extractClassification(row);
-                tags.add(classification);
-            }
-        } catch (Exception e) {
-            LOG.error("findByVertexIdAndPropagated=Exception while fetching propagated tags for vertexId={}, bucket={}", vertexId, bucket, e);
-            throw new AtlasBaseException(String.format("Error fetching tags for asset: %s, bucket: %s", vertexId, bucket), e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-
-        if (tags.isEmpty()) {
-            LOG.warn("No propagated tags found for vertexId={}, bucket={}", vertexId, bucket);
-        }
-        return tags;
-    }
-
-    @Override
-    public AtlasClassification findDirectTagByVertexIdAndTagTypeName(String vertexId, String tagTypeName) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findTagByVertexIdAndTagTypeName");
-        int bucket = calculateBucket(vertexId);
-        try {
-            BoundStatement bound = findADirectTagStmt.bind(bucket, vertexId, vertexId, tagTypeName);
-            ResultSet rs = executeWithRetry(bound);
-
-            for (Row row : rs) {
-                return convertToAtlasClassification(row.getString("tag_meta_json"));
-            }
-            LOG.warn("No direct tag found for vertexId={}, tagTypeName={}, bucket={}", vertexId, tagTypeName, bucket);
-        } catch (Exception e) {
-            LOG.error("findDirectTagByVertexIdAndTagTypeName=Exception occurred while fetching direct tag for vertexId={}, tagTypeName={}, bucket={}", vertexId, tagTypeName, bucket, e);
-            throw new AtlasBaseException(String.format("Error fetching tag for asset: %s and tag type: %s, bucket: %s", vertexId, tagTypeName, bucket), e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-        return null;
-    }
-
-    @Override
-    public AtlasClassification findDirectDeletedTagByVertexIdAndTagTypeName(String vertexId, String tagTypeName) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDirectDeletedTagByVertexIdAndTagTypeName");
-        int bucket = calculateBucket(vertexId);
-        try {
-            BoundStatement bound = findADirectDeletedTagStmt.bind(bucket, vertexId, vertexId, tagTypeName);
-            ResultSet rs = executeWithRetry(bound);
-
-            for (Row row : rs) {
-                return convertToAtlasClassification(row.getString("tag_meta_json"));
-            }
-            LOG.warn("No deleted tag found for vertexId={}, tagTypeName={}, bucket={}", vertexId, tagTypeName, bucket);
-        } catch (Exception e) {
-            LOG.error("findDirectDeletedTagByVertexIdAndTagTypeName=Error retrieving deleted tag for vertexId={}, tagTypeName={}, bucket={}", vertexId, tagTypeName, bucket, e);
-            throw new AtlasBaseException(String.format("Error fetching tag for asset: %s and tag type: %s, bucket: %s", vertexId, tagTypeName, bucket), e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-        return null;
-    }
-
-    @Override
-    public Tag findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(String vertexId, String tagTypeName) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata");
-        int bucket = calculateBucket(vertexId);
-        try {
-            BoundStatement bound = findADirectTagWithAssetMetadataRowStmt.bind(bucket, vertexId, vertexId, tagTypeName);
-            ResultSet rs = executeWithRetry(bound);
-
-            for (Row row : rs) {
-                Tag tag = new Tag();
-                tag.setVertexId(vertexId);
-                tag.setTagTypeName(tagTypeName);
-                tag.setTagMetaJson(objectMapper.readValue(row.getString("tag_meta_json"), Map.class));
-                tag.setAssetMetadata(objectMapper.readValue(row.getString("asset_metadata"), Map.class));
-                return tag;
-            }
-            LOG.warn("No direct tag with asset metadata found for vertexId={}, tagTypeName={}, bucket={}", vertexId, tagTypeName, bucket);
-        } catch (Exception e) {
-            LOG.error("findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata=Error fetching direct tag with asset metadata for vertexId={}, tagTypeName={}, bucket={}", vertexId, tagTypeName, bucket, e);
-            throw new AtlasBaseException(String.format("Error fetching tag for asset: %s and tag type: %s, bucket: %s", vertexId, tagTypeName, bucket), e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-        return null;
-    }
-
-    @Override
-    public List<Tag> getAllTagsByVertexId(String vertexId) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagsWithIsPropagatedByVertexId");
-        int bucket = calculateBucket(vertexId);
-        try {
-            BoundStatement bound = findAllTagsByVertexIdStmt.bind(bucket, vertexId);
-            ResultSet rs = executeWithRetry(bound);
-
-            List<Tag> results = new ArrayList<>();
-
-            for (Row row : rs) {
-                Tag tag = new Tag();
-                tag.setVertexId(vertexId);
-                tag.setPropagated(row.getBoolean("is_propagated"));
-                String sourceId = row.getString("source_id");
-                String typeName = row.getString("tag_type_name");
-                Tag sourceTag = getTagFromPK(sourceId, sourceId, typeName);
-                tag.setTagMetaJson(sourceTag.getTagMetaJson());
-                results.add(tag);
-            }
-
-            if (results.isEmpty()) {
-                LOG.warn("No tag rows found for vertexId={}, bucket={}", vertexId, bucket);
-            }
-            return results;
-        } catch (Exception e) {
-            LOG.error("getAllTagsByVertexId=Error fetching tags for vertexId={}, bucket={}", vertexId, bucket, e);
-            throw new AtlasBaseException(String.format("Error fetching tag for id: %s and bucket: %s", vertexId, bucket), e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-    }
-
-    @Override
-    public PaginatedTagResult getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
-        // Track all pages using a static variable per tag type and source
-        String cacheKey = sourceVertexId + "|" + tagTypeName;
-        String storedPagingState = PagingStateCache.getState(cacheKey);
-
-        PaginatedTagResult result = getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, storedPagingState, 100, cacheKey);
-
-        // Store paging state for next call
-        PagingStateCache.setState(cacheKey, result.getPagingState());
-
-        // Return empty list when we've reached the end
-        if (result.getTags().isEmpty() && result.getPagingState() == null) {
-            LOG.info("No more tags found for source_id: {}, tagTypeName: {}", sourceVertexId, tagTypeName);
-        }
-
-        return result;
+        return finalTags;
     }
 
     @Override
     public PaginatedTagResult getPropagationsForAttachmentBatchWithPagination(String sourceVertexId, String tagTypeName,
                                                                               String pagingStateStr, int pageSize, String cacheKey) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getVertexIdsForAttachment");
-        List<Tag> tags = new ArrayList<>();
-        String nextPagingState = null;
-        boolean done = false;
-        try {
-            BoundStatement bound = findAllPropagatedTagsByTypeNameStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
+        BoundStatement bound = findPropagationsBySourceStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
 
-            // Apply the paging state if provided
-            if (pagingStateStr != null && !pagingStateStr.isEmpty()) {
-                try {
-                    // For Driver 4.13.0, convert the Base64 string back to ByteBuffer
-                    byte[] decoded = Base64.getDecoder().decode(pagingStateStr);
-                    ByteBuffer pagingStateBuffer = ByteBuffer.wrap(decoded);
-                    bound = bound.setPagingState(pagingStateBuffer);
-                } catch (Exception e) {
-                    LOG.warn("Failed to decode paging state string", e);
-                    // Continue without paging state on error
-                }
-            }
-
-            ResultSet rs = cassSession.execute(bound);
-
-            // Process only up to pageSize rows
-            int count = 0;
-            for (Row row : rs) {
-                Tag tag = new Tag();
-                tag.setBucket(row.getInt("bucket"));
-                tag.setVertexId(row.getString("id"));
-                tag.setTagTypeName(row.getString("tag_type_name"));
-                tag.setSourceVertexId(row.getString("source_id"));
-                tag.setAssetMetadata(objectMapper.readValue(row.getString("asset_metadata"), Map.class));
-                tags.add(tag);
-
-                count++;
-                if (count >= pageSize) {
-                    break;
-                }
-            }
-
-            // Only set paging state if we got a full page of results
-            if (count >= pageSize && !rs.isFullyFetched()) {
-                try {
-                    // Get the paging state from the result set
-                    ByteBuffer pagingStateBuffer = rs.getExecutionInfo().getPagingState();
-                    if (pagingStateBuffer != null) {
-                        // Make a copy of the buffer to avoid position issues
-                        ByteBuffer copy = ByteBuffer.allocate(pagingStateBuffer.remaining());
-                        copy.put(pagingStateBuffer.duplicate());
-                        copy.flip();
-
-                        // Encode as Base64 string for safe transport
-                        byte[] bytes = new byte[copy.remaining()];
-                        copy.get(bytes);
-                        nextPagingState = Base64.getEncoder().encodeToString(bytes);
-                    }
-                } catch (Exception e) {
-                    LOG.warn("Could not process paging state, pagination may not work correctly", e);
-                    nextPagingState = null;
-                    PagingStateCache.setState(cacheKey, nextPagingState);
-                }
-            } else {
-                // We've reached the end - explicitly set nextPagingState to null
-                nextPagingState = null;
-                PagingStateCache.setState(cacheKey, nextPagingState);
-                done = true;
-                LOG.info("Reached end of results for source_id: {}, tagTypeName: {}, fetched {} rows",
-                        sourceVertexId, tagTypeName, count);
-            }
-
-            if (tags.isEmpty()) {
-                LOG.info("No propagated tags found for source_id: {}, tagTypeName: {}", sourceVertexId, tagTypeName);
-            }
-        } catch (Exception e) {
-            throw new AtlasBaseException(String.format("getPropagationsForAttachmentBatchWithPagination=Error fetching tags for source_id: %s and tag type: %s",
-                    sourceVertexId, tagTypeName), e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
+        if (pagingStateStr != null && !pagingStateStr.isEmpty()) {
+            bound = bound.setPagingState(ByteBuffer.wrap(Base64.getDecoder().decode(pagingStateStr)));
         }
 
+        ResultSet rs = executeWithRetry(bound);
+        List<Tag> tags = new ArrayList<>(pageSize);
+
+        Iterator<Row> iterator = rs.iterator();
+        int count = 0;
+
+        // Iterate up to pageSize, fetching from the iterator
+        while (count < pageSize && iterator.hasNext()) {
+            Row row = iterator.next();
+            Tag tag = new Tag();
+            tag.setVertexId(row.getString("propagated_asset_id"));
+            tag.setSourceVertexId(sourceVertexId);
+            tag.setTagTypeName(tagTypeName);
+            try {
+                tag.setAssetMetadata(objectMapper.readValue(row.getString("asset_metadata"), Map.class));
+            } catch (JsonProcessingException e) {
+                LOG.error("Error parsing asset_metadata for propagated tag", e);
+            }
+            tags.add(tag);
+            count++;
+        }
+
+        ByteBuffer pagingStateBuffer = rs.getExecutionInfo().getPagingState();
+        String nextPagingState = null;
+
+        if (pagingStateBuffer != null) {
+            byte[] bytes = new byte[pagingStateBuffer.remaining()];
+            pagingStateBuffer.get(bytes);
+            if (bytes.length > 0) {
+                nextPagingState = Base64.getEncoder().encodeToString(bytes);
+            }
+        }
+
+        boolean done = (nextPagingState == null || nextPagingState.isEmpty());
+
+        PagingStateCache.setState(cacheKey, nextPagingState);
         return new PaginatedTagResult(tags, nextPagingState, done);
     }
 
     @Override
-    public List<Tag> getTagPropagationsForAttachment(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getVertexIdsForAttachment");
-        List<Tag> tags = new ArrayList<>();
-
-        try {
-            BoundStatement bound = findAllPropagatedTagsOptStmt.bind(sourceVertexId, tagTypeName);
-            ResultSet rs = executeWithRetry(bound);
-
-            for (Row row : rs) {
-                Tag tag = new Tag();
-                tag.setBucket(row.getInt("bucket"));
-                tag.setVertexId(row.getString("id"));
-                tag.setTagTypeName(row.getString("tag_type_name"));
-                tag.setSourceVertexId(row.getString("source_id"));
-                tags.add(tag);
-            }
-
-            if (tags.isEmpty()) {
-                LOG.info("No propagated assets found for source_id: {}, tagTypeName: {}", sourceVertexId, tagTypeName);
-            }
-        } catch (Exception e) {
-            LOG.error("getTagPropagationsForAttachment=Error fetching propagated tags for source_id: {}, tagTypeName: {}", sourceVertexId, tagTypeName, e);
-            throw new AtlasBaseException(String.format("Error fetching tags for source_id: %s and tag type: %s",
-                                       sourceVertexId, tagTypeName), e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-
-        return tags;
-    }
-
-    @Override
     public void deleteDirectTag(String sourceVertexId, AtlasClassification tagToDelete) throws AtlasBaseException {
-        // Do not delete row, mark is_active as false
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("deleteTags");
         int bucket = calculateBucket(sourceVertexId);
-        String tagType = tagToDelete != null ? tagToDelete.getTypeName() : "null";
-        try {
-            BoundStatement bound = deleteTagStmt.bind()
-                    .setInstant(0, Instant.ofEpochMilli(RequestContext.get().getRequestTime()))   // updated_at
-                    .setInt(1, bucket)
-                    .setString(2, sourceVertexId)
-                    .setString(3, sourceVertexId)
-                    .setString(4, tagType);
+        String tagTypeName = tagToDelete.getTypeName();
 
-            executeWithRetry(bound);
-        } catch (Exception e) {
-            LOG.error("deleteDirectTag=Failed to delete direct tag - vertexId: {}, tagType: {}, bucket: {}",
-                    sourceVertexId, tagType, bucket, e);
-            throw new AtlasBaseException("Error deleting tags", e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
+        BoundStatement bound = deleteEffectiveTagStmt.bind()
+                .setInstant("updated_at", Instant.ofEpochMilli(RequestContext.get().getRequestTime()))
+                .setInt("bucket", bucket)
+                .setString("id", sourceVertexId)
+                .setBoolean("is_propagated", false)
+                .setString("source_id", sourceVertexId)
+                .setString("tag_type_name", tagTypeName);
+
+        executeWithRetry(bound);
     }
 
     @Override
     public void deleteTags(List<Tag> tagsToDelete) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(tagsToDelete)) {
+            return;
+        }
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("deleteTags");
-
         try {
-            if (CollectionUtils.isEmpty(tagsToDelete)) {
-                LOG.warn("deleteTags called with empty or null tag list. No tags to delete.");
-                return;
-            }
+            Instant now = Instant.ofEpochMilli(RequestContext.get().getRequestTime());
+            BatchStatementBuilder batchBuilder = BatchStatement.builder(DefaultBatchType.LOGGED)
+                    .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
 
-            // Create initial batch
-            BatchStatement batch = BatchStatement.builder(DefaultBatchType.LOGGED)
-                    .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                    .build();
+            for (Tag tag : tagsToDelete) {
+                // 1. Soft delete from effective_tags
+                batchBuilder.addStatement(deleteEffectiveTagStmt.bind()
+                        .setInstant("updated_at", now)
+                        .setInt("bucket", tag.getBucket())
+                        .setString("id", tag.getVertexId())
+                        .setBoolean("is_propagated", tag.isPropagated())
+                        .setString("source_id", tag.getSourceVertexId())
+                        .setString("tag_type_name", tag.getTagTypeName()));
 
-            for (Tag tagToDelete : tagsToDelete) {
-                // Create bound statement for each delete
-                BoundStatement bound = deleteTagStmt.bind()
-                        .setInstant(0, Instant.ofEpochMilli(RequestContext.get().getRequestTime()))   // updated_at
-                        .setInt(1, tagToDelete.getBucket())            // bucket
-                        .setString(2, tagToDelete.getVertexId())       // id
-                        .setString(3, tagToDelete.getSourceVertexId()) // source_id
-                        .setString(4, tagToDelete.getTagTypeName());   // tag_type_name
-
-                // Add to batch
-                batch = batch.add(bound);
-
-                // If batch size limit reached, execute it
-                if (batch.size() >= BATCH_SIZE_LIMIT) {
-                    cassSession.execute(batch);
-                    // Create new batch for next statements
-                    batch = BatchStatement.builder(DefaultBatchType.LOGGED)
-                            .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                            .build();
+                // 2. If it's a propagated tag, HARD delete from the lookup table
+                if (tag.isPropagated()) {
+                    batchBuilder.addStatement(deletePropagationStmt.bind()
+                            .setString("source_id", tag.getSourceVertexId())
+                            .setString("tag_type_name", tag.getTagTypeName())
+                            .setString("propagated_asset_id", tag.getVertexId()));
                 }
             }
-
-            // Execute any remaining statements in the final batch
-            if (batch.size() > 0) {
-                cassSession.execute(batch);
-            }
-
+            executeWithRetry(batchBuilder.build());
         } catch (Exception e) {
-            LOG.error("deleteTags=Failed to delete tags. Total tags attempted: {}, Tags: {}",
-                    tagsToDelete.size(),
-                    tagsToDelete.stream()
-                            .map(t -> String.format("[id=%s, sourceId=%s, type=%s]",
-                                    t.getVertexId(), t.getSourceVertexId(), t.getTagTypeName()))
-                            .collect(Collectors.toList()), e);
+            LOG.error("deleteTags=Failed to delete tags batch", e);
             throw new AtlasBaseException("Error deleting tags", e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
     }
 
+
+    // ===================================================================================
+    // Other methods from the interface, adapted for the new schema
+    // ===================================================================================
+
     @Override
-    public void putPropagatedTags(String sourceAssetId,
-                                  String tagTypeName,
-                                  Set<String> propagatedAssetVertexIds,
-                                  Map<String, Map<String, Object>> assetMinAttrsMap,
-                                  AtlasClassification tag) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("putPropagatedTags");
+    public AtlasClassification findDirectTagByVertexIdAndTagTypeName(String assetVertexId, String tagTypeName) throws AtlasBaseException {
+        Tag tag = findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(assetVertexId, tagTypeName);
+        return tag != null ? toAtlasClassification(tag.getTagMetaJson()) : null;
+    }
 
+    @Override
+    public Tag findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(String vertexId, String tagTypeName) throws AtlasBaseException {
+        int bucket = calculateBucket(vertexId);
+        BoundStatement bound = findSpecificDirectTagStmt.bind(bucket, vertexId, vertexId, tagTypeName);
+        ResultSet rs = executeWithRetry(bound);
+        Row row = rs.one();
+
+        if (row == null || row.getBoolean("is_deleted")) {
+            return null;
+        }
+
+        Tag tag = new Tag();
+        tag.setVertexId(vertexId);
+        tag.setTagTypeName(tagTypeName);
         try {
-            List<String> vertexIds = new ArrayList<>(propagatedAssetVertexIds);
-            for (int i = 0; i < vertexIds.size(); i += BATCH_SIZE_LIMIT) {
-                // Create new batch for each group
-                BatchStatement batch = BatchStatement.builder(DefaultBatchType.LOGGED)
-                        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM)
-                        .build();
+            tag.setTagMetaJson(objectMapper.readValue(row.getString("tag_meta_json"), Map.class));
+            tag.setAssetMetadata(objectMapper.readValue(row.getString("asset_metadata"), Map.class));
+        } catch (JsonProcessingException e) {
+            throw new AtlasBaseException("Failed to parse tag JSON", e);
+        }
+        return tag;
+    }
 
-                // Process up to BATCH_SIZE_LIMIT vertices
-                int endIndex = Math.min(i + BATCH_SIZE_LIMIT, vertexIds.size());
-                for (int j = i; j < endIndex; j++) {
-                    String propagatedAssetVertexId = vertexIds.get(j);
-                    int bucket = calculateBucket(propagatedAssetVertexId);
+    @Override
+    public AtlasClassification findDirectDeletedTagByVertexIdAndTagTypeName(String vertexId, String tagTypeName) throws AtlasBaseException {
+        int bucket = calculateBucket(vertexId);
+        BoundStatement bound = findSpecificDeletedTagStmt.bind(bucket, vertexId, vertexId, tagTypeName);
+        ResultSet rs = executeWithRetry(bound);
+        Row row = rs.one();
 
-                    // Create bound statement for insert
-                    BoundStatement bound = insertTagStmt.bind()
-                            .setInt(0, bucket)
-                            .setString(1, propagatedAssetVertexId)
-                            .setString(2, sourceAssetId)
-                            .setString(3, tagTypeName)
-                            .setBoolean(4, true)  // is_propagated
-                            .setInstant(5, Instant.ofEpochMilli(RequestContext.get().getRequestTime()))
-                            .setString(6, AtlasType.toJson(assetMinAttrsMap.get(propagatedAssetVertexId)))
-                            .setString(7, AtlasType.toJson(tag));
+        if (row != null && row.getBoolean("is_deleted")) {
+            return convertToAtlasClassification(row.getString("tag_meta_json"));
+        }
+        return null;
+    }
 
-                    batch = batch.add(bound);
-                }
+    @Override
+    public PaginatedTagResult getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
+        String cacheKey = sourceVertexId + "|" + tagTypeName;
+        String storedPagingState = PagingStateCache.getState(cacheKey);
+        // Default page size of 100
+        return getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, storedPagingState, 100, cacheKey);
+    }
 
-                // Execute batch with retry logic
-                executeWithRetry(batch);
+    @Override
+    public List<Tag> getTagPropagationsForAttachment(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
+        List<Tag> allTags = new ArrayList<>();
+        PaginatedTagResult result;
+        String pagingState = null;
+        String cacheKey = "full_fetch_" + sourceVertexId + "|" + tagTypeName;
+        do {
+            result = getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, pagingState, 500, cacheKey);
+            allTags.addAll(result.getTags());
+            pagingState = result.getPagingState();
+        } while (!result.isDone());
+        return allTags;
+    }
+
+    @Override
+    public List<AtlasClassification> findByVertexIdAndPropagated(String vertexId) throws AtlasBaseException {
+        int bucket = calculateBucket(vertexId);
+        BoundStatement bound = findPropagatedTagsForAssetStmt.bind(bucket, vertexId);
+        ResultSet rs = executeWithRetry(bound);
+        List<AtlasClassification> tags = new ArrayList<>();
+        for (Row row : rs) {
+            if (!row.getBoolean("is_deleted")) {
+                tags.add(convertToAtlasClassification(row.getString("tag_meta_json")));
+            }
+        }
+        return tags;
+    }
+
+    @Override
+    public List<AtlasClassification> getPropagationsForAttachment(String vertexId, String sourceEntityGuid) throws AtlasBaseException {
+        List<AtlasClassification> allTags = getAllClassificationsForVertex(vertexId);
+        return allTags.stream()
+                .filter(tag -> sourceEntityGuid.equals(tag.getEntityGuid()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<Tag> getAllTagsByVertexId(String vertexId) throws AtlasBaseException {
+        int bucket = calculateBucket(vertexId);
+        BoundStatement bound = findAllTagDetailsForAssetStmt.bind(bucket, vertexId);
+        ResultSet rs = executeWithRetry(bound);
+        List<Tag> tags = new ArrayList<>();
+
+        for (Row row : rs) {
+            if (row.getBoolean("is_deleted")) {
+                continue;
             }
 
-        } catch (Exception e) {
-            LOG.error("Error in putPropagatedTags for sourceAssetId: {}, tagTypeName: {}", sourceAssetId, tagTypeName, e);
-            throw new AtlasBaseException("Error executing batch operation", e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-    }
+            Tag tag = new Tag();
+            tag.setVertexId(vertexId);
+            tag.setTagTypeName(row.getString("tag_type_name"));
+            tag.setPropagated(row.getBoolean("is_propagated"));
 
-
-    public static AtlasClassification convertToAtlasClassification(String tagMetaJson) throws AtlasBaseException {
-        if (tagMetaJson == null) {
-            throw new AtlasBaseException("Tag metadata JSON cannot be null");
-        }
-        try {
-            Map tagMetaJsonMap = objectMapper.readValue(tagMetaJson, Map.class);
-            return getAtlasClassification(tagMetaJsonMap);
-        } catch (JsonProcessingException e) {
-            LOG.error("Error converting to AtlasClassification. JSON: {}",
-                    tagMetaJson, e);
-            throw new AtlasBaseException("Unable to map to AtlasClassification", e);
-        }
-    }
-
-    public static AtlasClassification toAtlasClassification(Map<String, Object> tagMetaJsonMap) throws AtlasBaseException {
-        return getAtlasClassification(tagMetaJsonMap);
-    }
-
-    private static AtlasClassification getAtlasClassification(Map<String, Object> tagMetaJsonMap) throws AtlasBaseException {
-        AtlasClassification classification = new AtlasClassification();
-        classification.setTypeName((String) tagMetaJsonMap.get("typeName"));
-        classification.setEntityGuid((String) tagMetaJsonMap.get("entityGuid"));
-        classification.setPropagate((Boolean) tagMetaJsonMap.get("propagate"));
-        classification.setRemovePropagationsOnEntityDelete((Boolean) tagMetaJsonMap.get("removePropagationsOnEntityDelete"));
-        classification.setRestrictPropagationThroughLineage((Boolean) tagMetaJsonMap.get("restrictPropagationThroughLineage"));
-        classification.setRestrictPropagationThroughHierarchy((Boolean) tagMetaJsonMap.get("restrictPropagationThroughHierarchy"));
-
-        Map<String, Object> originalAttributes = (Map<String, Object>) tagMetaJsonMap.get("attributes");
-        if (originalAttributes != null) {
-            classification.setAttributes(deepCopyMap(originalAttributes));
-        }
-        return classification;
-    }
-
-    private static Map<String, Object> deepCopyMap(Map<String, Object> original) throws AtlasBaseException {
-        try {
-            if (original == null || original.isEmpty()) {
-                return new HashMap<>();
+            try {
+                tag.setTagMetaJson(objectMapper.readValue(row.getString("tag_meta_json"), Map.class));
+            } catch (JsonProcessingException e) {
+                LOG.error("Error parsing tag_meta_json in getAllTagsByVertexId for vertexId: {}", vertexId, e);
+                // Depending on requirements, you might want to skip this tag or throw
+                continue;
             }
-            String json = objectMapper.writeValueAsString(original);
-            return objectMapper.readValue(json, new TypeReference<>() {});
-        } catch (JsonProcessingException e) {
-            throw new AtlasBaseException("Error during deep copy of map: " + original, e);
+            tags.add(tag);
         }
+        return tags;
     }
+
+    // ===================================================================================
+    // Helper and Utility Methods
+    // ===================================================================================
 
     private <T extends Statement<T>> ResultSet executeWithRetry(Statement<T> statement) throws AtlasBaseException {
         int retryCount = 0;
@@ -946,11 +539,12 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             } catch (DriverTimeoutException | WriteTimeoutException | NoHostAvailableException e) {
                 lastException = e;
                 retryCount++;
-                if (retryCount == MAX_RETRIES) {
+                if (retryCount >= MAX_RETRIES) {
                     break;
                 }
                 try {
-                    Thread.sleep(INITIAL_BACKOFF.multipliedBy(retryCount).toMillis());
+                    long backoff = INITIAL_BACKOFF.toMillis() * (long)Math.pow(2, retryCount - 1);
+                    Thread.sleep(backoff);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     throw new AtlasBaseException("Interrupted during retry backoff", ie);
@@ -958,36 +552,46 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             }
         }
         LOG.error("Failed to execute statement after {} retries", MAX_RETRIES, lastException);
-        throw new AtlasBaseException("Failed to execute statement after retries", lastException);
+        throw new AtlasBaseException("Failed to execute statement after " + MAX_RETRIES + " retries", lastException);
+    }
+
+    private int calculateOptimalLocalPoolSize() {
+        return Math.min(Math.max((int) Math.ceil(Runtime.getRuntime().availableProcessors() * 0.75), 4), 8);
+    }
+
+    private int calculateOptimalRemotePoolSize() {
+        return Math.max(calculateOptimalLocalPoolSize() / 2, 2);
     }
 
     public static int calculateBucket(String vertexId) {
-        int numBuckets = 2 << BUCKET_POWER; // 2^5=32
+        int numBuckets = 2 << BUCKET_POWER; // 2 * 2^5 = 64
         return (int) (Long.parseLong(vertexId) % numBuckets);
     }
 
+    public static AtlasClassification convertToAtlasClassification(String tagMetaJson) throws AtlasBaseException {
+        try {
+            return objectMapper.readValue(tagMetaJson, AtlasClassification.class);
+        } catch (JsonProcessingException e) {
+            throw new AtlasBaseException("Unable to map to AtlasClassification", e);
+        }
+    }
+
+    public static AtlasClassification toAtlasClassification(Map<String, Object> tagMetaJsonMap) {
+        return objectMapper.convertValue(tagMetaJsonMap, AtlasClassification.class);
+    }
+
     @Override
-    public void close() throws Exception {
-        if (cassSession != null) {
-            try {
-                if (!cassSession.isClosed()) {
-                    cassSession.close();
-                }
-            } catch (Exception e) {
-                LOG.error("Error closing Cassandra session", e);
-            }
+    public void close() {
+        if (cassSession != null && !cassSession.isClosed()) {
+            cassSession.close();
         }
     }
 
     private static class PagingStateCache {
-        private static final Map<String, String> pagingStates = new java.util.HashMap<>();
-
-        public static String getState(String key) {
-            return pagingStates.get(key);
-        }
-
+        private static final Map<String, String> pagingStates = new java.util.concurrent.ConcurrentHashMap<>();
+        public static String getState(String key) { return pagingStates.get(key); }
         public static void setState(String key, String state) {
-            if (state == null) {
+            if (state == null || state.isEmpty()) {
                 pagingStates.remove(key);
             } else {
                 pagingStates.put(key, state);

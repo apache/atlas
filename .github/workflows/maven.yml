@@ -30,6 +30,7 @@ on:
       - optimise_classifications_fetch
       - poctagprophashedrebased
       - staging
+      - feat/tags_schema_v2
 
 jobs:
   build:
