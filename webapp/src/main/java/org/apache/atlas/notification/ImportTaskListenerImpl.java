@@ -61,14 +61,14 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     private static final Logger LOG = LoggerFactory.getLogger(ImportTaskListenerImpl.class);
 
     private static final String THREADNAME_PREFIX = ImportTaskListener.class.getSimpleName();
-    private static final int ASYNC_IMPORT_PERMITS = 1; // Only one asynchronous import task is permitted
+    private static final int    ASYNC_IMPORT_PERMITS = 1; // Only one asynchronous import task is permitted
 
-    private final BlockingQueue<String> requestQueue;    // Blocking queue for requests
-    private final ExecutorService executorService; // Single-thread executor for sequential processing
-    private final AsyncImportService asyncImportService;
+    private final BlockingQueue<String>    requestQueue;    // Blocking queue for requests
+    private final ExecutorService          executorService; // Single-thread executor for sequential processing
+    private final AsyncImportService       asyncImportService;
     private final NotificationHookConsumer notificationHookConsumer;
-    private final Semaphore asyncImportSemaphore;
-    private final Configuration applicationProperties;
+    private final Semaphore                asyncImportSemaphore;
+    private final Configuration            applicationProperties;
 
     @Inject
     public ImportTaskListenerImpl(AsyncImportService asyncImportService, NotificationHookConsumer notificationHookConsumer) throws AtlasException {
