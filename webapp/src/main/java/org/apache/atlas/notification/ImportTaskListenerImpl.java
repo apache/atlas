@@ -270,20 +270,18 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     void populateRequestQueue() {
         LOG.info("==> populateRequestQueue()");
 
-        List<String> queuedImports = asyncImportService.fetchQueuedImportRequests();
+        List<String> queuedImports     = asyncImportService.fetchQueuedImportRequests();
         List<String> inProgressImports = asyncImportService.fetchInProgressImportIds();
 
-        try {
-            if (queuedImports.isEmpty() && inProgressImports.isEmpty()) {
-                LOG.warn("populateRequestQueue(): No queued requests found.");
-                return;
-            }
+        if (queuedImports.isEmpty() && inProgressImports.isEmpty()) {
+            LOG.warn("populateRequestQueue(): no queued asynchronous import requests found.");
+        } else {
+            LOG.info("populateRequestQueue(): loaded {} asynchronous import requests (in-progress={}, queued={})", (inProgressImports.size() + queuedImports.size()), inProgressImports.size(), queuedImports.size());
 
-            Stream.concat(inProgressImports.stream(), queuedImports.stream())
-                    .forEach(this::enqueueImportId);
-        } finally {
-            LOG.info("<== populateRequestQueue()");
+            Stream.concat(inProgressImports.stream(), queuedImports.stream()).forEach(this::enqueueImportId);
         }
+
+        LOG.info("<== populateRequestQueue()");
     }
 
     private void enqueueImportId(String importId) {
