@@ -18,18 +18,6 @@
 
 package org.apache.atlas.impala.hook.events;
 
-import static org.apache.atlas.impala.hook.AtlasImpalaHookContext.QNAME_SEP_PROCESS;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.atlas.impala.hook.AtlasImpalaHookContext;
 import org.apache.atlas.impala.hook.ImpalaOperationParser;
 import org.apache.atlas.impala.model.ImpalaDataType;
@@ -45,11 +33,22 @@ import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.type.AtlasTypeUtil;
-
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.apache.atlas.impala.hook.AtlasImpalaHookContext.QNAME_SEP_PROCESS;
 
 /**
  * The base class for generating notification event to Atlas server
@@ -99,7 +98,6 @@ public abstract class BaseImpalaEvent {
     protected final Map<Long, LineageVertex> verticesMap;
 
     public BaseImpalaEvent(AtlasImpalaHookContext context) {
-
         this.context   = context;
         vertexNameMap  = new HashMap<>();
         verticesMap    = new HashMap<>();
@@ -111,7 +109,9 @@ public abstract class BaseImpalaEvent {
 
     public abstract List<HookNotification> getNotificationMessages() throws Exception;
 
-    public String getUserName() { return context.getUserName(); }
+    public String getUserName() {
+        return context.getUserName();
+    }
 
     public String getTableNameFromVertex(LineageVertex vertex) {
         if (vertex.getVertexType() == ImpalaVertexType.COLUMN) {
@@ -130,7 +130,6 @@ public abstract class BaseImpalaEvent {
     }
 
     public String getQualifiedName(ImpalaNode node) throws IllegalArgumentException {
-
         return getQualifiedName(node.getOwnVertex());
     }
 
@@ -172,8 +171,8 @@ public abstract class BaseImpalaEvent {
     static final class AtlasEntityComparator implements Comparator<AtlasEntity> {
         @Override
         public int compare(AtlasEntity entity1, AtlasEntity entity2) {
-            String name1 = (String)entity1.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
-            String name2 = (String)entity2.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
+            String name1 = (String) entity1.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
+            String name2 = (String) entity2.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
 
             if (name1 == null) {
                 return -1;
@@ -193,17 +192,17 @@ public abstract class BaseImpalaEvent {
         ImpalaOperationType operation = context.getImpalaOperationType();
 
         if (operation == ImpalaOperationType.CREATEVIEW ||
-            operation == ImpalaOperationType.CREATETABLE_AS_SELECT ||
-            operation == ImpalaOperationType.ALTERVIEW_AS) {
+                operation == ImpalaOperationType.CREATETABLE_AS_SELECT ||
+                operation == ImpalaOperationType.ALTERVIEW_AS) {
             List<? extends AtlasEntity> sortedEntities = new ArrayList<>(outputs);
 
             Collections.sort(sortedEntities, entityComparator);
 
             for (AtlasEntity entity : sortedEntities) {
                 if (entity.getTypeName().equalsIgnoreCase(HIVE_TYPE_TABLE)) {
-                    Long createTime = (Long)entity.getAttribute(ATTRIBUTE_CREATE_TIME);
+                    Long createTime = (Long) entity.getAttribute(ATTRIBUTE_CREATE_TIME);
 
-                    return (String)entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME) + QNAME_SEP_PROCESS + createTime;
+                    return (String) entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME) + QNAME_SEP_PROCESS + createTime;
                 }
             }
         }
@@ -228,7 +227,6 @@ public abstract class BaseImpalaEvent {
             qualifiedName = sb.toString();
         }
 
-
         return qualifiedName;
     }
 
@@ -249,10 +247,10 @@ public abstract class BaseImpalaEvent {
             String qualifiedName = null;
             long   createTime    = 0;
 
-            qualifiedName = (String)entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
+            qualifiedName = (String) entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
 
             if (entity.getTypeName().equalsIgnoreCase(HIVE_TYPE_TABLE)) {
-                Long createTimeObj = (Long)entity.getAttribute(ATTRIBUTE_CREATE_TIME);
+                Long createTimeObj = (Long) entity.getAttribute(ATTRIBUTE_CREATE_TIME);
                 if (createTimeObj != null) {
                     createTime = createTimeObj;
                 }
@@ -266,17 +264,17 @@ public abstract class BaseImpalaEvent {
                 boolean             addWriteType = false;
                 ImpalaOperationType subType      = ImpalaOperationParser.getImpalaOperationSubType(operation, queryText);
 
-                    switch (subType) {
-                        // Impala does not generate lineage for UPDATE and DELETE
-                        case INSERT:
-                        case INSERT_OVERWRITE:
-                            addWriteType = true;
-                            break;
-                    }
+                switch (subType) {
+                    // Impala does not generate lineage for UPDATE and DELETE
+                    case INSERT:
+                    case INSERT_OVERWRITE:
+                        addWriteType = true;
+                        break;
+                }
 
-                    if (addWriteType) {
-                        processQualifiedName.append(QNAME_SEP_PROCESS).append(subType.name());
-                    }
+                if (addWriteType) {
+                    processQualifiedName.append(QNAME_SEP_PROCESS).append(subType.name());
+                }
             }
 
             processQualifiedName.append(QNAME_SEP_PROCESS).append(qualifiedName.toLowerCase().replaceAll("/", ""));
@@ -296,7 +294,7 @@ public abstract class BaseImpalaEvent {
             case DFS_DIR: {
                 ret = toAtlasEntity(node, entityExtInfo);
             }
-            break;
+                break;
         }
 
         return ret;
@@ -436,9 +434,7 @@ public abstract class BaseImpalaEvent {
                 }
             }
         }
-
         ret.setAttribute(ATTRIBUTE_COLUMNS, getObjectIds(columns));
-
 
         context.putEntity(tblQualifiedName, ret);
 
@@ -448,7 +444,7 @@ public abstract class BaseImpalaEvent {
     public static AtlasObjectId getObjectId(AtlasEntity entity) {
         String        qualifiedName = (String) entity.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
         AtlasObjectId ret           = new AtlasObjectId(entity.getGuid(), entity.getTypeName(), Collections
-            .singletonMap(ATTRIBUTE_QUALIFIED_NAME, qualifiedName));
+                .singletonMap(ATTRIBUTE_QUALIFIED_NAME, qualifiedName));
 
         return ret;
     }

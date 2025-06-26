@@ -33,10 +33,21 @@ public class ImpalaNode {
         children = new HashMap<>();
     }
 
-    public String getNodeName() { return ownVertex.getVertexId(); }
-    public ImpalaVertexType getNodeType() { return ownVertex.getVertexType(); }
-    public LineageVertex getOwnVertex() { return ownVertex; }
-    public Map<Long, ImpalaNode> getChildren() { return children; }
+    public String getNodeName() {
+        return ownVertex.getVertexId();
+    }
+
+    public ImpalaVertexType getNodeType() {
+        return ownVertex.getVertexType();
+    }
+
+    public LineageVertex getOwnVertex() {
+        return ownVertex;
+    }
+
+    public Map<Long, ImpalaNode> getChildren() {
+        return children;
+    }
 
     /**
      * Add child to this node

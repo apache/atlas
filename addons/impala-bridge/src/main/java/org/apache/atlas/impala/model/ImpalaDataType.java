@@ -21,7 +21,6 @@ package org.apache.atlas.impala.model;
  * Data types used for Impala bridge
  */
 public enum ImpalaDataType {
-
     IMPALA_PROCESS,
     IMPALA_PROCESS_EXECUTION,
     IMPALA_COLUMN_LINEAGE,
