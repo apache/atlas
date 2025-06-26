@@ -194,12 +194,14 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     void startInternal() {
         populateRequestQueue();
 
-        CompletableFuture.runAsync(this::startNextImportInQueue)
-                .exceptionally(ex -> {
-                    LOG.error("Failed to start next import in queue", ex);
+        if (!requestQueue.isEmpty()) {
+            CompletableFuture.runAsync(this::startNextImportInQueue)
+                    .exceptionally(ex -> {
+                        LOG.error("Failed to start next import in queue", ex);
 
-                    return null;
-                });
+                        return null;
+                    });
+        }
     }
 
     @VisibleForTesting
