@@ -17,6 +17,7 @@
 # limitations under the License.
 import os
 import sys
+import subprocess
 import traceback
 
 import atlas_config as mc
@@ -26,6 +27,33 @@ ATLAS_COMMAND_OPTS="-Datlas.home=%s"
 ATLAS_CONFIG_OPTS="-Datlas.conf=%s"
 DEFAULT_JVM_HEAP_OPTS="-Xmx1024m"
 DEFAULT_JVM_OPTS="-Dlogback.configurationFile=atlas-logback.xml -Djava.net.preferIPv4Stack=true -server"
+
+def get_default_jvm_opts():
+    opts = DEFAULT_JVM_OPTS
+    try:
+        output = subprocess.check_output(["java", "-version"], stderr=subprocess.STDOUT).decode("utf-8")
+        for line in output.splitlines():
+            if "version" in line:
+                version_str = line.split('"')[1]
+                major = int(version_str.split(".")[1]) if version_str.startswith("1.") else int(version_str.split(".")[0])
+                if major >= 9:
+                    opts += (
+                        " --add-opens=java.base/java.lang=ALL-UNNAMED"
+                        " --add-opens=java.base/java.lang.reflect=ALL-UNNAMED"
+                        " --add-opens=java.base/java.util=ALL-UNNAMED"
+                        " --add-opens=java.base/java.nio=ALL-UNNAMED"
+                        " --add-opens=java.base/java.net=ALL-UNNAMED"
+                        " --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED"
+                        " --add-opens=java.base/java.nio.channels.spi=ALL-UNNAMED"
+                        " --add-opens=java.base/sun.nio.ch=ALL-UNNAMED"
+                        " --add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED"
+                        " --add-exports=java.base/sun.security.x509=ALL-UNNAMED"
+                        " --add-modules java.sql"
+                    )
+                break
+    except Exception as e:
+        pass
+    return opts
 
 def main():
 
@@ -65,6 +93,7 @@ def main():
     if atlas_server_jvm_opts:
         jvm_opts_list.extend(atlas_server_jvm_opts.split())
 
+    DEFAULT_JVM_OPTS = get_default_jvm_opts()
     atlas_jvm_opts = os.environ.get(mc.ATLAS_OPTS, DEFAULT_JVM_OPTS)
     jvm_opts_list.extend(atlas_jvm_opts.split())
 
