@@ -45,7 +45,7 @@ public final class SecurityProperties {
     public static final String       ATLAS_SSL_EXCLUDE_PROTOCOLS              = "atlas.ssl.exclude.protocols";
     public static final String       ATLAS_SSL_ENABLED_PROTOCOLS              = "atlas.ssl.enabled.protocols";
     public static final String[]     DEFAULT_EXCLUDE_PROTOCOLS                = new String[] {"TLSv1", "TLSv1.1"};
-    public static final String[]     ATLAS_SSL_DEFAULT_PROTOCOL               = new String[] { "TLSv1.2" };
+    public static final String[]     ATLAS_SSL_DEFAULT_PROTOCOL               = new String[] {"TLSv1.2"};
 
     private SecurityProperties() {
     }

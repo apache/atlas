@@ -49,6 +49,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
 
 import static org.apache.atlas.AtlasConfiguration.ASYNC_IMPORT_TOPIC_PREFIX;
 import static org.apache.atlas.AtlasErrorCode.IMPORT_QUEUEING_FAILED;
@@ -95,26 +96,34 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
         startInternal();
     }
 
-    private void startInternal() {
-        CompletableFuture<Void> populateTask = CompletableFuture.runAsync(this::populateRequestQueue)
-                .exceptionally(ex -> {
-                    LOG.error("Failed to populate request queue", ex);
-                    return null;
-                });
+    @Override
+    public void stop() throws AtlasException {
+        try {
+            stopImport();
+        } finally {
+            releaseAsyncImportSemaphore();
+        }
+    }
 
-        CompletableFuture<Void> resumeTask = CompletableFuture.runAsync(this::resumeInProgressImports)
-                .exceptionally(ex -> {
-                    LOG.error("Failed to resume in-progress imports", ex);
-                    return null;
-                });
+    @Override
+    public void instanceIsActive() {
+        LOG.info("Reacting to active state: initializing Kafka consumers");
 
-        // Wait for both tasks to complete before proceeding
-        CompletableFuture.allOf(populateTask, resumeTask)
-                .thenRun(this::startNextImportInQueue)
-                .exceptionally(ex -> {
-                    LOG.error("Failed to start next import in queue", ex);
-                    return null;
-                }).join();
+        startInternal();
+    }
+
+    @Override
+    public void instanceIsPassive() {
+        try {
+            stopImport();
+        } finally {
+            releaseAsyncImportSemaphore();
+        }
+    }
+
+    @Override
+    public int getHandlerOrder() {
+        return ActiveStateChangeHandler.HandlerOrder.IMPORT_TASK_LISTENER.getOrder();
     }
 
     @Override
@@ -153,7 +162,50 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
         }
     }
 
-    private void startNextImportInQueue() {
+    @PreDestroy
+    public void stopImport() {
+        LOG.info("Shutting down import processor...");
+
+        executorService.shutdown(); // Initiate an orderly shutdown
+
+        try {
+            if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
+                LOG.warn("Executor service did not terminate gracefully within the timeout. Waiting longer...");
+
+                // Retry shutdown before forcing it
+                if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
+                    LOG.warn("Forcing shutdown...");
+
+                    executorService.shutdownNow();
+                }
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+
+            LOG.error("Shutdown interrupted. Forcing shutdown...");
+
+            executorService.shutdownNow();
+        }
+
+        LOG.info("Import processor stopped.");
+    }
+
+    @VisibleForTesting
+    void startInternal() {
+        populateRequestQueue();
+
+        if (!requestQueue.isEmpty()) {
+            CompletableFuture.runAsync(this::startNextImportInQueue)
+                    .exceptionally(ex -> {
+                        LOG.error("Failed to start next import in queue", ex);
+
+                        return null;
+                    });
+        }
+    }
+
+    @VisibleForTesting
+    void startNextImportInQueue() {
         LOG.info("==> startNextImportInQueue()");
 
         startAsyncImportIfAvailable(null);
@@ -176,6 +228,7 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
 
             if (isNotValidImportRequest(nextImport)) {
                 releaseAsyncImportSemaphore();
+
                 return;
             }
 
@@ -189,36 +242,12 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
         }
     }
 
-    private void startImportConsumer(AtlasAsyncImportRequest importRequest) {
-        try {
-            LOG.info("==> startImportConsumer(atlasAsyncImportRequest={})", importRequest);
-
-            notificationHookConsumer.startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, importRequest.getImportId(), importRequest.getTopicName());
-
-            importRequest.setStatus(ImportStatus.PROCESSING);
-            importRequest.setProcessingStartTime(System.currentTimeMillis());
-        } catch (Exception e) {
-            LOG.error("Failed to start consumer for import: {}, marking import as failed", importRequest, e);
-
-            importRequest.setStatus(ImportStatus.FAILED);
-        } finally {
-            asyncImportService.updateImportRequest(importRequest);
-
-            if (ObjectUtils.equals(importRequest.getStatus(), ImportStatus.FAILED)) {
-                onCompleteImportRequest(importRequest.getImportId());
-            }
-
-            LOG.info("<== startImportConsumer(atlasAsyncImportRequest={})", importRequest);
-        }
-    }
-
     @VisibleForTesting
     AtlasAsyncImportRequest getNextImportFromQueue() {
         LOG.info("==> getNextImportFromQueue()");
 
-        final int               maxRetries = 5;
-        int                     retryCount = 0;
-        AtlasAsyncImportRequest nextImport = null;
+        final int maxRetries = 5;
+        int       retryCount = 0;
 
         while (retryCount < maxRetries) {
             try {
@@ -248,8 +277,10 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
                 return importRequest;
             } catch (InterruptedException e) {
                 LOG.error("Thread interrupted while waiting for importId from the queue", e);
+
                 // Restore the interrupt flag
                 Thread.currentThread().interrupt();
+
                 return null;
             }
         }
@@ -265,6 +296,46 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
                 (!ImportStatus.WAITING.equals(importRequest.getStatus()) && !ImportStatus.PROCESSING.equals(importRequest.getStatus()));
     }
 
+    void populateRequestQueue() {
+        LOG.info("==> populateRequestQueue()");
+
+        List<String> queuedImports     = asyncImportService.fetchQueuedImportRequests();
+        List<String> inProgressImports = asyncImportService.fetchInProgressImportIds();
+
+        if (queuedImports.isEmpty() && inProgressImports.isEmpty()) {
+            LOG.info("populateRequestQueue(): no queued asynchronous import requests found.");
+        } else {
+            LOG.info("populateRequestQueue(): loaded {} asynchronous import requests (in-progress={}, queued={})", (inProgressImports.size() + queuedImports.size()), inProgressImports.size(), queuedImports.size());
+
+            Stream.concat(inProgressImports.stream(), queuedImports.stream()).forEach(this::enqueueImportId);
+        }
+
+        LOG.info("<== populateRequestQueue()");
+    }
+
+    private void startImportConsumer(AtlasAsyncImportRequest importRequest) {
+        try {
+            LOG.info("==> startImportConsumer(atlasAsyncImportRequest={})", importRequest);
+
+            notificationHookConsumer.startAsyncImportConsumer(NotificationInterface.NotificationType.ASYNC_IMPORT, importRequest.getImportId(), importRequest.getTopicName());
+
+            importRequest.setStatus(ImportStatus.PROCESSING);
+            importRequest.setProcessingStartTime(System.currentTimeMillis());
+        } catch (Exception e) {
+            LOG.error("Failed to start consumer for import: {}, marking import as failed", importRequest, e);
+
+            importRequest.setStatus(ImportStatus.FAILED);
+        } finally {
+            asyncImportService.updateImportRequest(importRequest);
+
+            if (ObjectUtils.equals(importRequest.getStatus(), ImportStatus.FAILED)) {
+                onCompleteImportRequest(importRequest.getImportId());
+            }
+
+            LOG.info("<== startImportConsumer(atlasAsyncImportRequest={})", importRequest);
+        }
+    }
+
     private void releaseAsyncImportSemaphore() {
         LOG.info("==> releaseAsyncImportSemaphore()");
 
@@ -277,111 +348,15 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
         }
     }
 
-    void populateRequestQueue() {
-        LOG.info("==> populateRequestQueue()");
-
-        List<String> importRequests = asyncImportService.fetchQueuedImportRequests();
-
+    private void enqueueImportId(String importId) {
         try {
-            if (!importRequests.isEmpty()) {
-                for (String request : importRequests) {
-                    try {
-                        if (!requestQueue.offer(request, 5, TimeUnit.SECONDS)) { // Wait up to 5 sec
-                            LOG.warn("populateRequestQueue(): Request {} could not be added to the queue", request);
-                        }
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-
-                        LOG.error("populateRequestQueue(): Failed to add requests to queue");
-
-                        break; // Exit loop on interruption
-                    }
-                }
-
-                LOG.info("populateRequestQueue(): Added {} requests to queue", importRequests.size());
-            } else {
-                LOG.warn("populateRequestQueue(): No queued requests found.");
-            }
-        } finally {
-            LOG.info("<== populateRequestQueue()");
-        }
-    }
-
-    private void resumeInProgressImports() {
-        LOG.info("==> resumeInProgressImports()");
-
-        try {
-            String importId = asyncImportService.fetchInProgressImportIds().stream().findFirst().orElse(null);
-
-            if (importId == null) {
-                LOG.warn("No imports found to resume");
-
-                return;
-            }
-
-            LOG.info("Resuming import id={}", importId);
-
-            startAsyncImportIfAvailable(importId);
-        } finally {
-            LOG.info("<== resumeInProgressImports()");
-        }
-    }
-
-    @PreDestroy
-    public void stopImport() {
-        LOG.info("Shutting down import processor...");
-
-        executorService.shutdown(); // Initiate an orderly shutdown
-
-        try {
-            if (!executorService.awaitTermination(30, TimeUnit.SECONDS)) {
-                LOG.warn("Executor service did not terminate gracefully within the timeout. Waiting longer...");
-
-                // Retry shutdown before forcing it
-                if (!executorService.awaitTermination(10, TimeUnit.SECONDS)) {
-                    LOG.warn("Forcing shutdown...");
-
-                    executorService.shutdownNow();
-                }
+            if (!requestQueue.offer(importId, 5, TimeUnit.SECONDS)) {
+                LOG.warn("populateRequestQueue(): failed to add import {} to the queue - enqueue timed out", importId);
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
 
-            LOG.error("Shutdown interrupted. Forcing shutdown...");
-
-            executorService.shutdownNow();
+            LOG.error("populateRequestQueue(): Failed to add import {} to the queue", importId, e);
         }
-
-        LOG.info("Import processor stopped.");
-    }
-
-    @Override
-    public void stop() throws AtlasException {
-        try {
-            stopImport();
-        } finally {
-            releaseAsyncImportSemaphore();
-        }
-    }
-
-    @Override
-    public void instanceIsActive() {
-        LOG.info("Reacting to active state: initializing Kafka consumers");
-
-        startInternal();
-    }
-
-    @Override
-    public void instanceIsPassive() {
-        try {
-            stopImport();
-        } finally {
-            releaseAsyncImportSemaphore();
-        }
-    }
-
-    @Override
-    public int getHandlerOrder() {
-        return ActiveStateChangeHandler.HandlerOrder.IMPORT_TASK_LISTENER.getOrder();
     }
 }
