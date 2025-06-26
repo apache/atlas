@@ -52,4 +52,7 @@ export interface TableProps {
   setUpdateTable?: any;
   isfilterQuery?: any;
   isClientSidePagination?: boolean;
+  isEmptyData?: boolean;
+  setIsEmptyData?: React.Dispatch<React.SetStateAction<boolean>>;
+  showGoToPage?: boolean;
 }

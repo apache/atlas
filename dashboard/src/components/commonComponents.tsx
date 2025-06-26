@@ -454,3 +454,27 @@ export const getValues = (
     </span>
   );
 };
+
+export const GetNumberSuffix = (options: { number: any; sup?: boolean }) => {
+  if (options && options.number) {
+    let n = options.number;
+    let s = ["th", "st", "nd", "rd"];
+    let v = n % 100;
+    let suffix = s[(v - 20) % 10] || s[v] || s[0];
+    if (options.sup) {
+      return (
+        <>
+          <>{n}</>
+          <sup>{suffix}</sup>
+        </>
+      );
+    } else {
+      return (
+        <>
+          {n}
+          {suffix}
+        </>
+      );
+    }
+  }
+};
