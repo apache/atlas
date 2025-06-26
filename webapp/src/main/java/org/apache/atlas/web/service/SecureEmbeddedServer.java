@@ -53,11 +53,11 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.List;
 
-import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_EXCLUDE_CIPHER_SUITES;
-import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_EXCLUDE_PROTOCOLS;
+import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_DEFAULT_PROTOCOL;
 import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_ENABLED_ALGORITHMS;
 import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_ENABLED_PROTOCOLS;
-import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_DEFAULT_PROTOCOL;
+import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_EXCLUDE_CIPHER_SUITES;
+import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_EXCLUDE_PROTOCOLS;
 import static org.apache.atlas.security.SecurityProperties.CLIENT_AUTH_KEY;
 import static org.apache.atlas.security.SecurityProperties.DEFATULT_TRUSTORE_FILE_LOCATION;
 import static org.apache.atlas.security.SecurityProperties.DEFAULT_CIPHER_SUITES;
