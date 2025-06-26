@@ -6202,23 +6202,12 @@ public class EntityGraphMapper {
             }
 
             List<Tag> batchToUpdate = paginatedResult.getTags();
-            int previousBatchSize = -1; // Track previous batch size for loop detection
-            int loopDetectionCounter = 0;
 
             while (!batchToUpdate.isEmpty()) {
-                // Safety check to prevent infinite loops - if we get the same batch size twice in a row
-                int batchSize = batchToUpdate.size();
-                if (batchSize == previousBatchSize) {
-                    loopDetectionCounter++;
-                    if (loopDetectionCounter > 3) {
-                        LOG.warn("Possible infinite loop detected in tag propagation for entity {}, tag type {}. Processed {} batches so far.",
-                                sourceEntityGuid, tagTypeName, totalUpdated / batchSize);
-                        break;
-                    }
-                } else {
-                    loopDetectionCounter = 0;
-                }
-                previousBatchSize = batchSize;
+                // ====================================================================
+                // The entire loop detection block has been removed. It is harmful
+                // and unnecessary with the stateful paging DAO.
+                // ====================================================================
 
                 // collect the vertex IDs in this batch
                 List<String> vertexIds = batchToUpdate.stream()
