@@ -6204,10 +6204,6 @@ public class EntityGraphMapper {
             List<Tag> batchToUpdate = paginatedResult.getTags();
 
             while (!batchToUpdate.isEmpty()) {
-                // ====================================================================
-                // The entire loop detection block has been removed. It is harmful
-                // and unnecessary with the stateful paging DAO.
-                // ====================================================================
 
                 // collect the vertex IDs in this batch
                 List<String> vertexIds = batchToUpdate.stream()
@@ -6242,8 +6238,7 @@ public class EntityGraphMapper {
                 batchToUpdate = paginatedResult.getTags();
             }
 
-            LOG.info("Updated classification text for {} propagations, taskId: {}",
-                    totalUpdated, RequestContext.get().getCurrentTask().getGuid());
+            LOG.info("Updated classification text for {} propagations, taskId: {}", totalUpdated, RequestContext.get().getCurrentTask().getGuid());
         } catch (Exception e) {
             LOG.error("Error while updating classification text for tag type {}: {}", tagTypeName, e.getMessage());
             throw new AtlasBaseException(e);
