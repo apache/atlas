@@ -15,7 +15,6 @@ on:
       - poctagprophashedrebased
       - idonlycanary
       - idonlycanarybeta
-      - feat/tags_schema_v2
     types:
       - completed
 
