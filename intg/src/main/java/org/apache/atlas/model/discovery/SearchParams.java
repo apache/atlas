@@ -37,6 +37,10 @@ public class SearchParams {
         return enableFullRestriction;
     }
 
+    public void setEnableFullRestriction(boolean enableFullRestriction) {
+        this.enableFullRestriction = enableFullRestriction;
+    }
+
     public Set<String> getAttributes() {
         return attributes;
     }
