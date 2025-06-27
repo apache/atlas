@@ -23,6 +23,7 @@ import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.GraphDatabase;
+import org.apache.atlas.repository.graphdb.janus.graphv3.AtlasJanusGraphFactory;
 import org.apache.atlas.repository.graphdb.janus.serializer.BigDecimalSerializer;
 import org.apache.atlas.repository.graphdb.janus.serializer.BigIntegerSerializer;
 import org.apache.atlas.repository.graphdb.janus.serializer.TypeCategorySerializer;
@@ -149,13 +150,13 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
         org.apache.commons.configuration2.Configuration conf2 = createConfiguration2(config);
         try {
-            return JanusGraphFactory.open(conf2);
+            return AtlasJanusGraphFactory.open(conf2);
         } catch (JanusGraphException e) {
             LOG.warn("JanusGraphException: {}", e.getMessage());
             if (e.getMessage().startsWith(OLDER_STORAGE_EXCEPTION)) {
                 LOG.info("Newer client is being used with older janus storage version. Setting allow-upgrade=true and reattempting connection");
                 config.addProperty("graph.allow-upgrade", true);
-                return JanusGraphFactory.open(conf2);
+                return AtlasJanusGraphFactory.open(conf2);
             } else {
                 throw new RuntimeException(e);
             }
