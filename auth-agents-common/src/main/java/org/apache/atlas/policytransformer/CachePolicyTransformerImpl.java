@@ -43,6 +43,7 @@ import org.apache.atlas.plugin.util.ServicePolicies.TagPolicies;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -131,9 +132,9 @@ public class CachePolicyTransformerImpl {
     private final Map<EntityAuditActionV2, Integer> auditEventToDeltaChangeType;
 
     @Inject
-    public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
+    public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry, TagDAO tagDAO) throws AtlasBaseException {
         this.graph                = new AtlasJanusGraph();
-        this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
+        this.entityRetriever      = new EntityGraphRetriever(tagDAO, graph, typeRegistry);
 
         personaTransformer = new PersonaCachePolicyTransformer(entityRetriever);
         purposeTransformer = new PurposeCachePolicyTransformer(entityRetriever);

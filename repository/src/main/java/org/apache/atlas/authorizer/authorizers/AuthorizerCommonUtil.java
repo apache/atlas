@@ -5,6 +5,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
@@ -30,9 +31,9 @@ public class AuthorizerCommonUtil {
     private static EntityGraphRetriever entityRetriever;
 
     @Inject
-    public AuthorizerCommonUtil(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
+    public AuthorizerCommonUtil(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TagDAO tagDAO) {
         AuthorizerCommonUtil.typeRegistry = typeRegistry;
-        entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true);
+        entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true, tagDAO);
     }
 
     public static String getCurrentUserName() {
