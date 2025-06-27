@@ -102,6 +102,8 @@ public class RangerPolicy extends RangerBaseModelObject implements java.io.Seria
     private Map<String, String> 			  attributes;
     private String 			                  policyFilterCriteria;
     private String 			                  policyResourceCategory;
+    
+    @JsonIgnore
     private JsonNode                          filterCriteriaNode;
 
     public RangerPolicy() {
