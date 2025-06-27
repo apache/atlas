@@ -27,7 +27,6 @@ on:
       - development
       - master
       - staging
-      - fixdupkeyissue
 
 jobs:
   build:
