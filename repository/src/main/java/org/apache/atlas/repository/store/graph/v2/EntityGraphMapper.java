@@ -18,6 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.annotations.VisibleForTesting;
+import io.opentelemetry.api.common.AttributeType;
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -529,6 +530,24 @@ public class EntityGraphMapper {
             }
         }
 
+        // If an entity is both appended and removed, remove it from both lists
+        if (CollectionUtils.isNotEmpty(appendEntities) && CollectionUtils.isNotEmpty(removeEntities)) {
+            Set<String> appendGuids = appendEntities.stream()
+                .map(AtlasEntity::getGuid)
+                .collect(Collectors.toSet());
+
+            Set<String> removeGuids = removeEntities.stream()
+                .map(AtlasEntity::getGuid)
+                .collect(Collectors.toSet());
+
+            Set<String> commonGuids = new HashSet<>(appendGuids);
+            commonGuids.retainAll(removeGuids);
+
+            if (!commonGuids.isEmpty()) {
+                appendEntities.removeIf(entity -> commonGuids.contains(entity.getGuid()));
+                removeEntities.removeIf(entity -> commonGuids.contains(entity.getGuid()));
+            }
+        }
         if (CollectionUtils.isNotEmpty(appendEntities)) {
             for (AtlasEntity entity : appendEntities) {
                 String guid = entity.getGuid();
@@ -1828,6 +1847,7 @@ public class EntityGraphMapper {
         if (type instanceof AtlasEntityType) {
             AtlasEntityType entityType = (AtlasEntityType) type;
             AtlasAttribute  attribute     = ctx.getAttribute();
+            AtlasType atlasType = attribute.getAttributeType();
             String          attributeName = attribute.getName();
 
             if (entityType.hasRelationshipAttribute(attributeName)) {
@@ -1849,14 +1869,36 @@ public class EntityGraphMapper {
                     toVertex   = attributeVertex;
                 }
 
-                AtlasEdge edge = null;
+                AtlasEdge newEdge = null;
 
                 Map<String, Object> relationshipAttributes = getRelationshipAttributes(ctx.getValue());
                 AtlasRelationship relationship = new AtlasRelationship(relationshipName, relationshipAttributes);
+                String relationshipLabel = StringUtils.EMPTY;
 
                 if (createEdge) {
-                    edge = relationshipStore.getOrCreate(fromVertex, toVertex, relationship, false);
-                    boolean isCreated = graphHelper.getCreatedTime(edge) == RequestContext.get().getRequestTime();
+                    // hard delete the edge if it exists and is  soft deleted
+                    if (relationshipStore instanceof  AtlasRelationshipStoreV2){
+                        relationshipLabel = ((AtlasRelationshipStoreV2)relationshipStore).getRelationshipEdgeLabel(fromVertex, toVertex,  relationship.getTypeName());
+                    }
+                    if (StringUtils.isNotEmpty(relationshipLabel)) {
+                        Iterator<AtlasEdge> edges = fromVertex.getEdges(AtlasEdgeDirection.OUT, relationshipLabel).iterator();
+                        while (edges.hasNext()) {
+                            AtlasEdge edge = edges.next();
+                            if (edge.getInVertex().equals(toVertex) && getStatus(edge) == DELETED) {
+                                // Hard delete the newEdge
+                                if (atlasType instanceof AtlasArrayType) {
+                                    deleteDelegate.getHandler(DeleteType.HARD).deleteEdgeReference(edge, ((AtlasArrayType) atlasType).getElementType().getTypeCategory(), attribute.isOwnedRef(),
+                                            true, attribute.getRelationshipEdgeDirection(), entityVertex);
+                                } else {
+                                    deleteDelegate.getHandler(DeleteType.HARD).deleteEdgeReference(edge, attribute.getAttributeType().getTypeCategory(), attribute.isOwnedRef(),
+                                            true, attribute.getRelationshipEdgeDirection(), entityVertex);
+                                }
+
+                            }
+                        }
+                    }
+                    newEdge = relationshipStore.getOrCreate(fromVertex, toVertex, relationship, false);
+                    boolean isCreated = graphHelper.getCreatedTime(newEdge) == RequestContext.get().getRequestTime();
 
                     if (isCreated) {
                         // if relationship did not exist before and new relationship was created
@@ -1866,9 +1908,9 @@ public class EntityGraphMapper {
                     }
 
                 } else {
-                    edge = relationshipStore.getRelationship(fromVertex, toVertex, relationship);
+                    newEdge = relationshipStore.getRelationship(fromVertex, toVertex, relationship);
                 }
-                ret = edge;
+                ret = newEdge;
             }
         }
 
