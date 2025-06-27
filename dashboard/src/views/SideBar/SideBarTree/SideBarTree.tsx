@@ -64,7 +64,6 @@ import CircularProgress from "@mui/material/CircularProgress";
 import { globalSearchFilterInitialQuery, isEmpty } from "@utils/Utils";
 import LaunchOutlinedIcon from "@mui/icons-material/LaunchOutlined";
 import { getGlossaryImportTmpl } from "@api/apiMethods/glossaryApiMethod";
-import { toast } from "react-toastify";
 import { EnumTypeDefData, TreeNode } from "@models/treeStructureType";
 import ImportDialog from "@components/ImportDialog";
 import TreeIcons from "@components/Treeicons";
@@ -78,8 +77,11 @@ import { AntSwitch } from "@utils/Muiutils";
 type CustomContentRootProps = HTMLAttributes<HTMLDivElement> & {
   selectedNodeType?: any;
   selectedNodeTag?: any;
+  selectedNodeGlossary?: any;
+  selectedNodeTerm?: any;
   selectedNodeRelationship?: any;
   selectedNodeBM?: any;
+  selectedNodeCF?: any;
   node?: any;
   selectedNode?: any;
 };
@@ -115,13 +117,14 @@ const CustomContentRoot = styled("div")<CustomContentRootProps>(
     },
     ...((props.selectedNodeType === props.node ||
       props.selectedNodeTag === props.node ||
+      props.selectedNodeGlossary === props.node ||
+      props.selectedNodeTerm === props.node ||
       props.selectedNodeRelationship === props.node ||
-      props.selectedNodeBM === props.node) && {
+      props.selectedNodeBM === props.node ||
+      props?.selectedNodeCF === props.node) && {
       "&.Mui-selected .MuiTreeItem-contentBar": {
         backgroundColor: "rgba(255,255,255,0.08)",
         borderLeft: "4px solid #2ccebb"
-        // color: "white"
-        // borderRadius: "4px"
       }
     }),
     ...(props?.selectedNode == props?.node && {
@@ -148,7 +151,6 @@ const CustomContentRoot = styled("div")<CustomContentRootProps>(
       }
     },
     "&.Mui-selected.Mui-focused .MuiTreeItem-contentBar": {
-      // backgroundColor: "#0E8173"
       backgroundColor: "rgba(255,255,255,0.08)"
     }
   })
@@ -185,10 +187,13 @@ const CustomContent = forwardRef(function CustomContent(
     preventSelection(event);
   };
 
-  const handleClick = (event: MouseEvent<HTMLDivElement>) => {
+  const handleExpansionClick = (event: MouseEvent<HTMLDivElement>) => {
     event.stopPropagation();
-    event.preventDefault();
     handleExpansion(event);
+  };
+
+  const handleLabelClick = (event: MouseEvent<HTMLDivElement>) => {
+    event.stopPropagation();
     handleSelection(event);
   };
 
@@ -200,15 +205,18 @@ const CustomContent = forwardRef(function CustomContent(
           (isValidElement(props.label) &&
             (props.label.props.selectedNodeType === props.label.props.node ||
               props.label.props.selectedNodeTag === props.label.props.node ||
+              props.label.props.selectedNodeGlossary ===
+                props.label.props.node ||
+              props.label.props.selectedNodeTerm === props.label.props.node ||
               props.label.props.selectedNodeRelationship ===
                 props.label.props.node ||
-              props.label.props.selectedNodeBM === props.label.props.node)) ||
+              props.label.props.selectedNodeBM === props.label.props.node ||
+              props.label.props.selectedNodeCF === props.label.props.node)) ||
           selected,
         "Mui-focused": focused,
         "Mui-disabled": disabled
       })}
       sx={{ position: "relative" }}
-      // selectedNode={props.label.props.selectedNode}
       selectedNodeType={
         isValidElement(props.label)
           ? props.label.props.selectedNodeType
@@ -217,6 +225,16 @@ const CustomContent = forwardRef(function CustomContent(
       selectedNodeTag={
         isValidElement(props.label)
           ? props.label.props.selectedNodeTag
+          : undefined
+      }
+      selectedNodeGlossary={
+        isValidElement(props.label)
+          ? props.label.props.selectedNodeGlossary
+          : undefined
+      }
+      selectedNodeTerm={
+        isValidElement(props.label)
+          ? props.label.props.selectedNodeTerm
           : undefined
       }
       selectedNodeRelationship={
@@ -229,16 +247,29 @@ const CustomContent = forwardRef(function CustomContent(
           ? props.label.props.selectedNodeBM
           : undefined
       }
+      selectedNodeCF={
+        isValidElement(props.label)
+          ? props.label.props.selectedNodeCF
+          : undefined
+      }
       node={isValidElement(props.label) ? props.label.props.node : undefined}
-      onClick={(e) => {
-        handleClick(e);
-      }}
       onMouseDown={handleMouseDown}
       ref={ref as Ref<HTMLDivElement>}
     >
       <div className="MuiTreeItem-contentBar" />
-      <div className={classes.iconContainer}>{icon}</div>
-      <Typography component="div" className={classes.label}>
+      <div
+        className={classes.iconContainer}
+        onClick={handleExpansionClick}
+        style={{ cursor: "pointer" }}
+      >
+        {icon}
+      </div>
+      <Typography
+        component="div"
+        className={classes.label}
+        onClick={handleLabelClick}
+        style={{ cursor: "pointer" }}
+      >
         {label}
       </Typography>
     </CustomContentRoot>
@@ -254,7 +285,6 @@ const CustomTreeItem = memo(
       <TreeItem
         sx={{
           "& .MuiTreeItem-label": {
-            // fontWeight: "400  !important",
             fontSize: "14px  !important",
             lineHeight: "24px !important",
             color: "rgba(255,255,255,0.8)"
@@ -307,23 +337,32 @@ const BarTreeView: FC<{
   const [selectedNode, setSelectedNode] = useState<{
     type: string | null;
     tag: string | null;
+    glossary: string | null;
+    term: string | null;
     relationship: string | null;
     businessMetadata: string | null;
+    customFilters: string | null;
   }>({
     type: null,
     tag: null,
+    glossary: null,
+    term: null,
     relationship: null,
-    businessMetadata: null
+    businessMetadata: null,
+    customFilters: null
   });
-
+  const [hoveredNodeId, setHoveredNodeId] = useState<string | null>(null);
   const [openModal, setOpenModal] = useState<boolean>(false);
-  const toastId: any = useRef(null);
   const open = Boolean(expand);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [tagModal, setTagModal] = useState<boolean>(false);
   const [glossaryModal, setGlossaryModal] = useState<boolean>(false);
   const { businessMetaData }: any = useAppSelector(
     (state: any) => state.businessMetaData
+  );
+
+  const { glossaryData = [] }: any = useAppSelector(
+    (state: any) => state.glossary
   );
 
   const filteredData = useMemo(() => {
@@ -373,12 +412,26 @@ const BarTreeView: FC<{
     const searchParams = new URLSearchParams(location.search);
     const nodeIdFromParamsType = searchParams.get("type");
     const nodeIdFromParamsTag = searchParams.get("tag");
+    const nodeIdFromParamsGlossary = searchParams.get("gtype") == "glossary";
+    let nodeIdFromParamsTermRaw = searchParams.get("term");
+    const nodeIdFromParamsTerm = nodeIdFromParamsTermRaw
+      ? nodeIdFromParamsTermRaw.split("@")[0]
+      : null;
     const nodeIdFromParamsRelationshipName =
       searchParams.get("relationshipName");
     const nodeIdFromBMName = location.pathname.includes(
       "/administrator/businessMetadata"
     );
+    const nodeIdFromCFName =
+      treeName == "CustomFilters" && searchParams.get("isCF");
 
+    const glossaryGuid = searchParams.get("gId");
+
+    const glossaryName = !isEmpty(glossaryData)
+      ? glossaryData.find(
+          (obj: { guid: string | null }) => obj.guid === glossaryGuid
+        )?.name
+      : "";
     const bmObj = !isEmpty(businessMetaData?.businessMetadataDefs)
       ? businessMetaData?.businessMetadataDefs?.find((obj: EnumTypeDefData) => {
           if (bmguid == obj.guid) {
@@ -391,24 +444,33 @@ const BarTreeView: FC<{
     setSelectedNode({
       type: nodeIdFromParamsType,
       tag: nodeIdFromParamsTag,
+      glossary: nodeIdFromParamsGlossary ? glossaryName : null,
+      term: nodeIdFromParamsTerm,
       relationship: nodeIdFromParamsRelationshipName,
-      businessMetadata: nodeIdFromBMName ? name : null
+      businessMetadata: nodeIdFromBMName ? name : null,
+      customFilters: null
     });
 
     if (
       !nodeIdFromParamsType &&
       !nodeIdFromParamsTag &&
+      !nodeIdFromParamsGlossary &&
+      !nodeIdFromParamsTerm &&
       !nodeIdFromParamsRelationshipName &&
-      !nodeIdFromBMName
+      !nodeIdFromBMName &&
+      !nodeIdFromCFName
     ) {
       setSelectedNode({
         type: null,
         tag: null,
+        glossary: null,
+        term: null,
         relationship: null,
-        businessMetadata: null
+        businessMetadata: null,
+        customFilters: null
       });
     }
-  }, [location.search]);
+  }, [location.search, location.pathname, treeData]);
 
   const getEmptyTypesTitle = () => {
     switch (treeName) {
@@ -461,51 +523,57 @@ const BarTreeView: FC<{
 
   const handleClickNode = (nodeId: string) => {
     const searchParams = new URLSearchParams(location.search);
-    const isTypeMatch = searchParams.get("type") === nodeId;
-    const isTagMatch = searchParams.get("tag") === nodeId;
-    const isRelationshipMatch = searchParams.get("relationshipName") === nodeId;
-    const isBusinessMetadataMatch = location.pathname.includes(
-      "/administrator/businessMetadata"
+
+    const nodeTypeMap: { [key: string]: boolean } = {
+      type: searchParams.get("type") === nodeId,
+      tag: searchParams.get("tag") === nodeId,
+      glossary: searchParams.get("gType") === "glossary",
+      term: searchParams.get("term")?.split("@")[0] === nodeId,
+      relationship: searchParams.get("relationshipName") === nodeId,
+      businessMetadata: location.pathname.includes(
+        "/administrator/businessMetadata"
+      ),
+      customFilters:
+        treeName == "CustomFilters" && searchParams.get("isCF") === nodeId
+    };
+
+    const glossaryGuid = searchParams.get("gId");
+
+    const glossaryName = !isEmpty(glossaryData)
+      ? glossaryData.find(
+          (obj: { guid: string | null }) => obj.guid === glossaryGuid
+        )?.name
+      : "";
+
+    const matchedType = Object.keys(nodeTypeMap).find(
+      (key) => nodeTypeMap[key]
     );
 
-    if (isTypeMatch) {
+    if (matchedType) {
       setSelectedNode({
-        type: nodeId,
-        tag: null,
-        relationship: null,
-        businessMetadata: null
-      });
-    }
-    if (isTagMatch) {
-      setSelectedNode({
-        type: null,
-        tag: nodeId,
-        relationship: null,
-        businessMetadata: null
-      });
-    }
-    if (isRelationshipMatch) {
-      setSelectedNode({
-        type: null,
-        tag: null,
-        relationship: nodeId,
-        businessMetadata: null
-      });
-    }
-    if (isBusinessMetadataMatch) {
-      setSelectedNode({
-        type: null,
-        tag: null,
-        relationship: null,
-        businessMetadata: nodeId
+        type: matchedType === "type" ? nodeId : null,
+        tag: matchedType === "tag" ? nodeId : null,
+        glossary: matchedType === "glossary" ? glossaryName : null,
+        term: matchedType === "term" ? nodeId : null,
+        relationship: matchedType === "relationship" ? nodeId : null,
+        businessMetadata: matchedType === "businessMetadata" ? nodeId : null,
+        customFilters: matchedType === "customFilters" ? nodeId : null
       });
     }
   };
 
   const getNodeId = (node: TreeNode) => {
-    if (treeName == "Classifications" && node.types == "parent") {
+    if (
+      (treeName == "Classifications" ||
+        treeName == "Glossary" ||
+        treeName == "CustomFilters") &&
+      node.types == "parent"
+    ) {
       return node.label;
-    } else if (treeName == "Classifications" && node.types == "child") {
+    } else if (
+      (treeName == "Classifications" || treeName == "CustomFilters") &&
+      node.types == "child"
+    ) {
       return `${node.id}@${node.label}`;
     }
     return !isEmpty(node?.parent) ? `${node.id}@${node?.parent}` : node.id;
@@ -517,8 +585,7 @@ const BarTreeView: FC<{
     searchParams: URLSearchParams,
     navigate: NavigateFunction,
     isEmptyServicetype: boolean | undefined,
-    savedSearchData: any,
-    toastId: any
+    savedSearchData: any
   ) => {
     globalSearchFilterInitialQuery.setQuery({});
     searchParams.delete("tabActive");
@@ -549,8 +616,7 @@ const BarTreeView: FC<{
         treeName,
         searchParams,
         navigate,
-        isEmptyServicetype,
-        toastId
+        isEmptyServicetype
       );
     }
   };
@@ -560,7 +626,8 @@ const BarTreeView: FC<{
       node.children === undefined ||
       isEmpty(node.children) ||
       treeName === "Classifications" ||
-      (treeName === "Glossary" && node.types === "child")
+      treeName === "Glossary"
+      // && node.types === "child"
     );
   };
 
@@ -569,7 +636,7 @@ const BarTreeView: FC<{
     treeName: string,
     searchParams: URLSearchParams,
     isEmptyServicetype: boolean | undefined,
-    savedSearchData: any
+    savedSearchData: any[]
   ) => {
     searchParams.set(
       "searchType",
@@ -683,8 +750,7 @@ const BarTreeView: FC<{
     treeName: string,
     searchParams: URLSearchParams,
     navigate: NavigateFunction,
-    isEmptyServicetype: boolean | undefined,
-    toastId: any
+    isEmptyServicetype: boolean | undefined
   ) => {
     switch (treeName) {
       case "Business MetaData":
@@ -700,15 +766,30 @@ const BarTreeView: FC<{
           navigate(
             {
               pathname: `glossary/${
-                node.cGuid !== undefined ? node.cGuid : node.guid
+                node.cGuid !== undefined ? node.cGuid : node.guid || ""
               }`,
               search: searchParams.toString()
             },
             { replace: true }
           );
         } else if (node.types === "parent") {
-          toast.dismiss(toastId.current);
-          toastId.current = toast.warning("Create a Term or Category");
+          const searchParams = new URLSearchParams();
+          searchParams.set(
+            "gId",
+            node.cGuid !== undefined ? node.cGuid : node.guid || ""
+          );
+          searchParams.set("gtype", "glossary");
+          searchParams.set("viewType", "term");
+
+          navigate(
+            {
+              pathname: `glossary/${
+                node.cGuid !== undefined ? node.cGuid : node.guid
+              }`,
+              search: searchParams.toString()
+            },
+            { replace: true }
+          );
         } else {
           searchParams.delete("relationshipName");
           navigate(
@@ -790,48 +871,72 @@ const BarTreeView: FC<{
         key={node.id}
         itemId={getNodeId(node)}
         label={
-          <div
+          <Stack
+            direction="row"
+            alignItems="center"
+            width="100%"
+            gap="4px"
             {...({
               selectedNodeType: selectedNode.type,
               selectedNodeTag: selectedNode.tag,
+              selectedNodeGlossary: selectedNode.glossary,
+              selectedNodeTerm: selectedNode.term,
               selectedNodeRelationship: selectedNode.relationship,
               selectedNodeBM: selectedNode.businessMetadata,
-              node: node.id,
+              selectedNodeCF: selectedNode.customFilters,
+              node: treeName == "Classifications" ? node.text : node.id,
               onClick: (_event: MouseEvent<HTMLElement>) => {
+                if (
+                  (treeName == "CustomFilters" &&
+                    isEmptyServicetype &&
+                    node.types == "parent") ||
+                  (treeName == "Glossary" && node.types == "parent")
+                ) {
+                  return;
+                }
                 handleNodeClick(
                   node,
                   treeName,
                   searchParams,
                   navigate,
                   isEmptyServicetype,
-                  savedSearchData,
-                  toastId
+                  savedSearchData
                 );
               },
               className: "custom-treeitem-label"
             } as any)}
           >
-            {node.id != "No Records Found" && (
-              <TreeIcons
-                node={node}
-                treeName={treeName}
-                isEmptyServicetype={isEmptyServicetype ?? false}
-              />
-            )}
-            <TreeLabelWithTooltip label={node.label} />
-            {(treeName == "Entities" ||
-              treeName == "Classifications" ||
-              treeName == "CustomFilters" ||
-              treeName == "Glossary") &&
-              node.id != "No Records Found" && (
-                <TreeNodeIcons
+            <Stack
+              direction="row"
+              alignItems="center"
+              width="100%"
+              gap="4px"
+              onMouseEnter={() => setHoveredNodeId(node.id)}
+              onMouseLeave={() => setHoveredNodeId(null)}
+            >
+              {node.id != "No Records Found" && (
+                <TreeIcons
                   node={node}
                   treeName={treeName}
-                  updatedData={refreshData}
-                  isEmptyServicetype={isEmptyServicetype}
+                  isEmptyServicetype={isEmptyServicetype ?? false}
                 />
               )}
-          </div>
+              <TreeLabelWithTooltip label={node.label} />
+              {(treeName == "Entities" ||
+                treeName == "Classifications" ||
+                treeName == "CustomFilters" ||
+                treeName == "Glossary") &&
+                node.id != "No Records Found" && (
+                  <TreeNodeIcons
+                    node={node}
+                    treeName={treeName}
+                    updatedData={refreshData}
+                    isEmptyServicetype={isEmptyServicetype}
+                    hovered={hoveredNodeId === node.id}
+                  />
+                )}
+            </Stack>
+          </Stack>
         }
       >
         {node.children && node.children.map((child) => renderTreeItem(child))}

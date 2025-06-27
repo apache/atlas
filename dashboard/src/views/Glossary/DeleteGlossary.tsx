@@ -32,11 +32,10 @@ import { toast } from "react-toastify";
 const DeleteGlossary = (props: {
   open: boolean;
   onClose: () => void;
-  setExpandNode: any;
   node: any;
   updatedData: any;
 }) => {
-  const { open, onClose, setExpandNode, node, updatedData } = props;
+  const { open, onClose, node, updatedData } = props;
   const { id, guid, cGuid, types } = node;
   const gtype: string | undefined | null =
     types != "parent" ? "term" : "glossary";
@@ -74,9 +73,9 @@ const DeleteGlossary = (props: {
         );
       }
       onClose();
-      setExpandNode(null);
     } catch (error) {
       console.log(`Error occur while removing ${id}`, error);
+      onClose();
       serverError(error, toastId);
     }
   };

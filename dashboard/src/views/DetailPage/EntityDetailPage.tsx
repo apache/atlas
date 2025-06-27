@@ -45,11 +45,14 @@ import { cloneDeep } from "@utils/Helper";
 import { fetchDetailPageData } from "@redux/slice/detailPageSlice";
 import React from "react";
 import AddTag from "@views/Classification/AddTag";
-import AssignTerm from "@views/Glossary/AssignTerm";
-import { removeTerm } from "@api/apiMethods/glossaryApiMethod";
+import {
+  assignTermstoEntites,
+  removeTerm
+} from "@api/apiMethods/glossaryApiMethod";
 import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import ShowMoreView from "@components/ShowMore/ShowMoreView";
 import LineageTab from "./EntityDetailTabs/LineageTab";
+import AssignGlossaryItem from "@views/Glossary/AssignGlossaryItem";
 
 const EntityDetailPage: React.FC = () => {
   const { guid } = useParams();
@@ -538,13 +541,18 @@ const EntityDetailPage: React.FC = () => {
           setRowSelection={undefined}
         />
       )}
+
       {openAddTermModal && (
-        <AssignTerm
-          updateTable={undefined}
+        <AssignGlossaryItem
           open={openAddTermModal}
           onClose={handleCloseAddTermModal}
           data={relationshipAttributes}
-          relatedTerm={false}
+          updateTable={undefined}
+          relatedItem={false}
+          itemType="term"
+          dataKey="terms"
+          assignApiMethod={assignTermstoEntites}
+          treeLabel="Term"
           columnVal={"meanings"}
         />
       )}

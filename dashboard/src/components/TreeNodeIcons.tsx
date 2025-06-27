@@ -49,13 +49,41 @@ import DeleteGlossary from "@views/Glossary/DeleteGlossary";
 import AddUpdateCategoryForm from "@views/Glossary/AddUpdateCategoryForm";
 import MoreHorizOutlinedIcon from "@mui/icons-material/MoreHorizOutlined";
 
+const NodeMenuIconButton = ({
+  onClick,
+  visible,
+  className = "tree-item-more-label",
+  iconClassName = "",
+  ...props
+}: {
+  onClick: (e: React.MouseEvent<HTMLElement>) => void;
+  visible: boolean;
+  className?: string;
+  iconClassName?: string;
+  [key: string]: any;
+}) => (
+  <IconButton
+    onClick={onClick}
+    size="small"
+    className={className}
+    data-cy="dropdownMenuButton"
+    sx={{
+      visibility: visible ? "visible" : "hidden"
+    }}
+    {...props}
+  >
+    <MoreHorizOutlinedIcon className={iconClassName} />
+  </IconButton>
+);
+
 const TreeNodeIcons = (props: {
   node: any;
   treeName: string;
   updatedData: any;
   isEmptyServicetype: boolean | undefined;
+  hovered: any;
 }) => {
-  const { node, treeName, updatedData, isEmptyServicetype } = props;
+  const { node, treeName, updatedData, isEmptyServicetype, hovered } = props;
   const navigate = useNavigate();
   const toastId: any = useRef(null);
   const [expandNode, setExpandNode] = useState<null | HTMLElement>(null);
@@ -65,7 +93,7 @@ const TreeNodeIcons = (props: {
   const { savedSearchData }: any = useAppSelector(
     (state: any) => state.savedSearch
   );
-  const [deleteTagModal, setdeleteTagModal] = useState<boolean>(false);
+  const [deleteTagModal, setDeleteTagModal] = useState<boolean>(false);
   const [deleteGlossaryModal, setDeleteGlossaryModal] =
     useState<boolean>(false);
   const [tagModal, setTagModal] = useState<boolean>(false);
@@ -96,7 +124,7 @@ const TreeNodeIcons = (props: {
   };
 
   const handleCloseDeleteTagModal = () => {
-    setdeleteTagModal(false);
+    setDeleteTagModal(false);
   };
 
   const handleCloseDeleteGlossaryModal = () => {
@@ -162,6 +190,7 @@ const TreeNodeIcons = (props: {
       serverError(error, toastId);
     }
   };
+
   return (
     <>
       {(node.types == "child" || node.types == undefined) &&
@@ -174,16 +203,10 @@ const TreeNodeIcons = (props: {
         (treeName == "CustomFilters" ||
           treeName == "Classifications" ||
           treeName == "Glossary") && (
-          <IconButton
-            onClick={(e) => {
-              handleClickNodeMenu(e);
-            }}
-            size="small"
-            className="tree-item-more-label"
-            data-cy="dropdownMenuButton"
-          >
-            <MoreHorizOutlinedIcon />
-          </IconButton>
+          <NodeMenuIconButton
+            onClick={handleClickNodeMenu}
+            visible={hovered || openNode}
+          />
         )}
 
       {(((treeName == "Classifications" || treeName == "Glossary") &&
@@ -193,16 +216,11 @@ const TreeNodeIcons = (props: {
         (node.types == "child" &&
           !isEmpty(node.children) &&
           node.cGuid != undefined)) && (
-        <IconButton
-          onClick={(e) => {
-            handleClickNodeMenu(e);
-          }}
-          className="tree-item-more-label"
-          size="small"
-          data-cy="dropdownMenuButton"
-        >
-          <MoreHorizOutlinedIcon className="treeitem-dropdown-toggle" />
-        </IconButton>
+        <NodeMenuIconButton
+          onClick={handleClickNodeMenu}
+          visible={hovered || openNode}
+          iconClassName="treeitem-dropdown-toggle"
+        />
       )}
       <Menu
         onClick={(e) => {
@@ -226,6 +244,7 @@ const TreeNodeIcons = (props: {
           <MenuItem
             onClick={(e) => {
               e.stopPropagation();
+              setExpandNode(null);
               if (
                 treeName == "Classifications" &&
                 !addOnClassification.includes(node.id)
@@ -272,6 +291,7 @@ const TreeNodeIcons = (props: {
           (treeName == "Glossary" && isEmptyServicetype)) && (
           <MenuItem
             onClick={(_e) => {
+              setExpandNode(null);
               if (treeName == "Classifications") {
                 const searchParams = new URLSearchParams();
                 searchParams.set(
@@ -284,7 +304,6 @@ const TreeNodeIcons = (props: {
                   }`,
                   search: searchParams.toString()
                 });
-                setExpandNode(null);
               }
               if (treeName == "Glossary" && node.types == "parent") {
                 setGlossaryModal(true);
@@ -301,7 +320,6 @@ const TreeNodeIcons = (props: {
                   pathname: `/glossary/${node.cGuid}`,
                   search: searchParams.toString()
                 });
-                setExpandNode(null);
               }
             }}
             data-cy="createClassification"
@@ -330,12 +348,11 @@ const TreeNodeIcons = (props: {
           (treeName == "Glossary" &&
             node.types == "child" &&
             isEmptyServicetype)) && (
-          // &&
-          //   !isEmpty(gtype)
           <MenuItem
             onClick={(_e) => {
+              setExpandNode(null);
               if (treeName == "Classifications") {
-                setdeleteTagModal(true);
+                setDeleteTagModal(true);
               }
               if (treeName == "Glossary") {
                 setDeleteGlossaryModal(true);
@@ -513,7 +530,6 @@ const TreeNodeIcons = (props: {
         <DeleteTag
           open={deleteTagModal}
           onClose={handleCloseDeleteTagModal}
-          setExpandNode={setExpandNode}
           node={node}
           updatedData={updatedData}
         />
@@ -522,7 +538,6 @@ const TreeNodeIcons = (props: {
         <DeleteGlossary
           open={deleteGlossaryModal}
           onClose={handleCloseDeleteGlossaryModal}
-          setExpandNode={setExpandNode}
           node={node}
           updatedData={updatedData}
         />

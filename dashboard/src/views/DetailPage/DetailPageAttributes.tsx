@@ -15,6 +15,8 @@
  * limitations under the License.
  */
 
+import { useState } from "react";
+import { useParams, useSearchParams } from "react-router-dom";
 import { CustomButton, LightTooltip } from "@components/muiComponents";
 import SkeletonLoader from "@components/SkeletonLoader";
 import {
@@ -25,27 +27,100 @@ import {
   ToggleButtonGroup,
   Typography
 } from "@mui/material";
+import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
+import { StyledPaper } from "@utils/Muiutils";
 import {
   extractKeyValueFromEntity,
   isEmpty,
   sanitizeHtmlContent
 } from "@utils/Utils";
-import { useState } from "react";
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { removeClassification } from "@api/apiMethods/classificationApiMethod";
-import { useParams, useSearchParams } from "react-router-dom";
+import {
+  assignGlossaryType,
+  assignTermstoEntites,
+  removeTermorCategory
+} from "@api/apiMethods/glossaryApiMethod";
 import ClassificationForm from "@views/Classification/ClassificationForm";
 import AddUpdateTermForm from "@views/Glossary/AddUpdateTermForm";
 import AddUpdateCategoryForm from "@views/Glossary/AddUpdateCategoryForm";
-import { removeTermorCategory } from "@api/apiMethods/glossaryApiMethod";
-import { StyledPaper } from "@utils/Muiutils";
 import ShowMoreView from "@components/ShowMore/ShowMoreView";
-import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutline";
 import AddTag from "@views/Classification/AddTag";
 import AddTagAttributes from "@views/Classification/AddTagAttributes";
-import AssignCategory from "@views/Glossary/AssignCategory";
-import AssignTerm from "@views/Glossary/AssignTerm";
 import ShowMoreText from "@components/ShowMore/ShowMoreText";
+import AddUpdateGlossaryForm from "@views/Glossary/AddUpdateGlossaryForm";
+import AssignGlossaryItem from "@views/Glossary/AssignGlossaryItem";
+
+const initialModalState = {
+  tag: false,
+  editTerm: false,
+  editCategory: false,
+  glossary: false,
+  addTag: false,
+  attribute: false,
+  addTerm: false,
+  category: false
+};
+
+const Loader = () => (
+  <Stack direction="column" spacing={2} alignItems="flex-start">
+    <SkeletonLoader
+      count={1}
+      variant="text"
+      width={300}
+      className="text-loader"
+    />
+  </Stack>
+);
+
+const Section = ({
+  title,
+  tooltip,
+  onAdd,
+  dataKey,
+  showMoreProps,
+  loading,
+  children,
+  data
+}: any) => (
+  <Stack direction="column" alignItems="flex-start" gap="0.5rem">
+    <Stack direction="row" alignItems="center" gap="0.75rem">
+      <Typography
+        fontWeight="600"
+        className="entity-attribute-label"
+        fontSize="16px"
+      >
+        {title}
+      </Typography>
+      {tooltip && (
+        <LightTooltip title={tooltip}>
+          <IconButton
+            component="label"
+            size="small"
+            color="primary"
+            onClick={onAdd}
+          >
+            <AddCircleOutlineIcon className="mr-0" fontSize="small" />
+          </IconButton>
+        </LightTooltip>
+      )}
+    </Stack>
+    <Stack direction="row" flex="1" justifyContent="flex-start">
+      {loading ? (
+        <Loader />
+      ) : (
+        children || (
+          <ShowMoreView
+            data={data?.[dataKey] || []}
+            {...showMoreProps}
+            currentEntity={data}
+            isEditView={false}
+          />
+        )
+      )}
+    </Stack>
+  </Stack>
+);
 
 const DetailPageAttribute = ({
   data,
@@ -60,45 +135,16 @@ const DetailPageAttribute = ({
   const { guid, tagName, bmguid } = useParams();
   const gtypeParams = searchParams.get("gtype");
   const [alignment, setAlignment] = useState<string>("formatted");
-  const [tagModal, setTagModal] = useState<boolean>(false);
-  const [editTermModal, setEditTermModal] = useState(false);
-  const [editCategoryModal, setEditCategoryModal] = useState(false);
+  const [modals, setModals] = useState(initialModalState);
 
-  const [openAddTagModal, setOpenAddTagModal] = useState<boolean>(false);
-  const [attributeModal, setAttributeModal] = useState<boolean>(false);
-  const [openAddTermModal, setOpenAddTermModal] = useState<boolean>(false);
+  const handleModal = (modal: keyof typeof initialModalState, open: boolean) =>
+    setModals((prev) => ({ ...prev, [modal]: open }));
 
-  const [categoryModal, setCategoryModal] = useState<boolean>(false);
-
-  const handleCloseTermModal = () => {
-    setOpenAddTermModal(false);
-  };
-  const handleCloseAddTagModal = () => {
-    setOpenAddTagModal(false);
-  };
-  const handleCloseCategoryModal = () => {
-    setCategoryModal(false);
-  };
-  const handleCloseAttributeModal = () => {
-    setAttributeModal(false);
-  };
   const handleChange = (
     _event: React.MouseEvent<HTMLElement>,
     newAlignment: string
   ) => {
     setAlignment(newAlignment);
-  };
-
-  const handleCloseTagModal = () => {
-    setTagModal(false);
-  };
-
-  const handleCloseEditTermModal = () => {
-    setEditTermModal(false);
-  };
-
-  const handleCloseEditCategoryModal = () => {
-    setEditCategoryModal(false);
   };
 
   const { name }: { name: string; found: boolean; key: any } =
@@ -138,16 +184,24 @@ const DetailPageAttribute = ({
                   size="small"
                   onClick={() => {
                     if (!isEmpty(tagName)) {
-                      setTagModal(true);
-                    }
-                    if (!isEmpty(guid) && gtypeParams == "term") {
-                      setEditTermModal(true);
-                    }
-                    if (!isEmpty(guid) && gtypeParams == "category") {
-                      setEditCategoryModal(true);
+                      handleModal("tag", true);
+                    } else if (!isEmpty(guid)) {
+                      switch (gtypeParams) {
+                        case "glossary":
+                          handleModal("glossary", true);
+                          break;
+                        case "term":
+                          handleModal("editTerm", true);
+                          break;
+                        case "category":
+                          handleModal("editCategory", true);
+                          break;
+                        default:
+                          break;
+                      }
                     }
                   }}
-                  data-cy="addTag"
+                  data-cy="editButton"
                 >
                   <EditOutlinedIcon className="table-filter-refresh" />
                 </CustomButton>
@@ -168,7 +222,7 @@ const DetailPageAttribute = ({
             }}
           >
             {" "}
-            {shortDescription != undefined && (
+            {shortDescription !== undefined && (
               <>
                 <Stack gap="0.5rem">
                   <Typography
@@ -211,7 +265,7 @@ const DetailPageAttribute = ({
                   className="opacity-07"
                   fontSize={"16px"}
                 >
-                  {shortDescription != undefined ? `Long` : ""} Description
+                  {shortDescription !== undefined ? `Long` : ""} Description
                 </Typography>
                 <ToggleButtonGroup
                   size="small"
@@ -248,7 +302,7 @@ const DetailPageAttribute = ({
                 }}
               >
                 <Stack gap={1} right="0" top="0" justifyContent="flex-end">
-                  {alignment == "formatted" ? (
+                  {alignment === "formatted" ? (
                     <div style={{ wordBreak: "break-all" }}>
                       <ShowMoreText
                         value={sanitizeHtmlContent(description)}
@@ -271,429 +325,184 @@ const DetailPageAttribute = ({
                 </Stack>
               </div>
             </Stack>
-            {!isEmpty(gtypeParams) &&
-              (gtypeParams == "term" || gtypeParams == "category") &&
-              (loading ? (
-                <Stack direction="column" spacing={2} alignItems="left">
-                  <SkeletonLoader
-                    count={1}
-                    variant="text"
-                    width={300}
-                    className="text-loader"
-                  />
-                </Stack>
-              ) : (
-                gtypeParams != "category" && (
-                  <Stack
-                    direction="column"
-                    alignItems="flex-start"
-                    gap="0.5rem"
-                  >
-                    <Stack direction="row" alignItems="center" gap="0.75rem">
-                      <Typography
-                        lineHeight="26px"
-                        flexBasis="12%"
-                        fontWeight="600"
-                        fontSize="16px"
-                        className="entity-attribute-label"
-                      >
-                        Classifications
-                      </Typography>
-                      <LightTooltip title={"Add Classifications"}>
-                        <IconButton
-                          component="label"
-                          role={undefined}
-                          tabIndex={-1}
-                          size="small"
-                          color="primary"
-                          onClick={() => {
-                            setOpenAddTagModal(true);
-                          }}
-                        >
-                          <AddCircleOutlineIcon
-                            className="mr-0"
-                            fontSize="small"
-                          />{" "}
-                        </IconButton>
-                      </LightTooltip>
-                    </Stack>
-                    <Stack
-                      data-cy="tagListTerm"
-                      direction="row"
-                      flex="1"
-                      justifyContent="flex-start"
-                    >
-                      <ShowMoreView
-                        data={data?.["classifications"] || []}
-                        maxVisible={4}
-                        title="Classifications"
-                        displayKey="typeName"
-                        removeApiMethod={removeClassification}
-                        removeTagsTitle={"Remove Classification Assignment"}
-                        currentEntity={data}
-                        isEditView={false}
-                        id={"Classifications"}
-                      />
-                    </Stack>
-                  </Stack>
-                )
-              ))}
-            {!isEmpty(gtypeParams) &&
-              gtypeParams == "category" &&
-              (loading ? (
-                <Stack direction="column" spacing={2} alignItems="left">
-                  <SkeletonLoader
-                    count={1}
-                    variant="text"
-                    width={300}
-                    className="text-loader"
-                  />
-                </Stack>
-              ) : (
-                !isEmpty(guid) &&
-                gtypeParams == "category" && (
-                  <Stack
-                    direction="column"
-                    alignItems="flex-start"
-                    gap="0.5rem"
-                  >
-                    <Stack direction="row" alignItems="center" gap="0.75rem">
-                      <Typography
-                        lineHeight="26px"
-                        flexBasis="12%"
-                        fontWeight="600"
-                        className="entity-attribute-label"
-                        fontSize="16px"
-                      >
-                        Terms
-                      </Typography>
-                      <LightTooltip title={"Add Term"}>
-                        <IconButton
-                          component="label"
-                          role={undefined}
-                          tabIndex={-1}
-                          size="small"
-                          color="primary"
-                          onClick={() => {
-                            setOpenAddTermModal(true);
-                          }}
-                        >
-                          <AddCircleOutlineIcon
-                            className="mr-0"
-                            fontSize="small"
-                          />{" "}
-                        </IconButton>
-                      </LightTooltip>
-                    </Stack>
-                    <Stack
-                      data-cy="termList"
-                      direction="row"
-                      flex="1"
-                      justifyContent="flex-start"
-                    >
-                      <ShowMoreView
-                        data={data?.["terms"] || []}
-                        maxVisible={4}
-                        title="Terms"
-                        displayKey="displayText"
-                        isEditView={false}
-                        currentEntity={data}
-                        removeApiMethod={removeTermorCategory}
-                        removeTagsTitle={"Remove Term Assignment"}
-                        id={"Terms"}
-                      />
-                    </Stack>
-                  </Stack>
-                )
-              ))}
-            {!isEmpty(gtypeParams) &&
-              gtypeParams == "term" &&
-              (loading ? (
-                <Stack direction="column" spacing={2} alignItems="left">
-                  <SkeletonLoader
-                    count={1}
-                    variant="text"
-                    width={300}
-                    className="text-loader"
-                  />
-                </Stack>
-              ) : (
-                !isEmpty(guid) &&
-                gtypeParams == "term" && (
-                  <Stack
-                    direction="column"
-                    alignItems="flex-start"
-                    gap="0.5rem"
-                  >
-                    <Stack direction="row" alignItems="center" gap="0.75rem">
-                      <Typography
-                        flexBasis="12%"
-                        fontWeight="600"
-                        className="entity-attribute-label"
-                        fontSize={"16px"}
-                      >
-                        Categories
-                      </Typography>
-                      <LightTooltip title={"Add Categories"}>
-                        <IconButton
-                          component="label"
-                          role={undefined}
-                          tabIndex={-1}
-                          size="small"
-                          color="primary"
-                          onClick={() => {
-                            setCategoryModal(true);
-                          }}
-                        >
-                          <AddCircleOutlineIcon
-                            className="mr-0"
-                            fontSize="small"
-                          />{" "}
-                        </IconButton>
-                      </LightTooltip>
-                    </Stack>
-                    <Stack
-                      data-cy="categoryList"
-                      direction="row"
-                      flex="1"
-                      justifyContent="flex-start"
-                    >
-                      <ShowMoreView
-                        data={data?.["categories"] || []}
-                        maxVisible={4}
-                        title="Category"
-                        displayKey="displayText"
-                        removeApiMethod={removeTermorCategory}
-                        currentEntity={data}
-                        removeTagsTitle={"Remove Category Assignment"}
-                        isEditView={false}
-                        id={"Category"}
-                      />
-                    </Stack>
-                  </Stack>
-                )
-              ))}
+            {!isEmpty(gtypeParams) && gtypeParams == "term" && (
+              <Section
+                title="Classifications"
+                tooltip="Add Classifications"
+                onAdd={() => handleModal("addTag", true)}
+                dataKey="classifications"
+                showMoreProps={{
+                  maxVisible: 4,
+                  title: "Classifications",
+                  displayKey: "typeName",
+                  removeApiMethod: removeClassification,
+                  removeTagsTitle: "Remove Classification Assignment",
+                  id: "Classifications"
+                }}
+                loading={loading}
+                data={data}
+              />
+            )}
+            {!isEmpty(gtypeParams) && gtypeParams === "category" && (
+              <Section
+                title="Terms"
+                tooltip="Add Term"
+                onAdd={() => handleModal("addTerm", true)}
+                dataKey="terms"
+                showMoreProps={{
+                  maxVisible: 4,
+                  title: "Terms",
+                  displayKey: "displayText",
+                  removeApiMethod: removeTermorCategory,
+                  removeTagsTitle: "Remove Term Assignment",
+                  id: "Terms"
+                }}
+                loading={loading}
+                data={data}
+              />
+            )}
+            {!isEmpty(gtypeParams) && gtypeParams === "term" && (
+              <Section
+                title="Categories"
+                tooltip="Add Categories"
+                onAdd={() => handleModal("category", true)}
+                dataKey="categories"
+                showMoreProps={{
+                  maxVisible: 4,
+                  title: "Category",
+                  displayKey: "displayText",
+                  removeApiMethod: removeTermorCategory,
+                  removeTagsTitle: "Remove Category Assignment",
+                  id: "Category"
+                }}
+                loading={loading}
+                data={data}
+              />
+            )}
             {!isEmpty(superTypes) && (
-              <>
-                {loading ? (
-                  <Stack direction="column" spacing={2} alignItems="left">
-                    <SkeletonLoader
-                      count={1}
-                      variant="text"
-                      width={300}
-                      className="text-loader"
-                    />
-                  </Stack>
-                ) : (
-                  <Stack
-                    direction="column"
-                    alignItems="flex-start"
-                    gap="0.5rem"
-                  >
-                    <Stack direction="row" alignItems="center" gap="0.75rem">
-                      <Typography
-                        fontWeight="600"
-                        className="entity-attribute-label"
-                        fontSize={"16px"}
-                      >
-                        Direct super-classifications
-                      </Typography>
-                    </Stack>
-                    <Stack
-                      data-cy="direct-super-classifications"
-                      direction="row"
-                      flex="1"
-                      justifyContent="flex-start"
-                    >
-                      <ShowMoreView
-                        data={data["superTypes"] || []}
-                        maxVisible={4}
-                        title="Super Classifications"
-                        displayKey=""
-                        currentEntity={data}
-                        isEditView={false}
-                        id={"Super Classifications"}
-                      />
-                    </Stack>
-                  </Stack>
-                )}
-              </>
+              <Section
+                title="Direct super-classifications"
+                dataKey="superTypes"
+                showMoreProps={{
+                  maxVisible: 4,
+                  title: "Super Classifications",
+                  displayKey: "",
+                  id: "Super Classifications"
+                }}
+                loading={loading}
+                data={data}
+              />
             )}
             {!isEmpty(subTypes) && (
-              <>
-                {loading ? (
-                  <Stack direction="column" spacing={2} alignItems="left">
-                    <SkeletonLoader
-                      count={1}
-                      variant="text"
-                      width={300}
-                      className="text-loader"
-                    />
-                  </Stack>
-                ) : (
-                  <Stack
-                    direction="column"
-                    alignItems="flex-start"
-                    gap="0.5rem"
-                  >
-                    <Stack direction="row" alignItems="center" gap="0.75rem">
-                      <Typography
-                        fontWeight="600"
-                        className="entity-attribute-label"
-                        fontSize={"16px"}
-                      >
-                        Direct sub-classifications
-                      </Typography>
-                    </Stack>
-                    <Stack
-                      data-cy="propagatedTagList"
-                      direction="row"
-                      flex="1"
-                      justifyContent="flex-start"
-                    >
-                      <ShowMoreView
-                        data={data?.["subTypes"] || []}
-                        maxVisible={4}
-                        title="Sub Classifications"
-                        displayKey=""
-                        currentEntity={data}
-                        isEditView={false}
-                        id={"Sub Classifications"}
-                      />
-                    </Stack>
-                  </Stack>
-                )}
-              </>
+              <Section
+                title="Direct sub-classifications"
+                dataKey="subTypes"
+                showMoreProps={{
+                  maxVisible: 4,
+                  title: "Sub Classifications",
+                  displayKey: "",
+                  id: "Sub Classifications"
+                }}
+                loading={loading}
+                data={data}
+              />
             )}
-            {attributeDefs != undefined && (
-              <>
-                <>
-                  {loading ? (
-                    <Stack direction="column" spacing={2} alignItems="left">
-                      <SkeletonLoader
-                        count={1}
-                        variant="text"
-                        width={300}
-                        className="text-loader"
-                      />
-                    </Stack>
-                  ) : (
-                    <Stack
-                      direction="column"
-                      alignItems="flex-start"
-                      gap="0.5rem"
-                    >
-                      <Stack direction="row" alignItems="center" gap="0.75rem">
-                        <Typography
-                          lineHeight="26px"
-                          flexBasis="12%"
-                          fontWeight="600"
-                          className="entity-attribute-label"
-                          fontSize={"16px"}
-                        >
-                          Attributes:
-                        </Typography>
-                        <LightTooltip title={"Add Attributes"}>
-                          <IconButton
-                            component="label"
-                            role={undefined}
-                            tabIndex={-1}
-                            size="small"
-                            color="primary"
-                            onClick={() => {
-                              setAttributeModal(true);
-                            }}
-                          >
-                            <AddCircleOutlineIcon
-                              className="mr-0"
-                              fontSize="small"
-                            />{" "}
-                          </IconButton>
-                        </LightTooltip>
-                      </Stack>
-
-                      <Stack
-                        data-cy="propagatedTagList"
-                        direction="row"
-                        flex="1"
-                        justifyContent="flex-start"
-                      >
-                        <ShowMoreView
-                          data={data?.["attributeDefs"] || []}
-                          maxVisible={4}
-                          title="Atrributes"
-                          displayKey="name"
-                          currentEntity={data}
-                          isEditView={false}
-                          id={"Atrributes"}
-                        />
-                      </Stack>
-                    </Stack>
-                  )}
-                </>
-              </>
+            {attributeDefs !== undefined && (
+              <Section
+                title="Attributes:"
+                tooltip="Add Attributes"
+                onAdd={() => handleModal("attribute", true)}
+                dataKey="attributeDefs"
+                showMoreProps={{
+                  maxVisible: 4,
+                  title: "Attributes",
+                  displayKey: "name",
+                  id: "Attributes"
+                }}
+                loading={loading}
+                data={data}
+              />
             )}
           </div>
         </StyledPaper>
       </Stack>
 
-      {tagModal && (
+      {modals.tag && (
         <ClassificationForm
-          open={tagModal}
-          onClose={handleCloseTagModal}
-          setTagModal={setTagModal}
+          open={modals.tag}
+          onClose={() => handleModal("tag", false)}
+          setTagModal={undefined}
         />
       )}
-      {openAddTagModal && (
+      {modals.addTag && (
         <AddTag
-          open={openAddTagModal}
+          open={modals.addTag}
           isAdd={true}
           entityData={data}
-          onClose={handleCloseAddTagModal}
+          onClose={() => handleModal("addTag", false)}
           setUpdateTable={undefined}
           setRowSelection={undefined}
         />
       )}
-      {editTermModal && (
+      {modals.editTerm && (
         <AddUpdateTermForm
-          open={editTermModal}
+          open={modals.editTerm}
           isAdd={false}
-          onClose={handleCloseEditTermModal}
+          onClose={() => handleModal("editTerm", false)}
           node={undefined}
           dataObj={data}
         />
       )}
-      {editCategoryModal && (
+      {modals.editCategory && (
         <AddUpdateCategoryForm
-          open={editCategoryModal}
+          open={modals.editCategory}
           isAdd={false}
-          onClose={handleCloseEditCategoryModal}
+          onClose={() => handleModal("editCategory", false)}
           node={undefined}
           dataObj={data}
         />
       )}
-      {attributeModal && (
+      {modals.attribute && (
         <AddTagAttributes
-          open={attributeModal}
-          onClose={handleCloseAttributeModal}
-        />
-      )}
-      {categoryModal && (
-        <AssignCategory
-          open={categoryModal}
-          onClose={handleCloseCategoryModal}
-          data={data || {}}
-          updateTable={undefined}
+          open={modals.attribute}
+          onClose={() => handleModal("attribute", false)}
         />
       )}
 
-      {openAddTermModal && (
-        <AssignTerm
-          open={openAddTermModal}
-          onClose={handleCloseTermModal}
+      {modals.category && (
+        <AssignGlossaryItem
+          open={modals.category}
+          onClose={() => handleModal("category", false)}
           data={data || {}}
           updateTable={undefined}
-          relatedTerm={undefined}
+          relatedItem={false}
+          itemType="category"
+          dataKey="categories"
+          assignApiMethod={assignGlossaryType}
+          treeLabel="Category"
+        />
+      )}
+
+      {modals.addTerm && (
+        <AssignGlossaryItem
+          open={modals.addTerm}
+          onClose={() => handleModal("addTerm", false)}
+          data={data || {}}
+          updateTable={undefined}
+          relatedItem={undefined}
+          itemType="term"
+          dataKey="terms"
+          assignApiMethod={assignTermstoEntites}
+          treeLabel="Term"
+        />
+      )}
+
+      {modals.glossary && (
+        <AddUpdateGlossaryForm
+          open={modals.glossary}
+          isAdd={false}
+          onClose={() => handleModal("glossary", false)}
+          node={data || {}}
         />
       )}
     </>

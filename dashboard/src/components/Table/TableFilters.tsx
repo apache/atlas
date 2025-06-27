@@ -46,7 +46,8 @@ import Filters from "@components/QueryBuilder/Filters";
 import { attributeFilter } from "@utils/CommonViewFunction";
 import { toast } from "react-toastify";
 import { downloadSearchResultsCSV } from "@api/apiMethods/downloadApiMethod";
-import AssignTerm from "@views/Glossary/AssignTerm";
+import AssignGlossaryItem from "@views/Glossary/AssignGlossaryItem";
+import { assignTermstoEntites } from "@api/apiMethods/glossaryApiMethod";
 
 export const StyledMenu = styled((props: MenuProps) => (
   <div style={{ position: "relative" }}>
@@ -497,14 +498,17 @@ export const TableFilter = ({
       )}
 
       {termModal && (
-        <AssignTerm
+        <AssignGlossaryItem
           open={termModal}
-          columnVal={"terms"}
           onClose={handleCloseTermModal}
           data={selectedRow}
-          relatedTerm={undefined}
+          relatedItem={undefined}
           updateTable={setUpdateTable}
           setRowSelection={setRowSelection}
+          itemType="term"
+          dataKey="terms"
+          treeLabel="Term"
+          assignApiMethod={assignTermstoEntites}
         />
       )}
 

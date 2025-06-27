@@ -765,17 +765,7 @@ const SearchResult = ({ classificationParams, glossaryTypeParams }: any) => {
   const getDefaultSort = useMemo(() => [{ id: "name", asc: true }], []);
 
   return (
-    <Stack
-      // paddingTop={
-      //   isEmpty(classificationParams || glossaryTypeParams) ? 0 : "40px"
-      // }
-      // marginTop={
-      //   isEmpty(classificationParams || glossaryTypeParams) ? 0 : "20px"
-      // }
-      // padding="16px"
-      position="relative"
-      gap={"1rem"}
-    >
+    <Stack position="relative" gap={"1rem"}>
       {!isEmpty(classificationParams || glossaryTypeParams) && (
         <Stack
           direction="row"

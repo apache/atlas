@@ -22,10 +22,7 @@ import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import { termRelationAttributeList } from "@utils/Enum";
 import DialogShowMoreLess from "@components/DialogShowMoreLess";
-import {
-  assignGlossaryType,
-  removeTerm
-} from "@api/apiMethods/glossaryApiMethod";
+import { assignGlossaryType } from "@api/apiMethods/glossaryApiMethod";
 import CustomModal from "@components/Modal";
 import { isEmpty, serverError } from "@utils/Utils";
 import { TableLayout } from "@components/Table/TableLayout";
@@ -126,7 +123,7 @@ const TermRelation = ({ glossaryTypeData }: any) => {
                 colName="Term"
                 relatedTerm={true}
                 displayText="qualifiedName"
-                removeApiMethod={removeTerm}
+                removeApiMethod={assignGlossaryType}
                 isShowMoreLess={false}
                 detailPage={true}
               />
