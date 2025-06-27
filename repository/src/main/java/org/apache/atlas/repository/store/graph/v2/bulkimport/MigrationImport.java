@@ -34,6 +34,7 @@ import org.apache.atlas.repository.store.graph.v1.RestoreHandlerV1;
 import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.pc.EntityConsumerBuilder;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.pc.EntityCreationManager;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.utils.TagAttributeMapper;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.slf4j.Logger;
@@ -49,14 +50,17 @@ public class MigrationImport extends ImportStrategy {
     private final EntityGraphRetriever entityGraphRetriever;
     private final TagAttributeMapper tagAttributeMapper;
 
+    private final TagDAO tagDAO;
+
     public MigrationImport(AtlasGraph graph, AtlasGraphProvider graphProvider,
-                           AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier, EntityGraphRetriever entityGraphRetriever, TagAttributeMapper tagAttributeMapper) {
+                           AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier, EntityGraphRetriever entityGraphRetriever, TagAttributeMapper tagAttributeMapper, TagDAO tagDAO) {
         this.graph = graph;
         this.graphProvider = graphProvider;
         this.typeRegistry = typeRegistry;
         this.entityChangeNotifier = entityChangeNotifier;
         this.entityGraphRetriever = entityGraphRetriever;
         this.tagAttributeMapper = tagAttributeMapper;
+        this.tagDAO = tagDAO;
         LOG.info("MigrationImport: Using bulkLoading...");
     }
 
@@ -102,7 +106,7 @@ public class MigrationImport extends ImportStrategy {
         AtlasGraph graphBulk = graphProvider.getBulkLoading();
 
         EntityGraphRetriever entityGraphRetriever = this.entityGraphRetriever;
-        EntityGraphRetriever entityGraphRetrieverBulk = new EntityGraphRetriever(graphBulk, typeRegistry);
+        EntityGraphRetriever entityGraphRetrieverBulk = new EntityGraphRetriever(tagDAO, graphBulk, typeRegistry);
 
         AtlasEntityStoreV2 entityStore = createEntityStore(this.graph, typeRegistry);
         AtlasEntityStoreV2 entityStoreBulk = createEntityStore(graphBulk, typeRegistry);

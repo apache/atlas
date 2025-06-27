@@ -151,12 +151,7 @@ public class EntityGraphRetriever {
 
     @Inject
     public EntityGraphRetriever(TagDAO tagDAO, AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
-        this(graph, typeRegistry, false);
-        this.tagDAO = tagDAO;
-    }
-
-    public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
-        this(graph, typeRegistry, false);
+        this(graph, typeRegistry, false, tagDAO);
     }
 
     public EntityGraphRetriever(EntityGraphRetriever retriever, boolean ignoreRelationshipAttr) {
@@ -167,11 +162,12 @@ public class EntityGraphRetriever {
         this.ignoreRelationshipAttr = ignoreRelationshipAttr;
     }
 
-    public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean ignoreRelationshipAttr) {
+    public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean ignoreRelationshipAttr, TagDAO tagDAO) {
         this.graph                  = graph;
         this.graphHelper            = new GraphHelper(graph);
         this.typeRegistry           = typeRegistry;
         this.ignoreRelationshipAttr = ignoreRelationshipAttr;
+        this.tagDAO = tagDAO;
     }
 
     public AtlasEntity toAtlasEntity(String guid, boolean includeReferences) throws AtlasBaseException {
