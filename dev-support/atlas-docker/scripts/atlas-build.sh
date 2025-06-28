@@ -92,3 +92,11 @@ mv -f distro/target/apache-atlas-${ATLAS_VERSION}-server.tar.gz     /home/atlas/
 mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hive-hook.tar.gz  /home/atlas/dist/
 mv -f distro/target/apache-atlas-${ATLAS_VERSION}-hbase-hook.tar.gz /home/atlas/dist/
 mv -f distro/target/apache-atlas-${ATLAS_VERSION}-kafka-hook.tar.gz /home/atlas/dist/
+
+# Run code coverage and generate reports
+./dev-support/checks/coverage.sh
+status=$?
+
+# save coverage reports to the dist directory before container shutdown
+mv -f target/coverage /home/atlas/dist/
+exit $status
