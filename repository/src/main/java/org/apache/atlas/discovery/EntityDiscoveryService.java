@@ -1021,6 +1021,48 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         return ret;
     }
 
+    public List<AtlasVertex> directVerticesIndexSearch(SearchParams searchParams) throws AtlasBaseException {
+        IndexSearchParams params = (IndexSearchParams) searchParams;
+        RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
+        RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
+        RequestContext.get().setIncludeRelationshipAttributes(params.isIncludeRelationshipAttributes());
+
+        List<AtlasVertex> ret = new ArrayList<>();
+        AtlasIndexQuery indexQuery;
+
+        try {
+            if(LOG.isDebugEnabled()){
+                LOG.debug("Performing ES search for the params ({})", searchParams);
+            }
+
+            String indexName = getIndexName(params);
+
+            indexQuery = graph.elasticsearchQuery(indexName);
+
+            if (searchParams.getEnableFullRestriction()) {
+                addPreFiltersToSearchQuery(searchParams);
+            }
+
+            AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
+            DirectIndexQueryResult indexQueryResult = indexQuery.vertices(searchParams);
+            if (indexQueryResult == null) {
+                return null;
+            }
+            RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
+
+            Iterator<Result> iterator = indexQueryResult.getIterator();
+            while (iterator.hasNext()) {
+                Result result = iterator.next();
+                AtlasVertex vertex = result.getVertex();
+                ret.add(vertex);
+            }
+        } catch (Exception e) {
+            LOG.error("Error while performing direct search for the params ({}), {}", searchParams, e.getMessage());
+            throw e;
+        }
+        return ret;
+    }
+
     @Override
     public AtlasSearchResult directRelationshipIndexSearch(SearchParams searchParams) throws AtlasBaseException {
         AtlasSearchResult ret = new AtlasSearchResult();
