@@ -142,7 +142,7 @@ public class EntityGraphRetriever {
     private final AtlasTypeRegistry typeRegistry;
 
     private final boolean ignoreRelationshipAttr;
-    private final boolean onlyMandatoryRelationshipAttr;
+    private final boolean fetchOnlyMandatoryRelationshipAttr;
     private final AtlasGraph graph;
 
     @Inject
@@ -155,15 +155,15 @@ public class EntityGraphRetriever {
         this.graphHelper            = new GraphHelper(graph);
         this.typeRegistry           = typeRegistry;
         this.ignoreRelationshipAttr = ignoreRelationshipAttr;
-        this.onlyMandatoryRelationshipAttr = false;
+        this.fetchOnlyMandatoryRelationshipAttr = false;
     }
 
-    public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean ignoreRelationshipAttr, boolean onlyMandatoryRelationshipAttr) {
+    public EntityGraphRetriever(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean ignoreRelationshipAttr, boolean fetchOnlyMandatoryRelationshipAttr) {
         this.graph                  = graph;
         this.graphHelper            = new GraphHelper(graph);
         this.typeRegistry           = typeRegistry;
         this.ignoreRelationshipAttr = ignoreRelationshipAttr;
-        this.onlyMandatoryRelationshipAttr = onlyMandatoryRelationshipAttr;
+        this.fetchOnlyMandatoryRelationshipAttr = fetchOnlyMandatoryRelationshipAttr;
     }
 
     public AtlasEntity toAtlasEntity(String guid, boolean includeReferences) throws AtlasBaseException {
@@ -988,7 +988,7 @@ public class EntityGraphRetriever {
             mapAttributes(entityVertex, entity, entityExtInfo, isMinExtInfo, includeReferences);
 
             if (!ignoreRelationshipAttr) { // only map when really needed
-                if (onlyMandatoryRelationshipAttr) {
+                if (fetchOnlyMandatoryRelationshipAttr) {
                     // map only mandatory relationships
                     mapMandatoryRelationshipAttributes(entityVertex, entity);
                 } else {
