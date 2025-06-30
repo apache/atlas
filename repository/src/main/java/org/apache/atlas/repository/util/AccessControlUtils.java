@@ -80,6 +80,7 @@ public final class AccessControlUtils {
     public static final String ATTR_POLICY_RESOURCES_CATEGORY  = "policyResourceCategory";
     public static final String ATTR_POLICY_SERVICE_NAME  = "policyServiceName";
     public static final String ATTR_POLICY_PRIORITY  = "policyPriority";
+    public static final String ATTR_QUALIFIED_NAME  = "qualifiedName";
 
     public static final String REL_ATTR_ACCESS_CONTROL = "accessControl";
     public static final String REL_ATTR_POLICIES       = "policies";

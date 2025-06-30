@@ -30,6 +30,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_STARTS_WITH;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_IN;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_NOT_IN;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_QUALIFIED_NAME;
 
 public class EntityAuthorizer {
 
@@ -234,7 +235,7 @@ public class EntityAuthorizer {
                 break;
 
             default:
-                LOG.warn("Value for attribute {} not found", attributeName);
+                LOG.warn("Value for attribute {} not found for {}:{}", attributeName, entity.getTypeName(), entity.getAttribute(ATTR_QUALIFIED_NAME));
         }
 
         return entityAttributeValues;
@@ -278,6 +279,9 @@ public class EntityAuthorizer {
                 relatedAttributes.addAll(attributeSet);
                 break;
             }
+        }
+        if (relatedAttributes.isEmpty()) {
+            relatedAttributes.add(attributeName);
         }
 
         return relatedAttributes;
