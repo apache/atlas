@@ -3107,5 +3107,22 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             RequestContext.get().endMetricRecord(metric);
         }
     }
+    @Override
+    @GraphTransaction
+    public void attributeUpdate(List<AttributeUpdateRequest.AssetAttributeInfo> data) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("attributeUpdate.GraphTransaction");
+        try {
+            List<AtlasVertex> vertices = this.entityGraphMapper.attributeUpdate(data);
+            if (CollectionUtils.isEmpty(vertices)) {
+                return;
+            }
+        } catch (Exception e) {
+            LOG.error("Error during attribute update", e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
 
 }

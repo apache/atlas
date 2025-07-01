@@ -5415,4 +5415,21 @@ public class EntityGraphMapper {
 
         return vertex;
     }
+    public List<AtlasVertex> attributeUpdate(List<AttributeUpdateRequest.AssetAttributeInfo> data) {
+        List<AtlasVertex> vertices = new ArrayList<>();
+        for (AttributeUpdateRequest.AssetAttributeInfo assetAttributeInfo : data) {
+            String assetGuid = assetAttributeInfo.getAssetId();
+            AtlasVertex vertex = findByGuid(graph, assetGuid);
+            if (vertex == null || GraphHelper.getStatus(vertex) == DELETED) {
+                LOG.warn("Asset with GUID {} not found", assetGuid);
+                continue;
+            }
+            vertex.setProperty(assetAttributeInfo.getAttributeName(), assetAttributeInfo.getValue());
+            updateModificationMetadata(vertex);
+            vertices.add(vertex);
+        }
+
+        return  vertices;
+
+    }
 }
