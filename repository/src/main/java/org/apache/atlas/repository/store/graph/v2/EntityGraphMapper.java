@@ -4001,7 +4001,7 @@ public class EntityGraphMapper {
                 Set<String> impactedVerticeIds = new HashSet<>();
                 entityRetriever.traverseImpactedVerticesByLevelV2(entityVertex, null, null, impactedVerticeIds, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, verticesIdsToAddClassification);
                 // entityVertex needed to be added in propagation
-                if (!entityGuid.equals(parentEntityGuid)) {
+                if (parentEntityGuid!=null && !entityGuid.equals(parentEntityGuid)) {
                     impactedVerticeIds.add(entityVertex.getIdForDisplay());
                 }
                 List<AtlasVertex> impactedVertices = impactedVerticeIds.stream().map(x -> graph.getVertex(x))
@@ -4022,14 +4022,14 @@ public class EntityGraphMapper {
             }
         } else { // handle add classifications fromVertex to toVertex
             // Get all tags for fromVertex
-            AtlasVertex fromVertex = graph.getVertex(entityGuid);
+            AtlasVertex fromVertex = entityRetriever.getEntityVertex(entityGuid);
             if (fromVertex == null) {
                 LOG.error("propagateClassification(fromVertexId={}, tagTypeName={}): fromVertex not found", entityGuid, tagTypeName);
                 throw new AtlasBaseException(String.format("propagateClassification(fromVertexId=%s, tagTypeName=%s): fromVertex not found", entityGuid, tagTypeName));
             }
             List<Tag> tags = tagDAO.getAllTagsByVertexId(fromVertex.getIdForDisplay());
             // get impacted vertices for toVertex
-            AtlasVertex toVertex = graph.getVertex(toVertexId);
+            AtlasVertex toVertex = entityRetriever.getEntityVertex(toVertexId);
             if (toVertex == null) {
                 LOG.error("propagateClassification(toVertexId={}, tagTypeName={}): toVertex not found", toVertexId, tagTypeName);
                 throw new AtlasBaseException(String.format("propagateClassification(toVertexId=%s, tagTypeName=%s): toVertex not found", toVertexId, tagTypeName));
@@ -4037,14 +4037,26 @@ public class EntityGraphMapper {
             Map<String, List<AtlasVertex>> impactedVerticesMap = new TreeMap<>();
             // Process propagated tags: determine propagation mode, cache impacted vertices by mode, and apply classification propagation
             for(Tag tag: tags) {
-                if (tag.isPropagatedValue()) {
+                if (tag.isPropagationEnabled()) {
                     Boolean currentRestrictPropagationThroughLineage = tag.getRestrictPropagationThroughLineage();
                     Boolean currentRestrictPropagationThroughHierarchy = tag.getRestrictPropagationThroughHierarchy();
                     String propagationMode = entityRetriever.determinePropagationMode(currentRestrictPropagationThroughLineage, currentRestrictPropagationThroughHierarchy);
                     Boolean toExclude = Objects.equals(propagationMode, CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE);
-                    List<AtlasVertex> impactedVertices;
+                    List<AtlasVertex> impactedVertices = new ArrayList<>();
                     if (!impactedVerticesMap.containsKey(propagationMode)) {
-                        impactedVertices = entityRetriever.getImpactedVerticesV2(toVertex, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude);
+                        List<Tag> tagPropagations = tagDAO.getTagPropagationsForAttachment(fromVertex.getIdForDisplay(), tag.getTagTypeName());
+                        LOG.info("{} entity vertices have classification with typeName {} attached", tagPropagations.size(), tagTypeName);
+
+                        Set<String> verticesIdsToAddClassification = tagPropagations.stream()
+                                .map(Tag::getVertexId)
+                                .collect(Collectors.toSet());
+                        Set<String> impactedVerticesIds = new HashSet<>();
+                        entityRetriever.traverseImpactedVerticesByLevelV2(toVertex, null, null, impactedVerticesIds, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, verticesIdsToAddClassification);
+                        impactedVerticesIds.remove(fromVertex.getIdForDisplay());
+                        impactedVerticesIds.addAll(verticesIdsToAddClassification);
+                        impactedVertices = impactedVerticesIds.stream().map(x -> graph.getVertex(x))
+                                .filter(vertex -> vertex != null)
+                                .collect(Collectors.toList());
                         impactedVerticesMap.put(propagationMode, impactedVertices);
                     } else {
                         impactedVertices = impactedVerticesMap.get(propagationMode);
@@ -5097,16 +5109,14 @@ public class EntityGraphMapper {
             // Get tags in batches and delete them
             // The DAO now returns a PaginatedTagResult which contains the batch and paging information
 
-            if(!parentEntityGuid.equals(sourceEntityGuid) && StringUtils.isNotEmpty(parentEntityGuid)) {
-                AtlasVertex parentityVertex = graphHelper.getVertexForGUID(parentEntityGuid);
-                if (parentityVertex == null) {
+            if(StringUtils.isNotEmpty(parentEntityGuid) && !parentEntityGuid.equals(sourceEntityGuid)) {
+                entityVertex = graphHelper.getVertexForGUID(parentEntityGuid);
+                if (entityVertex == null) {
                     LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): entity vertex not found", parentEntityGuid, tagTypeName);
                     throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, tagTypeName=%s): entity vertex not found", parentEntityGuid, tagTypeName));
                 }
-                pageToDelete = tagDAO.getPropagationsForAttachmentBatch(parentityVertex.getIdForDisplay(), tagTypeName);
-            } else {
-                pageToDelete = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
             }
+            pageToDelete = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
 
             List<Tag> batchToDelete = pageToDelete.getTags();
             AtlasClassification originalClassification;

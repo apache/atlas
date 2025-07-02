@@ -104,10 +104,9 @@ public abstract class DeleteHandlerV1 {
     private   final TaskManagement       taskManagement;
     private   final AtlasGraph           graph;
     private   final TaskUtil             taskUtil;
-    private final TagDAO tagDAO;
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete,
-                           TaskManagement taskManagement, EntityGraphRetriever entityRetriever, TagDAO tagDAO) {
+                           TaskManagement taskManagement, EntityGraphRetriever entityRetriever) {
         this.typeRegistry                  = typeRegistry;
         this.graphHelper                   = new GraphHelper(graph);
         this.entityRetriever               = entityRetriever;
@@ -116,7 +115,6 @@ public abstract class DeleteHandlerV1 {
         this.taskManagement                = taskManagement;
         this.graph                         = graph;
         this.taskUtil                      = new TaskUtil(graph);
-        this.tagDAO = tagDAO;
     }
 
     /**

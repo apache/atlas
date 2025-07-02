@@ -3,7 +3,6 @@ package org.apache.atlas.model;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -125,9 +124,9 @@ public class Tag {
         }
     }
 
-    public boolean isPropagatedValue() {
-        if (tagMetaJson != null && tagMetaJson.containsKey("propagated")) {
-            return (boolean) tagMetaJson.get("propagated");
+    public boolean isPropagationEnabled() {
+        if (tagMetaJson != null && tagMetaJson.containsKey("propagate")) {
+            return (boolean) tagMetaJson.get("propagate");
         } else {
             return false; //TODO check default value
         }
