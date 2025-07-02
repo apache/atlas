@@ -866,14 +866,14 @@ public class EntityGraphRetriever {
     }
 
     public void traverseImpactedVerticesByLevelV2(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
-                                                 final String classificationId, final Set<String> result, List<String> edgeLabelsToCheck,Boolean toExclude, Set<String> verticesWithoutClassification) {
+                                                 final String classificationId, final Set<String> result, List<String> edgeLabelsToCheck,Boolean toExclude, Set<String> verticesWithClassification) {
         AtlasPerfMetrics.MetricRecorder metricRecorder                          = RequestContext.get().startMetricRecord("traverseImpactedVerticesByLevel");
         Set<String>                 visitedVerticesIds                          = new HashSet<>();
         Set<String>                 verticesAtCurrentLevel                      = new HashSet<>();
         Set<String>                 traversedVerticesIds                        = new HashSet<>();
-        Set<String>                 verticesWithOutClassification               = new HashSet<>();
+        Set<String>                 verticesToPropagateTo               = new HashSet<>();
         RequestContext              requestContext                              = RequestContext.get();
-        boolean                     storeVerticesWithoutClassification          = verticesWithoutClassification == null ? false : true;
+        boolean                     storeVerticesWithoutClassification          = verticesWithClassification == null ? false : true;
 
         final ThreadFactory threadFactory = new ThreadFactoryBuilder()
                 .setNameFormat("Tasks-BFS-%d")
@@ -909,8 +909,8 @@ public class EntityGraphRetriever {
                             // If we want to store vertices without classification attached
                             // Check if vertices has classification attached or not using function isClassificationAttached
 
-                            if(storeVerticesWithoutClassification && !verticesWithoutClassification.contains(entityVertex.getIdForDisplay())) {
-                                verticesWithOutClassification.add(entityVertex.getIdForDisplay());
+                            if(storeVerticesWithoutClassification && !verticesWithClassification.contains(entityVertex.getIdForDisplay())) {
+                                verticesToPropagateTo.add(entityVertex.getIdForDisplay());
                             }
 
                             return CompletableFuture.supplyAsync(() -> getAdjacentVerticesIds(entityVertex, classificationId,
@@ -931,8 +931,8 @@ public class EntityGraphRetriever {
         result.addAll(traversedVerticesIds);
 
         if(storeVerticesWithoutClassification) {
-            verticesWithoutClassification.clear();
-            verticesWithoutClassification.addAll(verticesWithOutClassification);
+            verticesWithClassification.clear();
+            verticesWithClassification.addAll(verticesToPropagateTo);
         }
 
         requestContext.endMetricRecord(metricRecorder);

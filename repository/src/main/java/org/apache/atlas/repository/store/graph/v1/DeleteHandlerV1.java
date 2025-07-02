@@ -155,7 +155,7 @@ public abstract class DeleteHandlerV1 {
         // Delete traits and vertices.
         for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
             RequestContext.get().getDeletedEdgesIds().clear();
-
+            // TODO : create a V2 for this deleteClassifications which does not create these many redundant tasks
             deleteAllClassifications(deletionCandidateVertex);
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 

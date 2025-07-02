@@ -41,12 +41,12 @@ public class ClassificationPropagationTasks {
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
             String entityGuid               = (String) parameters.get(PARAM_ENTITY_GUID);
             String tagTypeName              = getTaskDef().getTagTypeName();
-
+            String parentEntityGuid         = getTaskDef().getParentEntityGuid();
             Boolean previousRestrictPropagationThroughLineage = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
             Boolean previousRestrictPropagationThroughHierarchy = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
 
             if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
-                entityGraphMapper.propagateClassificationV2(parameters, entityGuid, tagTypeName);
+                entityGraphMapper.propagateClassificationV2(parameters, entityGuid, tagTypeName, parentEntityGuid);
             } else {
                 String classificationVertexId   = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 String relationshipGuid         = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
@@ -83,9 +83,10 @@ public class ClassificationPropagationTasks {
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
             String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
             String tagTypeName              = getTaskDef().getTagTypeName();
+            String parentEntityGuid         = getTaskDef().getParentEntityGuid();
 
             if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
-                entityGraphMapper.deleteClassificationPropagationV2(entityGuid, tagTypeName);
+                entityGraphMapper.deleteClassificationPropagationV2(entityGuid, parentEntityGuid, tagTypeName);
             } else {
                 String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 entityGraphMapper.deleteClassificationPropagation(entityGuid, classificationVertexId);
@@ -102,8 +103,10 @@ public class ClassificationPropagationTasks {
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
             String classificationTypeName = getTaskDef().getTagTypeName();
             String sourceEntity = getTaskDef().getEntityGuid();
+            String parentEntityGuid         = getTaskDef().getParentEntityGuid();
+
             if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
-                entityGraphMapper.classificationRefreshPropagationV2(parameters, sourceEntity, classificationTypeName);
+                entityGraphMapper.classificationRefreshPropagationV2(parameters, parentEntityGuid, sourceEntity, classificationTypeName);
             } else {
             String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 entityGraphMapper.classificationRefreshPropagation(classificationVertexId);

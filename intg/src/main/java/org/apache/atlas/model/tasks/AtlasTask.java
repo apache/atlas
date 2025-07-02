@@ -46,6 +46,15 @@ public class AtlasTask {
         this.tagTypeName = tagTypeName;
     }
 
+    public void setParentEntityGuid(String parentEntityGuid) {
+        this.parentEntityGuid = parentEntityGuid;
+    }
+
+    public String getParentEntityGuid() {
+        return parentEntityGuid;
+    }
+
+    private String parentEntityGuid;
     public enum Status {
         PENDING,
         IN_PROGRESS,

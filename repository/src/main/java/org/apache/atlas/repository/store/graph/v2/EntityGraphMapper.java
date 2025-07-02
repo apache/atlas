@@ -18,7 +18,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.google.common.annotations.VisibleForTesting;
-import io.opentelemetry.api.common.AttributeType;
+
 import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -580,6 +580,7 @@ public class EntityGraphMapper {
 
 
         if (CollectionUtils.isNotEmpty(context.getEntitiesToDelete())) {
+            // TODO : HR : This needs better context to take action for V2
             deleteDelegate.getHandler().deleteEntities(context.getEntitiesToDelete());
         }
 
@@ -3946,7 +3947,7 @@ public class EntityGraphMapper {
 
     public void propagateClassificationV2(Map<String, Object> parameters,
                                           String entityGuid,
-                                          String tagTypeName) throws AtlasBaseException {
+                                          String tagTypeName, String parentEntityGuid) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(tagTypeName)) {
                 LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): entityGuid and/or classification vertex id is empty", entityGuid, tagTypeName);
@@ -3964,12 +3965,21 @@ public class EntityGraphMapper {
                 throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, tagTypeName=%s): entity vertex not found", entityGuid, tagTypeName));
             }
 
+            AtlasVertex parentEntityVertex = graphHelper.getVertexForGUID(parentEntityGuid);
+            if (parentEntityVertex == null) {
+                LOG.error("propagateClassification(parentEntityGuid={}, tagTypeName={}): entity vertex not found", parentEntityGuid, tagTypeName);
+
+                throw new AtlasBaseException(String.format("propagateClassification(parentEntityGuid=%s, tagTypeName=%s): entity vertex not found", parentEntityGuid, tagTypeName));
+            }
+
             //AtlasVertex classificationVertex = graph.getVertex(classificationVertexId);
             AtlasClassification tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
             if (tag == null) {
-                LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): classification vertex not found", entityGuid, tagTypeName);
-
-                throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, tagTypeName=%s): classification vertex not found", entityGuid, tagTypeName));
+                tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(parentEntityVertex.getIdForDisplay(), tagTypeName);
+                if (tag == null) {
+                    LOG.error("propagateClassification(entityGuid={},parentEntityGuid={}, tagTypeName={}): tag found", entityGuid, parentEntityGuid, tagTypeName);
+                    throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s,parentEntityGuid=%s, tagTypeName=%s): tag found", entityGuid, parentEntityGuid, tagTypeName));
+                }
             }
 
             Boolean currentRestrictPropagationThroughLineage = tag.getRestrictPropagationThroughLineage();
@@ -3978,10 +3988,24 @@ public class EntityGraphMapper {
 
             List<String> edgeLabelsToCheck = CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode);
             Boolean toExclude = propagationMode == CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE ? true:false;
-            List<AtlasVertex> impactedVertices = entityRetriever.getIncludedImpactedVerticesV2(entityVertex, null, edgeLabelsToCheck,toExclude);
-            impactedVertices.remove(entityVertex);
+            List<Tag> tagPropagations = tagDAO.getTagPropagationsForAttachment(parentEntityVertex.getIdForDisplay(), tagTypeName);
+            LOG.info("{} entity vertices have classification with typeName {} attached", tagPropagations.size(), tagTypeName);
 
-            if (CollectionUtils.isEmpty(impactedVertices)) {
+            Set<String> verticesIdsToAddClassification = tagPropagations.stream()
+                    .map(Tag::getVertexId)
+                    .collect(Collectors.toSet());
+            Set<String> impactedVerticeIds = new HashSet<>();
+            entityRetriever.traverseImpactedVerticesByLevelV2(entityVertex, null, null, impactedVerticeIds, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, verticesIdsToAddClassification);
+            if(entityGuid != parentEntityGuid) {
+                impactedVerticeIds.add(entityVertex.getIdForDisplay());
+            }
+            List<AtlasVertex> impactedVertices = impactedVerticeIds.stream().map(x -> graph.getVertex(x))
+                    .filter(vertex -> vertex != null)
+                    .collect(Collectors.toList());
+            transactionInterceptHelper.intercept();
+
+
+            if (CollectionUtils.isEmpty(impactedVerticeIds)) {
                 LOG.debug("propagateClassification(entityGuid={}, tagTypeName={}): found no entities to propagate the classification", entityGuid, tagTypeName);
 
                 return;
@@ -5019,7 +5043,7 @@ public class EntityGraphMapper {
         }
     }
 
-    public void deleteClassificationPropagationV2(String sourceEntityGuid, String tagTypeName) throws AtlasBaseException {
+    public void deleteClassificationPropagationV2(String sourceEntityGuid, String parentEntityGuid, String tagTypeName) throws AtlasBaseException {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("deleteClassificationPropagationNew");
         try {
             if (StringUtils.isEmpty(tagTypeName)) {
@@ -5223,10 +5247,13 @@ public class EntityGraphMapper {
 
         Boolean restrictPropagationThroughLineage = AtlasGraphUtilsV2.getProperty(currentClassificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE, Boolean.class);
         Boolean restrictPropagationThroughHierarchy = AtlasGraphUtilsV2.getProperty(currentClassificationVertex, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY, Boolean.class);
-
+        // TODO : Why is refresh propagation being triggered for a child asset with the tag-vertex of the parent asset. The line :
+        //  List<String> verticesIdsToRemove = (List<String>)CollectionUtils.subtract(propagatedVerticesIds, impactedVertices);
+        //  Will Remove (whole-graph - sub-graph)
+        // The above is resolved, but keeping the TODO until full release of the code incase the source-task-creation logic is under scrutiny
         propagationMode = entityRetriever.determinePropagationMode(restrictPropagationThroughLineage,restrictPropagationThroughHierarchy);
         Boolean toExclude = propagationMode == CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE ? true:false;
-//        Total, at
+
         List<String> propagatedVerticesIds = GraphHelper.getPropagatedVerticesIds(currentClassificationVertex); //  get this in whole, not in batch
         LOG.info("{} entity vertices have classification with id {} attached", propagatedVerticesIds.size(), classificationId);
         // verticesToRemove -> simple row removal from cassandra table
@@ -6337,29 +6364,43 @@ public class EntityGraphMapper {
         return null;
     }
 
-    public void classificationRefreshPropagationV2(Map<String, Object> parameters, String sourceEntityId, String classificationTypeName) throws AtlasBaseException {
+    public void classificationRefreshPropagationV2(Map<String, Object> parameters,String parentEntityGuid, String sourceEntityId, String classificationTypeName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder classificationRefreshPropagationMetricRecorder = RequestContext.get().startMetricRecord("classificationRefreshPropagationV2");
 
-        AtlasVertex         sourceEntityVertex              = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityId);
-        String sourceEntityVertexId = sourceEntityVertex.getIdForDisplay();
+        AtlasVertex         entityVertex              = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityId);
+        String entityVertexId = entityVertex.getIdForDisplay();
+
+        AtlasVertex         parentEntityVertex              = AtlasGraphUtilsV2.findByGuid(this.graph, parentEntityGuid);
+        String parentEntityVertexId = parentEntityVertex.getIdForDisplay();
         String propagationMode;
-        AtlasClassification tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(sourceEntityVertexId, classificationTypeName);
+        AtlasClassification tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertexId, classificationTypeName);
+        if(tag == null) {
+            // We are assigning entityVertex as parentEntityVertex because parentEntityVertex is the one we will be doing traversal calcs etc.
+            // By this conditional check, we know entityvertex is a child/subgraph and we have no use for child vertex in calc.
+            entityVertex = parentEntityVertex;
+            entityVertexId = parentEntityVertexId;
+            tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertexId, classificationTypeName);
+            if(tag == null) {
+                LOG.warn("Classification with typeName {} not found for entity {} and parentEntity {}", classificationTypeName, sourceEntityId, parentEntityVertexId);
+                throw new AtlasBaseException(String.format("Classification with typeName {} not found for entity {} and parentEntity {}", classificationTypeName, sourceEntityId, parentEntityVertexId));
+            }
+        }
         Boolean restrictPropagationThroughLineage = tag.getRestrictPropagationThroughLineage();
         Boolean restrictPropagationThroughHierarchy = tag.getRestrictPropagationThroughHierarchy();
 
         propagationMode = entityRetriever.determinePropagationMode(restrictPropagationThroughLineage,restrictPropagationThroughHierarchy);
         Boolean toExclude = propagationMode == CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE ? true:false;
 
-        List<Tag> tagPropagations = tagDAO.getTagPropagationsForAttachment(sourceEntityVertexId, classificationTypeName);
+        List<Tag> tagPropagations = tagDAO.getTagPropagationsForAttachment(entityVertexId, classificationTypeName);
         LOG.info("{} entity vertices have classification with typeName {} attached", tagPropagations.size(), classificationTypeName);
 
         Set<String> verticesIdsToAddClassification = tagPropagations.stream()
                 .map(Tag::getVertexId)
                 .collect(Collectors.toSet());
         Set<String> impactedVertices = new HashSet<>();
-        entityRetriever.traverseImpactedVerticesByLevelV2(sourceEntityVertex, null, null, impactedVertices, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, verticesIdsToAddClassification);
+        entityRetriever.traverseImpactedVerticesByLevelV2(entityVertex, null, null, impactedVertices, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, verticesIdsToAddClassification);
         transactionInterceptHelper.intercept();
-        verticesIdsToAddClassification.remove(sourceEntityVertexId);
+        verticesIdsToAddClassification.remove(entityVertexId);
 
         LOG.info("To add classification with typeName {} to {} vertices",classificationTypeName, verticesIdsToAddClassification.size());
 
@@ -6390,7 +6431,7 @@ public class EntityGraphMapper {
             LOG.debug("propagateClassification(entityGuid={}, classificationTypeName={}): found no entities to propagate the classification", sourceEntityId, classificationTypeName);
             return;
         }
-        processClassificationPropagationAdditionV2(parameters, sourceEntityVertex, verticesToAddClassification, tag);
+        processClassificationPropagationAdditionV2(parameters, entityVertex, verticesToAddClassification, tag);
         LOG.info("Completed refreshing propagation for classification typeName {} and source entity {}",classificationTypeName, sourceEntityId);
 
         RequestContext.get().endMetricRecord(classificationRefreshPropagationMetricRecorder);

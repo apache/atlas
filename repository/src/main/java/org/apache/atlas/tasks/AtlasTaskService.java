@@ -25,6 +25,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.util.*;
 
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
@@ -241,6 +242,7 @@ public class AtlasTaskService implements TaskService {
 
         if (task.getClassificationId() != null) {
             setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_ID, task.getClassificationId());
+            validateAndAddParentEntityGuid(ret, task, task.getClassificationId());
         }
 
         if(task.getEntityGuid() != null) {
@@ -275,6 +277,19 @@ public class AtlasTaskService implements TaskService {
                 TASK_GUID, task.getGuid());
 
         return ret;
+    }
+
+    private void validateAndAddParentEntityGuid(AtlasVertex ret, AtlasTask task, String classificationId) {
+        if (StringUtils.isNotEmpty(classificationId) && StringUtils.isNotEmpty(task.getEntityGuid())) {
+            AtlasVertex classificationVertex = graph.getVertex(classificationId);
+            if (classificationVertex != null) {
+                String parentEntityGuid = classificationVertex.getProperty(CLASSIFICATION_ENTITY_GUID, String.class);
+                if (StringUtils.isNotEmpty(parentEntityGuid)) {
+                    task.setParentEntityGuid(parentEntityGuid);
+                    setEncodedProperty(ret, Constants.TASK_PARENT_ENTITY_GUID, task.getParentEntityGuid());
+                }
+            }
+        }
     }
 
     @Override
