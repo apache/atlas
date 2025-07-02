@@ -3,7 +3,11 @@ package org.apache.atlas.model;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.instance.AtlasClassification;
 
 import java.util.Date;
 import java.util.Map;
@@ -38,6 +42,8 @@ public class Tag {
 
     @JsonProperty("asset_metadata")
     Map<String, Object> assetMetadata;
+
+    private ObjectMapper objectMapper = new ObjectMapper();
 
     public int getBucket() {
         return bucket;
@@ -101,5 +107,33 @@ public class Tag {
 
     public void setTagMetaJson(Map<String, Object> tagMetaJson) {
         this.tagMetaJson = tagMetaJson;
+    }
+
+    public boolean getRestrictPropagationThroughLineage(){
+        if (tagMetaJson != null && tagMetaJson.containsKey("restrictPropagationThroughLineage")) {
+            return (boolean) tagMetaJson.get("restrictPropagationThroughLineage");
+        } else {
+            return false; //TODO check default value
+        }
+    }
+
+    public boolean getRestrictPropagationThroughHierarchy() {
+        if (tagMetaJson != null && tagMetaJson.containsKey("restrictPropagationThroughHierarchy")) {
+            return (boolean) tagMetaJson.get("restrictPropagationThroughHierarchy");
+        } else {
+            return false; //TODO check default value
+        }
+    }
+
+    public boolean isPropagatedValue() {
+        if (tagMetaJson != null && tagMetaJson.containsKey("propagated")) {
+            return (boolean) tagMetaJson.get("propagated");
+        } else {
+            return false; //TODO check default value
+        }
+    }
+
+    public AtlasClassification toAtlasClassification() throws AtlasBaseException {
+        return objectMapper.convertValue(tagMetaJson, AtlasClassification.class);
     }
 }
