@@ -5,6 +5,8 @@
   "main": "index.js",
   "scripts": {
     "start": "node ./docz-lib/docz/bin/index.js dev",
+    "fetch-team": "node scripts/fetchTeamList.js",
+    "prebuild": "npm run fetch-team",
     "build": "node ./docz-lib/docz/bin/index.js build",
     "predeploy": "npm install && npm run build",
     "deploy": "gh-pages -d .docz/dist"
