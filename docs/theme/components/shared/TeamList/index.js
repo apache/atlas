@@ -20,7 +20,7 @@ import React, { Component } from "react";
 import axios from "axios";
 import { parseString } from "xml2js";
 import styled from "styled-components";
-import teamData from "src/resources/public/data/team.json";
+import teamData from "src/resources/data/team.json";
 
 const TeamListStyle = styled.div`
   width: 100%;

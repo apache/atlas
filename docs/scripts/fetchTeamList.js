@@ -21,7 +21,7 @@ const fs = require("fs");
 const { parseString } = require("xml2js");
 
 const POM_URL = "https://raw.githubusercontent.com/apache/atlas/master/pom.xml";
-const OUTPUT_PATH = "src/resources/public/data/team.json";
+const OUTPUT_PATH = "src/resources/data/team.json";
 
 function fetchXML(url) {
   return new Promise((resolve, reject) => {
