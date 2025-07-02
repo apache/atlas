@@ -46,6 +46,7 @@ import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.repository.store.graph.v2.tasks.TaskUtil;
 import org.apache.atlas.tasks.TaskManagement;
@@ -80,7 +81,7 @@ import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_ADD;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_PROPAGATION_DELETE;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_REFRESH_PROPAGATION;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask.PARAM_ENTITY_GUID;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask.*;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.HAS_LINEAGE;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
@@ -155,8 +156,17 @@ public abstract class DeleteHandlerV1 {
         // Delete traits and vertices.
         for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
             RequestContext.get().getDeletedEdgesIds().clear();
+            // TODO for Hritik Verify below
+            if(getJanusOptimisationEnabled()) {
+                List<AtlasClassification> classifications = entityRetriever.getAllClassifications_V2(deletionCandidateVertex);
+                classifications.forEach(classification -> {
+                    createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_DELETE, deletionCandidateVertex, null, classification.getTypeName());
+                });
 
-            deleteAllClassifications(deletionCandidateVertex);
+            } else {
+                deleteAllClassifications(deletionCandidateVertex);
+            }
+
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 
             if (DEFERRED_ACTION_ENABLED) {
@@ -442,23 +452,30 @@ public abstract class DeleteHandlerV1 {
     }
 
     private void addTagPropagation(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasEdge edge) throws AtlasBaseException {
-        final List<AtlasVertex> classificationVertices = getPropagationEnabledClassificationVertices(fromVertex);
-        String                  relationshipGuid       = getRelationshipGuid(edge);
-
-        if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
-            for (AtlasVertex classificationVertex : classificationVertices) {
-                createAndQueueTask(CLASSIFICATION_PROPAGATION_ADD, toVertex, classificationVertex.getIdForDisplay(), getTypeName(classificationVertex), relationshipGuid);
-            }
+        //below needs to be forked ?
+        if(getJanusOptimisationEnabled()) {
+            // foreground
+            // classifcationTypeName can be empty
+            createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_ADD, fromVertex, toVertex, "");
         } else {
-            final List<AtlasVertex> propagatedEntityVertices = CollectionUtils.isNotEmpty(classificationVertices) ? entityRetriever.getIncludedImpactedVerticesV2(toVertex, relationshipGuid) : null;
+            final List<AtlasVertex> classificationVertices = getPropagationEnabledClassificationVertices(fromVertex);
+            String relationshipGuid = getRelationshipGuid(edge);
 
-            if (CollectionUtils.isNotEmpty(propagatedEntityVertices)) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Propagate {} tags: from {} entity to {} entities", classificationVertices.size(), getTypeName(fromVertex), propagatedEntityVertices.size());
-                }
-
+            if (taskManagement != null && DEFERRED_ACTION_ENABLED) {
                 for (AtlasVertex classificationVertex : classificationVertices) {
-                    addTagPropagation(classificationVertex, propagatedEntityVertices);
+                    createAndQueueTask(CLASSIFICATION_PROPAGATION_ADD, toVertex, classificationVertex.getIdForDisplay(), getTypeName(classificationVertex), relationshipGuid);
+                }
+            } else {
+                final List<AtlasVertex> propagatedEntityVertices = CollectionUtils.isNotEmpty(classificationVertices) ? entityRetriever.getIncludedImpactedVerticesV2(toVertex, relationshipGuid) : null;
+
+                if (CollectionUtils.isNotEmpty(propagatedEntityVertices)) {
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Propagate {} tags: from {} entity to {} entities", classificationVertices.size(), getTypeName(fromVertex), propagatedEntityVertices.size());
+                    }
+
+                    for (AtlasVertex classificationVertex : classificationVertices) {
+                        addTagPropagation(classificationVertex, propagatedEntityVertices);
+                    }
                 }
             }
         }
@@ -1352,17 +1369,19 @@ public abstract class DeleteHandlerV1 {
         RequestContext.get().queueTask(task);
     }
 
-    public void createAndQueueTaskWithoutCheckV2(String taskType, AtlasVertex entityVertex, String classificationTypeName) {
+    public void createAndQueueTaskWithoutCheckV2(String taskType, AtlasVertex fromVertex, AtlasVertex toVertex, String classificationTypeName) {
         String              currentUser = RequestContext.getCurrentUser();
-        String              entityGuid  = GraphHelper.getGuid(entityVertex);
+        String              entityGuid  = GraphHelper.getGuid(fromVertex);
+        String              toEntityGuid  = toVertex != null ? GraphHelper.getGuid(toVertex) : null;
 
         Map<String, Object> taskParams  = new HashMap<>() {{
             put(PARAM_ENTITY_GUID, entityGuid);
             put(TASK_CLASSIFICATION_TYPENAME, classificationTypeName);
+            put(PARAM_TO_ENTITY_GUID, toEntityGuid);
         }};
 
         AtlasTask task = taskManagement.createTaskV2(taskType, currentUser, taskParams, classificationTypeName, entityGuid);
-        AtlasGraphUtilsV2.addEncodedProperty(entityVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
+        AtlasGraphUtilsV2.addEncodedProperty(fromVertex, PENDING_TASKS_PROPERTY_KEY, task.getGuid());
         RequestContext.get().queueTask(task);
     }
 
