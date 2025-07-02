@@ -40,13 +40,14 @@ public class ClassificationPropagationTasks {
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
             String entityGuid               = (String) parameters.get(PARAM_ENTITY_GUID);
+            String toEntityGuid               = (String) parameters.get(PARAM_TO_ENTITY_GUID);
             String tagTypeName              = getTaskDef().getTagTypeName();
             String parentEntityGuid         = getTaskDef().getParentEntityGuid();
             Boolean previousRestrictPropagationThroughLineage = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
             Boolean previousRestrictPropagationThroughHierarchy = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
 
             if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
-                entityGraphMapper.propagateClassificationV2(parameters, entityGuid, tagTypeName, parentEntityGuid);
+                entityGraphMapper.propagateClassificationV2(parameters, entityGuid, tagTypeName, parentEntityGuid, toEntityGuid);
             } else {
                 String classificationVertexId   = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 String relationshipGuid         = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
@@ -86,8 +87,11 @@ public class ClassificationPropagationTasks {
             String parentEntityGuid         = getTaskDef().getParentEntityGuid();
 
             if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
+                // we get propagated tags from vanilla cassandra table and remove them
+                // remove original attachment (direct tag - ? ) - check if it removed in sync path
                 entityGraphMapper.deleteClassificationPropagationV2(entityGuid, parentEntityGuid, tagTypeName);
             } else {
+                // here as well no traversal. just query classification vertex, get propagation edges, remove edges and classification vertex
                 String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 entityGraphMapper.deleteClassificationPropagation(entityGuid, classificationVertexId);
             }
