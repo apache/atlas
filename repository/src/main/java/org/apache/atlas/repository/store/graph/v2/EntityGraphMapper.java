@@ -4062,7 +4062,7 @@ public class EntityGraphMapper {
                         impactedVertices = impactedVerticesMap.get(propagationMode);
                         LOG.info("Impacted vertices for propagation mode {} already exists", propagationMode);
                     }
-                    processClassificationPropagationAdditionV2(parameters, toVertex.getIdForDisplay(), impactedVertices, tag.toAtlasClassification());
+                    processClassificationPropagationAdditionV2(parameters, fromVertex.getIdForDisplay(), impactedVertices, tag.toAtlasClassification());
                 }
             }
         }
