@@ -1,0 +1,10 @@
+services:
+  hbase:
+    extends:
+      service: atlas-hbase
+      file: docker-compose.atlas-hbase.yml
+
+  postgres:
+    extends:
+      service: atlas-db
+      file: docker-compose.atlas-db.yml
