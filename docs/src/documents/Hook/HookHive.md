@@ -92,6 +92,44 @@ atlas.kafka.zookeeper.sync.time.ms=20             # Zookeeper sync time. Default
 
 Other configurations for Kafka notification producer can be specified by prefixing the configuration name with "atlas.kafka.". For list of configuration supported by Kafka producer, please refer to [Kafka Producer Configs](http://kafka.apache.org/documentation/#producerconfigs)
 
+## Hive MetaStore Hook (hive.metastore.event.listeners)
+Hive Metastore  Hook acts as a post-event listener in the Hive Metastore to capture DDL operations (such as CREATE TABLE, DROP TABLE, ALTER TABLE, etc.) and push lineage metadata to the Apache Atlas Kafka topic, from where it is consumed and processed by the Atlas server.
+How It Works:
+* The listener class (AtlasHiveMetastoreHook) is registered in Hive's configuration through:
+  -> hive.metastore.event.listeners=org.apache.atlas.hive.hook.HiveMetastoreHookImpl
+* Once registered, this class listens for Metastore DDL events and sends corresponding notifications to Atlas Kafka Topic.
+* These messages are then picked up by the Atlas hook consumer, which updates Atlas with entity metadata (like tables, databases, columns, etc.).
+Follow the instructions below to setup Atlas hook in Hive:
+ * set up Hook to be registered as hive.metastore.event.listeners
+<SyntaxHighlighter wrapLines={true} language="xml" style={theme.dark}>
+{`<property>
+   <name>hive.metastore.event.listeners</name>
+   <value>org.apache.atlas.hive.hook.HiveMetastoreHookImpl</value>
+ </property>`}
+</SyntaxHighlighter>
+  
+ * untar apache-atlas-${project.version}-hive-hook.tar.gz
+ * cd apache-atlas-hive-hook-${project.version}
+ * Copy entire contents of folder apache-atlas-hive-hook-${project.version}/hook/hive to `<atlas package>`/hook/hive 
+ * Add 'export HIVE_AUX_JARS_PATH=`<atlas package>`/hook/hive/atlas-hive-plugin-impl/' in hive-env.sh of your hive configuration
+ * Copy `<atlas-conf>`/atlas-application.properties to the hive conf directory.
+
+The following properties in atlas-application.properties control the thread pool and notification details:
+<SyntaxHighlighter wrapLines={true} language="shell" style={theme.dark}>
+{`atlas.hook.hive.synchronous=false # whether to run the hook synchronously. false is recommended to avoid delays in Hive query completion. Default: false
+atlas.hook.hive.numRetries=3      # number of retries for notification failure. Default: 3
+atlas.hook.hive.queueSize=10000   # queue size for the threadpool. Default: 10000
+atlas.cluster.name=primary # clusterName to use in qualifiedName of entities. Default: primary
+atlas.kafka.zookeeper.connect=                    # Zookeeper connect URL for Kafka. Example: localhost:2181
+atlas.kafka.zookeeper.connection.timeout.ms=30000 # Zookeeper connection timeout. Default: 30000
+atlas.kafka.zookeeper.session.timeout.ms=60000    # Zookeeper session timeout. Default: 60000
+atlas.kafka.zookeeper.sync.time.ms=20             # Zookeeper sync time. Default: 20
+atlas.notification.topics=ATLAS_HOOK,ATLAS_ENTITIES # Kafka Topic
+atlas.kafka.key.serializer=org.apache.kafka.common.serialization.StringSerializer
+atlas.kafka.value.serializer=org.apache.kafka.common.serialization.StringSerializer`}
+</SyntaxHighlighter>
+ 
+
 ## Column Level Lineage
 
 Starting from 0.8-incubating version of Atlas, Column level lineage is captured in Atlas. Below are the details
