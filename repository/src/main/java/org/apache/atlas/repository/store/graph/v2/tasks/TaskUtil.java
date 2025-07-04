@@ -2,6 +2,7 @@ package org.apache.atlas.repository.store.graph.v2.tasks;
 
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.tasks.TaskSearchResult;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.tasks.AtlasTaskService;
@@ -53,7 +54,7 @@ public class TaskUtil {
 
     }
 
-    public TaskSearchResult findDuplicatePendingTasksV2(int from, int size, String entityGuid, String tagTypeName, List<String> types) throws AtlasBaseException {
+    public List<AtlasTask> getAllTasksByCondition(int size, String entityGuid, String tagTypeName, List<String> types) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDuplicatePendingTasksV2");
         List<Map<String,Object>> mustConditions = new ArrayList<>();
 
@@ -71,7 +72,7 @@ public class TaskUtil {
 
         RequestContext.get().endMetricRecord(recorder);
 
-        return taskService.getTasksByCondition(from, size, mustConditions, Collections.emptyList(), Collections.emptyList());
+        return taskService.getAllTasksByCondition(size, mustConditions);
     }
 
 

@@ -85,6 +85,7 @@ public enum AtlasConfiguration {
     DSL_CACHED_TRANSLATOR("atlas.dsl.cached.translator", true),
     DEBUG_METRICS_ENABLED("atlas.debug.metrics.enabled", false),
     TASKS_USE_ENABLED("atlas.tasks.enabled", true),
+    TASKS_PENDING_TASK_QUERY_SIZE_PAGE_SIZE("atlas.tasks.pending.tasks.query.page.size", 100),
     ATLAS_DISTRIBUTED_TASK_ENABLED("atlas.distributed.task.enabled", false),
     TASKS_REQUEUE_GRAPH_QUERY("atlas.tasks.requeue.graph.query", false),
     TASKS_IN_PROGRESS_GRAPH_QUERY("atlas.tasks.inprogress.graph.query", false),

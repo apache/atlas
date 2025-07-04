@@ -94,6 +94,7 @@ public abstract class DeleteHandlerV1 {
     public static final Logger  LOG = LoggerFactory.getLogger(DeleteHandlerV1.class);
 
     static final boolean        DEFERRED_ACTION_ENABLED        = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
+    static final     int        PENDING_TASK_QUERY_SIZE_PAGE_SIZE = AtlasConfiguration.TASKS_PENDING_TASK_QUERY_SIZE_PAGE_SIZE.getInt();
     static final     int        PENDING_TASK_QUERY_SIZE_LIMIT  = 20;
 
     protected final GraphHelper          graphHelper;
@@ -1519,8 +1520,8 @@ public abstract class DeleteHandlerV1 {
             if (
                     tasksInRequestContext != null &&
                     tasksInRequestContext.stream().filter(Objects::nonNull)
-                    .anyMatch(task -> task.getClassificationId().equals(classificationId)
-                            && taskTypes.contains(task.getType()) && task.getStatus().equals(PENDING))
+                    .anyMatch(task -> Objects.equals(task.getClassificationId(), classificationId)
+                            && taskTypes.contains(task.getType()) && PENDING.equals(task.getStatus()))
             ) {
                 return true;
             }
@@ -1546,13 +1547,12 @@ public abstract class DeleteHandlerV1 {
             if (
                     pendingTasks.stream()
                     .filter(Objects::nonNull)
-                    .anyMatch(task -> task.getClassificationId().equals(classificationId)
-                            && taskTypes.contains(task.getType()) && task.getStatus().equals(PENDING))
+                    .anyMatch(task -> Objects.equals(task.getClassificationId(), classificationId)
+                            && taskTypes.contains(task.getType()) && PENDING.equals(task.getStatus()))
             ) {
                 return true;
             } else {
-                LOG.warn("There is inconsistency " +
-                        "in task queue, there are no pending tasks for classification id {} but there are tasks in queue", classificationId);
+                LOG.warn("There is inconsistency in task queue, there are no pending tasks for classification id {} but there are tasks in queue", classificationId);
             }
         } catch (AtlasBaseException e) {
             LOG.error("Error while checking if classification task creation is required for classification id {}", classificationId, e);
@@ -1684,14 +1684,11 @@ public abstract class DeleteHandlerV1 {
          */
         try {
             List<AtlasTask> tasksInRequestContext = RequestContext.get().getQueuedTasks();
-            if (tasksInRequestContext != null) {
-                if (hasDuplicateTask(tasksInRequestContext, entityGuid, tagTypeName))
-                    return true;
-            }
+            if (hasDuplicateTask(tasksInRequestContext, entityGuid, tagTypeName))
+                return true;
 
-            TaskSearchResult taskSearchResult = taskUtil.findDuplicatePendingTasksV2(0, 2, entityGuid, tagTypeName, taskTypesToSkip);
+            List<AtlasTask> pendingTasks = taskUtil.getAllTasksByCondition(PENDING_TASK_QUERY_SIZE_PAGE_SIZE, entityGuid, tagTypeName, taskTypesToSkip);
 
-            List<AtlasTask> pendingTasks = taskSearchResult.getTasks();
             if(CollectionUtils.isEmpty(pendingTasks)) {
                 return false;
             }
@@ -1722,17 +1719,18 @@ public abstract class DeleteHandlerV1 {
     }
 
     private boolean hasDuplicateTask(List<AtlasTask> tasks, String entityGuid, String tagTypeName) {
-        return tasks.stream()
+        return CollectionUtils.isNotEmpty(tasks) &&
+                tasks.stream()
                 .filter(Objects::nonNull)
                 .anyMatch(task -> isDuplicateTask(task, entityGuid, tagTypeName));
     }
 
     private boolean isDuplicateTask(AtlasTask task, String entityGuid, String tagTypeName) {
         return task != null
-                && task.getEntityGuid().equals(entityGuid)
-                && task.getTagTypeName().equals(tagTypeName)
-                && taskTypesToSkip.contains(task.getType())
-                && task.getStatus().equals(PENDING);
+                && Objects.equals(task.getEntityGuid(), entityGuid)
+                && Objects.equals(task.getTagTypeName(), tagTypeName)
+                && task.getType() != null && taskTypesToSkip.contains(task.getType())
+                && Objects.equals(task.getStatus(), PENDING);
     }
 
     private boolean isRequestFromWorkFlow() {

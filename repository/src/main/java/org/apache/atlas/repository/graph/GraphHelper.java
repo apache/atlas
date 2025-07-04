@@ -115,7 +115,8 @@ public final class GraphHelper {
         try {
             tagDAO = getTagDAO();
         } catch (AtlasBaseException e) {
-            throw new RuntimeException(e);
+            LOG.error("Failed to load TagDAO is static block", e);
+            throw new RuntimeException("Failed to load TagDAO is static block", e);
         }
     }
 
