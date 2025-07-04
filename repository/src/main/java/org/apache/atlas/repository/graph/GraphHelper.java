@@ -85,7 +85,6 @@ import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
@@ -110,7 +109,15 @@ public final class GraphHelper {
     private long    retrySleepTimeMillis = 1000;
     private boolean removePropagations = true;
 
-    private static TagDAO tagDAO = null;
+    private static TagDAO tagDAO;
+
+    static {
+        try {
+            tagDAO = getTagDAO();
+        } catch (AtlasBaseException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public GraphHelper(AtlasGraph graph) {
         this.graph = graph;
@@ -973,8 +980,7 @@ public final class GraphHelper {
 
         RequestContext requestContext = RequestContext.get();
 
-        if ((edge != null && getStatus(edge) != DELETED) ||
-                (requestContext.getCurrentTask() != null && CLASSIFICATION_ONLY_PROPAGATION_DELETE.equals(requestContext.getCurrentTask().getType()))) {
+        if ((edge != null && getStatus(edge) != DELETED) || requestContext.getCurrentTask() != null) {
             PropagateTags propagateTags = getPropagateTags(edge);
             AtlasVertex   outVertex     = edge.getOutVertex();
             AtlasVertex   inVertex      = edge.getInVertex();
@@ -990,6 +996,18 @@ public final class GraphHelper {
 
         return ret;
     }
+
+    public static List<AtlasClassification> getPropagatableClassificationsV2(AtlasEdge edge) throws AtlasBaseException {
+        List<AtlasClassification> ret = new ArrayList<>();
+
+        if ((edge != null && getStatus(edge) != DELETED) || RequestContext.get().getCurrentTask() != null) {
+            AtlasVertex vertex = getPropagatingVertex(edge);
+            ret.addAll(tagDAO.getAllClassificationsForVertex(vertex.getIdForDisplay()));
+        }
+
+        return ret;
+    }
+
     //Returns the vertex from which the tag is being propagated
     public static AtlasVertex getPropagatingVertex(AtlasEdge edge) {
         if(edge != null) {
@@ -1562,126 +1580,6 @@ public final class GraphHelper {
             return Objects.hash(entity, vertex);
         }
     }
-
-    /*
-     /**
-     * Get the GUIDs and vertices for all composite entities owned/contained by the specified root entity AtlasVertex.
-     * The graph is traversed from the root entity through to the leaf nodes of the containment graph.
-     *
-     * @param entityVertex the root entity vertex
-     * @return set of VertexInfo for all composite entities
-     * @throws AtlasException
-     */
-    /*
-    public Set<VertexInfo> getCompositeVertices(AtlasVertex entityVertex) throws AtlasException {
-        Set<VertexInfo> result = new HashSet<>();
-        Stack<AtlasVertex> vertices = new Stack<>();
-        vertices.push(entityVertex);
-        while (vertices.size() > 0) {
-            AtlasVertex vertex = vertices.pop();
-            String typeName = GraphHelper.getTypeName(vertex);
-            String guid = GraphHelper.getGuid(vertex);
-            Id.EntityState state = GraphHelper.getState(vertex);
-            if (state == Id.EntityState.DELETED) {
-                //If the reference vertex is marked for deletion, skip it
-                continue;
-            }
-            result.add(new VertexInfo(guid, vertex, typeName));
-            ClassType classType = typeSystem.getDataType(ClassType.class, typeName);
-            for (AttributeInfo attributeInfo : classType.fieldMapping().fields.values()) {
-                if (!attributeInfo.isComposite) {
-                    continue;
-                }
-                String edgeLabel = GraphHelper.getEdgeLabel(classType, attributeInfo);
-                switch (attributeInfo.dataType().getTypeCategory()) {
-                    case CLASS:
-                        AtlasEdge edge = getEdgeForLabel(vertex, edgeLabel);
-                        if (edge != null && GraphHelper.getState(edge) == Id.EntityState.ACTIVE) {
-                            AtlasVertex compositeVertex = edge.getInVertex();
-                            vertices.push(compositeVertex);
-                        }
-                        break;
-                    case ARRAY:
-                        IDataType elementType = ((DataTypes.ArrayType) attributeInfo.dataType()).getElemType();
-                        DataTypes.TypeCategory elementTypeCategory = elementType.getTypeCategory();
-                        if (elementTypeCategory != TypeCategory.CLASS) {
-                            continue;
-                        }
-                        Iterator<AtlasEdge> edges = getOutGoingEdgesByLabel(vertex, edgeLabel);
-                        if (edges != null) {
-                            while (edges.hasNext()) {
-                                edge = edges.next();
-                                if (edge != null && GraphHelper.getState(edge) == Id.EntityState.ACTIVE) {
-                                    AtlasVertex compositeVertex = edge.getInVertex();
-                                    vertices.push(compositeVertex);
-                                }
-                            }
-                        }
-                        break;
-                    case MAP:
-                        DataTypes.MapType mapType = (DataTypes.MapType) attributeInfo.dataType();
-                        DataTypes.TypeCategory valueTypeCategory = mapType.getValueType().getTypeCategory();
-                        if (valueTypeCategory != TypeCategory.CLASS) {
-                            continue;
-                        }
-                        String propertyName = GraphHelper.getQualifiedFieldName(classType, attributeInfo.name);
-                        List<String> keys = vertex.getProperty(propertyName, List.class);
-                        if (keys != null) {
-                            for (String key : keys) {
-                                String mapEdgeLabel = GraphHelper.getQualifiedNameForMapKey(edgeLabel, key);
-                                edge = getEdgeForLabel(vertex, mapEdgeLabel);
-                                if (edge != null && GraphHelper.getState(edge) == Id.EntityState.ACTIVE) {
-                                    AtlasVertex compositeVertex = edge.getInVertex();
-                                    vertices.push(compositeVertex);
-                                }
-                            }
-                        }
-                        break;
-                    default:
-                }
-            }
-        }
-        return result;
-    }
-    */
-
-    /*
-    public static Referenceable[] deserializeClassInstances(AtlasTypeRegistry typeRegistry, String entityInstanceDefinition)
-    throws AtlasException {
-        try {
-            JSONArray referableInstances = new JSONArray(entityInstanceDefinition);
-            Referenceable[] instances = new Referenceable[referableInstances.length()];
-            for (int index = 0; index < referableInstances.length(); index++) {
-                Referenceable entityInstance =
-                        AtlasType.fromV1Json(referableInstances.getString(index), Referenceable.class);
-                Referenceable typedInstrance = getTypedReferenceableInstance(typeRegistry, entityInstance);
-                instances[index] = typedInstrance;
-            }
-            return instances;
-        } catch(TypeNotFoundException  e) {
-            throw e;
-        } catch (Exception e) {  // exception from deserializer
-            LOG.error("Unable to deserialize json={}", entityInstanceDefinition, e);
-            throw new IllegalArgumentException("Unable to deserialize json", e);
-        }
-    }
-
-    public static Referenceable getTypedReferenceableInstance(AtlasTypeRegistry typeRegistry, Referenceable entityInstance)
-            throws AtlasException {
-        final String entityTypeName = ParamChecker.notEmpty(entityInstance.getTypeName(), "Entity type cannot be null");
-
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityTypeName);
-
-        //Both assigned id and values are required for full update
-        //classtype.convert() will remove values if id is assigned. So, set temp id, convert and
-        // then replace with original id
-        Id origId = entityInstance.getId();
-        entityInstance.setId(new Id(entityInstance.getTypeName()));
-        Referenceable typedInstrance = new Referenceable(entityInstance);
-        typedInstrance.setId(origId);
-        return typedInstrance;
-    }
-    */
 
     public static boolean isInternalType(AtlasVertex vertex) {
         return vertex != null && isInternalType(getTypeName(vertex));
