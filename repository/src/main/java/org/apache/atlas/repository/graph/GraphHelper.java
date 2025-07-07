@@ -1003,7 +1003,9 @@ public final class GraphHelper {
 
         if ((edge != null && getStatus(edge) != DELETED) || RequestContext.get().getCurrentTask() != null) {
             AtlasVertex vertex = getPropagatingVertex(edge);
-            ret.addAll(tagDAO.getAllClassificationsForVertex(vertex.getIdForDisplay()));
+            if (vertex != null) {
+                ret.addAll(tagDAO.getAllClassificationsForVertex(vertex.getIdForDisplay()));
+            }
         }
 
         return ret;
