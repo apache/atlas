@@ -19,7 +19,6 @@ package org.apache.atlas.repository.store.graph.v2;
 
 
 import com.google.common.annotations.VisibleForTesting;
-import io.opentelemetry.api.common.AttributeType;
 import org.apache.atlas.*;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
@@ -75,6 +74,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -5415,21 +5415,45 @@ public class EntityGraphMapper {
 
         return vertex;
     }
-    public List<AtlasVertex> attributeUpdate(List<AttributeUpdateRequest.AssetAttributeInfo> data) {
-        List<AtlasVertex> vertices = new ArrayList<>();
-        for (AttributeUpdateRequest.AssetAttributeInfo assetAttributeInfo : data) {
-            String assetGuid = assetAttributeInfo.getAssetId();
-            AtlasVertex vertex = findByGuid(graph, assetGuid);
-            if (vertex == null || GraphHelper.getStatus(vertex) == DELETED) {
-                LOG.warn("Asset with GUID {} not found", assetGuid);
-                continue;
-            }
-            vertex.setProperty(assetAttributeInfo.getAttributeName(), assetAttributeInfo.getValue());
-            updateModificationMetadata(vertex);
-            vertices.add(vertex);
+    public AtlasVertex attributeUpdate(AttributeUpdateRequest.AssetAttributeInfo data) {
+        // Validate input
+        if (data == null || StringUtils.isEmpty(data.getAssetId())) {
+            LOG.warn("Invalid data provided for attribute update. Data: {}", data);
+            return null;
         }
+        String attributeName = data.getAttributeName();
+        if (StringUtils.isEmpty(attributeName)) {
+            LOG.warn("Attribute name is null or empty for asset ID: {}", data.getAssetId());
+            return null;
+        }
+        switch (attributeName) {
+            case "internalPopularityScore":
+                return updateAsset(data);
+            default:
+                LOG.warn("Unsupported attribute name: {} for asset ID: {}", attributeName, data.getAssetId());
+                return null;
+        }
+    }
 
-        return  vertices;
+    private AtlasVertex updateAsset(AttributeUpdateRequest.AssetAttributeInfo assetAttributeInfo) {
+        String assetGuid = assetAttributeInfo.getAssetId();
+        AtlasVertex vertex = findByGuid(graph, assetGuid);
+        if (vertex == null || GraphHelper.getStatus(vertex) == DELETED) {
+            LOG.warn("Asset with GUID {} not found", assetGuid);
+            return null;
+        }
+        vertex.setProperty(assetAttributeInfo.getAttributeName(), assetAttributeInfo.getValue());
+        updateModificationMetadata(vertex);
+        cacheDifferentialEntityAttributeUpdate(vertex, assetAttributeInfo.getAttributeName(), assetAttributeInfo.getValue());
+        return vertex;
+    }
 
+    private void cacheDifferentialEntityAttributeUpdate(AtlasVertex ev, String property, String value) {
+        AtlasEntity diffEntity = new AtlasEntity(ev.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+        setEntityCommonAttributes(ev, diffEntity);
+        diffEntity.setAttribute(property, value);
+
+        RequestContext requestContext = RequestContext.get();
+        requestContext.cacheDifferentialEntity(diffEntity);
     }
 }

@@ -41,13 +41,19 @@ public class AttributeREST {
     @POST
     @Path("/update")
     @Timed
-    public void udpateAttribute(final AttributeUpdateRequest request) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("updateAttribute");
+    public void updateAttribute(final AttributeUpdateRequest request) throws AtlasBaseException {
+        // Validate the size of the request data
+        if (request.getData() == null || request.getData().size() > 50) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Request data size exceeds the limit of 50 attributes");
+        }
 
         // Ensure the current user is authorized to link policies
         if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
             throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Attribute update");
         }
+
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("updateAttribute");
+
         // Set request context parameters
         RequestContext.get().setIncludeClassifications(false);
         RequestContext.get().setIncludeMeanings(false);
@@ -59,7 +65,7 @@ public class AttributeREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AttributeREST.updateAttribute()");
             }
-            // update attribute
+            // Update attribute
             entitiesStore.attributeUpdate(request.getData());
         } finally {
             // Log performance metrics

@@ -50,8 +50,6 @@ public class AttributeUpdateRequest implements Serializable {
         private String assetId;
         private String attributeName;
         private String value;
-        private boolean notificationRequired;
-
         public String getAssetId() {
             return assetId;
         }
@@ -76,21 +74,12 @@ public class AttributeUpdateRequest implements Serializable {
             this.value = value;
         }
 
-        public boolean isNotificationRequired() {
-            return notificationRequired;
-        }
-
-        public void setNotificationRequired(boolean notificationRequired) {
-            this.notificationRequired = notificationRequired;
-        }
-
         @Override
         public String toString() {
             final StringBuilder sb = new StringBuilder("AssetAttributeInfo{");
             sb.append("assetId='").append(assetId).append('\'');
             sb.append(", attributeName='").append(attributeName).append('\'');
             sb.append(", value='").append(value).append('\'');
-            sb.append(", notificationRequired=").append(notificationRequired);
             sb.append('}');
             return sb.toString();
         }
