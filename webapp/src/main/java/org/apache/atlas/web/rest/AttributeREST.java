@@ -30,7 +30,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ARGO_SERVICE_U
 @Produces({Servlets.JSON_MEDIA_TYPE, MediaType.APPLICATION_JSON})
 
 public class AttributeREST {
-    private static final Logger LOG = LoggerFactory.getLogger(BusinessPolicyREST.class);
+    private static final Logger LOG = LoggerFactory.getLogger(AttributeREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.AttributeREST");
 
     private final AtlasEntityStore entitiesStore;
@@ -47,7 +47,7 @@ public class AttributeREST {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Request data size exceeds the limit of 50 attributes");
         }
 
-        // Ensure the current user is authorized to link policies
+        // Ensure the current user is authorized to trigger this endpoint
         if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
             throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Attribute update");
         }

@@ -74,7 +74,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.jetbrains.annotations.Nullable;
+import org.apache.commons.lang3.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -5427,7 +5427,14 @@ public class EntityGraphMapper {
             return null;
         }
         switch (attributeName) {
-            case "internalPopularityScore":
+            case "assetInternalPopularityScore":
+                // validate value to be a number
+                String value = data.getValue();
+                //isNumber should work for now we have to upgrade apache-common to 3.6+ to use isCreatable more reliable
+                if (StringUtils.isEmpty(value) || !NumberUtils.isNumber(value)) {
+                    LOG.warn("Invalid value for internalPopularityScore: {} for assetId {}", value, data.getAssetId());
+                    return null;
+                }
                 return updateAsset(data);
             default:
                 LOG.warn("Unsupported attribute name: {} for asset ID: {}", attributeName, data.getAssetId());
