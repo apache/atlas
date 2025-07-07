@@ -50,6 +50,8 @@ public class HeadersUtil {
     public static final String X_REQUESTED_WITH_VALUE              = "XMLHttpRequest";
     public static final int    SC_AUTHENTICATION_TIMEOUT           = 419;
     public static final String CONFIG_PREFIX_HTTP_RESPONSE_HEADER  = "atlas.headers";
+    public static final String CACHE_CONTROL                       = "Cache-Control";
+    public static final String CACHE_CONTROL_VAL                   = "no-cache";
 
     private static final Map<String, String> HEADER_MAP = new HashMap<>();
 

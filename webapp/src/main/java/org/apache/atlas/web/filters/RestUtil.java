@@ -30,7 +30,7 @@ public class RestUtil {
     private static final Logger LOG = LoggerFactory.getLogger(RestUtil.class);
 
     public static final  String TIMEOUT_ACTION = "timeout";
-    public static final  String LOGOUT_URL     = "/logout.html";
+    public static final  String LOGOUT_URL     = "/logout";
     public static final  String DELIMITTER     = "://";
 
     private static final String PROXY_ATLAS_URL_PATH = "/atlas";

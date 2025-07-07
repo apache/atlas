@@ -1098,6 +1098,15 @@ public class AdminResource {
         }
     }
 
+    @GET
+    @Path("/checksso")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String checkSSO(@Context HttpServletRequest httpServletRequest) {
+        Object ssoFlag = httpServletRequest.getAttribute("ssoEnabled");
+        LOG.debug("SSO attribute Value: {}", ssoFlag);
+        return String.valueOf(ssoFlag);
+    }
+
     private void updateCriteriaWithDefaultValues(AuditReductionCriteria auditReductionCriteria) {
         if (auditReductionCriteria.getDefaultAgeoutTTLInDays() <= 0) {
             auditReductionCriteria.setDefaultAgeoutTTLInDays(AtlasConfiguration.ATLAS_AUDIT_DEFAULT_AGEOUT_TTL.getInt());
