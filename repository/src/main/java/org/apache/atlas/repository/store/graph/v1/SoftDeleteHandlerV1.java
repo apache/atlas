@@ -35,11 +35,14 @@ import org.apache.commons.collections.CollectionUtils;
 
 import javax.inject.Inject;
 
+import java.util.Collection;
+
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassificationsV2;
 
 public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
@@ -78,7 +81,10 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
 
             if (DEFERRED_ACTION_ENABLED && RequestContext.get().getCurrentTask() == null) {
-                if (CollectionUtils.isNotEmpty(getPropagatableClassifications(edge))) {
+                Collection propagatableTags = janusOptimisationEnabled
+                        ? getPropagatableClassificationsV2(edge)
+                        : getPropagatableClassifications(edge);
+                if (CollectionUtils.isNotEmpty(propagatableTags)) {
                     RequestContext.get().addToDeletedEdgesIds(edge.getIdForDisplay());
                 }
             } else {

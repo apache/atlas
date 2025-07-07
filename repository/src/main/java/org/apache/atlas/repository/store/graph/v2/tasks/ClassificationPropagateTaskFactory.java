@@ -42,15 +42,6 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
     //This should be used when referencing vertex to which classification is directly attached
     public static final String CLASSIFICATION_PROPAGATION_DELETE              = "CLASSIFICATION_PROPAGATION_DELETE";
 
-    /* This should be used when referencing vertex to which classification is not directly attached but it is propagated
-     * e.g. t0 -> p0 -> t1
-     * tag is on t0 propagating to p0,t1,
-     * deleting p0 should remove all propagations further to p0 for tag which is propagating from t0
-     */
-    public static final String CLASSIFICATION_ONLY_PROPAGATION_DELETE         = "CLASSIFICATION_ONLY_PROPAGATION_DELETE";
-
-    public static final String CLASSIFICATION_ONLY_PROPAGATION_DELETE_ON_HARD_DELETE =  "CLASSIFICATION_ONLY_PROPAGATION_DELETE_ON_HARD_DELETE";
-
     public static final String CLASSIFICATION_REFRESH_PROPAGATION = "CLASSIFICATION_REFRESH_PROPAGATION";
 
     public static final String CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE = "CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE";
@@ -63,8 +54,6 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
         add(CLASSIFICATION_PROPAGATION_TEXT_UPDATE);
         add(CLASSIFICATION_PROPAGATION_ADD);
         add(CLASSIFICATION_PROPAGATION_DELETE);
-        add(CLASSIFICATION_ONLY_PROPAGATION_DELETE);
-        add(CLASSIFICATION_ONLY_PROPAGATION_DELETE_ON_HARD_DELETE);
         add(CLASSIFICATION_REFRESH_PROPAGATION);
         add(CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE);
         add(CLEANUP_CLASSIFICATION_PROPAGATION);

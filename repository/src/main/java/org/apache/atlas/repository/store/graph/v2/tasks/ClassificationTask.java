@@ -136,21 +136,6 @@ public abstract class ClassificationTask extends AbstractTask {
         }};
     }
 
-    public static Map<String, Object> toParameters(String deletedEdgeId, String classificationVertexId) {
-        return new HashMap<String, Object>() {{
-            put(PARAM_DELETED_EDGE_ID, deletedEdgeId);
-            put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
-        }};
-    }
-
-    public static Map<String, Object> toParameters(String classificationVertexId, String referencedVertexId, boolean isTermEntityEdge) {
-        return new HashMap<String, Object>() {{
-            put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
-            put(PARAM_REFERENCED_VERTEX_ID, referencedVertexId);
-            put(PARAM_IS_TERM_ENTITY_EDGE, isTermEntityEdge);
-        }};
-    }
-
     public static Map<String, Object> toParameters(String relationshipEdgeId, AtlasRelationship relationship) {
         return new HashMap<String, Object>() {{
             put(PARAM_RELATIONSHIP_EDGE_ID, relationshipEdgeId);
