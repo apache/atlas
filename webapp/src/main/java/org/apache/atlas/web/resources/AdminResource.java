@@ -76,6 +76,7 @@ import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
+import org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.web.model.DebugMetrics;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
 import org.apache.atlas.web.service.ServiceState;
@@ -1096,6 +1097,15 @@ public class AdminResource {
 
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Service not ready to accept client requests");
         }
+    }
+
+    @GET
+    @Path("/checksso")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String checkSSO(@Context HttpServletRequest httpServletRequest) {
+        Object ssoFlag = httpServletRequest.getAttribute("ssoEnabled");
+        LOG.debug("SSO attribute Value: {}", ssoFlag);
+        return String.valueOf(ssoFlag);
     }
 
     private void updateCriteriaWithDefaultValues(AuditReductionCriteria auditReductionCriteria) {
