@@ -76,6 +76,7 @@ import org.apache.atlas.util.SearchTracker;
 import org.apache.atlas.utils.AtlasJson;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.filters.AtlasCSRFPreventionFilter;
+import org.apache.atlas.web.filters.AtlasKnoxSSOAuthenticationFilter;
 import org.apache.atlas.web.model.DebugMetrics;
 import org.apache.atlas.web.service.AtlasDebugMetricsSink;
 import org.apache.atlas.web.service.ServiceState;
@@ -192,6 +193,7 @@ public class AdminResource {
     private final boolean                    isUiTasksTabEnabled;
     private final AtlasAuditReductionService auditReductionService;
     private       Response                   version;
+    public AtlasKnoxSSOAuthenticationFilter atlasKnoxSSOAuthenticationFilter;
 
     @Context
     private HttpServletRequest httpServletRequest;
@@ -205,7 +207,7 @@ public class AdminResource {
             MigrationProgressService migrationProgressService, AtlasServerService serverService,
             ExportImportAuditService exportImportAuditService, AtlasEntityStore entityStore,
             AtlasPatchManager patchManager, AtlasAuditService auditService, EntityAuditRepository auditRepository,
-            TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink, AtlasAuditReductionService atlasAuditReductionService, AtlasMetricsUtil atlasMetricsUtil) {
+            TaskManagement taskManagement, AtlasDebugMetricsSink debugMetricsRESTSink, AtlasAuditReductionService atlasAuditReductionService, AtlasMetricsUtil atlasMetricsUtil, AtlasKnoxSSOAuthenticationFilter atlasKnoxSSOAuthenticationFilter) {
         this.serviceState              = serviceState;
         this.metricsService            = metricsService;
         this.exportService             = exportService;
@@ -224,6 +226,7 @@ public class AdminResource {
         this.debugMetricsRESTSink      = debugMetricsRESTSink;
         this.auditReductionService     = atlasAuditReductionService;
         this.atlasMetricsUtil          = atlasMetricsUtil;
+        this.atlasKnoxSSOAuthenticationFilter = atlasKnoxSSOAuthenticationFilter;
 
         if (atlasProperties != null) {
             this.defaultUIVersion            = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
@@ -1096,6 +1099,14 @@ public class AdminResource {
 
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Service not ready to accept client requests");
         }
+    }
+
+    @GET
+    @Path("/checksso")
+    @Produces(MediaType.TEXT_PLAIN)
+    public String checkSSO() {
+        LOG.debug("SSO Details: {}", atlasKnoxSSOAuthenticationFilter.isSsoEnabled());
+        return String.valueOf(atlasKnoxSSOAuthenticationFilter.isSsoEnabled());
     }
 
     private void updateCriteriaWithDefaultValues(AuditReductionCriteria auditReductionCriteria) {
