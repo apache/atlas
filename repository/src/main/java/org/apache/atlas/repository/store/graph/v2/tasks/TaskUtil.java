@@ -55,7 +55,6 @@ public class TaskUtil {
     }
 
     public List<AtlasTask> getAllTasksByCondition(int size, String entityGuid, String tagTypeName, List<String> types) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDuplicatePendingTasksV2");
         List<Map<String,Object>> mustConditions = new ArrayList<>();
 
         if (StringUtils.isNotEmpty(entityGuid))
@@ -69,8 +68,6 @@ public class TaskUtil {
         }
 
         mustConditions.add(getMap("term", getMap(TASK_STATUS + ".keyword", TASK_STATUS_PENDING)));
-
-        RequestContext.get().endMetricRecord(recorder);
 
         return taskService.getAllTasksByCondition(size, mustConditions);
     }

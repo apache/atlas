@@ -109,6 +109,8 @@ public class AtlasTaskService implements TaskService {
 
     @Override
     public List<AtlasTask> getAllTasksByCondition(int batchSize, List<Map<String,Object>> mustConditions) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDuplicatePendingTasksV2");
+
         List<AtlasTask> tasks = new ArrayList<>(0);
         long from = 0;
 
@@ -123,16 +125,22 @@ public class AtlasTaskService implements TaskService {
 
         while (hasNext) {
             TaskSearchResult page = getTasks(taskSearchParams);
-            if (page == null || CollectionUtils.isEmpty(page.getTasks()) || page.getTasks().size() < batchSize) {
+            if (page == null || CollectionUtils.isEmpty(page.getTasks())) {
                 hasNext = false;
             } else {
                 tasks.addAll(page.getTasks());
 
-                from += batchSize;
-                dsl.put("from", from);
-                taskSearchParams.setDsl(dsl);
+                if (page.getTasks().size() < batchSize) {
+                    hasNext = false;
+                } else {
+                    from += batchSize;
+                    dsl.put("from", from);
+                    taskSearchParams.setDsl(dsl);
+                }
             }
         }
+
+        RequestContext.get().endMetricRecord(recorder);
 
         return tasks;
     }
