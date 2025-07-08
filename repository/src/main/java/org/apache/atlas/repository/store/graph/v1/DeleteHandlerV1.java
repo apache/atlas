@@ -26,6 +26,7 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.Tag;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -106,7 +107,7 @@ public abstract class DeleteHandlerV1 {
     private   final AtlasGraph           graph;
     private   final TaskUtil             taskUtil;
 
-    protected final boolean              janusOptimisationEnabled;
+    protected static Boolean              janusOptimisationEnabled;
 
     private static final List<String> taskTypesToSkip = Arrays.asList(CLASSIFICATION_REFRESH_PROPAGATION, CLASSIFICATION_PROPAGATION_DELETE);
 
@@ -120,7 +121,7 @@ public abstract class DeleteHandlerV1 {
         this.taskManagement                = taskManagement;
         this.graph                         = graph;
         this.taskUtil                      = new TaskUtil(graph);
-        this.janusOptimisationEnabled      = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
+        this.janusOptimisationEnabled      = null;
     }
 
     /**
@@ -131,59 +132,97 @@ public abstract class DeleteHandlerV1 {
      * @param instanceVertices
      * @throws AtlasException
      */
-    public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException {
+    public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException
+    {
+        LOG.info("deleteEntities invoked. Requested vertices size: {}", instanceVertices != null ? instanceVertices.size() : 0);
+
         final RequestContext   requestContext            = RequestContext.get();
         final Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
 
+        if (instanceVertices == null || instanceVertices.isEmpty()) {
+            LOG.info("No vertices provided to deleteEntities.");
+            return;
+        }
+
         for (AtlasVertex instanceVertex : instanceVertices) {
-            final String             guid  = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
+            final String guid = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
+
+            LOG.info("Evaluating vertex for deletion. guid={}, vertexId={}", guid,
+                     instanceVertex != null ? instanceVertex.getIdForDisplay() : "null");
 
             if (skipVertexForDelete(instanceVertex)) {
-                if (LOG.isDebugEnabled()) {
-                        LOG.debug("Skipping deletion of entity={} as it is already deleted", guid);
-                }
+                LOG.info("Skipping deletion of entity={} as it is already deleted", guid);
                 continue;
             }
 
-            // Record all deletion candidate entities in RequestContext
-            // and gather deletion candidate vertices.
             for (GraphHelper.VertexInfo vertexInfo : getOwnedVertices(instanceVertex)) {
                 AtlasEntityHeader entityHeader = vertexInfo.getEntity();
 
                 if (requestContext.isPurgeRequested()) {
-                    entityHeader.setClassifications(entityRetriever.handleGetAllClassifications(vertexInfo.getVertex()));
+                    entityHeader.setClassifications(
+                            entityRetriever.handleGetAllClassifications(vertexInfo.getVertex()));
                 }
 
                 requestContext.recordEntityDelete(entityHeader);
                 deletionCandidateVertices.add(vertexInfo.getVertex());
+
+                LOG.info("Marked vertexId={} (guid={}) as deletion candidate. Total candidates so far: {}",
+                         vertexInfo.getVertex().getIdForDisplay(), entityHeader.getGuid(),
+                         deletionCandidateVertices.size());
             }
         }
 
-        // Delete traits and vertices.
-        for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
-            RequestContext.get().getDeletedEdgesIds().clear();
-            // TODO for Hritik Verify below
-            if(getJanusOptimisationEnabled()) {
-                List<AtlasClassification> classifications = entityRetriever.getAllClassifications_V2(deletionCandidateVertex);
-                classifications.forEach(classification -> {
-                    createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_DELETE, deletionCandidateVertex, null, classification.getTypeName());
-                });
+        LOG.info("Total deletion candidate vertices to process: {}", deletionCandidateVertices.size());
 
+        for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
+            LOG.info("Processing deletion for candidate vertexId={}", deletionCandidateVertex.getIdForDisplay());
+
+            RequestContext.get().getDeletedEdgesIds().clear();
+
+            if (getJanusOptimisationEnabled()) {
+                LOG.info(
+                        "Janus Optimisation Enabled, deleting classifications using v2 method for vertexId={}",
+                        deletionCandidateVertex.getIdForDisplay());
+                deleteAllClassificationsV2(deletionCandidateVertex);
             } else {
+                LOG.info("Deleting classifications using v1 method for vertexId={}",
+                         deletionCandidateVertex.getIdForDisplay());
                 deleteAllClassifications(deletionCandidateVertex);
             }
 
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 
-            // TODO: Why do we need following createAndQueueClassificationRefreshPropagationTask?
             if (DEFERRED_ACTION_ENABLED) {
                 Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
+
+                LOG.info(
+                        "Scheduling classification refresh tasks for {} deleted edges associated with vertexId={}",
+                        deletedEdgeIds.size(), deletionCandidateVertex.getIdForDisplay());
+
                 for (String deletedEdgeId : deletedEdgeIds) {
                     AtlasEdge edge = graph.getEdge(deletedEdgeId);
-                    createAndQueueClassificationRefreshPropagationTask(edge);
+                    if (edge != null) {
+                        createAndQueueClassificationRefreshPropagationTask(edge);
+                    } else {
+                        LOG.info(
+                                "Could not find edge with id={} while scheduling classification refresh task",
+                                deletedEdgeId);
+                    }
                 }
             }
+
+            LOG.info("Completed deletion processing for vertexId={}", deletionCandidateVertex.getIdForDisplay());
         }
+
+        LOG.info("deleteEntities completed. Total vertices processed: {}", deletionCandidateVertices.size());
+    }
+
+    public boolean getJanusOptimisationEnabled() {
+        if (this.janusOptimisationEnabled == null) {
+            this.janusOptimisationEnabled = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
+        }
+        LOG.info("Janus Optimisation Enabled: {}", this.janusOptimisationEnabled);
+        return this.janusOptimisationEnabled;
     }
 
     /**
@@ -1173,6 +1212,26 @@ public abstract class DeleteHandlerV1 {
         return ret;
     }
 
+    private void deleteAllClassificationsV2(AtlasVertex instanceVertex) throws AtlasBaseException {
+        if (!ACTIVE.equals(getState(instanceVertex)))
+            return;
+//        List<AtlasClassification> classifications = entityRetriever.getAllClassifications_V2(instanceVertex);
+        List<Tag> tags = getTagDAO().getAllTagsByVertexId(instanceVertex.getIdForDisplay());
+        List<Tag> tagsToDelete = new ArrayList<>();
+        tags.forEach(tag -> {
+            if(tag.getSourceVertexId().equals(tag.getVertexId())) {
+                createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_DELETE, instanceVertex, null, tag.getTagTypeName());
+            }
+            tagsToDelete.add(tag);
+        });
+        try {
+            getTagDAO().deleteTags(tagsToDelete);
+        } catch (AtlasBaseException e) {
+            LOG.error("Error while deleting tags for vertex: {}", instanceVertex.getIdForDisplay());
+            e.printStackTrace();
+        }
+    }
+
     /**
      * Delete all associated classifications from the specified entity vertex.
      * @param instanceVertex
@@ -1451,7 +1510,8 @@ public abstract class DeleteHandlerV1 {
             return;
         }
 
-        if (!janusOptimisationEnabled) {
+        if (!getJanusOptimisationEnabled()) {
+            LOG.info("JanusGraph optimisations are not enabled, scheduling task for edge {}", edge.getIdForDisplay());
             // Existing flow as it is
             List<AtlasVertex> currentClassificationVertices = GraphHelper.getPropagatableClassifications(edge);
             for (AtlasVertex currentClassificationVertex : currentClassificationVertices) {
@@ -1475,6 +1535,7 @@ public abstract class DeleteHandlerV1 {
                 RequestContext.get().queueTask(task);
             }
         } else {
+            LOG.info("JanusGraph optimisations are enabled, scheduling task for edge {}", edge.getIdForDisplay());
             // V2 for tag optimisations
             List<AtlasClassification> currentClassificationVertices = GraphHelper.getPropagatableClassificationsV2(edge);
             for (AtlasClassification tag : currentClassificationVertices) {
