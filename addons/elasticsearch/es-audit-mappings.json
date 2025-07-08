@@ -31,11 +31,25 @@
     },
     "dynamic_templates": [
       {
+        "ignore_random_id_objects": {
+          "path_match":    "detail.attributes.*",
+          "match_pattern": "regex",
+          "match":         "^[a-zA-Z](?=.*\\\\d)[a-zA-Z0-9]{21}$",
+          "mapping":       { "enabled": false }
+        }
+      },
+      {
         "atlan_headers_as_keyword": {
           "path_match": "headers.x-atlan-*",
-          "mapping": {
-            "type": "keyword"
-          }
+          "mapping":    { "type": "keyword" }
+        }
+      },
+      {
+        "suppress_attribute_hashes": {
+          "path_match": "detail.classifications.*",
+          "match_pattern": "regex",
+          "match":         "^[a-zA-Z](?=.*\\\\d)[a-zA-Z0-9]{21}$",
+          "mapping":    { "enabled": false }
         }
       },
       {
@@ -46,7 +60,12 @@
             "enabled": false
           }
         }
-      }
+      },
+      { "allow_strings":  { "path_match":"detail.attributes.*", "match_mapping_type":"string",  "mapping":{ "type":"keyword", "ignore_above":256 }}},
+      { "allow_longs":    { "path_match":"detail.attributes.*", "match_mapping_type":"long",    "mapping":{ "type":"long"    }}},
+      { "allow_doubles":  { "path_match":"detail.attributes.*", "match_mapping_type":"double",  "mapping":{ "type":"double"  }}},
+      { "allow_booleans": { "path_match":"detail.attributes.*", "match_mapping_type":"boolean", "mapping":{ "type":"boolean" }}},
+      { "allow_dates":    { "path_match":"detail.attributes.*", "match_mapping_type":"date",    "mapping":{ "type":"date", "format":"strict_date_optional_time||epoch_millis" }}}
     ],
     "date_detection": false,
     "numeric_detection": false
