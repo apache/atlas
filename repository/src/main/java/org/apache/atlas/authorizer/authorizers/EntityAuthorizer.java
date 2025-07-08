@@ -36,6 +36,10 @@ public class EntityAuthorizer {
 
     private static final Logger LOG = LoggerFactory.getLogger(EntityAuthorizer.class);
     private static final PoliciesStore policiesStore = PoliciesStore.getInstance();
+    private static final List<Set<String>> relatedAttributeSets = Arrays.asList(
+            Set.of("ownerUsers", "ownerGroups"),
+            Set.of("__traitNames", "__propagatedTraitNames")
+    );
 
     public static AtlasAccessResult isAccessAllowedInMemory(AtlasEntityHeader entity, String action) {
 
@@ -266,12 +270,6 @@ public class EntityAuthorizer {
 
     public static List<String> getRelatedAttributes(String attributeName) {
         List<String> relatedAttributes = new ArrayList<>();
-
-        // Define sets of related attributes
-        List<Set<String>> relatedAttributeSets = Arrays.asList(
-                Set.of("ownerUsers", "ownerGroups"),
-                Set.of("__traitNames", "__propagatedTraitNames")
-        );
 
         // Check if attributeName exists in any set and add the entire set
         for (Set<String> attributeSet : relatedAttributeSets) {
