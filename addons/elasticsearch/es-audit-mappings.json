@@ -53,12 +53,11 @@
         }
       },
       {
-        "suppress_attribute_hashes": {
-          "path_match": "detail.classifications.properties.attributes.*",
-          "mapping": {
-            "type": "object",
-            "enabled": false
-          }
+        "ignore_random_id_objects_custom_attr": {
+          "path_match":    "detail.customAttributes.*",
+          "match_pattern": "regex",
+          "match":         "^[a-zA-Z](?=.*\\\\d)[a-zA-Z0-9]{21}$",
+          "mapping":       { "enabled": false }
         }
       },
       { "allow_strings":  { "path_match":"detail.attributes.*", "match_mapping_type":"string",  "mapping":{ "type":"keyword", "ignore_above":256 }}},
