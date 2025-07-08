@@ -80,6 +80,7 @@ public final class AccessControlUtils {
     public static final String ATTR_POLICY_RESOURCES_CATEGORY  = "policyResourceCategory";
     public static final String ATTR_POLICY_SERVICE_NAME  = "policyServiceName";
     public static final String ATTR_POLICY_PRIORITY  = "policyPriority";
+    public static final String ATTR_QUALIFIED_NAME  = "qualifiedName";
 
     public static final String REL_ATTR_ACCESS_CONTROL = "accessControl";
     public static final String REL_ATTR_POLICIES       = "policies";
@@ -141,12 +142,19 @@ public final class AccessControlUtils {
     public static final String POLICY_FILTER_CRITERIA_CRITERION = "criterion";
     public static final String POLICY_FILTER_CRITERIA_CONDITION = "condition";
     public static final String POLICY_FILTER_CRITERIA_OPERATAOR = "operator";
+    public static final String POLICY_FILTER_CRITERIA_AND = "AND";
+    public static final String POLICY_FILTER_CRITERIA_OR = "OR";
     public static final String POLICY_FILTER_CRITERIA_EQUALS = "EQUALS";
     public static final String POLICY_FILTER_CRITERIA_NOT_EQUALS = "NOT_EQUALS";
     public static final String POLICY_FILTER_CRITERIA_IN = "IN";
     public static final String POLICY_FILTER_CRITERIA_NOT_IN = "NOT_IN";
-    public static final Set<String> POLICY_FILTER_CRITERIA_VAID_OPS = Set.of(POLICY_FILTER_CRITERIA_EQUALS,
+    public static final String POLICY_FILTER_CRITERIA_STARTS_WITH = "STARTS_WITH";
+    public static final String POLICY_FILTER_CRITERIA_ENDS_WITH = "ENDS_WITH";
+    
+    public static final Set<String> POLICY_FILTER_CRITERIA_VALID_OPS = Set.of(POLICY_FILTER_CRITERIA_EQUALS,
             POLICY_FILTER_CRITERIA_NOT_EQUALS, POLICY_FILTER_CRITERIA_IN, POLICY_FILTER_CRITERIA_NOT_IN);
+    public static final Set<String> POLICY_FILTER_CRITERIA_NEGATIVE_OPS = Set.of(POLICY_FILTER_CRITERIA_NOT_EQUALS,
+            POLICY_FILTER_CRITERIA_NOT_IN);
 
 
     private AccessControlUtils() {}

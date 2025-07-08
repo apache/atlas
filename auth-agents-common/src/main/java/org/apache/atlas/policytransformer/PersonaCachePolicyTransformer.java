@@ -88,7 +88,7 @@ public class PersonaCachePolicyTransformer extends AbstractCachePolicyTransforme
 
         int index = 0;
         for (String atlasAction : atlasActions) {
-            List<PolicyTransformerTemplate.TemplatePolicy> currentTemplates = personaTemplate.getTemplate(atlasAction);
+            List<PolicyTransformerTemplate.TemplatePolicy> currentTemplates = personaTemplate.getTemplate(personaTemplate.getTemplateKey(atlasAction, policyServiceName));
 
             if (CollectionUtils.isEmpty(currentTemplates)) {
                 LOG.warn("PolicyTransformerImpl: Skipping unknown action {} while transforming policy {}", atlasAction, atlasPolicy.getGuid());

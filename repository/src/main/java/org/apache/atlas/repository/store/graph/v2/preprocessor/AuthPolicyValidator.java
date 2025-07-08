@@ -114,14 +114,16 @@ public class AuthPolicyValidator {
     }};
 
     private static final Set<String> PERSONA_METADATA_ABAC_POLICY_ACTIONS = new HashSet<>(){{
-        add("persona-abac-read");
-        add("persona-abac-update");
-        add("persona-abac-update-business-metadata");
-        add("persona-abac-add-classification");
-        add("persona-abac-remove-classification");
-        add("persona-abac-add-terms");
-        add("persona-abac-remove-terms");
-        add("persona-abac-delete");
+        add("persona-asset-read");
+        add("persona-asset-update");
+        add("persona-api-create");
+        add("persona-api-delete");
+        add("persona-business-update-metadata");
+        add("persona-entity-add-classification");
+        add("persona-entity-update-classification");
+        add("persona-entity-remove-classification");
+        add("persona-add-terms");
+        add("persona-remove-terms");
     }};
 
     private static final Map<String, Set<String>> PERSONA_POLICY_VALID_ACTIONS = new HashMap<String, Set<String>>(){{
@@ -434,8 +436,8 @@ public class AuthPolicyValidator {
         if (criterionArray == null) { // Leaf node
             JsonNode operator = criteriaNode.get(POLICY_FILTER_CRITERIA_OPERATAOR);
             validateParam(operator == null, INVALID_FILTER_CRITERIA + "operator is required");
-            validateParam(!POLICY_FILTER_CRITERIA_VAID_OPS.contains(operator.asText()), 
-                INVALID_FILTER_CRITERIA + "operator must be one of: " + POLICY_FILTER_CRITERIA_VAID_OPS);
+            validateParam(!POLICY_FILTER_CRITERIA_VALID_OPS.contains(operator.asText()),
+                INVALID_FILTER_CRITERIA + "operator must be one of: " + POLICY_FILTER_CRITERIA_VALID_OPS);
             return;
         }
 

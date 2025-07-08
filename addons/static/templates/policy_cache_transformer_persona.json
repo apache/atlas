@@ -1340,7 +1340,7 @@
     }
   ],
 
-  "persona-abac-read": [
+  "persona-asset-read-abac": [
     {
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
@@ -1348,7 +1348,7 @@
       "actions": ["entity-read"]
     }
   ],
-  "persona-abac-update": [
+  "persona-asset-update-abac": [
     {
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
@@ -1368,7 +1368,15 @@
       "actions": ["add-relationship", "remove-relationship"]
     }
   ],
-  "persona-abac-delete": [
+  "persona-api-create-abac": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-create"]
+    }
+  ],
+  "persona-api-delete-abac": [
     {
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
@@ -1376,7 +1384,7 @@
       "actions": ["entity-delete"]
     }
   ],
-  "persona-abac-update-business-metadata": [
+  "persona-business-update-metadata-abac": [
     {
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
@@ -1384,7 +1392,7 @@
       "actions": ["entity-update-business-metadata"]
     }
   ],
-  "persona-abac-add-classification": [
+  "persona-entity-add-classification-abac": [
     {
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
@@ -1392,7 +1400,15 @@
       "actions": ["entity-add-classification", "entity-update-classification"]
     }
   ],
-  "persona-abac-remove-classification": [
+  "persona-entity-update-classification-abac": [
+    {
+      "policyType": "ACCESS",
+      "policyResourceCategory": "ENTITY",
+      "policyFilterCriteria": "{criteria}",
+      "actions": ["entity-update-classification"]
+    }
+  ],
+  "persona-entity-remove-classification-abac": [
     {
       "policyType": "ACCESS",
       "policyResourceCategory": "ENTITY",
@@ -1400,7 +1416,7 @@
       "actions": ["entity-update-classification", "entity-remove-classification"]
     }
   ],
-  "persona-abac-add-terms": [
+  "persona-add-terms-abac": [
     {
       "policyType": "ACCESS",
       "policyResourceCategory": "RELATIONSHIP",
@@ -1408,7 +1424,7 @@
       "actions": ["add-relationship", "update-relationship"]
     }
   ],
-  "persona-abac-remove-terms": [
+  "persona-remove-terms-abac": [
     {
       "policyType": "ACCESS",
       "policyResourceCategory": "RELATIONSHIP",

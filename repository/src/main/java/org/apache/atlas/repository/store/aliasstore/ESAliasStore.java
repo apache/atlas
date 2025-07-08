@@ -216,6 +216,9 @@ public class ESAliasStore implements IndexAliasStore {
 
                 // Handle ABAC policies
                 if (POLICY_SERVICE_NAME_ABAC.equals(policyServiceName)) {
+                    if (!policyActions.contains(ACCESS_READ_PERSONA_METADATA)) {
+                        continue;
+                    }
                     String policyFilterCriteria = (String) policy.getAttribute(ATTR_POLICY_FILTER_CRITERIA);
                     JsonNode entityFilterCriteriaNode = JsonToElasticsearchQuery.parseFilterJSON(policyFilterCriteria, "entity");
 
@@ -228,9 +231,7 @@ public class ESAliasStore implements IndexAliasStore {
                         LOG.error("Error processing ABAC policy filter criteria for policy {}", policy.getGuid(), e);
                     }
                     continue;
-                }
-
-                if (policyActions.contains(ACCESS_READ_PERSONA_METADATA)) {
+                } else if (policyActions.contains(ACCESS_READ_PERSONA_METADATA)) {
 
                     if (!POLICY_SUB_CATEGORY_METADATA.equals(getPolicySubCategory(policy))) {
                         terms.qualifiedNames.addAll(assets);

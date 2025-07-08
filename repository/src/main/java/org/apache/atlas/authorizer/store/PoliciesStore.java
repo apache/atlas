@@ -87,7 +87,6 @@ public class PoliciesStore {
 
             if (!ignoreUser) {
                 String user = AuthorizerCommonUtil.getCurrentUserName();
-                LOG.info("ABAC_AUTH: Getting relevant policies for user: {}, service={}, policyType={}", user, serviceName, policyType);
 
                 UsersStore usersStore = UsersStore.getInstance();
                 RangerUserStore userStore = usersStore.getUserStore();
