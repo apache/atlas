@@ -37,11 +37,11 @@
         <module>common</module>
         <module>graphdb-impls</module>
         <module>janus</module>
+        <module>janusgraph-rdbms</module>
     </modules>
 
     <properties>
         <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
         <checkstyle.skip>false</checkstyle.skip>
     </properties>
-
 </project>
