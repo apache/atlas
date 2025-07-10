@@ -30,6 +30,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
@@ -40,6 +41,7 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 @Component
+@Lazy
 public class DataAccess {
     private static final Logger LOG      = LoggerFactory.getLogger(DataAccess.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("repository.DataAccess");
@@ -209,7 +211,7 @@ public class DataAccess {
         entityStore.deleteById(guid);
     }
 
-    public void delete(String guid) throws AtlasBaseException {
+    public EntityMutationResponse delete(String guid) throws AtlasBaseException {
         requireNonNull(guid, "guid");
         AtlasPerfTracer perf = null;
 
@@ -218,13 +220,13 @@ public class DataAccess {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataAccess.delete()");
             }
 
-            entityStore.deleteById(guid);
+            return entityStore.deleteById(guid);
         } finally {
             AtlasPerfTracer.log(perf);
         }
     }
 
-    public void delete(List<String> guids) throws AtlasBaseException {
+    public EntityMutationResponse delete(List<String> guids) throws AtlasBaseException {
         requireNonNull(guids, "guids");
 
         AtlasPerfTracer perf = null;
@@ -234,7 +236,7 @@ public class DataAccess {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DataAccess.multiDelete()");
             }
 
-            entityStore.deleteByIds(guids);
+            return entityStore.deleteByIds(guids);
         } finally {
             AtlasPerfTracer.log(perf);
         }
