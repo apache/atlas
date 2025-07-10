@@ -34,3 +34,7 @@ services:
     environment:
       - HBASE_VERSION
       - ATLAS_VERSION
+
+networks:
+  atlas:
+    name: atlasnw
