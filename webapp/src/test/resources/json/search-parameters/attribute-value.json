@@ -1,34 +1,172 @@
-[  {
-  "testDescription": "hive_table contains testtable or retentionSize != 0",
-  "searchParameters": {
-    "typeName": "hive_table",
-    "excludeDeletedEntities": true,
-    "classification": "",
-    "query": "",
-    "limit": 25,
-    "offset": 0,
-    "entityFilters": {
-      "attributeName": "name",
-      "attributeValue": "",
-      "condition" : "AND",
-      "criterion" : [
-        {
-          "attributeName": "name",
-          "operator": "eq",
-          "attributeValue": ""
-        },
-        {
-          "attributeName": "retention",
-          "operator": "neq",
-          "attributeValue": ""
-        }
-      ]
-    },
-    "tagFilters": null,
-    "attributes": [
-      ""
-    ]
+[
+  {
+    "testDescription": "Invalid attribute values: empty name and retention",
+    "searchParameters": {
+      "typeName": "hive_table",
+      "excludeDeletedEntities": true,
+      "limit": 25,
+      "offset": 0,
+      "entityFilters": {
+        "condition": "AND",
+        "criterion": [
+          {
+            "attributeName": "name",
+            "operator": "eq",
+            "attributeValue": ""
+          },
+          {
+            "attributeName": "retention",
+            "operator": "neq",
+            "attributeValue": ""
+          }
+        ]
+      },
+      "tagFilters": null,
+      "attributes": []
+    }
   },
-  "expectedCount": 0
-}
+  {
+    "testDescription": "Nested filters with empty values",
+    "searchParameters": {
+      "typeName": "hive_table",
+      "excludeDeletedEntities": true,
+      "limit": 25,
+      "offset": 0,
+      "entityFilters": {
+        "condition": "AND",
+        "criterion": [
+          {
+            "condition": "AND",
+            "criterion": [
+              {
+                "attributeName": "name",
+                "operator": "eq",
+                "attributeValue": ""
+              },
+              {
+                "attributeName": "owner",
+                "operator": "neq",
+                "attributeValue": ""
+              }
+            ]
+          },
+          {
+            "attributeName": "retention",
+            "operator": "eq",
+            "attributeValue": ""
+          }
+        ]
+      },
+      "tagFilters": null,
+      "attributes": []
+    }
+  },
+  {
+    "testDescription": "Nested tag filters with mixed operators and empty values",
+    "searchParameters": {
+      "typeName": "hive_column",
+      "excludeDeletedEntities": true,
+      "limit": 25,
+      "offset": 0,
+      "entityFilters": null,
+      "tagFilters": {
+        "condition": "AND",
+        "criterion": [
+          {
+            "condition": "OR",
+            "criterion": [
+              {
+                "attributeName": "__createdBy",
+                "operator": "eq",
+                "attributeValue": ""
+              },
+              {
+                "attributeName": "__state",
+                "operator": "eq",
+                "attributeValue": ""
+              }
+            ]
+          },
+          {
+            "condition": "AND",
+            "criterion": [
+              {
+                "attributeName": "__modificationTimestamp",
+                "operator": "eq",
+                "attributeValue": ""
+              },
+              {
+                "attributeName": "__modifiedBy",
+                "operator": "eq",
+                "attributeValue": ""
+              }
+            ]
+          }
+        ]
+      },
+      "attributes": [],
+      "classification": "_ALL_CLASSIFICATION_TYPES"
+    }
+  },
+  {
+    "testDescription": "Nested entity and tag filters with empty values for negative testing",
+    "searchParameters": {
+      "typeName": "hive_table",
+      "excludeDeletedEntities": true,
+      "limit": 25,
+      "offset": 0,
+      "entityFilters": {
+        "condition": "AND",
+        "criterion": [
+          {
+            "attributeName": "name",
+            "operator": "eq",
+            "attributeValue": ""
+          },
+          {
+            "condition": "AND",
+            "criterion": [
+              {
+                "attributeName": "owner",
+                "operator": "eq",
+                "attributeValue": ""
+              },
+              {
+                "attributeName": "retention",
+                "operator": "neq",
+                "attributeValue": ""
+              }
+            ]
+          }
+        ]
+      },
+      "tagFilters": {
+        "condition": "OR",
+        "criterion": [
+          {
+            "condition": "AND",
+            "criterion": [
+              {
+                "attributeName": "__createdBy",
+                "operator": "eq",
+                "attributeValue": ""
+              },
+              {
+                "attributeName": "__modificationTimestamp",
+                "operator": "eq",
+                "attributeValue": ""
+              }
+            ]
+          },
+          {
+            "attributeName": "__state",
+            "operator": "eq",
+            "attributeValue": ""
+          }
+        ]
+      },
+      "attributes": [],
+      "classification": "_ALL_CLASSIFICATION_TYPES"
+    }
+  }
 ]
