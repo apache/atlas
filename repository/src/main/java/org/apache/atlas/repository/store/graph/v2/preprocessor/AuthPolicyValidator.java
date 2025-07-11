@@ -170,6 +170,10 @@ public class AuthPolicyValidator {
 
     private static final String INVALID_FILTER_CRITERIA = "Invalid filter criteria: ";
     private static final int FILTER_CRITERIA_MAX_NESTING_LEVEL = 2;
+    private static final Set<String> POLICY_SERVICE_ALLOWED_UPDATE = new HashSet<>(){{
+        add(POLICY_SERVICE_NAME_ATLAS);
+        add(POLICY_SERVICE_NAME_ABAC);
+    }};
 
     public void validate(AtlasEntity policy, AtlasEntity existingPolicy,
                          AtlasEntity accessControl, EntityMutations.EntityOperation operation) throws AtlasBaseException {
@@ -280,9 +284,13 @@ public class AuthPolicyValidator {
                 validateParam(policy.hasAttribute(ATTR_POLICY_ACTIONS) && CollectionUtils.isEmpty(getPolicyActions(policy)),
                         "Please provide attribute " + ATTR_POLICY_ACTIONS);
 
+                // allow service name update only for interchanging atlas and abac, not heka
                 String newServiceName = getPolicyServiceName(policy);
-                validateOperation (StringUtils.isNotEmpty(newServiceName) && !newServiceName.equals(getPolicyServiceName(existingPolicy)),
+                if (StringUtils.isNotEmpty(newServiceName) && !newServiceName.equals(getPolicyServiceName(existingPolicy))) {
+                    String existingServiceName = getPolicyServiceName(existingPolicy);
+                    validateOperation (!POLICY_SERVICE_ALLOWED_UPDATE.contains(newServiceName) || !POLICY_SERVICE_ALLOWED_UPDATE.contains(existingServiceName),
                         ATTR_POLICY_SERVICE_NAME + " change not Allowed");
+                }
 
                 String newResourceCategory = getPolicyResourceCategory(policy);
                 validateOperation (StringUtils.isNotEmpty(newResourceCategory) && !newResourceCategory.equals(getPolicyResourceCategory(existingPolicy)),
@@ -303,7 +311,7 @@ public class AuthPolicyValidator {
                     if (isABACPolicyService(policy)) {
                         validatePolicyFilterCriteria(getPolicyFilterCriteria(policy));
                     } else {
-                        validateParam (policy.hasAttribute(ATTR_POLICY_RESOURCES) && CollectionUtils.isEmpty(resources),
+                        validateParam (CollectionUtils.isEmpty(resources),
                             "Please provide attribute " + ATTR_POLICY_RESOURCES);
                     }
 
