@@ -20,13 +20,17 @@ package org.apache.atlas.repository.audit;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
-import org.apache.atlas.*;
+import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasException;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.EntityAuditEvent;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditSearchResult;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.MapUtils;
@@ -38,14 +42,14 @@ import org.apache.http.HttpHost;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
-import org.elasticsearch.action.search.*;
-import org.elasticsearch.client.*;
-import org.elasticsearch.xcontent.*;
+import org.elasticsearch.client.Request;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -517,128 +521,6 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
     private boolean isSuccess(Response response) {
         return response.getStatusLine().getStatusCode() == 200;
-    }
-
-    /**
-     * Performs a search operation using the Elasticsearch low-level client.
-     *
-     * @param searchRequest the search request containing query and indices
-     * @return SearchResponse containing search results
-     * @throws AtlasBaseException if the search operation fails
-     */
-    public SearchResponse search(SearchRequest searchRequest) throws AtlasBaseException {
-
-        String indexName = "";
-        if (searchRequest.indices() != null && searchRequest.indices().length > 0) {
-            indexName = searchRequest.indices()[0];
-        }
-
-        LOG.debug("==> ESBasedAuditRepository.search(index={})", indexName);
-
-        try {
-            Request request = new Request("POST", indexName + "/_search");
-            if (searchRequest.source() != null) {
-                request.setJsonEntity(searchRequest.source().toString());
-            }
-
-            Response response = lowLevelClient.performRequest(request);
-
-            try (XContentParser parser = XContentFactory.xContent(XContentType.JSON)
-                    .createParser(NamedXContentRegistry.EMPTY,
-                            DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
-                            response.getEntity().getContent())) {
-                SearchResponse searchResponse = SearchResponse.fromXContent(parser);
-                LOG.debug("<== ESBasedAuditRepository.search() - found {} hits",
-                        searchResponse.getHits().getTotalHits().value);
-                return searchResponse;
-            }
-        } catch (IOException e) {
-            LOG.error("Error performing search on index {}: {}", indexName, e.getMessage(), e);
-            throw new AtlasBaseException(AtlasErrorCode.DISCOVERY_QUERY_FAILED,
-                    String.format("Search failed on index %s: %s", indexName, e.getMessage()));
-        }
-    }
-
-    /**
-     * Opens a Point in Time (PIT) for search operations.
-     *
-     * @param pitRequest the request to open a PIT
-     * @return OpenPointInTimeResponse containing the PIT ID and other metadata
-     * @throws AtlasBaseException if the PIT creation fails
-     */
-    public OpenPointInTimeResponse openPointInTime(OpenPointInTimeRequest pitRequest) throws AtlasBaseException {
-        if (pitRequest == null || pitRequest.indices() == null || pitRequest.indices().length == 0) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "PIT request or indices cannot be null");
-        }
-
-        String indexName = pitRequest.indices()[0];
-        LOG.debug("==> ESBasedAuditRepository.openPointInTime(index={}, keepAlive={})",
-                indexName, pitRequest.keepAlive());
-
-        try {
-            String keeAliveParam = String.format("keep_alive=%s", pitRequest.keepAlive());
-            String endpoint = indexName + "/_pit?"+keeAliveParam;
-
-            Request request = new Request("POST", endpoint);
-            request.setOptions(RequestOptions.DEFAULT.toBuilder()
-                    .addHeader("Content-Type", ContentType.APPLICATION_JSON.getMimeType())
-                    .build());
-            Response response = lowLevelClient.performRequest(request);
-            try (XContentParser parser = XContentFactory.xContent(XContentType.JSON)
-                    .createParser(NamedXContentRegistry.EMPTY,
-                            DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
-                            response.getEntity().getContent())) {
-                OpenPointInTimeResponse pitResponse = OpenPointInTimeResponse.fromXContent(parser);
-                LOG.debug("<== ESBasedAuditRepository.openPointInTime() - created PIT: {}",
-                        pitResponse.getPointInTimeId());
-                return pitResponse;
-            }
-        } catch (IOException e) {
-            LOG.error("Error opening PIT for index {}: {}", indexName, e.getMessage(), e);
-            throw new AtlasBaseException(AtlasErrorCode.DISCOVERY_QUERY_FAILED,
-                    String.format("Failed to open PIT for index %s: %s", indexName, e.getMessage()));
-        }
-    }
-
-    /**
-     * Closes a Point in Time (PIT) search context.
-     *
-     * @param closeRequest the request to close a PIT
-     * @return ClosePointInTimeResponse containing the operation status
-     * @throws AtlasBaseException if the PIT closure fails
-     */
-    public ClosePointInTimeResponse closePointInTime(ClosePointInTimeRequest closeRequest) throws AtlasBaseException {
-        if (closeRequest == null || closeRequest.getId() == null) {
-            throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Close request or PIT ID cannot be null");
-        }
-
-        String pitId = closeRequest.getId();
-        LOG.debug("==> ESBasedAuditRepository.closePointInTime(pitId={})", pitId);
-
-        try {
-            Request request = new Request("DELETE", "/_pit");
-            
-            // Create request body with PIT ID
-            String requestBody = String.format("{\"id\": \"%s\"}", pitId);
-            HttpEntity entity = new NStringEntity(requestBody, ContentType.APPLICATION_JSON);
-            request.setEntity(entity);
-
-            Response response = lowLevelClient.performRequest(request);
-
-            try (XContentParser parser = XContentFactory.xContent(XContentType.JSON)
-                    .createParser(NamedXContentRegistry.EMPTY,
-                            DeprecationHandler.THROW_UNSUPPORTED_OPERATION,
-                            response.getEntity().getContent())) {
-                ClosePointInTimeResponse closeResponse = ClosePointInTimeResponse.fromXContent(parser);
-                LOG.debug("<== ESBasedAuditRepository.closePointInTime() - closed PIT: {}, succeeded: {}",
-                        pitId, closeResponse.isSucceeded());
-                return closeResponse;
-            }
-        } catch (IOException e) {
-            LOG.error("Error closing PIT {}: {}", pitId, e.getMessage(), e);
-            throw new AtlasBaseException(AtlasErrorCode.DISCOVERY_QUERY_FAILED,
-                    String.format("Failed to close PIT %s: %s", pitId, e.getMessage()));
-        }
     }
 }
 

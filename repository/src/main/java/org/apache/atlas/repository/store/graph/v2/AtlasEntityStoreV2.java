@@ -1,4 +1,3 @@
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -3120,7 +3119,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                     .map(ad -> {
                         AtlasVertex av = this.entityGraphMapper.attributeUpdate(ad);
                         if (av == null) {
-                            LOG.warn("No vertex found for guid: {}", ad.getAssetId());
+                            LOG.warn("No vertex found for asset: {}", ad.getAssetId());
                         }
                         return av;
                     })

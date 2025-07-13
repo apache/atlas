@@ -16,7 +16,48 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 
 /**
  * Request object for direct Elasticsearch operations.
- * Supports simple search, Point-in-Time (PIT) creation, PIT search, and PIT deletion.
+ * Supports four types of operations based on searchType:
+ * 
+ * 1. SIMPLE:
+ * {
+ *   "searchType": "SIMPLE",
+ *   "indexName": "my_index",
+ *   "query": {
+ *     "query": {
+ *       "match_all": {}
+ *     }
+ *   }
+ * }
+ * 
+ * 2. PIT_CREATE:
+ * {
+ *   "searchType": "PIT_CREATE",
+ *   "indexName": "my_index",
+ *   "keepAlive": 60000
+ * }
+ * 
+ * 3. PIT_SEARCH:
+ * {
+ *   "searchType": "PIT_SEARCH",
+ *   "query": {
+ *     "query": {
+ *       "pit": {
+ *         "pitId": "pit_id_here"
+ *       },
+ *       "bool": {
+ *         "filter": [...]
+ *       }
+ *     },
+ *     "sort": [...],
+ *     "size": 100
+ *   }
+ * }
+ * 
+ * 4. PIT_DELETE:
+ * {
+ *   "searchType": "PIT_DELETE",
+ *   "pitId": "pit_id_here"
+ * }
  */
 @JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
 @JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
@@ -56,7 +97,8 @@ public class DirectSearchRequest implements Serializable {
     }
 
     /**
-     * Gets the index name for SIMPLE search and PIT_CREATE operations.
+     * Gets the index name.
+     * Required for SIMPLE and PIT_CREATE operations.
      * @return the index name
      */
     public String getIndexName() {
@@ -70,6 +112,15 @@ public class DirectSearchRequest implements Serializable {
     /**
      * Gets the Elasticsearch query DSL as a Map.
      * Required for SIMPLE and PIT_SEARCH operations.
+     * For PIT_SEARCH, must include pit section in query.query:
+     * {
+     *   "query": {
+     *     "pit": {
+     *       "pitId": "pit_id_here"
+     *     },
+     *     "bool": {...}
+     *   }
+     * }
      * @return the query map
      */
     public Map<String, Object> getQuery() {
@@ -82,7 +133,7 @@ public class DirectSearchRequest implements Serializable {
 
     /**
      * Gets the Point-in-Time ID.
-     * Required for PIT_SEARCH and PIT_DELETE operations.
+     * Required for PIT_DELETE operation.
      * @return the PIT ID
      */
     public String getPitId() {
@@ -94,7 +145,8 @@ public class DirectSearchRequest implements Serializable {
     }
 
     /**
-     * Gets the keep-alive duration in milliseconds for PIT operations.
+     * Gets the keep-alive duration in milliseconds.
+     * Optional for PIT_CREATE operation.
      * @return the keep-alive duration
      */
     public Long getKeepAlive() {

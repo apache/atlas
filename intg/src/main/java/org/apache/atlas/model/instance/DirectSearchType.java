@@ -1,18 +1,30 @@
 package org.apache.atlas.model.instance;
 
 /**
- * Enum defining the types of search operations supported by the Elasticsearch API.
+ * Enum defining the types of direct Elasticsearch operations supported.
  */
 public enum DirectSearchType {
-        /** Normal search operation without Point-in-Time context */
-        SIMPLE,
+    /**
+     * Simple search operation using a standard Elasticsearch query.
+     * Requires indexName and query parameters.
+     */
+    SIMPLE,
 
-        /** Creates a new Point-in-Time context for consistent paginated searches */
-        PIT_CREATE,
+    /**
+     * Create a Point-in-Time (PIT) snapshot of an index.
+     * Requires indexName parameter, optionally accepts keepAlive.
+     */
+    PIT_CREATE,
 
-        /** Performs a search using an existing Point-in-Time context */
-        PIT_SEARCH,
+    /**
+     * Search using a Point-in-Time ID.
+     * Requires query parameter with pit section in query.query.
+     */
+    PIT_SEARCH,
 
-        /** Deletes/closes an existing Point-in-Time context */
-        PIT_DELETE
-}
+    /**
+     * Delete a Point-in-Time snapshot.
+     * Requires pitId parameter.
+     */
+    PIT_DELETE
+} 

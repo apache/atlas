@@ -10,6 +10,7 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
+import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -19,7 +20,10 @@ import javax.ws.rs.Consumes;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
+import java.util.List;
 
 import static org.apache.atlas.repository.util.AccessControlUtils.ARGO_SERVICE_USER_NAME;
 
@@ -32,6 +36,7 @@ import static org.apache.atlas.repository.util.AccessControlUtils.ARGO_SERVICE_U
 public class AttributeREST {
     private static final Logger LOG = LoggerFactory.getLogger(AttributeREST.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.AttributeREST");
+    private static final String X_ATLAN_CLIENT_ORIGIN = "x-atlan-client-origin";
 
     private final AtlasEntityStore entitiesStore;
     public AttributeREST(AtlasEntityStore entitiesStore) {
@@ -41,7 +46,7 @@ public class AttributeREST {
     @POST
     @Path("/update")
     @Timed
-    public void updateAttribute(final AttributeUpdateRequest request) throws AtlasBaseException {
+    public void updateAttribute(@Context HttpHeaders headers, final AttributeUpdateRequest request) throws AtlasBaseException {
         // Validate the size of the request data
         if (request.getData() == null || request.getData().size() > 50) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Request data size exceeds the limit of 50 attributes");
@@ -50,6 +55,13 @@ public class AttributeREST {
         // Ensure the current user is authorized to trigger this endpoint
         if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
             throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.getCurrentUser(), "Attribute update");
+        }
+
+        // Validate required headers
+        List<String> clientOrigin = headers.getRequestHeader(X_ATLAN_CLIENT_ORIGIN);
+        if (CollectionUtils.isEmpty(clientOrigin)) {
+            LOG.error("Required header {} is missing or empty", X_ATLAN_CLIENT_ORIGIN);
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Required header x-atlan-client-origin is missing or empty");
         }
 
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("updateAttribute");
@@ -65,6 +77,7 @@ public class AttributeREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AttributeREST.updateAttribute()");
             }
+            LOG.debug("==> AttributeREST.updateAttribute(request={}, client-origin={})", request, clientOrigin);
             // Update attribute
             entitiesStore.attributeUpdate(request.getData());
         } finally {
@@ -73,6 +86,4 @@ public class AttributeREST {
             RequestContext.get().endMetricRecord(metric);
         }
     }
-
-
 }
