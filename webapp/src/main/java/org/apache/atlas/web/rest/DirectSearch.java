@@ -141,7 +141,7 @@ public class DirectSearch {
         }
     }
 
-    private SearchSourceBuilder buildSearchSource(DirectSearchRequest request) throws IOException {
+    private SearchSourceBuilder buildSearchSource(DirectSearchRequest request) throws Exception {
         try {
             String queryJson = AtlasJson.toJson(request.getQuery());
             try (XContentParser parser = XContentFactory.xContent(XContentType.JSON)
@@ -157,9 +157,9 @@ public class DirectSearch {
 
                 return sourceBuilder;
             }
-        } catch (IOException e) {
+        } catch (Exception e) {
             LOG.error("Error building search source from query: {}", request.getQuery(), e);
-            throw new IOException("Failed to parse search query: " + e.getMessage(), e);
+            throw new Exception("Failed to parse search query: " + e.getMessage(), e);
         }
     }
 
