@@ -2087,9 +2087,10 @@ public class EntityGraphRetriever {
                     relationshipAttributes.put("attributes", relationship.getAttributes());
 
                     if (ret.getAttributes() == null) {
-                        ret.setAttributes(new HashMap<>());
+                        ret.setAttributes(mapOf("relationshipAttributes", relationshipAttributes));
+                    } else {
+                        ret.getAttributes().put("relationshipAttributes", relationshipAttributes);
                     }
-                    ret.getAttributes().put("relationshipAttributes", relationshipAttributes);
                 }
             }
         }
