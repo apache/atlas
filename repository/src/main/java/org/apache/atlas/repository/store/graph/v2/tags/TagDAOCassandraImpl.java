@@ -116,7 +116,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                     "SELECT tag_meta_json, is_deleted FROM %s.%s WHERE bucket = ? AND id = ?", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
 
             findAllTagDetailsForAssetStmt = prepare(String.format(
-                    "SELECT tag_meta_json, is_propagated, tag_type_name, is_deleted FROM %s.%s WHERE bucket = ? AND id = ?", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
+                    "SELECT tag_meta_json, source_id, is_propagated, tag_type_name, is_deleted FROM %s.%s WHERE bucket = ? AND id = ?", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
 
             findDirectTagsForAssetStmt = prepare(String.format(
                     "SELECT tag_meta_json, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = false", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
@@ -618,6 +618,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 tag.setVertexId(vertexId);
                 tag.setTagTypeName(row.getString("tag_type_name"));
                 tag.setPropagated(row.getBoolean("is_propagated"));
+                tag.setSourceVertexId(row.getString("source_id"));
 
                 try {
                     tag.setTagMetaJson(objectMapper.readValue(row.getString("tag_meta_json"), new TypeReference<>() {
