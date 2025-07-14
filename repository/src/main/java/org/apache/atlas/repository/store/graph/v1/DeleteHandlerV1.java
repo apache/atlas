@@ -1215,20 +1215,17 @@ public abstract class DeleteHandlerV1 {
     private void deleteAllClassificationsV2(AtlasVertex instanceVertex) throws AtlasBaseException {
         if (!ACTIVE.equals(getState(instanceVertex)))
             return;
-//        List<AtlasClassification> classifications = entityRetriever.getAllClassifications_V2(instanceVertex);
         List<Tag> tags = getTagDAO().getAllTagsByVertexId(instanceVertex.getIdForDisplay());
-        List<Tag> tagsToDelete = new ArrayList<>();
-        tags.forEach(tag -> {
-            if(tag.getSourceVertexId().equals(tag.getVertexId())) {
-                createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_DELETE, instanceVertex, null, tag.getTagTypeName());
-            }
-            tagsToDelete.add(tag);
-        });
         try {
-            getTagDAO().deleteTags(tagsToDelete);
+            getTagDAO().deleteTags(tags);
+            tags.forEach(tag -> {
+                if(tag.getSourceVertexId().equals(tag.getVertexId())) {
+                    createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_DELETE, instanceVertex, null, tag.getTagTypeName());
+                }
+            });
         } catch (AtlasBaseException e) {
             LOG.error("Error while deleting tags for vertex: {}", instanceVertex.getIdForDisplay());
-            e.printStackTrace();
+            throw e;
         }
     }
 
