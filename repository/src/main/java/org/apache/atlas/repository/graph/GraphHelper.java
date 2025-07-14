@@ -111,15 +111,6 @@ public final class GraphHelper {
 
     private static TagDAO tagDAO;
 
-    static {
-        try {
-            tagDAO = getTagDAO();
-        } catch (AtlasBaseException e) {
-            LOG.error("Failed to load TagDAO is static block", e);
-            throw new RuntimeException("Failed to load TagDAO is static block", e);
-        }
-    }
-
     public GraphHelper(AtlasGraph graph) {
         this.graph = graph;
         try {
@@ -1004,7 +995,7 @@ public final class GraphHelper {
         if ((edge != null && getStatus(edge) != DELETED) || RequestContext.get().getCurrentTask() != null) {
             AtlasVertex vertex = getPropagatingVertex(edge);
             if (vertex != null) {
-                ret.addAll(tagDAO.getAllClassificationsForVertex(vertex.getIdForDisplay()));
+                ret.addAll(getTagDAO().getAllClassificationsForVertex(vertex.getIdForDisplay()));
             }
         }
 
