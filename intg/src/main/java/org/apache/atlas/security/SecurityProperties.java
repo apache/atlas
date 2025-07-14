@@ -40,9 +40,12 @@ public final class SecurityProperties {
     public static final String       SSL_CLIENT_PROPERTIES                    = "ssl-client.xml";
     public static final String       BIND_ADDRESS                             = "atlas.server.bind.address";
     public static final String       ATLAS_SSL_EXCLUDE_CIPHER_SUITES          = "atlas.ssl.exclude.cipher.suites";
+    public static final String       ATLAS_SSL_ENABLED_ALGORITHMS             = "atlas.ssl.enabled.algorithms";
     public static final List<String> DEFAULT_CIPHER_SUITES                    = Arrays.asList(".*NULL.*", ".*RC4.*", ".*MD5.*", ".*DES.*", ".*DSS.*");
     public static final String       ATLAS_SSL_EXCLUDE_PROTOCOLS              = "atlas.ssl.exclude.protocols";
+    public static final String       ATLAS_SSL_ENABLED_PROTOCOLS              = "atlas.ssl.enabled.protocols";
     public static final String[]     DEFAULT_EXCLUDE_PROTOCOLS                = new String[] {"TLSv1", "TLSv1.1"};
+    public static final String[]     ATLAS_SSL_DEFAULT_PROTOCOL               = new String[] {"TLSv1.2"};
 
     private SecurityProperties() {
     }

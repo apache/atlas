@@ -79,6 +79,12 @@ jobs:
             exit 1
           fi
 
+      - name: Upload Code Coverage Results
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: dev-support/atlas-docker/dist/coverage/*
+
       - name: Cache downloaded archives
         if: success()
         uses: actions/cache@v4
@@ -98,17 +104,16 @@ jobs:
           cd dev-support/atlas-docker
           export DOCKER_BUILDKIT=1
           export COMPOSE_DOCKER_CLI_BUILD=1
+          docker compose -f docker-compose.atlas-base.yml build 
           docker compose \
-          -f docker-compose.atlas-base.yml \
           -f docker-compose.atlas.yml \
           -f docker-compose.atlas-hadoop.yml \
           -f docker-compose.atlas-hbase.yml \
           -f docker-compose.atlas-kafka.yml \
-          -f docker-compose.atlas-hive.yml up -d
+          -f docker-compose.atlas-hive.yml up -d --wait
 
       - name: Check status of containers and remove them
         run: |
-          sleep 60
           containers=(atlas atlas-hadoop atlas-hbase atlas-kafka atlas-hive);
           flag=true;
           for container in "${containers[@]}"; do
