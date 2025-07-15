@@ -44,6 +44,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -131,6 +132,8 @@ public class CachePolicyTransformerImpl {
 
     private final Map<EntityAuditActionV2, Integer> auditEventToDeltaChangeType;
 
+    private TagDAO tagDAO;
+
     @Inject
     public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry, TagDAO tagDAO) throws AtlasBaseException {
         this.graph                = new AtlasJanusGraph();
@@ -153,6 +156,24 @@ public class CachePolicyTransformerImpl {
         this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_PURGE, RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE);
 
         this.services = new HashMap<>();
+
+        setTagDAO();
+    }
+
+    private void setTagDAO() throws AtlasBaseException {
+        if (this.tagDAO == null) {
+            try {
+                synchronized (CachePolicyTransformerImpl.class) {
+                    if (tagDAO == null) {
+                        tagDAO = new TagDAOCassandraImpl();
+                    }
+                }
+            } catch (AtlasBaseException e) {
+                // Handle the case when Spring context is not initialized or available
+                LOG.warn("Error getting TagDAO from Spring context, creating a new instance", e);
+                throw e;
+            }
+        }
     }
 
     public AtlasEntityHeader getService() {
