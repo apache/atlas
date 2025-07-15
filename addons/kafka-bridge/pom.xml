@@ -337,12 +337,6 @@
                             </resources>
                         </configuration>
                     </execution>
-                </executions>
-            </plugin>
-
-            <plugin>
-                <artifactId>maven-resources-plugin</artifactId>
-                <executions>
                     <execution>
                         <id>copy-solr-resources</id>
                         <goals>
