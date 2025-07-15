@@ -139,16 +139,14 @@ public abstract class DeleteHandlerV1 {
         final RequestContext   requestContext            = RequestContext.get();
         final Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
 
-        if (instanceVertices == null || instanceVertices.isEmpty()) {
-            LOG.info("No vertices provided to deleteEntities.");
+        if (CollectionUtils.isEmpty(instanceVertices)) {
             return;
         }
 
         for (AtlasVertex instanceVertex : instanceVertices) {
             final String guid = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
 
-            LOG.info("Evaluating vertex for deletion. guid={}, vertexId={}", guid,
-                     instanceVertex != null ? instanceVertex.getIdForDisplay() : "null");
+            LOG.info("Evaluating vertex for deletion. guid={}, vertexId={}", guid, instanceVertex.getIdForDisplay());
 
             if (skipVertexForDelete(instanceVertex)) {
                 LOG.info("Skipping deletion of entity={} as it is already deleted", guid);
