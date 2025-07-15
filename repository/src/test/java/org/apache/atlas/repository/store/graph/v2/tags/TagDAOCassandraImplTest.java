@@ -130,7 +130,7 @@ public class TagDAOCassandraImplTest {
         // --- 3. Action & Assertion: Use the DAO to retrieve and verify the data ---
 
         // Get all *active* direct classifications for the asset
-        List<AtlasClassification> directTags = tagDAO.getAllDirectTagsForVertex(assetId);
+        List<AtlasClassification> directTags = tagDAO.getAllDirectClassificationsForVertex(assetId);
         assertEquals(1, directTags.size(), "Should find exactly one active direct tag.");
 
         AtlasClassification retrievedClassification = directTags.get(0);
