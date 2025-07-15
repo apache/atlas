@@ -70,15 +70,6 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         createPropertyKeys(structDef, typeDefStore);
 
         for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
-            // Validate the mandatory features of an attribute (compatibility with legacy type system)
-            if (StringUtils.isEmpty(attributeDef.getName())) {
-                throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "name");
-            }
-
-            if (StringUtils.isEmpty(attributeDef.getTypeName())) {
-                throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "typeName");
-            }
-
             String propertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef, attributeDef.getName());
 
             vertex.setProperty(AtlasGraphUtilsV2.encodePropertyKey(propertyKey), toJsonFromAttribute(structType.getAttribute(attributeDef.getName())));
