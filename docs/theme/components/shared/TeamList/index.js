@@ -20,6 +20,7 @@ import React, { Component } from "react";
 import axios from "axios";
 import { parseString } from "xml2js";
 import styled from "styled-components";
+import teamData from "src/resources/data/team.json";
 
 const TeamListStyle = styled.div`
   width: 100%;
@@ -73,33 +74,9 @@ export default class TeamList extends Component {
   constructor(props) {
     super(props);
     this.state = {
-      isLoading: true,
-      displayData: []
+      displayData: teamData || [],
+      isLoading: false
     };
-    this.fetchData();
-  }
-
-  fetchData() {
-    axios
-      .get(`https://raw.githubusercontent.com/apache/atlas/master/pom.xml`)
-      .then(res => {
-        // Transform the raw data by extracting the nested posts
-        parseString(res.data, (err, result) => {
-          const developersList = result.project.developers[0].developer;
-          const developersListLength = developersList.length;
-          let t_displayData = [];
-          const keys = Object.keys(developersList[0]);
-          for (var i = 0; i < developersListLength; i++) {
-            const obj = {};
-            keys.map(k => (obj[k] = developersList[i][k]));
-            t_displayData.push(obj);
-          }
-          this.setState({ displayData: t_displayData, isLoading: false });
-        });
-      })
-      .catch(err => {
-        console.log("fetching data from pom.xml is failed.");
-      });
   }
 
   render() {
