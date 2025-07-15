@@ -681,7 +681,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         } catch (Exception e) {
             LOG.error("PropertyKey creation failed", e);
 
-            throw new AtlasBaseException(new IndexException("Index commit failed ", e));
+            throw new AtlasBaseException(new IndexException("Index commit failed", e));
         }
     }
 }
