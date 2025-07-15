@@ -891,28 +891,43 @@ public class DiscoveryREST {
     }
 
     private void validateEntityFilter(SearchParameters parameters) throws AtlasBaseException {
-        FilterCriteria entityFilter = parameters.getEntityFilters();
+        validateNestedCriteria(parameters.getEntityFilters());
+        validateNestedCriteria(parameters.getTagFilters());
+    }
 
-        if (entityFilter == null) {
+    private void validateNestedCriteria(SearchParameters.FilterCriteria criteria) throws AtlasBaseException {
+        if (criteria == null) {
+            return; // Nothing to validate
+        }
+
+        boolean hasComposite = criteria.getCriterion() != null && !criteria.getCriterion().isEmpty();
+        boolean hasLeaf = StringUtils.isNotEmpty(criteria.getAttributeName())
+                || criteria.getOperator() != null
+                || StringUtils.isNotEmpty(criteria.getAttributeValue());
+
+        if (!hasComposite && !hasLeaf) {
+            // It's an empty filter object — skip (backward compatibility)
             return;
         }
 
-        if (entityFilter.getCriterion() != null &&
-                !entityFilter.getCriterion().isEmpty()) {
-            if (entityFilter.getCondition() == null || StringUtils.isEmpty(entityFilter.getCondition().toString())) {
+        if (hasComposite) {
+            if (criteria.getCondition() == null || StringUtils.isEmpty(criteria.getCondition().toString())) {
                 throw new AtlasBaseException("Condition (AND/OR) must be specified when using multiple filters.");
             }
 
-            for (FilterCriteria filterCriteria : entityFilter.getCriterion()) {
-                validateCriteria(filterCriteria);
+            for (FilterCriteria filterCriteria : criteria.getCriterion()) {
+                if (filterCriteria != null) {
+                    validateNestedCriteria(filterCriteria); // Recursive check
+                }
             }
         }
-        else {
-            validateCriteria(entityFilter);
+
+        if (hasLeaf) {
+            validateLeafFilterCriteria(criteria);
         }
     }
 
-    private void validateCriteria(SearchParameters.FilterCriteria criteria) throws AtlasBaseException {
+    private void validateLeafFilterCriteria(SearchParameters.FilterCriteria criteria) throws AtlasBaseException {
         if (criteria.getOperator() == null) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_OPERATOR, criteria.getAttributeName());
         }
