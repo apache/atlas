@@ -420,7 +420,7 @@ public abstract class DeleteHandlerV1 {
 
             if (typeCategory == STRUCT || typeCategory == CLASSIFICATION || (typeCategory == OBJECT_ID_TYPE && isOwned)) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Processing delete for typeCategory={}, isOwned={}", typeCategory, isOwned);
+                    LOG.debug("Processing for typeCategory={}, isOwned={}", typeCategory, isOwned);
                 }
                 //If the vertex is of type struct delete the edge and then the reference vertex as the vertex is not shared by any other entities.
                 //If the vertex is of type classification, delete the edge and then the reference vertex only if the vertex is not shared by any other propagated entities.

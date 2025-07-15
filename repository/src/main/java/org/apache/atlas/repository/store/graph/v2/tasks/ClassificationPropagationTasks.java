@@ -83,13 +83,15 @@ public class ClassificationPropagationTasks {
         @Override
         protected void run(Map<String, Object> parameters) throws AtlasBaseException {
             String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
+            String sourceVertexId = (String) parameters.get(PARAM_SOURCE_VERTEX_ID);
+
             String tagTypeName              = getTaskDef().getTagTypeName();
             String parentEntityGuid         = getTaskDef().getParentEntityGuid();
 
             if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
                 // we get propagated tags from vanilla cassandra table and remove them
                 // remove original attachment (direct tag - ? ) - check if it removed in sync path
-                entityGraphMapper.deleteClassificationPropagationV2(entityGuid, parentEntityGuid, tagTypeName);
+                entityGraphMapper.deleteClassificationPropagationV2(entityGuid, sourceVertexId, parentEntityGuid, tagTypeName);
             } else {
                 // here as well no traversal. just query classification vertex, get propagation edges, remove edges and classification vertex
                 String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);

@@ -5123,7 +5123,7 @@ public class EntityGraphMapper {
         }
     }
 
-    public void deleteClassificationPropagationV2(String sourceEntityGuid, String parentEntityGuid, String tagTypeName) throws AtlasBaseException {
+    public void deleteClassificationPropagationV2(String sourceEntityGuid, String sourceVertexId, String parentEntityGuid, String tagTypeName) throws AtlasBaseException {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("deleteClassificationPropagationNew");
         try {
             if (StringUtils.isEmpty(tagTypeName)) {
@@ -5131,34 +5131,29 @@ public class EntityGraphMapper {
                 return;
             }
 
-            AtlasVertex entityVertex = graphHelper.getVertexForGUID(sourceEntityGuid);
-            if (entityVertex == null) {
-                LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): entity vertex not found", sourceEntityGuid, tagTypeName);
-                throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, tagTypeName=%s): entity vertex not found", sourceEntityGuid, tagTypeName));
+            String vertexIdForPropagations = sourceVertexId;
+
+            if(StringUtils.isNotEmpty(parentEntityGuid)) {
+                AtlasVertex parentVertex = graphHelper.getVertexForGUID(parentEntityGuid);
+                if (parentVertex != null) {
+                    // If a parent is involved and still exists, use its ID.
+                    vertexIdForPropagations = parentVertex.getIdForDisplay();
+                }
             }
 
             int totalDeleted = 0;
             PaginatedTagResult pageToDelete;
-            // Get tags in batches and delete them
-            // The DAO now returns a PaginatedTagResult which contains the batch and paging information
 
-            if(StringUtils.isNotEmpty(parentEntityGuid) && !parentEntityGuid.equals(sourceEntityGuid)) {
-                entityVertex = graphHelper.getVertexForGUID(parentEntityGuid);
-                if (entityVertex == null) {
-                    LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): entity vertex not found", parentEntityGuid, tagTypeName);
-                    throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, tagTypeName=%s): entity vertex not found", parentEntityGuid, tagTypeName));
-                }
-            }
-            pageToDelete = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
+            pageToDelete = tagDAO.getPropagationsForAttachmentBatch(vertexIdForPropagations, tagTypeName);
 
             List<Tag> batchToDelete = pageToDelete.getTags();
             AtlasClassification originalClassification;
 
-            AtlasClassification deletedClassification = tagDAO.findDirectDeletedTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
+            AtlasClassification deletedClassification = tagDAO.findDirectDeletedTagByVertexIdAndTagTypeName(vertexIdForPropagations, tagTypeName);
             if (deletedClassification != null)
                 originalClassification = deletedClassification;
             else
-                originalClassification = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
+                originalClassification = tagDAO.findDirectTagByVertexIdAndTagTypeName(vertexIdForPropagations, tagTypeName);
 
             if (originalClassification == null) {
                 LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): classification vertex not found", sourceEntityGuid, tagTypeName);
@@ -5192,7 +5187,7 @@ public class EntityGraphMapper {
                 if (pageToDelete.isDone()) {
                     break;
                 }
-                pageToDelete = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
+                pageToDelete = tagDAO.getPropagationsForAttachmentBatch(vertexIdForPropagations, tagTypeName);
                 batchToDelete = pageToDelete.getTags();
             }
 
