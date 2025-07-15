@@ -333,7 +333,7 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
         } catch (Exception e) {
             LOG.error("PropertyKey creation failed", e);
 
-            throw new AtlasBaseException(new IndexException("Index commit failed ", e));
+            throw new AtlasBaseException(new IndexException("Index commit failed", e));
         }
     }
 }
