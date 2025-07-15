@@ -218,11 +218,11 @@ public abstract class DeleteHandlerV1 {
     }
 
     public boolean getJanusOptimisationEnabled() {
-        if (this.janusOptimisationEnabled == null) {
-            this.janusOptimisationEnabled = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
+        if (janusOptimisationEnabled == null) {
+            janusOptimisationEnabled = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
         }
-        LOG.info("Janus Optimisation Enabled: {}", this.janusOptimisationEnabled);
-        return this.janusOptimisationEnabled;
+        LOG.info("Janus Optimisation Enabled: {}", janusOptimisationEnabled);
+        return janusOptimisationEnabled;
     }
 
     /**
