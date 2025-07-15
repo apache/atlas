@@ -110,7 +110,7 @@ public class JsonToElasticsearchQuery {
                 break;
 
             case POLICY_FILTER_CRITERIA_STARTS_WITH:
-                queryNode.putObject("prefix").put(attributeName, attributeValue + "*");
+                queryNode.putObject("prefix").put(attributeName, attributeValue);
                 break;
 
             case POLICY_FILTER_CRITERIA_ENDS_WITH:
