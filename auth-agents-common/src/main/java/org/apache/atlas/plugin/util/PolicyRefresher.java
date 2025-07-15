@@ -24,7 +24,6 @@ import com.google.gson.GsonBuilder;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.authz.admin.client.AtlasAuthAdminClient;
 import org.apache.atlas.policytransformer.CachePolicyTransformerImpl;
-import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
@@ -32,7 +31,6 @@ import org.apache.atlas.authorization.config.RangerPluginConfig;
 import org.apache.atlas.plugin.policyengine.RangerPluginContext;
 import org.apache.atlas.plugin.service.RangerBasePlugin;
 
-import javax.inject.Inject;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -66,9 +64,6 @@ public class PolicyRefresher extends Thread {
 	private       boolean                        policiesSetInPlugin;
 	private       boolean                        serviceDefSetInPlugin;
 	private       boolean                        enableDeltaBasedRefresh;
-
-	@Inject
-	private 	  TagDAO 						 tagDAO;
 
 
 	public PolicyRefresher(RangerBasePlugin plugIn) {
@@ -318,7 +313,7 @@ public class PolicyRefresher extends Thread {
 			if (serviceName.equals("atlas") && plugIn.getTypeRegistry() != null && lastUpdatedTimeInMillis == -1) {
 				LOG.info("PolicyRefresher(serviceName=" + serviceName + "): loading all policies for first time");
 				RangerRESTUtils restUtils = new RangerRESTUtils();
-				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry(), this.tagDAO);
+				CachePolicyTransformerImpl transformer = new CachePolicyTransformerImpl(plugIn.getTypeRegistry(), null);
 
 				svcPolicies = transformer.getPoliciesAll(serviceName,
 							restUtils.getPluginId(serviceName, plugIn.getAppId()),
