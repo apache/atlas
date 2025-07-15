@@ -29,12 +29,14 @@ import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
+import org.apache.atlas.repository.graphdb.AtlasUniqueKeyHandler;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
@@ -229,15 +231,54 @@ public class AtlasGraphUtilsV2 {
             LOG.debug("==> setProperty({}, {}, {})", toString(element), propertyName, value);
         }
 
+        AtlasUniqueKeyHandler uniqueKeyHandler = getGraphInstance().getUniqueKeyHandler();;
+
         if (!isEncoded) {
             propertyName = encodePropertyKey(propertyName);
         }
 
         if (value == null) {
+            if (uniqueKeyHandler != null) {
+                if (GraphBackedSearchIndexer.isTypeUniqueIndexKey(propertyName)) {
+                    uniqueKeyHandler.removeTypeUniqueKey(getProperty(element, TYPE_NAME_PROPERTY_KEY, String.class), propertyName, getProperty(element, propertyName, Object.class), element.getId(), element instanceof AtlasVertex);
+                } else if (GraphBackedSearchIndexer.isGlobalUniqueIndexKey(propertyName)) {
+                    uniqueKeyHandler.removeUniqueKey(propertyName, getProperty(element, propertyName, String.class), element.getId(), element instanceof AtlasVertex);
+                }
+            }
+
             element.removeProperty(propertyName);
         } else {
             if (value instanceof Date) {
                 value = ((Date) value).getTime();
+            }
+
+            if (uniqueKeyHandler != null) {
+                if (GraphBackedSearchIndexer.isTypeUniqueIndexKey(propertyName)) {
+                    Object existingValue = getProperty(element, propertyName, Object.class);
+                    String typeName      = getProperty(element, TYPE_NAME_PROPERTY_KEY, String.class);
+
+                    if (existingValue != null) {
+                        if (!existingValue.equals(value)) {
+                            // remove the existing value from unique key index
+                            uniqueKeyHandler.removeTypeUniqueKey(typeName, propertyName, existingValue, element.getId(), element instanceof AtlasVertex);
+                            uniqueKeyHandler.addTypeUniqueKey(typeName, propertyName, value, element.getId(), element instanceof AtlasVertex);
+                        }
+                    } else {
+                        uniqueKeyHandler.addTypeUniqueKey(typeName, propertyName, value, element.getId(), element instanceof AtlasVertex);
+                    }
+                } else if (GraphBackedSearchIndexer.isGlobalUniqueIndexKey(propertyName)) {
+                    String existingValue = getProperty(element, propertyName, String.class);
+
+                    if (existingValue != null) {
+                        if (!existingValue.equals(value)) {
+                            // remove the existing value from global unique key index
+                            uniqueKeyHandler.removeUniqueKey(propertyName, existingValue, element.getId(), element instanceof AtlasVertex);
+                            uniqueKeyHandler.addUniqueKey(propertyName, value, element.getId(), element instanceof AtlasVertex);
+                        }
+                    } else {
+                        uniqueKeyHandler.addUniqueKey(propertyName, value, element.getId(), element instanceof AtlasVertex);
+                    }
+                }
             }
 
             element.setProperty(propertyName, value);

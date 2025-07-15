@@ -81,6 +81,7 @@ public enum AtlasConfiguration {
     LINEAGE_MAX_NODE_COUNT("atlas.lineage.max.node.count", 9000),
 
     HTTP_HEADER_SERVER_VALUE("atlas.http.header.server.value", "Apache Atlas"),
+    STORAGE_BACKEND_TYPE("atlas.graph.storage.backend", ""),
     STORAGE_CONSISTENCY_LOCK_ENABLED("atlas.graph.storage.consistency-lock.enabled", true),
     REBUILD_INDEX("atlas.rebuild.index", false),
     PROCESS_NAME_UPDATE_PATCH("atlas.process.name.update.patch", false),
