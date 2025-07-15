@@ -1750,7 +1750,7 @@ public class EntityGraphRetriever {
                 LOG.debug("Performing getDirectClassifications");
             }
 
-            return tagDAO.getAllDirectTagsForVertex(entityVertex.getIdForDisplay());
+            return tagDAO.getAllDirectClassificationsForVertex(entityVertex.getIdForDisplay());
 
         } catch (Exception e) {
             LOG.error("Error while getting direct classifications", e);

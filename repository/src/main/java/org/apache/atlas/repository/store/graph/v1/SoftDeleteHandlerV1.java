@@ -29,6 +29,7 @@ import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
@@ -47,8 +48,8 @@ import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClass
 public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
     @Inject
-    public SoftDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement, EntityGraphRetriever entityRetriever) {
-        super(graph, typeRegistry, false, true, taskManagement, entityRetriever);
+    public SoftDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement, EntityGraphRetriever entityRetriever, TagDAO tagDAO) {
+        super(graph, typeRegistry, false, true, taskManagement, entityRetriever, tagDAO);
     }
 
     @Override

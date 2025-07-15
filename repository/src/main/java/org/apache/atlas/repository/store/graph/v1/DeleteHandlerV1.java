@@ -47,6 +47,7 @@ import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.repository.store.graph.v2.tasks.TaskUtil;
 import org.apache.atlas.service.FeatureFlagStore;
@@ -106,13 +107,14 @@ public abstract class DeleteHandlerV1 {
     private   final TaskManagement       taskManagement;
     private   final AtlasGraph           graph;
     private   final TaskUtil             taskUtil;
+    private   final TagDAO               tagDAO;
 
     protected static Boolean              janusOptimisationEnabled;
 
     private static final List<String> taskTypesToSkip = Arrays.asList(CLASSIFICATION_REFRESH_PROPAGATION, CLASSIFICATION_PROPAGATION_DELETE);
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete,
-                           TaskManagement taskManagement, EntityGraphRetriever entityRetriever) {
+                           TaskManagement taskManagement, EntityGraphRetriever entityRetriever, TagDAO tagDAO) {
         this.typeRegistry                  = typeRegistry;
         this.graphHelper                   = new GraphHelper(graph);
         this.entityRetriever               = entityRetriever;
@@ -120,8 +122,9 @@ public abstract class DeleteHandlerV1 {
         this.softDelete                    = softDelete;
         this.taskManagement                = taskManagement;
         this.graph                         = graph;
+        this.tagDAO                        = tagDAO;
         this.taskUtil                      = new TaskUtil(graph);
-        this.janusOptimisationEnabled      = null;
+        janusOptimisationEnabled           = null;
     }
 
     /**
@@ -173,30 +176,22 @@ public abstract class DeleteHandlerV1 {
         LOG.info("Total deletion candidate vertices to process: {}", deletionCandidateVertices.size());
 
         for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
+            RequestContext.get().getDeletedEdgesIds().clear();
             LOG.info("Processing deletion for candidate vertexId={}", deletionCandidateVertex.getIdForDisplay());
 
             RequestContext.get().getDeletedEdgesIds().clear();
 
             if (getJanusOptimisationEnabled()) {
-                LOG.info(
-                        "Janus Optimisation Enabled, deleting classifications using v2 method for vertexId={}",
-                        deletionCandidateVertex.getIdForDisplay());
                 deleteAllClassificationsV2(deletionCandidateVertex);
             } else {
-                LOG.info("Deleting classifications using v1 method for vertexId={}",
-                         deletionCandidateVertex.getIdForDisplay());
                 deleteAllClassifications(deletionCandidateVertex);
             }
 
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 
+            // We need this to trigger refresh propagation task for the propagated tags on the asset which is being deleted
             if (DEFERRED_ACTION_ENABLED) {
                 Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
-
-                LOG.info(
-                        "Scheduling classification refresh tasks for {} deleted edges associated with vertexId={}",
-                        deletedEdgeIds.size(), deletionCandidateVertex.getIdForDisplay());
-
                 for (String deletedEdgeId : deletedEdgeIds) {
                     AtlasEdge edge = graph.getEdge(deletedEdgeId);
                     if (edge != null) {
@@ -1210,19 +1205,15 @@ public abstract class DeleteHandlerV1 {
         return ret;
     }
 
-    private void deleteAllClassificationsV2(AtlasVertex instanceVertex) throws AtlasBaseException {
-        if (!ACTIVE.equals(getState(instanceVertex)))
-            return;
-        List<Tag> tags = getTagDAO().getAllTagsByVertexId(instanceVertex.getIdForDisplay());
+    private void deleteAllClassificationsV2(AtlasVertex deletionCandidateVertex) throws AtlasBaseException {
+        // Create Delete propagation task only for direct tags, propagated tags will be handled in refresh task created later in the same flow
+        List<Tag> tags = tagDAO.getAllDirectTagsForVertex(deletionCandidateVertex.getIdForDisplay());
         try {
-            getTagDAO().deleteTags(tags);
-            tags.forEach(tag -> {
-                if(tag.getSourceVertexId().equals(tag.getVertexId())) {
-                    createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_DELETE, instanceVertex, null, tag.getTagTypeName());
-                }
-            });
+            tagDAO.deleteTags(tags);
+            tagDAO.deleteTags(tags);
+            tags.forEach(t -> createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_DELETE, deletionCandidateVertex, null, t.getTagTypeName()));
         } catch (AtlasBaseException e) {
-            LOG.error("Error while deleting tags for vertex: {}", instanceVertex.getIdForDisplay());
+            LOG.error("Error while deleting tags for vertex: {}", deletionCandidateVertex.getIdForDisplay());
             throw e;
         }
     }
