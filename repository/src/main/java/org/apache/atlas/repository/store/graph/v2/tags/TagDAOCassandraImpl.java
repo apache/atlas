@@ -307,7 +307,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getAllDirectTagsForVertex");
         try {
             int bucket = calculateBucket(vertexId);
-            BoundStatement bound = findDirectClassificationsForAssetStmt.bind(bucket, vertexId);
+            BoundStatement bound = findDirectTagsForAssetStmt.bind(bucket, vertexId);
             ResultSet rs = executeWithRetry(bound);
             List<Tag> tags = resultSetToTags(vertexId, rs);
             if (tags.isEmpty()) {
