@@ -133,6 +133,7 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.OUTPUT_PORT_GUIDS_ATTR;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask.PARAM_ENTITY_GUID;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask.PARAM_SOURCE_VERTEX_ID;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
@@ -4414,7 +4415,7 @@ public class EntityGraphMapper {
 
                 Map<String, Object> taskParams  = new HashMap<>() {{
                     put(PARAM_ENTITY_GUID, entityGuid);
-                    put("sourceVertexId", entityVertex.getIdForDisplay());
+                    put(PARAM_SOURCE_VERTEX_ID, entityVertex.getIdForDisplay());
                     put(TASK_CLASSIFICATION_TYPENAME, currentClassification.getTypeName());
                     put("newMode", true);
                 }};
@@ -4958,8 +4959,9 @@ public class EntityGraphMapper {
                 String  currentUser = RequestContext.getCurrentUser();
                 String  entityGuid  = GraphHelper.getGuid(entityVertex);
 
-                Map<String, Object> taskParams  = new HashMap<String, Object>() {{
+                Map<String, Object> taskParams  = new HashMap<>() {{
                     put(PARAM_ENTITY_GUID, entityGuid);
+                    put(PARAM_SOURCE_VERTEX_ID, entityVertex.getIdForDisplay());
                 }};
 
                 taskManagement.createTaskV2(propagationType, currentUser, taskParams, classification.getTypeName(), entityGuid);

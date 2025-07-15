@@ -1426,6 +1426,7 @@ public abstract class DeleteHandlerV1 {
 
         Map<String, Object> taskParams  = new HashMap<>() {{
             put(PARAM_ENTITY_GUID, entityGuid);
+            put(PARAM_SOURCE_VERTEX_ID, fromVertex.getIdForDisplay());
             put(TASK_CLASSIFICATION_TYPENAME, classificationTypeName);
             put(PARAM_TO_ENTITY_GUID, toEntityGuid);
         }};
