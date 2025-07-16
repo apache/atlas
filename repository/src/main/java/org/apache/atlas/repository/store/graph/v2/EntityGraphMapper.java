@@ -215,7 +215,7 @@ public class EntityGraphMapper {
                              AtlasRelationshipStore relationshipStore, IAtlasEntityChangeNotifier entityChangeNotifier,
                              AtlasInstanceConverter instanceConverter, IFullTextMapper fullTextMapperV2,
                              TaskManagement taskManagement, TransactionInterceptHelper transactionInterceptHelper,
-                             EntityGraphRetriever entityRetriever, TagDAO tagDAO, TagAttributeMapper tagAttributeMapper) {
+                             EntityGraphRetriever entityRetriever, TagAttributeMapper tagAttributeMapper) {
         this.restoreHandlerV1 = restoreHandlerV1;
         this.graphHelper          = new GraphHelper(graph);
         this.deleteDelegate       = deleteDelegate;
@@ -229,7 +229,7 @@ public class EntityGraphMapper {
         this.fullTextMapperV2     = fullTextMapperV2;
         this.taskManagement       = taskManagement;
         this.transactionInterceptHelper = transactionInterceptHelper;
-        this.tagDAO = tagDAO;
+        this.tagDAO = TagDAOCassandraImpl.getInstance();
         this.tagAttributeMapper = tagAttributeMapper;
     }
 

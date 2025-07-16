@@ -31,9 +31,9 @@ public class AuthorizerCommonUtil {
     private static EntityGraphRetriever entityRetriever;
 
     @Inject
-    public AuthorizerCommonUtil(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TagDAO tagDAO) {
+    public AuthorizerCommonUtil(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
         AuthorizerCommonUtil.typeRegistry = typeRegistry;
-        entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true, tagDAO);
+        entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true);
     }
 
     public static String getCurrentUserName() {
