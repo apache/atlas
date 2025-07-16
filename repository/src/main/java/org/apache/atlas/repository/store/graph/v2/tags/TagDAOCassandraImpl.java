@@ -63,6 +63,30 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     public static final String DEFAULT_HOST = "localhost";
     public static final String DATACENTER = "datacenter1";
 
+    private static final TagDAOCassandraImpl INSTANCE;
+
+    /**
+     * Static initializer block to create the singleton instance.
+     * This handles potential exceptions during initialization.
+     * Also, this will not block requests initializing or waiting due to lazy initialization
+     */
+    static {
+        try {
+            INSTANCE = new TagDAOCassandraImpl();
+        } catch (AtlasBaseException e) {
+            LOG.error("FATAL: Failed to initialize TagDAOCassandraImpl singleton", e);
+            throw new RuntimeException("Could not initialize TagDAO Cassandra implementation: TagDAOCassandraImpl", e);
+        }
+    }
+
+    /**
+     * Provides the global point of access to the TagDAOCassandraImpl instance.
+     * @return The single instance of TagDAOCassandraImpl.
+     */
+    public static TagDAOCassandraImpl getInstance() {
+        return INSTANCE;
+    }
+
     private final CqlSession cassSession;
 
     // Prepared Statements for 'tags_by_id' table
@@ -81,7 +105,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     private final PreparedStatement deletePropagationStmt;
 
 
-    public TagDAOCassandraImpl() throws AtlasBaseException {
+    private TagDAOCassandraImpl() throws AtlasBaseException {
         try {
             String hostname = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, DEFAULT_HOST);
             Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", ApplicationProperties.get().getString(CASSANDRA_REPLICATION_FACTOR_PROPERTY, "3"));

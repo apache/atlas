@@ -56,7 +56,7 @@ public class TagDAOCassandraImplTest {
         ApplicationProperties.set(testConfig);
 
         // The DAO will now use the in-memory configuration instead of loading from a file.
-        tagDAO = new TagDAOCassandraImpl();
+        tagDAO = TagDAOCassandraImpl.getInstance();
 
         // Create a separate CqlSession for test utility functions like data setup and cleanup.
         testSession = CqlSession.builder()

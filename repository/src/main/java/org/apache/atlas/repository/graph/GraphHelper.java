@@ -109,8 +109,6 @@ public final class GraphHelper {
     private long    retrySleepTimeMillis = 1000;
     private boolean removePropagations = true;
 
-    private static TagDAO tagDAO;
-
     public GraphHelper(AtlasGraph graph) {
         this.graph = graph;
         try {
@@ -124,34 +122,6 @@ public final class GraphHelper {
 
     public static boolean isTermEntityEdge(AtlasEdge edge) {
         return StringUtils.equals(edge.getLabel(), TERM_ASSIGNMENT_LABEL);
-    }
-
-    public static TagDAO getTagDAO() throws AtlasBaseException {
-        if (tagDAO == null) {
-            try {
-                // Get the TagDAO from Spring context using BeanUtil
-                tagDAO = BeanUtil.getBean(TagDAO.class);
-
-                // Fallback if Spring context is not available (like in unit tests)
-                if (tagDAO == null) {
-                    LOG.warn("Could not get TagDAO from Spring context, creating a new instance");
-                    synchronized (GraphHelper.class) {
-                        if (tagDAO == null) {
-                            tagDAO = new TagDAOCassandraImpl();
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                // Handle the case when Spring context is not initialized or available
-                LOG.warn("Error getting TagDAO from Spring context, creating a new instance", e);
-                synchronized (GraphHelper.class) {
-                    if (tagDAO == null) {
-                        tagDAO = new TagDAOCassandraImpl();
-                    }
-                }
-            }
-        }
-        return tagDAO;
     }
 
     public AtlasEdge addClassificationEdge(AtlasVertex entityVertex, AtlasVertex classificationVertex, boolean isPropagated) throws AtlasBaseException {
@@ -949,7 +919,7 @@ public final class GraphHelper {
     public static List<String> getTraitNamesV2(AtlasVertex entityVertex, Boolean propagated) {
         List<String>     ret   = new ArrayList<>();
         try {
-            TagDAO tagDAOCassandra = getTagDAO();
+            TagDAO tagDAOCassandra = TagDAOCassandraImpl.getInstance();
             if (!propagated) {
                 ret = tagDAOCassandra.getAllDirectTagsForVertex(entityVertex.getIdForDisplay())
                                      .stream()
@@ -995,7 +965,7 @@ public final class GraphHelper {
         if ((edge != null && getStatus(edge) != DELETED) || RequestContext.get().getCurrentTask() != null) {
             AtlasVertex vertex = getPropagatingVertex(edge);
             if (vertex != null) {
-                ret.addAll(getTagDAO().getAllClassificationsForVertex(vertex.getIdForDisplay()));
+                ret.addAll(TagDAOCassandraImpl.getInstance().getAllClassificationsForVertex(vertex.getIdForDisplay()));
             }
         }
 

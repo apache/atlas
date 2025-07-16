@@ -34,6 +34,7 @@ import org.apache.atlas.repository.store.graph.v2.bulkimport.ImportStrategy;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.MigrationImport;
 import org.apache.atlas.repository.store.graph.v2.bulkimport.RegularImport;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.repository.store.graph.v2.utils.TagAttributeMapper;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
@@ -60,18 +61,15 @@ public class BulkImporterImpl implements BulkImporter {
     private final EntityGraphRetriever entityGraphRetriever;
     private final TagAttributeMapper tagAttributeMapper;
 
-    private final TagDAO tagDAO;
-
     @Inject
     public BulkImporterImpl(AtlasGraph atlasGraph, AtlasEntityStore entityStore,
-                            AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier, EntityGraphRetriever entityGraphRetriever, TagAttributeMapper tagAttributeMapper, TagDAO tagDAO) {
+                            AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier, EntityGraphRetriever entityGraphRetriever, TagAttributeMapper tagAttributeMapper) {
         this.atlasGraph = atlasGraph;
         this.entityStore = entityStore;
         this.typeRegistry = typeRegistry;
         this.entityChangeNotifier = entityChangeNotifier;
         this.entityGraphRetriever = entityGraphRetriever;
         this.tagAttributeMapper = tagAttributeMapper;
-        this.tagDAO = tagDAO;
     }
 
     @Override
@@ -80,7 +78,7 @@ public class BulkImporterImpl implements BulkImporter {
 
         if (importResult.getRequest().getOptions() != null &&
                 importResult.getRequest().getOptions().containsKey(AtlasImportRequest.OPTION_KEY_MIGRATION)) {
-            importStrategy = new MigrationImport(this.atlasGraph, new AtlasGraphProvider(), this.typeRegistry, entityChangeNotifier, entityGraphRetriever, tagAttributeMapper, tagDAO);
+            importStrategy = new MigrationImport(this.atlasGraph, new AtlasGraphProvider(), this.typeRegistry, entityChangeNotifier, entityGraphRetriever, tagAttributeMapper);
         } else {
             importStrategy = new RegularImport(this.atlasGraph, this.entityStore, this.typeRegistry, this.entityGraphRetriever);
         }

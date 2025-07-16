@@ -132,12 +132,10 @@ public class CachePolicyTransformerImpl {
 
     private final Map<EntityAuditActionV2, Integer> auditEventToDeltaChangeType;
 
-    private TagDAO tagDAO;
-
     @Inject
-    public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry, TagDAO tagDAO) throws AtlasBaseException {
+    public CachePolicyTransformerImpl(AtlasTypeRegistry typeRegistry) throws AtlasBaseException {
         this.graph                = new AtlasJanusGraph();
-        this.entityRetriever      = new EntityGraphRetriever(tagDAO, graph, typeRegistry);
+        this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
 
         personaTransformer = new PersonaCachePolicyTransformer(entityRetriever);
         purposeTransformer = new PurposeCachePolicyTransformer(entityRetriever);
@@ -156,28 +154,6 @@ public class CachePolicyTransformerImpl {
         this.auditEventToDeltaChangeType.put(EntityAuditActionV2.ENTITY_PURGE, RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE);
 
         this.services = new HashMap<>();
-
-        if (this.tagDAO == null) {
-            setTagDAO();
-        } else {
-            this.tagDAO = tagDAO;
-        }
-    }
-
-    private void setTagDAO() throws AtlasBaseException {
-        if (this.tagDAO == null) {
-            try {
-                synchronized (CachePolicyTransformerImpl.class) {
-                    if (tagDAO == null) {
-                        tagDAO = new TagDAOCassandraImpl();
-                    }
-                }
-            } catch (AtlasBaseException e) {
-                // Handle the case when Spring context is not initialized or available
-                LOG.warn("Error getting TagDAO from Spring context, creating a new instance", e);
-                throw e;
-            }
-        }
     }
 
     public AtlasEntityHeader getService() {
