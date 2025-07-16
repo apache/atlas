@@ -23,8 +23,8 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
 
     private final TagDAO tagDAO;
 
-    public EntityCreateOrUpdateMutationPostProcessor(TagDAO tagDAO) {
-        this.tagDAO = tagDAO;
+    public EntityCreateOrUpdateMutationPostProcessor() {
+        this.tagDAO = TagDAOCassandraImpl.getInstance();
     }
 
     @Override

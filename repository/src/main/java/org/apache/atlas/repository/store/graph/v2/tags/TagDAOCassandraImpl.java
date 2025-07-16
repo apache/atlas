@@ -49,7 +49,6 @@ import static org.apache.atlas.repository.store.graph.v2.tags.CassandraTagConfig
  * -   PK: ((source_id, tag_type_name), propagated_asset_id)
  * -   Compaction: LeveledCompactionStrategy (LCS)
  */
-@Repository
 public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(TagDAOCassandraImpl.class);
     private static final ObjectMapper objectMapper = new ObjectMapper();
