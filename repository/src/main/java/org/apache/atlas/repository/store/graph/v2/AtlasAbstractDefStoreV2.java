@@ -27,7 +27,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.query.AtlasDSL;
-import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
