@@ -36,14 +36,18 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 
 public class SchemaRegistryConnector {
-    private static final String SCHEMA_KEY = "schema";
-    private static final Logger LOG        = LoggerFactory.getLogger(SchemaRegistryConnector.class);
+    private static final String SCHEMA_KEY  = "schema";
+    private static final Logger LOG         = LoggerFactory.getLogger(SchemaRegistryConnector.class);
+
+    private SchemaRegistryConnector() {
+        //private constructor
+    }
 
     static ArrayList<Integer> getVersionsKafkaSchemaRegistry(CloseableHttpClient httpClient, String subject) throws IOException {
         ArrayList<Integer> list = new ArrayList<>();
         JSONParser parser = new JSONParser();
 
-        HttpGet getRequest = new HttpGet("http://" + KafkaBridge.KAFKA_SCHEMA_REGISTRY_HOSTNAME + "/subjects/" + subject + "/versions/");
+        HttpGet getRequest = new HttpGet("http://" + KafkaBridge.kafkaSchemaRegistryHostname + "/subjects/" + subject + "/versions/");
         getRequest.addHeader("accept", "application/json");
         getRequest.addHeader("Content-Type", "application/vnd.schemaregistry.v1+json");
 
@@ -72,7 +76,6 @@ public class SchemaRegistryConnector {
                     System.out.println("---Error reading versions to schema: " + subject + " in Kafka");
                     LOG.error("Error reading versions to schema: " + subject + " in Kafka: ", e.getMessage());
                 }
-
             } else if (response.getStatusLine().getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 // did not find any schema to the topic
                 System.out.println("---No schema versions found for schema: " + subject + " in Schema Registry");
@@ -85,8 +88,7 @@ public class SchemaRegistryConnector {
 
             EntityUtils.consumeQuietly(response.getEntity());
             response.close();
-        }
-        catch(Exception e) {
+        } catch (Exception e) {
             System.out.println("---Error getting versions to schema: " + subject + " from Kafka");
             LOG.error("Error getting versions to schema: " + subject + " from Kafka: ", e);
         }
@@ -94,14 +96,14 @@ public class SchemaRegistryConnector {
     }
 
     static String getSchemaFromKafkaSchemaRegistry(CloseableHttpClient httpClient, String subject, int version) throws IOException {
-        HttpGet getRequest = new HttpGet("http://" + KafkaBridge.KAFKA_SCHEMA_REGISTRY_HOSTNAME + "/subjects/" + subject + "/versions/" + version);
+        HttpGet getRequest = new HttpGet("http://" + KafkaBridge.kafkaSchemaRegistryHostname + "/subjects/" + subject + "/versions/" + version);
         getRequest.addHeader("accept", "application/json");
         getRequest.addHeader("Content-Type", "application/vnd.schemaregistry.v1+json");
         JSONParser parser = new JSONParser();
 
         CloseableHttpResponse response = httpClient.execute(getRequest);
 
-        if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK){
+        if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
             //found corresponding Schema in Registry
             try {
                 BufferedReader br = new BufferedReader(
@@ -116,19 +118,14 @@ public class SchemaRegistryConnector {
                 System.out.println("---Error reading versions to schema: " + subject + " in Kafka");
                 LOG.error("Error reading versions to schema: " + subject + " in Kafka: ", e);
             }
-
-        }
-
-        else if (response.getStatusLine().getStatusCode() == 404) {
+        } else if (response.getStatusLine().getStatusCode() == 404) {
             // did not find any schema to the topic
             System.out.println("---Cannot find the corresponding schema to: " + subject + "in Kafka");
             LOG.info("Cannot find the corresponding schema to: {} in Kafka", subject);
-        }
-
-        else {
+        } else {
             // any other error when connecting to schema registry
-            System.out.println("---Cannot connect to schema registry at: " + KafkaBridge.KAFKA_SCHEMA_REGISTRY_HOSTNAME);
-            LOG.warn("Cannot connect to schema registry at: {}", KafkaBridge.KAFKA_SCHEMA_REGISTRY_HOSTNAME);
+            System.out.println("---Cannot connect to schema registry at: " + KafkaBridge.kafkaSchemaRegistryHostname);
+            LOG.warn("Cannot connect to schema registry at: {}", KafkaBridge.kafkaSchemaRegistryHostname);
         }
 
         EntityUtils.consumeQuietly(response.getEntity());
