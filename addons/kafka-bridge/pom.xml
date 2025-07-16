@@ -32,6 +32,11 @@
     <name>Apache Atlas Kafka Bridge</name>
     <description>Apache Atlas Kafka Bridge Module</description>
 
+    <properties>
+        <checkstyle.failOnViolation>true</checkstyle.failOnViolation>
+        <checkstyle.skip>false</checkstyle.skip>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>com.google.guava</groupId>
