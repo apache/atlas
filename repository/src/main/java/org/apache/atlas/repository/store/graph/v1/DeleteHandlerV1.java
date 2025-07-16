@@ -202,10 +202,7 @@ public abstract class DeleteHandlerV1 {
                     }
                 }
             }
-
-            LOG.info("Completed deletion processing for vertexId={}", deletionCandidateVertex.getIdForDisplay());
         }
-
         LOG.info("deleteEntities completed. Total vertices processed: {}", deletionCandidateVertices.size());
     }
 
