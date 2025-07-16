@@ -67,6 +67,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     // Prepared Statements for 'tags_by_id' table
     private final PreparedStatement findAllTagsForAssetStmt;
+    private final PreparedStatement findDirectClassificationsForAssetStmt;
     private final PreparedStatement findDirectTagsForAssetStmt;
     private final PreparedStatement findPropagatedTagsForAssetStmt;
     private final PreparedStatement findSpecificDirectTagStmt;
@@ -116,10 +117,13 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                     "SELECT tag_meta_json, is_deleted FROM %s.%s WHERE bucket = ? AND id = ?", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
 
             findAllTagDetailsForAssetStmt = prepare(String.format(
-                    "SELECT tag_meta_json, is_propagated, tag_type_name, is_deleted FROM %s.%s WHERE bucket = ? AND id = ?", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
+                    "SELECT tag_meta_json, source_id, is_propagated, tag_type_name, is_deleted FROM %s.%s WHERE bucket = ? AND id = ?", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
+
+            findDirectClassificationsForAssetStmt = prepare(String.format(
+                    "SELECT tag_meta_json, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = false", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
 
             findDirectTagsForAssetStmt = prepare(String.format(
-                    "SELECT tag_meta_json, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = false", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
+                    "SELECT is_propagated, source_id, tag_type_name, tag_meta_json, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = false", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
 
             findPropagatedTagsForAssetStmt = prepare(String.format(
                     "SELECT tag_meta_json, source_id, is_deleted FROM %s.%s WHERE bucket = ? AND id = ? AND is_propagated = true", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME));
@@ -274,18 +278,38 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     }
 
     @Override
-    public List<AtlasClassification> getAllDirectTagsForVertex(String vertexId) throws AtlasBaseException {
+    public List<AtlasClassification> getAllDirectClassificationsForVertex(String vertexId) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getAllDirectClassificationsForVertex");
+        List<AtlasClassification> classifications = new ArrayList<>();
+        try {
+            int bucket = calculateBucket(vertexId);
+            BoundStatement bound = findDirectClassificationsForAssetStmt.bind(bucket, vertexId);
+            ResultSet rs = executeWithRetry(bound);
+            for (Row row : rs) {
+                if (!row.getBoolean("is_deleted")) {
+                    classifications.add(convertToAtlasClassification(row.getString("tag_meta_json")));
+                }
+            }
+            if (classifications.isEmpty()) {
+                LOG.warn("No active direct tags found for vertexId={}, bucket={}", vertexId, bucket);
+            }
+            return classifications;
+        } catch (Exception e) {
+            LOG.error("Error fetching direct classifications for vertexId={}", vertexId, e);
+            throw new AtlasBaseException("Error fetching direct tags", e);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
+    }
+
+    @Override
+    public List<Tag> getAllDirectTagsForVertex(String vertexId) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getAllDirectTagsForVertex");
-        List<AtlasClassification> tags = new ArrayList<>();
         try {
             int bucket = calculateBucket(vertexId);
             BoundStatement bound = findDirectTagsForAssetStmt.bind(bucket, vertexId);
             ResultSet rs = executeWithRetry(bound);
-            for (Row row : rs) {
-                if (!row.getBoolean("is_deleted")) {
-                    tags.add(convertToAtlasClassification(row.getString("tag_meta_json")));
-                }
-            }
+            List<Tag> tags = resultSetToTags(vertexId, rs);
             if (tags.isEmpty()) {
                 LOG.warn("No active direct tags found for vertexId={}, bucket={}", vertexId, bucket);
             }
@@ -603,31 +627,12 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     @Override
     public List<Tag> getAllTagsByVertexId(String vertexId) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getAllTagsByVertexId");
-        List<Tag> tags = new ArrayList<>();
         try {
             int bucket = calculateBucket(vertexId);
             BoundStatement bound = findAllTagDetailsForAssetStmt.bind(bucket, vertexId);
             ResultSet rs = executeWithRetry(bound);
 
-            for (Row row : rs) {
-                if (row.getBoolean("is_deleted")) {
-                    continue;
-                }
-
-                Tag tag = new Tag();
-                tag.setVertexId(vertexId);
-                tag.setTagTypeName(row.getString("tag_type_name"));
-                tag.setPropagated(row.getBoolean("is_propagated"));
-
-                try {
-                    tag.setTagMetaJson(objectMapper.readValue(row.getString("tag_meta_json"), new TypeReference<>() {
-                    }));
-                } catch (JsonProcessingException e) {
-                    LOG.error("Error parsing tag_meta_json in getAllTagsByVertexId for vertexId: {}", vertexId, e);
-                    continue;
-                }
-                tags.add(tag);
-            }
+            List<Tag> tags = resultSetToTags(vertexId, rs);
             if (tags.isEmpty()) {
                 LOG.warn("No active tags found for vertexId={}, bucket={}", vertexId, bucket);
             }
@@ -638,6 +643,31 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
+    }
+
+    private static List<Tag> resultSetToTags(String vertexId, ResultSet rs) {
+        List<Tag> tags = new ArrayList<>();
+        for (Row row : rs) {
+            if (row.getBoolean("is_deleted")) {
+                continue;
+            }
+
+            Tag tag = new Tag();
+            tag.setVertexId(vertexId);
+            tag.setTagTypeName(row.getString("tag_type_name"));
+            tag.setPropagated(row.getBoolean("is_propagated"));
+            tag.setSourceVertexId(row.getString("source_id"));
+
+            try {
+                tag.setTagMetaJson(objectMapper.readValue(row.getString("tag_meta_json"), new TypeReference<>() {
+                }));
+            } catch (JsonProcessingException e) {
+                LOG.error("Error parsing tag_meta_json in getAllTagsByVertexId for vertexId: {}", vertexId, e);
+                continue;
+            }
+            tags.add(tag);
+        }
+        return tags;
     }
 
     private <T extends Statement<T>> ResultSet executeWithRetry(Statement<T> statement) throws AtlasBaseException {

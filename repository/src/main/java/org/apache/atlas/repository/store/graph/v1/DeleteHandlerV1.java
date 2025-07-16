@@ -26,6 +26,7 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorize.AtlasRelationshipAccessRequest;
 import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.Tag;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -46,6 +47,7 @@ import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.repository.store.graph.v2.tasks.TaskUtil;
 import org.apache.atlas.service.FeatureFlagStore;
@@ -105,13 +107,14 @@ public abstract class DeleteHandlerV1 {
     private   final TaskManagement       taskManagement;
     private   final AtlasGraph           graph;
     private   final TaskUtil             taskUtil;
+    private   final TagDAO               tagDAO;
 
-    protected final boolean              janusOptimisationEnabled;
+    protected static Boolean              janusOptimisationEnabled;
 
     private static final List<String> taskTypesToSkip = Arrays.asList(CLASSIFICATION_REFRESH_PROPAGATION, CLASSIFICATION_PROPAGATION_DELETE);
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete,
-                           TaskManagement taskManagement, EntityGraphRetriever entityRetriever) {
+                           TaskManagement taskManagement, EntityGraphRetriever entityRetriever, TagDAO tagDAO) {
         this.typeRegistry                  = typeRegistry;
         this.graphHelper                   = new GraphHelper(graph);
         this.entityRetriever               = entityRetriever;
@@ -119,8 +122,9 @@ public abstract class DeleteHandlerV1 {
         this.softDelete                    = softDelete;
         this.taskManagement                = taskManagement;
         this.graph                         = graph;
+        this.tagDAO                        = tagDAO;
         this.taskUtil                      = new TaskUtil(graph);
-        this.janusOptimisationEnabled      = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
+        janusOptimisationEnabled           = null;
     }
 
     /**
@@ -131,59 +135,83 @@ public abstract class DeleteHandlerV1 {
      * @param instanceVertices
      * @throws AtlasException
      */
-    public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException {
+    public void deleteEntities(Collection<AtlasVertex> instanceVertices) throws AtlasBaseException
+    {
+        LOG.info("deleteEntities invoked. Requested vertices size: {}", instanceVertices != null ? instanceVertices.size() : 0);
+
         final RequestContext   requestContext            = RequestContext.get();
         final Set<AtlasVertex> deletionCandidateVertices = new HashSet<>();
 
+        if (CollectionUtils.isEmpty(instanceVertices)) {
+            return;
+        }
+
         for (AtlasVertex instanceVertex : instanceVertices) {
-            final String             guid  = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
+            final String guid = AtlasGraphUtilsV2.getIdFromVertex(instanceVertex);
+
+            LOG.info("Evaluating vertex for deletion. guid={}, vertexId={}", guid, instanceVertex.getIdForDisplay());
 
             if (skipVertexForDelete(instanceVertex)) {
-                if (LOG.isDebugEnabled()) {
-                        LOG.debug("Skipping deletion of entity={} as it is already deleted", guid);
-                }
+                LOG.info("Skipping deletion of entity={} as it is already deleted", guid);
                 continue;
             }
 
-            // Record all deletion candidate entities in RequestContext
-            // and gather deletion candidate vertices.
             for (GraphHelper.VertexInfo vertexInfo : getOwnedVertices(instanceVertex)) {
                 AtlasEntityHeader entityHeader = vertexInfo.getEntity();
 
                 if (requestContext.isPurgeRequested()) {
-                    entityHeader.setClassifications(entityRetriever.handleGetAllClassifications(vertexInfo.getVertex()));
+                    entityHeader.setClassifications(
+                            entityRetriever.handleGetAllClassifications(vertexInfo.getVertex()));
                 }
 
                 requestContext.recordEntityDelete(entityHeader);
                 deletionCandidateVertices.add(vertexInfo.getVertex());
+
+                LOG.info("Marked vertexId={} (guid={}) as deletion candidate. Total candidates so far: {}",
+                         vertexInfo.getVertex().getIdForDisplay(), entityHeader.getGuid(),
+                         deletionCandidateVertices.size());
             }
         }
 
-        // Delete traits and vertices.
-        for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
-            RequestContext.get().getDeletedEdgesIds().clear();
-            // TODO for Hritik Verify below
-            if(getJanusOptimisationEnabled()) {
-                List<AtlasClassification> classifications = entityRetriever.getAllClassifications_V2(deletionCandidateVertex);
-                classifications.forEach(classification -> {
-                    createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_DELETE, deletionCandidateVertex, null, classification.getTypeName());
-                });
+        LOG.info("Total deletion candidate vertices to process: {}", deletionCandidateVertices.size());
 
+        for (AtlasVertex deletionCandidateVertex : deletionCandidateVertices) {
+            LOG.info("Processing deletion for candidate vertexId={}", deletionCandidateVertex.getIdForDisplay());
+
+            RequestContext.get().getDeletedEdgesIds().clear();
+
+            if (getJanusOptimisationEnabled()) {
+                deleteAllClassificationsV2(deletionCandidateVertex);
             } else {
                 deleteAllClassifications(deletionCandidateVertex);
             }
 
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 
-            // TODO: Why do we need following createAndQueueClassificationRefreshPropagationTask?
+            // We need this to trigger refresh propagation task for the propagated tags on the asset which is being deleted
             if (DEFERRED_ACTION_ENABLED) {
                 Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
                 for (String deletedEdgeId : deletedEdgeIds) {
                     AtlasEdge edge = graph.getEdge(deletedEdgeId);
-                    createAndQueueClassificationRefreshPropagationTask(edge);
+                    if (edge != null) {
+                        createAndQueueClassificationRefreshPropagationTask(edge);
+                    } else {
+                        LOG.info(
+                                "Could not find edge with id={} while scheduling classification refresh task",
+                                deletedEdgeId);
+                    }
                 }
             }
         }
+        LOG.info("deleteEntities completed. Total vertices processed: {}", deletionCandidateVertices.size());
+    }
+
+    public boolean getJanusOptimisationEnabled() {
+        if (janusOptimisationEnabled == null) {
+            janusOptimisationEnabled = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
+        }
+        LOG.info("Janus Optimisation Enabled: {}", janusOptimisationEnabled);
+        return janusOptimisationEnabled;
     }
 
     /**
@@ -389,7 +417,7 @@ public abstract class DeleteHandlerV1 {
 
             if (typeCategory == STRUCT || typeCategory == CLASSIFICATION || (typeCategory == OBJECT_ID_TYPE && isOwned)) {
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Processing delete for typeCategory={}, isOwned={}", typeCategory, isOwned);
+                    LOG.debug("Processing for typeCategory={}, isOwned={}", typeCategory, isOwned);
                 }
                 //If the vertex is of type struct delete the edge and then the reference vertex as the vertex is not shared by any other entities.
                 //If the vertex is of type classification, delete the edge and then the reference vertex only if the vertex is not shared by any other propagated entities.
@@ -1173,6 +1201,18 @@ public abstract class DeleteHandlerV1 {
         return ret;
     }
 
+    private void deleteAllClassificationsV2(AtlasVertex deletionCandidateVertex) throws AtlasBaseException {
+        // Create Delete propagation task only for direct tags, propagated tags will be handled in refresh task created later in the same flow
+        List<Tag> tags = tagDAO.getAllDirectTagsForVertex(deletionCandidateVertex.getIdForDisplay());
+        try {
+            tagDAO.deleteTags(tags);
+            tags.forEach(t -> createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_DELETE, deletionCandidateVertex, null, t.getTagTypeName()));
+        } catch (AtlasBaseException e) {
+            LOG.error("Error while deleting tags for vertex: {}", deletionCandidateVertex.getIdForDisplay());
+            throw e;
+        }
+    }
+
     /**
      * Delete all associated classifications from the specified entity vertex.
      * @param instanceVertex
@@ -1383,6 +1423,7 @@ public abstract class DeleteHandlerV1 {
 
         Map<String, Object> taskParams  = new HashMap<>() {{
             put(PARAM_ENTITY_GUID, entityGuid);
+            put(PARAM_SOURCE_VERTEX_ID, fromVertex.getIdForDisplay());
             put(TASK_CLASSIFICATION_TYPENAME, classificationTypeName);
             put(PARAM_TO_ENTITY_GUID, toEntityGuid);
         }};
@@ -1451,7 +1492,8 @@ public abstract class DeleteHandlerV1 {
             return;
         }
 
-        if (!janusOptimisationEnabled) {
+        if (!getJanusOptimisationEnabled()) {
+            LOG.info("JanusGraph optimisations are not enabled, scheduling task for edge {}", edge.getIdForDisplay());
             // Existing flow as it is
             List<AtlasVertex> currentClassificationVertices = GraphHelper.getPropagatableClassifications(edge);
             for (AtlasVertex currentClassificationVertex : currentClassificationVertices) {
@@ -1475,6 +1517,7 @@ public abstract class DeleteHandlerV1 {
                 RequestContext.get().queueTask(task);
             }
         } else {
+            LOG.info("JanusGraph optimisations are enabled, scheduling task for edge {}", edge.getIdForDisplay());
             // V2 for tag optimisations
             List<AtlasClassification> currentClassificationVertices = GraphHelper.getPropagatableClassificationsV2(edge);
             for (AtlasClassification tag : currentClassificationVertices) {

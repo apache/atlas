@@ -951,7 +951,7 @@ public final class GraphHelper {
         try {
             TagDAO tagDAOCassandra = getTagDAO();
             if (!propagated) {
-                ret = tagDAOCassandra.getAllDirectTagsForVertex(entityVertex.getIdForDisplay())
+                ret = tagDAOCassandra.getAllDirectClassificationsForVertex(entityVertex.getIdForDisplay())
                                      .stream()
                                      .map(AtlasClassification::getTypeName)
                                      .collect(Collectors.toList());

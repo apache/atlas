@@ -130,7 +130,7 @@ public class MigrationImport extends ImportStrategy {
 
     private AtlasEntityStoreV2 createEntityStore(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
         FullTextMapperV2Nop fullTextMapperV2 = new FullTextMapperV2Nop();
-        DeleteHandlerDelegate deleteDelegate = new DeleteHandlerDelegate(graph, typeRegistry, null, null);
+        DeleteHandlerDelegate deleteDelegate = new DeleteHandlerDelegate(graph, typeRegistry, null, null, tagDAO);
         RestoreHandlerV1 restoreHandlerV1 = new RestoreHandlerV1(graph, typeRegistry, entityGraphRetriever);
 
         AtlasRelationshipStore relationshipStore = new AtlasRelationshipStoreV2(graph, typeRegistry, deleteDelegate, entityChangeNotifier, null);

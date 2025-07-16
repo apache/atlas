@@ -133,6 +133,7 @@ import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcess
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.OUTPUT_PORT_GUIDS_ATTR;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.*;
 import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask.PARAM_ENTITY_GUID;
+import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask.PARAM_SOURCE_VERTEX_ID;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
@@ -4414,7 +4415,7 @@ public class EntityGraphMapper {
 
                 Map<String, Object> taskParams  = new HashMap<>() {{
                     put(PARAM_ENTITY_GUID, entityGuid);
-                    put("sourceVertexId", entityVertex.getIdForDisplay());
+                    put(PARAM_SOURCE_VERTEX_ID, entityVertex.getIdForDisplay());
                     put(TASK_CLASSIFICATION_TYPENAME, currentClassification.getTypeName());
                     put("newMode", true);
                 }};
@@ -4958,8 +4959,9 @@ public class EntityGraphMapper {
                 String  currentUser = RequestContext.getCurrentUser();
                 String  entityGuid  = GraphHelper.getGuid(entityVertex);
 
-                Map<String, Object> taskParams  = new HashMap<String, Object>() {{
+                Map<String, Object> taskParams  = new HashMap<>() {{
                     put(PARAM_ENTITY_GUID, entityGuid);
+                    put(PARAM_SOURCE_VERTEX_ID, entityVertex.getIdForDisplay());
                 }};
 
                 taskManagement.createTaskV2(propagationType, currentUser, taskParams, classification.getTypeName(), entityGuid);
@@ -5121,7 +5123,7 @@ public class EntityGraphMapper {
         }
     }
 
-    public void deleteClassificationPropagationV2(String sourceEntityGuid, String parentEntityGuid, String tagTypeName) throws AtlasBaseException {
+    public void deleteClassificationPropagationV2(String sourceEntityGuid, String sourceVertexId, String parentEntityGuid, String tagTypeName) throws AtlasBaseException {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("deleteClassificationPropagationNew");
         try {
             if (StringUtils.isEmpty(tagTypeName)) {
@@ -5129,34 +5131,29 @@ public class EntityGraphMapper {
                 return;
             }
 
-            AtlasVertex entityVertex = graphHelper.getVertexForGUID(sourceEntityGuid);
-            if (entityVertex == null) {
-                LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): entity vertex not found", sourceEntityGuid, tagTypeName);
-                throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, tagTypeName=%s): entity vertex not found", sourceEntityGuid, tagTypeName));
+            String vertexIdForPropagations = sourceVertexId;
+
+            if(StringUtils.isNotEmpty(parentEntityGuid)) {
+                AtlasVertex parentVertex = graphHelper.getVertexForGUID(parentEntityGuid);
+                if (parentVertex != null) {
+                    // If a parent is involved and still exists, use its ID.
+                    vertexIdForPropagations = parentVertex.getIdForDisplay();
+                }
             }
 
             int totalDeleted = 0;
             PaginatedTagResult pageToDelete;
-            // Get tags in batches and delete them
-            // The DAO now returns a PaginatedTagResult which contains the batch and paging information
 
-            if(StringUtils.isNotEmpty(parentEntityGuid) && !parentEntityGuid.equals(sourceEntityGuid)) {
-                entityVertex = graphHelper.getVertexForGUID(parentEntityGuid);
-                if (entityVertex == null) {
-                    LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): entity vertex not found", parentEntityGuid, tagTypeName);
-                    throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, tagTypeName=%s): entity vertex not found", parentEntityGuid, tagTypeName));
-                }
-            }
-            pageToDelete = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
+            pageToDelete = tagDAO.getPropagationsForAttachmentBatch(vertexIdForPropagations, tagTypeName);
 
             List<Tag> batchToDelete = pageToDelete.getTags();
             AtlasClassification originalClassification;
 
-            AtlasClassification deletedClassification = tagDAO.findDirectDeletedTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
+            AtlasClassification deletedClassification = tagDAO.findDirectDeletedTagByVertexIdAndTagTypeName(vertexIdForPropagations, tagTypeName);
             if (deletedClassification != null)
                 originalClassification = deletedClassification;
             else
-                originalClassification = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertex.getIdForDisplay(), tagTypeName);
+                originalClassification = tagDAO.findDirectTagByVertexIdAndTagTypeName(vertexIdForPropagations, tagTypeName);
 
             if (originalClassification == null) {
                 LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): classification vertex not found", sourceEntityGuid, tagTypeName);
@@ -5190,7 +5187,7 @@ public class EntityGraphMapper {
                 if (pageToDelete.isDone()) {
                     break;
                 }
-                pageToDelete = tagDAO.getPropagationsForAttachmentBatch(entityVertex.getIdForDisplay(), tagTypeName);
+                pageToDelete = tagDAO.getPropagationsForAttachmentBatch(vertexIdForPropagations, tagTypeName);
                 batchToDelete = pageToDelete.getTags();
             }
 
@@ -6301,24 +6298,28 @@ public class EntityGraphMapper {
         return null;
     }
 
-    public void classificationRefreshPropagationV2(Map<String, Object> parameters,String parentEntityGuid, String sourceEntityGuId, String classificationTypeName) throws AtlasBaseException {
+    public void classificationRefreshPropagationV2(Map<String, Object> parameters,String parentEntityGuid, String sourceEntityGuid, String classificationTypeName) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder classificationRefreshPropagationMetricRecorder = RequestContext.get().startMetricRecord("classificationRefreshPropagationV2");
 
-        AtlasVertex         entityVertex              = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityGuId);
+        AtlasVertex         entityVertex              = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityGuid);
         String entityVertexId = entityVertex.getIdForDisplay();
         String propagationMode;
         AtlasClassification tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertexId, classificationTypeName);
         if(tag == null) {
             // We are assigning entityVertex as parentEntityVertex because parentEntityVertex is the one we will be doing traversal calcs etc.
             // By this conditional check, we know entityvertex is a child/subgraph and we have no use for child vertex in calc.
-            if(StringUtils.isNotEmpty(parentEntityGuid) && !parentEntityGuid.equals(sourceEntityGuId)) {
+            if(StringUtils.isNotEmpty(parentEntityGuid) && !parentEntityGuid.equals(sourceEntityGuid)) {
                 entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, parentEntityGuid);
                 entityVertexId = entityVertex.getIdForDisplay();
                 tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertexId, classificationTypeName);
+                if (tag == null) {
+                    LOG.warn("Classification with typeName {} not found for entity {} and parentEntity {}", classificationTypeName, sourceEntityGuid, entityVertexId);
+                    throw new AtlasBaseException(String.format("Classification with typeName %s not found for entity %s and parentEntity %s", classificationTypeName, sourceEntityGuid, parentEntityGuid));
+                }
             }
             if (tag == null) {
-                LOG.warn("Classification with typeName {} not found for entity {} and parentEntity {}", classificationTypeName, sourceEntityGuId, entityVertexId);
-                throw new AtlasBaseException(String.format("Classification with typeName {} not found for entity {} and parentEntity {}", classificationTypeName, sourceEntityGuId, entityVertexId));
+                LOG.warn("Classification with typeName {} not found for entity {} and parentEntity {}", classificationTypeName, sourceEntityGuid, parentEntityGuid);
+                throw new AtlasBaseException(String.format("Classification with typeName %s not found for entity %s and parentEntity %s", classificationTypeName, sourceEntityGuid, parentEntityGuid));
             }
         }
         Boolean restrictPropagationThroughLineage = tag.getRestrictPropagationThroughLineage();
@@ -6364,11 +6365,11 @@ public class EntityGraphMapper {
             ESConnector.writeTagProperties(deNormMap);
         }
         if (CollectionUtils.isEmpty(verticesToAddClassification)) {
-            LOG.debug("propagateClassification(entityGuid={}, classificationTypeName={}): found no entities to propagate the classification", sourceEntityGuId, classificationTypeName);
+            LOG.debug("propagateClassification(entityGuid={}, classificationTypeName={}): found no entities to propagate the classification", sourceEntityGuid, classificationTypeName);
             return;
         }
         processClassificationPropagationAdditionV2(parameters, entityVertex.getIdForDisplay(), verticesToAddClassification, tag);
-        LOG.info("Completed refreshing propagation for classification typeName {} and source entity {}",classificationTypeName, sourceEntityGuId);
+        LOG.info("Completed refreshing propagation for classification typeName {} and source entity {}",classificationTypeName, sourceEntityGuid);
 
         RequestContext.get().endMetricRecord(classificationRefreshPropagationMetricRecorder);
     }

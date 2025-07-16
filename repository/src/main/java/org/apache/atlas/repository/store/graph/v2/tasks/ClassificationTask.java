@@ -45,6 +45,7 @@ public abstract class ClassificationTask extends AbstractTask {
     private static final Logger LOG = LoggerFactory.getLogger(ClassificationTask.class);
 
     public static final String PARAM_ENTITY_GUID              = "entityGuid";
+    public static final String PARAM_SOURCE_VERTEX_ID         = "sourceVertexId";
     public static final String PARAM_TO_ENTITY_GUID           = "toEntityGuid";
     public static final String PARAM_DELETED_EDGE_IDS         = "deletedEdgeIds"; // TODO: Will be deprecated
     public static final String PARAM_DELETED_EDGE_ID          = "deletedEdgeId";
