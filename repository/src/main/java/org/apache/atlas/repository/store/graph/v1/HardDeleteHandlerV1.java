@@ -39,8 +39,8 @@ import javax.inject.Inject;
 public class HardDeleteHandlerV1 extends DeleteHandlerV1 {
 
     @Inject
-    public HardDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement, EntityGraphRetriever entityRetriever, TagDAO tagDAO) {
-        super(graph, typeRegistry, true, false, taskManagement, entityRetriever, tagDAO);
+    public HardDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement, EntityGraphRetriever entityRetriever) {
+        super(graph, typeRegistry, true, false, taskManagement, entityRetriever);
     }
 
     @Override

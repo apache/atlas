@@ -48,8 +48,8 @@ import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClass
 public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
     @Inject
-    public SoftDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement, EntityGraphRetriever entityRetriever, TagDAO tagDAO) {
-        super(graph, typeRegistry, false, true, taskManagement, entityRetriever, tagDAO);
+    public SoftDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement, EntityGraphRetriever entityRetriever) {
+        super(graph, typeRegistry, false, true, taskManagement, entityRetriever);
     }
 
     @Override

@@ -44,15 +44,13 @@ public class DeleteHandlerDelegate {
     private final AtlasGraph graph;
     private final TaskManagement      taskManagement;
     private final EntityGraphRetriever entityRetriever;
-    private final TagDAO tagDAO;
 
     @Inject
-    public DeleteHandlerDelegate(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement, EntityGraphRetriever entityRetriever, TagDAO tagDAO) {
+    public DeleteHandlerDelegate(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement, EntityGraphRetriever entityRetriever) {
         this.graph = graph;
         this.taskManagement    = taskManagement;
-        this.tagDAO = tagDAO;
-        this.softDeleteHandler = new SoftDeleteHandlerV1(graph, typeRegistry, taskManagement, entityRetriever, tagDAO);
-        this.hardDeleteHandler = new HardDeleteHandlerV1(graph, typeRegistry, taskManagement, entityRetriever, tagDAO);
+        this.softDeleteHandler = new SoftDeleteHandlerV1(graph, typeRegistry, taskManagement, entityRetriever);
+        this.hardDeleteHandler = new HardDeleteHandlerV1(graph, typeRegistry, taskManagement, entityRetriever);
         this.entityRetriever   = entityRetriever;
         this.defaultHandler    = getDefaultConfiguredHandler(typeRegistry);
     }

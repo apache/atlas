@@ -48,6 +48,7 @@ import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationTask;
 import org.apache.atlas.repository.store.graph.v2.tasks.TaskUtil;
 import org.apache.atlas.service.FeatureFlagStore;
@@ -114,7 +115,7 @@ public abstract class DeleteHandlerV1 {
     private static final List<String> taskTypesToSkip = Arrays.asList(CLASSIFICATION_REFRESH_PROPAGATION, CLASSIFICATION_PROPAGATION_DELETE);
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete,
-                           TaskManagement taskManagement, EntityGraphRetriever entityRetriever, TagDAO tagDAO) {
+                           TaskManagement taskManagement, EntityGraphRetriever entityRetriever) {
         this.typeRegistry                  = typeRegistry;
         this.graphHelper                   = new GraphHelper(graph);
         this.entityRetriever               = entityRetriever;
@@ -122,7 +123,7 @@ public abstract class DeleteHandlerV1 {
         this.softDelete                    = softDelete;
         this.taskManagement                = taskManagement;
         this.graph                         = graph;
-        this.tagDAO                        = tagDAO;
+        this.tagDAO                        = TagDAOCassandraImpl.getInstance();
         this.taskUtil                      = new TaskUtil(graph);
         janusOptimisationEnabled           = null;
     }
