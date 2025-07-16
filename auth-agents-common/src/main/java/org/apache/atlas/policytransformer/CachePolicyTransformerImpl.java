@@ -157,7 +157,11 @@ public class CachePolicyTransformerImpl {
 
         this.services = new HashMap<>();
 
-        setTagDAO();
+        if (this.tagDAO == null) {
+            setTagDAO();
+        } else {
+            this.tagDAO = tagDAO;
+        }
     }
 
     private void setTagDAO() throws AtlasBaseException {
