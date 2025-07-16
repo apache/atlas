@@ -25,6 +25,9 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.IndexException;
+import org.apache.atlas.repository.graphdb.AtlasCardinality;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.typesystem.types.DataTypes.TypeCategory;
@@ -36,6 +39,8 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
+import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.encodePropertyKey;
 
 /**
  * EnumDef store in v2 format.
@@ -239,14 +244,11 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
             throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, enumDef.getName(), "values");
         }
 
+        createPropertyKeys(enumDef);
+
         List<String> values = new ArrayList<>(enumDef.getElementDefs().size());
 
         for (AtlasEnumElementDef element : enumDef.getElementDefs()) {
-            // Validate the enum element
-            if (StringUtils.isEmpty(element.getValue()) || null == element.getOrdinal()) {
-                throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, enumDef.getName(), "elementValue");
-            }
-
             String elemKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef, element.getValue());
 
             AtlasGraphUtilsV2.setProperty(vertex, elemKey, element.getOrdinal());
@@ -259,10 +261,9 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
             values.add(element.getValue());
         }
-        AtlasGraphUtilsV2.setProperty(vertex, AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef), values);
 
-        String defaultValueKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef, "defaultValue");
-        AtlasGraphUtilsV2.setProperty(vertex, defaultValueKey, enumDef.getDefaultValue());
+        AtlasGraphUtilsV2.setProperty(vertex, AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef), values);
+        AtlasGraphUtilsV2.setProperty(vertex, AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef, "defaultValue"), enumDef.getDefaultValue());
     }
 
     private AtlasEnumDef toEnumDef(AtlasVertex vertex) {
@@ -281,7 +282,13 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
         typeDefStore.vertexToTypeDef(vertex, ret);
 
         List<AtlasEnumElementDef> elements   = new ArrayList<>();
-        List<String>              elemValues = vertex.getProperty(AtlasGraphUtilsV2.getTypeDefPropertyKey(ret), List.class);
+        Object                    names      = vertex.getProperty(AtlasGraphUtilsV2.getTypeDefPropertyKey(ret), Object.class);
+        List<String>              elemValues = names instanceof List ? (List<String>) names : new ArrayList<>();
+
+        if (names == null) {
+            LOG.warn("failed to load element names for enum {}", ret.getName());
+        }
+
         for (String elemValue : elemValues) {
             String elemKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(ret, elemValue);
             String descKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(elemKey, "description");
@@ -298,5 +305,35 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
         ret.setDefaultValue(defaultValue);
 
         return ret;
+    }
+
+    private void createPropertyKeys(AtlasEnumDef enumDef) throws AtlasBaseException {
+        AtlasGraphManagement management = typeDefStore.atlasGraph.getManagementSystem();
+
+        // create property keys first
+        for (AtlasEnumElementDef element : enumDef.getElementDefs()) {
+            // Validate the enum element
+            if (StringUtils.isEmpty(element.getValue()) || null == element.getOrdinal()) {
+                throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, enumDef.getName(), "elementValue");
+            }
+
+            String elemKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef, element.getValue());
+
+            createPropertyKey(encodePropertyKey(elemKey), Integer.class, AtlasCardinality.SINGLE, management);
+        }
+
+        String typeDefKey      = AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef);
+        String defaultValueKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef, "defaultValue");
+
+        createPropertyKey(encodePropertyKey(typeDefKey), Object.class, AtlasCardinality.SINGLE, management);
+        createPropertyKey(encodePropertyKey(defaultValueKey), String.class, AtlasCardinality.SINGLE, management);
+
+        try {
+            management.commit();
+        } catch (Exception e) {
+            LOG.error("PropertyKey creation failed", e);
+
+            throw new AtlasBaseException(new IndexException("Index commit failed", e));
+        }
     }
 }
