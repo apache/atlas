@@ -28,6 +28,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.service.Service;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,12 +133,13 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         long ret = 0L;
 
         try {
-            String           time       = config.getString(SOLR_INDEX_RECOVERY_CONFIGURED_START_TIME);
-            SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
+            String time = config.getString(SOLR_INDEX_RECOVERY_CONFIGURED_START_TIME);
+            if (StringUtils.isNotBlank(time)) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
+                dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-            dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-            ret = dateFormat.parse(time).toInstant().toEpochMilli();
+                ret = dateFormat.parse(time).toInstant().toEpochMilli();
+            }
         } catch (Exception e) {
             LOG.error("Error fetching: {}", SOLR_INDEX_RECOVERY_CONFIGURED_START_TIME, e);
         }
