@@ -53,12 +53,12 @@ public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
     @Override
     public void putEventsV1(List<EntityAuditEvent> events) throws AtlasException {
-        // TODO: is V1 supported needed anymore?
+        // TODO: is V1 support needed anymore?
     }
 
     @Override
     public List<EntityAuditEvent> listEventsV1(String entityId, String startKey, short n) throws AtlasException {
-        // TODO: is V1 supported needed anymore?
+        // TODO: is V1 support needed anymore?
         return Collections.emptyList();
     }
 

@@ -231,7 +231,7 @@ public class AtlasGraphUtilsV2 {
             LOG.debug("==> setProperty({}, {}, {})", toString(element), propertyName, value);
         }
 
-        AtlasUniqueKeyHandler uniqueKeyHandler = getGraphInstance().getUniqueKeyHandler();;
+        AtlasUniqueKeyHandler uniqueKeyHandler = getGraphInstance().getUniqueKeyHandler();
 
         if (!isEncoded) {
             propertyName = encodePropertyKey(propertyName);
