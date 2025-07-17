@@ -185,24 +185,25 @@ public abstract class DeleteHandlerV1 {
                 deleteAllClassificationsV2(deletionCandidateVertex);
             } else {
                 deleteAllClassifications(deletionCandidateVertex);
-            }
 
-            deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
+                deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 
-            // We need this to trigger refresh propagation task for the propagated tags on the asset which is being deleted
-            if (DEFERRED_ACTION_ENABLED) {
-                Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
-                for (String deletedEdgeId : deletedEdgeIds) {
-                    AtlasEdge edge = graph.getEdge(deletedEdgeId);
-                    if (edge != null) {
-                        createAndQueueClassificationRefreshPropagationTask(edge);
-                    } else {
-                        LOG.info(
-                                "Could not find edge with id={} while scheduling classification refresh task",
-                                deletedEdgeId);
+                // We need this to trigger refresh propagation task for the propagated tags on the asset which is being deleted
+                if (DEFERRED_ACTION_ENABLED) {
+                    Set<String> deletedEdgeIds = RequestContext.get().getDeletedEdgesIds();
+                    for (String deletedEdgeId : deletedEdgeIds) {
+                        AtlasEdge edge = graph.getEdge(deletedEdgeId);
+                        if (edge != null) {
+                            createAndQueueClassificationRefreshPropagationTask(edge);
+                        } else {
+                            LOG.info(
+                                    "Could not find edge with id={} while scheduling classification refresh task",
+                                    deletedEdgeId);
+                        }
                     }
                 }
             }
+
         }
         LOG.info("deleteEntities completed. Total vertices processed: {}", deletionCandidateVertices.size());
     }
@@ -1204,10 +1205,32 @@ public abstract class DeleteHandlerV1 {
 
     private void deleteAllClassificationsV2(AtlasVertex deletionCandidateVertex) throws AtlasBaseException {
         // Create Delete propagation task only for direct tags, propagated tags will be handled in refresh task created later in the same flow
-        List<Tag> tags = tagDAO.getAllDirectTagsForVertex(deletionCandidateVertex.getIdForDisplay());
+        List<Tag> tags = tagDAO.getAllTagsByVertexId(deletionCandidateVertex.getIdForDisplay());
         try {
-            tagDAO.deleteTags(tags);
-            tags.forEach(t -> createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_DELETE, deletionCandidateVertex, null, t.getTagTypeName()));
+            tags.stream()
+                    .filter(t -> !t.isPropagated())
+                    .filter(Tag::getRemovePropagationsOnEntityDelete)
+                    .forEach(t -> createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_DELETE, deletionCandidateVertex, null, t.getTagTypeName()));
+
+            if (RequestContext.get().getDeleteType() == DeleteType.HARD || RequestContext.get().getDeleteType() == DeleteType.PURGE)
+                tagDAO.deleteTags(tags);
+
+            deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
+
+            tags.stream()
+                    .filter(Tag::isPropagated)
+                    .map(t -> TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson()))
+                    .forEach(t -> taskManagement.createTaskV2(CLASSIFICATION_REFRESH_PROPAGATION,
+                            RequestContext.getCurrentUser(),
+                            new HashMap<>() {{
+                                put(PARAM_ENTITY_GUID, t.getEntityGuid());
+                                put(PARAM_CLASSIFICATION_NAME, t.getTypeName());
+                            }},
+                            t.getTypeName(),
+                            t.getEntityGuid()
+                        )
+                    );
+
         } catch (AtlasBaseException e) {
             LOG.error("Error while deleting tags for vertex: {}", deletionCandidateVertex.getIdForDisplay());
             throw e;
