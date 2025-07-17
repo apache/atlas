@@ -112,7 +112,7 @@ public class Tag {
         if (tagMetaJson != null && tagMetaJson.containsKey("restrictPropagationThroughLineage")) {
             return (boolean) tagMetaJson.get("restrictPropagationThroughLineage");
         } else {
-            return false; //TODO check default value
+            return false;
         }
     }
 
@@ -120,7 +120,7 @@ public class Tag {
         if (tagMetaJson != null && tagMetaJson.containsKey("restrictPropagationThroughHierarchy")) {
             return (boolean) tagMetaJson.get("restrictPropagationThroughHierarchy");
         } else {
-            return false; //TODO check default value
+            return false;
         }
     }
 
@@ -128,7 +128,15 @@ public class Tag {
         if (tagMetaJson != null && tagMetaJson.containsKey("propagate")) {
             return (boolean) tagMetaJson.get("propagate");
         } else {
-            return false; //TODO check default value
+            return true;
+        }
+    }
+
+    public boolean getRemovePropagationsOnEntityDelete() {
+        if (tagMetaJson != null && tagMetaJson.containsKey("removePropagationsOnEntityDelete")) {
+            return (boolean) tagMetaJson.get("removePropagationsOnEntityDelete");
+        } else {
+            return true;
         }
     }
 
