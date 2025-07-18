@@ -446,7 +446,6 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
         return uniqueKeyHandler;
     }
 
-
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> wrapVertices(Iterable<? extends Vertex> it) {
         return Iterables.transform(it, (Function<Vertex, AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>>) input -> GraphDbObjectFactory.createVertex(AtlasJanusGraph.this, input));
     }
