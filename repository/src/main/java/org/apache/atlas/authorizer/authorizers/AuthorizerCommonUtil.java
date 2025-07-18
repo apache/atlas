@@ -143,4 +143,10 @@ public class AuthorizerCommonUtil {
         }
         return true;
     }
+
+    public static String tagKeyValueRepr(String tag, String key, String value) {
+        key = key == null ? "" : key;
+        value = value == null ? "" : value;
+        return tag + "." + key + "=" + value;
+    }
 }

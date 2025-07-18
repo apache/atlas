@@ -146,12 +146,12 @@ public class EntityAuthorizer {
         }
 
         List<String> entityAttributeValues = getAttributeValue(entity, attributeName, vertex);
-        if (entityAttributeValues.isEmpty()) {
-            entityAttributeValues = handleSpecialAttributes(entity, attributeName);
-        }
+        entityAttributeValues = handleSpecialAttributes(entity, attributeName);
+//        if (entityAttributeValues.isEmpty()) {
+//        }
 
         JsonNode attributeValueNode = crit.get("attributeValue");
-        String attributeValue = attributeValueNode.asText();
+        String attributeValue = getRequiredAttributeValue(crit);
         String operator = crit.get("operator").asText();
 
         // incase attributeValue is an array
@@ -216,6 +216,7 @@ public class EntityAuthorizer {
                     for (AtlasClassification tag : tags) {
                         if (StringUtils.isEmpty(tag.getEntityGuid()) || tag.getEntityGuid().equals(entity.getGuid())) {
                             entityAttributeValues.add(tag.getTypeName());
+                            entityAttributeValues.addAll(extractTagAttachmentValues(tag));
                         }
                     }
                 }
@@ -227,6 +228,7 @@ public class EntityAuthorizer {
                     for (AtlasClassification tag : tags) {
                         if (StringUtils.isNotEmpty(tag.getEntityGuid()) && !tag.getEntityGuid().equals(entity.getGuid())) {
                             entityAttributeValues.add(tag.getTypeName());
+                            entityAttributeValues.addAll(extractTagAttachmentValues(tag));
                         }
                     }
                 }
@@ -243,6 +245,39 @@ public class EntityAuthorizer {
         }
 
         return entityAttributeValues;
+    }
+
+    private static List<String> extractTagAttachmentValues(AtlasClassification tag) {
+        List<String> tagAttachmentValues = new ArrayList<>();
+        if (tag.getAttributes() != null) {
+            String tagTypeName = tag.getTypeName();
+            for (String key : tag.getAttributes().keySet()) {
+                Object value = tag.getAttribute(key);
+                if (value instanceof Collection) {
+                    Collection<?> collection = (Collection<?>) value;
+                    for (Object item : collection) {
+                        tagAttachmentValues.add(AuthorizerCommonUtil.tagKeyValueRepr(tagTypeName, key, String.valueOf(item)));
+                    }
+                } else {
+                    tagAttachmentValues.add(AuthorizerCommonUtil.tagKeyValueRepr(tagTypeName, key, String.valueOf(value)));
+                }
+            }
+        }
+        return tagAttachmentValues;
+    }
+
+    private static String getRequiredAttributeValue(JsonNode crit) {
+        String attributeValue = crit.get("attributeValue").asText();
+        String attributeName = crit.get("attributeName").asText();
+        String attributeMetaKey = crit.get("attributeMetaKey") != null ? crit.get("attributeMetaKey").asText() : null;
+        String attributeMetaValue = crit.get("attributeMetaValue") != null ? crit.get("attributeMetaValue").asText() : null;
+
+        if (attributeName.equals("__traitNames") || attributeName.equals("__propagatedTraitNames")) {
+            if (attributeMetaKey != null || attributeMetaValue != null) {
+                return AuthorizerCommonUtil.tagKeyValueRepr(attributeValue, attributeMetaKey, attributeMetaValue);
+            }
+        }
+        return attributeValue;
     }
 
     private static List<String> getAttributeValue(AtlasEntityHeader entity, String attributeName, AtlasVertex vertex) {
