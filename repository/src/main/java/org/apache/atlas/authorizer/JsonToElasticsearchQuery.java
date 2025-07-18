@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
 
+import static org.apache.atlas.authorizer.authorizers.AuthorizerCommonUtil.isTagKeyValueFormat;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_AND;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_OR;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_EQUALS;
@@ -109,7 +110,7 @@ public class JsonToElasticsearchQuery {
                 break;
 
             case POLICY_FILTER_CRITERIA_NOT_EQUALS:
-                if (attributeValueNode.isArray()) {
+                if (attributeValueNode.isArray()) { // same as not_in operator
                     queryNode.putObject("bool").putObject("must_not").putObject("terms").set(attributeName, attributeValueNode);
                 } else {
                     queryNode.putObject("bool").putObject("must_not").putObject("term").put(attributeName, attributeValue);
@@ -151,13 +152,6 @@ public class JsonToElasticsearchQuery {
         }
 
         return mapper.createObjectNode().putObject("term").put(attributeName, attributeValueNode.asText());
-    }
-
-    public static boolean isTagKeyValueFormat(JsonNode attributeValueNode) {
-        JsonNode firstElement = attributeValueNode.isArray() && !attributeValueNode.isEmpty()
-            ? attributeValueNode.get(0) 
-            : attributeValueNode;
-        return firstElement.has("tag") && firstElement.has("key") && firstElement.has("value");
     }
 
     public static JsonNode createQueryWithOperatorForTag(String operator, String attributeName, JsonNode attributeValueNode) {

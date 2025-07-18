@@ -146,18 +146,18 @@ public class EntityAuthorizer {
         }
 
         List<String> entityAttributeValues = getAttributeValue(entity, attributeName, vertex);
-        entityAttributeValues = handleSpecialAttributes(entity, attributeName);
-//        if (entityAttributeValues.isEmpty()) {
-//        }
+        entityAttributeValues.addAll(handleSpecialAttributes(entity, attributeName));
 
         JsonNode attributeValueNode = crit.get("attributeValue");
-        String attributeValue = getRequiredAttributeValue(crit);
+        String attributeValue = attributeValueNode.asText();
         String operator = crit.get("operator").asText();
 
-        // incase attributeValue is an array
         List<String> attributeValues = new ArrayList<>();
         if (attributeValueNode.isArray()) {
-            attributeValueNode.elements().forEachRemaining(node -> attributeValues.add(node.asText()));
+            String finalAttributeName = attributeName;
+            attributeValueNode.elements().forEachRemaining(node -> attributeValues.add(getRequiredAttributeValue(finalAttributeName, node)));
+        } else {
+            attributeValue = getRequiredAttributeValue(attributeName, attributeValueNode);
         }
 
         switch (operator) {
@@ -266,18 +266,15 @@ public class EntityAuthorizer {
         return tagAttachmentValues;
     }
 
-    private static String getRequiredAttributeValue(JsonNode crit) {
-        String attributeValue = crit.get("attributeValue").asText();
-        String attributeName = crit.get("attributeName").asText();
-        String attributeMetaKey = crit.get("attributeMetaKey") != null ? crit.get("attributeMetaKey").asText() : null;
-        String attributeMetaValue = crit.get("attributeMetaValue") != null ? crit.get("attributeMetaValue").asText() : null;
-
+    private static String getRequiredAttributeValue(String attributeName, JsonNode valueNode) {
+        // handle attribute specific value format
         if (attributeName.equals("__traitNames") || attributeName.equals("__propagatedTraitNames")) {
-            if (attributeMetaKey != null || attributeMetaValue != null) {
-                return AuthorizerCommonUtil.tagKeyValueRepr(attributeValue, attributeMetaKey, attributeMetaValue);
+            if (AuthorizerCommonUtil.isTagKeyValueFormat(valueNode)) {
+                return AuthorizerCommonUtil.tagKeyValueRepr(valueNode.get("tag").asText(), valueNode.get("key").asText(), valueNode.get("value").asText());
             }
         }
-        return attributeValue;
+
+        return valueNode.asText();
     }
 
     private static List<String> getAttributeValue(AtlasEntityHeader entity, String attributeName, AtlasVertex vertex) {

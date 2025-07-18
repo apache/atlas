@@ -1,5 +1,6 @@
 package org.apache.atlas.authorizer.authorizers;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -148,5 +149,12 @@ public class AuthorizerCommonUtil {
         key = key == null ? "" : key;
         value = value == null ? "" : value;
         return tag + "." + key + "=" + value;
+    }
+
+    public static boolean isTagKeyValueFormat(JsonNode attributeValueNode) {
+        JsonNode firstElement = attributeValueNode.isArray() && !attributeValueNode.isEmpty()
+            ? attributeValueNode.get(0) 
+            : attributeValueNode;
+        return firstElement.has("tag") && firstElement.has("key") && firstElement.has("value");
     }
 }
