@@ -31,6 +31,7 @@ on:
       - poctagprophashedrebased
       - staging
       - tagscanary
+      - nbtagscanary
 
 jobs:
   build:

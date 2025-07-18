@@ -39,6 +39,7 @@ import org.apache.atlas.utils.AtlasMetricType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -637,6 +638,11 @@ public class TaskRegistry {
         String entityGuid = v.getProperty(Constants.TASK_ENTITY_GUID, String.class);
         if(entityGuid != null) {
             ret.setEntityGuid(entityGuid);
+        }
+
+        String parentEntityGuid = v.getProperty(Constants.TASK_PARENT_ENTITY_GUID, String.class);
+        if(StringUtils.isNotEmpty(parentEntityGuid)) {
+            ret.setParentEntityGuid(parentEntityGuid);
         }
 
         Integer attemptCount = v.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
