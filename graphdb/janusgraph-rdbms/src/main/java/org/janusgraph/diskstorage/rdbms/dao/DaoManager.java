@@ -18,6 +18,8 @@
  */
 package org.janusgraph.diskstorage.rdbms.dao;
 
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
 import org.eclipse.persistence.config.PersistenceUnitProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -27,20 +29,29 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.spi.PersistenceProvider;
 import javax.persistence.spi.PersistenceProviderResolver;
 import javax.persistence.spi.PersistenceProviderResolverHolder;
+import javax.sql.DataSource;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * DAO manager that initializes JPA layer
  *
  * Sample properties to initialize JPA
  *   storage.backend=rdbms
+ *   storage.rdbms.jpa.dataSource.driverClassName=org.postgresql.Driver
+ *   storage.rdbms.jpa.dataSource.jdbcUrl=jdbc:postgresql://dbhost/dbname
+ *   storage.rdbms.jpa.dataSource.username=janus
+ *   storage.rdbms.jpa.dataSource.password=janusR0cks!
+ *   storage.rdbms.jpa.dataSource.maximumPoolSize=40
+ *   storage.rdbms.jpa.dataSource.minimumPoolSize=5
+ *   storage.rdbms.jpa.dataSource.minimumIdle=janusR0cks!
+ *   storage.rdbms.jpa.dataSource.idleTimeout=300000
+ *   storage.rdbms.jpa.dataSource.connectionTestQuery=select 1
+ *   storage.rdbms.jpa.dataSource.maxLifetime=1800000
+ *   storage.rdbms.jpa.dataSource.connectionTimeout=30000
  *   storage.rdbms.jpa.javax.persistence.jdbc.dialect=org.eclipse.persistence.platform.database.PostgreSQLPlatform
- *   storage.rdbms.jpa.javax.persistence.jdbc.driver=org.postgresql.Driver
- *   storage.rdbms.jpa.javax.persistence.jdbc.url=jdbc:postgresql://dbhost/dbname
- *   storage.rdbms.jpa.javax.persistence.jdbc.user=janus
- *   storage.rdbms.jpa.javax.persistence.jdbc.password=janusR0cks!
  *   storage.rdbms.jpa.javax.persistence.schema-generation.database.action=create
  *   storage.rdbms.jpa.javax.persistence.schema-generation.create-database-schemas=true
  *   storage.rdbms.jpa.javax.persistence.schema-generation.create-source=metadata
@@ -56,7 +67,8 @@ public class DaoManager {
      * @param jpaConfig
      */
     public DaoManager(Map<String, Object> jpaConfig) {
-        Map<String, String> config = new HashMap<>();
+        Map<String, Object> config       = new HashMap<>();
+        Properties          hikariConfig = new Properties();
 
         if (jpaConfig != null) {
             for (Map.Entry<String, Object> entry : jpaConfig.entrySet()) {
@@ -64,14 +76,19 @@ public class DaoManager {
                 Object value = entry.getValue();
 
                 if (value != null) {
-                    config.put(key, value.toString());
+                    if (key.startsWith("hikari.")) {
+                        hikariConfig.put(key.substring("hikari".length() + 1), value.toString());
+                    } else {
+                        config.put(key, value.toString());
+                    }
                 }
             }
         }
 
-        config.put(PersistenceUnitProperties.ECLIPSELINK_PERSISTENCE_XML, "META-INF/janus-persistence.xml");
+        DataSource dataSource = new HikariDataSource(new HikariConfig(hikariConfig));
 
-        LOG.debug("DaoManager: config={}", config);
+        config.put(PersistenceUnitProperties.ECLIPSELINK_PERSISTENCE_XML, "META-INF/janus-persistence.xml");
+        config.put(PersistenceUnitProperties.NON_JTA_DATASOURCE, dataSource);
 
         PersistenceProviderResolver resolver = PersistenceProviderResolverHolder.getPersistenceProviderResolver();
         EntityManagerFactory        emf      = null;

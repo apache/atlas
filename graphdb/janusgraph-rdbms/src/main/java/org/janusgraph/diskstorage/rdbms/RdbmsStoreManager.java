@@ -54,6 +54,8 @@ public class RdbmsStoreManager extends AbstractStoreManager implements KeyColumn
     public static final ConfigNamespace RDBMS_NS      = new ConfigNamespace(GraphDatabaseConfiguration.STORAGE_NS, NAME, "RDBMS configuration options");
     public static final ConfigNamespace JPA_CONFIG_NS = new ConfigNamespace(RDBMS_NS, "jpa", "JPA configurations", true);
 
+    private static RdbmsStoreManager sInstance;
+
     private final StandardStoreFeatures   features;
     private final Map<String, RdbmsStore> stores;
     private final DaoManager              daoManager;
@@ -73,7 +75,13 @@ public class RdbmsStoreManager extends AbstractStoreManager implements KeyColumn
         stores     = new HashMap<>();
         daoManager = new DaoManager(config.getSubset(JPA_CONFIG_NS));
 
+        sInstance = this;;
+
         LOG.info("RdbmsStoreManager()");
+    }
+
+    public static RdbmsStoreManager getInstance() {
+        return sInstance;
     }
 
     public DaoManager getDaoManager() {

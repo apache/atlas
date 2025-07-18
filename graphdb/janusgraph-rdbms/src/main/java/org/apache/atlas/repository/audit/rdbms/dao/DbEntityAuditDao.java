@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.repository.audit.rdbms.dao;
 
-import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.repository.audit.rdbms.entity.DbEntityAudit;
 
 import javax.persistence.EntityManager;
@@ -27,15 +26,15 @@ import java.util.Collections;
 import java.util.List;
 
 public class DbEntityAuditDao extends BaseDao<DbEntityAudit> {
-    protected DbEntityAuditDao(EntityManager em) {
+    public DbEntityAuditDao(EntityManager em) {
         super(em);
     }
 
-    public List<DbEntityAudit> getByEntityIdActionStartTimeStartIdx(String entityId, EntityAuditEventV2.EntityAuditActionV2 action, long eventTimeStart, int eventIdxStart, int maxResults) {
+    public List<DbEntityAudit> getByEntityIdActionStartTimeStartIdx(String entityId, int action, long eventTimeStart, int eventIdxStart, int maxResults) {
         try {
             return em.createNamedQuery("DbEntityAudit.getByEntityIdActionStartTimeStartIdx", DbEntityAudit.class)
                     .setParameter("entityId", entityId)
-                    .setParameter("action", action.ordinal())
+                    .setParameter("action", action)
                     .setParameter("eventTimeStart", eventTimeStart)
                     .setParameter("eventIdxStart", eventIdxStart)
                     .setMaxResults(maxResults)
@@ -47,7 +46,7 @@ public class DbEntityAuditDao extends BaseDao<DbEntityAudit> {
         return Collections.emptyList();
     }
 
-    public List<DbEntityAudit> getByEntityIdAction(String entityId, EntityAuditEventV2.EntityAuditActionV2 action, int startIdx, int maxResults) {
+    public List<DbEntityAudit> getByEntityIdAction(String entityId, Integer action, int startIdx, int maxResults) {
         try {
             if (action == null) {
                 return em.createNamedQuery("DbEntityAudit.getByEntityId", DbEntityAudit.class)
@@ -58,7 +57,7 @@ public class DbEntityAuditDao extends BaseDao<DbEntityAudit> {
             } else {
                 return em.createNamedQuery("DbEntityAudit.getByEntityIdAction", DbEntityAudit.class)
                         .setParameter("entityId", entityId)
-                        .setParameter("action", action.ordinal())
+                        .setParameter("action", action)
                         .setFirstResult(startIdx)
                         .setMaxResults(maxResults)
                         .getResultList();

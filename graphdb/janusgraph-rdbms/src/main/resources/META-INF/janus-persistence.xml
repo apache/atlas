@@ -19,6 +19,8 @@
     <persistence-unit name="janusPU">
         <mapping-file>META-INF/janus-jpa_named_queries.xml</mapping-file>
 
+        <class>org.apache.atlas.repository.audit.rdbms.entity.DbEntityAudit</class>
+
         <class>org.janusgraph.diskstorage.rdbms.entity.JanusStore</class>
         <class>org.janusgraph.diskstorage.rdbms.entity.JanusKey</class>
         <class>org.janusgraph.diskstorage.rdbms.entity.JanusColumn</class>

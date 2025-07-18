@@ -13,6 +13,26 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
+CREATE SEQUENCE IF NOT EXISTS atlas_entity_audit_seq CACHE 1000;
+
+CREATE TABLE IF NOT EXISTS atlas_entity_audit(
+    id         BIGINT      DEFAULT nextval('atlas_entity_audit_seq'::regclass),
+    entity_id  VARCHAR(64) NOT NULL,
+    event_time BIGINT      NOT NULL,
+    event_idx  INT         NOT NULL,
+    user_name  VARCHAR(64) NOT NULL,
+    operation  INT         NOT NULL,
+    details    TEXT        DEFAULT NULL,
+    entity     TEXT        DEFAULT NULL,
+    audit_type INT         NOT NULL,
+    PRIMARY KEY(id));
+
+CREATE INDEX IF NOT EXISTS atlas_entity_audit_idx_entity_id            ON atlas_entity_audit (entity_id);
+CREATE INDEX IF NOT EXISTS atlas_entity_audit_idx_event_time           ON atlas_entity_audit (event_time);
+CREATE INDEX IF NOT EXISTS atlas_entity_audit_idx_user_name            ON atlas_entity_audit (user_name);
+CREATE INDEX IF NOT EXISTS atlas_entity_audit_idx_entity_id_event_time ON atlas_entity_audit (entity_id, event_time);
+
+
 CREATE SEQUENCE IF NOT EXISTS janus_store_seq                  CACHE 1;
 CREATE SEQUENCE IF NOT EXISTS janus_key_seq                    CACHE 1000;
 CREATE SEQUENCE IF NOT EXISTS janus_column_seq                 CACHE 1000;

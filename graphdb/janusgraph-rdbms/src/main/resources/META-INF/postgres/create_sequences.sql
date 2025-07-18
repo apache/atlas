@@ -13,6 +13,8 @@
 -- See the License for the specific language governing permissions and
 -- limitations under the License.
 
+CREATE SEQUENCE IF NOT EXISTS atlas_entity_audit_seq CACHE 1000;
+
 CREATE SEQUENCE IF NOT EXISTS janus_store_seq             CACHE 1;
 CREATE SEQUENCE IF NOT EXISTS janus_key_seq               CACHE 1000;
 CREATE SEQUENCE IF NOT EXISTS janus_column_seq            CACHE 1000;

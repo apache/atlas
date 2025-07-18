@@ -24,14 +24,12 @@ import org.apache.atlas.annotation.ConditionalOnAtlasProperty;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.repository.audit.AbstractStorageBasedAuditRepository;
-import org.apache.atlas.repository.audit.rdbms.dao.DaoManager;
 import org.apache.atlas.repository.audit.rdbms.dao.DbEntityAuditDao;
 import org.apache.atlas.repository.audit.rdbms.entity.DbEntityAudit;
 import org.apache.commons.configuration.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
-import javax.annotation.PostConstruct;
 import javax.inject.Singleton;
 
 import java.util.Collections;
@@ -44,13 +42,6 @@ import java.util.stream.Collectors;
 @ConditionalOnAtlasProperty(property = "atlas.EntityAuditRepository.impl", isDefault = true)
 @Order(0)
 public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditRepository {
-    private DaoManager daoManager;
-
-    @PostConstruct
-    public void init() {
-        daoManager = new DaoManager(getConfiguration().subset("atlas.graph.storage.rdbms.jpa"));
-    }
-
     @Override
     public void putEventsV1(List<EntityAuditEvent> events) throws AtlasException {
         // TODO: is V1 support needed anymore?
@@ -64,8 +55,8 @@ public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
     @Override
     public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
-        try (RdbmsTransaction trx = new RdbmsTransaction(daoManager.getEntityManagerFactory())) {
-            DbEntityAuditDao dao = daoManager.getEntityAuditDao(trx.getEntityManager());
+        try (RdbmsTransaction trx = new RdbmsTransaction()) {
+            DbEntityAuditDao dao = new DbEntityAuditDao(trx.getEntityManager());
 
             for (int i = 0; i < events.size(); i++) {
                 EntityAuditEventV2 event   = events.get(i);
@@ -84,10 +75,10 @@ public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
     @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String startKey, short maxResultCount) throws AtlasBaseException {
-        try (RdbmsTransaction trx = new RdbmsTransaction(daoManager.getEntityManagerFactory())) {
-            DbEntityAuditDao dao = daoManager.getEntityAuditDao(trx.getEntityManager());
+        try (RdbmsTransaction trx = new RdbmsTransaction()) {
+            DbEntityAuditDao dao = new DbEntityAuditDao(trx.getEntityManager());
 
-            List<DbEntityAudit> dbEvents = dao.getByEntityIdActionStartTimeStartIdx(entityId, auditAction, getTimestampFromKey(startKey), getIndexFromKey(startKey), maxResultCount);
+            List<DbEntityAudit> dbEvents = dao.getByEntityIdActionStartTimeStartIdx(entityId, auditAction.ordinal(), getTimestampFromKey(startKey), getIndexFromKey(startKey), maxResultCount);
 
             return dbEvents.stream().map(RdbmsBasedAuditRepository::fromDbEntityAudit).collect(Collectors.toList());
         } catch (Exception excp) {
@@ -97,10 +88,10 @@ public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditReposito
 
     @Override
     public List<EntityAuditEventV2> listEventsV2(String entityId, EntityAuditEventV2.EntityAuditActionV2 auditAction, String sortByColumn, boolean sortOrderDesc, int offset, short limit) throws AtlasBaseException {
-        try (RdbmsTransaction trx = new RdbmsTransaction(daoManager.getEntityManagerFactory())) {
-            DbEntityAuditDao dao = daoManager.getEntityAuditDao(trx.getEntityManager());
+        try (RdbmsTransaction trx = new RdbmsTransaction()) {
+            DbEntityAuditDao dao = new DbEntityAuditDao(trx.getEntityManager());
 
-            List<DbEntityAudit> dbEvents = dao.getByEntityIdAction(entityId, auditAction, offset, limit);
+            List<DbEntityAudit> dbEvents = dao.getByEntityIdAction(entityId, auditAction == null ? null : auditAction.ordinal(), offset, limit);
 
             return dbEvents.stream().map(RdbmsBasedAuditRepository::fromDbEntityAudit).collect(Collectors.toList());
         } catch (Exception excp) {

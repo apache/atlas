@@ -17,16 +17,17 @@
  */
 package org.apache.atlas.repository.audit.rdbms;
 
+import org.janusgraph.diskstorage.rdbms.RdbmsStoreManager;
+
 import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 
 public class RdbmsTransaction implements AutoCloseable {
     private final EntityManager     em;
     private final EntityTransaction trx;
 
-    public RdbmsTransaction(EntityManagerFactory emf) {
-        this.em  = emf.createEntityManager();
+    public RdbmsTransaction() {
+        this.em  = RdbmsStoreManager.getInstance().getDaoManager().createEntityManager();
         this.trx = em.getTransaction();
 
         this.trx.begin();

@@ -55,11 +55,17 @@ then
     cat <<EOF >> /opt/atlas/conf/atlas-application.properties
 
 atlas.graph.storage.backend=rdbms
+atlas.graph.storage.rdbms.jpa.hikari.driverClassName=org.postgresql.Driver
+atlas.graph.storage.rdbms.jpa.hikari.jdbcUrl=jdbc:postgresql://atlas-db/atlas
+atlas.graph.storage.rdbms.jpa.hikari.username=atlas
+atlas.graph.storage.rdbms.jpa.hikari.password=atlasR0cks!
+atlas.graph.storage.rdbms.jpa.hikari.maximumPoolSize=40
+atlas.graph.storage.rdbms.jpa.hikari.minimumIdle=5
+atlas.graph.storage.rdbms.jpa.hikari.idleTimeout=300000
+atlas.graph.storage.rdbms.jpa.hikari.connectionTestQuery=select 1
+atlas.graph.storage.rdbms.jpa.hikari.maxLifetime=1800000
+atlas.graph.storage.rdbms.jpa.hikari.connectionTimeout=30000
 atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.dialect=org.eclipse.persistence.platform.database.PostgreSQLPlatform
-atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.driver=org.postgresql.Driver
-atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.url=jdbc:postgresql://atlas-db/atlas
-atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.user=atlas
-atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.password=atlasR0cks!
 atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.database.action=create
 atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-database-schemas=true
 atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-source=script-then-metadata
