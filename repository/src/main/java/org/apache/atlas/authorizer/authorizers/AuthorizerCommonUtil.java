@@ -145,12 +145,14 @@ public class AuthorizerCommonUtil {
         return true;
     }
 
+    // tag.key=value
     public static String tagKeyValueRepr(String tag, String key, String value) {
         key = key == null ? "" : key;
         value = value == null ? "" : value;
         return tag + "." + key + "=" + value;
     }
 
+    // Expected format for tag key value: {tag: "tag", key: "key", value: "value"}
     public static boolean isTagKeyValueFormat(JsonNode attributeValueNode) {
         JsonNode firstElement = attributeValueNode.isArray() && !attributeValueNode.isEmpty()
             ? attributeValueNode.get(0) 

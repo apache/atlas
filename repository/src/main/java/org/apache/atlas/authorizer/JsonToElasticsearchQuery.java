@@ -73,11 +73,11 @@ public class JsonToElasticsearchQuery {
                             : POLICY_FILTER_CRITERIA_OR;
                     attributeQuery = convertConditionToQuery(relatedAttrCondition);
                     for (String relatedAttribute : relatedAttributes) {
-                        JsonNode relatedAttributeQuery = createOperatorQuery(operator, relatedAttribute, attributeValueNode);
+                        JsonNode relatedAttributeQuery = createAttributeQuery(operator, relatedAttribute, attributeValueNode);
                         ((ArrayNode) attributeQuery.get("bool").get(getConditionClause(relatedAttrCondition))).add(relatedAttributeQuery);
                     }
                 } else {
-                    attributeQuery = createOperatorQuery(operator, attributeName, attributeValueNode);
+                    attributeQuery = createAttributeQuery(operator, attributeName, attributeValueNode);
                 }
 
                 if (attributeQuery != null) queryArray.add(attributeQuery);
@@ -87,7 +87,7 @@ public class JsonToElasticsearchQuery {
         return query;
     }
 
-    private static JsonNode createOperatorQuery(String operator, String attributeName, JsonNode attributeValueNode) {
+    private static JsonNode createAttributeQuery(String operator, String attributeName, JsonNode attributeValueNode) {
         ObjectNode queryNode = mapper.createObjectNode();
         String attributeValue = attributeValueNode.asText();
 
@@ -138,22 +138,8 @@ public class JsonToElasticsearchQuery {
         return queryNode;
     }
 
-    // createAttributeQuery is not being used, but this could be used to avoid handling of 
-    // tag key value separately but it was complicating the createOperatorQuery method.
-    public static JsonNode createAttributeQuery(String attributeName, JsonNode attributeValueNode) {
-        if (attributeValueNode.isArray()) { // array values must be handled by the caller
-            return null;
-        }
-
-        if (attributeName.equals("__traitNames") || attributeName.equals("__propagatedTraitNames")) {
-            if (isTagKeyValueFormat(attributeValueNode)) {
-                return createDSLForTagKeyValue(attributeName, attributeValueNode);
-            }
-        }
-
-        return mapper.createObjectNode().putObject("term").put(attributeName, attributeValueNode.asText());
-    }
-
+    // Repeating some code for tag key-value pairs query creation to avoid complexity in the main query creation logic
+    // This method can potentially be merged with createAttributeQuery if needed
     public static JsonNode createQueryWithOperatorForTag(String operator, String attributeName, JsonNode attributeValueNode) {
         ObjectNode queryNode = mapper.createObjectNode();
         
@@ -213,6 +199,29 @@ public class JsonToElasticsearchQuery {
         return queryNode;
     }
 
+    /*
+        This should produce something like
+        {
+            "bool": {
+                "filter": [
+                    {
+                        "term": {"__traitNames": "tag"}
+                    },
+                    {
+                        "span_near": {
+                            "clauses": [
+                                {"span_term": {"__classificationsText.text": "tagAttachmentValue"}},
+                                {"span_term": {"__classificationsText.text": "value"}},
+                                {"span_term": {"__classificationsText.text": "tagAttachmentKey"}}
+                            ],
+                            "in_order": true,
+                            "slop": 0
+                        }
+                    }
+                ]
+            }
+        }
+     */
     public static JsonNode createDSLForTagKeyValue(String attributeName, JsonNode tagKeyValue) {
         String tag = tagKeyValue.get("tag").asText();
         String key = tagKeyValue.get("key").asText();
