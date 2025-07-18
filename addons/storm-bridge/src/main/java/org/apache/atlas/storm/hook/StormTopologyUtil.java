@@ -18,12 +18,12 @@
 
 package org.apache.atlas.storm.hook;
 
+import com.google.common.base.Joiner;
 import org.apache.commons.lang.StringUtils;
 import org.apache.storm.generated.Bolt;
 import org.apache.storm.generated.GlobalStreamId;
 import org.apache.storm.generated.Grouping;
 import org.apache.storm.generated.StormTopology;
-import com.google.common.base.Joiner;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Field;
@@ -94,25 +94,26 @@ public final class StormTopologyUtil {
     public static Set<String> removeSystemComponents(Set<String> components) {
         Set<String> userComponents = new HashSet<>();
         for (String component : components) {
-            if (!isSystemComponent(component))
+            if (!isSystemComponent(component)) {
                 userComponents.add(component);
+            }
         }
 
         return userComponents;
     }
 
     private static final Set<Class> WRAPPER_TYPES = new HashSet<Class>() {{
-        add(Boolean.class);
-        add(Character.class);
-        add(Byte.class);
-        add(Short.class);
-        add(Integer.class);
-        add(Long.class);
-        add(Float.class);
-        add(Double.class);
-        add(Void.class);
-        add(String.class);
-    }};
+            add(Boolean.class);
+            add(Character.class);
+            add(Byte.class);
+            add(Short.class);
+            add(Integer.class);
+            add(Long.class);
+            add(Float.class);
+            add(Double.class);
+            add(Void.class);
+            add(String.class);
+        }};
 
     public static boolean isWrapperType(Class clazz) {
         return WRAPPER_TYPES.contains(clazz);
@@ -161,7 +162,9 @@ public final class StormTopologyUtil {
                             continue;
                         } else if (fieldVal.getClass().isPrimitive() ||
                                 isWrapperType(fieldVal.getClass())) {
-                            if (toString(fieldVal, false).isEmpty()) continue;
+                            if (toString(fieldVal, false).isEmpty()) {
+                                continue;
+                            }
                             output.put(key, toString(fieldVal, false));
                         } else if (isMapType(fieldVal.getClass())) {
                             //TODO: check if it makes more sense to just stick to json
@@ -181,7 +184,9 @@ public final class StormTopologyUtil {
                             //TODO check if it makes more sense to just stick to
                             // json like structure instead of a flatten output.
                             Collection collection = (Collection) fieldVal;
-                            if (collection.size() == 0) continue;
+                            if (collection.size() == 0) {
+                                continue;
+                            }
                             String outStr = "";
                             for (Object o : collection) {
                                 outStr += getString(o, false, objectsToSkip) + ",";
@@ -203,7 +208,7 @@ public final class StormTopologyUtil {
                 }
             }
         }
-        catch (Exception e){
+        catch (Exception e) {
             LOG.warn("Exception while constructing topology", e);
         }
         return output;
@@ -237,12 +242,16 @@ public final class StormTopologyUtil {
     }
 
     private static String toString(Object instance, boolean wrapWithQuote) {
-        if (instance instanceof String)
-            if (wrapWithQuote)
+        if (instance instanceof String) {
+            if (wrapWithQuote) {
                 return "\"" + instance + "\"";
-            else
+            }
+            else {
                 return instance.toString();
-        else
+            }
+        }
+        else {
             return instance.toString();
+        }
     }
 }

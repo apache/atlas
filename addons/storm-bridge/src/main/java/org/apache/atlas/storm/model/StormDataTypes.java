@@ -15,15 +15,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package org.apache.atlas.storm.model;
-
-
 /**
  * Storm Data Types for model and hook.
  */
 public enum StormDataTypes {
-
     // Topology Classes
     STORM_TOPOLOGY,  // represents the topology containing the DAG
 
@@ -34,9 +30,7 @@ public enum StormDataTypes {
     // Data Sets
     KAFKA_TOPIC,  // kafka data set
     JMS_TOPIC,  // jms data set
-    HBASE_TABLE,  // hbase table data set
-    ;
-
+    HBASE_TABLE;  // hbase table data set
     public String getName() {
         return name().toLowerCase();
     }
