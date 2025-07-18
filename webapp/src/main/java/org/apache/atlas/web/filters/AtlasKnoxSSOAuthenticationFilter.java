@@ -101,6 +101,14 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
     private boolean                     ssoEnabled;
     private JWSVerifier                 verifier;
 
+    public boolean isSsoEnabled() {
+        return ssoEnabled;
+    }
+
+    public void setSsoEnabled(boolean ssoEnabled) {
+        this.ssoEnabled = ssoEnabled;
+    }
+
     @Inject
     public AtlasKnoxSSOAuthenticationFilter(AtlasAuthenticationProvider authenticationProvider) {
         this.authenticationProvider = authenticationProvider;
@@ -163,16 +171,11 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
      */
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
+        setSsoEnabled(false);
         HttpServletResponse         httpResponse    = (HttpServletResponse) servletResponse;
         AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
 
         HeadersUtil.setSecurityHeaders(responseWrapper);
-
-        if (!ssoEnabled) {
-            filterChain.doFilter(servletRequest, servletResponse);
-
-            return;
-        }
 
         HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
 
@@ -182,12 +185,6 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
 
         if (httpRequest.getSession() != null && httpRequest.getSession().getAttribute("locallogin") != null) {
             servletRequest.setAttribute("ssoEnabled", false);
-            filterChain.doFilter(servletRequest, servletResponse);
-
-            return;
-        }
-
-        if (jwtProperties == null || isAuthenticated()) {
             filterChain.doFilter(servletRequest, servletResponse);
 
             return;
@@ -308,7 +305,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
             for (Cookie cookie : cookies) {
                 if (cookieName.equals(cookie.getName())) {
                     LOG.debug("{} cookie has been found and is being processed", cookieName);
-
+                    setSsoEnabled(true);
                     serializedJWT = cookie.getValue();
                     break;
                 }
