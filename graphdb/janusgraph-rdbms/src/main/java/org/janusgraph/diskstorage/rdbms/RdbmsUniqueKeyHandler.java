@@ -48,14 +48,13 @@ public class RdbmsUniqueKeyHandler {
         }
     }
 
-    public void removeUniqueKey(String keyName, Object value, Object elementId, boolean isVertex) {
+    public void removeUniqueKey(String keyName, Object value, boolean isVertex) {
         RdbmsTransaction trx = RdbmsTransaction.getActiveTransaction();
 
         if (trx != null) {
             trx.getEntityManager().createNativeQuery(isVertex ? SQL_DELETE_UNIQUE_VERTEX_KEY : SQL_DELETE_UNIQUE_EDGE_KEY)
-                    .setParameter(1, getNumberId(elementId))
-                    .setParameter(2, keyName)
-                    .setParameter(3, value)
+                    .setParameter(1, keyName)
+                    .setParameter(2, value)
                     .executeUpdate();
         } else {
             throw new IllegalStateException("No active transaction found to remove unique key: keyName=" + keyName + ", value=" + value);
@@ -77,15 +76,14 @@ public class RdbmsUniqueKeyHandler {
         }
     }
 
-    public void removeTypeUniqueKey(String typeName, String keyName, Object value, Object elementId, boolean isVertex) {
+    public void removeTypeUniqueKey(String typeName, String keyName, Object value, boolean isVertex) {
         RdbmsTransaction trx = RdbmsTransaction.getActiveTransaction();
 
         if (trx != null) {
             trx.getEntityManager().createNativeQuery(isVertex ? SQL_DELETE_UNIQUE_VERTEX_TYPE_KEY : SQL_DELETE_UNIQUE_EDGE_TYPE_KEY)
-                    .setParameter(1, getNumberId(elementId))
-                    .setParameter(2, typeName)
-                    .setParameter(3, keyName)
-                    .setParameter(4, value)
+                    .setParameter(1, typeName)
+                    .setParameter(2, keyName)
+                    .setParameter(3, value)
                     .executeUpdate();
         } else {
             throw new IllegalStateException("No active transaction found to remove type unique key: typeName=" + typeName + ", keyName=" + keyName + ", value=" + value);

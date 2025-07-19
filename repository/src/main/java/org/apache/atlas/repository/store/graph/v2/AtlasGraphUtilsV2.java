@@ -240,9 +240,14 @@ public class AtlasGraphUtilsV2 {
         if (value == null) {
             if (uniqueKeyHandler != null) {
                 if (GraphBackedSearchIndexer.isTypeUniqueIndexKey(propertyName)) {
-                    uniqueKeyHandler.removeTypeUniqueKey(getProperty(element, TYPE_NAME_PROPERTY_KEY, String.class), propertyName, getProperty(element, propertyName, Object.class), element.getId(), element instanceof AtlasVertex);
+                    String typeName  = getProperty(element, TYPE_NAME_PROPERTY_KEY, String.class);
+                    Object propValue = getProperty(element, propertyName, Object.class);
+
+                    uniqueKeyHandler.removeTypeUniqueKey(typeName, propertyName, propValue, element instanceof AtlasVertex);
                 } else if (GraphBackedSearchIndexer.isGlobalUniqueIndexKey(propertyName)) {
-                    uniqueKeyHandler.removeUniqueKey(propertyName, getProperty(element, propertyName, String.class), element.getId(), element instanceof AtlasVertex);
+                    Object propValue = getProperty(element, propertyName, Object.class);
+
+                    uniqueKeyHandler.removeUniqueKey(propertyName, propValue, element instanceof AtlasVertex);
                 }
             }
 
@@ -260,7 +265,7 @@ public class AtlasGraphUtilsV2 {
                     if (existingValue != null) {
                         if (!existingValue.equals(value)) {
                             // remove the existing value from unique key index
-                            uniqueKeyHandler.removeTypeUniqueKey(typeName, propertyName, existingValue, element.getId(), element instanceof AtlasVertex);
+                            uniqueKeyHandler.removeTypeUniqueKey(typeName, propertyName, existingValue, element instanceof AtlasVertex);
                             uniqueKeyHandler.addTypeUniqueKey(typeName, propertyName, value, element.getId(), element instanceof AtlasVertex);
                         }
                     } else {
@@ -272,7 +277,7 @@ public class AtlasGraphUtilsV2 {
                     if (existingValue != null) {
                         if (!existingValue.equals(value)) {
                             // remove the existing value from global unique key index
-                            uniqueKeyHandler.removeUniqueKey(propertyName, existingValue, element.getId(), element instanceof AtlasVertex);
+                            uniqueKeyHandler.removeUniqueKey(propertyName, existingValue, element instanceof AtlasVertex);
                             uniqueKeyHandler.addUniqueKey(propertyName, value, element.getId(), element instanceof AtlasVertex);
                         }
                     } else {

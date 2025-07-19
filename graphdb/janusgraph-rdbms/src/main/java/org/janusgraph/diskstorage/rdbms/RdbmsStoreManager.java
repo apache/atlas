@@ -75,7 +75,7 @@ public class RdbmsStoreManager extends AbstractStoreManager implements KeyColumn
         stores     = new HashMap<>();
         daoManager = new DaoManager(config.getSubset(JPA_CONFIG_NS));
 
-        sInstance = this;;
+        sInstance = this;
 
         LOG.info("RdbmsStoreManager()");
     }

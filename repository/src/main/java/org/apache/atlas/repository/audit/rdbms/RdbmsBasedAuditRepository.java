@@ -44,13 +44,12 @@ import java.util.stream.Collectors;
 public class RdbmsBasedAuditRepository extends AbstractStorageBasedAuditRepository {
     @Override
     public void putEventsV1(List<EntityAuditEvent> events) throws AtlasException {
-        // TODO: is V1 support needed anymore?
+        throw new UnsupportedOperationException();
     }
 
     @Override
     public List<EntityAuditEvent> listEventsV1(String entityId, String startKey, short n) throws AtlasException {
-        // TODO: is V1 support needed anymore?
-        return Collections.emptyList();
+        throw new UnsupportedOperationException();
     }
 
     @Override

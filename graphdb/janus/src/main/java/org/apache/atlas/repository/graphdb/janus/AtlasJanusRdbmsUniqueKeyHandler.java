@@ -33,8 +33,8 @@ public class AtlasJanusRdbmsUniqueKeyHandler extends AtlasUniqueKeyHandler {
     }
 
     @Override
-    public void removeUniqueKey(String keyName, Object value, Object elementId, boolean isVertex) {
-        uniqueKeyHandler.removeUniqueKey(keyName, value, elementId, isVertex);
+    public void removeUniqueKey(String keyName, Object value, boolean isVertex) {
+        uniqueKeyHandler.removeUniqueKey(keyName, value, isVertex);
     }
 
     @Override
@@ -43,8 +43,8 @@ public class AtlasJanusRdbmsUniqueKeyHandler extends AtlasUniqueKeyHandler {
     }
 
     @Override
-    public void removeTypeUniqueKey(String typeName, String keyName, Object value, Object elementId, boolean isVertex) {
-        uniqueKeyHandler.removeTypeUniqueKey(typeName, keyName, value, elementId, isVertex);
+    public void removeTypeUniqueKey(String typeName, String keyName, Object value, boolean isVertex) {
+        uniqueKeyHandler.removeTypeUniqueKey(typeName, keyName, value, isVertex);
     }
 
     @Override

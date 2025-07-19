@@ -21,11 +21,11 @@ package org.apache.atlas.repository.graphdb;
 public abstract class AtlasUniqueKeyHandler {
     public abstract void addUniqueKey(String keyName, Object value, Object elementId, boolean isVertex);
 
-    public abstract void removeUniqueKey(String keyName, Object value, Object elementId, boolean isVertex);
+    public abstract void removeUniqueKey(String keyName, Object value, boolean isVertex);
 
     public abstract void addTypeUniqueKey(String typeName, String keyName, Object value, Object elementId, boolean isVertex);
 
-    public abstract void removeTypeUniqueKey(String typeName, String keyName, Object value, Object elementId, boolean isVertex);
+    public abstract void removeTypeUniqueKey(String typeName, String keyName, Object value, boolean isVertex);
 
     public abstract void removeUniqueKeysForVertexId(Object vertexId);
 
