@@ -108,6 +108,7 @@
         <curator.version>4.3.0</curator.version>
         <doxia.version>1.8</doxia.version>
         <dropwizard-metrics>3.2.2</dropwizard-metrics>
+        <eclipse.jpa.version>2.7.15</eclipse.jpa.version>
         <elasticsearch.version>7.17.8</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
         <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
@@ -136,6 +137,7 @@
         <javac.source.version>1.8</javac.source.version>
         <javac.target.version>1.8</javac.target.version>
         <javax-inject.version>1</javax-inject.version>
+        <javax.persistence.version>2.2.1</javax.persistence.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
         <jaxb.api.version>2.3.1</jaxb.api.version>
         <jersey-spring.version>1.19.4</jersey-spring.version>
@@ -165,6 +167,7 @@
         <paranamer.version>2.7</paranamer.version>
         <poi-ooxml.version>5.2.2</poi-ooxml.version>
         <poi.version>5.2.2</poi.version>
+        <postgresql.version>42.7.7</postgresql.version>
         <project.build.dashboard.gruntBuild>run build</project.build.dashboard.gruntBuild>
         <project.build.dashboardv2.gruntBuild>build-minify</project.build.dashboardv2.gruntBuild>
         <project.build.dashboardv3.gruntBuild>build-minify</project.build.dashboardv3.gruntBuild>
