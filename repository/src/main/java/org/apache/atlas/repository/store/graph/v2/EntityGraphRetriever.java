@@ -362,8 +362,7 @@ public class EntityGraphRetriever {
             Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
 
             for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
-                //TODO: Implement to fetch attribute from V2 cache
-                Object attrValue = getVertexAttribute(entityVertex, attribute);
+                Object attrValue = getVertexAttribute(entityVertex, attribute, vertexEdgePropertiesCache);
 
                 if (attrValue != null) {
                     uniqueAttributes.put(attribute.getName(), attrValue);
@@ -377,7 +376,7 @@ public class EntityGraphRetriever {
                     if (attribute != null
                             && !uniqueAttributes.containsKey(attributeName)) {
                         Object attrValue = null;
-                        attrValue = getVertexAttribute(entityVertex, attribute);
+                        attrValue = getVertexAttribute(entityVertex, attribute, vertexEdgePropertiesCache);
 
                         if (attrValue != null) {
                             attributes.put(attribute.getName(), attrValue);
@@ -1409,6 +1408,7 @@ public class EntityGraphRetriever {
             }
 
             if(RequestContext.get().includeMeanings()) {
+                // TODO: This should be optimized to use vertexEdgePropertiesCache
                 List<AtlasTermAssignmentHeader> termAssignmentHeaders = mapAssignedTerms(entityVertex);
                 ret.setMeanings(termAssignmentHeaders);
                 ret.setMeaningNames(
@@ -1419,15 +1419,15 @@ public class EntityGraphRetriever {
 
             if (entityType != null) {
                 for (AtlasAttribute headerAttribute : entityType.getHeaderAttributes().values()) {
-                    Object attrValue = getVertexAttribute(entityVertex, headerAttribute);
+                    Object attrValue = getVertexAttribute(entityVertex, headerAttribute, vertexEdgePropertiesCache);
 
                     if (attrValue != null) {
                         ret.setAttribute(headerAttribute.getName(), attrValue);
                     }
                 }
 
-                Object displayText = getDisplayText(entityVertex, entityType);
-
+//                Object displayText = getDisplayText(entityVertex, entityType);
+                Object displayText = getDisplayText(vertexId, entityType,vertexEdgePropertiesCache);
                 if (displayText != null) {
                     ret.setDisplayText(displayText.toString());
                 }
@@ -2793,6 +2793,27 @@ public class EntityGraphRetriever {
 
     private Object getDisplayText(AtlasVertex entityVertex, String entityTypeName) throws AtlasBaseException {
         return getDisplayText(entityVertex, typeRegistry.getEntityTypeByName(entityTypeName));
+    }
+
+    private Object getDisplayText(String vertexId, AtlasEntityType entityType, VertexEdgePropertiesCache vertexEdgePropertiesCache) throws AtlasBaseException {
+        Object ret = null;
+
+        if (entityType != null) {
+            String displayTextAttribute = entityType.getDisplayTextAttribute();
+
+            if (displayTextAttribute != null) {
+                ret = vertexEdgePropertiesCache.getPropertyValue(vertexId, DISPLAY_NAME, Object.class);
+            }
+            if (ret == null) {
+                ret = vertexEdgePropertiesCache.getPropertyValue(vertexId, NAME, Object.class);
+
+                if (ret == null) {
+                    ret = vertexEdgePropertiesCache.getPropertyValue(vertexId, QUALIFIED_NAME, Object.class);
+                }
+            }
+        }
+
+        return ret;
     }
 
     private Object getDisplayText(AtlasVertex entityVertex, AtlasEntityType entityType) throws AtlasBaseException {

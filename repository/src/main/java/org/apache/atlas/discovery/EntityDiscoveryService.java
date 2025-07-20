@@ -1146,6 +1146,21 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }).filter(Objects::nonNull).collect(Collectors.toSet());
 
             VertexEdgePropertiesCache vertexEdgePropertiesCache = entityRetriever.enrichVertexPropertiesByVertexIds(vertexIds);
+            // If valueMap of certain vertex is empty or null then remove that from processing results
+            results = results.stream().filter(result -> {
+                AtlasVertex vertex = result.getVertex();
+                if (vertex == null) {
+                    LOG.warn("vertex in null");
+                    return false;
+                }
+
+                String guid = vertexEdgePropertiesCache.getGuid(vertex.getId().toString());
+                if (StringUtils.isEmpty(guid)) {
+                    LOG.warn("guid in null for vertex, stale vertex warning {}", vertex.getId());
+                    return false;
+                }
+                return  true;
+            }).toList();
 
             for(Result result : results) {
                 AtlasVertex vertex = result.getVertex();
