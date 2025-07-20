@@ -40,6 +40,7 @@ import org.apache.atlas.query.executors.DSLQueryExecutor;
 import org.apache.atlas.query.executors.ScriptEngineBasedExecutor;
 import org.apache.atlas.query.executors.TraversalBasedExecutor;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.VertexEdgePropertiesCache;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
@@ -49,6 +50,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.userprofile.UserProfileService;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.searchlog.ESSearchLogger;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.stats.StatsClient;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
@@ -87,6 +89,7 @@ import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.
 public class EntityDiscoveryService implements AtlasDiscoveryService {
     private static final Logger LOG = LoggerFactory.getLogger(EntityDiscoveryService.class);
     private static final String DEFAULT_SORT_ATTRIBUTE_NAME = "name";
+    public static final String USE_BULK_FETCH_INDEXSEARCH = "discovery_use_bulk_fetch_indexsearch";
 
     private final AtlasGraph                      graph;
     private final EntityGraphRetriever            entityRetriever;
@@ -1128,21 +1131,38 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 LOG.debug("Preparing search results for ({})", ret.getSearchParameters());
             }
             Iterator<Result> iterator = indexQueryResult.getIterator();
+            List<Result> results = IteratorUtils.toList(iterator);
             boolean showSearchScore = searchParams.getShowSearchScore();
             if (iterator == null) {
                 return;
             }
+            Set<String> vertexIds = results.stream().map(result -> {
+                AtlasVertex vertex = result.getVertex();
+                if (vertex == null) {
+                    LOG.warn("vertex in null");
+                    return null;
+                }
+                return vertex.getId().toString();
+            }).filter(Objects::nonNull).collect(Collectors.toSet());
 
-            while (iterator.hasNext()) {
-                Result result = iterator.next();
+            VertexEdgePropertiesCache vertexEdgePropertiesCache = entityRetriever.enrichVertexPropertiesByVertexIds(vertexIds);
+
+            for(Result result : results) {
                 AtlasVertex vertex = result.getVertex();
 
                 if (vertex == null) {
                     LOG.warn("vertex in null");
                     continue;
                 }
+                vertexIds.add(vertex.getId().toString());
+                AtlasEntityHeader header;
 
-                AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
+                if(FeatureFlagStore.evaluate(USE_BULK_FETCH_INDEXSEARCH, "true")) {
+                  header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes, vertexEdgePropertiesCache);
+                } else {
+                    header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
+                }
+
                 if(RequestContext.get().includeClassifications()){
                     header.setClassifications(entityRetriever.getAllClassifications(vertex));
                 }
