@@ -1147,7 +1147,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }).filter(Objects::nonNull).collect(Collectors.toSet());
             VertexEdgePropertiesCache vertexEdgePropertiesCache;
             if (useBulkFetch) {
-                vertexEdgePropertiesCache = entityRetriever.enrichVertexPropertiesByVertexIds(vertexIds);
+                vertexEdgePropertiesCache = entityRetriever.enrichVertexPropertiesByVertexIds(vertexIds, resultAttributes);
             } else {
                 vertexEdgePropertiesCache = null;
             }
