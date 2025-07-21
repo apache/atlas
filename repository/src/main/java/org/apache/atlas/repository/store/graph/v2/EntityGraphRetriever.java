@@ -2449,6 +2449,9 @@ public class EntityGraphRetriever {
 
     private AtlasObjectId mapVertexToObjectIdV2(AtlasVertex entityVertex, Pair<String, EdgeVertexReference.EdgeInfo> referencedElementPair,
                                                 VertexEdgePropertiesCache vertexEdgePropertiesCache) throws AtlasBaseException {
+        if (referencedElementPair == null || referencedElementPair.getValue1() == null) {
+            return null;
+        }
         AtlasObjectId ret;
         EdgeVertexReference.EdgeInfo edgeInfo = referencedElementPair.getValue1();
         String edgeLabel = edgeInfo.getEdgeLabel();
