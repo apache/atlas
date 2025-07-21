@@ -1018,7 +1018,8 @@ public class EntityGraphRetriever {
             Map<String, Map<String, ArrayList<?>>> ret = new HashMap<>();
 
             ListUtils.partition(new ArrayList<>(vertexIds), batchSize).forEach(batch -> {
-                GraphTraversal<?, ?> traversal = ((AtlasJanusGraph) graph).V(batch).valueMap(true);
+                Long startTime = System.currentTimeMillis();
+                GraphTraversal<?, ?> traversal = graph.V(batch).valueMap(true);
                 traversal.toList().forEach(obj -> {
                     if (obj instanceof Map) {
                         @SuppressWarnings("unchecked")
@@ -1033,6 +1034,8 @@ public class EntityGraphRetriever {
                         }
                     }
                 });
+                long endTime = System.currentTimeMillis();
+                LOG.info("Fetched properties for {} vertices in {} ms", batch.size(), (endTime - startTime));
             });
 
             return ret;
@@ -1166,7 +1169,7 @@ public class EntityGraphRetriever {
                }
            }
 
-           Map<String, Map<String, ArrayList<?>>> referenceVerticesProperties = getVertexPropertiesValueMap(vertexIdsToProcess, 100);
+           Map<String, Map<String, ArrayList<?>>> referenceVerticesProperties = getVertexPropertiesValueMap(vertexIdsToProcess, 1000);
            for (Map.Entry<String, Map<String, ArrayList<?>>> entry : referenceVerticesProperties.entrySet()) {
                String vertexId = entry.getKey();
                Map<String, ArrayList<?>> properties = entry.getValue();
