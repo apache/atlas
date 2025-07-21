@@ -424,7 +424,7 @@ public class DiscoveryREST {
             if(LOG.isDebugEnabled()){
                 LOG.debug("Performing indexsearch for the params ({})", parameters);
             }
-            AtlasSearchResult result = discoveryService.directIndexSearch(parameters);
+            AtlasSearchResult result = discoveryService.directIndexSearch(parameters, true);
             if (result == null) {
                 return null;
             }
