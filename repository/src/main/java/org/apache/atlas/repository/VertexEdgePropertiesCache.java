@@ -44,7 +44,7 @@ public class VertexEdgePropertiesCache {
         return properties.getOrDefault(propertyName, null);
     }
 
-    public <T>  ArrayList<?> getMultiValuedProperties(String vertexId, String propertyName, Class<T> clazz ) {
+    public <T>  ArrayList<T> getMultiValuedProperties(String vertexId, String propertyName, Class<T> clazz ) {
         Map<String, ArrayList<?>> properties = getVertexPropertiesById(vertexId);
         ArrayList<T> result = new ArrayList<>();
         if (properties == null) {
@@ -55,7 +55,7 @@ public class VertexEdgePropertiesCache {
             return null;
         }
         for (Object value : values) {
-            result.add(clazz.cast(value));
+            result.add((T) value);
         }
         return result;
     }
@@ -117,33 +117,33 @@ public class VertexEdgePropertiesCache {
     public EdgeVertexReference getReferenceVertexByEdgeLabelAndId(String sourceVertexId, String edgeLabel, String targetVertexId, String edgeId) {
         ArrayList<EdgeVertexReference> references = getVertexEdgeReferencesByEdgeLabel(sourceVertexId, edgeLabel);
         for (EdgeVertexReference reference : references) {
-            if (reference.getReferenceVertexId().equals(targetVertexId) && reference.getEdge().id().toString().equals(edgeId)) {
+            if (reference.getReferenceVertexId().equals(targetVertexId) && reference.getEdgeId().equals(edgeId)) {
                 return reference;
             }
         }
         return null;
     }
 
-    public List<Pair<String, Edge>> getCollectionElementsUsingRelationship(String vertexId, AtlasStructType.AtlasAttribute attribute) {
+    public List<Pair<String, EdgeVertexReference.EdgeInfo>> getCollectionElementsUsingRelationship(String vertexId, AtlasStructType.AtlasAttribute attribute) {
         String edgeLabel = attribute.getRelationshipEdgeLabel();
         ArrayList<EdgeVertexReference> references = getVertexEdgeReferencesByEdgeLabel(vertexId, edgeLabel);
-        List<Pair<String, Edge>> ret = new ArrayList<>();
+        List<Pair<String, EdgeVertexReference.EdgeInfo>> ret = new ArrayList<>();
         for (EdgeVertexReference reference : references) {
             String targetVertexId = reference.getReferenceVertexId();
-            Edge edge = reference.getEdge();
+            EdgeVertexReference.EdgeInfo edge = reference.getEdgeInfo();
             ret.add(Pair.with(targetVertexId, edge));
         }
         return ret;
     }
 
-    public Pair<String, Edge> getRelationShipElement(String vertexId, String edgeLabel) {
+    public Pair<String, EdgeVertexReference.EdgeInfo> getRelationShipElement(String vertexId, String edgeLabel) {
         ArrayList<EdgeVertexReference> references = getVertexEdgeReferencesByEdgeLabel(vertexId, edgeLabel);
         if (references == null || references.isEmpty()) {
             return null;
         }
         EdgeVertexReference reference = references.get(0);
         String targetVertexId = reference.getReferenceVertexId();
-        Edge edge = reference.getEdge();
+        EdgeVertexReference.EdgeInfo edge = reference.getEdgeInfo();
         return Pair.with(targetVertexId, edge);
     }
 

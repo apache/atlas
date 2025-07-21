@@ -3,7 +3,6 @@ package org.apache.atlas.repository;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.typedef.AtlasRelationshipDef;
-import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.apache.tinkerpop.gremlin.structure.T;
 
 import java.util.Date;
@@ -14,25 +13,34 @@ import static org.apache.atlas.repository.Constants.*;
 
 public class EdgeVertexReference {
     private final String referenceVertexId;
-    private final Edge edge;
+    private final String edgeId;
+    private final String edgeLabel;
+    private final String inVertexId;
+    private final String outVertexId;
+    private final  EdgeInfo edgeInfo;
     private Map<String, Object> properties;
 
-    public EdgeVertexReference(String referenceVertexId, Edge edge, LinkedHashMap<Object, Object> properties) {
+    public EdgeVertexReference(String referenceVertexId,String edgeId, String edgeLabel, String inVertexId, String outVertexId, LinkedHashMap<Object, Object> properties) {
         this.referenceVertexId = referenceVertexId;
-        this.edge = edge;
+        this.edgeId = edgeId;
+        this.edgeLabel = edgeLabel;
+        this.inVertexId = inVertexId;
+        this.outVertexId = outVertexId;
+        this.edgeInfo = new EdgeInfo(edgeId, edgeLabel, inVertexId, outVertexId);
+
         setProperties(properties);
+    }
+
+    public EdgeInfo getEdgeInfo() {
+        return edgeInfo;
     }
 
     public String getReferenceVertexId() {
         return referenceVertexId;
     }
 
-    public Edge getEdge() {
-        return edge;
-    }
-
     public String getEdgeLabel() {
-        return edge.label();
+        return edgeLabel;
     }
 
     public Map<String, Object> getProperties() {
@@ -94,18 +102,51 @@ public class EdgeVertexReference {
             relationship.setStatus(AtlasRelationship.Status.valueOf(state));
         }
 
-        String end1VertexId = edge.outVertex().id().toString();
-        String end2VertexId = edge.inVertex().id().toString();
+        String end1VertexId = outVertexId;
+        String end2VertexId = inVertexId;
 
         // TODO: Keeping properties as null, need to evaluate later if we need these info
         relationship.setEnd1(new AtlasObjectId(cache.getGuid(end1VertexId), cache.getTypeName(end1VertexId), null));
         relationship.setEnd2(new AtlasObjectId(cache.getGuid(end2VertexId), cache.getTypeName(end2VertexId), null));
 
-        relationship.setLabel(edge.label());
+        relationship.setLabel(edgeLabel);
         relationship.setPropagateTags(AtlasRelationshipDef.PropagateTags.valueOf(getProperty(RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, String.class)));
 
         return relationshipWithExtInfo.getRelationship();
     }
 
 
+    public String getEdgeId() {
+        return edgeId;
+    }
+
+    public class EdgeInfo {
+        private final String edgeId;
+        private final String edgeLabel;
+        private final String inVertexId;
+        private final String outVertexId;
+
+        public EdgeInfo(String edgeId, String edgeLabel, String inVertexId, String outVertexId) {
+            this.edgeId = edgeId;
+            this.edgeLabel = edgeLabel;
+            this.inVertexId = inVertexId;
+            this.outVertexId = outVertexId;
+        }
+
+        public String getEdgeId() {
+            return edgeId;
+        }
+
+        public String getEdgeLabel() {
+            return edgeLabel;
+        }
+
+        public String getInVertexId() {
+            return inVertexId;
+        }
+
+        public String getOutVertexId() {
+            return outVertexId;
+        }
+    }
 }
