@@ -1063,6 +1063,9 @@ public class EntityGraphRetriever {
            VertexEdgePropertiesCache ret = new VertexEdgePropertiesCache();
            Set<String> vertexIdsToProcess = new HashSet<>(vertexIds);
            vertexIdsToProcess.addAll(vertexIds);
+           if (CollectionUtils.isEmpty(vertexIdsToProcess)) {
+               return ret;
+           }
 
            // Get all edges
            LOG.info("Enriching vertex properties for total {} vertices", vertexIdsToProcess.size());
@@ -1080,7 +1083,7 @@ public class EntityGraphRetriever {
 
            List<Map<String, Object>> results = edgeTraversal.toList();
            Long elapsedTime = System.currentTimeMillis() - currentTime;
-           LOG.info("Enriching vertex properties for total {} vertices and total edges {} took {} ms", vertexIdsToProcess.size(),results.size(), elapsedTime);
+           LOG.info("Enriching vertex,edge properties for total {} vertices and total edges {} took {} ms", vertexIdsToProcess.size(),results.size(), elapsedTime);
 
            for (Map<String, Object> result : results) {
                if (result.containsKey("id") && result.containsKey("valueMap")) {
