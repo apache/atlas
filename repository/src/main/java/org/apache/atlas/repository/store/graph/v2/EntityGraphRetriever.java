@@ -1019,7 +1019,11 @@ public class EntityGraphRetriever {
 
             ListUtils.partition(new ArrayList<>(vertexIds), batchSize).forEach(batch -> {
                 Long startTime = System.currentTimeMillis();
-                GraphTraversal<?, ?> traversal = graph.V(batch).valueMap(true);
+                AtlasJanusGraph janusGraph = (AtlasJanusGraph) graph;
+                GraphTraversal<?, ?> traversal = janusGraph.getGraph()
+                        .traversal()
+                        .V(batch)
+                        .valueMap(true);
                 traversal.toList().forEach(obj -> {
                     if (obj instanceof Map) {
                         @SuppressWarnings("unchecked")
