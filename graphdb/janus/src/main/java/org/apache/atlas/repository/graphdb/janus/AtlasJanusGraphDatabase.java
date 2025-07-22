@@ -37,7 +37,6 @@ import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.schema.JanusGraphManagement;
 import org.janusgraph.graphdb.database.serialize.attribute.SerializableSerializer;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,34 +85,10 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
     private static volatile AtlasJanusGraph atlasGraphInstance = null;
     private static volatile JanusGraph graphInstance;
-    private static volatile StandardJanusGraphTx readGraphInstance;
 
     public AtlasJanusGraphDatabase() {
         //update registry
         GraphSONMapper.build().addRegistry(JanusGraphIoRegistry.getInstance()).create();
-    }
-
-    public static Configuration getReadConfiguration() throws AtlasException {
-        // Build the configuration for read operations manually
-        Configuration configProperties = ApplicationProperties.get();
-        Configuration janusConfig = ApplicationProperties.getSubsetConfiguration(configProperties, "atlas.graph.read");
-
-        //add serializers for non-standard property value types that Atlas uses
-        janusConfig.setProperty("attributes.custom.attribute1.attribute-class", TypeCategory.class.getName());
-        janusConfig.setProperty("attributes.custom.attribute1.serializer-class", TypeCategorySerializer.class.getName());
-
-        //not ideal, but avoids making large changes to Atlas
-        janusConfig.setProperty("attributes.custom.attribute2.attribute-class", ArrayList.class.getName());
-        janusConfig.setProperty("attributes.custom.attribute2.serializer-class", SerializableSerializer.class.getName());
-
-        janusConfig.setProperty("attributes.custom.attribute3.attribute-class", BigInteger.class.getName());
-        janusConfig.setProperty("attributes.custom.attribute3.serializer-class", BigIntegerSerializer.class.getName());
-
-        janusConfig.setProperty("attributes.custom.attribute4.attribute-class", BigDecimal.class.getName());
-        janusConfig.setProperty("attributes.custom.attribute4.serializer-class", BigDecimalSerializer.class.getName());
-
-        return janusConfig;
-
     }
 
     public static Configuration getConfiguration() throws AtlasException {
@@ -144,22 +119,6 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         janusConfig.setProperty("attributes.custom.attribute4.serializer-class", BigDecimalSerializer.class.getName());
 
         return janusConfig;
-    }
-
-    public static StandardJanusGraphTx getReadGraphInstance() {
-        if (readGraphInstance == null || readGraphInstance.isClosed()) {
-            synchronized (AtlasJanusGraphDatabase.class) {
-                if (readGraphInstance == null) {
-                    try {
-                        Configuration config = getReadConfiguration();
-                        readGraphInstance = initReadJanusGraph(config);
-                    } catch (AtlasException e) {
-                        throw new RuntimeException(e);
-                    }
-                }
-            }
-        }
-        return readGraphInstance;
     }
 
     public static JanusGraph getGraphInstance() {
@@ -201,16 +160,6 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
             } else {
                 throw new RuntimeException(e);
             }
-        }
-    }
-
-    static StandardJanusGraphTx initReadJanusGraph(Configuration config) {
-        org.apache.commons.configuration2.Configuration conf2 = createConfiguration2(config);
-        try {
-            return   AtlasJanusGraphFactory.open(conf2).tx().createThreadedTx();
-
-        } catch (JanusGraphException e) {
-            throw new RuntimeException(e);
         }
     }
 
