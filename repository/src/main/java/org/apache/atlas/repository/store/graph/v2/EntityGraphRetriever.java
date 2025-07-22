@@ -1015,14 +1015,13 @@ public class EntityGraphRetriever {
             if (CollectionUtils.isEmpty(vertexIds)) {
                 return new HashMap<>();
             }
-            StandardJanusGraphTx g = AtlasJanusGraphDatabase.getReadGraphInstance();
+//            StandardJanusGraphTx g = AtlasJanusGraphDatabase.getReadGraphInstance();
 
             Map<String, Map<String, ArrayList<?>>> ret = new HashMap<>();
 
             ListUtils.partition(new ArrayList<>(vertexIds), batchSize).forEach(batch -> {
                 Long startTime = System.currentTimeMillis();
-                List<Map<Object, Object>> results = g.traversal()
-                        .V(batch)
+                List<Map<Object, Object>> results = graph.V(batch)
                         .valueMap(true)
                         .toList();
                 Long endTime0 = System.currentTimeMillis();

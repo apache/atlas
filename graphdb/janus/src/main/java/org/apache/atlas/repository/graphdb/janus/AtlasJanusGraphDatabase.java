@@ -207,7 +207,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     static StandardJanusGraphTx initReadJanusGraph(Configuration config) {
         org.apache.commons.configuration2.Configuration conf2 = createConfiguration2(config);
         try {
-            return   JanusGraphFactory.open(conf2).tx().createThreadedTx();
+            return   AtlasJanusGraphFactory.open(conf2).tx().createThreadedTx();
 
         } catch (JanusGraphException e) {
             throw new RuntimeException(e);
