@@ -78,6 +78,7 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.graphdb.relations.CacheVertexProperty;
+import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.javatuples.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -1014,14 +1015,13 @@ public class EntityGraphRetriever {
             if (CollectionUtils.isEmpty(vertexIds)) {
                 return new HashMap<>();
             }
+            StandardJanusGraphTx g = AtlasJanusGraphDatabase.getReadGraphInstance();
 
             Map<String, Map<String, ArrayList<?>>> ret = new HashMap<>();
 
             ListUtils.partition(new ArrayList<>(vertexIds), batchSize).forEach(batch -> {
                 Long startTime = System.currentTimeMillis();
-                AtlasJanusGraph janusGraph = (AtlasJanusGraph) graph;
-                GraphTraversal<?, ?> traversal = janusGraph.getGraph()
-                        .traversal()
+                GraphTraversal<?, ?> traversal = g.traversal()
                         .V(batch)
                         .valueMap(true);
                 traversal.toList().forEach(obj -> {
