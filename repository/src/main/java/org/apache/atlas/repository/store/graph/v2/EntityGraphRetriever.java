@@ -1021,14 +1021,14 @@ public class EntityGraphRetriever {
 
             ListUtils.partition(new ArrayList<>(vertexIds), batchSize).forEach(batch -> {
                 Long startTime = System.currentTimeMillis();
-                GraphTraversal<?, ?> traversal = g.traversal()
+                List<Map<Object, Object>> results = g.traversal()
                         .V(batch)
-                        .valueMap(true);
-                traversal.toList().forEach(obj -> {
-                    if (obj instanceof Map) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Object> properties = (Map<String, Object>) obj;
-
+                        .valueMap(true)
+                        .toList();
+                Long endTime0 = System.currentTimeMillis();
+                LOG.info("Fetched properties for {} vertices in {} ms", batch.size(), (endTime0 - startTime));
+                results.forEach(properties -> {
+                    if (properties != null) {
                         if (MapUtils.isNotEmpty(properties) && properties.containsKey(T.id)) {
                             Long vertexId = (Long) properties.get(T.id);
                             properties.remove(T.id);
@@ -1049,10 +1049,10 @@ public class EntityGraphRetriever {
     }
 
     @NotNull
-    private static Map<String, ArrayList<?>> getStringArrayListMap(Map<String, Object> properties) {
+    private static Map<String, ArrayList<?>> getStringArrayListMap(Map<Object, Object> properties) {
         Map<String, ArrayList<?>> vertexProperties = new HashMap<>();
-        for (Map.Entry<String, Object> entry : properties.entrySet()) {
-            String attributeName = entry.getKey();
+        for (Map.Entry<Object, Object> entry : properties.entrySet()) {
+            String attributeName = entry.getKey().toString();
             Object attributeValue = entry.getValue();
             if (attributeValue instanceof List) {
                 // Convert List to ArrayList

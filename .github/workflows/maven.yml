@@ -24,7 +24,7 @@ on:
     branches:
       - alpha
       - beta
-      - mlh-808-idxsearch-fetch
+      - development
       - master
       - staging
 
