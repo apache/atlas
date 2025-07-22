@@ -113,7 +113,10 @@ const Labels = ({ loading, labels }: any) => {
 
   const onSubmit = async (values: any) => {
     let formData = { ...values };
-    let data = formData.labels.map((obj: { inputValue: any }) => {
+    if(isEmpty(formData.labels) && isEmpty(labels)){
+      return;
+    }
+    let data = formData.labels?.map((obj: { inputValue: any }) => {
       if (obj.inputValue) {
         return obj.inputValue;
       }
@@ -169,6 +172,7 @@ const Labels = ({ loading, labels }: any) => {
                   <Stack direction="row" alignItems="center" gap="0.5rem">
                     {addLabel ? (
                       <CustomButton
+                        key="edit-Add-button"
                         variant="outlined"
                         color="success"
                         size="small"
@@ -183,17 +187,20 @@ const Labels = ({ loading, labels }: any) => {
                     ) : (
                       <>
                         <CustomButton
+                          key="save-button"
                           variant="outlined"
                           color="success"
                           size="small"
                           onClick={handleSave}
+                          disabled={isSubmitting}
                           startIcon={
-                            isSubmitting && <CircularProgress size="14px" />
+                            isSubmitting && <CircularProgress size="14px" color="inherit"/>
                           }
                         >
                           Save
                         </CustomButton>
                         <CustomButton
+                          key="cancel-button"
                           variant="outlined"
                           color="success"
                           size="small"
