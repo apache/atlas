@@ -166,13 +166,13 @@ public class ExtractorService {
             try {
                 AtlasEntity.AtlasEntityWithExtInfo schemaEntity = AtlasClientHelper.createOrUpdateSchemaEntity(catalog, trinoCatalogEntity, schemaName);
 
-                List<String> tables = trinoClientHelper.getTrinoTables(catalog.getName(), schemaName, catalog.getTableToImport());
+                Map<String, Map<String, Object>> tables = trinoClientHelper.getTrinoTables(catalog.getName(), schemaName, catalog.getTableToImport());
                 LOG.info("Found {} tables under {}.{} catalog.schema", tables.size(), catalog.getName(), schemaName);
 
                 processTables(catalog, schemaName, schemaEntity.getEntity(), tables);
 
                 if (StringUtils.isEmpty(context.getTable())) {
-                    deleteTables(tables, schemaEntity.getEntity().getGuid());
+                    deleteTables(new ArrayList<>(tables.keySet()), schemaEntity.getEntity().getGuid());
                 }
             } catch (Exception e) {
                 LOG.error("Error processing schema: {}", schemaName);
@@ -180,15 +180,15 @@ public class ExtractorService {
         }
     }
 
-    public void processTables(Catalog catalog, String schemaName, AtlasEntity schemaEntity, List<String> trinoTables) {
-        for (String trinoTableName : trinoTables) {
+    public void processTables(Catalog catalog, String schemaName, AtlasEntity schemaEntity,  Map<String, Map<String, Object>> trinoTables) {
+        for (String trinoTableName : trinoTables.keySet()) {
             LOG.info("Started extracting {} table:", trinoTableName);
 
             try {
                 Map<String, Map<String, Object>> trinoColumns = trinoClientHelper.getTrinoColumns(catalog.getName(), schemaName, trinoTableName);
                 LOG.info("Found {} columns under {}.{}.{} catalog.schema.table", trinoColumns.size(), catalog.getName(), schemaName, trinoTableName);
 
-                AtlasClientHelper.createOrUpdateTableEntity(catalog, schemaName, trinoTableName, trinoColumns, schemaEntity);
+                AtlasClientHelper.createOrUpdateTableEntity(catalog, schemaName, trinoTableName, trinoTables.get(trinoTableName), trinoColumns, schemaEntity);
             } catch (Exception e) {
                 LOG.error("Error processing table: {}", trinoTableName, e);
             }

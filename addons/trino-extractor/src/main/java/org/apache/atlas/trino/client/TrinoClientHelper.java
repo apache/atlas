@@ -84,19 +84,23 @@ public class TrinoClientHelper {
         return schemas;
     }
 
-    public List<String> getTrinoTables(String catalog, String schema, String tableToImport) throws SQLException {
-        List<String>  tables     = new ArrayList<>();
-        Connection    connection = getTrinoConnection();
-        Statement     stmt       = connection.createStatement();
-        StringBuilder query      = new StringBuilder();
-        query.append("SELECT table_name FROM " + catalog + ".information_schema.tables WHERE table_schema = '" + schema + "'");
+    public Map<String, Map<String, Object>> getTrinoTables(String catalog, String schema, String tableToImport) throws SQLException {
+        Map<String, Map<String, Object>> tables     = new HashMap<>();
+        Connection                       connection = getTrinoConnection();
+        Statement                        stmt       = connection.createStatement();
+        StringBuilder                    query      = new StringBuilder();
+        query.append("SELECT table_name, table_type FROM " + catalog + ".information_schema.tables WHERE table_schema = '" + schema + "'");
         if (StringUtils.isNotEmpty(tableToImport)) {
             query.append(" and table_name = '" + tableToImport + "'");
         }
 
         ResultSet rs = stmt.executeQuery(query.toString());
         while (rs.next()) {
-            tables.add(rs.getString("table_name"));
+            Map<String, Object> tableMetadata = new HashMap<>();
+            tableMetadata.put("table_name", rs.getString("table_name"));
+            tableMetadata.put("table_type", rs.getString("table_type"));
+
+            tables.put(rs.getString("table_name"), tableMetadata);
         }
 
         return tables;

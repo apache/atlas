@@ -187,14 +187,6 @@
             "typeVersion" : "1.0",
             "attributeDefs" : [
                 {
-                    "name": "depenendencyType",
-                    "typeName": "string",
-                    "cardinality" : "SINGLE",
-                    "isIndexable": false,
-                    "isOptional": false,
-                    "isUnique": false
-                },
-                {
                     "name": "expression",
                     "typeName": "string",
                     "cardinality" : "SINGLE",
@@ -386,6 +378,26 @@
                 "cardinality": "SINGLE"
             },
             "propagateTags": "NONE"
+        },
+        {
+          "name": "trino_process_column_lineage",
+          "serviceType": "trino",
+          "typeVersion": "1.0",
+          "relationshipCategory": "COMPOSITION",
+          "endDef1": {
+            "type": "trino_column_lineage",
+            "name": "query",
+            "isContainer": false,
+            "cardinality": "SINGLE",
+            "isLegacyAttribute": true
+          },
+          "endDef2": {
+            "type": "trino_process",
+            "name": "columnLineages",
+            "isContainer": true,
+            "cardinality": "SET"
+          },
+          "propagateTags": "NONE"
         },
          {
             "name": "trino_schema_hive_db",

@@ -35,6 +35,7 @@ import org.quartz.JobDetail;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
 import org.quartz.Scheduler;
+import org.quartz.SchedulerException;
 import org.quartz.SchedulerFactory;
 import org.quartz.Trigger;
 import org.quartz.TriggerBuilder;
@@ -67,28 +68,36 @@ public class TrinoExtractor {
     private static ExtractorContext extractorContext;
 
     public static void main(String[] args) {
+        Scheduler scheduler = null;
         try {
             extractorContext = createExtractorContext(args);
             if (extractorContext != null) {
                 String cronExpression = extractorContext.getCronExpression();
 
                 if (StringUtils.isNotEmpty(cronExpression)) {
-
                     if (!CronExpression.isValidExpression(cronExpression)) {
                         LOG.error("Invalid cron expression provided: {}", cronExpression);
-                    } else {
-                        LOG.info("Cron Expression found, scheduling the job for {}", cronExpression);
-                        SchedulerFactory sf = new StdSchedulerFactory();
-                        Scheduler scheduler = sf.getScheduler();
+                        exitCode = EXIT_CODE_FAILED;
+                        System.exit(exitCode);
+                    }
 
-                        JobDetail job = JobBuilder.newJob(MetadataJob.class).withIdentity("metadataJob", "group1").build();
-                        Trigger trigger = TriggerBuilder.newTrigger()
-                                .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression)).startNow()
-                                .build();
+                    LOG.info("Cron Expression found, scheduling the job for {}", cronExpression);
+                    SchedulerFactory sf = new StdSchedulerFactory();
+                    scheduler = sf.getScheduler();
 
-                        scheduler.scheduleJob(job, trigger);
-                        scheduler.start();
+                    JobDetail job = JobBuilder.newJob(MetadataJob.class).withIdentity("metadataJob", "group1").build();
+                    Trigger trigger = TriggerBuilder.newTrigger()
+                            .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression)).startNow()
+                            .build();
+
+                    scheduler.scheduleJob(job, trigger);
+                    scheduler.start();
+                    try {
                         Thread.currentThread().join();
+                    } catch (InterruptedException ie) {
+                        LOG.info("Main thread interrupted, shutting down scheduler.");
+                        scheduler.shutdown(true);
+                        exitCode = EXIT_CODE_SUCCESS;
                     }
                 } else {
                     LOG.warn("Cron Expression missing, hence will run the job once");
@@ -99,12 +108,17 @@ public class TrinoExtractor {
                 }
             }
         } catch (Exception e) {
-            LOG.error("Error encountered.", e);
-            System.out.println("exitCode : " + exitCode);
-            System.out.println("Error encountered." + e);
+            LOG.error("Error encountered. exitCode: {}", exitCode, e);
         } finally {
             if (extractorContext != null && extractorContext.getAtlasConnector() != null) {
                 extractorContext.getAtlasConnector().close();
+            }
+            try {
+                if (scheduler != null && !scheduler.isShutdown()) {
+                    scheduler.shutdown(true);
+                }
+            } catch (SchedulerException se) {
+                LOG.warn("Error shutting down scheduler: {}", se.getMessage());
             }
         }
 

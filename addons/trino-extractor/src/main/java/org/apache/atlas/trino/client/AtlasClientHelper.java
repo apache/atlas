@@ -72,6 +72,7 @@ public class AtlasClientHelper {
     private static final String TRINO_COLUMN_COLUMN_DEFAULT_ATTRIBUTE    = "column_default";
     private static final String TRINO_COLUMN_IS_NULLABLE_ATTRIBUTE       = "is_nullable";
     private static final String TRINO_COLUMN_TABLE_ATTRIBUTE             = "table";
+    private static final String TRINO_TABLE_TYPE                         = "table_type";
     private static final String TRINO_TABLE_COLUMN_RELATIONSHIP          = "trino_table_columns";
     private static final String TRINO_TABLE_SCHEMA_RELATIONSHIP          = "trino_table_schema";
     private static final String TRINO_TABLE_SCHEMA_ATTRIBUTE             = "trinoschema";
@@ -259,24 +260,24 @@ public class AtlasClientHelper {
         return ret;
     }
 
-    public static AtlasEntity.AtlasEntityWithExtInfo createOrUpdateTableEntity(Catalog catalog, String schema, String table, Map<String, Map<String, Object>> trinoColumns, AtlasEntity schemaEntity) throws AtlasServiceException {
+    public static AtlasEntity.AtlasEntityWithExtInfo createOrUpdateTableEntity(Catalog catalog, String schema, String table, Map<String, Object> tableMetadata, Map<String, Map<String, Object>> trinoColumns, AtlasEntity schemaEntity) throws AtlasServiceException {
         String qualifiedName = String.format("%s.%s.%s@%s", catalog.getName(), schema, table, catalog.getInstanceName());
 
         AtlasEntity.AtlasEntityWithExtInfo ret;
         AtlasEntity.AtlasEntityWithExtInfo tableEntityExt = findEntity(TRINO_TABLE, qualifiedName, true, true);
 
         if (tableEntityExt == null) {
-            tableEntityExt = toTableEntity(catalog, schema, table, trinoColumns, schemaEntity, tableEntityExt);
+            tableEntityExt = toTableEntity(catalog, schema, table, tableMetadata, trinoColumns, schemaEntity, tableEntityExt);
             ret            = createEntity(tableEntityExt);
         } else {
-            ret = toTableEntity(catalog, schema, table, trinoColumns, schemaEntity, tableEntityExt);
+            ret = toTableEntity(catalog, schema, table, tableMetadata, trinoColumns, schemaEntity, tableEntityExt);
             updateEntity(ret);
         }
 
         return ret;
     }
 
-    public static AtlasEntity.AtlasEntityWithExtInfo toTableEntity(Catalog catalog, String schema, String table, Map<String, Map<String, Object>> trinoColumns, AtlasEntity schemaEntity, AtlasEntity.AtlasEntityWithExtInfo tableEntityExt)  {
+    public static AtlasEntity.AtlasEntityWithExtInfo toTableEntity(Catalog catalog, String schema, String table, Map<String, Object> tableMetadata, Map<String, Map<String, Object>> trinoColumns, AtlasEntity schemaEntity, AtlasEntity.AtlasEntityWithExtInfo tableEntityExt)  {
         if (tableEntityExt == null) {
             tableEntityExt = new AtlasEntity.AtlasEntityWithExtInfo(new AtlasEntity(TRINO_TABLE));
         }
@@ -286,6 +287,7 @@ public class AtlasClientHelper {
         AtlasEntity tableEntity = tableEntityExt.getEntity();
         tableEntity.setAttribute(QUALIFIED_NAME_ATTRIBUTE, qualifiedName);
         tableEntity.setAttribute(NAME_ATTRIBUTE, table);
+        tableEntity.setAttribute(TRINO_TABLE_TYPE, tableMetadata.get(TRINO_TABLE_TYPE).toString());
 
         List<AtlasEntity> columnEntities = new ArrayList<>();
         for (Map.Entry<String, Map<String, Object>> columnEntry : trinoColumns.entrySet()) {
