@@ -42,5 +42,10 @@
             <groupId>org.apache.atlas</groupId>
             <artifactId>atlas-intg</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-core</artifactId>
+            <version>${mockito.version}</version>
+        </dependency>
     </dependencies>
 </project>

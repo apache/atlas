@@ -86,6 +86,9 @@ class TestMetadata(unittest.TestCase):
         atlas.main()
         self.assertTrue(configure_hbase_mock.called)
 
+        expected_jvm_opts = mc.get_base_jvm_opts()
+        expected_jvm_opts.extend(mc.get_expected_jvm_opts(mc.get_java_version()))
+
         if IS_WINDOWS:
             calls = [call(['atlas_home\\hbase\\bin\\start-hbase.cmd', '--config', 'atlas_home\\hbase\\conf'],
                           'atlas_home\\logs', False, True),
@@ -127,9 +130,7 @@ class TestMetadata(unittest.TestCase):
                 'org.apache.atlas.Atlas',
                 ['-app', 'atlas_home\\server\\webapp\\atlas'],
                 'atlas_home\\conf;atlas_home\\server\\webapp\\atlas\\WEB-INF\\classes;atlas_home\\server\\webapp\\atlas\\WEB-INF\\lib\\*;atlas_home\\libext\\*;atlas_home\\hbase\\conf',
-                ['-Datlas.log.dir=atlas_home\\logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home',
-                 '-Datlas.conf=atlas_home\\conf', '-Xmx1024m',
-                 '-Dlogback.configurationFile=atlas-logback.xml', '-Djava.net.preferIPv4Stack=true', '-server'],
+                expected_jvm_opts,
                 'atlas_home\\logs')
 
         else:
@@ -137,9 +138,7 @@ class TestMetadata(unittest.TestCase):
                 'org.apache.atlas.Atlas',
                 ['-app', 'atlas_home/server/webapp/atlas'],
                 'atlas_home/conf:atlas_home/server/webapp/atlas/WEB-INF/classes:atlas_home/server/webapp/atlas/WEB-INF/lib/*:atlas_home/libext/*:atlas_home/hbase/conf',
-                ['-Datlas.log.dir=atlas_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home',
-                 '-Datlas.conf=atlas_home/conf', '-Xmx1024m',
-                 '-Dlogback.configurationFile=atlas-logback.xml', '-Djava.net.preferIPv4Stack=true', '-server'],
+                expected_jvm_opts,
                 'atlas_home/logs')
 
         pass
@@ -178,6 +177,9 @@ class TestMetadata(unittest.TestCase):
 
         atlas.main()
         self.assertFalse(configure_hbase_mock.called)
+
+        expected_jvm_opts = mc.get_base_jvm_opts()
+        expected_jvm_opts.extend(mc.get_expected_jvm_opts(mc.get_java_version()))
 
         if IS_WINDOWS:
             calls = [call(['atlas_home\\hbase\\bin\\start-hbase.cmd', '--config', 'atlas_home\\hbase\\conf'],
@@ -220,9 +222,7 @@ class TestMetadata(unittest.TestCase):
                 'org.apache.atlas.Atlas',
                 ['-app', 'atlas_home\\server\\webapp\\atlas'],
                 'atlas_home\\conf;atlas_home\\server\\webapp\\atlas\\WEB-INF\\classes;atlas_home\\server\\webapp\\atlas\\WEB-INF\\lib\\*;atlas_home\\libext\\*;atlas_home\\hbase\\conf',
-                ['-Datlas.log.dir=atlas_home\\logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home',
-                 '-Datlas.conf=atlas_home\\conf', '-Xmx1024m',
-                 '-Dlogback.configurationFile=atlas-logback.xml', '-Djava.net.preferIPv4Stack=true', '-server'],
+                expected_jvm_opts,
                 'atlas_home\\logs')
 
         else:
@@ -230,9 +230,7 @@ class TestMetadata(unittest.TestCase):
                 'org.apache.atlas.Atlas',
                 ['-app', 'atlas_home/server/webapp/atlas'],
                 'atlas_home/conf:atlas_home/server/webapp/atlas/WEB-INF/classes:atlas_home/server/webapp/atlas/WEB-INF/lib/*:atlas_home/libext/*:atlas_home/hbase/conf',
-                ['-Datlas.log.dir=atlas_home/logs', '-Datlas.log.file=application.log', '-Datlas.home=atlas_home',
-                 '-Datlas.conf=atlas_home/conf', '-Xmx1024m',
-                 '-Dlogback.configurationFile=atlas-logback.xml', '-Djava.net.preferIPv4Stack=true', '-server'],
+                expected_jvm_opts,
                 'atlas_home/logs')
 
         pass

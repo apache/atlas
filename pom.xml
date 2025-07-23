@@ -113,7 +113,7 @@
         <elasticsearch.version>7.17.8</elasticsearch.version>
         <entity.repository.impl>org.apache.atlas.repository.audit.InMemoryEntityAuditRepository</entity.repository.impl>
         <enunciate-maven-plugin.version>2.13.2</enunciate-maven-plugin.version>
-        <failsafe.version>2.18.1</failsafe.version>
+        <failsafe.version>3.5.3</failsafe.version>
         <falcon.version>0.8</falcon.version>
         <fastutil.version>6.5.16</fastutil.version>
         <graph.index.backend>solr</graph.index.backend>
@@ -134,9 +134,6 @@
         <jacoco.version>0.8.13</jacoco.version>
         <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
         <janusgraph.version>1.0.0</janusgraph.version>
-        <java.version.required>1.8</java.version.required>
-        <javac.source.version>1.8</javac.source.version>
-        <javac.target.version>1.8</javac.target.version>
         <javax-inject.version>1</javax-inject.version>
         <javax.persistence.version>2.2.1</javax.persistence.version>
         <javax.servlet.version>3.1.0</javax.servlet.version>
@@ -156,8 +153,10 @@
         <keycloak.version>6.0.1</keycloak.version>
         <logback.version>1.3.15</logback.version>
         <lucene-solr.version>8.11.3</lucene-solr.version>
+        <maven-compiler-version>3.11.0</maven-compiler-version>
         <maven-plugin-sortpom.version>3.0.1</maven-plugin-sortpom.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
+        <mockito.version>3.12.4</mockito.version>
         <netty.version>4.1.125.Final</netty.version>
         <node-for-v1.version>v22.14.0</node-for-v1.version>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
@@ -193,7 +192,7 @@
         <sqoop.version>1.4.7</sqoop.version>
         <storm.version>2.4.0</storm.version>
         <surefire.forkCount>2C</surefire.forkCount>
-        <surefire.version>3.0.0-M5</surefire.version>
+        <surefire.version>3.5.3</surefire.version>
         <testng.version>7.0.0</testng.version>
         <tinkerpop.version>3.7.0</tinkerpop.version>
         <woodstox-core.version>5.0.3</woodstox-core.version>
@@ -989,8 +988,8 @@
 
             <dependency>
                 <groupId>org.mockito</groupId>
-                <artifactId>mockito-all</artifactId>
-                <version>1.8.5</version>
+                <artifactId>mockito-core</artifactId>
+                <version>${mockito.version}</version>
                 <scope>test</scope>
             </dependency>
 
@@ -1102,17 +1101,13 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-compiler-plugin</artifactId>
-                    <version>3.7.0</version>
-                    <configuration>
-                        <source>1.8</source>
-                        <target>1.8</target>
-                    </configuration>
+                    <version>${maven-compiler-version}</version>
                 </plugin>
 
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-source-plugin</artifactId>
-                    <version>2.4</version>
+                    <version>3.2.1</version>
                 </plugin>
 
                 <plugin>
@@ -1164,9 +1159,9 @@
                 </plugin>
 
                 <plugin>
-                    <groupId>org.codehaus.mojo</groupId>
-                    <artifactId>findbugs-maven-plugin</artifactId>
-                    <version>3.0.5</version>
+                    <groupId>com.github.spotbugs</groupId>
+                    <artifactId>spotbugs-maven-plugin</artifactId>
+                    <version>4.4.2</version>
                 </plugin>
 
                 <!-- Source code metrics: mvn javancss:report or mvn site -->
@@ -1265,13 +1260,8 @@
                                     <message>** MAVEN VERSION ERROR ** Maven 3.5.0 or above is required. See https://maven.apache.org/install.html</message>
                                 </requireMavenVersion>
                                 <requireJavaVersion>
-                                    <level>ERROR</level>
-                                    <version>[1.8.0-151,)</version>
-                                    <message>** JAVA VERSION ERROR ** Java 8 (Update 151) or above is required.</message>
-                                </requireJavaVersion>
-                                <requireJavaVersion>
                                     <level>WARN</level>
-                                    <version>(,1.9]</version>
+                                    <version>(,17]</version>
                                     <message>** JAVA VERSION WARNING ** Java 9 and above has not been tested with Atlas.</message>
                                 </requireJavaVersion>
                             </rules>
@@ -1319,7 +1309,8 @@
                     <forkCount>${surefire.forkCount}</forkCount>
                     <reuseForks>false</reuseForks>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <argLine>${argLine} -Djava.awt.headless=true -Dproject.version=${project.version}
+                    <argLine>${jdk.argLine} ${argLine}
+                        -Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir="${project.build.directory}/tmp-hadoop-${user.name}"
                         -Xmx1024m -Djava.net.preferIPv4Stack=true ${atlas.surefire.options}</argLine>
                     <skip>${skipUTs}</skip>
@@ -1347,7 +1338,8 @@
                         <embedded.solr.directory>${project.basedir}/target</embedded.solr.directory>
                     </systemPropertyVariables>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
+                    <argLine>${jdk.argLine}
+                        -Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir="${project.build.directory}/tmp-hadoop-${user.name}"
                         -Xmx1024m ${atlas.surefire.options}</argLine>
                     <skip>${skipITs}</skip>
@@ -1527,8 +1519,8 @@
             </plugin>
 
             <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>findbugs-maven-plugin</artifactId>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
                 <configuration>
                     <!--debug>true</debug -->
                     <xmlOutput>true</xmlOutput>
@@ -1539,7 +1531,7 @@
                     <execution>
                         <id>findbugs-check</id>
                         <goals>
-                            <goal>check</goal>
+                            <goal>spotbugs</goal>
                         </goals>
                         <phase>verify</phase>
                     </execution>
@@ -2315,6 +2307,41 @@
             </activation>
             <properties>
                 <skipDocs>false</skipDocs>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>jdk-17</id>
+            <activation>
+                <jdk>[17,)</jdk>
+            </activation>
+            <properties>
+                <enunciate-maven-plugin.version>2.18.1</enunciate-maven-plugin.version>
+                <jdk.argLine>--add-opens=java.base/java.lang=ALL-UNNAMED
+                    --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
+                    --add-opens=java.base/java.util=ALL-UNNAMED
+                    --add-opens=java.base/java.nio=ALL-UNNAMED
+                    --add-opens=java.base/java.net=ALL-UNNAMED
+                    --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED
+                    --add-opens=java.base/java.nio.channels.spi=ALL-UNNAMED
+                    --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
+                    --add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED
+                    --add-exports=java.base/sun.security.x509=ALL-UNNAMED
+                    --add-modules=java.sql</jdk.argLine>
+                <maven.compiler.source>17</maven.compiler.source>
+                <maven.compiler.target>17</maven.compiler.target>
+            </properties>
+        </profile>
+
+        <profile>
+            <id>jdk-8</id>
+            <activation>
+                <jdk>(,17)</jdk>
+            </activation>
+            <properties>
+                <jdk.argLine />
+                <maven.compiler.source>1.8</maven.compiler.source>
+                <maven.compiler.target>1.8</maven.compiler.target>
             </properties>
         </profile>
 

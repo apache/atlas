@@ -70,11 +70,36 @@ Regular Build Process
 2. Execute the following commands to build Apache Atlas
    ```
    export MAVEN_OPTS="-Xms2g -Xmx2g"
-   mvn clean install
-   mvn clean package -Pdist
+   ```
+- Apache Atlas supports building with **Java 8**, **Java 11**, and **Java 17**. Set the appropriate `JAVA_HOME` and `MAVEN_OPTS` before building.
+
+- **For Java 8 / Java 11:**
+  ```bash
+  export MAVEN_OPTS="-Xms2g -Xmx2g"
+  ```
+
+- **For Java 17:**
+  ```bash
+  export MAVEN_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED \
+  --add-opens=java.base/java.lang.reflect=ALL-UNNAMED \
+  --add-opens=java.base/java.util=ALL-UNNAMED \
+  --add-opens=java.base/java.nio=ALL-UNNAMED \
+  --add-opens=java.base/java.net=ALL-UNNAMED \
+  --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED \
+  --add-opens=java.base/java.nio.channels.spi=ALL-UNNAMED \
+  --add-opens=java.base/sun.nio.ch=ALL-UNNAMED \
+  --add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED \
+  --add-exports=java.base/sun.security.x509=ALL-UNNAMED \
+  --add-modules=java.sql -Xms2g -Xmx2g"
+  ```
+
+- After setting the correct `MAVEN_OPTS`, run:
+   ```bash
+    mvn clean install
+    mvn clean package -Pdist
    ```
 
-4. After above build commands successfully complete, you should see the following files
+3. After above build commands successfully complete, you should see the following files
    ```
    distro/target/apache-atlas-<version>-bin.tar.gz
    distro/target/apache-atlas-<version>-hbase-hook.tar.gz
@@ -89,4 +114,4 @@ Regular Build Process
    distro/target/apache-atlas-<version>-couchbase-hook.tar.gz
    ```
 
-5. For more details on installing and running Apache Atlas, please refer to https://atlas.apache.org/#/Installation
+4. For more details on installing and running Apache Atlas, please refer to https://atlas.apache.org/#/Installation

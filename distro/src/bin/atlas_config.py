@@ -733,3 +733,51 @@ def convertCygwinPath(path, isClasspath=False):
     windowsPath = subprocess.Popen(cygpathArgs, stdout=subprocess.PIPE).communicate()[0]
     windowsPath = windowsPath.strip()
     return windowsPath
+
+def get_java_version():
+    try:
+        output = subprocess.check_output(["java", "-version"], stderr=subprocess.STDOUT).decode()
+        if "version" in output:
+            version_line = output.splitlines()[0]
+            version_str = version_line.split('"')[1]
+            if version_str.startswith("1."):
+                return version_str.split('.')[1]
+            else:
+                return version_str.split('.')[0]
+    except Exception:
+        return "unknown"
+
+def get_expected_jvm_opts(java_version: str) -> list:
+    jvm_opts = []
+
+    try:
+        if java_version != "unknown" and int(java_version) >= 9:
+            jvm_opts.extend([
+                "--add-opens=java.base/java.lang=ALL-UNNAMED",
+                "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
+                "--add-opens=java.base/java.util=ALL-UNNAMED",
+                "--add-opens=java.base/java.nio=ALL-UNNAMED",
+                "--add-opens=java.base/java.net=ALL-UNNAMED",
+                "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED",
+                "--add-opens=java.base/java.nio.channels.spi=ALL-UNNAMED",
+                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
+                "--add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED",
+                "--add-exports=java.base/sun.security.x509=ALL-UNNAMED",
+                "--add-modules=java.sql"
+            ])
+    except Exception as e:
+        print(f"Warning: Invalid Java version '{java_version}': {e}")
+
+    return jvm_opts
+
+def get_base_jvm_opts() -> list:
+    return [
+        '-Datlas.log.dir=atlas_home/logs',
+        '-Datlas.log.file=application.log',
+        '-Datlas.home=atlas_home',
+        '-Datlas.conf=atlas_home/conf',
+        '-Xmx1024m',
+        '-Dlogback.configurationFile=atlas-logback.xml',
+        '-Djava.net.preferIPv4Stack=true',
+        '-server'
+    ]

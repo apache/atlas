@@ -49,6 +49,26 @@ export M2=/home/atlas/.m2
 
 echo JAVA_HOME="${JAVA_HOME}"
 
+JAVA_VERSION=$("${JAVA_HOME}/bin/java" -version 2>&1 | awk -F[\".] '/version/ {print $2}')
+
+echo "Java version: ${JAVA_VERSION}"
+
+if [ "$JAVA_VERSION" == "17" ]; then
+  export MAVEN_OPTS="-Xms2g -Xmx2g --add-opens=java.base/java.lang=ALL-UNNAMED \
+  --add-opens=java.base/java.lang.reflect=ALL-UNNAMED \
+  --add-opens=java.base/java.util=ALL-UNNAMED \
+  --add-opens=java.base/java.nio=ALL-UNNAMED \
+  --add-opens=java.base/java.net=ALL-UNNAMED \
+  --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED \
+  --add-opens=java.base/java.nio.channels.spi=ALL-UNNAMED \
+  --add-opens=java.base/sun.nio.ch=ALL-UNNAMED \
+  --add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED \
+  --add-exports=java.base/sun.security.x509=ALL-UNNAMED \
+  --add-modules=java.sql"
+fi
+
+echo "MAVEN_OPTS set to: $MAVEN_OPTS"
+
 if [ "${BUILD_HOST_SRC}" == "true" ]
 then
   if [ ! -f /home/atlas/src/pom.xml ]
