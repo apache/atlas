@@ -222,6 +222,20 @@ public class AtlasIndexSerializer extends IndexSerializer {
                         assert extIndex.getBackingIndexName().equals(index);
                         final ImmutableMap.Builder<String,KeyInformation> b = ImmutableMap.builder();
                         for (final ParameterIndexField field : extIndex.getFieldKeys()) b.put(key2Field(field),getKeyInformation(field));
+
+                        if ("edge_index".equals(store)) {
+                            Set<String> processedKeys = new HashSet<>();
+                            for (final ParameterIndexField field : extIndex.getFieldKeys()) {
+                                String key = key2Field(field);
+                                if (!processedKeys.contains(key)) {
+                                    b.put(key,getKeyInformation(field));
+                                    processedKeys.add(key);
+                                }
+                            }
+                        } else {
+                            for (final ParameterIndexField field : extIndex.getFieldKeys()) b.put(key2Field(field),getKeyInformation(field));
+                        }
+
                         ImmutableMap<String,KeyInformation> infoMap;
                         try {
                             infoMap = b.build();

@@ -114,14 +114,16 @@ public class AuthPolicyValidator {
     }};
 
     private static final Set<String> PERSONA_METADATA_ABAC_POLICY_ACTIONS = new HashSet<>(){{
-        add("persona-abac-read");
-        add("persona-abac-update");
-        add("persona-abac-update-business-metadata");
-        add("persona-abac-add-classification");
-        add("persona-abac-remove-classification");
-        add("persona-abac-add-terms");
-        add("persona-abac-remove-terms");
-        add("persona-abac-delete");
+        add("persona-asset-read");
+        add("persona-asset-update");
+        add("persona-api-create");
+        add("persona-api-delete");
+        add("persona-business-update-metadata");
+        add("persona-entity-add-classification");
+        add("persona-entity-update-classification");
+        add("persona-entity-remove-classification");
+        add("persona-add-terms");
+        add("persona-remove-terms");
     }};
 
     private static final Map<String, Set<String>> PERSONA_POLICY_VALID_ACTIONS = new HashMap<String, Set<String>>(){{
@@ -168,6 +170,10 @@ public class AuthPolicyValidator {
 
     private static final String INVALID_FILTER_CRITERIA = "Invalid filter criteria: ";
     private static final int FILTER_CRITERIA_MAX_NESTING_LEVEL = 2;
+    private static final Set<String> POLICY_SERVICE_ALLOWED_UPDATE = new HashSet<>(){{
+        add(POLICY_SERVICE_NAME_ATLAS);
+        add(POLICY_SERVICE_NAME_ABAC);
+    }};
 
     public void validate(AtlasEntity policy, AtlasEntity existingPolicy,
                          AtlasEntity accessControl, EntityMutations.EntityOperation operation) throws AtlasBaseException {
@@ -278,9 +284,13 @@ public class AuthPolicyValidator {
                 validateParam(policy.hasAttribute(ATTR_POLICY_ACTIONS) && CollectionUtils.isEmpty(getPolicyActions(policy)),
                         "Please provide attribute " + ATTR_POLICY_ACTIONS);
 
+                // allow service name update only for interchanging atlas and abac, not heka
                 String newServiceName = getPolicyServiceName(policy);
-                validateOperation (StringUtils.isNotEmpty(newServiceName) && !newServiceName.equals(getPolicyServiceName(existingPolicy)),
+                if (StringUtils.isNotEmpty(newServiceName) && !newServiceName.equals(getPolicyServiceName(existingPolicy))) {
+                    String existingServiceName = getPolicyServiceName(existingPolicy);
+                    validateOperation (!POLICY_SERVICE_ALLOWED_UPDATE.contains(newServiceName) || !POLICY_SERVICE_ALLOWED_UPDATE.contains(existingServiceName),
                         ATTR_POLICY_SERVICE_NAME + " change not Allowed");
+                }
 
                 String newResourceCategory = getPolicyResourceCategory(policy);
                 validateOperation (StringUtils.isNotEmpty(newResourceCategory) && !newResourceCategory.equals(getPolicyResourceCategory(existingPolicy)),
@@ -301,7 +311,7 @@ public class AuthPolicyValidator {
                     if (isABACPolicyService(policy)) {
                         validatePolicyFilterCriteria(getPolicyFilterCriteria(policy));
                     } else {
-                        validateParam (policy.hasAttribute(ATTR_POLICY_RESOURCES) && CollectionUtils.isEmpty(resources),
+                        validateParam (CollectionUtils.isEmpty(resources),
                             "Please provide attribute " + ATTR_POLICY_RESOURCES);
                     }
 
@@ -434,8 +444,8 @@ public class AuthPolicyValidator {
         if (criterionArray == null) { // Leaf node
             JsonNode operator = criteriaNode.get(POLICY_FILTER_CRITERIA_OPERATAOR);
             validateParam(operator == null, INVALID_FILTER_CRITERIA + "operator is required");
-            validateParam(!POLICY_FILTER_CRITERIA_VAID_OPS.contains(operator.asText()), 
-                INVALID_FILTER_CRITERIA + "operator must be one of: " + POLICY_FILTER_CRITERIA_VAID_OPS);
+            validateParam(!POLICY_FILTER_CRITERIA_VALID_OPS.contains(operator.asText()),
+                INVALID_FILTER_CRITERIA + "operator must be one of: " + POLICY_FILTER_CRITERIA_VALID_OPS);
             return;
         }
 

@@ -30,8 +30,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_SERVICE_NAME_ABAC;
+
 public class PolicyTransformerTemplate {
     private static final Logger LOG = LoggerFactory.getLogger(PolicyTransformerTemplate.class);
+    private static final String ABAC_TEMPLATE_KEY_SUFFIX = "abac";
 
     private Map<String, List<TemplatePolicy>> actionToPoliciesMap = new HashMap<>();
 
@@ -44,6 +47,13 @@ public class PolicyTransformerTemplate {
 
     public Set<String> getTemplateActions() {
         return new HashSet<>(actionToPoliciesMap.keySet());
+    }
+
+    public String getTemplateKey(String action, String service) {
+        if (POLICY_SERVICE_NAME_ABAC.equals(service)) {
+            return action + "-" + ABAC_TEMPLATE_KEY_SUFFIX;
+        }
+        return action;
     }
 
     public void fromJsonString(String json) {

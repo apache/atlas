@@ -17,16 +17,29 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
+import java.util.HashSet;
 
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_DENY;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_EQUALS;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_ENDS_WITH;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_NOT_EQUALS;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_STARTS_WITH;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_IN;
+import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_NOT_IN;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_QUALIFIED_NAME;
 
 public class EntityAuthorizer {
 
     private static final Logger LOG = LoggerFactory.getLogger(EntityAuthorizer.class);
     private static final PoliciesStore policiesStore = PoliciesStore.getInstance();
+    private static final List<Set<String>> relatedAttributeSets = Arrays.asList(
+            Set.of("ownerUsers", "ownerGroups"),
+            Set.of("__traitNames", "__propagatedTraitNames")
+    );
 
     public static AtlasAccessResult isAccessAllowedInMemory(AtlasEntityHeader entity, String action) {
 
@@ -132,25 +145,7 @@ public class EntityAuthorizer {
             attributeName = attributeName.replace(".keyword", "");
         }
 
-        List<String> entityAttributeValues = new ArrayList<>();
-
-        Object attrValue = entity.getAttribute(attributeName);
-        if (attrValue != null) {
-            if (attrValue instanceof Collection) {
-                entityAttributeValues.addAll((Collection<? extends String>) attrValue);
-            } else {
-                entityAttributeValues.add(String.valueOf(attrValue));
-            }
-        } else {
-            // try fetching from vertex
-            if (vertex != null) {
-                Collection<?> values = vertex.getPropertyValues(attributeName, String.class);
-                for (Object value : values) {
-                    entityAttributeValues.add(String.valueOf(value));
-                }
-            }
-        }
-
+        List<String> entityAttributeValues = getAttributeValue(entity, attributeName, vertex);
         if (entityAttributeValues.isEmpty()) {
             entityAttributeValues = handleSpecialAttributes(entity, attributeName);
         }
@@ -166,37 +161,39 @@ public class EntityAuthorizer {
         }
 
         switch (operator) {
-            case "EQUALS":
-                if (entityAttributeValues.contains(attributeValue)) {
-                    return true;
-                }
-                break;
-            case "STARTS_WITH":
+            case POLICY_FILTER_CRITERIA_EQUALS:
+                return attributeValues.isEmpty() 
+                    ? entityAttributeValues.contains(attributeValue)
+                    : new HashSet<>(entityAttributeValues).containsAll(attributeValues);
+
+            case POLICY_FILTER_CRITERIA_STARTS_WITH:
                 if (AuthorizerCommonUtil.listStartsWith(attributeValue, entityAttributeValues)) {
                     return true;
                 }
                 break;
-            case "LIKE":
-                if (AuthorizerCommonUtil.listMatchesWith(attributeValue, entityAttributeValues)) {
-                    return true;
-                }
-                break;
-            case "ENDS_WITH":
+            // case "LIKE":
+            //     if (AuthorizerCommonUtil.listMatchesWith(attributeValue, entityAttributeValues)) {
+            //         return true;
+            //     }
+            //     break;
+            case POLICY_FILTER_CRITERIA_ENDS_WITH:
                 if (AuthorizerCommonUtil.listEndsWith(attributeValue, entityAttributeValues)) {
                     return true;
                 }
                 break;
-            case "NOT_EQUALS":
-                if (!entityAttributeValues.contains(attributeValue)) {
-                    return true;
-                }
-                break;
-            case "IN":
+
+            case POLICY_FILTER_CRITERIA_NOT_EQUALS:
+                return attributeValues.isEmpty()
+                    ? !entityAttributeValues.contains(attributeValue)
+                    : Collections.disjoint(entityAttributeValues, attributeValues);
+
+            case POLICY_FILTER_CRITERIA_IN:
                 if (AuthorizerCommonUtil.arrayListContains(attributeValues, entityAttributeValues)) {
                     return true;
                 }
                 break;
-            case "NOT_IN":
+
+            case POLICY_FILTER_CRITERIA_NOT_IN:
                 if (!AuthorizerCommonUtil.arrayListContains(attributeValues, entityAttributeValues)) {
                     return true;
                 }
@@ -242,9 +239,49 @@ public class EntityAuthorizer {
                 break;
 
             default:
-                LOG.warn("Value for attribute {} not found", attributeName);
+                LOG.warn("Value for attribute {} not found for {}:{}", attributeName, entity.getTypeName(), entity.getAttribute(ATTR_QUALIFIED_NAME));
         }
 
         return entityAttributeValues;
+    }
+
+    private static List<String> getAttributeValue(AtlasEntityHeader entity, String attributeName, AtlasVertex vertex) {
+        List<String> entityAttributeValues = new ArrayList<>();
+
+        List<String> relatedAttributes = getRelatedAttributes(attributeName);
+        for (String relatedAttribute : relatedAttributes) {
+            Object attrValue = entity.getAttribute(relatedAttribute);
+            if (attrValue != null) {
+                if (attrValue instanceof Collection) {
+                    entityAttributeValues.addAll((Collection<? extends String>) attrValue);
+                } else {
+                    entityAttributeValues.add(String.valueOf(attrValue));
+                }
+            } else if (vertex != null) {
+                // try fetching from vertex
+                Collection<?> values = vertex.getPropertyValues(relatedAttribute, String.class);
+                for (Object value : values) {
+                    entityAttributeValues.add(String.valueOf(value));
+                }
+            }
+        }
+        return entityAttributeValues;
+    }
+
+    public static List<String> getRelatedAttributes(String attributeName) {
+        List<String> relatedAttributes = new ArrayList<>();
+
+        // Check if attributeName exists in any set and add the entire set
+        for (Set<String> attributeSet : relatedAttributeSets) {
+            if (attributeSet.contains(attributeName)) {
+                relatedAttributes.addAll(attributeSet);
+                break;
+            }
+        }
+        if (relatedAttributes.isEmpty()) {
+            relatedAttributes.add(attributeName);
+        }
+
+        return relatedAttributes;
     }
 }

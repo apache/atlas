@@ -155,7 +155,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
             if (e.getMessage().startsWith(OLDER_STORAGE_EXCEPTION)) {
                 LOG.info("Newer client is being used with older janus storage version. Setting allow-upgrade=true and reattempting connection");
                 config.addProperty("graph.allow-upgrade", true);
-                return JanusGraphFactory.open(conf2);
+                return AtlasJanusGraphFactory.open(conf2);
             } else {
                 throw new RuntimeException(e);
             }

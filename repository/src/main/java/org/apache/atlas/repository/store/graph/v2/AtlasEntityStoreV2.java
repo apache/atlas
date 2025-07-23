@@ -1,4 +1,3 @@
-
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -3103,5 +3102,38 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             RequestContext.get().endMetricRecord(metric);
         }
     }
+    @Override
+    @GraphTransaction
+    public void attributeUpdate(List<AttributeUpdateRequest.AssetAttributeInfo> data) throws AtlasBaseException {
+        if (CollectionUtils.isEmpty(data)) {
+            LOG.warn("No data provided for attribute update.");
+            return;
+        }
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("attributeUpdate.GraphTransaction");
+        try {
+            List<AtlasVertex> vertices = data.stream()
+                    .map(ad -> {
+                        AtlasVertex av = this.entityGraphMapper.attributeUpdate(ad);
+                        if (av == null) {
+                            LOG.warn("No vertex found for asset: {}", ad.getAssetId());
+                        }
+                        return av;
+                    })
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            if (vertices.isEmpty()) {
+                LOG.warn("No vertices updated during attribute update.");
+                return;
+            }
+            handleEntityMutation(vertices);
+        } catch (Exception e) {
+            LOG.error("Error during attribute update", e);
+            throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
 
 }

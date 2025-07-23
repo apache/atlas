@@ -15,6 +15,7 @@ on:
       - poctagprophashedrebased
       - idonlycanary
       - idonlycanarybeta
+      - tagscanary
     types:
       - completed
 
