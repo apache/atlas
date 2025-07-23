@@ -221,7 +221,6 @@ public class AtlasIndexSerializer extends IndexSerializer {
                         final MixedIndexType extIndex = getMixedIndex(store, transaction);
                         assert extIndex.getBackingIndexName().equals(index);
                         final ImmutableMap.Builder<String,KeyInformation> b = ImmutableMap.builder();
-                        for (final ParameterIndexField field : extIndex.getFieldKeys()) b.put(key2Field(field),getKeyInformation(field));
 
                         if ("edge_index".equals(store)) {
                             Set<String> processedKeys = new HashSet<>();
