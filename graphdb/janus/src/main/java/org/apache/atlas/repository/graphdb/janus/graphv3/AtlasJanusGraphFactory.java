@@ -247,11 +247,8 @@ public class AtlasJanusGraphFactory {
     }
 
     /**
-<<<<<<< HEAD
      * Returns a {@link org.janusgraph.core.log.LogProcessorFramework} for processing transaction log entries
-=======
      * Returns a {@link LogProcessorFramework} for processing transaction log entries
->>>>>>> master
      * against the provided graph instance.
      *
      * @param graph
@@ -308,11 +305,7 @@ public class AtlasJanusGraphFactory {
      * Load a properties file containing a JanusGraph graph configuration.
      * <p>
      * <ol>
-<<<<<<< HEAD
      * <li>Load the file contents into a {@link org.apache.commons.configuration2.PropertiesConfiguration}</li>
-=======
-     * <li>Load the file contents into a {@link PropertiesConfiguration}</li>
->>>>>>> master
      * <li>For each key that points to a configuration object that is either a directory
      * or local file, check
      * whether the associated value is a non-null, non-absolute path. If so,
