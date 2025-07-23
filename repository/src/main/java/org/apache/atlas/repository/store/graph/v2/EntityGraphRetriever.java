@@ -352,10 +352,14 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    public AtlasObjectId toAtlasObjectIdV2(AtlasVertex entityVertex, String vertexId, VertexEdgePropertiesCache vertexEdgePropertiesCache) throws AtlasBaseException {
+    public AtlasObjectId toAtlasObjectIdV2(String referenceVertexId, VertexEdgePropertiesCache vertexEdgePropertiesCache) throws AtlasBaseException {
         AtlasObjectId   ret        = null;
+        AtlasVertex referenceVertex = vertexEdgePropertiesCache.getVertexById(referenceVertexId);
+        if (referenceVertex == null) {
+            return null;
+        }
 //        String          typeName   = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
-        String typeName = vertexEdgePropertiesCache.getPropertyValue(vertexId, TYPE_NAME_PROPERTY_KEY, String.class);
+        String typeName = vertexEdgePropertiesCache.getPropertyValue(referenceVertexId, TYPE_NAME_PROPERTY_KEY, String.class);
         AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
         Map<String, Object> referenceVertexProperties  = null;
         if (entityType != null) {
@@ -363,7 +367,7 @@ public class EntityGraphRetriever {
             Set<String> relationAttributes = RequestContext.get().getRelationAttrsForSearch();
 
             for (AtlasAttribute attribute : entityType.getUniqAttributes().values()) {
-                Object attrValue = getVertexAttribute(entityVertex, attribute, vertexEdgePropertiesCache);
+                Object attrValue = getVertexAttribute(referenceVertex, attribute, vertexEdgePropertiesCache);
 
                 if (attrValue != null) {
                     uniqueAttributes.put(attribute.getName(), attrValue);
@@ -377,7 +381,7 @@ public class EntityGraphRetriever {
                     if (attribute != null
                             && !uniqueAttributes.containsKey(attributeName)) {
                         Object attrValue = null;
-                        attrValue = getVertexAttribute(entityVertex, attribute, vertexEdgePropertiesCache);
+                        attrValue = getVertexAttribute(referenceVertex, attribute, vertexEdgePropertiesCache);
 
                         if (attrValue != null) {
                             attributes.put(attribute.getName(), attrValue);
@@ -385,7 +389,7 @@ public class EntityGraphRetriever {
                     }
                 }
             }
-            ret = new AtlasObjectId(entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class), typeName, uniqueAttributes, attributes);
+            ret = new AtlasObjectId(referenceVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class), typeName, uniqueAttributes, attributes);
         }
 
         return ret;
@@ -1009,39 +1013,6 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    private Map<String, Map<String, ArrayList<?>>> getVertexPropertiesValueMap(Set<String> vertexIds, int batchSize) {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getVertexPropertiesValueMap");
-        try {
-            if (CollectionUtils.isEmpty(vertexIds)) {
-                return new HashMap<>();
-            }
-
-            Map<String, Map<String, ArrayList<?>>> ret = new HashMap<>();
-
-            ListUtils.partition(new ArrayList<>(vertexIds), batchSize).forEach(batch -> {
-                List<Map<Object, Object>> results = graph.V(batch)
-                        .valueMap(true)
-                        .toList();
-
-                results.forEach(properties -> {
-                    if (properties != null) {
-                        if (MapUtils.isNotEmpty(properties) && properties.containsKey(T.id)) {
-                            Long vertexId = (Long) properties.get(T.id);
-                            properties.remove(T.id);
-                            properties.remove(T.label);
-                            Map<String, ArrayList<?>> vertexProperties = getStringArrayListMap(properties);
-                            ret.put(vertexId.toString(), vertexProperties);
-                        }
-                    }
-                });
-            });
-
-            return ret;
-        } finally {
-            RequestContext.get().endMetricRecord(metricRecorder);
-        }
-    }
-
     @NotNull
     private static Map<String, ArrayList<?>> getStringArrayListMap(Map<Object, Object> properties) {
         Map<String, ArrayList<?>> vertexProperties = new HashMap<>();
@@ -1101,6 +1072,49 @@ public class EntityGraphRetriever {
         }
     }
 
+    private Pair<Map<String, Map<String, ArrayList<?>>>, Map<String, AtlasVertex>> getVertexPropertiesValueMap(Set<String> vertexIds, int batchSize) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getVertexPropertiesValueMap");
+        try {
+            if (CollectionUtils.isEmpty(vertexIds)) {
+                return Pair.with(Collections.emptyMap(), Collections.emptyMap());
+            }
+
+            Map<String, Map<String, ArrayList<?>>> vertexPropertyMap = new HashMap<>();
+            Map<String, AtlasVertex> vertexMap = new HashMap<>();
+
+            ListUtils.partition(new ArrayList<>(vertexIds), batchSize).forEach(batch -> {
+                GraphTraversal vertices  = graph.V(batch)
+                        .project("vertex", "properties")
+                        // Return the vertex only
+                        .by()
+                        .by(__.valueMap(true)); // Return the valueMap
+
+                List<Map<String, Object>> results = vertices.toList();
+
+
+
+                results.forEach(vertexInfo -> {
+                    AtlasVertex vertex = new AtlasJanusVertex((AtlasJanusGraph) graph, (Vertex) vertexInfo.get("vertex"));
+                    vertexMap.put(vertex.getIdForDisplay(), vertex);
+                    Map<Object, Object> properties = (Map<Object, Object>) vertexInfo.get("properties");
+                    if (properties != null) {
+                        if (MapUtils.isNotEmpty(properties) && properties.containsKey(T.id)) {
+                            Long vertexId = (Long) properties.get(T.id);
+                            properties.remove(T.id);
+                            properties.remove(T.label);
+                            Map<String, ArrayList<?>> vertexProperties = getStringArrayListMap(properties);
+                            vertexPropertyMap.put(vertexId.toString(), vertexProperties);
+                        }
+                    }
+                });
+            });
+
+            return Pair.with(vertexPropertyMap, vertexMap);
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
 
     public VertexEdgePropertiesCache enrichVertexPropertiesByVertexIds(Set<String> vertexIds, Set<String> attributes) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("enrichVertexPropertiesByVertexIds");
@@ -1111,8 +1125,9 @@ public class EntityGraphRetriever {
            }
 
            // Get vertex properties
-           Map<String, Map<String, ArrayList<?>>> vertexProperties = getVertexPropertiesValueMap(vertexIds, 100);
-           for (Map.Entry<String, Map<String, ArrayList<?>>> entry : vertexProperties.entrySet()) {
+           Pair<Map<String, Map<String, ArrayList<?>>>, Map<String, AtlasVertex>> vertexCache = getVertexPropertiesValueMap(vertexIds, 100);
+
+           for (Map.Entry<String, Map<String, ArrayList<?>>> entry : vertexCache.getValue0().entrySet()) {
                String vertexId = entry.getKey();
                Map<String, ArrayList<?>> properties = entry.getValue();
 
@@ -1120,6 +1135,7 @@ public class EntityGraphRetriever {
                    ret.addVertexProperties(vertexId, properties);
                }
            }
+           ret.addVertices(vertexCache.getValue1());
 
            Set<String> edgeLabelsToProcess = collectEdgeLabelsToProcess(ret, vertexIds, attributes);
 
@@ -1167,8 +1183,8 @@ public class EntityGraphRetriever {
                }
            }
 
-           Map<String, Map<String, ArrayList<?>>> referenceVerticesProperties = getVertexPropertiesValueMap(vertexIdsToProcess, 1000);
-           for (Map.Entry<String, Map<String, ArrayList<?>>> entry : referenceVerticesProperties.entrySet()) {
+           Pair<Map<String, Map<String, ArrayList<?>>>, Map<String, AtlasVertex>> referenceVertices = getVertexPropertiesValueMap(vertexIdsToProcess, 1000);
+           for (Map.Entry<String, Map<String, ArrayList<?>>> entry : referenceVertices.getValue0().entrySet()) {
                String vertexId = entry.getKey();
                Map<String, ArrayList<?>> properties = entry.getValue();
 
@@ -1176,6 +1192,7 @@ public class EntityGraphRetriever {
                    ret.addVertexProperties(vertexId, properties);
                }
            }
+           ret.addVertices(referenceVertices.getValue1());
 
            return ret;
        } finally {
@@ -2510,7 +2527,7 @@ public class EntityGraphRetriever {
         String elementId = referencedElementPair.getValue0();
         String edgeId = edgeInfo.getEdgeId();
 
-        ret = toAtlasObjectIdV2(entityVertex, elementId, vertexEdgePropertiesCache);
+        ret = toAtlasObjectIdV2(elementId, vertexEdgePropertiesCache);
 
         if (ret == null) {
             LOG.debug("Found corrupted vertex with Id: {}", entityVertex.getIdForDisplay());

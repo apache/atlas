@@ -1,6 +1,7 @@
 package org.apache.atlas.repository;
 
 import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.tinkerpop.gremlin.structure.Edge;
 import org.javatuples.Pair;
@@ -16,12 +17,27 @@ public class VertexEdgePropertiesCache {
     Map<String, Map<String, ArrayList<?>>> vertexProperties;
     Map<String, Map<String, Object>> edgeProperties;
     Map<String, Map<String, ArrayList<EdgeVertexReference>>> edgeLabelToVertexIds;
+    Map<String, AtlasVertex> vertexIdToVertexMap;
 
     public VertexEdgePropertiesCache() {
         this.vertexProperties = new HashMap<>();
         this.edgeProperties = new HashMap<>();
         this.edgeLabelToVertexIds = new HashMap<>();
+        this.vertexIdToVertexMap = new HashMap<>();
+    }
 
+    public void addVertices(Map<String, AtlasVertex> vertices) {
+        if (vertices != null) {
+            for (Map.Entry<String, AtlasVertex> entry : vertices.entrySet()) {
+                String vertexId = entry.getKey();
+                AtlasVertex vertex = entry.getValue();
+                vertexIdToVertexMap.put(vertexId, vertex);
+            }
+        }
+    }
+
+    public AtlasVertex getVertexById(String vertexId) {
+        return vertexIdToVertexMap.get(vertexId);
     }
 
     public Map<String, ArrayList<?>> getVertexPropertiesById(String vertexId) {
