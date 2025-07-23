@@ -64,9 +64,17 @@ import static org.apache.atlas.hive.hook.events.BaseHiveEvent.ATTRIBUTE_CLUSTER_
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.ATTRIBUTE_STORAGEDESC;
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.HIVE_TYPE_DB;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
-import static org.testng.AssertJUnit.*;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.testng.AssertJUnit.assertTrue;
 
 public class HiveMetaStoreBridgeTest {
     private static final String TEST_DB_NAME       = "default";
@@ -116,7 +124,7 @@ public class HiveMetaStoreBridgeTest {
         bridge.importHiveMetadata(null, null, true);
 
         // verify update is called
-        verify(atlasClientV2).updateEntity(Matchers.any(AtlasEntity.AtlasEntityWithExtInfo.class));
+        verify(atlasClientV2).updateEntity(any());
     }
 
     @Test
@@ -156,7 +164,8 @@ public class HiveMetaStoreBridgeTest {
         bridge.importHiveMetadata(null, null, true);
 
         // verify update is called on table
-        verify(atlasClientV2, times(2)).updateEntity(Matchers.any(AtlasEntity.AtlasEntityWithExtInfo.class));
+        verify(atlasClientV2, times(2)).updateEntity(any());
+
     }
 
     private void returnExistingDatabase(String databaseName, AtlasClientV2 atlasClientV2, String metadataNamespace)
