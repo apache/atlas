@@ -40,7 +40,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 public class ActiveInstanceElectorServiceTest {
@@ -111,7 +111,7 @@ public class ActiveInstanceElectorServiceTest {
 
         activeInstanceElectorService.start();
 
-        verifyZeroInteractions(curatorFactory);
+        verifyNoInteractions(curatorFactory);
     }
 
     @Test
@@ -162,7 +162,7 @@ public class ActiveInstanceElectorServiceTest {
 
         activeInstanceElectorService.stop();
 
-        verifyZeroInteractions(curatorFactory);
+        verifyNoInteractions(curatorFactory);
     }
 
     @Test
