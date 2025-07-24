@@ -82,15 +82,9 @@ Regular Build Process
   ```bash
   export MAVEN_OPTS="--add-opens=java.base/java.lang=ALL-UNNAMED \
   --add-opens=java.base/java.lang.reflect=ALL-UNNAMED \
-  --add-opens=java.base/java.util=ALL-UNNAMED \
   --add-opens=java.base/java.nio=ALL-UNNAMED \
   --add-opens=java.base/java.net=ALL-UNNAMED \
-  --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED \
-  --add-opens=java.base/java.nio.channels.spi=ALL-UNNAMED \
-  --add-opens=java.base/sun.nio.ch=ALL-UNNAMED \
-  --add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED \
-  --add-exports=java.base/sun.security.x509=ALL-UNNAMED \
-  --add-modules=java.sql -Xms2g -Xmx2g"
+  -Xms2g -Xmx2g"
   ```
 
 - After setting the correct `MAVEN_OPTS`, run:
