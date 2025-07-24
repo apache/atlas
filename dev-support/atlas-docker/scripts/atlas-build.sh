@@ -56,15 +56,8 @@ echo "Java version: ${JAVA_VERSION}"
 if [ "$JAVA_VERSION" == "17" ]; then
   export MAVEN_OPTS="-Xms2g -Xmx2g --add-opens=java.base/java.lang=ALL-UNNAMED \
   --add-opens=java.base/java.lang.reflect=ALL-UNNAMED \
-  --add-opens=java.base/java.util=ALL-UNNAMED \
-  --add-opens=java.base/java.nio=ALL-UNNAMED \
   --add-opens=java.base/java.net=ALL-UNNAMED \
-  --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED \
-  --add-opens=java.base/java.nio.channels.spi=ALL-UNNAMED \
-  --add-opens=java.base/sun.nio.ch=ALL-UNNAMED \
-  --add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED \
-  --add-exports=java.base/sun.security.x509=ALL-UNNAMED \
-  --add-modules=java.sql"
+  --add-opens=java.base/java.nio=ALL-UNNAMED"
 fi
 
 echo "MAVEN_OPTS set to: $MAVEN_OPTS"

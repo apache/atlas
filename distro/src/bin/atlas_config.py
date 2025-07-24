@@ -747,7 +747,7 @@ def get_java_version():
     except Exception:
         return "unknown"
 
-def get_expected_jvm_opts(java_version: str) -> list:
+def get_expected_jvm_opts(java_version):
     jvm_opts = []
 
     try:
@@ -755,22 +755,15 @@ def get_expected_jvm_opts(java_version: str) -> list:
             jvm_opts.extend([
                 "--add-opens=java.base/java.lang=ALL-UNNAMED",
                 "--add-opens=java.base/java.lang.reflect=ALL-UNNAMED",
-                "--add-opens=java.base/java.util=ALL-UNNAMED",
-                "--add-opens=java.base/java.nio=ALL-UNNAMED",
                 "--add-opens=java.base/java.net=ALL-UNNAMED",
-                "--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED",
-                "--add-opens=java.base/java.nio.channels.spi=ALL-UNNAMED",
-                "--add-opens=java.base/sun.nio.ch=ALL-UNNAMED",
-                "--add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED",
-                "--add-exports=java.base/sun.security.x509=ALL-UNNAMED",
-                "--add-modules=java.sql"
+                "--add-opens=java.base/java.nio=ALL-UNNAMED"
             ])
     except Exception as e:
-        print(f"Warning: Invalid Java version '{java_version}': {e}")
+        print("Warning: Invalid Java version '{}': {}".format(java_version, e))
 
     return jvm_opts
 
-def get_base_jvm_opts() -> list:
+def get_base_jvm_opts():
     return [
         '-Datlas.log.dir=atlas_home/logs',
         '-Datlas.log.file=application.log',
