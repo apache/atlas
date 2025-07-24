@@ -446,7 +446,7 @@ public class AdminResource {
 
         } catch (Exception e) {
             result.put("cassandra", new HealthStatus("cassandra", "error", true, new Date().toString(), e.toString()));
-            result.put("cassandra", new HealthStatus("elasticsearch", "error", true, new Date().toString(), e.toString()));
+            result.put("elasticsearch", new HealthStatus("elasticsearch", "error", true, new Date().toString(), e.toString()));
             cassandraFailed = true;
         }
 
