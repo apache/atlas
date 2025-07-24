@@ -1155,8 +1155,12 @@ public class EntityGraphRetriever {
 
                List<Map<String, Object>> results = edgeTraversal.toList();
 
-               for (Map<String, Object> result : results) {
-                   if (result.containsKey("id") && result.containsKey("valueMap")) {
+
+               for(String vertexId : vertexIds) {
+                   for (Map<String, Object> result : results) {
+                       if (!(result.containsKey("id") && result.containsKey("valueMap"))) {
+                           continue;
+                       }
                        LinkedHashMap<Object, Object> valueMap = (LinkedHashMap<Object, Object>) result.get("valueMap");
 
                        String edgeId = result.get("id").toString();
@@ -1167,18 +1171,17 @@ public class EntityGraphRetriever {
                        if (!edgeLabelsToProcess.contains(edgeLabel)) {
                            continue;
                        }
-
                        // Self relationship condition, like similarities relationship in the meanings
-                       if (Objects.equals(outVertexId, inVertexId)) {
-                           ret.addEdgeLabelToVertexIds(outVertexId, edgeLabel, new EdgeVertexReference(outVertexId, edgeId, edgeLabel, inVertexId, outVertexId, valueMap));
-                       }
-                       if (vertexIds.contains(outVertexId)) {
-                           ret.addEdgeLabelToVertexIds(outVertexId, edgeLabel, new EdgeVertexReference(inVertexId, edgeId, edgeLabel, inVertexId, outVertexId, valueMap));
+                       if (vertexId.equals(outVertexId) && vertexId.equals(inVertexId)) {
+                           ret.addEdgeLabelToVertexIds(vertexId, edgeLabel, new EdgeVertexReference(outVertexId, edgeId, edgeLabel, inVertexId, outVertexId, valueMap));
+                       } else if (vertexId.equals(outVertexId)) {
+                           ret.addEdgeLabelToVertexIds(vertexId, edgeLabel, new EdgeVertexReference(inVertexId, edgeId, edgeLabel, inVertexId, outVertexId, valueMap));
                            vertexIdsToProcess.add(inVertexId);
-                       } else if (vertexIds.contains(inVertexId)) {
-                           ret.addEdgeLabelToVertexIds(inVertexId, edgeLabel, new EdgeVertexReference(outVertexId, edgeId, edgeLabel, inVertexId, outVertexId, valueMap));
+                       } else if (vertexId.equals(inVertexId)) {
+                           ret.addEdgeLabelToVertexIds(vertexId, edgeLabel, new EdgeVertexReference(outVertexId, edgeId, edgeLabel, inVertexId, outVertexId, valueMap));
                            vertexIdsToProcess.add(outVertexId);
                        }
+
                    }
                }
            }
@@ -2102,7 +2105,7 @@ public class EntityGraphRetriever {
                         }
                         if (vertexEdgePropertiesCache != null) {
                             ret = attribute.getAttributeDef().isSoftReferenced() ? mapVertexToObjectIdForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo) :
-                            mapVertexToObjectIdV2(entityVertex, vertexEdgePropertiesCache.getRelationShipElement(vertexId, edgeLabel), vertexEdgePropertiesCache);
+                            mapVertexToObjectIdV2(entityVertex, vertexEdgePropertiesCache.getRelationShipElement(vertexId, edgeLabel, edgeDirection), edgeDirection, vertexEdgePropertiesCache);
 
                         } else {
                             ret = attribute.getAttributeDef().isSoftReferenced() ? mapVertexToObjectIdForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo) :
@@ -2131,6 +2134,9 @@ public class EntityGraphRetriever {
                             ret = mapVertexToArrayForSoftRef(entityVertex, attribute, entityExtInfo, isMinExtInfo);
                         } else {
                             ret = mapVertexToArray(entityVertex, entityExtInfo, isOwnedAttribute, attribute, isMinExtInfo, includeReferences, ignoreInactive, vertexEdgePropertiesCache);
+                            if (ret == null && !attribute.getAttributeDef().getIsDefaultValueNull()) {
+                                ret = Collections.emptyList();
+                            }
                         }
                     }
                 }
@@ -2344,7 +2350,7 @@ public class EntityGraphRetriever {
 
             case OBJECT_ID_TYPE:
                 if(vertexEdgePropertiesCache != null) {
-                    ret = includeReferences ? mapVertexToObjectIdV2(entityVertex, (Pair<String, EdgeVertexReference.EdgeInfo>) value, vertexEdgePropertiesCache) : null;
+                    ret = includeReferences ? mapVertexToObjectIdV2(entityVertex, (Pair<String, EdgeVertexReference.EdgeInfo>) value, edgeDirection, vertexEdgePropertiesCache) : null;
                 } else {
                     ret = includeReferences ? mapVertexToObjectId(entityVertex, edgeLabel, (AtlasEdge) value, entityExtInfo, isOwnedAttribute, edgeDirection, isMinExtInfo) : null;
                 }
@@ -2516,7 +2522,7 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    private AtlasObjectId   mapVertexToObjectIdV2(AtlasVertex entityVertex, Pair<String, EdgeVertexReference.EdgeInfo> referencedElementPair,
+    private AtlasObjectId  mapVertexToObjectIdV2(AtlasVertex entityVertex, Pair<String, EdgeVertexReference.EdgeInfo> referencedElementPair, AtlasRelationshipEdgeDirection edgeDirection,
                                                 VertexEdgePropertiesCache vertexEdgePropertiesCache) throws AtlasBaseException {
         if (referencedElementPair == null || referencedElementPair.getValue1() == null) {
             return null;
@@ -2527,6 +2533,14 @@ public class EntityGraphRetriever {
         String elementId = referencedElementPair.getValue0();
         String edgeId = edgeInfo.getEdgeId();
 
+
+        EdgeVertexReference edgeVertexReference = vertexEdgePropertiesCache.getReferenceVertexByEdgeLabelAndId(entityVertex.getIdForDisplay(), edgeLabel, elementId, edgeId, edgeDirection);
+
+        if (edgeVertexReference == null) {
+            LOG.debug("EdgeVertexReference not found for vertexId: {}, edgeLabel: {}, elementId: {}, edgeId: {}", entityVertex.getIdForDisplay(), edgeLabel, elementId, edgeId);
+            return null;
+        }
+
         ret = toAtlasObjectIdV2(elementId, vertexEdgePropertiesCache);
 
         if (ret == null) {
@@ -2534,12 +2548,6 @@ public class EntityGraphRetriever {
             return null;
         }
 
-        EdgeVertexReference edgeVertexReference = vertexEdgePropertiesCache.getReferenceVertexByEdgeLabelAndId(entityVertex.getIdForDisplay(), edgeLabel, elementId, edgeId);
-
-        if (edgeVertexReference == null) {
-            LOG.debug("EdgeVertexReference not found for vertexId: {}, edgeLabel: {}, elementId: {}, edgeId: {}", entityVertex.getIdForDisplay(), edgeLabel, elementId, edgeId);
-            return null;
-        }
 
         String relationshipTypeName = edgeVertexReference.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class);
         boolean isRelationshipAttribute = typeRegistry.getRelationshipDefByName(relationshipTypeName) != null;

@@ -120,6 +120,15 @@ public class EdgeVertexReference {
         return edgeId;
     }
 
+    public boolean equals(EdgeVertexReference other) {
+
+        return edgeId.equals(other.edgeId) &&
+               edgeLabel.equals(other.edgeLabel) &&
+               inVertexId.equals(other.inVertexId) &&
+               outVertexId.equals(other.outVertexId);
+
+    }
+
     public class EdgeInfo {
         private final String edgeId;
         private final String edgeLabel;

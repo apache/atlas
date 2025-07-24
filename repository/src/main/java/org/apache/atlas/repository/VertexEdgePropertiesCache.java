@@ -1,15 +1,11 @@
 package org.apache.atlas.repository;
 
-import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasStructType;
-import org.apache.tinkerpop.gremlin.structure.Edge;
+import org.apache.commons.collections.CollectionUtils;
 import org.javatuples.Pair;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 
@@ -119,19 +115,57 @@ public class VertexEdgePropertiesCache {
     }
 
     public void addEdgeLabelToVertexIds(String sourceVertexId, String edgeLabel, EdgeVertexReference targetElement) {
-        edgeLabelToVertexIds
+        List<EdgeVertexReference> targetElements = edgeLabelToVertexIds
                 .computeIfAbsent(sourceVertexId, k -> new HashMap<>())
-                .computeIfAbsent(edgeLabel, k -> new ArrayList<>())
-                .add(targetElement);
+                .computeIfAbsent(edgeLabel, k -> new ArrayList<>());
+
+        for (EdgeVertexReference existingReference : targetElements) {
+            if (existingReference.equals(targetElement)) {
+                // Element already exists, don't add it
+                return;
+            }
+        }
+
+        // Element doesn't exist, add it
+        targetElements.add(targetElement);
     }
 
-    public ArrayList<EdgeVertexReference> getVertexEdgeReferencesByEdgeLabel(String sourceVertexId, String edgeLabel) {
-        return edgeLabelToVertexIds.getOrDefault(sourceVertexId, new HashMap<>())
-                .getOrDefault(edgeLabel, new ArrayList<>());
+    public List<EdgeVertexReference> getVertexEdgeReferencesByEdgeLabel(
+            String sourceVertexId,
+            String edgeLabel,
+            AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection direction) {
+
+        Map<String, ArrayList<EdgeVertexReference>> edgeMap = edgeLabelToVertexIds.get(sourceVertexId);
+        if (edgeMap == null) {
+            return Collections.emptyList();
+        }
+
+        List<EdgeVertexReference> references = edgeMap.get(edgeLabel);
+        if (references == null || references.isEmpty()) {
+            return Collections.emptyList();
+        }
+
+        return references.stream()
+                .filter(reference -> !isDirectionMatch(reference, direction))
+                .toList();
     }
 
-    public EdgeVertexReference getReferenceVertexByEdgeLabelAndId(String sourceVertexId, String edgeLabel, String targetVertexId, String edgeId) {
-        ArrayList<EdgeVertexReference> references = getVertexEdgeReferencesByEdgeLabel(sourceVertexId, edgeLabel);
+    private boolean isDirectionMatch(
+            EdgeVertexReference reference,
+            AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection direction) {
+
+        String referenceVertexId = reference.getReferenceVertexId();
+        EdgeVertexReference.EdgeInfo edgeInfo = reference.getEdgeInfo();
+
+        return switch (direction) {
+            case IN -> edgeInfo.getInVertexId().equals(referenceVertexId);
+            case OUT -> edgeInfo.getOutVertexId().equals(referenceVertexId);
+            default -> false;
+        };
+    }
+
+    public EdgeVertexReference getReferenceVertexByEdgeLabelAndId(String sourceVertexId, String edgeLabel, String targetVertexId, String edgeId, AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection direction) {
+        List<EdgeVertexReference> references = getVertexEdgeReferencesByEdgeLabel(sourceVertexId, edgeLabel, direction);
         for (EdgeVertexReference reference : references) {
             if (reference.getReferenceVertexId().equals(targetVertexId) && reference.getEdgeId().equals(edgeId)) {
                 return reference;
@@ -142,18 +176,18 @@ public class VertexEdgePropertiesCache {
 
     public List<Pair<String, EdgeVertexReference.EdgeInfo>> getCollectionElementsUsingRelationship(String vertexId, AtlasStructType.AtlasAttribute attribute) {
         String edgeLabel = attribute.getRelationshipEdgeLabel();
-        ArrayList<EdgeVertexReference> references = getVertexEdgeReferencesByEdgeLabel(vertexId, edgeLabel);
+        List<EdgeVertexReference> references = getVertexEdgeReferencesByEdgeLabel(vertexId, edgeLabel, attribute.getRelationshipEdgeDirection());
         List<Pair<String, EdgeVertexReference.EdgeInfo>> ret = new ArrayList<>();
         for (EdgeVertexReference reference : references) {
             String targetVertexId = reference.getReferenceVertexId();
-            EdgeVertexReference.EdgeInfo edge = reference.getEdgeInfo();
-            ret.add(Pair.with(targetVertexId, edge));
+            EdgeVertexReference.EdgeInfo edgeInfo = reference.getEdgeInfo();
+            ret.add(Pair.with(targetVertexId, edgeInfo));
         }
         return ret;
     }
 
-    public Pair<String, EdgeVertexReference.EdgeInfo> getRelationShipElement(String vertexId, String edgeLabel) {
-        ArrayList<EdgeVertexReference> references = getVertexEdgeReferencesByEdgeLabel(vertexId, edgeLabel);
+    public Pair<String, EdgeVertexReference.EdgeInfo> getRelationShipElement(String vertexId, String edgeLabel, AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection direction) {
+        List<EdgeVertexReference> references = getVertexEdgeReferencesByEdgeLabel(vertexId, edgeLabel, direction);
         if (references == null || references.isEmpty()) {
             return null;
         }
