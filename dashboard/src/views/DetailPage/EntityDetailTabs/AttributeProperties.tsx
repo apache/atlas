@@ -108,7 +108,7 @@ const AttributeProperties = ({
   }
   let nonEmptyValueProperty: { [key: string]: string } = {};
 
-  if (!isEmpty(properties) && !auditDetails) {
+  if (!isEmpty(properties) && !auditDetails && !isEmpty(entityDefs)) {
     let activeTypeDef = entityDefs.find((obj: { name: any }) => {
       return obj.name == entity.typeName;
     });
@@ -213,7 +213,7 @@ const AttributeProperties = ({
           </Stack>
         </AccordionSummary>
         <AccordionDetails>
-          {loading == undefined || loading ? (
+          {loading == undefined || loading || isEmpty(entityData) ? (
             <>
               <SkeletonLoader count={3} animation="wave" />
             </>
