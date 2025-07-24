@@ -22,7 +22,7 @@ import {
   useState,
   ChangeEvent,
   lazy,
-  useRef
+  useRef,
 } from "react";
 import atlasLogo from "/img/atlas_logo.svg";
 import {
@@ -31,7 +31,7 @@ import {
   RouteObject,
   useLocation,
   useNavigate,
-  useRoutes
+  useRoutes,
 } from "react-router-dom";
 import Drawer from "@mui/material/Drawer";
 import CssBaseline from "@mui/material/CssBaseline";
@@ -76,16 +76,16 @@ const Main = styled("main", { shouldForwardProp: (prop) => prop !== "open" })<{
   padding: theme.spacing(3),
   transition: theme.transitions.create("margin", {
     easing: theme.transitions.easing.sharp,
-    duration: theme.transitions.duration.leavingScreen
+    duration: theme.transitions.duration.leavingScreen,
   }),
   marginLeft: `-${defaultDrawerWidth}`,
   ...(open && {
     transition: theme.transitions.create("margin", {
       easing: theme.transitions.easing.easeOut,
-      duration: theme.transitions.duration.enteringScreen
+      duration: theme.transitions.duration.enteringScreen,
     }),
-    marginLeft: 0
-  })
+    marginLeft: 0,
+  }),
 }));
 
 const DrawerHeader = styled("div")(({ theme }) => ({
@@ -93,7 +93,7 @@ const DrawerHeader = styled("div")(({ theme }) => ({
   alignItems: "center",
   padding: theme.spacing(0, 1),
   ...theme.mixins.toolbar,
-  marginBottom: "1rem"
+  marginBottom: "1rem",
 }));
 
 const SideBarBody = (props: {
@@ -118,6 +118,7 @@ const SideBarBody = (props: {
 
   const [position, setPosition] = useState<string | number>(defaultDrawerWidth);
   const draggerRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const windowWidth = window.innerWidth;
   const minPosition = 300;
   const maxPosition = windowWidth * 0.6;
@@ -167,7 +168,7 @@ const SideBarBody = (props: {
       path: PathAssociateWithModule[
         key as keyof typeof PathAssociateWithModule
       ][0],
-      element: routes
+      element: routes,
     };
   });
 
@@ -188,7 +189,7 @@ const SideBarBody = (props: {
           minHeight: "calc(100vh - 64px)",
           minWidth: "30px",
           ...(open == false && {
-            transform: `translateX(calc(-${position} + 30px)) !important`
+            transform: `translateX(calc(-${position} + 30px)) !important`,
           }),
           ...(open == false && { visibility: "visible !important" }),
 
@@ -200,38 +201,44 @@ const SideBarBody = (props: {
             top: "0",
             transition: "none !important",
             ...(open == false && {
-              transform: `translateX(30px) !important`
+              transform: `translateX(30px) !important`,
             }),
-            ...(open == false && { visibility: "visible !important" })
-          }
+            ...(open == false && { visibility: "visible !important" }),
+          },
         }}
         PaperProps={{
-          style: { width: position, minWidth: "30px" }
+          style: { width: position, minWidth: "30px" },
         }}
         variant="persistent"
         anchor="left"
         open={open}
       >
-        <Paper
-          className="sidebar-wrapper"
+        <Stack
           sx={{
-            width: open ? position : "100%",
-
-            ...(open == false && {
-              overflow: "hidden"
-            })
+            height: "100vh",
+            width: "100%",
+            backgroundColor: "#034858",
           }}
         >
           {open && (
-            <DrawerHeader>
-              <Stack gap="2rem" width="100%">
+            <DrawerHeader
+              ref={headerRef}
+              sx={{
+                position: "sticky",
+                top: 0,
+                zIndex: 10,
+                backgroundColor: "#034858",
+                flexShrink: 0,
+              }}
+            >
+              <Stack gap="1.5rem" width="100%" marginTop="1rem">
                 <img
                   src={atlasLogo}
                   alt="Atlas logo"
                   onClick={() => {
                     navigate(
                       {
-                        pathname: "/search"
+                        pathname: "/search",
                       },
                       { replace: true }
                     );
@@ -241,7 +248,7 @@ const SideBarBody = (props: {
                 />
                 <Paper
                   sx={{
-                    width: "100%"
+                    width: "100%",
                   }}
                   className="sidebar-searchbar"
                 >
@@ -264,80 +271,20 @@ const SideBarBody = (props: {
               </Stack>
             </DrawerHeader>
           )}
-          <div
-            className="sidebar-treeview-container"
-            data-cy="r_entityTreeRender"
+          <Paper
+            className="sidebar-wrapper"
+            sx={{
+              flex: 1,
+              overflow: "hidden auto",
+              paddingBottom: "0px", // Account for bottom toggle button
+              ...(open == false && {
+                overflow: "hidden",
+              }),
+            }}
           >
-            <Suspense
-              fallback={
-                <Stack className="tree-item-loader-box">
-                  <CircularProgress size="small" className="tree-item-loader" />
-                </Stack>
-              }
-            >
-              <EntitiesTree
-                sideBarOpen={open}
-                loading={loading}
-                searchTerm={searchTerm}
-              />
-            </Suspense>
-          </div>
-
-          <div
-            className="sidebar-treeview-container"
-            data-cy="r_classificationTreeRender"
-          >
-            <Suspense
-              fallback={
-                <Stack className="tree-item-loader-box">
-                  <CircularProgress size="small" className="tree-item-loader" />
-                </Stack>
-              }
-            >
-              <ClassificationTree
-                sideBarOpen={open}
-                loading={loader}
-                searchTerm={searchTerm}
-              />
-            </Suspense>
-          </div>
-
-          <div
-            className="sidebar-treeview-container"
-            data-cy="r_businessMetadataTreeRender"
-          >
-            <Suspense
-              fallback={
-                <Stack className="tree-item-loader-box">
-                  <CircularProgress size="small" className="tree-item-loader" />
-                </Stack>
-              }
-            >
-              <BusinessMetadataTree
-                sideBarOpen={open}
-                searchTerm={searchTerm}
-              />
-            </Suspense>
-          </div>
-
-          <div
-            className="sidebar-treeview-container"
-            data-cy="r_glossaryTreeRender"
-          >
-            <Suspense
-              fallback={
-                <Stack className="tree-item-loader-box">
-                  <CircularProgress size="small" className="tree-item-loader" />
-                </Stack>
-              }
-            >
-              <GlossaryTree sideBarOpen={open} searchTerm={searchTerm} />
-            </Suspense>
-          </div>
-          {relationshipSearch && (
             <div
               className="sidebar-treeview-container"
-              data-cy="r_relationshipTreeRender"
+              data-cy="r_entityTreeRender"
             >
               <Suspense
                 fallback={
@@ -349,35 +296,125 @@ const SideBarBody = (props: {
                   </Stack>
                 }
               >
-                <RelationshipsTree sideBarOpen={open} searchTerm={searchTerm} />
+                <EntitiesTree
+                  sideBarOpen={open}
+                  loading={loading}
+                  searchTerm={searchTerm}
+                />
               </Suspense>
             </div>
-          )}
 
-          <div
-            className="sidebar-treeview-container"
-            data-cy="r_customFilterTreeRender"
-          >
-            <Suspense
-              fallback={
-                <Stack className="tree-item-loader-box">
-                  <CircularProgress size="small" className="tree-item-loader" />
-                </Stack>
-              }
+            <div
+              className="sidebar-treeview-container"
+              data-cy="r_classificationTreeRender"
             >
-              <CustomFiltersTree sideBarOpen={open} searchTerm={searchTerm} />
-            </Suspense>
-          </div>
+              <Suspense
+                fallback={
+                  <Stack className="tree-item-loader-box">
+                    <CircularProgress
+                      size="small"
+                      className="tree-item-loader"
+                    />
+                  </Stack>
+                }
+              >
+                <ClassificationTree
+                  sideBarOpen={open}
+                  loading={loader}
+                  searchTerm={searchTerm}
+                />
+              </Suspense>
+            </div>
+
+            <div
+              className="sidebar-treeview-container"
+              data-cy="r_businessMetadataTreeRender"
+            >
+              <Suspense
+                fallback={
+                  <Stack className="tree-item-loader-box">
+                    <CircularProgress
+                      size="small"
+                      className="tree-item-loader"
+                    />
+                  </Stack>
+                }
+              >
+                <BusinessMetadataTree
+                  sideBarOpen={open}
+                  searchTerm={searchTerm}
+                />
+              </Suspense>
+            </div>
+
+            <div
+              className="sidebar-treeview-container"
+              data-cy="r_glossaryTreeRender"
+            >
+              <Suspense
+                fallback={
+                  <Stack className="tree-item-loader-box">
+                    <CircularProgress
+                      size="small"
+                      className="tree-item-loader"
+                    />
+                  </Stack>
+                }
+              >
+                <GlossaryTree sideBarOpen={open} searchTerm={searchTerm} />
+              </Suspense>
+            </div>
+            {relationshipSearch && (
+              <div
+                className="sidebar-treeview-container"
+                data-cy="r_relationshipTreeRender"
+              >
+                <Suspense
+                  fallback={
+                    <Stack className="tree-item-loader-box">
+                      <CircularProgress
+                        size="small"
+                        className="tree-item-loader"
+                      />
+                    </Stack>
+                  }
+                >
+                  <RelationshipsTree
+                    sideBarOpen={open}
+                    searchTerm={searchTerm}
+                  />
+                </Suspense>
+              </div>
+            )}
+
+            <div
+              className="sidebar-treeview-container"
+              data-cy="r_customFilterTreeRender"
+            >
+              <Suspense
+                fallback={
+                  <Stack className="tree-item-loader-box">
+                    <CircularProgress
+                      size="small"
+                      className="tree-item-loader"
+                    />
+                  </Stack>
+                }
+              >
+                <CustomFiltersTree sideBarOpen={open} searchTerm={searchTerm} />
+              </Suspense>
+            </div>
+          </Paper>
           <div
             style={{
-              width: "inherit",
+              width: "100%",
               textAlign: "right",
               padding: "8px",
-              position: "fixed",
+              position: "sticky",
               bottom: "0px",
               zIndex: "9",
               left: "0",
-              background: "#034858"
+              background: "#034858",
             }}
           >
             <IconButton size="medium" onClick={() => handleDrawerOpen()}>
@@ -394,19 +431,19 @@ const SideBarBody = (props: {
               )}
             </IconButton>
           </div>
-        </Paper>
+        </Stack>
       </Drawer>
 
       <Main
         open={open}
         sx={{
           ...(open == false && {
-            marginLeft: `calc(-${position} + 60px) !important`
+            marginLeft: `calc(-${position} + 60px) !important`,
           }),
           margin: "0",
           overflowX: "auto",
           background: "#f5f5f5",
-          padding: "0"
+          padding: "0",
         }}
       >
         <Stack height="auto" minHeight="100%">
@@ -417,7 +454,7 @@ const SideBarBody = (props: {
               backgroundColor: "white",
               height: "56px",
               alignItems: "center",
-              padding: "16px"
+              padding: "16px",
             }}
           >
             <Suspense fallback={null}>
@@ -432,7 +469,7 @@ const SideBarBody = (props: {
               padding: "16px",
               display: "flex",
               flex: "1",
-              flexDirection: "column"
+              flexDirection: "column",
             }}
           >
             {matched || location.pathname.includes("!") ? (
@@ -444,7 +481,7 @@ const SideBarBody = (props: {
                       top: 0,
                       width: "100%",
                       height: "calc(100vh - 88px)",
-                      position: "relative"
+                      position: "relative",
                     }}
                   >
                     <CircularProgress
@@ -455,7 +492,7 @@ const SideBarBody = (props: {
                         position: "absolute",
                         left: "50%",
                         top: "50%",
-                        transform: "translate(-50%, -50%)"
+                        transform: "translate(-50%, -50%)",
                       }}
                     />
                   </div>
