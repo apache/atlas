@@ -158,6 +158,8 @@ public interface AtlasDiscoveryService {
      */
     AtlasSearchResult directIndexSearch(SearchParams searchParams) throws AtlasBaseException;
 
+    AtlasSearchResult directIndexSearch(SearchParams searchParams, boolean useVertexEdgeBulkFetching) throws AtlasBaseException;
+
     /**
      * Search for direct ES query in janusgraph_edge_index
      * @param searchParams Search criteria
