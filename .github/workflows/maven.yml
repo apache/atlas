@@ -24,7 +24,7 @@ on:
     branches:
       - alpha
       - beta
-      - development
+      - jg-1.0.0
       - master
       - staging
 

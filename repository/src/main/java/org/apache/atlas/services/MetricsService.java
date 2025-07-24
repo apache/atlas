@@ -98,7 +98,6 @@ public class MetricsService {
     @SuppressWarnings("unchecked")
     @GraphTransaction
     public AtlasMetrics getMetrics() {
-        this.atlasGraph.setEnableCache(false);
         final AtlasTypesDef typesDef = getTypesDef();
 
         Collection<AtlasEntityDef> entityDefs = typesDef.getEntityDefs();
