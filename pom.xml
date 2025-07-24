@@ -141,7 +141,7 @@
         <jersey-spring.version>1.19.4</jersey-spring.version>
         <jersey.version>1.19</jersey.version>
         <jettison.version>1.5.4</jettison.version>
-        <jetty-maven-plugin.stopWait>10</jetty-maven-plugin.stopWait>
+        <jetty-maven-plugin.stopWait>30</jetty-maven-plugin.stopWait>
         <jetty.version>9.4.56.v20240826</jetty.version>
         <joda-time.version>2.10.6</joda-time.version>
         <json-simple.version>1.1.1</json-simple.version>
@@ -2319,15 +2319,8 @@
                 <enunciate-maven-plugin.version>2.18.1</enunciate-maven-plugin.version>
                 <jdk.argLine>--add-opens=java.base/java.lang=ALL-UNNAMED
                     --add-opens=java.base/java.lang.reflect=ALL-UNNAMED
-                    --add-opens=java.base/java.util=ALL-UNNAMED
-                    --add-opens=java.base/java.nio=ALL-UNNAMED
                     --add-opens=java.base/java.net=ALL-UNNAMED
-                    --add-opens=java.base/jdk.internal.ref=ALL-UNNAMED
-                    --add-opens=java.base/java.nio.channels.spi=ALL-UNNAMED
-                    --add-opens=java.base/sun.nio.ch=ALL-UNNAMED
-                    --add-exports=java.security.jgss/sun.security.krb5=ALL-UNNAMED
-                    --add-exports=java.base/sun.security.x509=ALL-UNNAMED
-                    --add-modules=java.sql</jdk.argLine>
+                    --add-opens=java.base/java.nio=ALL-UNNAMED</jdk.argLine>
                 <maven.compiler.source>17</maven.compiler.source>
                 <maven.compiler.target>17</maven.compiler.target>
             </properties>
