@@ -183,6 +183,7 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
                     <Stack direction="row" alignItems="center" gap="0.5rem">
                       {addLabel ? (
                         <CustomButton
+                          key="edit-Add-button"
                           variant="outlined"
                           color="success"
                           size="small"
@@ -200,17 +201,20 @@ const UserDefinedProperties = ({ loading, customAttributes, entity }: any) => {
                       ) : (
                         <>
                           <CustomButton
+                            key="save-button"
                             variant="outlined"
                             color="success"
                             size="small"
+                            disabled={isSubmitting}
                             onClick={handleSave}
                             startIcon={
-                              isSubmitting && <CircularProgress size="14px" />
+                              isSubmitting && <CircularProgress size="14px" color="inherit"/>
                             }
                           >
                             Save
                           </CustomButton>
                           <CustomButton
+                            key="cancel-button"
                             variant="outlined"
                             color="success"
                             size="small"
