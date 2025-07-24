@@ -22,6 +22,7 @@ import com.sun.jersey.multipart.FormDataParam;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorize.AtlasAdminAccessRequest;
 import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
@@ -47,6 +48,7 @@ import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.audit.AtlasAuditService;
+import org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase;
 import org.apache.atlas.repository.impexp.AtlasServerService;
 import org.apache.atlas.repository.impexp.ExportImportAuditService;
 import org.apache.atlas.repository.impexp.ExportService;
@@ -76,6 +78,7 @@ import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.lang.RandomStringUtils;
 import org.apache.commons.lang.StringUtils;
+import org.elasticsearch.client.RequestOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
@@ -321,6 +324,7 @@ public class AdminResource {
     @GET
     @Path("status")
     @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public Response getStatus() {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AdminResource.getStatus()");
@@ -416,6 +420,7 @@ public class AdminResource {
     @GET
     @Path("health")
     @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Timed
     public Response healthCheck() {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> AdminResource.healthCheck()");
@@ -435,8 +440,13 @@ public class AdminResource {
             GraphTraversal t = graph.V().limit(1);
             t.hasNext();
             result.put("cassandra", new HealthStatus("cassandra", "ok", true, new Date().toString(), ""));
+
+            boolean isConnected = AtlasElasticsearchDatabase.getClient().ping(RequestOptions.DEFAULT);
+            result.put("elasticsearch", new HealthStatus("elasticsearch", isConnected ? "ok" : "error", isConnected, new Date().toString(), ""));
+
         } catch (Exception e) {
             result.put("cassandra", new HealthStatus("cassandra", "error", true, new Date().toString(), e.toString()));
+            result.put("cassandra", new HealthStatus("elasticsearch", "error", true, new Date().toString(), e.toString()));
             cassandraFailed = true;
         }
 
