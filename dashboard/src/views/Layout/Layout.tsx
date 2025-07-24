@@ -70,7 +70,7 @@ const Layout: React.FC = () => {
     crossTab: true,
     throttle: 1000,
     eventsThrottle: 1000,
-    startOnMount: true
+    startOnMount: true,
   });
   const handleStillHere = () => {
     setOpenSessionModal(false);
