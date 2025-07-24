@@ -882,7 +882,13 @@ public final class GraphHelper {
     }
 
     public static boolean getJanusOptimisationEnabled() {
-        return StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
+        boolean isV2 = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
+        if (isV2) {
+            LOG.info("Using v2 tag flow (Cassandra)");
+        } else {
+            LOG.info("Using v1 tag flow (JanusGraph)");
+        }
+        return isV2;
     }
 
     public static List<String> handleGetTraitNames(AtlasVertex entityVertex, Boolean propagated) {
