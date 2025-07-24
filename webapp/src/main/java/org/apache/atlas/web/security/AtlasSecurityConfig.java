@@ -103,6 +103,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
     private final StaleTransactionCleanupFilter staleTransactionCleanupFilter;
     private final ActiveServerFilter            activeServerFilter;
     private final boolean                       keycloakEnabled;
+    private final CustomLogoutSuccessHandler        customLogoutSuccessHandler;
 
     @Value("${keycloak.configurationFile:WEB-INF/keycloak.json}")
     private Resource keycloakConfigFileResource;
@@ -120,7 +121,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
             AtlasAuthenticationEntryPoint atlasAuthenticationEntryPoint,
             Configuration configuration,
             StaleTransactionCleanupFilter staleTransactionCleanupFilter,
-            ActiveServerFilter activeServerFilter) {
+            ActiveServerFilter activeServerFilter, CustomLogoutSuccessHandler customLogoutSuccessHandler) {
         this.ssoAuthenticationFilter       = ssoAuthenticationFilter;
         this.csrfPreventionFilter          = atlasCSRFPreventionFilter;
         this.atlasAuthenticationFilter     = atlasAuthenticationFilter;
@@ -131,6 +132,7 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
         this.configuration                 = configuration;
         this.staleTransactionCleanupFilter = staleTransactionCleanupFilter;
         this.activeServerFilter            = activeServerFilter;
+        this.customLogoutSuccessHandler    = customLogoutSuccessHandler;
 
         this.keycloakEnabled = configuration.getBoolean(AtlasAuthenticationProvider.KEYCLOAK_AUTH_METHOD, false);
     }
@@ -220,10 +222,9 @@ public class AtlasSecurityConfig extends WebSecurityConfigurerAdapter {
                 .passwordParameter("j_password")
                 .and()
                 .logout()
-                .logoutSuccessUrl("/login.jsp")
+                .logoutSuccessHandler(customLogoutSuccessHandler)
                 .deleteCookies("ATLASSESSIONID")
-                .logoutUrl("/logout.html");
-
+                .logoutUrl("/logout");
         //@formatter:on
 
         boolean configMigrationEnabled = !StringUtils.isEmpty(configuration.getString(ATLAS_MIGRATION_MODE_FILENAME));
