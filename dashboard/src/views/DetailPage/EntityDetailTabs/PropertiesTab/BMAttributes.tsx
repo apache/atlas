@@ -296,7 +296,6 @@ const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
     }
   };
   const handleSave = (e: React.MouseEvent) => {
-    console.log(errors);
     e.stopPropagation();
     handleSubmit(onSubmit)();
   };
@@ -378,6 +377,7 @@ const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
                       <Stack direction="row" alignItems="center" gap="0.5rem">
                         {addLabel ? (
                           <CustomButton
+                            key="edit-Add-button"
                             variant="outlined"
                             color="success"
                             size="small"
@@ -395,17 +395,20 @@ const BMAttributes = ({ loading, bmAttributes, entity }: any) => {
                         ) : (
                           <>
                             <CustomButton
+                              key="save-button"
                               variant="outlined"
                               color="success"
                               size="small"
+                              disabled={isSubmitting}
                               onClick={handleSave}
                               startIcon={
-                                isSubmitting && <CircularProgress size="14px" />
+                                isSubmitting && <CircularProgress size="14px" color="inherit"/>
                               }
                             >
                               Save
                             </CustomButton>
                             <CustomButton
+                              key="cancel-button"
                               variant="outlined"
                               color="success"
                               size="small"
