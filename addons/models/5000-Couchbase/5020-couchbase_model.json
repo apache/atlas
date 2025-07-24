@@ -14,8 +14,6 @@
       ]
     }
   ],
-  "structDefs": [],
-  "classificationDefs": [],
   "entityDefs": [
     {
       "name":          "couchbase_cluster",
@@ -23,89 +21,40 @@
       "serviceType":   "couchbase",
       "typeVersion":   "1.0",
       "attributeDefs": [
-        {
-          "name":                  "url",
-          "typeName":              "string",
-          "cardinality":           "SINGLE",
-          "isIndexable":           true,
-          "isOptional":            false,
-          "isUnique":              true,
-          "includeInNotification": true
-        }
+        { "name": "url", "typeName": "string", "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": true, "includeInNotification": true }
       ]
     },
     {
-      "name":         "couchbase_bucket",
-      "superTypes":   [ "Asset" ],
-      "serviceType":  "couchbase",
-      "typeVersion":  "1.0",
-      "attributeDefs": [ ]
+      "name":        "couchbase_bucket",
+      "superTypes":  [ "Asset" ],
+      "serviceType": "couchbase",
+      "typeVersion": "1.0"
     },
     {
-      "name":          "couchbase_scope",
-      "superTypes":    [ "Asset" ],
-      "serviceType":   "couchbase",
-      "typeVersion":   "1.0",
-      "attributeDefs": []
+      "name":        "couchbase_scope",
+      "superTypes":  [ "Asset" ],
+      "serviceType": "couchbase",
+      "typeVersion": "1.0"
     },
     {
-      "name":          "couchbase_collection",
-      "superTypes":    [ "DataSet" ],
-      "serviceType":   "couchbase",
-      "typeVersion":   "1.0",
-      "options":       { "schemaElementsAttribute": "fields" },
+      "name":        "couchbase_collection",
+      "superTypes":  [ "DataSet" ],
+      "serviceType": "couchbase",
+      "typeVersion": "1.0",
+      "options":     { "schemaElementsAttribute": "fields" },
       "attributeDefs": [
-        {
-          "name":                  "documentsAnalyzed",
-          "typeName":              "long",
-          "isOptional":            false,
-          "cardinality":           "SINGLE",
-          "valuesMinCount":        1,
-          "valuesMaxCount":        1,
-          "isUnique":              false,
-          "isIndexable":           false,
-          "includeInNotification": false
-        }
+        { "name": "documentsAnalyzed", "typeName": "long", "isOptional": false, "cardinality": "SINGLE", "valuesMinCount": 1, "valuesMaxCount": 1, "isUnique": false, "isIndexable": false, "includeInNotification": false }
       ]
     },
     {
-      "name":          "couchbase_field",
-      "superTypes":    [ "DataSet" ],
-      "serviceType":   "couchbase",
-      "typeVersion":   "1.0",
+      "name":        "couchbase_field",
+      "superTypes":  [ "DataSet" ],
+      "serviceType": "couchbase",
+      "typeVersion": "1.0",
       "attributeDefs": [
-        {
-          "name":                  "fieldType",
-          "typeName":              "couchbase_field_type",
-          "isOptional":            false,
-          "cardinality":           "SINGLE",
-          "valuesMinCount":        1,
-          "valuesMaxCount":        1,
-          "isUnique":              false,
-          "isIndexable":           true,
-          "includeInNotification": false
-        },
-        {
-          "name":                  "fieldPath",
-          "typeName":              "string",
-          "isOptional":            false,
-          "cardinality":           "SINGLE",
-          "valuesMinCount":        1,
-          "valuesMaxCount":        1,
-          "isUnique":              false,
-          "isIndexable":           true,
-          "includeInNotification": false
-        },
-        {
-          "name":           "documentCount",
-          "typeName":       "long",
-          "isOptional":     false,
-          "cardinality":    "SINGLE",
-          "valuesMinCount": 1,
-          "valuesMaxCount": 1,
-          "isUnique":       false,
-          "isIndexable":    false
-        }
+        { "name": "fieldType",     "typeName": "couchbase_field_type", "isOptional": false, "cardinality": "SINGLE", "valuesMinCount": 1, "valuesMaxCount": 1, "isUnique": false, "isIndexable": true, "includeInNotification": false },
+        { "name": "fieldPath",     "typeName": "string",               "isOptional": false, "cardinality": "SINGLE", "valuesMinCount": 1, "valuesMaxCount": 1, "isUnique": false, "isIndexable": true, "includeInNotification": false },
+        { "name": "documentCount", "typeName": "long",                 "isOptional": false, "cardinality": "SINGLE", "valuesMinCount": 1, "valuesMaxCount": 1, "isUnique": false, "isIndexable": false }
       ]
     }
   ],
