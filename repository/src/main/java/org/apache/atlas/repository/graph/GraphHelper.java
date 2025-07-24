@@ -1316,7 +1316,13 @@ public final class GraphHelper {
     }
 
     public static long getModifiedTime(AtlasElement element){
-        return element.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+        try {
+            return element.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
+        } catch (Exception e) {
+            LOG.warn("Failed to get modified time for vertex {}. Error: {}", element.getIdForDisplay(), e.getMessage());
+            // Fallback to created time if modification timestamp is not set
+            return element.getProperty(TIMESTAMP_PROPERTY_KEY, Long.class);
+        }
     }
 
     public static void setModifiedTime(AtlasElement element, Long modifiedTime) {

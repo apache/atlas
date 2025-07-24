@@ -66,6 +66,7 @@ public class AtlasInstanceConverter {
     private final AtlasFormatConverters instanceFormatters;
     private final EntityGraphRetriever  entityGraphRetriever;
     private final EntityGraphRetriever  entityGraphRetrieverIgnoreRelationshipAttrs;
+    private final EntityGraphRetriever  entityGraphRetrieverIncludeMandatoryRelAttrs;
 
     @Inject
     public AtlasInstanceConverter(AtlasGraph graph, AtlasTypeRegistry typeRegistry, AtlasFormatConverters instanceFormatters,
@@ -74,6 +75,7 @@ public class AtlasInstanceConverter {
         this.instanceFormatters                          = instanceFormatters;
         this.entityGraphRetriever                        = entityGraphRetriever;
         this.entityGraphRetrieverIgnoreRelationshipAttrs = new EntityGraphRetriever(entityGraphRetriever, true);
+        this.entityGraphRetrieverIncludeMandatoryRelAttrs= new EntityGraphRetriever(graph, typeRegistry, false, true);
     }
 
     public Referenceable[] getReferenceables(Collection<AtlasEntity> entities) throws AtlasBaseException {
@@ -260,6 +262,17 @@ public class AtlasInstanceConverter {
                     LOG.debug("Cache miss -> GUID = {}", guid);
                 }
             }
+        }
+
+        return entity;
+    }
+
+    public AtlasEntity getEntityWithMandatoryRelations(String guid) throws AtlasBaseException {
+        RequestContext context = RequestContext.get();
+        AtlasEntity    entity  = context.getEntity(guid);
+
+        if (entity == null) {
+            entity = entityGraphRetrieverIncludeMandatoryRelAttrs.toAtlasEntity(guid);
         }
 
         return entity;
