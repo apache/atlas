@@ -100,31 +100,13 @@ public class FeatureFlagStore {
     public static void setFlag(String key, String value) {
         if (redisService == null || StringUtils.isEmpty(key) || StringUtils.isEmpty(value))
             return;
-
-        try {
-            redisService.putValue(addFeatureFlagNamespace(key), value);
-            // If the updated flag is the one we're caching, refresh it immediately
-            if (FF_ENABLE_JANUS_OPTIMISATION_KEY.equals(key)) {
-                loadTagV2Cache(); // Reload the cache for this specific flag
-            }
-        } catch (Exception e) {
-            LOG.error("Error setting feature flag '{}' to value '{}'", key, value, e);
-        }
+        redisService.putValue(addFeatureFlagNamespace(key), value);
     }
 
     public static void deleteFlag(String key) {
         if (redisService == null || StringUtils.isEmpty(key))
             return;
-
-        try {
-            redisService.removeValue(addFeatureFlagNamespace(key));
-            // If the deleted flag is the one we're caching, refresh it immediately
-            if (FF_ENABLE_JANUS_OPTIMISATION_KEY.equals(key)) {
-                loadTagV2Cache(); // Reload the cache for this specific flag
-            }
-        } catch (Exception e) {
-            LOG.error("Error deleting feature flag '{}'", key, e);
-        }
+        redisService.removeValue(addFeatureFlagNamespace(key));
     }
 
     private static String addFeatureFlagNamespace(String key) {
