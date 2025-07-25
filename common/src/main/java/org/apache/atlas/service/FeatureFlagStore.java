@@ -17,59 +17,49 @@ public class FeatureFlagStore {
 
     private static RedisService redisService = null;
 
-    // Cache variables for isTagV2Enabled
+    // Cache variable for isTagV2Enabled
     private static volatile Boolean cachedTagV2Enabled = null;
-    private static volatile long lastTagV2RefreshTime = 0L;
-    private static final long CACHE_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 60 minutes in milliseconds
-    private static final Object tagV2Lock = new Object(); // For thread-safe cache refresh
+    private static final Object tagV2Lock = new Object(); // For thread-safe initial cache loading
 
     @Inject
     public FeatureFlagStore(RedisService redisService) {
         FeatureFlagStore.redisService = redisService;
         // Initial cache load when the bean is created
-        refreshTagV2Cache();
+        loadTagV2Cache();
     }
 
     /**
-     * Returns the cached value of the JANUS_OPTIMISATION feature flag, refreshing it if stale.
+     * Returns the cached value of the JANUS_OPTIMISATION feature flag.
+     * The cache is loaded once on application startup and refreshed only on explicit set/delete operations.
      *
      * @return true if Janus Optimisation is enabled; false otherwise.
      */
     public static boolean isTagV2Enabled() {
-        // Check if cache is stale or not initialized
-        if (cachedTagV2Enabled == null || (System.currentTimeMillis() - lastTagV2RefreshTime > CACHE_REFRESH_INTERVAL_MS)) {
+        // Double-checked locking for thread-safe initial loading
+        if (cachedTagV2Enabled == null) {
             synchronized (tagV2Lock) {
-                // Double-checked locking to prevent multiple threads from refreshing
-                if (cachedTagV2Enabled == null || (System.currentTimeMillis() - lastTagV2RefreshTime > CACHE_REFRESH_INTERVAL_MS)) {
-                    refreshTagV2Cache();
+                if (cachedTagV2Enabled == null) {
+                    loadTagV2Cache();
                 }
             }
-        }
-        if (cachedTagV2Enabled) {
-            LOG.info("Using v2 tag flow (Cassandra)");
-        } else {
-            LOG.info("Using v1 tag flow (JanusGraph)");
         }
         return cachedTagV2Enabled;
     }
 
-    private static void refreshTagV2Cache() {
+    private static void loadTagV2Cache() {
         if (redisService == null) {
-            LOG.warn("RedisService is not initialized. Cannot refresh tag V2 feature flag cache. Defaulting to false.");
+            LOG.warn("RedisService is not initialized. Cannot load tag V2 feature flag cache. Defaulting to false.");
             cachedTagV2Enabled = false;
-            lastTagV2RefreshTime = System.currentTimeMillis();
             return;
         }
 
         try {
             String value = redisService.getValue(addFeatureFlagNamespace(FF_ENABLE_JANUS_OPTIMISATION_KEY));
             cachedTagV2Enabled = StringUtils.equals(value, ENABLED_VALUE);
-            lastTagV2RefreshTime = System.currentTimeMillis();
-            LOG.debug("Refreshed feature flag '{}'. New value: {}", FF_ENABLE_JANUS_OPTIMISATION_KEY, cachedTagV2Enabled);
+            LOG.info("Loaded feature flag '{}'. Value: {}", FF_ENABLE_JANUS_OPTIMISATION_KEY, cachedTagV2Enabled);
         } catch (Exception e) {
-            LOG.error("Error refreshing feature flag cache for '{}'. Defaulting to false.", FF_ENABLE_JANUS_OPTIMISATION_KEY, e);
+            LOG.error("Error loading feature flag cache for '{}'. Defaulting to false.", FF_ENABLE_JANUS_OPTIMISATION_KEY, e);
             cachedTagV2Enabled = false; // Default to false on error
-            lastTagV2RefreshTime = System.currentTimeMillis();
         }
     }
 
@@ -115,7 +105,7 @@ public class FeatureFlagStore {
             redisService.putValue(addFeatureFlagNamespace(key), value);
             // If the updated flag is the one we're caching, refresh it immediately
             if (FF_ENABLE_JANUS_OPTIMISATION_KEY.equals(key)) {
-                refreshTagV2Cache();
+                loadTagV2Cache(); // Reload the cache for this specific flag
             }
         } catch (Exception e) {
             LOG.error("Error setting feature flag '{}' to value '{}'", key, value, e);
@@ -130,7 +120,7 @@ public class FeatureFlagStore {
             redisService.removeValue(addFeatureFlagNamespace(key));
             // If the deleted flag is the one we're caching, refresh it immediately
             if (FF_ENABLE_JANUS_OPTIMISATION_KEY.equals(key)) {
-                refreshTagV2Cache();
+                loadTagV2Cache(); // Reload the cache for this specific flag
             }
         } catch (Exception e) {
             LOG.error("Error deleting feature flag '{}'", key, e);
