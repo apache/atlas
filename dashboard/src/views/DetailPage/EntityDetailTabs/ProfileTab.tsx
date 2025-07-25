@@ -84,6 +84,9 @@ const ProfileTab: React.FC<EntityDetailTabProps> = ({ entity }) => {
       pagination?: any;
       sorting: [{ id: string; desc: boolean }];
     }) => {
+      if (!entity?.typeName) {
+        return;
+      }
       const { pageSize, pageIndex } = pagination || {};
       if (pageIndex > 1) {
         searchParams.set("pageOffset", `${pageSize * pageIndex}`);
@@ -126,7 +129,7 @@ const ProfileTab: React.FC<EntityDetailTabProps> = ({ entity }) => {
         dispatch({ type: "failure", error });
       }
     },
-    [searchParams]
+    [searchParams, entity]
   );
 
   const handleSwitchChangeEntities = (
@@ -273,7 +276,7 @@ const ProfileTab: React.FC<EntityDetailTabProps> = ({ entity }) => {
               justifyContent="right"
               alignItems="center"
               marginBottom="0.75rem"
-              position="absolute"
+              position="relative"
               right={0}
             >
               <FormGroup>
