@@ -13,7 +13,6 @@ public class FeatureFlagStore {
     private static final Logger LOG = LoggerFactory.getLogger(FeatureFlagStore.class);
 
     private static final String FF_ENABLE_JANUS_OPTIMISATION_KEY = "ENABLE_JANUS_OPTIMISATION";
-    private static final String ENABLED_VALUE = "true"; // Assuming "true" means enabled
 
     private static RedisService redisService = null;
 
@@ -60,7 +59,7 @@ public class FeatureFlagStore {
 
         try {
             String value = redisService.getValue(addFeatureFlagNamespace(FF_ENABLE_JANUS_OPTIMISATION_KEY));
-            cachedTagV2Enabled = StringUtils.equals(value, ENABLED_VALUE);
+            cachedTagV2Enabled = StringUtils.isNotEmpty(value);
             LOG.info("Loaded feature flag '{}'. Value: {}", FF_ENABLE_JANUS_OPTIMISATION_KEY, cachedTagV2Enabled);
         } catch (Exception e) {
             LOG.error("Error loading feature flag cache for '{}'. Defaulting to false.", FF_ENABLE_JANUS_OPTIMISATION_KEY, e);
