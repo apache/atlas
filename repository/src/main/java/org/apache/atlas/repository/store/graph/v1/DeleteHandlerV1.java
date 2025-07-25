@@ -110,8 +110,6 @@ public abstract class DeleteHandlerV1 {
     private   final TaskUtil             taskUtil;
     private   final TagDAO               tagDAO;
 
-    protected static Boolean              janusOptimisationEnabled;
-
     private static final List<String> taskTypesToSkip = Arrays.asList(CLASSIFICATION_REFRESH_PROPAGATION, CLASSIFICATION_PROPAGATION_DELETE);
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete,
@@ -125,7 +123,6 @@ public abstract class DeleteHandlerV1 {
         this.graph                         = graph;
         this.tagDAO                        = TagDAOCassandraImpl.getInstance();
         this.taskUtil                      = new TaskUtil(graph);
-        janusOptimisationEnabled           = null;
     }
 
     /**
@@ -206,14 +203,6 @@ public abstract class DeleteHandlerV1 {
 
         }
         LOG.info("deleteEntities completed. Total vertices processed: {}", deletionCandidateVertices.size());
-    }
-
-    public boolean getJanusOptimisationEnabled() {
-        if (janusOptimisationEnabled == null) {
-            janusOptimisationEnabled = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
-        }
-        LOG.info("Janus Optimisation Enabled: {}", janusOptimisationEnabled);
-        return janusOptimisationEnabled;
     }
 
     /**

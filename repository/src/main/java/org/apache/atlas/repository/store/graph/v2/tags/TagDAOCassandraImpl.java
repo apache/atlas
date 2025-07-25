@@ -108,7 +108,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     private TagDAOCassandraImpl() throws AtlasBaseException {
         try {
             String hostname = ApplicationProperties.get().getString(CASSANDRA_HOSTNAME_PROPERTY, DEFAULT_HOST);
-            Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", ApplicationProperties.get().getString(CASSANDRA_REPLICATION_FACTOR_PROPERTY, "3"));
+            Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", ApplicationProperties.get().getString(CASSANDRA_REPLICATION_FACTOR_PROPERTY, "1"));
 
             DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
                     .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, CONNECTION_TIMEOUT)

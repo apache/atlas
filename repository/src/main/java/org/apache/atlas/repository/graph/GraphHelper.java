@@ -882,7 +882,7 @@ public final class GraphHelper {
     }
 
     public static boolean getJanusOptimisationEnabled() {
-        boolean isV2 = StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
+        boolean isV2 = FeatureFlagStore.isTagV2Enabled();
         if (isV2) {
             LOG.info("Using v2 tag flow (Cassandra)");
         } else {
