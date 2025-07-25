@@ -178,7 +178,7 @@ public abstract class DeleteHandlerV1 {
 
             RequestContext.get().getDeletedEdgesIds().clear();
 
-            if (getJanusOptimisationEnabled()) {
+            if (FeatureFlagStore.isTagV2Enabled()) {
                 deleteAllClassificationsV2(deletionCandidateVertex);
             } else {
                 deleteAllClassifications(deletionCandidateVertex);
@@ -479,7 +479,7 @@ public abstract class DeleteHandlerV1 {
 
     private void addTagPropagation(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasEdge edge) throws AtlasBaseException {
         //below needs to be forked ?
-        if(getJanusOptimisationEnabled()) {
+        if(FeatureFlagStore.isTagV2Enabled()) {
             // foreground
             // classificationTypeName can be empty
             createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_ADD, fromVertex, toVertex, "");
@@ -1505,7 +1505,7 @@ public abstract class DeleteHandlerV1 {
             return;
         }
 
-        if (!getJanusOptimisationEnabled()) {
+        if (!FeatureFlagStore.isTagV2Enabled()) {
             LOG.info("JanusGraph optimisations are not enabled, scheduling task for edge {}", edge.getIdForDisplay());
             // Existing flow as it is
             List<AtlasVertex> currentClassificationVertices = GraphHelper.getPropagatableClassifications(edge);

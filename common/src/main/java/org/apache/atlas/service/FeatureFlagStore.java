@@ -20,7 +20,7 @@ public class FeatureFlagStore {
     // Cache variables for isTagV2Enabled
     private static volatile Boolean cachedTagV2Enabled = null;
     private static volatile long lastTagV2RefreshTime = 0L;
-    private static final long CACHE_REFRESH_INTERVAL_MS = 30 * 60 * 1000; // 30 minutes in milliseconds
+    private static final long CACHE_REFRESH_INTERVAL_MS = 60 * 60 * 1000; // 60 minutes in milliseconds
     private static final Object tagV2Lock = new Object(); // For thread-safe cache refresh
 
     @Inject
@@ -44,6 +44,11 @@ public class FeatureFlagStore {
                     refreshTagV2Cache();
                 }
             }
+        }
+        if (cachedTagV2Enabled) {
+            LOG.info("Using v2 tag flow (Cassandra)");
+        } else {
+            LOG.info("Using v1 tag flow (JanusGraph)");
         }
         return cachedTagV2Enabled;
     }

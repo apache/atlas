@@ -881,18 +881,8 @@ public final class GraphHelper {
         return handleGetTraitNames(entityVertex, null);
     }
 
-    public static boolean getJanusOptimisationEnabled() {
-        boolean isV2 = FeatureFlagStore.isTagV2Enabled();
-        if (isV2) {
-            LOG.info("Using v2 tag flow (Cassandra)");
-        } else {
-            LOG.info("Using v1 tag flow (JanusGraph)");
-        }
-        return isV2;
-    }
-
     public static List<String> handleGetTraitNames(AtlasVertex entityVertex, Boolean propagated) {
-        if (getJanusOptimisationEnabled()) {
+        if (FeatureFlagStore.isTagV2Enabled()) {
             return getTraitNamesV2(entityVertex, propagated);
         } else {
             return getTraitNamesV1(entityVertex, propagated);
