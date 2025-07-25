@@ -24,7 +24,7 @@ services:
       - "10000:10000"
     depends_on:
       atlas-db:
-        condition: service_started
+        condition: service_healthy
       atlas-hadoop:
         condition: service_healthy
       atlas-zk:
@@ -37,19 +37,19 @@ services:
       - ATLAS_VERSION
 
   atlas-db:
-    build:
-      context: .
-      dockerfile: Dockerfile.atlas-db
-    image: atlas-db
-    container_name: atlas-db
-    hostname: atlas-db.example.com
-    networks:
-      - atlas
-    healthcheck:
-      test: 'su -c "pg_isready -q" postgres'
-      interval: 10s
-      timeout: 2s
-      retries: 30
+    extends:
+      service: atlas-db
+      file: docker-compose.atlas-common.yml
+
+  atlas-zk:
+    extends:
+      service: atlas-zk
+      file: docker-compose.atlas-common.yml
+
+  atlas-kafka:
+    extends:
+      service: atlas-kafka
+      file: docker-compose.atlas-common.yml
 
 networks:
   atlas:

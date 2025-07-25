@@ -1,0 +1,63 @@
+services:
+  atlas-solr:
+    build:
+      context: .
+      dockerfile: Dockerfile.atlas-solr
+    image: atlas-solr
+    container_name: atlas-solr
+    hostname: atlas-solr.example.com
+    networks:
+      - atlas
+    ports:
+      - "8983:8983"
+
+  atlas-kafka:
+    build:
+      context: .
+      dockerfile: Dockerfile.atlas-kafka
+      args:
+        - KAFKA_VERSION=${KAFKA_VERSION}
+        - ATLAS_VERSION=${ATLAS_VERSION}
+    image: atlas-kafka
+    container_name: atlas-kafka
+    hostname: atlas-kafka.example.com
+    stdin_open: true
+    tty: true
+    networks:
+      - atlas
+    ports:
+      - "9092:9092"
+    depends_on:
+      atlas-zk:
+        condition: service_started
+    environment:
+      - KAFKA_VERSION
+      - ATLAS_VERSION
+
+  atlas-zk:
+    build:
+      context: .
+      dockerfile: Dockerfile.atlas-zk
+    image: atlas-zk
+    container_name: atlas-zk
+    hostname: atlas-zk.example.com
+    networks:
+      - atlas
+    ports:
+      - "2181:2181"
+
+  atlas-db:
+    build:
+      context: .
+      dockerfile: Dockerfile.atlas-db
+    image: atlas-db
+    container_name: atlas-db
+    hostname: atlas-db.example.com
+    networks:
+      - atlas
+    healthcheck:
+      test: 'su -c "pg_isready -q" postgres'
+      interval: 30s
+      timeout: 10s
+      retries: 30
+      start_period: 40s

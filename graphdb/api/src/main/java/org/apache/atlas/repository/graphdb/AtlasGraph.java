@@ -367,4 +367,13 @@ public interface AtlasGraph<V, E> {
      * @return
      */
     List<AtlasVertex> getAllEdgesVertices(AtlasVertex vertex);
+
+    /**
+     * Get the unique key handler for this graph.
+     *
+     * @return AtlasUniqueKeyHandler
+     */
+    default AtlasUniqueKeyHandler getUniqueKeyHandler() {
+        return null; // Default implementation returns null, subclasses can override to provide specific implementation
+    }
 }
