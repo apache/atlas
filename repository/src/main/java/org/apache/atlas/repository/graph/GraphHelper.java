@@ -1633,7 +1633,7 @@ public final class GraphHelper {
         AtlasType mapValueType = mapType.getValueType();
 
         if (isReference(mapValueType)) {
-            return getReferenceMap(instanceVertex, attribute);
+            return getReferenceMap(instanceVertex, attribute, propertyName);
         } else {
             return (Map) instanceVertex.getProperty(propertyName, Map.class);
         }
@@ -1643,6 +1643,21 @@ public final class GraphHelper {
     public static Map<String, Object> getReferenceMap(AtlasVertex instanceVertex, AtlasAttribute attribute) {
         Map<String, Object> ret            = new HashMap<>();
         List<AtlasEdge>     referenceEdges = getCollectionElementsUsingRelationship(instanceVertex, attribute);
+
+        for (AtlasEdge edge : referenceEdges) {
+            String key = edge.getProperty(ATTRIBUTE_KEY_PROPERTY_KEY, String.class);
+
+            if (StringUtils.isNotEmpty(key)) {
+                ret.put(key, edge);
+            }
+        }
+
+        return ret;
+    }
+
+    public static Map<String, Object> getReferenceMap(AtlasVertex instanceVertex, AtlasAttribute attribute, String propertyName) {
+        Map<String, Object> ret            = new HashMap<>();
+        List<AtlasEdge>     referenceEdges = getCollectionElementsUsingRelationship(instanceVertex, attribute, propertyName);
 
         for (AtlasEdge edge : referenceEdges) {
             String key = edge.getProperty(ATTRIBUTE_KEY_PROPERTY_KEY, String.class);
