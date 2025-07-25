@@ -29,7 +29,6 @@ public class FeatureFlagStore {
 
     /**
      * Returns the cached value of the JANUS_OPTIMISATION feature flag.
-     * The cache is loaded once on application startup and refreshed only on explicit set/delete operations.
      *
      * @return true if Janus Optimisation is enabled; false otherwise.
      */

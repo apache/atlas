@@ -66,14 +66,13 @@ public abstract class ClassificationTask extends AbstractTask {
     protected final EntityGraphMapper      entityGraphMapper;
     protected final DeleteHandlerDelegate  deleteDelegate;
     protected final AtlasRelationshipStore relationshipStore;
-    protected Boolean isTagsV2Enabled;
+
     public ClassificationTask(AtlasTask task,
                               AtlasGraph graph,
                               EntityGraphMapper entityGraphMapper,
                               DeleteHandlerDelegate deleteDelegate,
                               AtlasRelationshipStore relationshipStore) {
         super(task);
-        this.isTagsV2Enabled = FeatureFlagStore.isTagV2Enabled();
         this.graph             = graph;
         this.entityGraphMapper = entityGraphMapper;
         this.deleteDelegate    = deleteDelegate;
