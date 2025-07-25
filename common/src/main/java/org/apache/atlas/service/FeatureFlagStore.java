@@ -43,6 +43,11 @@ public class FeatureFlagStore {
                 }
             }
         }
+        if (cachedTagV2Enabled) {
+            LOG.info("Using v2 tag flow (Cassandra)");
+        } else {
+            LOG.info("Using v1 tag flow (JanusGraph)");
+        }
         return cachedTagV2Enabled;
     }
 
