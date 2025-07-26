@@ -34,7 +34,7 @@ import javax.ws.rs.HttpMethod;
 import java.io.IOException;
 
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 public class ActiveServerFilterTest {
@@ -263,6 +263,6 @@ public class ActiveServerFilterTest {
         activeServerFilter.doFilter(servletRequest, servletResponse, filterChain);
 
         verify(filterChain).doFilter(servletRequest, servletResponse);
-        verifyZeroInteractions(activeInstanceState);
+        verifyNoInteractions(activeInstanceState);
     }
 }
