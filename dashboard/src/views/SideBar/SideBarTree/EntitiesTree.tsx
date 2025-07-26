@@ -57,9 +57,9 @@ const EntitiesTree = ({ sideBarOpen, searchTerm }: Props) => {
   }, []);
 
   const fetchInitialData = async () => {
+    await dispatch(fetchTypeHeaderData());
     await dispatch(fetchEntityData());
     await dispatch(fetchMetricEntity());
-    await dispatch(fetchTypeHeaderData());
   };
 
   useEffect(() => {
