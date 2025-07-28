@@ -2062,7 +2062,8 @@ public class EntityGraphRetriever {
         }
 
         if (isReference(mapValueType)) {
-            Map<String, Object> currentMap = getReferenceMap(entityVertex, attribute);
+            Map<String, Object> currentMap = getReferenceMap(entityVertex, attribute, AtlasGraphUtilsV2.getEdgeLabel(attribute.getVertexPropertyName()
+            ));
 
             if (MapUtils.isNotEmpty(currentMap)) {
                 ret = new HashMap<>();
@@ -2070,7 +2071,7 @@ public class EntityGraphRetriever {
                 for (Map.Entry<String, Object> entry : currentMap.entrySet()) {
                     String mapKey    = entry.getKey();
                     Object keyValue  = entry.getValue();
-                    Object mapValue  = mapVertexToCollectionEntry(entityVertex, mapValueType, keyValue, attribute.getRelationshipEdgeLabel(),
+                    Object mapValue  = mapVertexToCollectionEntry(entityVertex, mapValueType, keyValue, AtlasGraphUtilsV2.getEdgeLabel(attribute.getVertexPropertyName()),
                                                                   entityExtInfo, isOwnedAttribute, attribute.getRelationshipEdgeDirection(), isMinExtInfo, includeReferences);
                     if (mapValue != null) {
                         ret.put(mapKey, mapValue);

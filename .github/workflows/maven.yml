@@ -32,6 +32,7 @@ on:
       - staging
       - tagscanary
       - tagscanarymerge
+      - fixlabels
 
 jobs:
   build:
