@@ -415,7 +415,7 @@ public class AtlasIndexSerializer extends IndexSerializer {
                         throw new SchemaViolationException(p.propertyKey() + " is not available in mixed index " + index);
                     }
 
-                    if (getJanusOptimisationEnabled() && EXCLUDE_ES_SYNC_ATTRIBUTES.contains(field.getFieldKey().name())) {
+                    if (FeatureFlagStore.isTagV2Enabled() && EXCLUDE_ES_SYNC_ATTRIBUTES.contains(field.getFieldKey().name())) {
                         continue;
                     }
                     if (field.getStatus() == SchemaStatus.DISABLED) continue;
@@ -427,10 +427,6 @@ public class AtlasIndexSerializer extends IndexSerializer {
             }
         }
         return updates;
-    }
-
-    public boolean getJanusOptimisationEnabled() {
-        return StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
     }
 
     private IndexUpdate<String,IndexEntry> getMixedIndexUpdate(JanusGraphElement element, PropertyKey key, Object value,

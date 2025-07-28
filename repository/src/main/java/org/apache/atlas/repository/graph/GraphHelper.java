@@ -881,12 +881,8 @@ public final class GraphHelper {
         return handleGetTraitNames(entityVertex, null);
     }
 
-    public static boolean getJanusOptimisationEnabled() {
-        return StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
-    }
-
     public static List<String> handleGetTraitNames(AtlasVertex entityVertex, Boolean propagated) {
-        if (getJanusOptimisationEnabled()) {
+        if (FeatureFlagStore.isTagV2Enabled()) {
             return getTraitNamesV2(entityVertex, propagated);
         } else {
             return getTraitNamesV1(entityVertex, propagated);

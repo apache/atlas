@@ -3712,7 +3712,7 @@ public class EntityGraphMapper {
     }
 
     public void handleAddClassifications(final EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
-        if(getJanusOptimisationEnabled()){
+        if(FeatureFlagStore.isTagV2Enabled()){
             addClassificationsV2(context, guid, classifications);
         } else {
             addClassificationsV1(context, guid, classifications);
@@ -4326,6 +4326,9 @@ public class EntityGraphMapper {
 
         entityVertex.setProperty(CLASSIFICATION_NAMES_KEY, getClassificationNamesString(traitNames));
 
+        AtlasEntity entity = instanceConverter.getEntity(entityGuid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
+        entityVertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
+
         updateModificationMetadata(entityVertex);
 
         if (RequestContext.get().isDelayTagNotifications()) {
@@ -4339,12 +4342,8 @@ public class EntityGraphMapper {
         AtlasPerfTracer.log(perf);
     }
 
-    public boolean getJanusOptimisationEnabled() {
-        return StringUtils.isNotEmpty(FeatureFlagStore.getFlag("ENABLE_JANUS_OPTIMISATION"));
-    }
-
     public void handleDirectDeleteClassification(String entityGuid, String classificationName) throws AtlasBaseException {
-        if(getJanusOptimisationEnabled()) {
+        if(FeatureFlagStore.isTagV2Enabled()) {
             deleteClassificationV2(entityGuid, classificationName);
         } else {
             deleteClassificationV1(entityGuid, classificationName);
@@ -4780,7 +4779,7 @@ public class EntityGraphMapper {
     }
 
     public void handleUpdateClassifications(EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
-        if (getJanusOptimisationEnabled()) {
+        if (FeatureFlagStore.isTagV2Enabled()) {
             updateClassificationsV2(guid, classifications);
         } else {
             updateClassificationsV1(context, guid, classifications);

@@ -46,9 +46,11 @@ public class ClassificationPropagationTasks {
             Boolean previousRestrictPropagationThroughLineage = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
             Boolean previousRestrictPropagationThroughHierarchy = (Boolean) parameters.get(PARAM_PREVIOUS_CLASSIFICATION_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
 
-            if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
+            if (org.apache.atlas.service.FeatureFlagStore.isTagV2Enabled()) {
+                LOG.info("Using v2 tag flow (Cassandra) for Add propagation task");
                 entityGraphMapper.propagateClassificationV2(parameters, entityGuid, tagTypeName, parentEntityGuid, toEntityGuid);
             } else {
+                LOG.info("Using v1 tag flow (JanusGraph) for Add propagation task");
                 String classificationVertexId   = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 String relationshipGuid         = (String) parameters.get(PARAM_RELATIONSHIP_GUID);
                 entityGraphMapper.propagateClassification(entityGuid, classificationVertexId, relationshipGuid, previousRestrictPropagationThroughLineage, previousRestrictPropagationThroughHierarchy);
@@ -66,9 +68,11 @@ public class ClassificationPropagationTasks {
             String tagTypeName              = getTaskDef().getTagTypeName();
             String entityGuid             = (String) parameters.get(PARAM_ENTITY_GUID);
 
-            if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
+            if (org.apache.atlas.service.FeatureFlagStore.isTagV2Enabled()) {
+                LOG.info("Using v2 tag flow (Cassandra) for UpdateText propagation task");
                 entityGraphMapper.updateClassificationTextPropagationV2(entityGuid, tagTypeName);
             } else {
+                LOG.info("Using v1 tag flow (JanusGraph) for UpdateText propagation task");
                 String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 entityGraphMapper.updateClassificationTextPropagation(classificationVertexId);
             }
@@ -88,11 +92,13 @@ public class ClassificationPropagationTasks {
             String tagTypeName              = getTaskDef().getTagTypeName();
             String parentEntityGuid         = getTaskDef().getParentEntityGuid();
 
-            if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
+            if (org.apache.atlas.service.FeatureFlagStore.isTagV2Enabled()) {
+                LOG.info("Using v2 tag flow (Cassandra) for Delete propagation task");
                 // we get propagated tags from vanilla cassandra table and remove them
                 // remove original attachment (direct tag - ? ) - check if it removed in sync path
                 entityGraphMapper.deleteClassificationPropagationV2(entityGuid, sourceVertexId, parentEntityGuid, tagTypeName);
             } else {
+                LOG.info("Using v1 tag flow (JanusGraph) for Delete propagation task");
                 // here as well no traversal. just query classification vertex, get propagation edges, remove edges and classification vertex
                 String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 entityGraphMapper.deleteClassificationPropagation(entityGuid, classificationVertexId);
@@ -111,10 +117,12 @@ public class ClassificationPropagationTasks {
             String sourceEntity = getTaskDef().getEntityGuid();
             String parentEntityGuid         = getTaskDef().getParentEntityGuid();
 
-            if (JANUS_OPTIMISATION_ENABLED != null && JANUS_OPTIMISATION_ENABLED) {
+            if (org.apache.atlas.service.FeatureFlagStore.isTagV2Enabled()) {
+                LOG.info("Using v2 tag flow (Cassandra) for RefreshPropagation task");
                 entityGraphMapper.classificationRefreshPropagationV2(parameters, parentEntityGuid, sourceEntity, classificationTypeName);
             } else {
-            String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
+                LOG.info("Using v1 tag flow (JanusGraph) for RefreshPropagation task");
+                String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 entityGraphMapper.classificationRefreshPropagation(classificationVertexId);
             }
         }
