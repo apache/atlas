@@ -1926,7 +1926,7 @@ public class EntityGraphMapper {
         boolean             isSoftReference = ctx.getAttribute().getAttributeDef().isSoftReferenced();
         String propertyName = ctx.getVertexProperty();
 
-        if ((PARTIAL_UPDATE.equals(ctx.getOp()) || UPDATE.equals(ctx.getOp()) ) && attribute.getAttributeDef().isAppendOnPartialUpdate() && MapUtils.isNotEmpty(currentMap)) {
+        if (PARTIAL_UPDATE.equals(ctx.getOp()) && attribute.getAttributeDef().isAppendOnPartialUpdate() && MapUtils.isNotEmpty(currentMap)) {
             if (MapUtils.isEmpty(newVal)) {
                 newVal = new HashMap<>(currentMap);
             } else {
