@@ -48,7 +48,7 @@ public abstract class AbstractRedisService implements RedisService {
         boolean isLockAcquired;
         try {
             RLock lock = redisClient.getFairLock(key);
-            isLockAcquired = lock.tryLock(waitTimeInMS, leaseTimeInMS, TimeUnit.MILLISECONDS);
+            isLockAcquired = lock.tryLock(waitTimeInMS, TimeUnit.MILLISECONDS);
             if (isLockAcquired) {
                 keyLockMap.put(key, lock);
             } else {
@@ -67,7 +67,7 @@ public abstract class AbstractRedisService implements RedisService {
         RLock lock = null;
         try {
             lock = redisClient.getFairLock(key);
-            boolean isLockAcquired = lock.tryLock(waitTimeInMS, leaseTimeInMS, TimeUnit.MILLISECONDS);
+            boolean isLockAcquired = lock.tryLock(waitTimeInMS, TimeUnit.MILLISECONDS);
 
             if (isLockAcquired) {
                 getLogger().info("Lock with key {} is acquired, host: {}.", key, getHostAddress());

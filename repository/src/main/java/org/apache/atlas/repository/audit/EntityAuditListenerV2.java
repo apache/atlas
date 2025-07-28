@@ -255,6 +255,26 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
     }
 
     @Override
+    public void onClassificationPropagationsAdded(List<AtlasEntity> entities, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(classifications)) {
+            MetricRecorder metric = RequestContext.get().startMetricRecord("onClassificationPropagationsAdded");
+            FixedBufferList<EntityAuditEventV2> events = getAuditEventsList();
+
+            for (AtlasClassification classification : classifications) {
+                for (AtlasEntity entity : entities) {
+                    createEvent(events.next(), entity, PROPAGATED_CLASSIFICATION_ADD, "Added propagated classification: " + AtlasType.toJson(classification));
+                }
+            }
+
+            for (EntityAuditRepository auditRepository: auditRepositories) {
+                auditRepository.putEventsV2(events.toList());
+            }
+
+            RequestContext.get().endMetricRecord(metric);
+        }
+    }
+
+    @Override
     public void onClassificationsUpdated(AtlasEntity entity, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
             MetricRecorder metric = RequestContext.get().startMetricRecord("onClassificationsUpdated");
@@ -282,6 +302,11 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
             RequestContext.get().endMetricRecord(metric);
         }
+    }
+
+    @Override
+    public void onClassificationPropagationUpdated(AtlasEntity entity, List<AtlasClassification> classifications, boolean forceInline) throws AtlasBaseException {
+        onClassificationsUpdated(entity, classifications);
     }
 
     private String getDeleteClassificationString(String typeName) {
@@ -485,6 +510,11 @@ public class EntityAuditListenerV2 implements EntityChangeListenerV2 {
 
             RequestContext.get().endMetricRecord(metric);
         }
+    }
+
+    @Override
+    public void onClassificationsDeletedV2(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException {
+        onClassificationsDeleted(entity, deletedClassifications);
     }
 
     private EntityAuditEventV2 createEvent(EntityAuditEventV2 entityAuditEventV2, AtlasEntity entity, EntityAuditActionV2 action, String details) {

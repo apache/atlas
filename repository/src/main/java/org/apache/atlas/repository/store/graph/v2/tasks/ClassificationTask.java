@@ -26,6 +26,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.tasks.AbstractTask;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -44,6 +45,8 @@ public abstract class ClassificationTask extends AbstractTask {
     private static final Logger LOG = LoggerFactory.getLogger(ClassificationTask.class);
 
     public static final String PARAM_ENTITY_GUID              = "entityGuid";
+    public static final String PARAM_SOURCE_VERTEX_ID         = "sourceVertexId";
+    public static final String PARAM_TO_ENTITY_GUID           = "toEntityGuid";
     public static final String PARAM_DELETED_EDGE_IDS         = "deletedEdgeIds"; // TODO: Will be deprecated
     public static final String PARAM_DELETED_EDGE_ID          = "deletedEdgeId";
     public static final String PARAM_CLASSIFICATION_VERTEX_ID = "classificationVertexId";
@@ -70,7 +73,6 @@ public abstract class ClassificationTask extends AbstractTask {
                               DeleteHandlerDelegate deleteDelegate,
                               AtlasRelationshipStore relationshipStore) {
         super(task);
-
         this.graph             = graph;
         this.entityGraphMapper = entityGraphMapper;
         this.deleteDelegate    = deleteDelegate;
@@ -105,10 +107,8 @@ public abstract class ClassificationTask extends AbstractTask {
 
             setStatus(COMPLETE);
         } catch (AtlasBaseException e) {
-            LOG.error("Task: {}: Error performing task!", getTaskGuid(), e);
-
+            LOG.error("Task: {}: Error performing task! Task details: {}", getTaskGuid(), getTask(), e);
             setStatus(FAILED);
-
             throw e;
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
@@ -133,21 +133,6 @@ public abstract class ClassificationTask extends AbstractTask {
             put(PARAM_ENTITY_GUID, entityGuid);
             put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
             put(PARAM_RELATIONSHIP_GUID, relationshipGuid);
-        }};
-    }
-
-    public static Map<String, Object> toParameters(String deletedEdgeId, String classificationVertexId) {
-        return new HashMap<String, Object>() {{
-            put(PARAM_DELETED_EDGE_ID, deletedEdgeId);
-            put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
-        }};
-    }
-
-    public static Map<String, Object> toParameters(String classificationVertexId, String referencedVertexId, boolean isTermEntityEdge) {
-        return new HashMap<String, Object>() {{
-            put(PARAM_CLASSIFICATION_VERTEX_ID, classificationVertexId);
-            put(PARAM_REFERENCED_VERTEX_ID, referencedVertexId);
-            put(PARAM_IS_TERM_ENTITY_EDGE, isTermEntityEdge);
         }};
     }
 

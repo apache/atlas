@@ -69,12 +69,13 @@ public class AtlasInstanceConverter {
     private final EntityGraphRetriever  entityGraphRetrieverIncludeMandatoryRelAttrs;
 
     @Inject
-    public AtlasInstanceConverter(AtlasGraph graph, AtlasTypeRegistry typeRegistry, AtlasFormatConverters instanceFormatters) {
+    public AtlasInstanceConverter(AtlasGraph graph, AtlasTypeRegistry typeRegistry, AtlasFormatConverters instanceFormatters,
+                                  EntityGraphRetriever entityGraphRetriever) {
         this.typeRegistry                                = typeRegistry;
         this.instanceFormatters                          = instanceFormatters;
-        this.entityGraphRetriever                        = new EntityGraphRetriever(graph, typeRegistry);
+        this.entityGraphRetriever                        = entityGraphRetriever;
+        this.entityGraphRetrieverIgnoreRelationshipAttrs = new EntityGraphRetriever(entityGraphRetriever, true);
         this.entityGraphRetrieverIncludeMandatoryRelAttrs= new EntityGraphRetriever(graph, typeRegistry, false, true);
-        this.entityGraphRetrieverIgnoreRelationshipAttrs = new EntityGraphRetriever(graph, typeRegistry, true);
     }
 
     public Referenceable[] getReferenceables(Collection<AtlasEntity> entities) throws AtlasBaseException {

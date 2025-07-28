@@ -147,7 +147,6 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
     @VisibleForTesting
     static JanusGraph initJanusGraph(Configuration config) {
-
         org.apache.commons.configuration2.Configuration conf2 = createConfiguration2(config);
         try {
             return AtlasJanusGraphFactory.open(conf2);

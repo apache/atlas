@@ -300,7 +300,6 @@ public class KafkaNotification extends AbstractNotification implements Service {
                 }
             } catch (Exception e) {
                 lastFailureException = e;
-
                 failedMessages.add(context.getMessage());
             }
         }

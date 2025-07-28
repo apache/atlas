@@ -66,11 +66,11 @@ public class RegularImport extends ImportStrategy {
     private final EntityGraphRetriever entityGraphRetriever;
     private boolean directoryBasedImportConfigured;
 
-    public RegularImport(AtlasGraph graph, AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry) {
+    public RegularImport(AtlasGraph graph, AtlasEntityStore entityStore, AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityGraphRetriever) {
         this.graph       = graph;
         this.entityStore = entityStore;
         this.typeRegistry = typeRegistry;
-        this.entityGraphRetriever = new EntityGraphRetriever(graph, typeRegistry);
+        this.entityGraphRetriever = entityGraphRetriever;
         this.directoryBasedImportConfigured = StringUtils.isNotEmpty(AtlasConfiguration.IMPORT_TEMP_DIRECTORY.getString());
     }
 

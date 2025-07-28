@@ -17,6 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v2.bulkimport;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -53,12 +54,37 @@ public class EntityChangeNotifierNop implements IAtlasEntityChangeNotifier {
     }
 
     @Override
+    public void onClassificationPropagationAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+
+    }
+
+    @Override
+    public void onClassificationUpdatedToEntitiesV2(List<AtlasEntity> entities, AtlasClassification updatedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+
+    }
+
+    @Override
     public void onClassificationDeletedFromEntity(AtlasEntity entity, List<AtlasClassification> deletedClassifications) throws AtlasBaseException {
 
     }
 
     @Override
     public void onClassificationsDeletedFromEntities(List<AtlasEntity> entities, List<AtlasClassification> deletedClassifications) throws AtlasBaseException {
+
+    }
+
+    @Override
+    public void onClassificationDeletedFromEntities(List<AtlasEntity> entities, AtlasClassification deletedClassification) throws AtlasBaseException {
+
+    }
+
+    @Override
+    public void onClassificationPropagationDeleted(List<AtlasEntity> entities, AtlasClassification deletedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+
+    }
+
+    @Override
+    public void onClassificationPropagationDeleted(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException {
 
     }
 
@@ -84,6 +110,16 @@ public class EntityChangeNotifierNop implements IAtlasEntityChangeNotifier {
 
     @Override
     public void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications) throws AtlasBaseException {
+
+    }
+
+    @Override
+    public void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications, boolean forceInline) throws AtlasBaseException {
+
+    }
+
+    @Override
+    public void onClassificationUpdatedToEntities(List<AtlasEntity> entities, AtlasClassification updatedClassification) throws AtlasBaseException {
 
     }
 

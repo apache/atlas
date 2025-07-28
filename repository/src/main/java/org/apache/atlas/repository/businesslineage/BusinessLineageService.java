@@ -71,9 +71,9 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
 
 
     @Inject
-    BusinessLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, TransactionInterceptHelper transactionInterceptHelper, AtlasRelationshipStoreV2 relationshipStoreV2, IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier) {
+    BusinessLineageService(AtlasGraph atlasGraph, TransactionInterceptHelper transactionInterceptHelper, AtlasRelationshipStoreV2 relationshipStoreV2, IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier, EntityGraphRetriever entityGraphRetriever) {
         this.graph = atlasGraph;
-        this.entityRetriever = new EntityGraphRetriever(atlasGraph, typeRegistry);
+        this.entityRetriever = entityGraphRetriever;
         this.transactionInterceptHelper = transactionInterceptHelper;
         this.graphHelper = new GraphHelper(atlasGraph);
         this.relationshipStoreV2 = relationshipStoreV2;
