@@ -2482,6 +2482,24 @@ public class EntityGraphMapper {
 
         // Add more info to outputPort update event.
         if (internalAttr.equals(OUTPUT_PORT_GUIDS_ATTR)) {
+            // When adding assets as outputPort, remove them from inputPorts if they already exist there.
+            if (CollectionUtils.isNotEmpty(addedGuids)) {
+                List<String> existingInputPortGuids = toVertex.getMultiValuedProperty(INPUT_PORT_GUIDS_ATTR, String.class);
+                if (CollectionUtils.isNotEmpty(existingInputPortGuids)) {
+                    List<String> conflictingGuids = addedGuids.stream()
+                            .filter(existingInputPortGuids::contains)
+                            .collect(Collectors.toList());
+                    
+                    if (CollectionUtils.isNotEmpty(conflictingGuids)) {
+                        conflictingGuids.forEach(guid ->
+                            AtlasGraphUtilsV2.removeItemFromListPropertyValue(toVertex, INPUT_PORT_GUIDS_ATTR, guid));
+
+                        removeInputPortEdges(toVertex, conflictingGuids);
+
+                        trackInputPortRemoval(toVertex, conflictingGuids);
+                    }
+                }
+            }
             if (CollectionUtils.isNotEmpty(currentElements)) {
                 List<String> currentElementGuids = currentElements.stream()
                         .filter(x -> ((AtlasEdge) x).getProperty(STATE_PROPERTY_KEY, String.class).equals("ACTIVE"))
@@ -2500,6 +2518,42 @@ public class EntityGraphMapper {
                 diffEntity.setAddedRelationshipAttribute(OUTPUT_PORTS, addedGuids);
                 diffEntity.setRemovedRelationshipAttribute(OUTPUT_PORTS, removedGuids);
             }
+        }
+    }
+
+    private void removeInputPortEdges(AtlasVertex toVertex, List<String> conflictingGuids) {
+        for (String assetGuid: conflictingGuids) {
+            try {
+                AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, assetGuid);
+                Iterator<AtlasEdge> outEdges = assetVertex.getEdges(AtlasEdgeDirection.OUT, INPUT_PORT_PRODUCT_EDGE_LABEL).iterator();
+                while(outEdges.hasNext()) {
+                    AtlasEdge edge = outEdges.next();
+                    if (edge.getInVertex().equals(toVertex)) {
+                        deleteDelegate.getHandler(DeleteType.HARD).deleteEdgeReference(edge, TypeCategory.ENTITY, true,
+                                true, AtlasRelationshipEdgeDirection.OUT, assetVertex);
+                    }
+                }
+            } catch (AtlasBaseException e) {
+                throw new RuntimeException(e);
+            }
+        }
+    }
+
+    private void trackInputPortRemoval(AtlasVertex toVertex, List<String> conflictingGuids) {
+        String productGuid = toVertex.getProperty("__guid", String.class);
+        AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(productGuid);
+
+        if (diffEntity == null) {
+            diffEntity = new AtlasEntity();
+            diffEntity.setGuid(productGuid);
+            diffEntity.setTypeName(TYPE_PRODUCT);
+            RequestContext.get().cacheDifferentialEntity(diffEntity);
+        }
+
+        Map<String, Object> removedAttrs = diffEntity.getRemovedRelationshipAttributes();
+        if (removedAttrs == null) {
+            removedAttrs = new HashMap<>();
+            diffEntity.setRemovedRelationshipAttributes(removedAttrs);
         }
     }
 
