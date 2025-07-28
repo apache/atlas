@@ -781,6 +781,7 @@
         <redis.client.version>3.20.1</redis.client.version>
         <micrometer.version>1.11.1</micrometer.version>
         <netty4.version>4.1.61.Final</netty4.version>
+        <junit.jupiter.version>5.8.2</junit.jupiter.version>
     </properties>
 
     <modules>
@@ -870,6 +871,13 @@
 
     <dependencyManagement>
         <dependencies>
+
+            <dependency>
+                <groupId>com.datastax.oss</groupId>
+                <artifactId>java-driver-core</artifactId>
+                <version>4.17.0</version>
+            </dependency>
+
             <dependency>
                 <groupId>io.grpc</groupId>
                 <artifactId>grpc-core</artifactId>

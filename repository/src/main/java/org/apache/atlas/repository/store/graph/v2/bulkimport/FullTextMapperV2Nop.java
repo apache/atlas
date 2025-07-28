@@ -21,8 +21,11 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graph.IFullTextMapper;
+import org.apache.atlas.type.AtlasStructType;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class FullTextMapperV2Nop implements IFullTextMapper {
     @Override
@@ -53,5 +56,10 @@ public class FullTextMapperV2Nop implements IFullTextMapper {
     @Override
     public AtlasEntity.AtlasEntityWithExtInfo getAndCacheEntityWithExtInfo(String guid) throws AtlasBaseException {
         return null;
+    }
+
+    @Override
+    public void mapAttributes(AtlasStructType structType, Map<String, Object> attributes, AtlasEntity.AtlasEntityExtInfo entityExtInfo, StringBuilder sb, Set<String> processedGuids, Set<String> excludeAttributes, boolean isClassificationOnly) throws AtlasBaseException {
+
     }
 }

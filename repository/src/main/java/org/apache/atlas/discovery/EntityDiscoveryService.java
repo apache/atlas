@@ -89,7 +89,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private static final String DEFAULT_SORT_ATTRIBUTE_NAME = "name";
 
     private final AtlasGraph                      graph;
-    private final EntityGraphRetriever            entityRetriever;
     private final AtlasGremlinQueryProvider       gremlinQueryProvider;
     private final AtlasTypeRegistry               typeRegistry;
     private final GraphBackedSearchIndexer        indexer;
@@ -103,7 +102,20 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private final DSLQueryExecutor                dslQueryExecutor;
     private final StatsClient                     statsClient;
 
+    private EntityGraphRetriever            entityRetriever;
+
     @Inject
+    public EntityDiscoveryService(AtlasTypeRegistry typeRegistry,
+                                  AtlasGraph graph,
+                                  GraphBackedSearchIndexer indexer,
+                                  SearchTracker searchTracker,
+                                  UserProfileService userProfileService,
+                                  StatsClient statsClient,
+                                  EntityGraphRetriever entityRetriever) throws AtlasException {
+        this(typeRegistry, graph, indexer, searchTracker, userProfileService, statsClient);
+        this.entityRetriever          = entityRetriever;
+    }
+
     public EntityDiscoveryService(AtlasTypeRegistry typeRegistry,
                            AtlasGraph graph,
                            GraphBackedSearchIndexer indexer,
@@ -111,7 +123,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                            UserProfileService userProfileService,
                            StatsClient statsClient) throws AtlasException {
         this.graph                    = graph;
-        this.entityRetriever          = new EntityGraphRetriever(this.graph, typeRegistry);
         this.indexer                  = indexer;
         this.searchTracker            = searchTracker;
         this.gremlinQueryProvider     = AtlasGremlinQueryProvider.INSTANCE;
@@ -281,7 +292,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                     }
 
                     if (classificationNames != null) {
-                        List<String> traitNames = GraphHelper.getTraitNames(vertex);
+                        List<String> traitNames = GraphHelper.handleGetTraitNames(vertex);
 
                         if (CollectionUtils.isEmpty(traitNames) ||
                                 !CollectionUtils.containsAny(classificationNames, traitNames)) {
@@ -497,7 +508,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(atlasVertex, resultAttributes);
 
                 if(searchParameters.getIncludeClassificationAttributes()) {
-                    entity.setClassifications(entityRetriever.getAllClassifications(atlasVertex));
+                    entity.setClassifications(entityRetriever.handleGetAllClassifications(atlasVertex));
                 }
 
                 ret.addEntity(entity);
@@ -653,7 +664,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 AtlasEntityHeader entity = entityRetriever.toAtlasEntityHeader(vertex, searchParameters.getAttributes());
 
                 if (searchParameters.getIncludeClassificationAttributes()) {
-                    entity.setClassifications(entityRetriever.getAllClassifications(vertex));
+                    entity.setClassifications(entityRetriever.handleGetAllClassifications(vertex));
                 }
                 resultList.add(entity);
             }
@@ -980,6 +991,10 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
         RequestContext.get().setIncludeRelationshipAttributes(params.isIncludeRelationshipAttributes());
 
+        RequestContext.get().setIncludeMeanings(!searchParams.isExcludeMeanings());
+        RequestContext.get().setIncludeClassifications(!searchParams.isExcludeClassifications());
+        RequestContext.get().setIncludeClassificationNames(searchParams.isIncludeClassificationNames());
+
         AtlasSearchResult ret = new AtlasSearchResult();
         AtlasIndexQuery indexQuery;
 
@@ -1143,9 +1158,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 }
 
                 AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
-                if(RequestContext.get().includeClassifications()){
-                    header.setClassifications(entityRetriever.getAllClassifications(vertex));
-                }
+
                 if (showSearchScore) {
                     ret.addEntityScore(header.getGuid(), result.getScore());
                 }

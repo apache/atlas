@@ -1,9 +1,20 @@
+// Copyright 2017 JanusGraph Authors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//      http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
 package org.apache.atlas.repository.graphdb.janus.graphv3;
 
 import com.carrotsearch.hppc.LongArrayList;
-import com.datastax.oss.driver.api.core.CqlSession;
-import com.datastax.oss.driver.api.core.config.DefaultDriverOption;
-import com.datastax.oss.driver.api.core.config.DriverConfigLoader;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
@@ -13,9 +24,6 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.ListMultimap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasConfiguration;
-import org.apache.atlas.AtlasException;
 import org.apache.tinkerpop.gremlin.process.traversal.TraversalStrategies;
 import org.apache.tinkerpop.gremlin.structure.Direction;
 import org.apache.tinkerpop.gremlin.structure.Graph;
@@ -56,7 +64,6 @@ import org.janusgraph.diskstorage.util.StaticArrayEntry;
 import org.janusgraph.diskstorage.util.time.TimestampProvider;
 import org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration;
 import org.janusgraph.graphdb.database.EdgeSerializer;
-import org.janusgraph.graphdb.database.IndexSerializer;
 import org.janusgraph.graphdb.database.RelationQueryCache;
 import org.janusgraph.graphdb.database.StandardJanusGraph;
 import org.janusgraph.graphdb.database.cache.SchemaCache;
@@ -100,8 +107,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -118,27 +123,25 @@ import java.util.concurrent.atomic.AtomicLong;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REGISTRATION_TIME;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.REPLACE_INSTANCE_IF_EXISTS;
 
-public class AtlasStandardJanusGraph extends StandardJanusGraph {
+public class AtlasStandardJanusGraph extends StandardJanusGraph {//extends JanusGraphBlueprintsGraph {
 
     private static final Logger log =
             LoggerFactory.getLogger(AtlasStandardJanusGraph.class);
 
-    String CASSANDRA_HOSTNAME_PROPERTY = "atlas.graph.storage.hostname";
-
 
     static {
         TraversalStrategies graphStrategies =
-                TraversalStrategies.GlobalCache.getStrategies(Graph.class)
-                        .clone()
-                        .addStrategies(AdjacentVertexFilterOptimizerStrategy.instance(),
-                                AdjacentVertexHasIdOptimizerStrategy.instance(),
-                                AdjacentVertexIsOptimizerStrategy.instance(),
-                                AdjacentVertexHasUniquePropertyOptimizerStrategy.instance(),
-                                JanusGraphLocalQueryOptimizerStrategy.instance(),
-                                JanusGraphMultiQueryStrategy.instance(),
-                                JanusGraphMixedIndexCountStrategy.instance(),
-                                JanusGraphStepStrategy.instance(),
-                                JanusGraphIoRegistrationStrategy.instance());
+            TraversalStrategies.GlobalCache.getStrategies(Graph.class)
+                .clone()
+                .addStrategies(AdjacentVertexFilterOptimizerStrategy.instance(),
+                               AdjacentVertexHasIdOptimizerStrategy.instance(),
+                               AdjacentVertexIsOptimizerStrategy.instance(),
+                               AdjacentVertexHasUniquePropertyOptimizerStrategy.instance(),
+                               JanusGraphLocalQueryOptimizerStrategy.instance(),
+                               JanusGraphMultiQueryStrategy.instance(),
+                               JanusGraphMixedIndexCountStrategy.instance(),
+                               JanusGraphStepStrategy.instance(),
+                               JanusGraphIoRegistrationStrategy.instance());
 
         //Register with cache
         TraversalStrategies.GlobalCache.registerStrategies(AtlasStandardJanusGraph.class, graphStrategies);
@@ -306,7 +309,7 @@ public class AtlasStandardJanusGraph extends StandardJanusGraph {
 
     private synchronized void removeHook() {
         if (null == shutdownHook)
-            return;
+                return;
 
         ShutdownThread tmp = shutdownHook;
         shutdownHook = null;
@@ -447,7 +450,7 @@ public class AtlasStandardJanusGraph extends StandardJanusGraph {
 
     public RecordIterator<Long> getVertexIDs(final BackendTransaction tx) {
         Preconditions.checkArgument(backend.getStoreFeatures().hasOrderedScan() ||
-                        backend.getStoreFeatures().hasUnorderedScan(),
+                backend.getStoreFeatures().hasUnorderedScan(),
                 "The configured storage backend does not support global graph operations - use Faunus instead");
 
         final KeyIterator keyIterator;
@@ -508,7 +511,7 @@ public class AtlasStandardJanusGraph extends StandardJanusGraph {
     private ModifiableConfiguration getGlobalSystemConfig(Backend backend) {
 
         return new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
-                backend.getGlobalSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
+            backend.getGlobalSystemConfig(), BasicConfiguration.Restriction.GLOBAL);
     }
 
     // ################### WRITE #########################
@@ -563,12 +566,305 @@ public class AtlasStandardJanusGraph extends StandardJanusGraph {
         } else return 0;
     }
 
+    private static class ModificationSummary {
+
+        final boolean hasModifications;
+        final boolean has2iModifications;
+
+        private ModificationSummary(boolean hasModifications, boolean has2iModifications) {
+            this.hasModifications = hasModifications;
+            this.has2iModifications = has2iModifications;
+        }
+    }
+
+    public ModificationSummary prepareCommitC(final Collection<InternalRelation> addedRelations,
+                                     final Collection<InternalRelation> deletedRelations,
+                                     final Predicate<InternalRelation> filter,
+                                     final BackendTransaction mutator, final StandardJanusGraphTx tx,
+                                     final boolean acquireLocks) throws BackendException {
+
+
+        ListMultimap<Long, InternalRelation> mutations = ArrayListMultimap.create();
+        ListMultimap<InternalVertex, InternalRelation> mutatedProperties = ArrayListMultimap.create();
+        List<AtlasIndexSerializer.IndexUpdate> indexUpdates = Lists.newArrayList();
+        //1) Collect deleted edges and their index updates and acquire edge locks
+        for (InternalRelation del : Iterables.filter(deletedRelations,filter)) {
+            Preconditions.checkArgument(del.isRemoved());
+            for (int pos = 0; pos < del.getLen(); pos++) {
+                InternalVertex vertex = del.getVertex(pos);
+                if (pos == 0 || !del.isLoop()) {
+                    if (del.isProperty()) mutatedProperties.put(vertex,del);
+                    mutations.put(vertex.longId(), del);
+                }
+                if (acquireLock(del,pos,acquireLocks)) {
+                    Entry entry = edgeSerializer.writeRelation(del, pos, tx);
+                    mutator.acquireEdgeLock(idManager.getKey(vertex.longId()), entry);
+                }
+            }
+            indexUpdates.addAll(indexSerializer.getIndexUpdatesC(del));
+        }
+
+        //2) Collect added edges and their index updates and acquire edge locks
+        for (InternalRelation add : Iterables.filter(addedRelations,filter)) {
+            Preconditions.checkArgument(add.isNew());
+
+            for (int pos = 0; pos < add.getLen(); pos++) {
+                InternalVertex vertex = add.getVertex(pos);
+                if (pos == 0 || !add.isLoop()) {
+                    if (add.isProperty()) mutatedProperties.put(vertex,add);
+                    mutations.put(vertex.longId(), add);
+                }
+                if (!vertex.isNew() && acquireLock(add,pos,acquireLocks)) {
+                    Entry entry = edgeSerializer.writeRelation(add, pos, tx);
+                    mutator.acquireEdgeLock(idManager.getKey(vertex.longId()), entry.getColumn());
+                }
+            }
+            indexUpdates.addAll(indexSerializer.getIndexUpdatesC(add));
+        }
+
+        //3) Collect all index update for vertices
+        for (InternalVertex v : mutatedProperties.keySet()) {
+            indexUpdates.addAll(indexSerializer.getIndexUpdatesC(v,mutatedProperties.get(v)));
+        }
+        //4) Acquire index locks (deletions first)
+        for (AtlasIndexSerializer.IndexUpdate update : indexUpdates) {
+            if (!update.isCompositeIndex() || !update.isDeletion()) continue;
+            CompositeIndexType iIndex = (CompositeIndexType) update.getIndex();
+            if (acquireLock(iIndex,acquireLocks)) {
+                mutator.acquireIndexLock((StaticBuffer)update.getKey(), (Entry)update.getEntry());
+            }
+        }
+        for (AtlasIndexSerializer.IndexUpdate update : indexUpdates) {
+            if (!update.isCompositeIndex() || !update.isAddition()) continue;
+            CompositeIndexType iIndex = (CompositeIndexType) update.getIndex();
+            if (acquireLock(iIndex,acquireLocks)) {
+                mutator.acquireIndexLock((StaticBuffer)update.getKey(), ((Entry)update.getEntry()).getColumn());
+            }
+        }
+
+        //5) Add relation mutations
+        for (Long vertexId : mutations.keySet()) {
+            Preconditions.checkArgument(vertexId > 0, "Vertex has no id: %s", vertexId);
+            final List<InternalRelation> edges = mutations.get(vertexId);
+            final List<Entry> additions = new ArrayList<>(edges.size());
+            final List<Entry> deletions = new ArrayList<>(Math.max(10, edges.size() / 10));
+            for (final InternalRelation edge : edges) {
+                final InternalRelationType baseType = (InternalRelationType) edge.getType();
+                assert baseType.getBaseType()==null;
+
+                for (InternalRelationType type : baseType.getRelationIndexes()) {
+                    if (type.getStatus()== SchemaStatus.DISABLED) continue;
+                    for (int pos = 0; pos < edge.getArity(); pos++) {
+                        if (!type.isUnidirected(Direction.BOTH) && !type.isUnidirected(EdgeDirection.fromPosition(pos)))
+                            continue; //Directionality is not covered
+                        if (edge.getVertex(pos).longId()==vertexId) {
+                            StaticArrayEntry entry = edgeSerializer.writeRelation(edge, type, pos, tx);
+                            if (edge.isRemoved()) {
+                                deletions.add(entry);
+                            } else {
+                                Preconditions.checkArgument(edge.isNew());
+                                int ttl = getTTL(edge);
+                                if (ttl > 0) {
+                                    entry.setMetaData(EntryMetaData.TTL, ttl);
+                                }
+                                additions.add(entry);
+                            }
+                        }
+                    }
+                }
+            }
+
+            StaticBuffer vertexKey = idManager.getKey(vertexId);
+            mutator.mutateEdges(vertexKey, additions, deletions);
+        }
+
+        //6) Add index updates
+        boolean has2iMods = false;
+        for (AtlasIndexSerializer.IndexUpdate indexUpdate : indexUpdates) {
+            assert indexUpdate.isAddition() || indexUpdate.isDeletion();
+            if (indexUpdate.isCompositeIndex()) {
+                final AtlasIndexSerializer.IndexUpdate<StaticBuffer,Entry> update = indexUpdate;
+                if (update.isAddition())
+                    mutator.mutateIndex(update.getKey(), Lists.newArrayList(update.getEntry()), KCVSCache.NO_DELETIONS);
+                else
+                    mutator.mutateIndex(update.getKey(), KeyColumnValueStore.NO_ADDITIONS, Lists.newArrayList(update.getEntry()));
+            } else {
+                final AtlasIndexSerializer.IndexUpdate<String,IndexEntry> update = indexUpdate;
+                has2iMods = true;
+                IndexTransaction itx = mutator.getIndexTransaction(update.getIndex().getBackingIndexName());
+                String indexStore = ((MixedIndexType)update.getIndex()).getStoreName();
+                if (update.isAddition())
+                    itx.add(indexStore, update.getKey(), update.getEntry(), update.getElement().isNew());
+                else
+                    itx.delete(indexStore,update.getKey(),update.getEntry().field,update.getEntry().value,update.getElement().isRemoved());
+            }
+        }
+        return new ModificationSummary(!mutations.isEmpty(),has2iMods);
+    }
+
     private static final Predicate<InternalRelation> SCHEMA_FILTER =
-            internalRelation -> internalRelation.getType() instanceof BaseRelationType && internalRelation.getVertex(0) instanceof JanusGraphSchemaVertex;
+        internalRelation -> internalRelation.getType() instanceof BaseRelationType && internalRelation.getVertex(0) instanceof JanusGraphSchemaVertex;
 
     private static final Predicate<InternalRelation> NO_SCHEMA_FILTER = internalRelation -> !SCHEMA_FILTER.apply(internalRelation);
 
     private static final Predicate<InternalRelation> NO_FILTER = Predicates.alwaysTrue();
+
+    public void commit(final Collection<InternalRelation> addedRelations,
+                     final Collection<InternalRelation> deletedRelations, final StandardJanusGraphTx tx) throws BackendException {
+        if (addedRelations.isEmpty() && deletedRelations.isEmpty()) return;
+        //1. Finalize transaction
+        log.debug("Saving transaction. Added {}, removed {}", addedRelations.size(), deletedRelations.size());
+        if (!tx.getConfiguration().hasCommitTime()) tx.getConfiguration().setCommitTime(times.getTime());
+        final Instant txTimestamp = tx.getConfiguration().getCommitTime();
+        final long transactionId = txCounter.incrementAndGet();
+
+        //2. Assign JanusGraphVertex IDs
+        if (!tx.getConfiguration().hasAssignIDsImmediately())
+            idAssigner.assignIDs(addedRelations);
+
+        //3. Commit
+        BackendTransaction mutator = tx.getTxHandle();
+        final boolean acquireLocks = tx.getConfiguration().hasAcquireLocks();
+        final boolean hasTxIsolation = backend.getStoreFeatures().hasTxIsolation();
+        final boolean logTransaction = config.hasLogTransactions() && !tx.getConfiguration().hasEnabledBatchLoading();
+        final KCVSLog txLog = logTransaction?backend.getSystemTxLog():null;
+        final TransactionLogHeader txLogHeader = new TransactionLogHeader(transactionId,txTimestamp, times);
+        ModificationSummary commitSummary;
+
+        try {
+            //3.1 Log transaction (write-ahead log) if enabled
+            if (logTransaction) {
+                //[FAILURE] Inability to log transaction fails the transaction by escalation since it's likely due to unavailability of primary
+                //storage backend.
+                Preconditions.checkNotNull(txLog, "Transaction log is null");
+                txLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.PRECOMMIT, tx, addedRelations, deletedRelations),txLogHeader.getLogKey());
+            }
+
+            //3.2 Commit schema elements and their associated relations in a separate transaction if backend does not support
+            //    transactional isolation
+            boolean hasSchemaElements = !Iterables.isEmpty(Iterables.filter(deletedRelations,SCHEMA_FILTER))
+                    || !Iterables.isEmpty(Iterables.filter(addedRelations,SCHEMA_FILTER));
+            Preconditions.checkArgument(!hasSchemaElements || (!tx.getConfiguration().hasEnabledBatchLoading() && acquireLocks),
+                    "Attempting to create schema elements in inconsistent state");
+
+            if (hasSchemaElements && !hasTxIsolation) {
+                /*
+                 * On storage without transactional isolation, create separate
+                 * backend transaction for schema aspects to make sure that
+                 * those are persisted prior to and independently of other
+                 * mutations in the tx. If the storage supports transactional
+                 * isolation, then don't create a separate tx.
+                 */
+                final BackendTransaction schemaMutator = openBackendTransaction(tx);
+
+                try {
+                    //[FAILURE] If the preparation throws an exception abort directly - nothing persisted since batch-loading cannot be enabled for schema elements
+                    commitSummary = prepareCommitC(addedRelations,deletedRelations, SCHEMA_FILTER, schemaMutator, tx, acquireLocks);
+                    assert commitSummary.hasModifications && !commitSummary.has2iModifications;
+                } catch (Throwable e) {
+                    //Roll back schema tx and escalate exception
+                    schemaMutator.rollback();
+                    throw e;
+                }
+
+                try {
+                    schemaMutator.commit();
+                } catch (Throwable e) {
+                    //[FAILURE] Primary persistence failed => abort and escalate exception, nothing should have been persisted
+                    log.error("Could not commit transaction ["+transactionId+"] due to storage exception in system-commit",e);
+                    throw e;
+                }
+            }
+
+            //[FAILURE] Exceptions during preparation here cause the entire transaction to fail on transactional systems
+            //or just the non-system part on others. Nothing has been persisted unless batch-loading
+            commitSummary = prepareCommitC(addedRelations,deletedRelations, hasTxIsolation? NO_FILTER : NO_SCHEMA_FILTER, mutator, tx, acquireLocks);
+            if (commitSummary.hasModifications) {
+                String logTxIdentifier = tx.getConfiguration().getLogIdentifier();
+                boolean hasSecondaryPersistence = logTxIdentifier!=null || commitSummary.has2iModifications;
+
+                //1. Commit storage - failures lead to immediate abort
+
+                //1a. Add success message to tx log which will be committed atomically with all transactional changes so that we can recover secondary failures
+                //    This should not throw an exception since the mutations are just cached. If it does, it will be escalated since its critical
+                if (logTransaction) {
+                    txLog.add(txLogHeader.serializePrimary(serializer,
+                                        hasSecondaryPersistence?LogTxStatus.PRIMARY_SUCCESS:LogTxStatus.COMPLETE_SUCCESS),
+                            txLogHeader.getLogKey(),mutator.getTxLogPersistor());
+                }
+
+                try {
+                    mutator.commitStorage();
+                } catch (Throwable e) {
+                    //[FAILURE] If primary storage persistence fails abort directly (only schema could have been persisted)
+                    log.error("Could not commit transaction ["+transactionId+"] due to storage exception in commit",e);
+                    throw e;
+                }
+
+                if (hasSecondaryPersistence) {
+                    LogTxStatus status = LogTxStatus.SECONDARY_SUCCESS;
+                    Map<String,Throwable> indexFailures = ImmutableMap.of();
+                    boolean userlogSuccess = true;
+
+                    try {
+                        //2. Commit indexes - [FAILURE] all exceptions are collected and logged but nothing is aborted
+                        indexFailures = mutator.commitIndexes();
+                        if (!indexFailures.isEmpty()) {
+                            status = LogTxStatus.SECONDARY_FAILURE;
+                            for (Map.Entry<String,Throwable> entry : indexFailures.entrySet()) {
+                                log.error("Error while committing index mutations for transaction ["+transactionId+"] on index: " +entry.getKey(),entry.getValue());
+                            }
+                        }
+                        //3. Log transaction if configured - [FAILURE] is recorded but does not cause exception
+                        if (logTxIdentifier!=null) {
+                            try {
+                                userlogSuccess = false;
+                                final Log userLog = backend.getUserLog(logTxIdentifier);
+                                Future<Message> env = userLog.add(txLogHeader.serializeModifications(serializer, LogTxStatus.USER_LOG, tx, addedRelations, deletedRelations));
+                                if (env.isDone()) {
+                                    try {
+                                        env.get();
+                                    } catch (ExecutionException ex) {
+                                        throw ex.getCause();
+                                    }
+                                }
+                                userlogSuccess=true;
+                            } catch (Throwable e) {
+                                status = LogTxStatus.SECONDARY_FAILURE;
+                                log.error("Could not user-log committed transaction ["+transactionId+"] to " + logTxIdentifier, e);
+                            }
+                        }
+                    } finally {
+                        if (logTransaction) {
+                            //[FAILURE] An exception here will be logged and not escalated; tx considered success and
+                            // needs to be cleaned up later
+                            try {
+                                txLog.add(txLogHeader.serializeSecondary(serializer,status,indexFailures,userlogSuccess),txLogHeader.getLogKey());
+                            } catch (Throwable e) {
+                                log.error("Could not tx-log secondary persistence status on transaction ["+transactionId+"]",e);
+                            }
+                        }
+                    }
+                } else {
+                    //This just closes the transaction since there are no modifications
+                    mutator.commitIndexes();
+                }
+            } else { //Just commit everything at once
+                //[FAILURE] This case only happens when there are no non-system mutations in which case all changes
+                //are already flushed. Hence, an exception here is unlikely and should abort
+                mutator.commit();
+            }
+        } catch (Throwable e) {
+            log.error("Could not commit transaction ["+transactionId+"] due to exception",e);
+            try {
+                //Clean up any left-over transaction handles
+                mutator.rollback();
+            } catch (Throwable e2) {
+                log.error("Could not roll-back transaction ["+transactionId+"] after failure due to exception",e2);
+            }
+            throw e;
+        }
+    }
 
 
     private static class ShutdownThread extends Thread {

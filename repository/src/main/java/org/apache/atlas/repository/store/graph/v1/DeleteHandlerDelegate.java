@@ -21,6 +21,8 @@ package org.apache.atlas.repository.store.graph.v1;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.DeleteType;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasRepositoryConfiguration;
@@ -41,13 +43,15 @@ public class DeleteHandlerDelegate {
     private final DeleteHandlerV1     defaultHandler;
     private final AtlasGraph graph;
     private final TaskManagement      taskManagement;
+    private final EntityGraphRetriever entityRetriever;
 
     @Inject
-    public DeleteHandlerDelegate(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement) {
+    public DeleteHandlerDelegate(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement, EntityGraphRetriever entityRetriever) {
         this.graph = graph;
         this.taskManagement    = taskManagement;
-        this.softDeleteHandler = new SoftDeleteHandlerV1(graph, typeRegistry, taskManagement);
-        this.hardDeleteHandler = new HardDeleteHandlerV1(graph, typeRegistry, taskManagement);
+        this.softDeleteHandler = new SoftDeleteHandlerV1(graph, typeRegistry, taskManagement, entityRetriever);
+        this.hardDeleteHandler = new HardDeleteHandlerV1(graph, typeRegistry, taskManagement, entityRetriever);
+        this.entityRetriever   = entityRetriever;
         this.defaultHandler    = getDefaultConfiguredHandler(typeRegistry);
     }
 
@@ -83,8 +87,8 @@ public class DeleteHandlerDelegate {
 
             LOG.debug("Default delete handler set to: {}", handlerFromProperties.getName());
 
-            ret = (DeleteHandlerV1) handlerFromProperties.getConstructor(AtlasGraph.class, AtlasTypeRegistry.class, TaskManagement.class)
-                                    .newInstance(this.graph, typeRegistry, taskManagement);
+            ret = (DeleteHandlerV1) handlerFromProperties.getConstructor(AtlasGraph.class, AtlasTypeRegistry.class, TaskManagement.class, EntityGraphRetriever.class)
+                                    .newInstance(this.graph, typeRegistry, taskManagement, entityRetriever);
         } catch (Exception ex) {
             LOG.error("Error instantiating default delete handler. Defaulting to: {}", softDeleteHandler.getClass().getName(), ex);
 

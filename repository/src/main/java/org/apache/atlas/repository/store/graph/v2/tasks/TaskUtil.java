@@ -1,13 +1,17 @@
 package org.apache.atlas.repository.store.graph.v2.tasks;
 
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.tasks.TaskSearchResult;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.tasks.AtlasTaskService;
+import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang.StringUtils;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -49,6 +53,25 @@ public class TaskUtil {
         return taskService.getTasksByCondition(from, size, mustConditions, shouldConditions, excludeConditions);
 
     }
+
+    public List<AtlasTask> getAllTasksByCondition(int size, String entityGuid, String tagTypeName, List<String> types) throws AtlasBaseException {
+        List<Map<String,Object>> mustConditions = new ArrayList<>();
+
+        if (StringUtils.isNotEmpty(entityGuid))
+            mustConditions.add(getMap("term", getMap(TASK_ENTITY_GUID, entityGuid)));
+
+        if (StringUtils.isNotEmpty(tagTypeName))
+            mustConditions.add(getMap("term", getMap(TASK_CLASSIFICATION_TYPENAME, tagTypeName)));
+
+        if (CollectionUtils.isNotEmpty(types)) {
+            mustConditions.add(getMap("terms", getMap(TASK_TYPE, types)));
+        }
+
+        mustConditions.add(getMap("term", getMap(TASK_STATUS + ".keyword", TASK_STATUS_PENDING)));
+
+        return taskService.getAllTasksByCondition(size, mustConditions);
+    }
+
 
     private Map<String, Object> getMap(String key, Object value) {
         Map<String, Object> map = new HashMap<>();

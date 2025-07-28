@@ -26,7 +26,12 @@ on:
       - beta
       - development
       - master
+      - lineageondemand
+      - optimise_classifications_fetch
+      - poctagprophashedrebased
       - staging
+      - tagscanary
+      - tagscanarymerge
       - fixlabels
 
 jobs:
