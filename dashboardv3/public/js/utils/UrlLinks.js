@@ -293,6 +293,12 @@ define(['require', 'utils/Enums', 'utils/Utils', 'underscore'], function(require
         },
         downloadSearchResultsFileUrl: function(fileName) {
             return this.baseUrlV2 + '/search/download/' + fileName;
+        },
+        checkKnoxSsoApiUrl: function() {
+            return this.baseUrl+ '/admin/checksso';
+        },
+        logOutUrl: function() {
+            return UrlLinks.apiBaseUrl + '/logout';
         }
     });
 

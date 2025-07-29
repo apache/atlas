@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 'moment', 'store', 'modules/Modal', 'DOMPurify', 'moment-timezone', 'pnotify.buttons', 'pnotify.confirm', 'trumbowyg'], function(require, Globals, pnotify, Messages, Enums, moment, store, Modal, DOMPurify) {
+define(['App','require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 'moment', 'store', 'modules/Modal', 'DOMPurify', 'moment-timezone', 'pnotify.buttons', 'pnotify.confirm', 'trumbowyg'], function(App,require, Globals, pnotify, Messages, Enums, moment, store, Modal, DOMPurify) {
     'use strict';
 
     var Utils = {};
@@ -1222,7 +1222,8 @@ define(['require', 'utils/Globals', 'pnotify', 'utils/Messages', 'utils/Enums', 
             }
 
             if (currentConfig.redirectUrl) {
-                window.location.href = currentConfig.redirectUrl;
+                App.rNHeader.currentView.checkKnoxSSO();
+
             }
         };
 
