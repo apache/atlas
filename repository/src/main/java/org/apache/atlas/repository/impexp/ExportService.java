@@ -23,6 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.glossary.GlossaryService;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasObjectId;
@@ -34,6 +35,8 @@ import org.apache.atlas.model.typedef.AtlasRelationshipDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.repository.graph.GraphHelper;
+import org.apache.atlas.repository.graphdb.AtlasEdge;
+import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -43,6 +46,7 @@ import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -52,15 +56,25 @@ import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.StreamSupport;
 
 import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_CONNECTED;
 import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_FULL;
 import static org.apache.atlas.model.impexp.AtlasExportRequest.FETCH_TYPE_INCREMENTAL;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_LABEL;
 import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
+import static org.apache.atlas.repository.graph.GraphHelper.getGuid;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagatedClassificationEdge;
+import static org.apache.atlas.repository.graph.GraphHelper.getTypeName;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
+import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 
 @Component
 public class ExportService {
@@ -75,6 +89,7 @@ public class ExportService {
     private final AuditsWriter                    auditsWriter;
     private       ExportTypeProcessor             exportTypeProcessor;
     private static final String                   ATLAS_TYPE_HIVE_DB = "hive_db";
+    protected final GraphHelper graphHelper;
 
     @Inject
     public ExportService(final AtlasTypeRegistry typeRegistry, AtlasGraph graph, AuditsWriter auditsWriter, HdfsPathEntityCreator hdfsPathEntityCreator, GlossaryService glossaryService) {
@@ -85,19 +100,21 @@ public class ExportService {
         this.glossaryService                 = glossaryService;
         this.startEntityFetchByExportRequest = new StartEntityFetchByExportRequest(graph, typeRegistry, AtlasGremlinQueryProvider.getInstance());
         this.entitiesExtractor               = new EntitiesExtractor(graph, typeRegistry);
+        this.graphHelper                     = new GraphHelper(graph);
     }
 
     public AtlasExportResult run(ZipSink exportSink, AtlasExportRequest request, String userName, String hostName, String requestingIP) throws AtlasBaseException {
         long              startTime = System.currentTimeMillis();
         AtlasExportResult result    = new AtlasExportResult(request, userName, requestingIP, hostName, startTime, getCurrentChangeMarker());
         ExportContext     context   = new ExportContext(result, exportSink);
+        RelationshipAttributesExtractor relationshipAttributesExtractor = new RelationshipAttributesExtractor(typeRegistry);
 
         exportTypeProcessor = new ExportTypeProcessor(typeRegistry, glossaryService);
 
         try {
             LOG.info("==> export(user={}, from={})", userName, requestingIP);
 
-            AtlasExportResult.OperationStatus[] statuses = processItems(request, context);
+            AtlasExportResult.OperationStatus[] statuses = processItems(request, context, relationshipAttributesExtractor);
 
             processTypesDef(context);
 
@@ -118,7 +135,7 @@ public class ExportService {
         return context.result;
     }
 
-    public void processEntity(AtlasEntityWithExtInfo entityWithExtInfo, ExportContext context) throws AtlasBaseException {
+    public void processEntity(AtlasEntityWithExtInfo entityWithExtInfo, ExportContext context, RelationshipAttributesExtractor relationshipAttributesExtractor) throws AtlasBaseException {
         exportTypeProcessor.addTypes(entityWithExtInfo.getEntity(), context);
 
         if (MapUtils.isNotEmpty(context.termsGlossary)) {
@@ -138,6 +155,10 @@ public class ExportService {
             }
 
             context.guidsProcessed.addAll(entityWithExtInfo.getReferredEntities().keySet());
+        }
+
+        if (context.isHiveTableIncremental() && !context.visitedVertices.contains(entityWithExtInfo.getEntity().getGuid())) {
+            getEntityGuids(entityWithExtInfo, context, relationshipAttributesExtractor);
         }
     }
 
@@ -219,20 +240,20 @@ public class ExportService {
         }
     }
 
-    private AtlasExportResult.OperationStatus[] processItems(AtlasExportRequest request, ExportContext context) {
+    private AtlasExportResult.OperationStatus[] processItems(AtlasExportRequest request, ExportContext context, RelationshipAttributesExtractor relationshipAttributesExtractor) {
         AtlasExportResult.OperationStatus[] statuses      = new AtlasExportResult.OperationStatus[request.getItemsToExport().size()];
         List<AtlasObjectId>                 itemsToExport = request.getItemsToExport();
 
         for (int i = 0; i < itemsToExport.size(); i++) {
             AtlasObjectId item = itemsToExport.get(i);
 
-            statuses[i] = processObjectId(item, context);
+            statuses[i] = processObjectId(item, context, relationshipAttributesExtractor);
         }
 
         return statuses;
     }
 
-    private AtlasExportResult.OperationStatus processObjectId(AtlasObjectId item, ExportContext context) {
+    private AtlasExportResult.OperationStatus processObjectId(AtlasObjectId item, ExportContext context, RelationshipAttributesExtractor relationshipAttributesExtractor) {
         LOG.debug("==> processObjectId({})", item);
 
         try {
@@ -248,14 +269,14 @@ public class ExportService {
                 AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(guid);
                 String typeName = GraphHelper.getTypeName(vertex);
                 context.startingEntityType = typeName;
-                processEntityGuid(guid, context);
+                processEntityGuid(guid, context, relationshipAttributesExtractor);
             }
 
             while (!context.guidsToProcess.isEmpty()) {
                 while (!context.guidsToProcess.isEmpty()) {
                     String guid = context.guidsToProcess.remove(0);
 
-                    processEntityGuid(guid, context);
+                    processEntityGuid(guid, context, relationshipAttributesExtractor);
                 }
 
                 if (!context.lineageToProcess.isEmpty()) {
@@ -285,7 +306,7 @@ public class ExportService {
         return startEntityFetchByExportRequest.get(context.result.getRequest(), item);
     }
 
-    private void processEntityGuid(String guid, ExportContext context) throws AtlasBaseException {
+    private void processEntityGuid(String guid, ExportContext context, RelationshipAttributesExtractor relationshipAttributesExtractor) throws AtlasBaseException {
         LOG.debug("==> processEntityGuid({})", guid);
 
         if (context.guidsProcessed.contains(guid)) {
@@ -299,7 +320,7 @@ public class ExportService {
         } else {
             AtlasEntityWithExtInfo entityWithExtInfo = entityGraphRetriever.toAtlasEntityWithExtInfo(guid);
 
-            processEntity(entityWithExtInfo, context);
+            processEntity(entityWithExtInfo, context, relationshipAttributesExtractor);
         }
 
         LOG.debug("<== processEntityGuid({})", guid);
@@ -413,6 +434,115 @@ public class ExportService {
         context.reportProgress();
     }
 
+    public void getEntityGuids(AtlasEntityWithExtInfo entityWithExtInfo, ExportContext context, RelationshipAttributesExtractor relationshipAttributesExtractor) throws AtlasBaseException {
+        if (!context.classificationEntity.containsKey(entityWithExtInfo.getEntity().getGuid())) {
+            if (CollectionUtils.isNotEmpty(entityWithExtInfo.getEntity().getClassifications())) {
+                for (AtlasClassification c : entityWithExtInfo.getEntity().getClassifications()) {
+                    context.classificationEntity
+                            .computeIfAbsent(c.getEntityGuid(), key -> new UniqueList<>())
+                            .add(c.getTypeName());
+                }
+            }
+        }
+        String entityGuid = getClassificationLineage(entityWithExtInfo, context, relationshipAttributesExtractor);
+        if (entityGuid != null) {
+            if (!context.visitedVertices.contains(entityGuid)) {
+                context.visitedVertices.add(entityGuid);
+                getEntityGuids(new AtlasEntityWithExtInfo(entityGraphRetriever.toAtlasEntity(entityGuid)), context, relationshipAttributesExtractor);
+            }
+        }
+    }
+
+    public String getClassificationLineage(AtlasEntityWithExtInfo entityWithExtInfo, ExportContext context, RelationshipAttributesExtractor relationshipAttributesExtractor) throws AtlasBaseException {
+        Boolean isAppliedClassification = false;
+        AtlasVertex adjacentVertex = null;
+        Iterator<AtlasEdge> iterator;
+        AtlasVertex entityVertexStart = entityGraphRetriever.getEntityVertex(entityWithExtInfo.getEntity().getGuid());
+        String entityGuid = getGuid(entityVertexStart);
+        String entityTypeName = getTypeName(entityVertexStart);
+
+        if (CollectionUtils.isNotEmpty(entityWithExtInfo.getEntity().getClassifications())) {
+            for (AtlasClassification classification : entityWithExtInfo.getEntity().getClassifications()) {
+
+                String classificationName = classification.getTypeName();
+
+                if (context.propagatedEntityMap.containsKey(entityGuid) &&
+                        context.propagatedEntityMap.get(entityGuid).contains(classificationName)) {
+                    continue;
+                }
+
+                context.propagatedEntityMap.computeIfAbsent(entityGuid, key -> new UniqueList<>())
+                        .add(classificationName);
+
+                if (context.classificationEntity.containsKey(entityGuid) &&
+                        context.classificationEntity.get(entityGuid).contains(classificationName)) {
+                    continue;
+                }
+
+                boolean isProcess = relationshipAttributesExtractor.isLineageType(entityTypeName);
+                if (isProcess) {
+                    iterator = graphHelper.getEdgesForLabel(entityVertexStart, "__Process.inputs", OUT);
+                } else {
+                    iterator = graphHelper.getEdgesForLabel(entityVertexStart, "__Process.outputs", IN);
+                }
+
+                if (iterator != null) {
+                    while (iterator.hasNext()) {
+                        AtlasEdge edge ;
+                        AtlasEdge propagationEdge = iterator.next();
+                        AtlasVertex outVertex = propagationEdge.getOutVertex();
+                        AtlasVertex inVertex = propagationEdge.getInVertex();
+                        if (isProcess) {
+                            edge = getPropagatedClassificationEdge(inVertex, classificationName, classification.getEntityGuid());
+                        } else {
+                            edge = getPropagatedClassificationEdge(outVertex, classificationName, classification.getEntityGuid());
+                        }
+                        if (edge == null) {
+                            isAppliedClassification = checkAdjacentVertex(inVertex, classificationName);
+                        }
+
+                        if (edge != null || isAppliedClassification) {
+
+                            if (context.classificationEntity.containsKey(entityGuid) &&
+                                    context.classificationEntity.get(entityGuid).contains(classificationName)) {
+                                continue;
+                            }
+
+                            adjacentVertex = StringUtils.equals(outVertex.getIdForDisplay(), entityVertexStart.getIdForDisplay()) ? inVertex : outVertex;
+                            String adjacentEntityGuid = getGuid(adjacentVertex);
+
+                            AtlasEntity adjacentEntity = entityGraphRetriever.toAtlasEntity(adjacentEntityGuid);
+
+                            boolean getEntityLineage = isAppliedClassification || iterator.hasNext();
+                            if (getEntityLineage) {
+                                if (!context.guidsToProcess.contains(adjacentEntityGuid)) {
+                                    context.guidsToProcess.add(adjacentEntityGuid);
+                                }
+                                getEntityGuids(new AtlasEntityWithExtInfo(adjacentEntity), context, relationshipAttributesExtractor);
+                            }
+                            if (!context.guidsToProcess.contains(adjacentEntityGuid)) {
+                                context.guidsToProcess.add(adjacentEntityGuid);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return (adjacentVertex == null) ? null : getGuid(adjacentVertex);
+    }
+
+    //This method gets executed when a table/Process is a parent to a classification
+    public Boolean checkAdjacentVertex(AtlasVertex vertex, String classification) {
+        Iterable<AtlasEdge> appliedClassifications = vertex.query()
+                .direction(AtlasEdgeDirection.OUT)
+                .label(CLASSIFICATION_LABEL)
+                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, false)
+                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, classification)
+                .edges();
+
+        return StreamSupport.stream(appliedClassifications.spliterator(), false).findAny().isPresent();
+    }
+
     public enum TraversalDirection {
         UNKNOWN,
         INWARD,
@@ -460,6 +590,10 @@ public class ExportService {
         final Set<String>                     relationshipTypes     = new HashSet<>();
         final Set<String>                     businessMetadataTypes = new HashSet<>();
         final Map<String, String>             termsGlossary         = new HashMap<>();
+        final Map<String, UniqueList<String>> classificationEntity  = new HashMap<>();
+        final Map<String, UniqueList<String>> propagatedEntityMap    = new HashMap<>();
+        final Set<String>                     visitedVertices       = new HashSet<>();
+
         final AtlasExportResult               result;
         final ExportFetchType                 fetchType;
         final boolean                         skipLineage;
@@ -511,6 +645,9 @@ public class ExportService {
             guidsToProcess.clear();
             guidsProcessed.clear();
             guidDirection.clear();
+            visitedVertices.clear();
+            classificationEntity.clear();
+            propagatedEntityMap.clear();
             startingEntityType = null;
         }
 
