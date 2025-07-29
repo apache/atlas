@@ -431,6 +431,7 @@ public class AdminResource {
         AtlasGraph<Object, Object> graph = AtlasGraphProvider.getGraphInstance();
 
         boolean cassandraFailed = false;
+        boolean elasticSearchFailed = false;
         try {
             List<HealthStatus> healthStatuses = atlasHealthStatus.getHealthStatuses();
             for (final HealthStatus healthStatus : healthStatuses) {
@@ -440,21 +441,24 @@ public class AdminResource {
             GraphTraversal t = graph.V().limit(1);
             t.hasNext();
             result.put("cassandra", new HealthStatus("cassandra", "ok", true, new Date().toString(), ""));
-
-            boolean isConnected = AtlasElasticsearchDatabase.getClient().ping(RequestOptions.DEFAULT);
-            result.put("elasticsearch", new HealthStatus("elasticsearch", isConnected ? "ok" : "error", isConnected, new Date().toString(), ""));
-
         } catch (Exception e) {
             result.put("cassandra", new HealthStatus("cassandra", "error", true, new Date().toString(), e.toString()));
-            result.put("elasticsearch", new HealthStatus("elasticsearch", "error", true, new Date().toString(), e.toString()));
             cassandraFailed = true;
+        }
+
+        try {
+            boolean isConnected = AtlasElasticsearchDatabase.getClient().ping(RequestOptions.DEFAULT);
+            result.put("elasticsearch", new HealthStatus("elasticsearch", isConnected ? "ok" : "error", isConnected, new Date().toString(), ""));
+        } catch (Exception e) {
+            result.put("elasticsearch", new HealthStatus("elasticsearch", "error", false, new Date().toString(), e.toString()));
+            elasticSearchFailed = true;
         }
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("<== AdminResource.healthCheck()");
         }
 
-        if (cassandraFailed || atlasHealthStatus.isAtleastOneComponentUnHealthy()) {
+        if (cassandraFailed || elasticSearchFailed || atlasHealthStatus.isAtleastOneComponentUnHealthy()) {
             return Response.status(500).entity(result).build();
         }
 
