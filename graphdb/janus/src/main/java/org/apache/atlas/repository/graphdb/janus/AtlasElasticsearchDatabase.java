@@ -41,6 +41,9 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.apache.atlas.AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT;
+import static org.apache.atlas.AtlasConfiguration.INDEX_CLIENT_SOCKET_TIMEOUT;
+
 public class AtlasElasticsearchDatabase {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasElasticsearchDatabase.class);
 
@@ -62,8 +65,6 @@ public class AtlasElasticsearchDatabase {
     private static final int BASE_CONNECTIONS_PER_ROUTE;
     
     private static final int CONNECTION_REQUEST_TIMEOUT = 5000; // 5 seconds
-    private static final int SOCKET_TIMEOUT = 30000; // 30 seconds
-    private static final int CONNECT_TIMEOUT = 10000; // 10 seconds
     private static final int CONNECTION_TIME_TO_LIVE = 300000; // 5 minutes
     private static final int IO_THREAD_COUNT = Runtime.getRuntime().availableProcessors();
     
@@ -203,8 +204,8 @@ public class AtlasElasticsearchDatabase {
             // Create IO Reactor with optimized configuration
             IOReactorConfig ioReactorConfig = IOReactorConfig.custom()
                     .setIoThreadCount(IO_THREAD_COUNT)
-                    .setConnectTimeout(CONNECT_TIMEOUT)
-                    .setSoTimeout(SOCKET_TIMEOUT)
+                    .setConnectTimeout(INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
+                    .setSoTimeout(INDEX_CLIENT_SOCKET_TIMEOUT.getInt())
                     .setSoKeepAlive(true)
                     .setTcpNoDelay(true)
                     .setSoReuseAddress(true)
@@ -251,8 +252,8 @@ public class AtlasElasticsearchDatabase {
      */
     private static RequestConfig.Builder configureRequestConfig(RequestConfig.Builder requestConfigBuilder) {
         return requestConfigBuilder
-                .setConnectTimeout(CONNECT_TIMEOUT)
-                .setSocketTimeout(SOCKET_TIMEOUT)
+                .setConnectTimeout(INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
+                .setSocketTimeout(INDEX_CLIENT_SOCKET_TIMEOUT.getInt())
                 .setConnectionRequestTimeout(CONNECTION_REQUEST_TIMEOUT)
                 .setExpectContinueEnabled(false) // Disable 100-continue for better performance
                 .setRedirectsEnabled(false) // Disable redirects for predictable behavior
@@ -358,8 +359,8 @@ public class AtlasElasticsearchDatabase {
         LOG.info("=== Elasticsearch Client Performance Configuration ===");
         LOG.info("Max Total Connections: {}", BASE_CONNECTIONS_TOTAL);
         LOG.info("Max Connections Per Route: {}", BASE_CONNECTIONS_PER_ROUTE);
-        LOG.info("Connection Timeout: {}ms", CONNECT_TIMEOUT);
-        LOG.info("Socket Timeout: {}ms", SOCKET_TIMEOUT);
+        LOG.info("Connection Timeout: {}ms", INDEX_CLIENT_CONNECTION_TIMEOUT.getInt());
+        LOG.info("Socket Timeout: {}ms", INDEX_CLIENT_SOCKET_TIMEOUT.getInt());
         LOG.info("Connection Request Timeout: {}ms", CONNECTION_REQUEST_TIMEOUT);
         LOG.info("Connection TTL: {}ms", CONNECTION_TIME_TO_LIVE);
         LOG.info("IO Thread Count: {}", IO_THREAD_COUNT);
