@@ -387,3 +387,44 @@ pre {
 .termBox {
     z-index: 1;
 }
+
+.new-error-page {
+  height: calc(100vh - 200px);
+  display: flex;
+  width: 100%;
+  justify-content: center;
+  align-items:center;
+}
+
+.new-error-box {
+  display: table;
+  max-width: 40%;
+  min-width: 450px;
+}
+
+.error-white-bg {
+  background-color: #fff;
+  display: flex;
+  flex-direction:column;
+  gap:1rem;
+}
+
+.new-icon-box,
+.new-description-box {
+  display: table-cell;
+  vertical-align: middle;
+  color: #888;
+}
+
+.new-icon-box {
+  width: 60px;
+  text-align: center;
+}
+
+.m-t-xs{
+  margin-top:5px;
+}
+
+.m-t-md{
+  margin-top:15px;
+}
