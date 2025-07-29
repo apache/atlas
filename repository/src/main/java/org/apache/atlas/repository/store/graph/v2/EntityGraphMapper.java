@@ -2550,11 +2550,19 @@ public class EntityGraphMapper {
             RequestContext.get().cacheDifferentialEntity(diffEntity);
         }
 
+        // Track removed input ports in differential entity for change notifications and audit trail
         Map<String, Object> removedAttrs = diffEntity.getRemovedRelationshipAttributes();
         if (removedAttrs == null) {
             removedAttrs = new HashMap<>();
             diffEntity.setRemovedRelationshipAttributes(removedAttrs);
         }
+
+        List<String> existingRemovedInputPorts = (List<String>) removedAttrs.get(INPUT_PORTS);
+        if (existingRemovedInputPorts == null) {
+            existingRemovedInputPorts = new ArrayList<>();
+        }
+        existingRemovedInputPorts.addAll(conflictingGuids);
+        removedAttrs.put(INPUT_PORTS, existingRemovedInputPorts);
     }
 
     private boolean shouldDeleteExistingRelations(AttributeMutationContext ctx, AtlasAttribute attribute) {
