@@ -2491,15 +2491,15 @@ public class EntityGraphMapper {
                             .collect(Collectors.toList());
                     
                     if (CollectionUtils.isNotEmpty(conflictingGuids)) {
-                        conflictingGuids.forEach(guid ->
-                            AtlasGraphUtilsV2.removeItemFromListPropertyValue(toVertex, INPUT_PORT_GUIDS_ATTR, guid));
-
                         try {
                             removeInputPortEdges(toVertex, conflictingGuids);
                         } catch (AtlasBaseException e) {
                             LOG.error("Failed to remove input port edges for conflicting GUIDs: {}", conflictingGuids, e);
                             throw e;
                         }
+
+                        conflictingGuids.forEach(guid ->
+                            AtlasGraphUtilsV2.removeItemFromListPropertyValue(toVertex, INPUT_PORT_GUIDS_ATTR, guid));
 
                         trackInputPortRemoval(toVertex, conflictingGuids);
                     }
@@ -2522,6 +2522,20 @@ public class EntityGraphMapper {
                 // make change to not add following attributes to diff entity if they are empty
                 diffEntity.setAddedRelationshipAttribute(OUTPUT_PORTS, addedGuids);
                 diffEntity.setRemovedRelationshipAttribute(OUTPUT_PORTS, removedGuids);
+            }
+        } else if (internalAttr.equals(INPUT_PORT_GUIDS_ATTR)) {
+            // When adding assets as inputPort, fail if they already exist as outputPorts.
+            if (CollectionUtils.isNotEmpty(addedGuids)) {
+                List<String> existingOutputPortGuids = toVertex.getMultiValuedProperty(OUTPUT_PORT_GUIDS_ATTR, String.class);
+                if (CollectionUtils.isNotEmpty(existingOutputPortGuids)) {
+                    List<String> conflictingGuids = addedGuids.stream()
+                            .filter(existingOutputPortGuids::contains)
+                            .collect(Collectors.toList());
+
+                    if (CollectionUtils.isNotEmpty(conflictingGuids)) {
+                        throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Cannot add input ports that already exist as output ports: " + conflictingGuids);
+                    }
+                }
             }
         }
     }
