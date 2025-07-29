@@ -52,7 +52,7 @@ import java.util.List;
 
 import static org.apache.atlas.hive.hook.events.BaseHiveEvent.*;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.anyObject;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -111,7 +111,7 @@ public class HiveMetaStoreBridgeTest {
         bridge.importHiveMetadata(null, null, true);
 
         // verify update is called
-        verify(atlasClientV2).updateEntity(anyObject());
+        verify(atlasClientV2).updateEntity(any());
     }
 
     @Test
@@ -151,7 +151,7 @@ public class HiveMetaStoreBridgeTest {
         bridge.importHiveMetadata(null, null, true);
 
         // verify update is called on table
-        verify(atlasClientV2, times(2)).updateEntity(anyObject());
+        verify(atlasClientV2, times(2)).updateEntity(any());
 
     }
 
