@@ -30,7 +30,7 @@ public class ImportTransformerTest {
         String param1 = "@cl1";
         String param2 = "@cl2";
 
-        ImportTransformer e = ImportTransformer.getTransformer(String.format("%s:%s:%s", "replace", param1, param2));
+        ImportTransformer e = ImportTransformer.getTransformer(String.format("%s~%s~%s", "replace", param1, param2));
 
         assertTrue(e instanceof ImportTransformer.Replace);
         assertEquals(((ImportTransformer.Replace) e).getToFindStr(), param1);
@@ -42,8 +42,8 @@ public class ImportTransformerTest {
         String param1 = "@cl1";
         String param2 = "@cl2";
 
-        ImportTransformer e1 = ImportTransformer.getTransformer(String.format("%s:%s:%s", "replace", param1, param2));
-        ImportTransformer e2 = ImportTransformer.getTransformer("replace:tt1:tt2");
+        ImportTransformer e1 = ImportTransformer.getTransformer(String.format("%s~%s~%s", "replace", param1, param2));
+        ImportTransformer e2 = ImportTransformer.getTransformer(String.format("replace~tt1~tt2"));
 
         assertTrue(e1 instanceof ImportTransformer.Replace);
         assertEquals(((ImportTransformer.Replace) e1).getToFindStr(), param1);
@@ -56,7 +56,7 @@ public class ImportTransformerTest {
 
     @Test
     public void createWithDefaultParameters() throws AtlasBaseException {
-        ImportTransformer e1 = ImportTransformer.getTransformer("replace:@cl1");
+        ImportTransformer e1 = ImportTransformer.getTransformer("replace~@cl1");
         ImportTransformer e2 = ImportTransformer.getTransformer("replace");
 
         assertTrue(e1 instanceof ImportTransformer.Replace);
@@ -92,7 +92,7 @@ public class ImportTransformerTest {
 
     @Test
     public void applyReplaceTransformer1() throws AtlasBaseException {
-        ImportTransformer e = ImportTransformer.getTransformer("replace:@cl1:@cl2");
+        ImportTransformer e = ImportTransformer.getTransformer("replace~@cl1~@cl2");
 
         assertEquals(e.apply("@cl1"), "@cl2");
         assertEquals(e.apply("default@cl1"), "default@cl2");
@@ -105,7 +105,7 @@ public class ImportTransformerTest {
 
     @Test
     public void applyReplaceTransformer2() throws AtlasBaseException {
-        ImportTransformer e = ImportTransformer.getTransformer("replace:@cl1");
+        ImportTransformer e = ImportTransformer.getTransformer("replace~@cl1");
 
         assertEquals(e.apply("@cl1"), "");
         assertEquals(e.apply("default@cl1"), "default");
