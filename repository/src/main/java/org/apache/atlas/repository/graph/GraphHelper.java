@@ -956,12 +956,14 @@ public final class GraphHelper {
     }
 
     public static List<AtlasClassification> getPropagatableClassificationsV2(AtlasEdge edge) throws AtlasBaseException {
-        List<AtlasClassification> ret = new ArrayList<>();
+        List<AtlasClassification> ret = new ArrayList<>(0);
 
         if ((edge != null && getStatus(edge) != DELETED) || RequestContext.get().getCurrentTask() != null) {
             AtlasVertex vertex = getPropagatingVertex(edge);
             if (vertex != null) {
-                ret.addAll(TagDAOCassandraImpl.getInstance().getAllClassificationsForVertex(vertex.getIdForDisplay()));
+                List<AtlasClassification> allTags = TagDAOCassandraImpl.getInstance().getAllClassificationsForVertex(vertex.getIdForDisplay());
+
+                ret = allTags.stream().filter(x -> x.getPropagate()).toList();
             }
         }
 
