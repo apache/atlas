@@ -55,7 +55,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     // Configuration constants
     private static final int MAX_RETRIES = 3;
     private static final Duration INITIAL_BACKOFF = Duration.ofMillis(100);
-    private static final int BATCH_SIZE_LIMIT = 100;
+    private static final int BATCH_SIZE_LIMIT = 2;
     private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration HEARTBEAT_INTERVAL = Duration.ofSeconds(30);
     public static final String DEFAULT_HOST = "localhost";
@@ -455,8 +455,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("deleteTags");
         try {
             Instant now = Instant.ofEpochMilli(RequestContext.get().getRequestTime());
-            BatchStatementBuilder batchBuilder = BatchStatement.builder(DefaultBatchType.LOGGED)
-                    .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+            List<BatchableStatement<?>> statements = new ArrayList<>();
 
             for (Tag tag : tagsToDelete) {
                 int bucket = calculateBucket(tag.getVertexId());
@@ -470,7 +469,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 }
 
                 // 1. Soft delete from tags_by_id
-                batchBuilder.addStatement(deleteEffectiveTagStmt.bind()
+                statements.add(deleteEffectiveTagStmt.bind()
                         .setInstant("updated_at", now)
                         .setInt("bucket", bucket)
                         .setString("id", tag.getVertexId())
@@ -480,13 +479,23 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
                 // 2. If it's a propagated tag, HARD delete from the lookup table
                 if (isPropagated) {
-                    batchBuilder.addStatement(deletePropagationStmt.bind()
+                    statements.add(deletePropagationStmt.bind()
                             .setString("source_id", tag.getSourceVertexId())
                             .setString("tag_type_name", tag.getTagTypeName())
                             .setString("propagated_asset_id", tag.getVertexId()));
                 }
             }
-            executeWithRetry(batchBuilder.build());
+
+            for (int i = 0; i < statements.size(); i += BATCH_SIZE_LIMIT) {
+                int end = Math.min(i + BATCH_SIZE_LIMIT, statements.size());
+                List<BatchableStatement<?>> batchStatements = statements.subList(i, end);
+
+                BatchStatementBuilder batchBuilder = BatchStatement.builder(DefaultBatchType.LOGGED)
+                        .setConsistencyLevel(ConsistencyLevel.LOCAL_QUORUM);
+                batchBuilder.addStatements(batchStatements);
+
+                executeWithRetry(batchBuilder.build());
+            }
         } catch (Exception e) {
             LOG.error("deleteTags=Failed to delete tags batch", e);
             throw new AtlasBaseException("Error deleting tags", e);
