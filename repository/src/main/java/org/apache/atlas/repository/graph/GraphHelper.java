@@ -642,7 +642,7 @@ public final class GraphHelper {
         RequestContext context = RequestContext.get();
         if (context.isInvokedByIndexSearch() && context.isInvokedByProduct() && AtlasConfiguration.OPTIMISE_SUPER_VERTEX.getBoolean()) {
             return getAdjacentEdgesByLabelWithTimeout(vertex, AtlasEdgeDirection.valueOf(edgeDirection.name()), edgeLabel,
-                    AtlasConfiguration.TIMEOUT_SUPER_VERTEX_FETCH.getLong());
+                    AtlasConfiguration.MIN_TIMEOUT_SUPER_VERTEX.getLong());
         }
         return getAdjacentEdgesByLabel(vertex, AtlasEdgeDirection.valueOf(edgeDirection.name()), edgeLabel);
     }
