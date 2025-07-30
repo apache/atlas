@@ -2067,33 +2067,54 @@ public final class GraphHelper {
     }
     public Set<AbstractMap.SimpleEntry<String,String>> retrieveEdgeLabelsAndTypeName(AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.retrieveEdgeLabelsAndTypeName");
-
+        long timeoutSeconds = org.apache.atlas.AtlasConfiguration.TIMEOUT_SUPER_VERTEX_FETCH.getLong();
         try {
-            return ((AtlasJanusGraph) graph).getGraph().traversal()
-                    .V(vertex.getId())
-                    .bothE()
-                    .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
-                    .project(LABEL_PROPERTY_KEY, TYPE_NAME_PROPERTY_KEY)
-                    .by(T.label)
-                    .by(TYPE_NAME_PROPERTY_KEY)
-                    .toStream()
-                    .map(m -> {
-                        Object label = m.get(LABEL_PROPERTY_KEY);
-                        Object typeName = m.get(TYPE_NAME_PROPERTY_KEY);
-                        String labelStr = (label != null) ? label.toString() : "";
-                        String typeNameStr = (typeName != null) ? typeName.toString() : "";
+            return Single.fromCallable(() -> {
+                try {
+                    return ((AtlasJanusGraph) graph).getGraph().traversal()
+                            .V(vertex.getId())
+                            .bothE()
+                            .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
+                            .project(LABEL_PROPERTY_KEY, TYPE_NAME_PROPERTY_KEY)
+                            .by(T.label)
+                            .by(TYPE_NAME_PROPERTY_KEY)
+                            .toStream()
+                            .map(m -> {
+                                Object label = m.get(LABEL_PROPERTY_KEY);
+                                Object typeName = m.get(TYPE_NAME_PROPERTY_KEY);
+                                String labelStr = (label != null) ? label.toString() : "";
+                                String typeNameStr = (typeName != null) ? typeName.toString() : "";
 
-                        return new AbstractMap.SimpleEntry<>(labelStr, typeNameStr);
-                    })
-                    .filter(entry -> !entry.getKey().isEmpty())
-                    .distinct()
-                    .collect(Collectors.toSet());
-
+                                return new AbstractMap.SimpleEntry<>(labelStr, typeNameStr);
+                            })
+                            .filter(entry -> !entry.getKey().isEmpty())
+                            .distinct()
+                            .collect(Collectors.toSet());
+                } catch (Exception e) {
+                    LOG.error("Error while getting labels of active edges", e);
+                    throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+                }
+            })
+            .timeout(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)
+            .doOnError(throwable -> {
+                if (throwable instanceof java.util.concurrent.TimeoutException) {
+                    LOG.warn("Timeout while getting edge labels and type names for vertex id: {}", vertex.getId());
+                    throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, throwable);
+                } else {
+                    LOG.error("Error while getting edge labels and type names for vertex id: {}", vertex.getId(), throwable);
+                    throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, throwable);
+                }
+            })
+            .blockingGet();
         } catch (Exception e) {
-            LOG.error("Error while getting labels of active edges", e);
-            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
-        }
-        finally {
+            if (e instanceof AtlasBaseException) {
+                throw (AtlasBaseException) e;
+            } else if (e.getCause() instanceof AtlasBaseException) {
+                throw (AtlasBaseException) e.getCause();
+            } else {
+                throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, e);
+            }
+        } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
     }
