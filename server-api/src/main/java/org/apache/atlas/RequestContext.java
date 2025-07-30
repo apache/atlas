@@ -27,6 +27,7 @@ import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
@@ -126,6 +127,8 @@ public class RequestContext {
     private final List<ESDeferredOperation> esDeferredOperations = new ArrayList<>();
 
     Map<String, Object> tagsDiff = new HashMap<>();
+    private static final String X_ATLAN_CLIENT_ORIGIN = "X-Atlan-Client-Origin";
+    private static final String CLIENT_ORIGIN_PRODUCT = "product_webapp";
 
     private RequestContext() {
     }
@@ -826,6 +829,13 @@ public class RequestContext {
 
     public boolean isInvokedByIndexSearch() {
         return isInvokedByIndexSearch;
+    }
+
+    public boolean isInvokedByProduct() {
+        Map<String, String> requestContextHeaders = getRequestContextHeaders();
+        return MapUtils.isNotEmpty(requestContextHeaders) &&
+                StringUtils.isNotEmpty(requestContextHeaders.get(X_ATLAN_CLIENT_ORIGIN))
+                && requestContextHeaders.get(X_ATLAN_CLIENT_ORIGIN).equals(CLIENT_ORIGIN_PRODUCT);
     }
 
     public void setIsInvokedByLineage(boolean isInvokedByLineage) {
