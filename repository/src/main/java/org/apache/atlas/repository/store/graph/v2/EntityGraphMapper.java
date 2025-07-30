@@ -6322,6 +6322,12 @@ public class EntityGraphMapper {
                 throw new AtlasBaseException(String.format("Classification with typeName %s not found for entity %s and parentEntity %s", classificationTypeName, sourceEntityGuid, parentEntityGuid));
             }
         }
+
+        if (!tag.isPropagate()) {
+            LOG.warn("Invalid Refresh Prop task, not to be processed, classification with typeName {} is not propagated", tag.getTypeName());
+            return;
+        }
+
         Boolean restrictPropagationThroughLineage = tag.getRestrictPropagationThroughLineage();
         Boolean restrictPropagationThroughHierarchy = tag.getRestrictPropagationThroughHierarchy();
 
