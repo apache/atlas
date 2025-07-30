@@ -56,6 +56,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     private static final int MAX_RETRIES = 3;
     private static final Duration INITIAL_BACKOFF = Duration.ofMillis(100);
     private static final int BATCH_SIZE_LIMIT = 100;
+    private static final int BATCH_SIZE_LIMIT_FOR_DELETION = 1000;
     private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(5);
     private static final Duration HEARTBEAT_INTERVAL = Duration.ofSeconds(30);
     public static final String DEFAULT_HOST = "localhost";
@@ -486,8 +487,8 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 }
             }
 
-            for (int i = 0; i < statements.size(); i += BATCH_SIZE_LIMIT) {
-                int end = Math.min(i + BATCH_SIZE_LIMIT, statements.size());
+            for (int i = 0; i < statements.size(); i += BATCH_SIZE_LIMIT_FOR_DELETION) {
+                int end = Math.min(i + BATCH_SIZE_LIMIT_FOR_DELETION, statements.size());
                 List<BatchableStatement<?>> batchStatements = statements.subList(i, end);
 
                 BatchStatementBuilder batchBuilder = BatchStatement.builder(DefaultBatchType.LOGGED)
