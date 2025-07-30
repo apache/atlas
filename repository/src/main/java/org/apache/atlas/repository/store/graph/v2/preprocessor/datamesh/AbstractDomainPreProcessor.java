@@ -194,7 +194,9 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                         String currentDomainQualifiedName = (String) asset.getAttribute(ATTR_DOMAIN_QUALIFIED_NAME);
 
                         entity.setAttribute(ATTR_DOMAIN_QUALIFIED_NAME, updatedDomainQualifiedNames.get(currentDomainQualifiedName));
+                        entity.setAttribute(QUALIFIED_NAME, updatedDomainQualifiedNames.get(currentDomainQualifiedName));
                         updatedAttributes.put(ATTR_DOMAIN_QUALIFIED_NAME, updatedDomainQualifiedNames.get(currentDomainQualifiedName));
+                        updatedAttributes.put(QUALIFIED_NAME, updatedDomainQualifiedNames.get(currentDomainQualifiedName));
 
                     } else if (entity.getTypeName().equals(STAKEHOLDER_TITLE_ENTITY_TYPE)) {
                         entityType = typeRegistry.getEntityTypeByName(STAKEHOLDER_TITLE_ENTITY_TYPE);
