@@ -33,6 +33,7 @@ on:
       - tagscanary
       - tagscanarymerge
       - fixlabels
+      - interceptapis
 
 jobs:
   build:
