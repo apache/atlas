@@ -3524,7 +3524,6 @@ public class EntityGraphMapper {
     }
 
     public AtlasEntity repairClassificationMappings(AtlasVertex entityVertex) throws AtlasBaseException {
-        //TODO: support V2
         String guid = GraphHelper.getGuid(entityVertex);
         AtlasEntity entity = instanceConverter.getEntity(guid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
 
@@ -3562,6 +3561,35 @@ public class EntityGraphMapper {
         }
 
         return entity;
+    }
+
+    public Map<String, String> repairClassificationMappingsV2(List<AtlasVertex> entityVertices) throws AtlasBaseException {
+        Map<String, String> errorMap = new HashMap<>(0);
+
+        for (AtlasVertex entityVertex : entityVertices) {
+            List<AtlasClassification> currentTags = tagDAO.getAllClassificationsForVertex(entityVertex.getIdForDisplay());
+
+
+            try {
+                Map<String, Map<String, Object>> deNormMap = new HashMap<>();
+
+                deNormMap.put(entityVertex.getIdForDisplay(),
+                        TagDeNormAttributesUtil.getAllAttributesForAllTagsForRepair(GraphHelper.getGuid(entityVertex), currentTags, typeRegistry, fullTextMapperV2));
+
+                // ES operation collected to be executed in the end
+                RequestContext.get().addESDeferredOperation(
+                        new ESDeferredOperation(
+                                ESDeferredOperation.OperationType.TAG_DENORM_FOR_ADD_CLASSIFICATIONS,
+                                entityVertex.getIdForDisplay(),
+                                deNormMap
+                        )
+                );
+            } catch (Exception e) {
+                errorMap.put(GraphHelper.getGuid(entityVertex), e.getMessage());
+            }
+        }
+
+        return errorMap;
     }
 
     public void addClassificationsV1(final EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
