@@ -1,5 +1,6 @@
 package org.apache.atlas.auth.client.auth;
 
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -38,7 +39,7 @@ public final class KeycloakAuthenticationService {
         this.authConfig = authConfig;
         this.retrofit = new Retrofit.Builder().client(getOkHttpClient())
                 .baseUrl(this.authConfig.getAuthServerUrl())
-                .addConverterFactory(JacksonConverterFactory.create(new ObjectMapper())).build()
+                .addConverterFactory(JacksonConverterFactory.create(new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES))).build()
                 .create(RetrofitKeycloakClient.class);
     }
 

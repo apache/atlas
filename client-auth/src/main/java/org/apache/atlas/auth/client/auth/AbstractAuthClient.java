@@ -69,7 +69,7 @@ public class AbstractAuthClient {
                 .build();
         this.retrofitKeycloakClient = new Retrofit.Builder().client(okHttpClient)
                 .baseUrl(this.authConfig.getAuthServerUrl())
-                .addConverterFactory(JacksonConverterFactory.create(new ObjectMapper())).build()
+                .addConverterFactory(JacksonConverterFactory.create(new ObjectMapper().disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES))).build()
                 .create(RetrofitKeycloakClient.class);
         this.retrofitHeraclesClient = new Retrofit.Builder().client(okHttpClient)
                 .baseUrl(this.authConfig.getHeraclesApiServerUrl())
