@@ -118,10 +118,10 @@ public class ClassificationPropagationTasks {
             String parentEntityGuid         = getTaskDef().getParentEntityGuid();
 
             if (org.apache.atlas.service.FeatureFlagStore.isTagV2Enabled()) {
-                LOG.info("Using v2 tag flow (Cassandra) for RefreshPropagation task");
+                LOG.debug("Using v2 tag flow (Cassandra) for RefreshPropagation task");
                 entityGraphMapper.classificationRefreshPropagationV2(parameters, parentEntityGuid, sourceEntity, classificationTypeName);
             } else {
-                LOG.info("Using v1 tag flow (JanusGraph) for RefreshPropagation task");
+                LOG.debug("Using v1 tag flow (JanusGraph) for RefreshPropagation task");
                 String classificationVertexId = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
                 entityGraphMapper.classificationRefreshPropagation(classificationVertexId);
             }
