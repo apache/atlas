@@ -118,6 +118,9 @@ public class AtlasTaskService implements TaskService {
         TaskSearchParams taskSearchParams = getMatchQuery(taskGuid);
         AtlasIndexQuery atlasIndexQuery = searchTask(taskSearchParams);
         DirectIndexQueryResult indexQueryResult = atlasIndexQuery.vertices(taskSearchParams);
+        if (indexQueryResult == null || !indexQueryResult.getIterator().hasNext()) {
+            return;
+        }
 
         AtlasVertex atlasVertex = getTaskVertex(indexQueryResult.getIterator(), taskGuid);
 

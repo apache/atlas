@@ -270,6 +270,7 @@ public enum AtlasErrorCode {
     INDEX_SEARCH_CLIENT_NOT_INITIATED(500, "ATLAS-500-00-103", "Error occurred while running direct index query on ES: restClient is not initiated"),
 
     INDEX_SEARCH_FAILED_DUE_TO_TIMEOUT(429, "ATLAS-400-00-502", "ES query exceeded timeout: {0}"),
+    INDEX_SEARCH_FAILED_WITH_RESPONSE_CODE(400, "ATLAS-400-00-503", "ES query failed with response: {1}"),
     INDEX_SEARCH_GATEWAY_TIMEOUT(504, "ATLAS-504-00-001", "ES query gateway timeout: {0}"),
     DEPRECATED_API(400, "ATLAS-400-00-103", "Deprecated API. Use {0} instead"),
     DISABLED_API(400, "ATLAS-400-00-104", "API temporarily disabled. Reason: {0}"),
