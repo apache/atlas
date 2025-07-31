@@ -1,0 +1,43 @@
+{
+  "size": 100,
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "range": {
+            "createTime": {
+              "gte": "2024-01-01",
+              "lte": "2024-12-31"
+            }
+          }
+        },
+        {
+          "range": {
+            "updateTime": {
+              "gte": "2024-06-01"
+            }
+          }
+        },
+        {
+          "terms": {
+            "__typeName": ["DataSet", "Table", "Column"]
+          }
+        }
+      ],
+      "filter": [
+        {
+          "term": {
+            "__state": "ACTIVE"
+          }
+        }
+      ]
+    }
+  },
+  "sort": [
+    {
+      "createTime": {
+        "order": "desc"
+      }
+    }
+  ]
+} 

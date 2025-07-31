@@ -1,0 +1,39 @@
+{
+    "size": 500,
+    "sort": [
+        {
+            "__timestamp.date": {
+                "format": "epoch_second",
+                "order": "desc"
+            }
+        }
+    ],
+    "post_filter": {
+        "bool": {
+            "filter": [
+                {
+                    "terms": {
+                        "__typeName.keyword": [
+                            "Badge"
+                        ]
+                    }
+                }
+            ]
+        }
+    },
+    "query": {
+        "bool": {
+            "filter": {
+                "bool": {
+                    "must": [
+                        {
+                            "term": {
+                                "__state": "ACTIVE"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

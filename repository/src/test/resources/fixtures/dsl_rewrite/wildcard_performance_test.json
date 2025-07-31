@@ -1,0 +1,66 @@
+{
+  "size": 50,
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "wildcard": {
+            "qualifiedName": "default/warehouse/sales_*"
+          }
+        },
+        {
+          "wildcard": {
+            "qualifiedName": "default/warehouse/finance_*"
+          }
+        },
+        {
+          "wildcard": {
+            "qualifiedName": "default/warehouse/marketing_*"
+          }
+        },
+        {
+          "wildcard": {
+            "qualifiedName": "default/warehouse/hr_*"
+          }
+        },
+        {
+          "wildcard": {
+            "qualifiedName": "default/warehouse/operations_*"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "terms": {
+            "__typeName": ["Table", "DataSet"]
+          }
+        },
+        {
+          "term": {
+            "__state": "ACTIVE"
+          }
+        },
+        {
+          "range": {
+            "createTime": {
+              "gte": "2024-01-01"
+            }
+          }
+        }
+      ]
+    }
+  },
+  "sort": [
+    {
+      "updateTime": {
+        "order": "desc"
+      }
+    }
+  ],
+  "_source": [
+    "qualifiedName",
+    "__typeName",
+    "owner",
+    "createTime"
+  ]
+} 

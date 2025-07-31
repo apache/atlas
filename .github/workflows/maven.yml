@@ -31,7 +31,6 @@ on:
       - tagscanarymerge
       - fixlabels
       - interceptapis
-      - skiprelations
 
 jobs:
   build:

@@ -1,0 +1,303 @@
+{
+    "from": 0,
+    "size": 20,
+    "track_total_hits": true,
+    "sort": [
+      {
+        "_score": {
+          "order": "desc"
+        }
+      },
+      {
+        "name.keyword": {
+          "order": "asc"
+        }
+      }
+    ],
+    "highlight": {
+      "pre_tags": [
+        "<span>"
+      ],
+      "post_tags": [
+        "</span>"
+      ],
+      "fields": {
+        "displayName": {},
+        "displayName.keyword": {},
+        "name": {},
+        "name.keyword": {}
+      }
+    },
+    "query": {
+      "function_score": {
+        "query": {
+          "bool": {
+            "filter": {
+              "bool": {
+                "must": [
+                  {
+                    "bool": {
+                      "should": [
+                        {
+                          "term": {
+                            "connectionQualifiedName": "default/databricks/1731087869"
+                          }
+                        },
+                        {
+                          "term": {
+                            "qualifiedName": "default/databricks/1731087869"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "bool": {
+                      "should": [
+                        {
+                          "term": {
+                            "databaseQualifiedName": "default/databricks/1731087869/hive_metastore"
+                          }
+                        },
+                        {
+                          "term": {
+                            "qualifiedName": "default/databricks/1731087869/hive_metastore"
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "term": {
+                      "connectorName": "databricks"
+                    }
+                  },
+                  {
+                    "bool": {}
+                  },
+                  {
+                    "term": {
+                      "__state": "ACTIVE"
+                    }
+                  }
+                ],
+                "should": [
+                  {
+                    "terms": {
+                      "__superTypeNames.keyword": [
+                        "AI",
+                        "SQL",
+                        "BI",
+                        "SaaS",
+                        "ObjectStore",
+                        "EventStore",
+                        "DataQuality",
+                        "Dbt",
+                        "API",
+                        "Airflow",
+                        "Spark",
+                        "MWAA",
+                        "GCP_Cloud_Composer",
+                        "Astronomer",
+                        "SchemaRegistry",
+                        "Matillion",
+                        "NoSQL",
+                        "MultiDimensionalDataset",
+                        "ERD",
+                        "DataModeling",
+                        "ADF",
+                        "model",
+                        "Fivetran",
+                        "App",
+                        "Custom",
+                        "SAP",
+                        "Alteryx",
+                        "Flow"
+                      ]
+                    }
+                  },
+                  {
+                    "terms": {
+                      "__typeName.keyword": [
+                        "Query",
+                        "Collection",
+                        "AtlasGlossary",
+                        "AtlasGlossaryCategory",
+                        "AtlasGlossaryTerm",
+                        "Connection",
+                        "File",
+                        "Process",
+                        "DbtProcess"
+                      ]
+                    }
+                  }
+                ],
+                "must_not": [
+                  {
+                    "term": {
+                      "isPartial": "true"
+                    }
+                  },
+                  {
+                    "terms": {
+                      "__typeName.keyword": [
+                        "Procedure",
+                        "DbtColumnProcess",
+                        "BIProcess",
+                        "MatillionComponent",
+                        "ModelVersion",
+                        "alpha_DQRule",
+                        "FlowDatasetOperation",
+                        "FlowFieldOperation",
+                        "SnowflakeTag",
+                        "DbtTag",
+                        "BigqueryTag"
+                      ]
+                    }
+                  },
+                  {
+                    "terms": {
+                      "__typeName.keyword": [
+                        "MCIncident",
+                        "AnomaloCheck"
+                      ]
+                    }
+                  }
+                ],
+                "minimum_should_match": 1
+              }
+            }
+          }
+        },
+        "functions": [
+          {
+            "filter": {
+              "match": {
+                "starredBy": "sriram.aravamuthan"
+              }
+            },
+            "weight": 10
+          },
+          {
+            "filter": {
+              "match": {
+                "certificateStatus": "VERIFIED"
+              }
+            },
+            "weight": 16
+          },
+          {
+            "filter": {
+              "match": {
+                "certificateStatus": "DRAFT"
+              }
+            },
+            "weight": 5
+          },
+          {
+            "filter": {
+              "bool": {
+                "must_not": {
+                  "exists": {
+                    "field": "certificateStatus"
+                  }
+                }
+              }
+            },
+            "weight": 3
+          },
+          {
+            "filter": {
+              "match": {
+                "certificateStatus": "DEPRECATED"
+              }
+            },
+            "weight": 1
+          },
+          {
+            "filter": {
+              "bool": {
+                "must_not": [
+                  {
+                    "terms": {
+                      "__typeName.keyword": [
+                        "Process",
+                        "DbtProcess"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "weight": 20
+          },
+          {
+            "filter": {
+              "terms": {
+                "__typeName.keyword": [
+                  "Table",
+                  "View",
+                  "AtlasGlossaryTerm"
+                ]
+              }
+            },
+            "weight": 5
+          },
+          {
+            "filter": {
+              "term": {
+                "__typeName.keyword": "DataProduct"
+              }
+            },
+            "weight": 4
+          },
+          {
+            "filter": {
+              "terms": {
+                "__typeName.keyword": [
+                  "Column",
+                  "TableauDashboard",
+                  "TableauWorkbook",
+                  "TableauWorksheet",
+                  "LookerDashboard",
+                  "LookerExplore",
+                  "PowerBIDashboard",
+                  "PowerBIReport",
+                  "MetabaseDashboard"
+                ]
+              }
+            },
+            "weight": 3
+          },
+          {
+            "filter": {
+              "terms": {
+                "__typeName.keyword": [
+                  "MaterialisedView",
+                  "LookerField"
+                ]
+              }
+            },
+            "weight": 2
+          }
+        ],
+        "boost_mode": "sum",
+        "score_mode": "sum"
+      }
+    },
+    "aggs": {
+      "group_by_typeName": {
+        "terms": {
+          "field": "__typeName.keyword",
+          "size": 200
+        },
+        "aggs": {
+          "group_by_assetUserDefinedType": {
+            "terms": {
+              "field": "assetUserDefinedType"
+            }
+          }
+        }
+      }
+    }
+  }
