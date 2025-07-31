@@ -2098,13 +2098,8 @@ public final class GraphHelper {
             })
             .timeout(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)
             .doOnError(throwable -> {
-                if (throwable instanceof java.util.concurrent.TimeoutException) {
-                    LOG.warn("Timeout while getting edge labels and type names for vertex id: {}", vertex.getId());
-                    throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, throwable);
-                } else {
-                    LOG.error("Error while getting edge labels and type names for vertex id: {}", vertex.getId(), throwable);
-                    throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, throwable);
-                }
+                LOG.warn("Super vertex detected: vertex id = {}", vertex.getIdForDisplay());
+                throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, throwable);
             })
             .blockingGet();
         } catch (Exception e) {

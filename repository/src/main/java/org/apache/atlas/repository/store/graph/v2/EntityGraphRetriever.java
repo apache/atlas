@@ -1244,14 +1244,8 @@ public class EntityGraphRetriever {
 
             edgeLabels.stream().forEach(e -> propertiesMap.put(e, StringUtils.SPACE));
         } catch (AtlasBaseException e) {
-            String typeName = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class); //properties.get returns null
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
-            LOG.warn("Super vertex detected: vertex id = {}", entityVertex.getIdForDisplay());
-            attributes.forEach(attribute ->{
-                if (entityType != null && entityType.getRelationshipAttribute(attribute, null) != null) {
-                    LOG.warn("No relationship attribute found for {} in type {}", attribute, typeName);
-                    propertiesMap.put(attribute, StringUtils.SPACE);
-                }
+            attributes.forEach(attribute -> {
+                propertiesMap.putIfAbsent(attribute, StringUtils.SPACE);
             });
         }finally {
             RequestContext.get().endMetricRecord(metricRecorder);
