@@ -256,22 +256,23 @@ public class EntityMutationService {
         int processedGuids = 0;
 
         for (int i = 0; i < chunks.size(); i++) {
-            List<String> chunk = chunks.get(0);
+            List<String> chunk = chunks.get(i);
 
             LOG.info("Processing batch {} of size {}", i+1, chunk.size());
             if (isTagV2Enabled) {
                 try {
-                    errorMap.putAll(entityStore.repairClassificationMappingsV2(guids));
+                    errorMap.putAll(entityStore.repairClassificationMappingsV2(chunk));
                 } catch (Throwable e) {
                     isGraphTransactionFailed = true;
                     rollbackNativeCassandraOperations();
                     throw e;
                 } finally {
                     executeESPostProcessing(isGraphTransactionFailed);
+                    RequestContext.get().getESDeferredOperations().clear();
                 }
 
             } else {
-                entityStore.repairClassificationMappings(guids);
+                entityStore.repairClassificationMappings(chunk);
             }
             processedGuids+=chunk.size();
             LOG.info("Processed batch {}, total guids processed {}", i+1, processedGuids);
