@@ -25,8 +25,8 @@ public class ConnectorFactory {
 
     public static AtlasEntityConnector getConnector(String connectorType) {
         switch (connectorType.toLowerCase()) {
-            case "mysql":
-                return new RdbmsEntityConnector();
+            case "iceberg":
+                return new IcebergEntityConnector();
             case "hive":
                 return new HiveEntityConnector();
             default:

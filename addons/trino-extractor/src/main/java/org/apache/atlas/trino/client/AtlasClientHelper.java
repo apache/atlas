@@ -329,10 +329,8 @@ public class AtlasClientHelper {
     }
 
     public static AtlasEntity.AtlasEntityWithExtInfo findEntity(final String typeName, final String qualifiedName, boolean minExtInfo, boolean ignoreRelationship) throws AtlasServiceException {
-        AtlasEntity.AtlasEntityWithExtInfo ret = null;
-
         try {
-            ret = atlasClientV2.getEntityByAttribute(typeName, Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, qualifiedName), minExtInfo, ignoreRelationship);
+            return atlasClientV2.getEntityByAttribute(typeName, Collections.singletonMap(ATTRIBUTE_QUALIFIED_NAME, qualifiedName), minExtInfo, ignoreRelationship);
         } catch (AtlasServiceException e) {
             if (e.getStatus() == ClientResponse.Status.NOT_FOUND) {
                 return null;
@@ -340,7 +338,6 @@ public class AtlasClientHelper {
 
             throw e;
         }
-        return ret;
     }
 
     public static AtlasEntity.AtlasEntityWithExtInfo createEntity(AtlasEntity.AtlasEntityWithExtInfo entity) throws AtlasServiceException {

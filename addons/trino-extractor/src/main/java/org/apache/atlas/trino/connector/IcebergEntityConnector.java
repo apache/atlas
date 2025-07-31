@@ -29,16 +29,16 @@ import java.util.List;
 public class IcebergEntityConnector extends AtlasEntityConnector {
     private static final Logger LOG = LoggerFactory.getLogger(IcebergEntityConnector.class);
 
-    public static final String HIVE_INSTANCE                         = "hms_instance";
-    public static final String HIVE_DB                               = "hive_db";
-    public static final String HIVE_TABLE                            = "hive_table";
-    public static final String HIVE_COLUMN                           = "hive_column";
-    public static final String TRINO_SCHEMA_HIVE_DB_RELATIONSHIP     = "trino_schema_hive_db";
-    public static final String TRINO_TABLE_HIVE_TABLE_RELATIONSHIP   = "trino_table_hive_table";
-    public static final String TRINO_COLUMN_HIVE_COLUMN_RELATIONSHIP = "trino_column_hive_column";
-    public static final String TRINO_SCHEMA_HIVE_DB_ATTRIBUTE        = "hive_db";
-    public static final String TRINO_TABLE_HIVE_TABLE_ATTRIBUTE      = "hive_table";
-    public static final String TRINO_COLUMN_HIVE_COLUMN_ATTRIBUTE    = "hive_column";
+    public static final String HIVE_DB                                  = "hive_db";
+    public static final String ICEBERG_TABLE                            = "iceberg_table";
+    public static final String ICEBERG_COLUMN                           = "iceberg_column";
+    public static final String TRINO_SCHEMA_HIVE_DB_RELATIONSHIP        = "trino_schema_hive_db";
+    public static final String TRINO_TABLE_ICEBERG_TABLE_RELATIONSHIP   = "trino_table_iceberg_table";
+    public static final String TRINO_COLUMN_ICEBERG_COLUMN_RELATIONSHIP = "trino_column_iceberg_column";
+    public static final String TRINO_SCHEMA_HIVE_DB_ATTRIBUTE           = "hive_db";
+    public static final String TRINO_TABLE_ICEBERG_TABLE_ATTRIBUTE      = "iceberg_table";
+    public static final String TRINO_COLUMN_ICEBERG_COLUMN_ATTRIBUTE    = "iceberg_column";
+
     @Override
     public void connectTrinoCatalog(String instanceName, String catalogName, AtlasEntity entity, AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
 
@@ -70,12 +70,12 @@ public class IcebergEntityConnector extends AtlasEntityConnector {
             return;
         }
 
-        AtlasEntity hiveTable;
+        AtlasEntity icebergTable;
         try {
-            hiveTable = toTableEntity(instanceName, schemaName, tableName);
+            icebergTable = toTableEntity(instanceName, schemaName, tableName);
 
-            if (hiveTable != null) {
-                trinoTable.setRelationshipAttribute(TRINO_TABLE_HIVE_TABLE_ATTRIBUTE, AtlasTypeUtil.getAtlasRelatedObjectId(hiveTable, TRINO_TABLE_HIVE_TABLE_RELATIONSHIP));
+            if (icebergTable != null) {
+                trinoTable.setRelationshipAttribute(TRINO_TABLE_ICEBERG_TABLE_ATTRIBUTE, AtlasTypeUtil.getAtlasRelatedObjectId(icebergTable, TRINO_TABLE_ICEBERG_TABLE_RELATIONSHIP));
 
                 for (AtlasEntity columnEntity : columnEntities) {
                     connectTrinoColumn(instanceName, schemaName, tableName, columnEntity);
@@ -91,13 +91,14 @@ public class IcebergEntityConnector extends AtlasEntityConnector {
             return;
         }
 
-        AtlasEntity hiveColumn;
+        AtlasEntity icebergColumn;
         try {
-            hiveColumn = toColumnEntity(instanceName, schemaName, tableName, trinoColumn.getAttribute("name").toString());
-        } catch (AtlasServiceException e) {            throw new AtlasServiceException(e);
+            icebergColumn = toColumnEntity(instanceName, schemaName, tableName, trinoColumn.getAttribute("name").toString());
+        } catch (AtlasServiceException e) {
+            throw new AtlasServiceException(e);
         }
-        if (hiveColumn != null) {
-            trinoColumn.setRelationshipAttribute(TRINO_COLUMN_HIVE_COLUMN_ATTRIBUTE, AtlasTypeUtil.getAtlasRelatedObjectId(hiveColumn, TRINO_COLUMN_HIVE_COLUMN_RELATIONSHIP));
+        if (icebergColumn != null) {
+            trinoColumn.setRelationshipAttribute(TRINO_COLUMN_ICEBERG_COLUMN_ATTRIBUTE, AtlasTypeUtil.getAtlasRelatedObjectId(icebergColumn, TRINO_COLUMN_ICEBERG_COLUMN_RELATIONSHIP));
         }
     }
 
@@ -110,14 +111,14 @@ public class IcebergEntityConnector extends AtlasEntityConnector {
 
     private AtlasEntity toTableEntity(String instanceName, String schemaName, String tableName) throws AtlasServiceException {
         String                             tableQualifiedName = schemaName + "." + tableName + "@" + instanceName;
-        AtlasEntity.AtlasEntityWithExtInfo ret                = AtlasClientHelper.findEntity(HIVE_TABLE, tableQualifiedName, true, true);
+        AtlasEntity.AtlasEntityWithExtInfo ret                = AtlasClientHelper.findEntity(ICEBERG_TABLE, tableQualifiedName, true, true);
 
         return ret != null ? ret.getEntity() : null;
     }
 
     private AtlasEntity toColumnEntity(String instanceName, String schemaName, String tableName, String columnName) throws AtlasServiceException {
         String                             columnQualifiedName = schemaName + "." + tableName + "." + columnName + "@" + instanceName;
-        AtlasEntity.AtlasEntityWithExtInfo ret                 = AtlasClientHelper.findEntity(HIVE_COLUMN, columnQualifiedName, true, true);
+        AtlasEntity.AtlasEntityWithExtInfo ret                 = AtlasClientHelper.findEntity(ICEBERG_COLUMN, columnQualifiedName, true, true);
 
         return ret != null ? ret.getEntity() : null;
     }

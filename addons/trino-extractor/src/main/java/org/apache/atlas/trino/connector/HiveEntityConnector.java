@@ -29,7 +29,6 @@ import java.util.List;
 public class HiveEntityConnector extends AtlasEntityConnector {
     private static final Logger LOG = LoggerFactory.getLogger(HiveEntityConnector.class);
 
-    public static final String HIVE_INSTANCE                         = "hms_instance";
     public static final String HIVE_DB                               = "hive_db";
     public static final String HIVE_TABLE                            = "hive_table";
     public static final String HIVE_COLUMN                           = "hive_column";

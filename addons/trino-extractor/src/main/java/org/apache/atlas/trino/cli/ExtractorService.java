@@ -18,7 +18,6 @@
 package org.apache.atlas.trino.cli;
 
 import org.apache.atlas.AtlasServiceException;
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.trino.client.AtlasClientHelper;
@@ -56,7 +55,6 @@ public class ExtractorService {
     private static final String            TRINO_CATALOG_HOOK_ENABLED_SUFFIX = ".namespace";
     private static       Configuration     atlasProperties;
     private static       TrinoClientHelper trinoClientHelper;
-    private static       AtlasClientHelper atlasClientHelper;
     private static       String            trinoNamespace;
     private              ExtractorContext  context;
 
@@ -64,7 +62,6 @@ public class ExtractorService {
         this.context      = context;
         atlasProperties   = context.getAtlasConf();
         trinoClientHelper = context.getTrinoConnector();
-        atlasClientHelper = context.getAtlasConnector();
         trinoNamespace    = context.getNamespace();
 
         Map<String, String> catalogs = trinoClientHelper.getAllTrinoCatalogs();
