@@ -81,6 +81,7 @@ import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.client.RequestOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -107,7 +108,7 @@ import javax.ws.rs.core.Response;
 import org.apache.atlas.model.general.HealthStatus;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.SecureRandom;
@@ -438,12 +439,21 @@ public class AdminResource {
                 result.put(healthStatus.name, healthStatus);
             }
 
-            GraphTraversal t = graph.V().limit(1);
-            t.hasNext();
-            result.put("cassandra", new HealthStatus("cassandra", "ok", true, new Date().toString(), ""));
+            // Use lightweight Cassandra health check
+            boolean cassandraHealthy = TagDAOCassandraImpl.getInstance().isHealthy();
+            if (cassandraHealthy) {
+                result.put("cassandra", new HealthStatus("cassandra", "ok", true, new Date().toString(), ""));
+            } else {
+                result.put("cassandra", new HealthStatus("cassandra", "error", false, new Date().toString(), "Cassandra health check failed"));
+                cassandraFailed = true;
+                MDC.put("reason", "cassandra");
+                MDC.put("healthCheck", "health check failed");
+            }
         } catch (Exception e) {
-            result.put("cassandra", new HealthStatus("cassandra", "error", true, new Date().toString(), e.toString()));
+            result.put("cassandra", new HealthStatus("cassandra", "error", false, new Date().toString(), e.toString()));
             cassandraFailed = true;
+            MDC.put("reason", "cassandra");
+            MDC.put("healthCheck", "health check failed");
         }
 
         try {
@@ -452,6 +462,8 @@ public class AdminResource {
         } catch (Exception e) {
             result.put("elasticsearch", new HealthStatus("elasticsearch", "error", false, new Date().toString(), e.toString()));
             elasticSearchFailed = true;
+            MDC.put("reason", "elasticsearch");
+            MDC.put("healthCheck", "health check failed");
         }
 
         if (LOG.isDebugEnabled()) {
