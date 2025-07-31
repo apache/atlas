@@ -2078,6 +2078,7 @@ public final class GraphHelper {
                             .project(LABEL_PROPERTY_KEY, TYPE_NAME_PROPERTY_KEY)
                             .by(T.label)
                             .by(TYPE_NAME_PROPERTY_KEY)
+                            .dedup()
                             .toStream()
                             .map(m -> {
                                 Object label = m.get(LABEL_PROPERTY_KEY);
