@@ -104,6 +104,9 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     private final PreparedStatement insertPropagationBySourceStmt;
     private final PreparedStatement deletePropagationStmt;
 
+    // Health check prepared statement
+    private final PreparedStatement healthCheckStmt;
+
 
     private TagDAOCassandraImpl() throws AtlasBaseException {
         try {
@@ -169,6 +172,9 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
             deletePropagationStmt = prepare(String.format(
                     "DELETE FROM %s.%s WHERE source_id = ? AND tag_type_name = ? AND propagated_asset_id = ?", KEYSPACE, PROPAGATED_TAGS_TABLE_NAME));
+
+            // === Health check statement ===
+            healthCheckStmt = prepare("SELECT release_version FROM system.local");
 
         } catch (Exception e) {
             LOG.error("Failed to initialize TagDAO", e);
@@ -752,6 +758,44 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     public static AtlasClassification toAtlasClassification(Map<String, Object> tagMetaJsonMap) {
         return objectMapper.convertValue(tagMetaJsonMap, AtlasClassification.class);
+    }
+
+    /**
+     * Performs a lightweight health check against Cassandra to verify connectivity and availability.
+     * This method executes a simple query against the system.local table which is always available.
+     * 
+     * @return true if Cassandra is healthy and responsive, false otherwise
+     */
+    public boolean isHealthy() {
+        try {
+            Instant start = Instant.now();
+            
+            // Execute a lightweight query against system.local
+            ResultSet rs = cassSession.execute(healthCheckStmt.bind());
+            
+            // Verify we get at least one row back
+            boolean hasResults = rs.iterator().hasNext();
+            
+            Duration duration = Duration.between(start, Instant.now());
+            
+            if (hasResults) {
+                LOG.debug("Cassandra health check successful in {}ms", duration.toMillis());
+                return true;
+            } else {
+                LOG.warn("Cassandra health check failed - no results returned from system.local");
+                return false;
+            }
+            
+        } catch (DriverTimeoutException e) {
+            LOG.warn("Cassandra health check failed due to timeout: {}", e.getMessage());
+            return false;
+        } catch (NoHostAvailableException e) {
+            LOG.warn("Cassandra health check failed - no hosts available: {}", e.getMessage());
+            return false;
+        } catch (Exception e) {
+            LOG.warn("Cassandra health check failed due to unexpected error: {}", e.getMessage(), e);
+            return false;
+        }
     }
 
     @Override
