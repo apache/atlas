@@ -38,23 +38,24 @@ import java.util.Properties;
 /**
  * DAO manager that initializes JPA layer
  *
- * Sample properties to initialize JPA
- *   storage.backend=rdbms
- *   storage.rdbms.jpa.dataSource.driverClassName=org.postgresql.Driver
- *   storage.rdbms.jpa.dataSource.jdbcUrl=jdbc:postgresql://dbhost/dbname
- *   storage.rdbms.jpa.dataSource.username=janus
- *   storage.rdbms.jpa.dataSource.password=janusR0cks!
- *   storage.rdbms.jpa.dataSource.maximumPoolSize=40
- *   storage.rdbms.jpa.dataSource.minimumPoolSize=5
- *   storage.rdbms.jpa.dataSource.minimumIdle=janusR0cks!
- *   storage.rdbms.jpa.dataSource.idleTimeout=300000
- *   storage.rdbms.jpa.dataSource.connectionTestQuery=select 1
- *   storage.rdbms.jpa.dataSource.maxLifetime=1800000
- *   storage.rdbms.jpa.dataSource.connectionTimeout=30000
- *   storage.rdbms.jpa.javax.persistence.jdbc.dialect=org.eclipse.persistence.platform.database.PostgreSQLPlatform
- *   storage.rdbms.jpa.javax.persistence.schema-generation.database.action=create
- *   storage.rdbms.jpa.javax.persistence.schema-generation.create-database-schemas=true
- *   storage.rdbms.jpa.javax.persistence.schema-generation.create-source=metadata
+ * Sample properties to be set in atlas-application.properties for RDBMS storage backend:
+ *   atlas.graph.storage.backend=rdbms
+ *   atlas.graph.storage.rdbms.jpa.hikari.driverClassName=org.postgresql.Driver
+ *   atlas.graph.storage.rdbms.jpa.hikari.jdbcUrl=jdbc:postgresql://atlas-db/atlas
+ *   atlas.graph.storage.rdbms.jpa.hikari.username=atlas
+ *   atlas.graph.storage.rdbms.jpa.hikari.password=atlasR0cks!
+ *   atlas.graph.storage.rdbms.jpa.hikari.maximumPoolSize=40
+ *   atlas.graph.storage.rdbms.jpa.hikari.minimumIdle=5
+ *   atlas.graph.storage.rdbms.jpa.hikari.idleTimeout=300000
+ *   atlas.graph.storage.rdbms.jpa.hikari.connectionTestQuery=select 1
+ *   atlas.graph.storage.rdbms.jpa.hikari.maxLifetime=1800000
+ *   atlas.graph.storage.rdbms.jpa.hikari.connectionTimeout=30000
+ *   atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.dialect=org.eclipse.persistence.platform.database.PostgreSQLPlatform
+ *   atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.database.action=create
+ *   atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-database-schemas=true
+ *   atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-source=script
+ *   atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-script-source=META-INF/postgres/create_schema.sql
+ *   atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.rdbms.RdbmsBasedAuditRepository
  *
  */
 public class DaoManager {

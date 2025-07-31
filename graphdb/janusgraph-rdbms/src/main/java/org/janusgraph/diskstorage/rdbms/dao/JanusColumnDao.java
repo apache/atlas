@@ -50,7 +50,7 @@ public class JanusColumnDao extends BaseDao<JanusColumn> {
 
     public void addOrUpdate(long keyId, byte[] name, byte[] val) {
         try {
-            em.createNativeQuery("INSERT INTO janus_column (id, key_id, name, val) VALUES (NEXTVAL('janus_column_seq'), ?, ?, ?) ON CONFLICT (key_id, name) DO UPDATE SET val = EXCLUDED.val")
+            em.createNativeQuery("INSERT INTO janus_column (key_id, name, val) VALUES (?, ?, ?) ON CONFLICT (key_id, name) DO UPDATE SET val = EXCLUDED.val")
                     .setParameter(1, keyId)
                     .setParameter(2, name)
                     .setParameter(3, val)

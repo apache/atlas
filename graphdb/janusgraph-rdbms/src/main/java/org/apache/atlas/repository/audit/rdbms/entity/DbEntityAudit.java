@@ -44,7 +44,7 @@ import java.util.Objects;
                    @Index(name = "atlas_entity_audit_idx_user_name", columnList = "user_name")})
 public class DbEntityAudit implements java.io.Serializable {
     @Id
-    @SequenceGenerator(name = "atlas_entity_audit_seq", sequenceName = "atlas_entity_audit_seq", allocationSize = 1000)
+    @SequenceGenerator(name = "atlas_entity_audit_seq", sequenceName = "atlas_entity_audit_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.AUTO, generator = "atlas_entity_audit_seq")
     @Column(name = "id")
     protected Long id;

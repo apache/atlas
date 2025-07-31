@@ -42,7 +42,7 @@ public class JanusKey implements java.io.Serializable {
     private static final long serialVersionUID = 1L;
 
     @Id
-    @SequenceGenerator(name = "janus_key_seq", sequenceName = "janus_key_seq", allocationSize = 1000)
+    @SequenceGenerator(name = "janus_key_seq", sequenceName = "janus_key_seq", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.AUTO, generator = "janus_key_seq")
     @Column(name = "id")
     protected Long id;

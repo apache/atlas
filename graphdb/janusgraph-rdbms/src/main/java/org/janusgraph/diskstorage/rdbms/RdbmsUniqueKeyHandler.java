@@ -20,16 +20,16 @@ package org.janusgraph.diskstorage.rdbms;
 import org.janusgraph.graphdb.relations.RelationIdentifier;
 
 public class RdbmsUniqueKeyHandler {
-    private static final String SQL_INSERT_UNIQUE_VERTEX_KEY                   = "INSERT INTO janus_unique_vertex_key (id, vertex_id, key_name, val) VALUES (NEXTVAL('janus_unique_vertex_key_seq'), ?, ?, ?)";
+    private static final String SQL_INSERT_UNIQUE_VERTEX_KEY                   = "INSERT INTO janus_unique_vertex_key (vertex_id, key_name, val) VALUES (?, ?, ?)";
     private static final String SQL_DELETE_UNIQUE_VERTEX_KEY                   = "DELETE FROM janus_unique_vertex_key WHERE key_name = ? AND val = ?";
-    private static final String SQL_INSERT_UNIQUE_VERTEX_TYPE_KEY              = "INSERT INTO janus_unique_vertex_type_key (id, vertex_id, type_name, key_name, val) VALUES (NEXTVAL('janus_unique_vertex_type_key_seq'), ?, ?, ?, ?)";
+    private static final String SQL_INSERT_UNIQUE_VERTEX_TYPE_KEY              = "INSERT INTO janus_unique_vertex_type_key (vertex_id, type_name, key_name, val) VALUES (?, ?, ?, ?)";
     private static final String SQL_DELETE_UNIQUE_VERTEX_TYPE_KEY              = "DELETE FROM janus_unique_vertex_type_key WHERE type_name = ? AND key_name = ? AND val = ?";
     private static final String SQL_DELETE_UNIQUE_VERTEX_KEY_BY_VERTEX_ID      = "DELETE FROM janus_unique_vertex_key WHERE vertex_id = ?";
     private static final String SQL_DELETE_UNIQUE_VERTEX_TYPE_KEY_BY_VERTEX_ID = "DELETE FROM janus_unique_vertex_type_key WHERE vertex_id = ?";
 
-    private static final String SQL_INSERT_UNIQUE_EDGE_KEY                 = "INSERT INTO janus_unique_edge_key (id, edge_id, key_name, val) VALUES (NEXTVAL('janus_unique_edge_key_seq'), ?, ?, ?)";
+    private static final String SQL_INSERT_UNIQUE_EDGE_KEY                 = "INSERT INTO janus_unique_edge_key (edge_id, key_name, val) VALUES (?, ?, ?)";
     private static final String SQL_DELETE_UNIQUE_EDGE_KEY                 = "DELETE FROM janus_unique_edge_key WHERE key_name = ? AND val = ?";
-    private static final String SQL_INSERT_UNIQUE_EDGE_TYPE_KEY            = "INSERT INTO janus_unique_edge_type_key (id, edge_id, type_name, key_name, val) VALUES (NEXTVAL('janus_unique_edge_type_key_seq'), ?, ?, ?, ?)";
+    private static final String SQL_INSERT_UNIQUE_EDGE_TYPE_KEY            = "INSERT INTO janus_unique_edge_type_key (edge_id, type_name, key_name, val) VALUES (?, ?, ?, ?)";
     private static final String SQL_DELETE_UNIQUE_EDGE_TYPE_KEY            = "DELETE FROM janus_unique_edge_type_key WHERE type_name = ? AND key_name = ? AND val = ?";
     private static final String SQL_DELETE_UNIQUE_EDGE_KEY_BY_EDGE_ID      = "DELETE FROM janus_unique_edge_key WHERE edge_id = ?";
     private static final String SQL_DELETE_UNIQUE_EDGE_TYPE_KEY_BY_EDGE_ID = "DELETE FROM janus_unique_edge_type_key WHERE edge_id = ?";
@@ -41,7 +41,7 @@ public class RdbmsUniqueKeyHandler {
             trx.getEntityManager().createNativeQuery(isVertex ? SQL_INSERT_UNIQUE_VERTEX_KEY : SQL_INSERT_UNIQUE_EDGE_KEY)
                     .setParameter(1, getNumberId(elementId))
                     .setParameter(2, keyName)
-                    .setParameter(3, value)
+                    .setParameter(3, getStringValue(value))
                     .executeUpdate();
         } else {
             throw new IllegalStateException("No active transaction found to add unique key: keyName=" + keyName + ", value=" + value);
@@ -54,7 +54,7 @@ public class RdbmsUniqueKeyHandler {
         if (trx != null) {
             trx.getEntityManager().createNativeQuery(isVertex ? SQL_DELETE_UNIQUE_VERTEX_KEY : SQL_DELETE_UNIQUE_EDGE_KEY)
                     .setParameter(1, keyName)
-                    .setParameter(2, value)
+                    .setParameter(2, getStringValue(value))
                     .executeUpdate();
         } else {
             throw new IllegalStateException("No active transaction found to remove unique key: keyName=" + keyName + ", value=" + value);
@@ -69,7 +69,7 @@ public class RdbmsUniqueKeyHandler {
                     .setParameter(1, getNumberId(elementId))
                     .setParameter(2, typeName)
                     .setParameter(3, keyName)
-                    .setParameter(4, value)
+                    .setParameter(4, getStringValue(value))
                     .executeUpdate();
         } else {
             throw new IllegalStateException("No active transaction found to add type unique key: typeName=" + typeName + ", keyName=" + keyName + ", value=" + value);
@@ -83,7 +83,7 @@ public class RdbmsUniqueKeyHandler {
             trx.getEntityManager().createNativeQuery(isVertex ? SQL_DELETE_UNIQUE_VERTEX_TYPE_KEY : SQL_DELETE_UNIQUE_EDGE_TYPE_KEY)
                     .setParameter(1, typeName)
                     .setParameter(2, keyName)
-                    .setParameter(3, value)
+                    .setParameter(3, getStringValue(value))
                     .executeUpdate();
         } else {
             throw new IllegalStateException("No active transaction found to remove type unique key: typeName=" + typeName + ", keyName=" + keyName + ", value=" + value);
@@ -135,6 +135,16 @@ public class RdbmsUniqueKeyHandler {
             throw new IllegalArgumentException("Invalid elementId: null");
         } else {
             throw new IllegalArgumentException("Invalid elementId type: " + elementId.getClass().getName());
+        }
+    }
+
+    private String getStringValue(Object value) {
+        if (value instanceof String) {
+            return (String) value;
+        } else if (value == null) {
+            return null;
+        } else {
+            return value.toString();
         }
     }
 }

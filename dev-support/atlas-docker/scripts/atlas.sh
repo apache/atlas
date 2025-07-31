@@ -68,8 +68,8 @@ atlas.graph.storage.rdbms.jpa.hikari.connectionTimeout=30000
 atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.dialect=org.eclipse.persistence.platform.database.PostgreSQLPlatform
 atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.database.action=create
 atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-database-schemas=true
-atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-source=script-then-metadata
-atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-script-source=META-INF/postgres/create_sequences.sql
+atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-source=script
+atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-script-source=META-INF/postgres/create_schema.sql
 atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.rdbms.RdbmsBasedAuditRepository
 EOF
   fi

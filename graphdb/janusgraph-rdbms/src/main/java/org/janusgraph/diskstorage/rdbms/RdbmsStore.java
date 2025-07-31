@@ -283,8 +283,8 @@ public class RdbmsStore implements KeyColumnValueStore {
                 ret = createdKey != null ? createdKey.getId() : null;
 
                 LOG.debug("attempt #{}: created key(storeId={}, key={}): id={}", attempt, storeId, key, ret);
-            } catch (IOException excp) {
-                LOG.error("attempt #{}: failed to create key(storeId={}, key={})", attempt, storeId, key, excp);
+            } catch (Throwable t) {
+                LOG.error("attempt #{}: failed to create key(storeId={}, key.length={}, key={}): {}", attempt, storeId, key.length, new String(key), t);
             }
 
             if (ret != null || attempt >= KEY_CREATE_MAX_ATTEMPTS) {
