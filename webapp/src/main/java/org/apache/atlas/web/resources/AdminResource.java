@@ -112,6 +112,7 @@ import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -433,6 +434,7 @@ public class AdminResource {
 
         boolean cassandraFailed = false;
         boolean elasticSearchFailed = false;
+        List<String> failedServices = new ArrayList<>();
         try {
             List<HealthStatus> healthStatuses = atlasHealthStatus.getHealthStatuses();
             for (final HealthStatus healthStatus : healthStatuses) {
@@ -446,23 +448,32 @@ public class AdminResource {
             } else {
                 result.put("cassandra", new HealthStatus("cassandra", "error", false, new Date().toString(), "Cassandra health check failed"));
                 cassandraFailed = true;
-                MDC.put("reason", "cassandra");
-                MDC.put("healthCheck", "health check failed");
+                failedServices.add("cassandra");
             }
         } catch (Exception e) {
             result.put("cassandra", new HealthStatus("cassandra", "error", false, new Date().toString(), e.toString()));
             cassandraFailed = true;
-            MDC.put("reason", "cassandra");
-            MDC.put("healthCheck", "health check failed");
+            failedServices.add("cassandra");
         }
 
         try {
             boolean isConnected = AtlasElasticsearchDatabase.getClient().ping(RequestOptions.DEFAULT);
-            result.put("elasticsearch", new HealthStatus("elasticsearch", isConnected ? "ok" : "error", isConnected, new Date().toString(), ""));
+            if (isConnected) {
+                result.put("elasticsearch", new HealthStatus("elasticsearch", "ok", true, new Date().toString(), ""));
+            } else {
+                result.put("elasticsearch", new HealthStatus("elasticsearch", "error", false, new Date().toString(), "Elasticsearch ping failed"));
+                elasticSearchFailed = true;
+                failedServices.add("elasticsearch");
+            }
         } catch (Exception e) {
             result.put("elasticsearch", new HealthStatus("elasticsearch", "error", false, new Date().toString(), e.toString()));
             elasticSearchFailed = true;
-            MDC.put("reason", "elasticsearch");
+            failedServices.add("elasticsearch");
+        }
+
+        // Add failed services to MDC for logging/monitoring
+        if (!failedServices.isEmpty()) {
+            MDC.put("failedServices", String.join(",", failedServices));
             MDC.put("healthCheck", "health check failed");
         }
 
