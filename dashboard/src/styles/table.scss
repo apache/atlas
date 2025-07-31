@@ -230,9 +230,9 @@ td:has(.searchTableName) {
 }
 
 .entity-name {
-  display: inline-block;
+  // display: inline-block;
   line-height: 24px;
-  width: 72px;
+  // width: 72px;
   overflow: hidden;
   text-overflow: ellipsis;
   vertical-align: bottom;

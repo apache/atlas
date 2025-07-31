@@ -675,7 +675,7 @@ const TableLayout: FC<TableProps> = ({
             </Stack>
           )} */}
 
-          {showPagination && (
+          {showPagination && !isFetching && (
             <TablePagination
               firstPage={firstPage}
               getCanPreviousPage={getCanPreviousPage}

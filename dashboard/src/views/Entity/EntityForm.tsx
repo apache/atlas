@@ -28,6 +28,7 @@ import FormInputText from "@components/Forms/FormInputText";
 import FormSelectBoolean from "@components/Forms/FormSelectBoolean";
 import FormTextArea from "@components/Forms/FormTextArea";
 import CustomModal from "@components/Modal";
+import SkeletonLoader from "@components/SkeletonLoader";
 import { useAppDispatch, useAppSelector } from "@hooks/reducerHook";
 import { Action, DynamicObject, State } from "@models/entityFormType";
 import {
@@ -619,12 +620,8 @@ const EntityForm = ({
           )}
         </Stack>
         {loader ? (
-          <Stack
-            direction="row"
-            alignItems={"center"}
-            justifyContent={"center"}
-          >
-            <CircularProgress />
+          <Stack>
+          <SkeletonLoader animation="pulse" variant="text" count={5}/>
           </Stack>
         ) : (
           !isEmpty(entityTypeObj) && (
@@ -638,7 +635,7 @@ const EntityForm = ({
                       <>
                         <fieldset className="entity-form-fieldset">
                           <legend>
-                            <Typography fontSize={"14px"}>
+                            <Typography fontSize={"14px"} padding={ '5px 8px'}>
                               {key == "attributeDefs"
                                 ? "Attributes"
                                 : "Relationships"}
