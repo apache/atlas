@@ -798,42 +798,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         }
     }
 
-    /**
-     * Performs a health check with detailed timing information.
-     * 
-     * @return a map containing health status and timing information
-     */
-    public Map<String, Object> getHealthStatus() {
-        Map<String, Object> healthStatus = new HashMap<>();
-        Instant start = Instant.now();
-        
-        try {
-            ResultSet rs = cassSession.execute(healthCheckStmt.bind());
-            boolean hasResults = rs.iterator().hasNext();
-            Duration duration = Duration.between(start, Instant.now());
-            
-            healthStatus.put("healthy", hasResults);
-            healthStatus.put("responseTimeMs", duration.toMillis());
-            healthStatus.put("timestamp", start.toString());
-            
-            if (hasResults) {
-                healthStatus.put("status", "OK");
-            } else {
-                healthStatus.put("status", "ERROR - No results from system query");
-            }
-            
-        } catch (Exception e) {
-            Duration duration = Duration.between(start, Instant.now());
-            healthStatus.put("healthy", false);
-            healthStatus.put("responseTimeMs", duration.toMillis());
-            healthStatus.put("timestamp", start.toString());
-            healthStatus.put("status", "ERROR - " + e.getMessage());
-            healthStatus.put("error", e.getClass().getSimpleName());
-        }
-        
-        return healthStatus;
-    }
-
     @Override
     public void close() {
         if (cassSession != null && !cassSession.isClosed()) {
