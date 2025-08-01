@@ -58,6 +58,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     private static final int BATCH_SIZE_LIMIT = 100;
     private static final int BATCH_SIZE_LIMIT_FOR_DELETION = 1000;
     private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(5);
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(120);
     private static final Duration HEARTBEAT_INTERVAL = Duration.ofSeconds(30);
     public static final String DEFAULT_HOST = "localhost";
     public static final String DATACENTER = "datacenter1";
@@ -114,6 +115,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", ApplicationProperties.get().getString(CASSANDRA_REPLICATION_FACTOR_PROPERTY, "3"));
 
             DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
+                    .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, REQUEST_TIMEOUT)
                     .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, CONNECTION_TIMEOUT)
                     .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, CONNECTION_TIMEOUT)
                     .withDuration(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, CONNECTION_TIMEOUT)
@@ -600,13 +602,23 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             PaginatedTagResult result;
             String pagingState = null;
             String cacheKey = "full_fetch_" + sourceVertexId + "|" + tagTypeName;
+            int pageCount = 0;
+            LOG.info("Starting full propagation fetch for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName);
             do {
+                pageCount++;
                 result = getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, pagingState, 500, cacheKey);
+                int fetchedCount = result.getTags().size();
                 allTags.addAll(result.getTags());
                 pagingState = result.getPagingState();
+                LOG.info("sourceVertexId={}, tagTypeName={}: Page {}: Fetched {} propagations. Total fetched: {}. Has next page: {}",
+                        sourceVertexId, tagTypeName, pageCount, fetchedCount, allTags.size(), !result.isDone());
             } while (!result.isDone());
+
             if (allTags.isEmpty()) {
                 LOG.warn("No propagations found for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName);
+            } else {
+                LOG.info("Finished full propagation fetch for sourceVertexId={}, tagTypeName={}. Total propagations loaded: {}",
+                        sourceVertexId, tagTypeName, allTags.size());
             }
             return allTags;
         } catch (Exception e) {
