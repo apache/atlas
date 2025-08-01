@@ -6328,6 +6328,12 @@ public class EntityGraphMapper {
             if(StringUtils.isNotEmpty(parentEntityGuid) && !parentEntityGuid.equals(sourceEntityGuid)) {
                 entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, parentEntityGuid);
                 entityVertexId = entityVertex.getIdForDisplay();
+                if (entityVertex == null) {
+                    String warningMessage = String.format("classificationRefreshPropagationV2(sourceEntityGuid=%s, classificationTypeName=%s): parent entity vertex not found, skipping task execution", sourceEntityGuid, classificationTypeName);
+                    LOG.warn(warningMessage);
+                    RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
+                    return;
+                }
                 tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertexId, classificationTypeName);
                 if (tag == null) {
                     LOG.warn("Classification with typeName {} not found for entity {} and parentEntity {}", classificationTypeName, sourceEntityGuid, parentEntityGuid);
@@ -6335,10 +6341,8 @@ public class EntityGraphMapper {
                 }
             }
             if (tag == null) {
-                String warningMessage = String.format("classificationRefreshPropagationV2(classificationTypeName=%s, entityGuid=%s, parentEntityGuid=%s): classification not found, skipping task execution", classificationTypeName, sourceEntityGuid, parentEntityGuid);
-                LOG.warn(warningMessage);
-                RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
-                return;
+                LOG.warn("Classification with typeName {} not found for entity {} and parentEntity {}", classificationTypeName, sourceEntityGuid, parentEntityGuid);
+                throw new AtlasBaseException(String.format("Classification with typeName %s not found for entity %s and parentEntity %s", classificationTypeName, sourceEntityGuid, parentEntityGuid));
             }
         }
 
