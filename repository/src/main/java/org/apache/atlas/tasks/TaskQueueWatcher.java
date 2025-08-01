@@ -120,12 +120,12 @@ public class TaskQueueWatcher implements Runnable {
             } catch (Exception e) {
                 LOG.error("TaskQueueWatcher: Exception occurred " + e.getMessage(), e);
             } finally {
+                fetcher.clearTasks();
                 if (lockAcquired) {
                     redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
                     LOG.info("TaskQueueWatcher: Released Task Lock in finally");
                     lockAcquired = false;
                 }
-                fetcher.clearTasks();
             }
             try{
                 LOG.info("TaskQueueWatcher: Sleeping for pollInterval: {}", pollInterval);
