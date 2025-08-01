@@ -158,17 +158,18 @@ public class EntityAuthorizer {
             attributeValueNode.elements().forEachRemaining(node -> attributeValues.add(getRequiredAttributeValue(finalAttributeName, node)));
         } else {
             attributeValue = getRequiredAttributeValue(attributeName, attributeValueNode);
+            attributeValues.add(attributeValue);
         }
 
         switch (operator) {
             case POLICY_FILTER_CRITERIA_EQUALS:
-                return attributeValues.isEmpty() 
-                    ? entityAttributeValues.contains(attributeValue)
-                    : new HashSet<>(entityAttributeValues).containsAll(attributeValues);
+                return new HashSet<>(entityAttributeValues).containsAll(attributeValues);
 
             case POLICY_FILTER_CRITERIA_STARTS_WITH:
-                if (AuthorizerCommonUtil.listStartsWith(attributeValue, entityAttributeValues)) {
-                    return true;
+                for (String value : attributeValues) {
+                    if (AuthorizerCommonUtil.listStartsWith(value, entityAttributeValues)) {
+                        return true;
+                    }
                 }
                 break;
             // case "LIKE":
@@ -177,15 +178,15 @@ public class EntityAuthorizer {
             //     }
             //     break;
             case POLICY_FILTER_CRITERIA_ENDS_WITH:
-                if (AuthorizerCommonUtil.listEndsWith(attributeValue, entityAttributeValues)) {
-                    return true;
+                for (String value : attributeValues) {
+                    if (AuthorizerCommonUtil.listEndsWith(value, entityAttributeValues)) {
+                        return true;
+                    }
                 }
                 break;
 
             case POLICY_FILTER_CRITERIA_NOT_EQUALS:
-                return attributeValues.isEmpty()
-                    ? !entityAttributeValues.contains(attributeValue)
-                    : Collections.disjoint(entityAttributeValues, attributeValues);
+                return Collections.disjoint(entityAttributeValues, attributeValues);
 
             case POLICY_FILTER_CRITERIA_IN:
                 if (AuthorizerCommonUtil.arrayListContains(attributeValues, entityAttributeValues)) {
