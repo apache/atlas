@@ -54,8 +54,7 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromEdge;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.DATA_DOMAIN_REL_TYPE;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.PARENT_DOMAIN_REL_TYPE;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 
 @Singleton
@@ -140,11 +139,22 @@ public class RestoreHandlerV1 {
         AtlasEntity entity = entityRetriever.toAtlasEntity(instanceVertex);
 
         if (typeName.equals(DATA_DOMAIN_ENTITY_TYPE) && entity.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE) == null) {
-            return true;
+            return verifyDataDomainEntityForRestore(instanceVertex);
         } else if (typeName.equals(DATA_PRODUCT_ENTITY_TYPE) && entity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE) == null) {
             return true;
         }
         return false;
+    }
+
+    private boolean verifyDataDomainEntityForRestore(AtlasVertex instanceVertex) throws AtlasBaseException {
+        // To ensure super domains can be restored
+        String parentQualifiedName = instanceVertex.getProperty(PARENT_DOMAIN_QN_ATTR, String.class);
+        String superDomainQualifiedName = instanceVertex.getProperty(SUPER_DOMAIN_QN_ATTR, String.class);
+
+        if (parentQualifiedName == null && superDomainQualifiedName == null) {
+            return false;
+        }
+        return true;
     }
 
     private void restoreEdgeBetweenVertices(AtlasVertex outVertex, AtlasVertex inVertex, AtlasStructType.AtlasAttribute attribute) throws AtlasBaseException {
