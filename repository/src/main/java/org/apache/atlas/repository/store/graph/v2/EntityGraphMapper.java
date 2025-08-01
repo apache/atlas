@@ -3951,9 +3951,8 @@ public class EntityGraphMapper {
         if (StringUtils.isEmpty(toVertexId)) { // existing flow
             try {
                 if (StringUtils.isEmpty(entityGuid) || StringUtils.isEmpty(tagTypeName)) {
-                    LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): entityGuid and/or classification vertex id is empty", entityGuid, tagTypeName);
-
-                    throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, tagTypeName=%s): entityGuid and/or classification vertex id is empty", entityGuid, tagTypeName));
+                    LOG.warn("propagateClassification(entityGuid={}, tagTypeName={}): entityGuid and/or classification vertex id is empty", entityGuid, tagTypeName);
+                    return;
                 }
 
                 //Map<String, Object> sourceAsset = CassandraConnector.getVertexPropertiesByGuid(entityGuid);
@@ -3962,9 +3961,10 @@ public class EntityGraphMapper {
                 //entityGuid cannot be empty
                 AtlasVertex entityVertex = graphHelper.getVertexForGUID(entityGuid);
                 if (entityVertex == null) {
-                    LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): entity vertex not found", entityGuid, tagTypeName);
-
-                    throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, tagTypeName=%s): entity vertex not found", entityGuid, tagTypeName));
+                    String warningMessage = String.format("propagateClassificationV2(entityGuid=%s, tagTypeName=%s): entity vertex not found, skipping task execution", entityGuid, tagTypeName);
+                    LOG.warn(warningMessage);
+                    RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
+                    return;
                 }
 
                 //AtlasVertex classificationVertex = graph.getVertex(classificationVertexId);
@@ -3974,15 +3974,18 @@ public class EntityGraphMapper {
                         //fallback only to get tag
                         AtlasVertex parentEntityVertex = graphHelper.getVertexForGUID(parentEntityGuid);
                         if (parentEntityVertex == null) {
-                            LOG.error("propagateClassification(parentEntityGuid={}, tagTypeName={}): entity vertex not found", parentEntityGuid, tagTypeName);
-
-                            throw new AtlasBaseException(String.format("propagateClassification(parentEntityGuid=%s, tagTypeName=%s): entity vertex not found", parentEntityGuid, tagTypeName));
+                            String warningMessage = String.format("propagateClassificationV2(parentEntityGuid=%s, tagTypeName=%s): parentEntityVertex vertex not found, skipping task execution", parentEntityGuid, tagTypeName);
+                            LOG.warn(warningMessage);
+                            RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
+                            return;
                         }
                         tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(parentEntityVertex.getIdForDisplay(), tagTypeName);
                     }
                     if (tag == null) {
-                        LOG.error("propagateClassification(entityGuid={},parentEntityGuid={}, tagTypeName={}): tag found", entityGuid, parentEntityGuid, tagTypeName);
-                        throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s,parentEntityGuid=%s, tagTypeName=%s): tag found", entityGuid, parentEntityGuid, tagTypeName));
+                        String warningMessage = String.format("propagateClassificationV2(entityGuid=%s,parentEntityGuid=%s, tagTypeName=%s): tag not found, skipping task execution", entityGuid, parentEntityGuid, tagTypeName);
+                        LOG.warn(warningMessage);
+                        RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
+                        return;
                     }
                 }
 
@@ -4023,16 +4026,20 @@ public class EntityGraphMapper {
             // Get all tags for fromVertex
             AtlasVertex fromVertex = entityRetriever.getEntityVertex(entityGuid);
             if (fromVertex == null) {
-                LOG.error("propagateClassification(fromVertexId={}, tagTypeName={}): fromVertex not found", entityGuid, tagTypeName);
-                throw new AtlasBaseException(String.format("propagateClassification(fromVertexId=%s, tagTypeName=%s): fromVertex not found", entityGuid, tagTypeName));
+                String warningMessage = String.format("propagateClassificationV2(fromVertexId=%s, tagTypeName=%s): fromVertex not found, skipping task execution", entityGuid, tagTypeName);
+                LOG.warn(warningMessage);
+                RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
+                return;
             }
 
             List<Tag> tags = tagDAO.getAllTagsByVertexId(fromVertex.getIdForDisplay());
             // get impacted vertices for toVertex
             AtlasVertex toVertex = entityRetriever.getEntityVertex(toVertexId);
             if (toVertex == null) {
-                LOG.error("propagateClassification(toVertexId={}, tagTypeName={}): toVertex not found", toVertexId, tagTypeName);
-                throw new AtlasBaseException(String.format("propagateClassification(toVertexId=%s, tagTypeName=%s): toVertex not found", toVertexId, tagTypeName));
+                String warningMessage = String.format("propagateClassificationV2(toVertexId=%s, tagTypeName=%s): toVertex not found, skipping task execution", toVertexId, tagTypeName);
+                LOG.warn(warningMessage);
+                RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
+                return;
             }
 
             Map<String, List<AtlasVertex>> impactedVerticesMap = new TreeMap<>();
@@ -4065,8 +4072,10 @@ public class EntityGraphMapper {
                     String sourceEntityGuid = atlasClassification.getEntityGuid();
                     AtlasVertex sourceVertex = entityRetriever.getEntityVertex(sourceEntityGuid);
                     if (sourceVertex == null) {
-                        LOG.error("propagateClassification(sourceVertex={}, tagTypeName={}): sourceVertex not found", sourceEntityGuid, tagTypeName);
-                        throw new AtlasBaseException(String.format("propagateClassification(sourceVertex=%s, tagTypeName=%s): sourceVertex not found", sourceEntityGuid, tagTypeName));
+                        String warningMessage = String.format("propagateClassificationV2(sourceVertex=%s, tagTypeName=%s): sourceVertex not found, skipping task execution", sourceEntityGuid, tagTypeName);
+                        LOG.warn(warningMessage);
+                        RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
+                        return;
                     }
 
                     Boolean currentRestrictPropagationThroughLineage = tag.getRestrictPropagationThroughLineage();
@@ -6187,11 +6196,10 @@ public class EntityGraphMapper {
 
             AtlasVertex sourceEntityVertex = graphHelper.getVertexForGUID(sourceEntityGuid);
             if (sourceEntityVertex == null) {
-                LOG.error("updateClassificationTextPropagation(entityGuid={}, tagTypeName={}): entity vertex not found",
-                        sourceEntityGuid, tagTypeName);
-                throw new AtlasBaseException(
-                        String.format("updateClassificationTextPropagation(entityGuid=%s, tagTypeName=%s): entity vertex not found",
-                                sourceEntityGuid, tagTypeName));
+                String warningMessage = String.format("updateClassificationTextPropagationV2(entityGuid=%s, tagTypeName=%s): entity vertex not found, skipping task execution", sourceEntityGuid, tagTypeName);
+                LOG.warn(warningMessage);
+                RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
+                return;
             }
 
             int totalUpdated = 0;
@@ -6200,8 +6208,10 @@ public class EntityGraphMapper {
             PaginatedTagResult paginatedResult = tagDAO.getPropagationsForAttachmentBatch(sourceEntityVertex.getIdForDisplay(), tagTypeName);
             AtlasClassification originalClassification = tagDAO.findDirectTagByVertexIdAndTagTypeName(sourceEntityVertex.getIdForDisplay(), tagTypeName);
             if (originalClassification == null) {
-                LOG.error("propagateClassification(entityGuid={}, tagTypeName={}): classification vertex not found", sourceEntityGuid, tagTypeName);
-                throw new AtlasBaseException(String.format("propagateClassification(entityGuid=%s, tagTypeName=%s): classification vertex not found", sourceEntityGuid, tagTypeName));
+                String warningMessage = String.format("updateClassificationTextPropagationV2(entityGuid=%s, tagTypeName=%s): classification not found, skipping task execution", sourceEntityGuid, tagTypeName);
+                LOG.warn(warningMessage);
+                RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
+                return;
             }
 
             List<Tag> batchToUpdate = paginatedResult.getTags();
@@ -6302,6 +6312,12 @@ public class EntityGraphMapper {
         AtlasPerfMetrics.MetricRecorder classificationRefreshPropagationMetricRecorder = RequestContext.get().startMetricRecord("classificationRefreshPropagationV2");
 
         AtlasVertex         entityVertex              = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityGuid);
+        if (entityVertex == null) {
+            String warningMessage = String.format("classificationRefreshPropagationV2(sourceEntityGuid=%s, classificationTypeName=%s): entity vertex not found, skipping task execution", sourceEntityGuid, classificationTypeName);
+            LOG.warn(warningMessage);
+            RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
+            return;
+        }
         String entityVertexId = entityVertex.getIdForDisplay();
         String propagationMode;
         AtlasClassification tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertexId, classificationTypeName);
@@ -6313,13 +6329,15 @@ public class EntityGraphMapper {
                 entityVertexId = entityVertex.getIdForDisplay();
                 tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertexId, classificationTypeName);
                 if (tag == null) {
-                    LOG.warn("Classification with typeName {} not found for entity {} and parentEntity {}", classificationTypeName, sourceEntityGuid, entityVertexId);
+                    LOG.warn("Classification with typeName {} not found for entity {} and parentEntity {}", classificationTypeName, sourceEntityGuid, parentEntityGuid);                                                                                                                                │
                     throw new AtlasBaseException(String.format("Classification with typeName %s not found for entity %s and parentEntity %s", classificationTypeName, sourceEntityGuid, parentEntityGuid));
                 }
             }
             if (tag == null) {
-                LOG.warn("Classification with typeName {} not found for entity {} and parentEntity {}", classificationTypeName, sourceEntityGuid, parentEntityGuid);
-                throw new AtlasBaseException(String.format("Classification with typeName %s not found for entity %s and parentEntity %s", classificationTypeName, sourceEntityGuid, parentEntityGuid));
+                String warningMessage = String.format("classificationRefreshPropagationV2(classificationTypeName=%s, entityGuid=%s, parentEntityGuid=%s): classification not found, skipping task execution", classificationTypeName, sourceEntityGuid, parentEntityGuid);
+                LOG.warn(warningMessage);
+                RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
+                return;
             }
         }
 
