@@ -6327,13 +6327,13 @@ public class EntityGraphMapper {
             // By this conditional check, we know entityvertex is a child/subgraph and we have no use for child vertex in calc.
             if(StringUtils.isNotEmpty(parentEntityGuid) && !parentEntityGuid.equals(sourceEntityGuid)) {
                 entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, parentEntityGuid);
-                entityVertexId = entityVertex.getIdForDisplay();
                 if (entityVertex == null) {
                     String warningMessage = String.format("classificationRefreshPropagationV2(sourceEntityGuid=%s, classificationTypeName=%s): parent entity vertex not found, skipping task execution", sourceEntityGuid, classificationTypeName);
                     LOG.warn(warningMessage);
                     RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
                     return;
                 }
+                entityVertexId = entityVertex.getIdForDisplay();
                 tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertexId, classificationTypeName);
                 if (tag == null) {
                     LOG.warn("Classification with typeName {} not found for entity {} and parentEntity {}", classificationTypeName, sourceEntityGuid, parentEntityGuid);
