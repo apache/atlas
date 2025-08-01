@@ -197,7 +197,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                         updatedAttributes.put(ATTR_DOMAIN_QUALIFIED_NAME, updatedDomainQualifiedNames.get(currentDomainQualifiedName));
 
                         String currentStakeholderQualifiedName = (String) asset.getAttribute(QUALIFIED_NAME);
-                        String updatedStakeholderQualifiedName = getUpdatedStakeholderQualifiedName(currentStakeholderQualifiedName, updatedDomainQualifiedNames);
+                        String updatedStakeholderQualifiedName = getUpdatedStakeholderQualifiedName(currentStakeholderQualifiedName, updatedDomainQualifiedNames, asset);
                         if (updatedStakeholderQualifiedName != null) {
                             entity.setAttribute(QUALIFIED_NAME, updatedStakeholderQualifiedName);
                             updatedAttributes.put(QUALIFIED_NAME, updatedStakeholderQualifiedName);
@@ -232,7 +232,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
     }
 
     protected String getUpdatedStakeholderQualifiedName(String currentStakeholderQualifiedName, 
-                                                      Map<String, String> updatedDomainQualifiedNames) {
+                                                      Map<String, String> updatedDomainQualifiedNames, AtlasEntityHeader asset) {
         if (currentStakeholderQualifiedName == null) {
             return null;
         }
@@ -240,7 +240,7 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         String[] parts = currentStakeholderQualifiedName.split("/", 3);
         if (parts.length == 3 && "default".equals(parts[0])) {
             String uuid = parts[1];
-            String currentDomainQualifiedName = parts[2];
+            String currentDomainQualifiedName = (String) asset.getAttribute(ATTR_DOMAIN_QUALIFIED_NAME);
 
             String updatedDomainQN = updatedDomainQualifiedNames.get(currentDomainQualifiedName);
             if (updatedDomainQN != null) {
