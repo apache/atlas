@@ -110,11 +110,25 @@ public class JsonToElasticsearchQuery {
                 break;
 
             case POLICY_FILTER_CRITERIA_STARTS_WITH:
-                queryNode.putObject("prefix").put(attributeName, attributeValue);
+                if (attributeValueNode.isArray()) {
+                    ArrayNode shouldArray = queryNode.putObject("bool").putArray("should");
+                    for (JsonNode valueNode : attributeValueNode) {
+                        shouldArray.addObject().putObject("prefix").put(attributeName, valueNode.asText());
+                    }
+                } else {
+                    queryNode.putObject("prefix").put(attributeName, attributeValue);
+                }
                 break;
 
             case POLICY_FILTER_CRITERIA_ENDS_WITH:
-                queryNode.putObject("wildcard").put(attributeName, "*" + attributeValue);
+                if (attributeValueNode.isArray()) {
+                    ArrayNode shouldArray = queryNode.putObject("bool").putArray("should");
+                    for (JsonNode valueNode : attributeValueNode) {
+                        shouldArray.addObject().putObject("wildcard").put(attributeName, "*" + valueNode.asText());
+                    }
+                } else {
+                    queryNode.putObject("wildcard").put(attributeName, "*" + attributeValue);
+                }
                 break;
 
             case POLICY_FILTER_CRITERIA_IN:
