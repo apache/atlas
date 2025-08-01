@@ -55,7 +55,6 @@ import MuiAccordionDetails from "@mui/material/AccordionDetails";
 const LightTooltip = styled(({ className, ...props }: any) => (
   <Tooltip
     sx={{ transition: "none" }}
-    arrow
     {...props}
     classes={{ popper: className }}
     TransitionComponent={Zoom}
