@@ -285,7 +285,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 handleNetworkErrors((IOException) e);
             }
 
-            if (e instanceof ResponseException){
+            if (e instanceof ResponseException) {
                 int statusCode = ((ResponseException) e).getResponse().getStatusLine().getStatusCode();
                 throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED_WITH_RESPONSE_CODE, "Elasticsearch returned status code: " + statusCode + ", message: " + e.getMessage());
             }
