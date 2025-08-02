@@ -165,8 +165,8 @@
         <okio.version>3.4.0</okio.version>
         <opencsv.version>5.0</opencsv.version>
         <paranamer.version>2.7</paranamer.version>
-        <poi-ooxml.version>5.2.2</poi-ooxml.version>
-        <poi.version>5.2.2</poi.version>
+        <poi-ooxml.version>5.4.0</poi-ooxml.version>
+        <poi.version>5.4.0</poi.version>
         <postgresql.version>42.7.7</postgresql.version>
         <project.build.dashboard.gruntBuild>run build</project.build.dashboard.gruntBuild>
         <project.build.dashboardv2.gruntBuild>build-minify</project.build.dashboardv2.gruntBuild>
