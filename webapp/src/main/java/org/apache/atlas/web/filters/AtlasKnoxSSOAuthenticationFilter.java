@@ -163,22 +163,12 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
      */
     @Override
     public void doFilter(ServletRequest servletRequest, ServletResponse servletResponse, FilterChain filterChain) throws IOException, ServletException {
-        HttpServletResponse         httpResponse    = (HttpServletResponse) servletResponse;
-        AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse);
+        HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
+        httpRequest.setAttribute("ssoEnabled", false);
+        HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
+        AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpServletResponse);
 
         HeadersUtil.setSecurityHeaders(responseWrapper);
-
-        if (!ssoEnabled) {
-            filterChain.doFilter(servletRequest, servletResponse);
-
-            return;
-        }
-
-        HttpServletRequest httpRequest = (HttpServletRequest) servletRequest;
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Knox doFilter {}", httpRequest.getRequestURI());
-        }
 
         if (httpRequest.getSession() != null && httpRequest.getSession().getAttribute("locallogin") != null) {
             servletRequest.setAttribute("ssoEnabled", false);
@@ -187,19 +177,8 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
             return;
         }
 
-        if (jwtProperties == null || isAuthenticated()) {
-            filterChain.doFilter(servletRequest, servletResponse);
-
-            return;
-        }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Knox ssoEnabled  {} {}", ssoEnabled, httpRequest.getRequestURI());
-        }
-
         //if jwt properties are loaded and is current not authenticated then it will go for sso authentication
         //Note : Need to remove !isAuthenticated() after knoxsso solve the bug from cross-origin script
-        HttpServletResponse httpServletResponse = (HttpServletResponse) servletResponse;
         String              serializedJWT       = getJWTFromCookie(httpRequest);
 
         // if we get the hadoop-jwt token from the cookies then will process it further
@@ -308,7 +287,7 @@ public class AtlasKnoxSSOAuthenticationFilter implements Filter {
             for (Cookie cookie : cookies) {
                 if (cookieName.equals(cookie.getName())) {
                     LOG.debug("{} cookie has been found and is being processed", cookieName);
-
+                    req.setAttribute("ssoEnabled", true);
                     serializedJWT = cookie.getValue();
                     break;
                 }
