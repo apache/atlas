@@ -44,6 +44,35 @@ then
 
   echo ""                                                     >> /opt/atlas/conf/atlas-application.properties
   echo "atlas.graph.storage.hbase.compression-algorithm=NONE" >> /opt/atlas/conf/atlas-application.properties
+  echo "atlas.graph.graph.replace-instance-if-exists=true"    >> /opt/atlas/conf/atlas-application.properties
+
+  if [ "${ATLAS_BACKEND}" == "postgres" ]
+  then
+    # set RDBMS as backend and entity-audit store
+    sed -i "s/^atlas.graph.storage.backend=hbase2/# atlas.graph.storage.backend=hbase2/"                                                            /opt/atlas/conf/atlas-application.properties
+    sed -i "s/atlas.EntityAuditRepository.impl=.*$/# atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.HBaseBasedAuditRepository/" /opt/atlas/conf/atlas-application.properties
+
+    cat <<EOF >> /opt/atlas/conf/atlas-application.properties
+
+atlas.graph.storage.backend=rdbms
+atlas.graph.storage.rdbms.jpa.hikari.driverClassName=org.postgresql.Driver
+atlas.graph.storage.rdbms.jpa.hikari.jdbcUrl=jdbc:postgresql://atlas-db/atlas
+atlas.graph.storage.rdbms.jpa.hikari.username=atlas
+atlas.graph.storage.rdbms.jpa.hikari.password=atlasR0cks!
+atlas.graph.storage.rdbms.jpa.hikari.maximumPoolSize=40
+atlas.graph.storage.rdbms.jpa.hikari.minimumIdle=5
+atlas.graph.storage.rdbms.jpa.hikari.idleTimeout=300000
+atlas.graph.storage.rdbms.jpa.hikari.connectionTestQuery=select 1
+atlas.graph.storage.rdbms.jpa.hikari.maxLifetime=1800000
+atlas.graph.storage.rdbms.jpa.hikari.connectionTimeout=30000
+atlas.graph.storage.rdbms.jpa.javax.persistence.jdbc.dialect=org.eclipse.persistence.platform.database.PostgreSQLPlatform
+atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.database.action=create
+atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-database-schemas=true
+atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-source=script
+atlas.graph.storage.rdbms.jpa.javax.persistence.schema-generation.create-script-source=META-INF/postgres/create_schema.sql
+atlas.EntityAuditRepository.impl=org.apache.atlas.repository.audit.rdbms.RdbmsBasedAuditRepository
+EOF
+  fi
 
   chown -R atlas:atlas ${ATLAS_HOME}/
 
