@@ -514,10 +514,10 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     }
 
     @Override
-    public AtlasClassification findDirectTagByVertexIdAndTagTypeName(String assetVertexId, String tagTypeName) throws AtlasBaseException {
+    public AtlasClassification findDirectTagByVertexIdAndTagTypeName(String assetVertexId, String tagTypeName, boolean includeDeleted) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDirectTagByVertexIdAndTagTypeName");
         try {
-            Tag tag = findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(assetVertexId, tagTypeName);
+            Tag tag = findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(assetVertexId, tagTypeName, includeDeleted);
             return tag != null ? toAtlasClassification(tag.getTagMetaJson()) : null;
         } finally {
             RequestContext.get().endMetricRecord(recorder);
@@ -525,7 +525,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     }
 
     @Override
-    public Tag findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(String vertexId, String tagTypeName) throws AtlasBaseException {
+    public Tag findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(String vertexId, String tagTypeName, boolean includeDeleted) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata");
         try {
             int bucket = calculateBucket(vertexId);
@@ -533,7 +533,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             ResultSet rs = executeWithRetry(bound);
             Row row = rs.one();
 
-            if (row == null || row.getBoolean("is_deleted")) {
+            if (row == null || (!includeDeleted && row.getBoolean("is_deleted"))) {
                 LOG.warn("No active direct tag found for vertexId={}, tagTypeName={}, bucket={}", vertexId, tagTypeName, bucket);
                 return null;
             }
