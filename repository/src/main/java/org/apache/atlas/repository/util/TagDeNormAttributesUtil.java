@@ -128,12 +128,12 @@ public class TagDeNormAttributesUtil {
                                                                         IFullTextMapper fullTextMapperV2) throws AtlasBaseException {
         Map<String, Object> deNormAttrs = new HashMap<>();
 
-        String classificationTextKey = null;
-        String classificationNamesKey = null;
-        String propagatedClassificationNamesKey = null;
+        String classificationTextKey = Strings.EMPTY;
+        String classificationNamesKey = Strings.EMPTY;
+        String propagatedClassificationNamesKey = Strings.EMPTY;
 
-        List<String> traitNames= null;
-        List<String> propagatedTraitNames = null;
+        List<String> traitNames= Collections.EMPTY_LIST;
+        List<String> propagatedTraitNames = Collections.EMPTY_LIST;
 
         if (CollectionUtils.isNotEmpty(currentTags)) {
             // filter attachments
