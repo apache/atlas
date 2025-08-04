@@ -15,6 +15,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -62,49 +63,6 @@ public class TagDeNormAttributesUtil {
         return deNormAttrs;
     }
 
-    public static Map<String, Map<String, Object>> getPropagatedTagDeNormForUpdateProp(
-            TagDAO                    tagDAO,
-            String                    sourceEntityGuid,
-            List<String>              entityVertexIds,
-            AtlasTypeRegistry         typeRegistry,
-            IFullTextMapper           fullTextMapperV2
-    ) throws AtlasBaseException {
-        Map<String, Map<String, Object>> deNormAttrsMap = new HashMap<>();
-
-        for (String vertexId : entityVertexIds) {
-            // Fetch all classifications (direct + propagated) currently attached to this entity
-            List<AtlasClassification> currentTags =
-                    tagDAO.getPropagationsForAttachment(vertexId, sourceEntityGuid);
-
-            Map<String, Object> deNormAttrs = new HashMap<>();
-            if (CollectionUtils.isEmpty(currentTags)) {
-                // No remaining tags ⇒ reset to empty values
-                deNormAttrs.put(CLASSIFICATION_TEXT_KEY,   Strings.EMPTY);
-                deNormAttrs.put(CLASSIFICATION_NAMES_KEY,  Strings.EMPTY);
-                deNormAttrs.put(TRAIT_NAMES_PROPERTY_KEY,  Collections.emptyList());
-            } else {
-                // 1) Recompute the full‑text classification string for this entity
-                String fullText = getClassificationTextKey(currentTags, typeRegistry, fullTextMapperV2);
-                deNormAttrs.put(CLASSIFICATION_TEXT_KEY, fullText);
-
-                // 2) Compute the list of “direct” trait names on this entity
-                List<String> directTraits = currentTags.stream()
-                        .filter(tag -> vertexId.equals(tag.getEntityGuid()))
-                        .map(AtlasStruct::getTypeName)
-                        .collect(Collectors.toList());
-
-                // 3) Build the delimited names and raw list for direct traits
-                deNormAttrs.put(CLASSIFICATION_NAMES_KEY, getDelimitedClassificationNames(directTraits));
-                deNormAttrs.put(TRAIT_NAMES_PROPERTY_KEY, directTraits);
-            }
-
-            deNormAttrsMap.put(vertexId, deNormAttrs);
-        }
-
-        return deNormAttrsMap;
-    }
-
-
     public static Map<String, Object> getDirectTagAttachmentAttributesForDeleteTag(AtlasClassification tagDeleted,
                                                                                 List<AtlasClassification> currentTags,
                                                                                 AtlasTypeRegistry typeRegistry,
@@ -135,57 +93,6 @@ public class TagDeNormAttributesUtil {
         return deNormAttrs;
     }
 
-    public static Map<String, Map<String, Object>> getPropagatedTagDeNormForDeleteProp(final TagDAO tagDAO,
-                                                                                       String sourceEntityGuid,
-                                                                                       List<String> propagatedVertexIds,
-                                                                                       AtlasTypeRegistry typeRegistry,
-                                                                                       IFullTextMapper fullTextMapperV2) throws AtlasBaseException {
-        // Delete tag propagation
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getPropagatedTagDeNormForDeleteProp");
-
-        Map<String, Map<String, Object>> finalDeNormMap = new HashMap<>();
-
-        if(CollectionUtils.isNotEmpty(propagatedVertexIds)) {
-            Map<String, Object> deNormAttrs = new HashMap<>();
-
-            for(String vertexId : propagatedVertexIds) {
-                List<AtlasClassification> finalTags = tagDAO.getAllClassificationsForVertex(vertexId);
-
-                if (CollectionUtils.isNotEmpty(finalTags)) {
-                    deNormAttrs.put(CLASSIFICATION_TEXT_KEY, getClassificationTextKey(finalTags, typeRegistry, fullTextMapperV2));
-
-                    //filter propagated attachments
-                    List<String> propTraits = finalTags.stream()
-                            .filter(tag -> !sourceEntityGuid.equals(tag.getEntityGuid()))
-                            .map(AtlasStruct::getTypeName)
-                            .collect(Collectors.toList());
-
-                    if (CollectionUtils.isNotEmpty(propTraits)) {
-                        deNormAttrs.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, propTraits);
-
-                        StringBuilder finalTagNames = new StringBuilder();
-                        propTraits.forEach(tagName -> finalTagNames.append(CLASSIFICATION_NAME_DELIMITER).append(tagName));
-
-                        deNormAttrs.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, finalTagNames.toString());
-                    } else {
-                        deNormAttrs.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, Collections.EMPTY_LIST);
-                        deNormAttrs.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, Strings.EMPTY);
-                    }
-
-                } else {
-                    deNormAttrs.put(CLASSIFICATION_TEXT_KEY, Strings.EMPTY);
-                    deNormAttrs.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, Collections.EMPTY_LIST);
-                    deNormAttrs.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, Strings.EMPTY);
-                }
-
-                finalDeNormMap.put(vertexId, deNormAttrs);
-            }
-        }
-
-        RequestContext.get().endMetricRecord(metricRecorder);
-        return finalDeNormMap;
-    }
-
     public static Map<String, Object> getPropagatedAttributesForNoTags() {
         // Add tag Propagation, asset does not have any other tag
 
@@ -211,6 +118,57 @@ public class TagDeNormAttributesUtil {
 
         //filter propagated attachments
         updateDenormAttributesForPropagatedTags(propagatedTag, finalPropagatedTags, deNormAttrs);
+
+        return deNormAttrs;
+    }
+
+    public static Map<String, Object> getAllAttributesForAllTagsForRepair(String sourceAssetGuid,
+                                                                        List<AtlasClassification> currentTags,
+                                                                        AtlasTypeRegistry typeRegistry,
+                                                                        IFullTextMapper fullTextMapperV2) throws AtlasBaseException {
+        Map<String, Object> deNormAttrs = new HashMap<>();
+
+        String classificationTextKey = Strings.EMPTY;
+        String classificationNamesKey = Strings.EMPTY;
+        String propagatedClassificationNamesKey = Strings.EMPTY;
+
+        List<String> traitNames= Collections.EMPTY_LIST;
+        List<String> propagatedTraitNames = Collections.EMPTY_LIST;
+
+        if (CollectionUtils.isNotEmpty(currentTags)) {
+            // filter attachments
+            traitNames = new ArrayList<>(0);
+            propagatedTraitNames = new ArrayList<>(0);
+
+            for (AtlasClassification tag : currentTags) {
+                if (sourceAssetGuid.equals(tag.getEntityGuid())) {
+                    traitNames.add(tag.getTypeName());
+                } else {
+                    propagatedTraitNames.add(tag.getTypeName());
+                }
+            }
+
+            classificationTextKey = getClassificationTextKey(currentTags, typeRegistry, fullTextMapperV2);
+
+            if (!traitNames.isEmpty()) {
+                classificationNamesKey = getDelimitedClassificationNames(traitNames);
+            }
+
+            if (!propagatedTraitNames.isEmpty()) {
+                StringBuilder finalTagNames = new StringBuilder();
+                propagatedTraitNames.forEach(tagName -> finalTagNames.append(CLASSIFICATION_NAME_DELIMITER).append(tagName));
+
+                propagatedClassificationNamesKey = finalTagNames.toString();
+            }
+        }
+
+        deNormAttrs.put(CLASSIFICATION_TEXT_KEY, classificationTextKey);
+
+        deNormAttrs.put(TRAIT_NAMES_PROPERTY_KEY, traitNames);
+        deNormAttrs.put(CLASSIFICATION_NAMES_KEY, classificationNamesKey);
+
+        deNormAttrs.put(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, propagatedTraitNames);
+        deNormAttrs.put(PROPAGATED_CLASSIFICATION_NAMES_KEY, propagatedClassificationNamesKey);
 
         return deNormAttrs;
     }

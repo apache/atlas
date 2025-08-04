@@ -1,5 +1,7 @@
 package org.apache.atlas.repository.store.graph.v2;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.CassandraTagOperation;
@@ -20,8 +22,10 @@ import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.Stack;
 
 @Service
@@ -236,6 +240,45 @@ public class EntityMutationService {
         } finally {
             executeESPostProcessing(isGraphTransactionFailed);  // Only execute ES operations if no errors occurred
         }
+    }
+
+    public Map<String, String> repairClassificationMappings(List<String> guids) throws AtlasBaseException {
+        Map<String, String> errorMap = new HashMap<>(0);
+
+        boolean isGraphTransactionFailed = false;
+        boolean isTagV2Enabled = FeatureFlagStore.isTagV2Enabled();
+
+        int batchSize = isTagV2Enabled ? 300 : 20;
+        List<List<String>> chunks = Lists.partition(guids, batchSize);
+
+        LOG.info("Chunked {} guids into {} batches of {} guids each", guids.size(), chunks.size(), batchSize);
+
+        int processedGuids = 0;
+
+        for (int i = 0; i < chunks.size(); i++) {
+            List<String> chunk = chunks.get(i);
+
+            LOG.info("Processing batch {} of size {}", i+1, chunk.size());
+            if (isTagV2Enabled) {
+                try {
+                    errorMap.putAll(entityStore.repairClassificationMappingsV2(chunk));
+                } catch (Throwable e) {
+                    isGraphTransactionFailed = true;
+                    rollbackNativeCassandraOperations();
+                    throw e;
+                } finally {
+                    executeESPostProcessing(isGraphTransactionFailed);
+                    RequestContext.get().getESDeferredOperations().clear();
+                }
+
+            } else {
+                entityStore.repairClassificationMappings(chunk);
+            }
+            processedGuids+=chunk.size();
+            LOG.info("Processed batch {}, total guids processed {}", i+1, processedGuids);
+        }
+
+        return errorMap;
     }
 
     public void deleteRelationshipById(String guid) throws AtlasBaseException {

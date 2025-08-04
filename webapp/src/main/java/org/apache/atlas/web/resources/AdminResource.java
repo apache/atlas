@@ -81,6 +81,7 @@ import org.apache.commons.lang.StringUtils;
 import org.elasticsearch.client.RequestOptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -107,10 +108,11 @@ import javax.ws.rs.core.Response;
 import org.apache.atlas.model.general.HealthStatus;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graph.AtlasGraphProvider;
-import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.SecureRandom;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
@@ -432,26 +434,47 @@ public class AdminResource {
 
         boolean cassandraFailed = false;
         boolean elasticSearchFailed = false;
+        List<String> failedServices = new ArrayList<>();
         try {
             List<HealthStatus> healthStatuses = atlasHealthStatus.getHealthStatuses();
             for (final HealthStatus healthStatus : healthStatuses) {
                 result.put(healthStatus.name, healthStatus);
             }
 
-            GraphTraversal t = graph.V().limit(1);
-            t.hasNext();
-            result.put("cassandra", new HealthStatus("cassandra", "ok", true, new Date().toString(), ""));
+            // Use lightweight Cassandra health check
+            boolean cassandraHealthy = TagDAOCassandraImpl.getInstance().isHealthy();
+            if (cassandraHealthy) {
+                result.put("cassandra", new HealthStatus("cassandra", "ok", true, new Date().toString(), ""));
+            } else {
+                result.put("cassandra", new HealthStatus("cassandra", "error", false, new Date().toString(), "Cassandra health check failed"));
+                cassandraFailed = true;
+                failedServices.add("cassandra");
+            }
         } catch (Exception e) {
-            result.put("cassandra", new HealthStatus("cassandra", "error", true, new Date().toString(), e.toString()));
+            result.put("cassandra", new HealthStatus("cassandra", "error", false, new Date().toString(), e.toString()));
             cassandraFailed = true;
+            failedServices.add("cassandra");
         }
 
         try {
             boolean isConnected = AtlasElasticsearchDatabase.getClient().ping(RequestOptions.DEFAULT);
-            result.put("elasticsearch", new HealthStatus("elasticsearch", isConnected ? "ok" : "error", isConnected, new Date().toString(), ""));
+            if (isConnected) {
+                result.put("elasticsearch", new HealthStatus("elasticsearch", "ok", true, new Date().toString(), ""));
+            } else {
+                result.put("elasticsearch", new HealthStatus("elasticsearch", "error", false, new Date().toString(), "Elasticsearch ping failed"));
+                elasticSearchFailed = true;
+                failedServices.add("elasticsearch");
+            }
         } catch (Exception e) {
             result.put("elasticsearch", new HealthStatus("elasticsearch", "error", false, new Date().toString(), e.toString()));
             elasticSearchFailed = true;
+            failedServices.add("elasticsearch");
+        }
+
+        // Add failed services to MDC for logging/monitoring
+        if (!failedServices.isEmpty()) {
+            MDC.put("failedServices", String.join(",", failedServices));
+            MDC.put("healthCheck", "health check failed");
         }
 
         if (LOG.isDebugEnabled()) {

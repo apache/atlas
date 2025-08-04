@@ -819,7 +819,6 @@ public class EntityREST {
         }
 
         AtlasPerfTracer perf = null;
-        RequestContext.get().setEnableCache(false);
         RequestContext.get().setSkipProcessEdgeRestoration(skipProcessEdgeRestoration);
         try {
 
@@ -1232,8 +1231,26 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairClassifications()");
             }
 
-            entitiesStore.repairClassificationMappings(guid);
-            // TODO: Fix this API for V2 to fix assets tag attributes
+            entityMutationService.repairClassificationMappings(Collections.singletonList(guid));
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("bulk/repairClassificationsMappings")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Timed
+    public Map<String, String> repairClassificationsMappings(Set<String> guids) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairClassificationsMappings(" + guids.size() + ")");
+            }
+
+            return entityMutationService.repairClassificationMappings(new ArrayList<>(guids));
         } finally {
             AtlasPerfTracer.log(perf);
         }

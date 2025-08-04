@@ -163,7 +163,7 @@ public class TagDAOCassandraImplTest {
         tagDAO.putDirectTag(assetId, tagTypeName, expectedTag, assetMetadata);
 
         // --- Assertion 1: Test findDirectTagByVertexIdAndTagTypeName ---
-        AtlasClassification retrievedClassification = tagDAO.findDirectTagByVertexIdAndTagTypeName(assetId, tagTypeName);
+        AtlasClassification retrievedClassification = tagDAO.findDirectTagByVertexIdAndTagTypeName(assetId, tagTypeName, false);
 
         assertNotNull(retrievedClassification, "The retrieved classification should not be null.");
         assertAll("Verify all properties of the retrieved AtlasClassification object",
@@ -177,7 +177,7 @@ public class TagDAOCassandraImplTest {
         );
 
         // --- Assertion 2: Test findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata ---
-        Tag retrievedTag = tagDAO.findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(assetId, tagTypeName);
+        Tag retrievedTag = tagDAO.findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(assetId, tagTypeName, false);
 
         assertNotNull(retrievedTag, "The retrieved tag object should not be null.");
         assertEquals(assetId, retrievedTag.getVertexId(), "Vertex ID should match the asset ID.");
@@ -208,7 +208,7 @@ public class TagDAOCassandraImplTest {
         tagDAO.deleteDirectTag(assetId, tag);
 
         // --- Assertion ---
-        AtlasClassification activeTag = tagDAO.findDirectTagByVertexIdAndTagTypeName(assetId, tagTypeName);
+        AtlasClassification activeTag = tagDAO.findDirectTagByVertexIdAndTagTypeName(assetId, tagTypeName, false);
         assertNull(activeTag, "Active tag should not be found after deletion.");
 
         AtlasClassification deletedTag = tagDAO.findDirectDeletedTagByVertexIdAndTagTypeName(assetId, tagTypeName);
@@ -420,6 +420,58 @@ public class TagDAOCassandraImplTest {
                 () -> assertEquals(sourceAssetId1, retrievedTag.getEntityGuid())
         );
     }
+
+    @Test
+    void testFindDirectTagByVertexIdAndTagTypeNameWithAssetMetadata_IncludeDeleted() throws AtlasBaseException {
+        // --- Setup ---
+        String assetId = "1003";
+        String tagTypeName = "DELETED_TAG_METADATA";
+        Map<String, Object> assetMetadata = createAssetMetadata("table_003", "default/db/table_003");
+        AtlasClassification tag = createClassification(tagTypeName, assetId);
+
+        // --- Action ---
+        tagDAO.putDirectTag(assetId, tagTypeName, tag, assetMetadata);
+        tagDAO.deleteDirectTag(assetId, tag);
+
+        // --- Assertion ---
+        Tag activeTag = tagDAO.findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(assetId, tagTypeName, false);
+        assertNull(activeTag, "Active tag should not be found when includeDeleted is false.");
+
+        Tag deletedTag = tagDAO.findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(assetId, tagTypeName, true);
+        assertNotNull(deletedTag, "Deleted tag should be found when includeDeleted is true.");
+        assertAll("Verify properties of the retrieved deleted tag",
+                () -> assertEquals(assetId, deletedTag.getVertexId()),
+                () -> assertEquals(tagTypeName, deletedTag.getTagTypeName()),
+                () -> assertEquals(assetMetadata, deletedTag.getAssetMetadata())
+        );
+    }
+
+    @Test
+    void testFindDirectTagByVertexIdAndTagTypeName_IncludeDeleted() throws AtlasBaseException {
+        // --- Setup ---
+        String assetId = "1004";
+        String tagTypeName = "DELETED_CLASSIFICATION";
+        Map<String, Object> assetMetadata = createAssetMetadata("table_004", "default/db/table_004");
+        AtlasClassification tag = createClassification(tagTypeName, assetId);
+
+        // --- Action ---
+        tagDAO.putDirectTag(assetId, tagTypeName, tag, assetMetadata);
+        tagDAO.deleteDirectTag(assetId, tag);
+
+        // --- Assertion ---
+        AtlasClassification activeClassification = tagDAO.findDirectTagByVertexIdAndTagTypeName(assetId, tagTypeName, false);
+        assertNull(activeClassification, "Active classification should not be found when includeDeleted is false.");
+
+        AtlasClassification deletedClassification = tagDAO.findDirectTagByVertexIdAndTagTypeName(assetId, tagTypeName, true);
+        assertNotNull(deletedClassification, "Deleted classification should be found when includeDeleted is true.");
+        assertAll("Verify properties of the retrieved deleted classification",
+                () -> assertEquals(tag.getTypeName(), deletedClassification.getTypeName()),
+                () -> assertEquals(tag.getEntityGuid(), deletedClassification.getEntityGuid()),
+                () -> assertEquals(tag.getAttributes(), deletedClassification.getAttributes())
+        );
+    }
+
+
 
     // =================== Helper Methods ===================
 
