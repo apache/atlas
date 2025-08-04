@@ -1162,12 +1162,18 @@ public class EntityGraphRetriever {
     private void processRelationshipAttribute(AtlasEntityType entityType,
                                               String attribute,
                                               Set<String> edgeLabels) {
+
+        RequestContext context = RequestContext.get();
         if (!entityType.getRelationshipAttributes().containsKey(attribute)) {
             return;
         }
 
         AtlasAttribute atlasAttribute = entityType.getRelationshipAttribute(attribute, null);
         if (atlasAttribute != null && atlasAttribute.getAttributeType() != null) {
+            if (context.isInvokedByIndexSearch() && context.isInvokedByProduct() &&
+                    CollectionUtils.isEmpty(context.getRelationAttrsForSearch())) {
+                return;
+            }
             edgeLabels.add(atlasAttribute.getRelationshipEdgeLabel());
         } else {
             LOG.debug("Ignoring non-relationship type attribute: {}", attribute);
@@ -1649,6 +1655,11 @@ public class EntityGraphRetriever {
 
                             if (attribute == null) {
                                 attribute = entityType.getRelationshipAttribute(attrName, null);
+
+                                if (attribute != null && context.isInvokedByIndexSearch() && context.isInvokedByProduct() &&
+                                        CollectionUtils.isEmpty(context.getRelationAttrsForSearch())) {
+                                    continue;
+                                }
                             }
                         }
 

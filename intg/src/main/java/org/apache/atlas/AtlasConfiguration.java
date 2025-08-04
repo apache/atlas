@@ -166,6 +166,8 @@ public enum AtlasConfiguration {
     CASSANDRA_BATCH_SIZE("atlas.cassandra.batch.size", 100);
 
 
+    MIN_EDGES_SUPER_VERTEX("atlas.jg.super.vertex.min.edge.count", 1000),
+    TIMEOUT_SUPER_VERTEX_FETCH("atlas.jg.super.vertex.edge.timeout", 60);
 
     private static final Configuration APPLICATION_PROPERTIES;
 

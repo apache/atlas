@@ -1,5 +1,6 @@
 package org.apache.atlas.repository;
 
+import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasStructType;
 import org.apache.commons.collections.CollectionUtils;
@@ -118,6 +119,10 @@ public class VertexEdgePropertiesCache {
         List<EdgeVertexReference> targetElements = edgeLabelToVertexIds
                 .computeIfAbsent(sourceVertexId, k -> new HashMap<>())
                 .computeIfAbsent(edgeLabel, k -> new ArrayList<>());
+
+        if (edgeLabelToVertexIds.get(sourceVertexId).get(edgeLabel).size() >= AtlasConfiguration.MIN_EDGES_SUPER_VERTEX.getLong()) {
+            return;
+        }
 
         for (EdgeVertexReference existingReference : targetElements) {
             if (existingReference.equals(targetElement)) {
