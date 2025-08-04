@@ -1237,7 +1237,6 @@ public class EntityGraphRetriever {
                             .bothE()
                             .has(STATE_PROPERTY_KEY, ACTIVE.name())
                             .has(RELATIONSHIP_GUID_PROPERTY_KEY)
-                            .limit(relationAttrsSize)
                             .project( "id", "valueMap","label", "inVertexId", "outVertexId")
                             .by(__.id()) // Returns the edge id
                             .by(__.valueMap(true)) // Returns the valueMap
@@ -1299,15 +1298,37 @@ public class EntityGraphRetriever {
                        if (!edgeLabelsToProcess.contains(edgeLabel)) {
                            continue;
                        }
-                       // Self relationship condition, like similarities relationship in the meanings
-                       if (vertexId.equals(outVertexId) && vertexId.equals(inVertexId)) {
-                           ret.addEdgeLabelToVertexIds(vertexId, edgeLabel, new EdgeVertexReference(outVertexId, edgeId, edgeLabel, inVertexId, outVertexId, valueMap));
-                       } else if (vertexId.equals(outVertexId)) {
-                           ret.addEdgeLabelToVertexIds(vertexId, edgeLabel, new EdgeVertexReference(inVertexId, edgeId, edgeLabel, inVertexId, outVertexId, valueMap));
-                           vertexIdsToProcess.add(inVertexId);
-                       } else if (vertexId.equals(inVertexId)) {
-                           ret.addEdgeLabelToVertexIds(vertexId, edgeLabel, new EdgeVertexReference(outVertexId, edgeId, edgeLabel, inVertexId, outVertexId, valueMap));
-                           vertexIdsToProcess.add(outVertexId);
+                       // Check how this vertex relates to the edge
+                       boolean isSelfLoop = vertexId.equals(outVertexId) && vertexId.equals(inVertexId);
+                       boolean isSourceVertex = vertexId.equals(outVertexId);
+                       boolean isTargetVertex = vertexId.equals(inVertexId);
+
+                        // Only process if this vertex is part of the edge
+                       if (!isSelfLoop && !isSourceVertex && !isTargetVertex) {
+                           continue;
+                       }
+
+                        // For self-loops (like similarity relationships), reference points to itself
+                        // For regular edges, reference points to the other vertex
+                       String referencedVertex;
+                       if (isSelfLoop) {
+                           referencedVertex = outVertexId;
+                       } else if (isSourceVertex) {
+                           referencedVertex = inVertexId;
+                       } else {
+                           referencedVertex = outVertexId;
+                       }
+
+                       EdgeVertexReference edgeRef = new EdgeVertexReference(
+                               referencedVertex, edgeId, edgeLabel, inVertexId, outVertexId, valueMap
+                       );
+
+                       boolean wasAdded = ret.addEdgeLabelToVertexIds(
+                               vertexId, edgeLabel, edgeRef, relationAttrsSize
+                       );
+
+                       if (wasAdded && !isSelfLoop) {
+                           vertexIdsToProcess.add(referencedVertex);
                        }
 
                    }

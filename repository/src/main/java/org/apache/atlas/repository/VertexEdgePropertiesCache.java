@@ -115,20 +115,28 @@ public class VertexEdgePropertiesCache {
         return vertexProperties;
     }
 
-    public void addEdgeLabelToVertexIds(String sourceVertexId, String edgeLabel, EdgeVertexReference targetElement) {
+
+
+    public boolean addEdgeLabelToVertexIds(String sourceVertexId, String edgeLabel, EdgeVertexReference targetElement, int maxEdgeCount) {
         List<EdgeVertexReference> targetElements = edgeLabelToVertexIds
                 .computeIfAbsent(sourceVertexId, k -> new HashMap<>())
                 .computeIfAbsent(edgeLabel, k -> new ArrayList<>());
 
+        // Check if the maximum edge count is reached
+        if (targetElements.size() >= maxEdgeCount) {
+            return false;
+        }
+
         for (EdgeVertexReference existingReference : targetElements) {
             if (existingReference.equals(targetElement)) {
                 // Element already exists, don't add it
-                return;
+                return false;
             }
         }
 
         // Element doesn't exist, add it
         targetElements.add(targetElement);
+        return true;
     }
 
     public List<EdgeVertexReference> getVertexEdgeReferencesByEdgeLabel(

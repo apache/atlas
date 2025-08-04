@@ -823,9 +823,12 @@ public class RequestContext {
 
     public boolean isInvokedByProduct() {
         Map<String, String> requestContextHeaders = getRequestContextHeaders();
-        return MapUtils.isNotEmpty(requestContextHeaders) &&
-                StringUtils.isNotEmpty(requestContextHeaders.get(X_ATLAN_CLIENT_ORIGIN))
-                && requestContextHeaders.get(X_ATLAN_CLIENT_ORIGIN).equals(CLIENT_ORIGIN_PRODUCT);
+        if (MapUtils.isEmpty(requestContextHeaders)) {
+            return false;
+        }
+
+        return CLIENT_ORIGIN_PRODUCT.equals(requestContextHeaders.get(X_ATLAN_CLIENT_ORIGIN)) ||
+                CLIENT_ORIGIN_PRODUCT.equals(requestContextHeaders.get(X_ATLAN_CLIENT_ORIGIN.toLowerCase()));
     }
 
     public void setIsInvokedByLineage(boolean isInvokedByLineage) {
