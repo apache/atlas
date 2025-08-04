@@ -4364,9 +4364,6 @@ public class EntityGraphMapper {
 
         entityVertex.setProperty(CLASSIFICATION_NAMES_KEY, getClassificationNamesString(traitNames));
 
-        AtlasEntity entity = instanceConverter.getEntity(entityGuid, ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES);
-        entityVertex.setProperty(CLASSIFICATION_TEXT_KEY, fullTextMapperV2.getClassificationTextForEntity(entity));
-
         updateModificationMetadata(entityVertex);
 
         if (RequestContext.get().isDelayTagNotifications()) {
