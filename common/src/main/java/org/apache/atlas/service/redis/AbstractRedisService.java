@@ -17,6 +17,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 
 public abstract class AbstractRedisService implements RedisService {
 
@@ -33,6 +36,10 @@ public abstract class AbstractRedisService implements RedisService {
     private static final int DEFAULT_REDIS_LOCK_WATCHDOG_TIMEOUT_MS = 600_000;
     private static final int DEFAULT_REDIS_LEASE_TIME_MS = 60_000;
     private static final String ATLAS_METASTORE_SERVICE = "atlas-metastore-service";
+    // Heartbeat monitoring for lock health checking (not for renewal)
+    private final ScheduledExecutorService heartbeatExecutor = Executors.newScheduledThreadPool(1);
+    private final long HEARTBEAT_INTERVAL_MS = 30000; // 30 seconds - only for health monitoring
+    private final Map<String, LockInfo> activeLocks = new ConcurrentHashMap<>();
 
     RedissonClient redisClient;
     RedissonClient redisCacheClient;
@@ -42,23 +49,67 @@ public abstract class AbstractRedisService implements RedisService {
     long leaseTimeInMS;
     long watchdogTimeoutInMS;
 
+    // Inner class to track lock information
+    private static class LockInfo {
+        final RLock lock;
+        final long lockAcquiredTime;
+        final String ownerThreadName;
+        volatile ScheduledFuture<?> healthCheckTask;
+
+        LockInfo(RLock lock, String ownerThreadName) {
+            this.lock = lock;
+            this.lockAcquiredTime = System.currentTimeMillis();
+            this.ownerThreadName = ownerThreadName;
+        }
+    }
+
     @Override
     public boolean acquireDistributedLock(String key) throws Exception {
         getLogger().info("Attempting to acquire distributed lock for {}, host:{}", key, getHostAddress());
-        boolean isLockAcquired;
+        RLock lock = redisClient.getFairLock(key);
+        String currentThreadName = Thread.currentThread().getName();
         try {
-            RLock lock = redisClient.getFairLock(key);
-            isLockAcquired = lock.tryLock(waitTimeInMS, TimeUnit.MILLISECONDS);
+            // Redisson automatically handles lock renewal via its watchdog mechanism
+            // when leaseTime is -1 (which is the default for tryLock without leaseTime)
+            boolean isLockAcquired = lock.tryLock(waitTimeInMS, TimeUnit.MILLISECONDS);
             if (isLockAcquired) {
+                getLogger().info("Lock with key {} is acquired, host: {}, thread: {}", key, getHostAddress(), currentThreadName);
+
+                // Store lock information
                 keyLockMap.put(key, lock);
+                LockInfo lockInfo = new LockInfo(lock, currentThreadName);
+                activeLocks.put(key, lockInfo);
+
+                // Start health monitoring (not renewal - Redisson handles that automatically)
+                ScheduledFuture<?> healthCheckTask = heartbeatExecutor.scheduleAtFixedRate(() -> {
+                    monitorLockHealth(key, lockInfo);
+                }, HEARTBEAT_INTERVAL_MS, HEARTBEAT_INTERVAL_MS, TimeUnit.MILLISECONDS);
+                lockInfo.healthCheckTask = healthCheckTask;
             } else {
-                getLogger().info("Attempt failed as lock {} is already acquired, host: {}.", key, getHostAddress());
+                getLogger().info("Attempt failed as fair lock {} is already acquired, host: {}", key, getHostAddress());
             }
+            return isLockAcquired;
         } catch (InterruptedException e) {
             getLogger().error("Failed to acquire distributed lock for {}, host: {}", key, getHostAddress(), e);
             throw new AtlasException(e);
         }
-        return isLockAcquired;
+    }
+    // Health monitoring method - does not attempt to renew locks
+    private void monitorLockHealth(String key, LockInfo lockInfo) {
+        try {
+            RLock lock = lockInfo.lock;
+            if (lock != null && lock.isLocked()) {
+                long lockDuration = System.currentTimeMillis() - lockInfo.lockAcquiredTime;
+                getLogger().debug("Lock health check for {}: locked for {} ms, owner: {}",
+                        key, lockDuration, lockInfo.ownerThreadName);
+            } else {
+                // Lock is no longer held, cleanup monitoring
+                getLogger().debug("Lock {} is no longer held, stopping health monitoring", key);
+                cleanupLockMonitoring(key);
+            }
+        } catch (Exception e) {
+            getLogger().warn("Health check failed for lock {}", key, e);
+        }
     }
 
     @Override
@@ -67,8 +118,8 @@ public abstract class AbstractRedisService implements RedisService {
         RLock lock = null;
         try {
             lock = redisClient.getFairLock(key);
+            // Use Redisson's automatic renewal by not specifying leaseTime
             boolean isLockAcquired = lock.tryLock(waitTimeInMS, TimeUnit.MILLISECONDS);
-
             if (isLockAcquired) {
                 getLogger().info("Lock with key {} is acquired, host: {}.", key, getHostAddress());
                 return lock;
@@ -79,7 +130,7 @@ public abstract class AbstractRedisService implements RedisService {
 
         } catch (InterruptedException e) {
             getLogger().error("Failed to acquire distributed lock for {}, host: {}", key, getHostAddress(), e);
-            if (lock != null) {
+            if (lock != null && lock.isHeldByCurrentThread()) {
                 lock.unlock();
             }
             throw new AtlasException(e);
@@ -94,12 +145,24 @@ public abstract class AbstractRedisService implements RedisService {
         }
         try {
             RLock lock = keyLockMap.get(key);
-            if (lock.isHeldByCurrentThread()) {
+            if (lock != null && lock.isHeldByCurrentThread()) {
                 lock.unlock();
+                getLogger().info("Released distributed lock for {}", key);
             }
+            // Cleanup monitoring and tracking
+            cleanupLockMonitoring(key);
+            keyLockMap.remove(key);
 
         } catch (Exception e) {
             getLogger().error("Failed to release distributed lock for {}", key, e);
+        }
+    }
+
+    // Thread-safe cleanup of lock monitoring
+    private void cleanupLockMonitoring(String key) {
+        LockInfo lockInfo = activeLocks.remove(key);
+        if (lockInfo != null && lockInfo.healthCheckTask != null) {
+            lockInfo.healthCheckTask.cancel(false);
         }
     }
 
@@ -222,6 +285,41 @@ public abstract class AbstractRedisService implements RedisService {
 
     @PreDestroy
     public void flushLocks(){
-        keyLockMap.keySet().stream().forEach(k->keyLockMap.get(k).unlock());
+        // Cancel all health check tasks
+        activeLocks.values().forEach(lockInfo -> {
+            if (lockInfo.healthCheckTask != null) {
+                lockInfo.healthCheckTask.cancel(false);
+            }
+        });
+        activeLocks.clear();
+
+        // Release all locks held by current thread
+        keyLockMap.entrySet().removeIf(entry -> {
+            String key = entry.getKey();
+            RLock lock = entry.getValue();
+            try {
+                if (lock != null && lock.isHeldByCurrentThread()) {
+                    lock.unlock();
+                    getLogger().info("Released lock {} during shutdown", key);
+                    return true;
+                }
+            } catch (Exception e) {
+                getLogger().warn("Failed to release lock {} during shutdown", key, e);
+            }
+            return false;
+        });
+
+        // Shutdown the health monitoring executor
+        heartbeatExecutor.shutdown();
+        try {
+            if (!heartbeatExecutor.awaitTermination(5, TimeUnit.SECONDS)) {
+                getLogger().warn("Health monitoring executor did not terminate gracefully, forcing shutdown");
+                heartbeatExecutor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            getLogger().warn("Interrupted while waiting for health monitoring executor shutdown");
+            heartbeatExecutor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 }
