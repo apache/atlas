@@ -98,8 +98,6 @@ public final class GraphHelper {
     public static final String RETRY_COUNT = "atlas.graph.storage.num.retries";
     public static final String RETRY_DELAY = "atlas.graph.storage.retry.sleeptime.ms";
     public static final String DEFAULT_REMOVE_PROPAGATIONS_ON_ENTITY_DELETE = "atlas.graph.remove.propagations.default";
-    private static final String X_ATLAN_CLIENT_ORIGIN = "X-Atlan-Client-Origin";
-    private static final String CLIENT_ORIGIN_PRODUCT = "product_webapp";
 
     private AtlasGraph graph;
 
