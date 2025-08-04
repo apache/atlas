@@ -1225,6 +1225,32 @@ public class EntityGraphRetriever {
         }
     }
 
+    public List<Map<String, Object>> getConnectedEdges(Set<String> vertexIds, Set<String> edgeLabels, int relationAttrsSize) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getConnectedEdges");
+        try {
+            if (CollectionUtils.isEmpty(vertexIds)) {
+                return Collections.emptyList();
+            }
+
+            GraphTraversal<Edge, Map<String, Object>> edgeTraversal =
+                    ((AtlasJanusGraph) graph).V(vertexIds)
+                            .bothE()
+                            .has(STATE_PROPERTY_KEY, ACTIVE.name())
+                            .has(RELATIONSHIP_GUID_PROPERTY_KEY)
+                            .limit(relationAttrsSize)
+                            .project( "id", "valueMap","label", "inVertexId", "outVertexId")
+                            .by(__.id()) // Returns the edge id
+                            .by(__.valueMap(true)) // Returns the valueMap
+                            .by(__.label()) // Returns the edge label
+                            .by(__.inV().id())  // Returns the inVertexId
+                            .by(__.outV().id()); // Returns the outVertexId
+
+            return edgeTraversal.toList();
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
 
     public VertexEdgePropertiesCache enrichVertexPropertiesByVertexIds(Set<String> vertexIds, Set<String> attributes) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("enrichVertexPropertiesByVertexIds");
@@ -1256,22 +1282,7 @@ public class EntityGraphRetriever {
 
            Set<String> vertexIdsToProcess = new HashSet<>();
            if (!CollectionUtils.isEmpty(edgeLabelsToProcess)) {
-               // Get all edges
-               GraphTraversal<Edge, Map<String, Object>> edgeTraversal =
-                       ((AtlasJanusGraph) graph).V(vertexIds)
-                               .bothE()
-                               .has(STATE_PROPERTY_KEY, ACTIVE.name())
-                               .has(RELATIONSHIP_GUID_PROPERTY_KEY)
-                               .limit(relationAttrsSize)
-                               .project( "id", "valueMap","label", "inVertexId", "outVertexId")
-                               .by(__.id()) // Returns the edge id
-                               .by(__.valueMap(true)) // Returns the valueMap
-                               .by(__.label()) // Returns the edge label
-                               .by(__.inV().id())  // Returns the inVertexId
-                               .by(__.outV().id()); // Returns the outVertexId
-
-               List<Map<String, Object>> results = edgeTraversal.toList();
-
+               List<Map<String, Object>> results = getConnectedEdges(vertexIds, edgeLabelsToProcess, relationAttrsSize);
 
                for(String vertexId : vertexIds) {
                    for (Map<String, Object> result : results) {
