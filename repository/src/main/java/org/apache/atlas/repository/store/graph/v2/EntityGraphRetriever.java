@@ -1222,7 +1222,7 @@ public class EntityGraphRetriever {
         return edgeNames;
     }
 
-    private void retrieveEdgeLabels(AtlasVertex entityVertex, Set<String> attributes, Map<String, Set<String>> relationshipsLookup,Map<String, Object> propertiesMap)  {
+    private void retrieveEdgeLabels(AtlasVertex entityVertex, Set<String> attributes, Map<String, Set<String>> relationshipsLookup,Map<String, Object> propertiesMap) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("retrieveEdgeLabels");
         try {
             Set<AbstractMap.SimpleEntry<String, String>> edgeLabelAndTypeName = graphHelper.retrieveEdgeLabelsAndTypeName(entityVertex);
@@ -1243,15 +1243,12 @@ public class EntityGraphRetriever {
             }));
 
             edgeLabels.stream().forEach(e -> propertiesMap.put(e, StringUtils.SPACE));
-        } catch (AtlasBaseException e) {
-            attributes.forEach(attribute -> {
-                propertiesMap.putIfAbsent(attribute, StringUtils.SPACE);
-            });
-        }finally {
+        }
+        finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
-
     }
+
     private void updateAttrValue( Map<String, Object> propertiesMap, VertexProperty<Object> property){
         Object value = propertiesMap.get(property.key());
         if (value instanceof List) {
