@@ -33,6 +33,7 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -238,7 +239,9 @@ public class ClassificationAssociator {
                 }
             }
 
-            //entityGraphMapper.updateClassificationText(null, allVertices);
+            if (!FeatureFlagStore.isTagV2Enabled()) {
+                entityGraphMapper.updateClassificationText(null, allVertices);
+            }
             transactionInterceptHelper.intercept();
 
             RequestContext.get().endMetricRecord(recorder);
