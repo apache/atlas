@@ -1166,7 +1166,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 return vertex.getId().toString();
             }).filter(Objects::nonNull).collect(Collectors.toSet());
             VertexEdgePropertiesCache vertexEdgePropertiesCache;
-            vertexEdgePropertiesCache = entityRetriever.enrichVertexPropertiesByVertexIds(vertexIds, resultAttributes);
+            if (useVertexEdgeBulkFetching) {
+                vertexEdgePropertiesCache = entityRetriever.enrichVertexPropertiesByVertexIds(vertexIds, resultAttributes);
+            } else {
+                vertexEdgePropertiesCache = null;
+            }
 
             // If valueMap of certain vertex is empty or null then remove that from processing results
 
@@ -1181,7 +1185,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 vertexIds.add(vertex.getId().toString());
                 AtlasEntityHeader header;
 
-                header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes, vertexEdgePropertiesCache);
+                if(useVertexEdgeBulkFetching) {
+                  header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes, vertexEdgePropertiesCache);
+                } else {
+                    header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
+                }
 
                 if (showSearchScore) {
                     ret.addEntityScore(header.getGuid(), result.getScore());
