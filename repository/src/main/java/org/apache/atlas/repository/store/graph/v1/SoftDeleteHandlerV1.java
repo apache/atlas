@@ -28,23 +28,28 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.AtlasRelationshipStoreV2;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
 import org.apache.atlas.tasks.TaskManagement;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.commons.collections.CollectionUtils;
 
 import javax.inject.Inject;
 
+import java.util.Collection;
+
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
+import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassificationsV2;
 
 public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
     @Inject
-    public SoftDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement) {
-        super(graph, typeRegistry, false, true, taskManagement);
+    public SoftDeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, TaskManagement taskManagement, EntityGraphRetriever entityRetriever) {
+        super(graph, typeRegistry, false, true, taskManagement, entityRetriever);
     }
 
     @Override
@@ -77,7 +82,10 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
 
             if (DEFERRED_ACTION_ENABLED && RequestContext.get().getCurrentTask() == null) {
-                if (CollectionUtils.isNotEmpty(getPropagatableClassifications(edge))) {
+                Collection propagatableTags = org.apache.atlas.service.FeatureFlagStore.isTagV2Enabled()
+                        ? getPropagatableClassificationsV2(edge)
+                        : getPropagatableClassifications(edge);
+                if (CollectionUtils.isNotEmpty(propagatableTags)) {
                     RequestContext.get().addToDeletedEdgesIds(edge.getIdForDisplay());
                 }
             } else {

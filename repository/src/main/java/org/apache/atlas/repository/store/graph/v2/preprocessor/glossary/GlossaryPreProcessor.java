@@ -53,7 +53,7 @@ public class GlossaryPreProcessor implements PreProcessor {
         this.entityRetriever = entityRetriever;
         this.typeRegistry = typeRegistry;
         try{
-            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
+            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null, entityRetriever);
         } catch (Exception e) {
             e.printStackTrace();
         }

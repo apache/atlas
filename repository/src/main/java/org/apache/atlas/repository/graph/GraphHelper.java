@@ -30,16 +30,22 @@ import org.apache.atlas.GraphTransactionInterceptor;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
+import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.repository.VertexEdgePropertiesCache;
+import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.repository.graphdb.janus.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasMapType;
+import org.apache.atlas.util.BeanUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.v1.model.instance.Id;
 import org.apache.atlas.v1.model.instance.Referenceable;
@@ -81,7 +87,6 @@ import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
-import static org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory.CLASSIFICATION_ONLY_PROPAGATION_DELETE;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.BOTH;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.IN;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
@@ -184,11 +189,9 @@ public final class GraphHelper {
                     LOG.debug("Running edge creation attempt {}", numRetries);
                 }
 
-                if (inVertex.hasEdges(AtlasEdgeDirection.IN, edgeLabel) && outVertex.hasEdges(AtlasEdgeDirection.OUT, edgeLabel)) {
-                    AtlasEdge edge = graph.getEdgeBetweenVertices(outVertex, inVertex, edgeLabel);
-                    if (edge != null) {
-                        return edge;
-                    }
+                AtlasEdge edge = graph.getEdgeBetweenVertices(outVertex, inVertex, edgeLabel);
+                if (edge != null) {
+                    return edge;
                 }
 
                 try {
@@ -272,18 +275,30 @@ public final class GraphHelper {
             query = query.has((String) args[i], args[i + 1]);
         }
 
-        Iterator<AtlasElement> results = isVertexSearch ? query.vertices().iterator() : query.edges().iterator();
-        AtlasElement           element = (results != null && results.hasNext()) ? results.next() : null;
+        Iterator<AtlasElement> results = null;
+        try {
+            results = isVertexSearch ? query.vertices().iterator() : query.edges().iterator();
+            AtlasElement element = (results != null && results.hasNext()) ? results.next() : null;
 
-        if (element == null) {
-            throw new EntityNotFoundException("Could not find " + (isVertexSearch ? "vertex" : "edge") + " with condition: " + getConditionString(args));
+            if (element == null) {
+                throw new EntityNotFoundException("Could not find " + (isVertexSearch ? "vertex" : "edge") + " with condition: " + getConditionString(args));
+            }
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Found {} with condition {}", string(element), getConditionString(args));
+            }
+
+            return element;
+        } finally {
+            // Close iterator to release resources
+            if (results instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable) results).close();
+                } catch (Exception e) {
+                    LOG.debug("Error closing iterator resources", e);
+                }
+            }
         }
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Found {} with condition {}", string(element), getConditionString(args));
-        }
-
-        return element;
     }
 
     //In some cases of parallel APIs, the edge is added, but get edge by label doesn't return the edge. ATLAS-1104
@@ -332,13 +347,17 @@ public final class GraphHelper {
 
     public static boolean getRemovePropagations(AtlasVertex classificationVertex) {
         boolean ret = false;
-
         if (classificationVertex != null) {
             Boolean enabled = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY, Boolean.class);
-
-            ret = (enabled == null) ? true : enabled;
+            ret = enabled == null || enabled;
         }
+        return ret;
+    }
 
+    public static boolean getRemovePropagations(Map<String, Object> classificationPropertiesMap) {
+        boolean ret;
+        Boolean enabled = (Boolean) classificationPropertiesMap.get(CLASSIFICATION_VERTEX_REMOVE_PROPAGATIONS_KEY);
+        ret = enabled == null || enabled;
         return ret;
     }
 
@@ -347,6 +366,11 @@ public final class GraphHelper {
             return false;
         }
         Boolean restrictPropagation = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, propertyName, Boolean.class);
+        return restrictPropagation != null && restrictPropagation;
+    }
+
+    public static boolean getRestrictPropagation(Map<String, Object> classificationPropertiesMap, String propertyName) {
+        Boolean restrictPropagation = (Boolean) classificationPropertiesMap.get(propertyName);
 
         return restrictPropagation != null && restrictPropagation;
     }
@@ -357,6 +381,14 @@ public final class GraphHelper {
 
     public static boolean getRestrictPropagationThroughHierarchy(AtlasVertex classificationVertex) {
         return getRestrictPropagation(classificationVertex,CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
+    }
+
+    public static boolean getRestrictPropagationThroughLineage(Map<String, Object> classificationPropertiesMap) {
+        return getRestrictPropagation(classificationPropertiesMap, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_LINEAGE);
+    }
+
+    public static boolean getRestrictPropagationThroughHierarchy(Map<String, Object> classificationPropertiesMap) {
+        return getRestrictPropagation(classificationPropertiesMap, CLASSIFICATION_VERTEX_RESTRICT_PROPAGATE_THROUGH_HIERARCHY);
     }
 
     public void repairTagVertex(AtlasEdge edge, AtlasVertex classificationVertex) {
@@ -372,17 +404,29 @@ public final class GraphHelper {
                                                 .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, classificationName).edges();
 
         if (edges != null) {
-            Iterator<AtlasEdge> iterator = edges.iterator();
+            Iterator<AtlasEdge> iterator = null;
+            try {
+                iterator = edges.iterator();
 
-            while (iterator.hasNext()) {
-                AtlasEdge edge = iterator.next();
-                if(Objects.nonNull(edge))
-                {
-                    AtlasVertex classificationVertex = edge.getInVertex();
-                    if(Objects.nonNull(classificationVertex) && StringUtils.isNotEmpty(classificationVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class))) {
-                        return edge.getInVertex();
-                    } else if(graphHelper != null) {
-                        graphHelper.repairTagVertex(edge, edge.getInVertex());
+                while (iterator.hasNext()) {
+                    AtlasEdge edge = iterator.next();
+                    if(Objects.nonNull(edge))
+                    {
+                        AtlasVertex classificationVertex = edge.getInVertex();
+                        if(Objects.nonNull(classificationVertex) && StringUtils.isNotEmpty(classificationVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class))) {
+                            return edge.getInVertex();
+                        } else if(graphHelper != null) {
+                            graphHelper.repairTagVertex(edge, edge.getInVertex());
+                        }
+                    }
+                }
+            } finally {
+                // Close iterator to release resources
+                if (iterator instanceof AutoCloseable) {
+                    try {
+                        ((AutoCloseable) iterator).close();
+                    } catch (Exception e) {
+                        LOG.debug("Error closing iterator resources", e);
                     }
                 }
             }
@@ -401,12 +445,14 @@ public final class GraphHelper {
 
     public static List<AtlasVertex> getAllAssetsWithClassificationVertex(AtlasVertex classificationVertice, int availableSlots) {
         HashSet<AtlasVertex> entityVerticesSet = new HashSet<>();
+        Iterator<AtlasVertex> attachedVerticesIterator = null;
+        
         try {
             Iterable attachedVertices = classificationVertice.query()
                     .direction(AtlasEdgeDirection.IN)
                     .label(CLASSIFICATION_LABEL).vertices(availableSlots);
             if (attachedVertices != null) {
-                Iterator<AtlasVertex> attachedVerticesIterator = attachedVertices.iterator();
+                attachedVerticesIterator = attachedVertices.iterator();
                 while (attachedVerticesIterator.hasNext()) {
                     entityVerticesSet.add(attachedVerticesIterator.next());
                 }
@@ -415,6 +461,15 @@ public final class GraphHelper {
         }
         catch (IllegalStateException e){
             e.printStackTrace();
+        } finally {
+            // Close iterator to release resources
+            if (attachedVerticesIterator instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable) attachedVerticesIterator).close();
+                } catch (Exception e) {
+                    LOG.debug("Error closing iterator resources", e);
+                }
+            }
         }
         return entityVerticesSet.stream().collect(Collectors.toList());
     }
@@ -483,18 +538,30 @@ public final class GraphHelper {
                                               .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
                                               .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, classificationName).edges();
         if (edges != null) {
-            Iterator<AtlasEdge> iterator = edges.iterator();
+            Iterator<AtlasEdge> iterator = null;
+            try {
+                iterator = edges.iterator();
 
-            while (iterator.hasNext()) {
-                AtlasEdge   edge                 = iterator.next();
-                AtlasVertex classificationVertex = (edge != null) ? edge.getInVertex() : null;
+                while (iterator.hasNext()) {
+                    AtlasEdge   edge                 = iterator.next();
+                    AtlasVertex classificationVertex = (edge != null) ? edge.getInVertex() : null;
 
-                if (classificationVertex != null) {
-                    String guid = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class);
+                    if (classificationVertex != null) {
+                        String guid = AtlasGraphUtilsV2.getEncodedProperty(classificationVertex, CLASSIFICATION_ENTITY_GUID, String.class);
 
-                    if (StringUtils.equals(guid, associatedEntityGuid)) {
-                        ret = edge;
-                        break;
+                        if (StringUtils.equals(guid, associatedEntityGuid)) {
+                            ret = edge;
+                            break;
+                        }
+                    }
+                }
+            } finally {
+                // Close iterator to release resources
+                if (iterator instanceof AutoCloseable) {
+                    try {
+                        ((AutoCloseable) iterator).close();
+                    } catch (Exception e) {
+                        LOG.debug("Error closing iterator resources", e);
                     }
                 }
             }
@@ -510,14 +577,26 @@ public final class GraphHelper {
                                               .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).edges();
 
         if (edges != null && classificationVertex != null) {
-            Iterator<AtlasEdge> iterator = edges.iterator();
+            Iterator<AtlasEdge> iterator = null;
+            try {
+                iterator = edges.iterator();
 
-            while (iterator != null && iterator.hasNext()) {
-                AtlasEdge edge = iterator.next();
+                while (iterator != null && iterator.hasNext()) {
+                    AtlasEdge edge = iterator.next();
 
-                if (edge != null && edge.getInVertex().equals(classificationVertex)) {
-                    ret = edge;
-                    break;
+                    if (edge != null && edge.getInVertex().equals(classificationVertex)) {
+                        ret = edge;
+                        break;
+                    }
+                }
+            } finally {
+                // Close iterator to release resources
+                if (iterator instanceof AutoCloseable) {
+                    try {
+                        ((AutoCloseable) iterator).close();
+                    } catch (Exception e) {
+                        LOG.debug("Error closing iterator resources", e);
+                    }
                 }
             }
         }
@@ -531,12 +610,24 @@ public final class GraphHelper {
                                                     .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
                                                     .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).edges();
         if (edges != null) {
-            Iterator<AtlasEdge> iterator = edges.iterator();
+            Iterator<AtlasEdge> iterator = null;
+            try {
+                iterator = edges.iterator();
 
-            while (iterator.hasNext()) {
-                AtlasEdge edge = iterator.next();
+                while (iterator.hasNext()) {
+                    AtlasEdge edge = iterator.next();
 
-                ret.add(edge);
+                    ret.add(edge);
+                }
+            } finally {
+                // Close iterator to release resources
+                if (iterator instanceof AutoCloseable) {
+                    try {
+                        ((AutoCloseable) iterator).close();
+                    } catch (Exception e) {
+                        LOG.debug("Error closing iterator resources", e);
+                    }
+                }
             }
         }
 
@@ -545,16 +636,29 @@ public final class GraphHelper {
 
     public static List<String> getPropagatedVerticesIds (AtlasVertex classificationVertex) {
         List<String>   ret      =  new ArrayList<>();
-        Iterator<AtlasVertex>            vertices =  classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
-                .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
-                .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
-                .vertices().iterator();
+        Iterator<AtlasVertex> vertices = null;
+        
+        try {
+            vertices = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
+                    .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
+                    .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex))
+                    .vertices().iterator();
 
-        if (vertices != null) {
-            while (vertices.hasNext()) {
-                AtlasVertex vertex = vertices.next();
-                if (vertex != null) {
-                    ret.add(vertex.getIdForDisplay());
+            if (vertices != null) {
+                while (vertices.hasNext()) {
+                    AtlasVertex vertex = vertices.next();
+                    if (vertex != null) {
+                        ret.add(vertex.getIdForDisplay());
+                    }
+                }
+            }
+        } finally {
+            // Close iterator to release resources
+            if (vertices instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable) vertices).close();
+                } catch (Exception e) {
+                    LOG.debug("Error closing iterator resources", e);
                 }
             }
         }
@@ -563,8 +667,20 @@ public final class GraphHelper {
     }
 
     public static boolean hasEntityReferences(AtlasVertex classificationVertex) {
-        Iterator edgeIterator = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL).edges(1).iterator();
-        return edgeIterator != null && edgeIterator.hasNext();
+        Iterator edgeIterator = null;
+        try {
+            edgeIterator = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL).edges(1).iterator();
+            return edgeIterator != null && edgeIterator.hasNext();
+        } finally {
+            // Close iterator to release resources
+            if (edgeIterator instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable) edgeIterator).close();
+                } catch (Exception e) {
+                    LOG.debug("Error closing iterator resources", e);
+                }
+            }
+        }
     }
 
     public static List<AtlasVertex> getAllPropagatedEntityVertices(AtlasVertex classificationVertex) {
@@ -783,13 +899,28 @@ public final class GraphHelper {
         Map<String, AtlasVertex> result = new HashMap<>(values.size());
         //Process the result, using the guidToIndexMap to figure out where
         //each vertex should go in the result list.
-        for(AtlasVertex vertex : results) {
-            if(vertex.exists()) {
-                String propertyValue = vertex.getProperty(property, String.class);
-                if(LOG.isDebugEnabled()) {
-                    LOG.debug("Found a vertex {} with {} =  {}", string(vertex), property, propertyValue);
+        Iterator<AtlasVertex> resultIterator = null;
+        try {
+            resultIterator = results.iterator();
+            
+            while (resultIterator.hasNext()) {
+                AtlasVertex vertex = resultIterator.next();
+                if(vertex.exists()) {
+                    String propertyValue = vertex.getProperty(property, String.class);
+                    if(LOG.isDebugEnabled()) {
+                        LOG.debug("Found a vertex {} with {} =  {}", string(vertex), property, propertyValue);
+                    }
+                    result.put(propertyValue, vertex);
                 }
-                result.put(propertyValue, vertex);
+            }
+        } finally {
+            // Close iterator to release resources
+            if (resultIterator instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable) resultIterator).close();
+                } catch (Exception e) {
+                    LOG.debug("Error closing iterator resources", e);
+                }
             }
         }
         return result;
@@ -807,9 +938,21 @@ public final class GraphHelper {
     }
 
     public static void updateModificationMetadata(AtlasVertex vertex) {
-        AtlasGraphUtilsV2.setEncodedProperty(vertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
-        AtlasGraphUtilsV2.setEncodedProperty(vertex, MODIFIED_BY_KEY, RequestContext.get().getUser());
+        int maxRetries = 2; // Number of retries
+        for (int attempt = 0; attempt <= maxRetries; attempt++) {
+            try {
+                AtlasGraphUtilsV2.setEncodedProperty(vertex, MODIFICATION_TIMESTAMP_PROPERTY_KEY, RequestContext.get().getRequestTime());
+                AtlasGraphUtilsV2.setEncodedProperty(vertex, MODIFIED_BY_KEY, RequestContext.get().getUser());
+                break;
+            } catch (Exception e) {
+                LOG.error("Attempt : {} , Exception while updating metadata attributes.", attempt, e);
+                if (attempt == maxRetries) {
+                    throw e;
+                }
+            }
+        }
     }
+
     public static void updateMetadataAttributes(AtlasVertex vertex, List<String> attributes, String metadataType) {
         if (attributes != null && attributes.size() > 0) {
             for (String attributeName: attributes) {
@@ -834,30 +977,30 @@ public final class GraphHelper {
         return traitName;
     }
 
-    public static List<String> getTraitNames(AtlasVertex entityVertex) {
-        return getTraitNames(entityVertex, false);
+    public static List<String> handleGetTraitNames(AtlasVertex entityVertex) {
+        return handleGetTraitNames(entityVertex, false);
     }
 
     public static List<String> getPropagatedTraitNames(AtlasVertex entityVertex) {
-        return getTraitNames(entityVertex, true);
-    }
-    public static List<String> getAllTraitNamesFromAttribute(AtlasVertex entityVertex) {
-        List<String>     ret   = new ArrayList<>();
-        List<String>    traitNames = entityVertex.getMultiValuedProperty(TRAIT_NAMES_PROPERTY_KEY, String.class);
-        if (traitNames != null) {
-            ret.addAll(traitNames);
-        }
-        List<String>    propagatedTraitNames = entityVertex.getMultiValuedProperty(PROPAGATED_TRAIT_NAMES_PROPERTY_KEY, String.class);
-        if (propagatedTraitNames != null) {
-            ret.addAll(propagatedTraitNames);
-        }
-        return ret;
-    }
-    public static List<String> getAllTraitNames(AtlasVertex entityVertex) {
-        return getTraitNames(entityVertex, null);
+        return handleGetTraitNames(entityVertex, true);
     }
 
-    public static List<String> getTraitNames(AtlasVertex entityVertex, Boolean propagated) {
+    public static List<String> getAllTagNames(List<AtlasClassification> tags) {
+        return tags.stream().map(AtlasStruct::getTypeName).collect(Collectors.toList());
+    }
+    public static List<String> getAllTraitNames(AtlasVertex entityVertex) {
+        return handleGetTraitNames(entityVertex, null);
+    }
+
+    public static List<String> handleGetTraitNames(AtlasVertex entityVertex, Boolean propagated) {
+        if (FeatureFlagStore.isTagV2Enabled()) {
+            return getTraitNamesV2(entityVertex, propagated);
+        } else {
+            return getTraitNamesV1(entityVertex, propagated);
+        }
+    }
+
+    public static List<String> getTraitNamesV1(AtlasVertex entityVertex, Boolean propagated) {
         List<String>     ret   = new ArrayList<>();
         AtlasVertexQuery query = entityVertex.query().direction(AtlasEdgeDirection.OUT).label(CLASSIFICATION_LABEL);
 
@@ -880,13 +1023,33 @@ public final class GraphHelper {
         return ret;
     }
 
+    public static List<String> getTraitNamesV2(AtlasVertex entityVertex, Boolean propagated) {
+        List<String>     ret   = new ArrayList<>();
+        try {
+            TagDAO tagDAOCassandra = TagDAOCassandraImpl.getInstance();
+            if (!propagated) {
+                ret = tagDAOCassandra.getAllDirectClassificationsForVertex(entityVertex.getIdForDisplay())
+                                     .stream()
+                                     .map(AtlasClassification::getTypeName)
+                                     .collect(Collectors.toList());
+            } else {
+                ret = tagDAOCassandra.findByVertexIdAndPropagated(entityVertex.getIdForDisplay())
+                                     .stream()
+                                     .map(AtlasClassification::getTypeName)
+                                     .collect(Collectors.toList());
+            }
+        } catch (AtlasBaseException e) {
+            throw new RuntimeException(e);
+        }
+        return ret;
+    }
+
     public static List<AtlasVertex> getPropagatableClassifications(AtlasEdge edge) {
         List<AtlasVertex> ret = new ArrayList<>();
 
         RequestContext requestContext = RequestContext.get();
 
-        if ((edge != null && getStatus(edge) != DELETED) ||
-                (requestContext.getCurrentTask() != null && CLASSIFICATION_ONLY_PROPAGATION_DELETE.equals(requestContext.getCurrentTask().getType()))) {
+        if ((edge != null && getStatus(edge) != DELETED) || requestContext.getCurrentTask() != null) {
             PropagateTags propagateTags = getPropagateTags(edge);
             AtlasVertex   outVertex     = edge.getOutVertex();
             AtlasVertex   inVertex      = edge.getInVertex();
@@ -902,6 +1065,22 @@ public final class GraphHelper {
 
         return ret;
     }
+
+    public static List<AtlasClassification> getPropagatableClassificationsV2(AtlasEdge edge) throws AtlasBaseException {
+        List<AtlasClassification> ret = new ArrayList<>(0);
+
+        if ((edge != null && getStatus(edge) != DELETED) || RequestContext.get().getCurrentTask() != null) {
+            AtlasVertex vertex = getPropagatingVertex(edge);
+            if (vertex != null) {
+                List<AtlasClassification> allTags = TagDAOCassandraImpl.getInstance().getAllClassificationsForVertex(vertex.getIdForDisplay());
+
+                ret = allTags.stream().filter(x -> x.getPropagate()).toList();
+            }
+        }
+
+        return ret;
+    }
+
     //Returns the vertex from which the tag is being propagated
     public static AtlasVertex getPropagatingVertex(AtlasEdge edge) {
         if(edge != null) {
@@ -990,13 +1169,25 @@ public final class GraphHelper {
         Iterable edges = query.edges();
 
         if (edges != null) {
-            Iterator<AtlasEdge> iterator = edges.iterator();
+            Iterator<AtlasEdge> iterator = null;
+            try {
+                iterator = edges.iterator();
 
-            while (iterator.hasNext()) {
-                AtlasEdge edge = iterator.next();
+                while (iterator.hasNext()) {
+                    AtlasEdge edge = iterator.next();
 
-                if (edge != null) {
-                    ret.add(edge);
+                    if (edge != null) {
+                        ret.add(edge);
+                    }
+                }
+            } finally {
+                // Close iterator to release resources
+                if (iterator instanceof AutoCloseable) {
+                    try {
+                        ((AutoCloseable) iterator).close();
+                    } catch (Exception e) {
+                        LOG.debug("Error closing iterator resources", e);
+                    }
                 }
             }
         }
@@ -1366,11 +1557,25 @@ public final class GraphHelper {
 
         Iterable<AtlasVertex> queryResult = query.vertices();
 
-
-        for(AtlasVertex matchingVertex : queryResult) {
-            Collection<IndexedInstance> matches = getInstancesForVertex(map, matchingVertex);
-            for(IndexedInstance wrapper : matches) {
-                result[wrapper.getIndex()]= matchingVertex;
+        Iterator<AtlasVertex> resultIterator = null;
+        try {
+            resultIterator = queryResult.iterator();
+            
+            while (resultIterator.hasNext()) {
+                AtlasVertex matchingVertex = resultIterator.next();
+                Collection<IndexedInstance> matches = getInstancesForVertex(map, matchingVertex);
+                for(IndexedInstance wrapper : matches) {
+                    result[wrapper.getIndex()]= matchingVertex;
+                }
+            }
+        } finally {
+            // Close iterator to release resources
+            if (resultIterator instanceof AutoCloseable) {
+                try {
+                    ((AutoCloseable) resultIterator).close();
+                } catch (Exception e) {
+                    LOG.debug("Error closing iterator resources", e);
+                }
             }
         }
         return Arrays.asList(result);
@@ -1423,12 +1628,24 @@ public final class GraphHelper {
                                                 .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, false)
                                                 .has(CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, getTypeName(classificationVertex)).edges();
         if (edges != null) {
-            Iterator<AtlasEdge> iterator = edges.iterator();
+            Iterator<AtlasEdge> iterator = null;
+            try {
+                iterator = edges.iterator();
 
-            if (iterator != null && iterator.hasNext()) {
-                AtlasEdge edge = iterator.next();
+                if (iterator != null && iterator.hasNext()) {
+                    AtlasEdge edge = iterator.next();
 
-                ret = edge.getOutVertex();
+                    ret = edge.getOutVertex();
+                }
+            } finally {
+                // Close iterator to release resources
+                if (iterator instanceof AutoCloseable) {
+                    try {
+                        ((AutoCloseable) iterator).close();
+                    } catch (Exception e) {
+                        LOG.debug("Error closing iterator resources", e);
+                    }
+                }
             }
         }
 
@@ -1481,126 +1698,6 @@ public final class GraphHelper {
         }
     }
 
-    /*
-     /**
-     * Get the GUIDs and vertices for all composite entities owned/contained by the specified root entity AtlasVertex.
-     * The graph is traversed from the root entity through to the leaf nodes of the containment graph.
-     *
-     * @param entityVertex the root entity vertex
-     * @return set of VertexInfo for all composite entities
-     * @throws AtlasException
-     */
-    /*
-    public Set<VertexInfo> getCompositeVertices(AtlasVertex entityVertex) throws AtlasException {
-        Set<VertexInfo> result = new HashSet<>();
-        Stack<AtlasVertex> vertices = new Stack<>();
-        vertices.push(entityVertex);
-        while (vertices.size() > 0) {
-            AtlasVertex vertex = vertices.pop();
-            String typeName = GraphHelper.getTypeName(vertex);
-            String guid = GraphHelper.getGuid(vertex);
-            Id.EntityState state = GraphHelper.getState(vertex);
-            if (state == Id.EntityState.DELETED) {
-                //If the reference vertex is marked for deletion, skip it
-                continue;
-            }
-            result.add(new VertexInfo(guid, vertex, typeName));
-            ClassType classType = typeSystem.getDataType(ClassType.class, typeName);
-            for (AttributeInfo attributeInfo : classType.fieldMapping().fields.values()) {
-                if (!attributeInfo.isComposite) {
-                    continue;
-                }
-                String edgeLabel = GraphHelper.getEdgeLabel(classType, attributeInfo);
-                switch (attributeInfo.dataType().getTypeCategory()) {
-                    case CLASS:
-                        AtlasEdge edge = getEdgeForLabel(vertex, edgeLabel);
-                        if (edge != null && GraphHelper.getState(edge) == Id.EntityState.ACTIVE) {
-                            AtlasVertex compositeVertex = edge.getInVertex();
-                            vertices.push(compositeVertex);
-                        }
-                        break;
-                    case ARRAY:
-                        IDataType elementType = ((DataTypes.ArrayType) attributeInfo.dataType()).getElemType();
-                        DataTypes.TypeCategory elementTypeCategory = elementType.getTypeCategory();
-                        if (elementTypeCategory != TypeCategory.CLASS) {
-                            continue;
-                        }
-                        Iterator<AtlasEdge> edges = getOutGoingEdgesByLabel(vertex, edgeLabel);
-                        if (edges != null) {
-                            while (edges.hasNext()) {
-                                edge = edges.next();
-                                if (edge != null && GraphHelper.getState(edge) == Id.EntityState.ACTIVE) {
-                                    AtlasVertex compositeVertex = edge.getInVertex();
-                                    vertices.push(compositeVertex);
-                                }
-                            }
-                        }
-                        break;
-                    case MAP:
-                        DataTypes.MapType mapType = (DataTypes.MapType) attributeInfo.dataType();
-                        DataTypes.TypeCategory valueTypeCategory = mapType.getValueType().getTypeCategory();
-                        if (valueTypeCategory != TypeCategory.CLASS) {
-                            continue;
-                        }
-                        String propertyName = GraphHelper.getQualifiedFieldName(classType, attributeInfo.name);
-                        List<String> keys = vertex.getProperty(propertyName, List.class);
-                        if (keys != null) {
-                            for (String key : keys) {
-                                String mapEdgeLabel = GraphHelper.getQualifiedNameForMapKey(edgeLabel, key);
-                                edge = getEdgeForLabel(vertex, mapEdgeLabel);
-                                if (edge != null && GraphHelper.getState(edge) == Id.EntityState.ACTIVE) {
-                                    AtlasVertex compositeVertex = edge.getInVertex();
-                                    vertices.push(compositeVertex);
-                                }
-                            }
-                        }
-                        break;
-                    default:
-                }
-            }
-        }
-        return result;
-    }
-    */
-
-    /*
-    public static Referenceable[] deserializeClassInstances(AtlasTypeRegistry typeRegistry, String entityInstanceDefinition)
-    throws AtlasException {
-        try {
-            JSONArray referableInstances = new JSONArray(entityInstanceDefinition);
-            Referenceable[] instances = new Referenceable[referableInstances.length()];
-            for (int index = 0; index < referableInstances.length(); index++) {
-                Referenceable entityInstance =
-                        AtlasType.fromV1Json(referableInstances.getString(index), Referenceable.class);
-                Referenceable typedInstrance = getTypedReferenceableInstance(typeRegistry, entityInstance);
-                instances[index] = typedInstrance;
-            }
-            return instances;
-        } catch(TypeNotFoundException  e) {
-            throw e;
-        } catch (Exception e) {  // exception from deserializer
-            LOG.error("Unable to deserialize json={}", entityInstanceDefinition, e);
-            throw new IllegalArgumentException("Unable to deserialize json", e);
-        }
-    }
-
-    public static Referenceable getTypedReferenceableInstance(AtlasTypeRegistry typeRegistry, Referenceable entityInstance)
-            throws AtlasException {
-        final String entityTypeName = ParamChecker.notEmpty(entityInstance.getTypeName(), "Entity type cannot be null");
-
-        AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entityTypeName);
-
-        //Both assigned id and values are required for full update
-        //classtype.convert() will remove values if id is assigned. So, set temp id, convert and
-        // then replace with original id
-        Id origId = entityInstance.getId();
-        entityInstance.setId(new Id(entityInstance.getTypeName()));
-        Referenceable typedInstrance = new Referenceable(entityInstance);
-        typedInstrance.setId(origId);
-        return typedInstrance;
-    }
-    */
-
     public static boolean isInternalType(AtlasVertex vertex) {
         return vertex != null && isInternalType(getTypeName(vertex));
     }
@@ -1647,7 +1744,7 @@ public final class GraphHelper {
         AtlasType mapValueType = mapType.getValueType();
 
         if (isReference(mapValueType)) {
-            return getReferenceMap(instanceVertex, attribute);
+            return getReferenceMap(instanceVertex, attribute, propertyName);
         } else {
             return (Map) instanceVertex.getProperty(propertyName, Map.class);
         }
@@ -1657,6 +1754,21 @@ public final class GraphHelper {
     public static Map<String, Object> getReferenceMap(AtlasVertex instanceVertex, AtlasAttribute attribute) {
         Map<String, Object> ret            = new HashMap<>();
         List<AtlasEdge>     referenceEdges = getCollectionElementsUsingRelationship(instanceVertex, attribute);
+
+        for (AtlasEdge edge : referenceEdges) {
+            String key = edge.getProperty(ATTRIBUTE_KEY_PROPERTY_KEY, String.class);
+
+            if (StringUtils.isNotEmpty(key)) {
+                ret.put(key, edge);
+            }
+        }
+
+        return ret;
+    }
+
+    public static Map<String, Object> getReferenceMap(AtlasVertex instanceVertex, AtlasAttribute attribute, String propertyName) {
+        Map<String, Object> ret            = new HashMap<>();
+        List<AtlasEdge>     referenceEdges = getCollectionElementsUsingRelationship(instanceVertex, attribute, propertyName);
 
         for (AtlasEdge edge : referenceEdges) {
             String key = edge.getProperty(ATTRIBUTE_KEY_PROPERTY_KEY, String.class);
@@ -2118,25 +2230,29 @@ public final class GraphHelper {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.retrieveEdgeLabelsAndTypeName");
 
         try {
-            return ((AtlasJanusGraph) graph).getGraph().traversal()
+            // Use try-with-resources to ensure stream is properly closed
+            try (Stream<Map<String, Object>> stream = ((AtlasJanusGraph) graph).getGraph().traversal()
                     .V(vertex.getId())
                     .bothE()
                     .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
                     .project(LABEL_PROPERTY_KEY, TYPE_NAME_PROPERTY_KEY)
                     .by(T.label)
                     .by(TYPE_NAME_PROPERTY_KEY)
-                    .toStream()
-                    .map(m -> {
-                        Object label = m.get(LABEL_PROPERTY_KEY);
-                        Object typeName = m.get(TYPE_NAME_PROPERTY_KEY);
-                        String labelStr = (label != null) ? label.toString() : "";
-                        String typeNameStr = (typeName != null) ? typeName.toString() : "";
+                    .toStream()) {
+                
+                return stream
+                        .map(m -> {
+                            Object label = m.get(LABEL_PROPERTY_KEY);
+                            Object typeName = m.get(TYPE_NAME_PROPERTY_KEY);
+                            String labelStr = (label != null) ? label.toString() : "";
+                            String typeNameStr = (typeName != null) ? typeName.toString() : "";
 
-                        return new AbstractMap.SimpleEntry<>(labelStr, typeNameStr);
-                    })
-                    .filter(entry -> !entry.getKey().isEmpty())
-                    .distinct()
-                    .collect(Collectors.toSet());
+                            return new AbstractMap.SimpleEntry<>(labelStr, typeNameStr);
+                        })
+                        .filter(entry -> !entry.getKey().isEmpty())
+                        .distinct()
+                        .collect(Collectors.toSet());
+            }
 
         } catch (Exception e) {
             LOG.error("Error while getting labels of active edges", e);

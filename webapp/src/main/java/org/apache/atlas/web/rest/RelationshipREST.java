@@ -24,6 +24,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.AtlasRelationship.AtlasRelationshipWithExtInfo;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
+import org.apache.atlas.repository.store.graph.v2.EntityMutationService;
 import org.apache.atlas.utils.AtlasPerfTracer;
 import org.apache.atlas.web.util.Servlets;
 import org.apache.commons.collections.CollectionUtils;
@@ -48,10 +49,12 @@ public class RelationshipREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.RelationshipREST");
 
     private final AtlasRelationshipStore relationshipStore;
+    private final EntityMutationService entityMutationService;
 
     @Inject
-    public RelationshipREST(AtlasRelationshipStore relationshipStore) {
+    public RelationshipREST(AtlasRelationshipStore relationshipStore, EntityMutationService entityMutationService) {
         this.relationshipStore = relationshipStore;
+        this.entityMutationService = entityMutationService;
     }
 
     /**
@@ -158,7 +161,7 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG))
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.deleteById(" + guid + ")");
 
-            relationshipStore.deleteById(guid);
+            entityMutationService.deleteRelationshipById(guid);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -186,7 +189,7 @@ public class RelationshipREST {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "RelationshipREST.deleteById(" + guids.size() + ")");
             }
-            relationshipStore.deleteByIds(guids);
+            entityMutationService.deleteRelationshipsByIds(guids);
         } finally {
             AtlasPerfTracer.log(perf);
         }

@@ -72,4 +72,9 @@ public abstract class AbstractTask {
     }
 
     public abstract Status perform() throws Exception;
+
+    public AtlasTask getTask() {
+        return task;
+    }
+
 }

@@ -49,7 +49,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         super(typeRegistry, entityRetriever, graph);
         this.updatedPolicyResources = new HashMap<>();
         this.entityStore = entityStore;
-        this.retrieverNoRelation = new EntityGraphRetriever(graph, typeRegistry, true);
+        this.retrieverNoRelation = new EntityGraphRetriever(entityRetriever, true);
     }
 
     @Override

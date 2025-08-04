@@ -23,6 +23,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.Graph;
 import org.janusgraph.core.ConfiguredGraphFactory;
 import org.janusgraph.core.JanusGraph;
+import org.janusgraph.core.JanusGraphFactory;
 import org.janusgraph.core.JanusGraphManagerUtility;
 import org.janusgraph.core.log.LogProcessorFramework;
 import org.janusgraph.core.log.TransactionRecovery;
@@ -65,6 +66,7 @@ import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.ST
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_DIRECTORY;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_HOSTS;
 import static org.janusgraph.graphdb.configuration.GraphDatabaseConfiguration.STORAGE_NS;
+import static org.janusgraph.graphdb.management.JanusGraphManager.JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG;
 import static org.janusgraph.util.system.LoggerUtil.sanitizeAndLaunder;
 
 /**
@@ -74,13 +76,50 @@ import static org.janusgraph.util.system.LoggerUtil.sanitizeAndLaunder;
  * @see JanusGraph
  */
 
-public class AtlasJanusGraphFactory {
+public class AtlasJanusGraphFactory extends JanusGraphFactory {
 
     private static final Logger log =
             LoggerFactory.getLogger(AtlasJanusGraphFactory.class);
+    /**
+     * Opens a {@link JanusGraph} database.
+     * <p>
+     * If the argument points to a configuration file, the configuration file is loaded to configure the JanusGraph graph
+     * If the string argument is a configuration short-cut, then the short-cut is parsed and used to configure the returned JanusGraph graph.
+     * If the string argument is a configuration short-cut, then the short-cut is parsed and used to configure the returned JanusGraph graph.
+     * <p>
+     * A configuration short-cut is of the form:
+     * [STORAGE_BACKEND_NAME]:[DIRECTORY_OR_HOST]
+     *
+     * @param shortcutOrFile Configuration file name or configuration short-cut
+     * @return JanusGraph graph database configured according to the provided configuration
+     * @see <a href="https://docs.janusgraph.org/basics/configuration/">"Configuration" manual chapter</a>
+     * @see <a href="https://docs.janusgraph.org/basics/configuration-reference/">Configuration Reference</a>
+     */
+    public static JanusGraph open(String shortcutOrFile) {
+        return open(getLocalConfiguration(shortcutOrFile));
+    }
 
-    public static final String JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG
-            = "Gremlin Server must be configured to use the JanusGraphManager.";
+    /**
+     * Opens a {@link JanusGraph} database.
+     * <p>
+     * If the argument points to a configuration file, the configuration file is loaded to configure the JanusGraph graph
+     * If the string argument is a configuration short-cut, then the short-cut is parsed and used to configure the returned JanusGraph graph.
+     * This method shouldn't be called by end users; it is used by internal server processes to
+     * open graphs defined at server start that do not include the graphname property.
+     * <p>
+     * A configuration short-cut is of the form:
+     * [STORAGE_BACKEND_NAME]:[DIRECTORY_OR_HOST]
+     *
+     * @param shortcutOrFile Configuration file name or configuration short-cut
+     * @param backupName Backup name for graph
+     * @return JanusGraph graph database configured according to the provided configuration
+     * @see <a href="https://docs.janusgraph.org/basics/configuration/">"Configuration" manual chapter</a>
+     * @see <a href="https://docs.janusgraph.org/basics/configuration-reference/">Configuration Reference</a>
+     */
+    public static JanusGraph open(String shortcutOrFile, String backupName) {
+        return open(getLocalConfiguration(shortcutOrFile), backupName);
+    }
+
     /**
      * Opens a {@link JanusGraph} database configured according to the provided configuration.
      *
@@ -132,12 +171,12 @@ public class AtlasJanusGraphFactory {
         } else {
             if (jgm != null) {
                 log.warn("You should supply \"graph.graphname\" in your .properties file configuration if you are opening " +
-                         "a graph that has not already been opened at server start, i.e. it was " +
-                         "defined in your YAML file. This will ensure the graph is tracked by the JanusGraphManager, " +
-                         "which will enable autocommit and rollback functionality upon all gremlin script executions. " +
-                         "Note that JanusGraphFactory#open(String === shortcut notation) does not support consuming the property " +
-                         "\"graph.graphname\" so these graphs should be accessed dynamically by supplying a .properties file here " +
-                         "or by using the ConfiguredGraphFactory.");
+                        "a graph that has not already been opened at server start, i.e. it was " +
+                        "defined in your YAML file. This will ensure the graph is tracked by the JanusGraphManager, " +
+                        "which will enable autocommit and rollback functionality upon all gremlin script executions. " +
+                        "Note that JanusGraphFactory#open(String === shortcut notation) does not support consuming the property " +
+                        "\"graph.graphname\" so these graphs should be accessed dynamically by supplying a .properties file here " +
+                        "or by using the ConfiguredGraphFactory.");
             }
             return new AtlasStandardJanusGraph(new GraphDatabaseConfigurationBuilder().build(configuration));
         }
@@ -149,9 +188,9 @@ public class AtlasJanusGraphFactory {
      *  @return Set&lt;String&gt;
      */
     public static Set<String> getGraphNames() {
-       final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
-       Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
-       return jgm.getGraphNames();
+        final JanusGraphManager jgm = JanusGraphManagerUtility.getInstance();
+        Preconditions.checkNotNull(jgm, JANUS_GRAPH_MANAGER_EXPECTED_STATE_MSG);
+        return jgm.getGraphNames();
     }
 
     /**
@@ -198,17 +237,7 @@ public class AtlasJanusGraphFactory {
         }
     }
 
-    /**
-     * Returns a {@link Builder} that allows to set the configuration options for opening a JanusGraph graph database.
-     * <p>
-     * In the builder, the configuration options for the graph can be set individually. Once all options are configured,
-     * the graph can be opened with {@link org.janusgraph.core.JanusGraphFactory.Builder#open()}.
-     *
-     * @return
-     */
-    public static Builder build() {
-        return new Builder();
-    }
+
 
     //--------------------- BUILDER -------------------------------------------
 
@@ -240,13 +269,14 @@ public class AtlasJanusGraphFactory {
         public JanusGraph open() {
             ModifiableConfiguration mc = new ModifiableConfiguration(GraphDatabaseConfiguration.ROOT_NS,
                     writeConfiguration.copy(), BasicConfiguration.Restriction.NONE);
-            return AtlasJanusGraphFactory.open(mc);
+            return JanusGraphFactory.open(mc);
         }
 
 
     }
 
     /**
+     * Returns a {@link org.janusgraph.core.log.LogProcessorFramework} for processing transaction log entries
      * Returns a {@link LogProcessorFramework} for processing transaction log entries
      * against the provided graph instance.
      *
@@ -304,7 +334,7 @@ public class AtlasJanusGraphFactory {
      * Load a properties file containing a JanusGraph graph configuration.
      * <p>
      * <ol>
-     * <li>Load the file contents into a {@link PropertiesConfiguration}</li>
+     * <li>Load the file contents into a {@link org.apache.commons.configuration2.PropertiesConfiguration}</li>
      * <li>For each key that points to a configuration object that is either a directory
      * or local file, check
      * whether the associated value is a non-null, non-absolute path. If so,
@@ -347,17 +377,17 @@ public class AtlasJanusGraphFactory {
             // TODO this mangling logic is a relic from the hardcoded string days; it should be deleted and rewritten as a setting on ConfigOption
             final Pattern p = Pattern.compile("(" +
                     Pattern.quote(STORAGE_NS.getName()) + "\\..*" +
-                            "(" + Pattern.quote(STORAGE_DIRECTORY.getName()) + "|" +
-                                  Pattern.quote(STORAGE_CONF_FILE.getName()) + ")"
+                    "(" + Pattern.quote(STORAGE_DIRECTORY.getName()) + "|" +
+                    Pattern.quote(STORAGE_CONF_FILE.getName()) + ")"
                     + "|" +
                     Pattern.quote(INDEX_NS.getName()) + "\\..*" +
-                            "(" + Pattern.quote(INDEX_DIRECTORY.getName()) + "|" +
-                                  Pattern.quote(INDEX_CONF_FILE.getName()) +  ")"
-            + ")");
+                    "(" + Pattern.quote(INDEX_DIRECTORY.getName()) + "|" +
+                    Pattern.quote(INDEX_CONF_FILE.getName()) +  ")"
+                    + ")");
 
             final List<String> keysToMangle = StreamSupport.stream(
-                Spliterators.spliteratorUnknownSize(configuration.getKeys(), 0), false)
-                .filter(key -> null != key && p.matcher(key).matches()).collect(Collectors.toList());
+                            Spliterators.spliteratorUnknownSize(configuration.getKeys(), 0), false)
+                    .filter(key -> null != key && p.matcher(key).matches()).collect(Collectors.toList());
 
             for (String k : keysToMangle) {
                 Preconditions.checkNotNull(k);

@@ -120,11 +120,12 @@ public class AtlasRelationshipStoreV2 implements AtlasRelationshipStore {
     }
 
     @Inject
-    public AtlasRelationshipStoreV2(AtlasGraph graph, AtlasTypeRegistry typeRegistry, DeleteHandlerDelegate deleteDelegate, IAtlasEntityChangeNotifier entityChangeNotifier) {
+    public AtlasRelationshipStoreV2(AtlasGraph graph, AtlasTypeRegistry typeRegistry, DeleteHandlerDelegate deleteDelegate,
+                                    IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphRetriever entityRetriever) {
         this.graph                = graph;
         this.typeRegistry         = typeRegistry;
         this.graphHelper          = new GraphHelper(graph);
-        this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
+        this.entityRetriever      = entityRetriever;
         this.deleteDelegate       = deleteDelegate;
         this.entityChangeNotifier = entityChangeNotifier;
     }

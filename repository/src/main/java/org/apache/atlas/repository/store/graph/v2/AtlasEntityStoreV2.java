@@ -81,6 +81,7 @@ import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasBusinessMetadataType.AtlasBusinessAttribute;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.atlas.util.FileUtils;
+import org.apache.atlas.util.NanoIdUtils;
 import org.apache.atlas.utils.AtlasEntityUtil;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
@@ -154,7 +155,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
     public AtlasEntityStoreV2(AtlasGraph graph, DeleteHandlerDelegate deleteDelegate, RestoreHandlerV1 restoreHandlerV1, AtlasTypeRegistry typeRegistry,
                               IAtlasEntityChangeNotifier entityChangeNotifier, EntityGraphMapper entityGraphMapper, TaskManagement taskManagement,
                               AtlasRelationshipStore atlasRelationshipStore, FeatureFlagStore featureFlagStore,
-                              IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier, AtlasDistributedTaskNotificationSender taskNotificationSender) {
+                              IAtlasMinimalChangeNotifier atlasAlternateChangeNotifier, AtlasDistributedTaskNotificationSender taskNotificationSender,
+                              EntityGraphRetriever entityRetriever) {
 
         this.graph                = graph;
         this.deleteDelegate       = deleteDelegate;
@@ -162,7 +164,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.typeRegistry         = typeRegistry;
         this.entityChangeNotifier = entityChangeNotifier;
         this.entityGraphMapper    = entityGraphMapper;
-        this.entityRetriever      = new EntityGraphRetriever(graph, typeRegistry);
+        this.entityRetriever      = entityRetriever;
         this.storeDifferentialAudits = STORE_DIFFERENTIAL_AUDITS.getBoolean();
         this.graphHelper          = new GraphHelper(graph);
         this.taskManagement = taskManagement;
@@ -172,7 +174,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         this.atlasAlternateChangeNotifier = atlasAlternateChangeNotifier;
         this.taskNotificationSender = taskNotificationSender;
         try {
-            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
+            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null, entityRetriever);
         } catch (AtlasException e) {
             e.printStackTrace();
         }
@@ -217,9 +219,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             LOG.debug("==> getById({}, {})", guid, isMinExtInfo);
         }
 
-        EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry, ignoreRelationships);
+        EntityGraphRetriever retriever = new EntityGraphRetriever(entityRetriever, ignoreRelationships);
 
-        AtlasEntityWithExtInfo ret = entityRetriever.toAtlasEntityWithExtInfo(guid, isMinExtInfo);
+        AtlasEntityWithExtInfo ret = retriever.toAtlasEntityWithExtInfo(guid, isMinExtInfo);
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
@@ -241,9 +243,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             LOG.debug("==> getByIdWithoutAuthorization({})", guid);
         }
 
-        EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry, true);
+        EntityGraphRetriever retriever = new EntityGraphRetriever(entityRetriever, true);
 
-        AtlasEntityWithExtInfo ret = entityRetriever.toAtlasEntityWithExtInfo(guid, true);
+        AtlasEntityWithExtInfo ret = retriever.toAtlasEntityWithExtInfo(guid, true);
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
@@ -262,8 +264,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (LOG.isDebugEnabled()) {
             LOG.debug("==> getHeaderById({})", guid);
         }
-
-        EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
 
         AtlasEntityHeader ret = entityRetriever.toAtlasEntityHeaderWithClassifications(guid);
 
@@ -293,9 +293,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             LOG.debug("==> getByIds({}, {})", guids, isMinExtInfo);
         }
 
-        EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry, ignoreRelationships);
+        EntityGraphRetriever retriever = new EntityGraphRetriever(entityRetriever, ignoreRelationships);
 
-        AtlasEntitiesWithExtInfo ret = entityRetriever.toAtlasEntitiesWithExtInfo(guids, isMinExtInfo);
+        AtlasEntitiesWithExtInfo ret = retriever.toAtlasEntitiesWithExtInfo(guids, isMinExtInfo);
 
         if(ret != null){
             for(String guid : guids) {
@@ -335,9 +335,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             LOG.debug("==> getEntitiesByUniqueAttributes({}, {})", entityType.getTypeName(), uniqueAttributes);
         }
 
-        EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry, ignoreRelationships);
+        EntityGraphRetriever retriever = new EntityGraphRetriever(entityRetriever, ignoreRelationships);
 
-        AtlasEntitiesWithExtInfo ret = entityRetriever.getEntitiesByUniqueAttributes(entityType.getTypeName(), uniqueAttributes, isMinExtInfo);
+        AtlasEntitiesWithExtInfo ret = retriever.getEntitiesByUniqueAttributes(entityType.getTypeName(), uniqueAttributes, isMinExtInfo);
 
         if (ret != null && ret.getEntities() != null) {
             for (AtlasEntity entity : ret.getEntities()) {
@@ -368,9 +368,9 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.getVertexByUniqueAttributes(graph, entityType, uniqAttributes);
 
-        EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry, ignoreRelationships);
+        EntityGraphRetriever retriever = new EntityGraphRetriever(entityRetriever, ignoreRelationships);
 
-        AtlasEntityWithExtInfo ret = entityRetriever.toAtlasEntityWithExtInfo(entityVertex, isMinExtInfo);
+        AtlasEntityWithExtInfo ret = retriever.toAtlasEntityWithExtInfo(entityVertex, isMinExtInfo);
 
         if (ret == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, entityType.getTypeName(),
@@ -401,8 +401,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.getVertexByUniqueAttributes(graph, entityType, uniqAttributes);
 
-        EntityGraphRetriever entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
-
         AtlasEntityHeader ret = entityRetriever.toAtlasEntityHeader(entityVertex);
 
         if (ret == null) {
@@ -432,7 +430,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             LOG.debug("==> checkState({})", request);
         }
 
-        EntityStateChecker entityStateChecker = new EntityStateChecker(graph, typeRegistry);
+        EntityStateChecker entityStateChecker = new EntityStateChecker(graph, typeRegistry, entityRetriever);
 
         AtlasCheckStateResult ret = entityStateChecker.checkState(request);
 
@@ -1037,26 +1035,52 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     @Override
     @GraphTransaction
-    public void repairClassificationMappings(final String guid) throws AtlasBaseException {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("==> repairClassificationMappings({})", guid);
+    public void repairClassificationMappings(List<String> guids) throws AtlasBaseException {
+        for (String guid : guids) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("==> repairClassificationMappings({})", guid);
+            }
+
+            if (StringUtils.isEmpty(guid)) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+            }
+
+            AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+
+            if (entityVertex == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
+            }
+
+            entityGraphMapper.repairClassificationMappings(entityVertex);
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("<== repairClassificationMappings({})", guid);
+            }
+        }
+    }
+
+    public Map<String, String> repairClassificationMappingsV2(List<String> guids) throws AtlasBaseException {
+        Map<String, String> errorMap = new HashMap<>(0);
+
+        List<AtlasVertex> verticesToRepair = new ArrayList<>(guids.size());
+        for (String guid : guids) {
+            if (StringUtils.isEmpty(guid)) {
+                errorMap.put(NanoIdUtils.randomNanoId(), AtlasErrorCode.INSTANCE_GUID_NOT_FOUND.getFormattedErrorMessage(guid));
+                continue;
+            }
+
+            AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+            if (entityVertex == null) {
+                errorMap.put(guid, AtlasErrorCode.INSTANCE_GUID_NOT_FOUND.getFormattedErrorMessage(guid));
+                continue;
+            }
+
+            verticesToRepair.add(entityVertex);
         }
 
-        if (StringUtils.isEmpty(guid)) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
-        }
+        errorMap.putAll(entityGraphMapper.repairClassificationMappingsV2(verticesToRepair));
 
-        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
-
-        if (entityVertex == null) {
-            throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
-        }
-
-        entityGraphMapper.repairClassificationMappings(entityVertex);
-
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("<== repairClassificationMappings({})", guid);
-        }
+        return errorMap;
     }
 
     @Override
@@ -1093,7 +1117,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         context.cacheEntity(guid, entityVertex, typeRegistry.getEntityTypeByName(entityHeader.getTypeName()));
 
-
         for (AtlasClassification classification : classifications) {
             validateAndNormalize(classification);
         }
@@ -1101,7 +1124,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         // validate if entity, not already associated with classifications
         validateEntityAssociations(guid, classifications);
 
-        entityGraphMapper.addClassifications(context, guid, classifications);
+        entityGraphMapper.handleAddClassifications(context, guid, classifications);
     }
 
     @Override
@@ -1148,7 +1171,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             validateAndNormalize(classification);
         }
 
-        entityGraphMapper.updateClassifications(context, guid, classifications);
+        entityGraphMapper.handleUpdateClassifications(context, guid, classifications);
 
         AtlasPerfTracer.log(perf);
     }
@@ -1207,7 +1230,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         }
 
         for (String guid : validGuids) {
-            entityGraphMapper.addClassifications(context, guid, classifications);
+            entityGraphMapper.handleAddClassifications(context, guid, classifications);
         }
     }
 
@@ -1736,7 +1759,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("preCreateOrUpdate");
-        this.graph.setEnableCache(RequestContext.get().isCacheEnabled());
         EntityGraphDiscovery        graphDiscoverer  = new AtlasEntityGraphDiscoveryV2(graph, typeRegistry, entityStream, entityGraphMapper);
         EntityGraphDiscoveryContext discoveryContext = graphDiscoverer.discoverEntities();
         EntityMutationContext       context          = new EntityMutationContext(discoveryContext);

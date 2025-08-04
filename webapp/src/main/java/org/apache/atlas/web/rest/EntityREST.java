@@ -28,6 +28,7 @@ import org.apache.atlas.authorize.*;
 import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.CassandraTagOperation;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.audit.AuditSearchParams;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
@@ -41,12 +42,8 @@ import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.repository.audit.ESBasedAuditRepository;
 import org.apache.atlas.repository.converters.AtlasInstanceConverter;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
-import org.apache.atlas.repository.store.graph.v2.AtlasEntityStream;
-import org.apache.atlas.repository.store.graph.v2.BulkRequestContext;
-import org.apache.atlas.repository.store.graph.v2.ClassificationAssociator;
-import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
-import org.apache.atlas.repository.store.graph.v2.EntityStream;
-import org.apache.atlas.repository.store.graph.v2.IAtlasEntityChangeNotifier;
+import org.apache.atlas.repository.store.graph.v2.*;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasType;
@@ -99,7 +96,6 @@ public class EntityREST {
 
     public static final String PREFIX_ATTR  = "attr:";
     public static final String PREFIX_ATTR_ = "attr_";
-    public static final String QUALIFIED_NAME  = "qualifiedName";
     private static final int HUNDRED_THOUSAND = 100000;
     private static final int TWO_MILLION = HUNDRED_THOUSAND * 10 * 2;
     private static  final int  ENTITIES_ALLOWED_IN_BULK = AtlasConfiguration.ATLAS_BULK_API_MAX_ENTITIES_ALLOWED.getInt();
@@ -111,19 +107,16 @@ public class EntityREST {
     private final AtlasTypeRegistry      typeRegistry;
     private final AtlasEntityStore       entitiesStore;
     private final ESBasedAuditRepository  esBasedAuditRepository;
-    private final EntityGraphMapper entityGraphMapper;
-    private final IAtlasEntityChangeNotifier entityChangeNotifier;
-    private final AtlasInstanceConverter instanceConverter;
+    private final EntityGraphRetriever entityGraphRetriever;
+    private final EntityMutationService entityMutationService;
 
     @Inject
-    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository,
-                      EntityGraphMapper entityGraphMapper, IAtlasEntityChangeNotifier entityChangeNotifier, AtlasInstanceConverter instanceConverter) {
+    public EntityREST(AtlasTypeRegistry typeRegistry, AtlasEntityStore entitiesStore, ESBasedAuditRepository  esBasedAuditRepository, EntityGraphRetriever retriever, EntityMutationService entityMutationService) {
         this.typeRegistry      = typeRegistry;
         this.entitiesStore     = entitiesStore;
         this.esBasedAuditRepository = esBasedAuditRepository;
-        this.entityGraphMapper = entityGraphMapper;
-        this.entityChangeNotifier = entityChangeNotifier;
-        this.instanceConverter = instanceConverter;
+        this.entityGraphRetriever = retriever;
+        this.entityMutationService = entityMutationService;
     }
 
     /**
@@ -348,7 +341,7 @@ public class EntityREST {
 
             validateUniqueAttribute(entityType, uniqueAttributes);
 
-            return entitiesStore.updateByUniqueAttributes(entityType, uniqueAttributes, entityInfo);
+            return entityMutationService.updateByUniqueAttributes(entityType, uniqueAttributes, entityInfo);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -389,8 +382,7 @@ public class EntityREST {
 
             AtlasEntityType entityType = ensureEntityType(typeName);
 
-            return entitiesStore.
-                    deleteByUniqueAttributes(entityType, attributes);
+            return entityMutationService.deleteByUniqueAttributes(entityType, attributes);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -422,7 +414,7 @@ public class EntityREST {
                     .setReplaceBusinessAttributes(replaceBusinessAttributes)
                     .setOverwriteBusinessAttributes(isOverwriteBusinessAttributes)
                     .build();
-            return entitiesStore.createOrUpdate(new AtlasEntityStream(entity), context);
+            return entityMutationService.createOrUpdate(new AtlasEntityStream(entity), context);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -474,7 +466,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteByGuid(" + guid + ")");
             }
 
-            return entitiesStore.deleteById(guid);
+            return entityMutationService.deleteById(guid);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -563,7 +555,7 @@ public class EntityREST {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, typeName, attributes.toString());
             }
 
-            entitiesStore.addClassifications(guid, classifications);
+            entityMutationService.addClassifications(guid, classifications);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -590,7 +582,7 @@ public class EntityREST {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
             }
 
-            entitiesStore.addClassifications(guid, classifications);
+            entityMutationService.addClassifications(guid, classifications);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -621,7 +613,7 @@ public class EntityREST {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, typeName, attributes.toString());
             }
 
-            entitiesStore.updateClassifications(guid, classifications);
+            entityMutationService.updateClassifications(guid, classifications);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -649,7 +641,7 @@ public class EntityREST {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
             }
 
-            entitiesStore.updateClassifications(guid, classifications);
+            entityMutationService.updateClassifications(guid, classifications);
 
         } finally {
             AtlasPerfTracer.log(perf);
@@ -683,7 +675,7 @@ public class EntityREST {
                 throw new AtlasBaseException(AtlasErrorCode.INSTANCE_BY_UNIQUE_ATTRIBUTE_NOT_FOUND, typeName, attributes.toString());
             }
 
-            entitiesStore.deleteClassification(guid, classificationName);
+            entityMutationService.deleteClassification(guid, classificationName);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -717,7 +709,7 @@ public class EntityREST {
 
             ensureClassificationType(classificationName);
 
-            entitiesStore.deleteClassification(guid, classificationName, associatedEntityGuid);
+            entityMutationService.deleteClassification(guid, classificationName, associatedEntityGuid);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -827,7 +819,6 @@ public class EntityREST {
         }
 
         AtlasPerfTracer perf = null;
-        RequestContext.get().setEnableCache(false);
         RequestContext.get().setSkipProcessEdgeRestoration(skipProcessEdgeRestoration);
         try {
 
@@ -856,11 +847,12 @@ public class EntityREST {
                     .setReplaceBusinessAttributes(replaceBusinessAttributes)
                     .setOverwriteBusinessAttributes(isOverwriteBusinessAttributes)
                     .build();
-            return entitiesStore.createOrUpdate(entityStream, context);
+            return entityMutationService.createOrUpdate(entityStream, context);
         } finally {
             AtlasPerfTracer.log(perf);
         }
     }
+
 
     public static void validateAttributeLength(final List<AtlasEntity> entities) throws AtlasBaseException {
         List<String> errorMessages = new ArrayList<>();
@@ -906,7 +898,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.deleteByGuids(" + guids  + ")");
             }
 
-            return entitiesStore.deleteByIds(guids);
+            return entityMutationService.deleteByIds(guids);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -923,7 +915,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.bulkDeleteByUniqueAttribute(" + objectIds.size() + ")");
             }
 
-            return entitiesStore.deleteByUniqueAttributes(objectIds);
+            return entityMutationService.deleteByUniqueAttributes(objectIds);
 
         } finally {
             AtlasPerfTracer.log(perf);
@@ -950,7 +942,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.restoreByGuids(" + guids  + ")");
             }
 
-            return entitiesStore.restoreByIds(guids);
+            return entityMutationService.restoreByIds(guids);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -1015,7 +1007,7 @@ public class EntityREST {
                 }
             }
 
-            entitiesStore.addClassification(entityGuids, classification);
+            entityMutationService.addClassification(entityGuids, classification);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -1066,7 +1058,7 @@ public class EntityREST {
             }
 
             for (Map.Entry<String, List<AtlasClassification>> x : entityGuidClassificationMap.entrySet()) {
-                entitiesStore.addClassifications(x.getKey(), x.getValue());
+                entityMutationService.addClassifications(x.getKey(), x.getValue());
             }
 
         } finally {
@@ -1200,7 +1192,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.getEntityHeaders(" + tagUpdateStartTime + ", " + tagUpdateEndTime + ")");
             }
 
-            ClassificationAssociator.Retriever associator = new ClassificationAssociator.Retriever(typeRegistry, esBasedAuditRepository);
+            ClassificationAssociator.Retriever associator = new ClassificationAssociator.Retriever(typeRegistry, esBasedAuditRepository, entityGraphRetriever);
             return associator.get(tagUpdateStartTime, tagUpdateEndTime);
         } finally {
             AtlasPerfTracer.log(perf);
@@ -1220,8 +1212,7 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.setClassifications(" + overrideClassifications +")");
             }
 
-            ClassificationAssociator.Updater associator = new ClassificationAssociator.Updater(typeRegistry, entitiesStore, entityGraphMapper, entityChangeNotifier, instanceConverter);
-            associator.setClassifications(entityHeaders.getGuidHeaderMap(), overrideClassifications);
+            entityMutationService.setClassifications(entityHeaders, overrideClassifications);
         } finally {
             AtlasPerfTracer.log(perf);
         }
@@ -1240,7 +1231,26 @@ public class EntityREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairClassifications()");
             }
 
-            entitiesStore.repairClassificationMappings(guid);
+            entityMutationService.repairClassificationMappings(Collections.singletonList(guid));
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @POST
+    @Path("bulk/repairClassificationsMappings")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Timed
+    public Map<String, String> repairClassificationsMappings(Set<String> guids) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityREST.repairClassificationsMappings(" + guids.size() + ")");
+            }
+
+            return entityMutationService.repairClassificationMappings(new ArrayList<>(guids));
         } finally {
             AtlasPerfTracer.log(perf);
         }
