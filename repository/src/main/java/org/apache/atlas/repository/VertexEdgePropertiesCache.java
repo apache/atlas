@@ -120,10 +120,6 @@ public class VertexEdgePropertiesCache {
                 .computeIfAbsent(sourceVertexId, k -> new HashMap<>())
                 .computeIfAbsent(edgeLabel, k -> new ArrayList<>());
 
-        if (edgeLabelToVertexIds.get(sourceVertexId).get(edgeLabel).size() >= AtlasConfiguration.MIN_EDGES_SUPER_VERTEX.getLong()) {
-            return;
-        }
-
         for (EdgeVertexReference existingReference : targetElements) {
             if (existingReference.equals(targetElement)) {
                 // Element already exists, don't add it

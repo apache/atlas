@@ -101,6 +101,8 @@ import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS;
+import static org.apache.atlas.AtlasConfiguration.MAX_EDGES_SUPER_VERTEX;
+import static org.apache.atlas.AtlasConfiguration.MIN_EDGES_SUPER_VERTEX;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CONFIDENCE;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_CREATED_BY;
 import static org.apache.atlas.glossary.GlossaryUtils.TERM_ASSIGNMENT_ATTR_DESCRIPTION;
@@ -1227,6 +1229,11 @@ public class EntityGraphRetriever {
     public VertexEdgePropertiesCache enrichVertexPropertiesByVertexIds(Set<String> vertexIds, Set<String> attributes) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("enrichVertexPropertiesByVertexIds");
        try {
+           RequestContext context = RequestContext.get();
+           int relationAttrsSize = MAX_EDGES_SUPER_VERTEX.getInt();
+           if (context.isInvokedByIndexSearch() && context.isInvokedByProduct()) {
+               relationAttrsSize = MIN_EDGES_SUPER_VERTEX.getInt();
+           }
            VertexEdgePropertiesCache ret = new VertexEdgePropertiesCache();
            if (CollectionUtils.isEmpty(vertexIds)) {
                return null;
@@ -1254,6 +1261,8 @@ public class EntityGraphRetriever {
                        ((AtlasJanusGraph) graph).V(vertexIds)
                                .bothE()
                                .has(STATE_PROPERTY_KEY, ACTIVE.name())
+                               .has(RELATIONSHIP_GUID_PROPERTY_KEY)
+                               .limit(relationAttrsSize)
                                .project( "id", "valueMap","label", "inVertexId", "outVertexId")
                                .by(__.id()) // Returns the edge id
                                .by(__.valueMap(true)) // Returns the valueMap

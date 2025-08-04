@@ -163,12 +163,10 @@ public enum AtlasConfiguration {
 
     // ES and Cassandra batch operation configurations
     ES_BULK_BATCH_SIZE("atlas.es.bulk.batch.size", 500),
-    CASSANDRA_BATCH_SIZE("atlas.cassandra.batch.size", 100);
+    CASSANDRA_BATCH_SIZE("atlas.cassandra.batch.size", 100),
 
 
-    MIN_EDGES_SUPER_VERTEX("atlas.jg.super.vertex.min.edge.count", 1000),
-    TIMEOUT_SUPER_VERTEX_FETCH("atlas.jg.super.vertex.edge.timeout", 60);
-
+    MIN_EDGES_SUPER_VERTEX("atlas.jg.super.vertex.min.edge.count", 100);
     private static final Configuration APPLICATION_PROPERTIES;
 
     static {
