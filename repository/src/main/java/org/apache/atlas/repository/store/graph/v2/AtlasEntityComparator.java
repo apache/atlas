@@ -25,6 +25,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.util.AtlasEntityUtils;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.type.AtlasBusinessMetadataType;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -41,7 +42,6 @@ import java.util.HashMap;
 import static org.apache.atlas.repository.graph.GraphHelper.getCustomAttributes;
 import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_ADD;
 import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_DELETE;
-import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_NOOP;
 import static org.apache.atlas.repository.store.graph.v2.ClassificationAssociator.Updater.PROCESS_UPDATE;
 
 public class AtlasEntityComparator {
@@ -160,7 +160,16 @@ public class AtlasEntityComparator {
 
         if (context.isReplaceClassifications() || context.isReplaceTags() || context.isAppendTags()) {
             List<AtlasClassification> newVal  = updatedEntity.getClassifications();
-            List<AtlasClassification> currVal = (storedEntity != null) ? storedEntity.getClassifications() : entityRetriever.getAllClassifications(storedVertex);
+            List<AtlasClassification> currVal;
+            if (storedEntity != null) {
+                currVal = storedEntity.getClassifications();
+            } else {
+                if (FeatureFlagStore.isTagV2Enabled()) {
+                    currVal = entityRetriever.getDirectClassifications(storedVertex);
+                } else {
+                    currVal = entityRetriever.getAllClassifications_V1(storedVertex);
+                }
+            }
 
             if (context.isReplaceClassifications()) {
                 if (!Objects.equals(currVal, newVal)) {

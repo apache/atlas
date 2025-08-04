@@ -39,6 +39,7 @@ import org.apache.atlas.utils.AtlasMetricType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -183,6 +184,7 @@ public class TaskRegistry {
         setEncodedProperty(taskVertex, Constants.TASK_STATUS, task.getStatus().toString());
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
         setEncodedProperty(taskVertex, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
+        setEncodedProperty(taskVertex, Constants.TASK_WARNING_MESSAGE, task.getWarningMessage());
     }
 
     @GraphTransaction
@@ -346,13 +348,20 @@ public class TaskRegistry {
     }
 
     public List<AtlasTask> getTasksForReQueue() {
+        LOG.info("getTasksForReQueue: Starting to fetch tasks for re-queue");
+
         List<AtlasTask> ret = null;
 
         if (useGraphQuery) {
+            LOG.info("getTasksForReQueue: Using Graph Query to fetch tasks");
             ret = getTasksForReQueueGraphQuery();
         } else {
+            LOG.info("getTasksForReQueue: Using Index Search to fetch tasks");
             ret = getTasksForReQueueIndexSearch();
         }
+
+        LOG.info("getTasksForReQueue: Completed fetching tasks for re-queue, total tasks fetched: {}",
+                 ret != null ? ret.size() : 0);
 
         return ret;
     }
@@ -533,7 +542,7 @@ public class TaskRegistry {
     }
 
     public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters, String classificationId, String entityGuid) {
-        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, entityGuid);
+        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, null, entityGuid);
 
         createVertex(ret);
 
@@ -541,8 +550,16 @@ public class TaskRegistry {
     }
 
     public AtlasTask createVertex(String taskType, String createdBy, Map<String, Object> parameters, String classificationId,String classificationTypeName, String entityGuid) {
-        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, entityGuid);
-        ret.setClassificationTypeName(classificationTypeName);
+        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, classificationId, null,  entityGuid);
+        ret.setTagTypeName(classificationTypeName);
+        createVertex(ret);
+
+        return ret;
+    }
+
+    public AtlasTask createVertexV2(String taskType, String createdBy, Map<String, Object> parameters, String tagTypeName, String entityGuid) {
+        AtlasTask ret = new AtlasTask(taskType, createdBy, parameters, null, tagTypeName, entityGuid);
+
         createVertex(ret);
 
         return ret;
@@ -616,12 +633,17 @@ public class TaskRegistry {
 
         String classificationName = v.getProperty(Constants.TASK_CLASSIFICATION_TYPENAME, String.class);
         if (classificationName != null) {
-            ret.setClassificationTypeName(classificationName);
+            ret.setTagTypeName(classificationName);
         }
 
         String entityGuid = v.getProperty(Constants.TASK_ENTITY_GUID, String.class);
         if(entityGuid != null) {
             ret.setEntityGuid(entityGuid);
+        }
+
+        String parentEntityGuid = v.getProperty(Constants.TASK_PARENT_ENTITY_GUID, String.class);
+        if(StringUtils.isNotEmpty(parentEntityGuid)) {
+            ret.setParentEntityGuid(parentEntityGuid);
         }
 
         Integer attemptCount = v.getProperty(Constants.TASK_ATTEMPT_COUNT, Integer.class);
@@ -634,6 +656,10 @@ public class TaskRegistry {
             ret.setErrorMessage(errorMessage);
         }
 
+        String warningMessage = v.getProperty(Constants.TASK_WARNING_MESSAGE, String.class);
+        if (warningMessage != null) {
+            ret.setWarningMessage(warningMessage);
+        }
 
         return ret;
     }

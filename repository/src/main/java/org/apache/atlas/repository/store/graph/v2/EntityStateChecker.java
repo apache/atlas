@@ -60,10 +60,10 @@ public final class EntityStateChecker {
     private final EntityGraphRetriever entityRetriever;
 
     @Inject
-    public EntityStateChecker(AtlasGraph graph, AtlasTypeRegistry typeRegistry) {
+    public EntityStateChecker(AtlasGraph graph, AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever) {
         this.graph           = graph;
         this.typeRegistry    = typeRegistry;
-        this.entityRetriever = new EntityGraphRetriever(graph, typeRegistry);
+        this.entityRetriever = entityRetriever;
     }
 
 

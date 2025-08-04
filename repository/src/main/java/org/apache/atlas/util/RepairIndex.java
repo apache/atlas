@@ -18,6 +18,8 @@
 
 package org.apache.atlas.util;
 
+import org.apache.atlas.AtlanElasticSearchIndex;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraphDatabase;
@@ -49,15 +51,22 @@ public class RepairIndex {
     private static final String INDEX_NAME_EDGE_INDEX = "edge_index";
 
     private static JanusGraph graph;
+    private static AtlanElasticSearchIndex searchIndex;
 
     public static void setupGraph() {
         LOG.info("Initializing graph: ");
         graph = AtlasJanusGraphDatabase.getGraphInstance();
+
+        try {
+            searchIndex = new AtlanElasticSearchIndex();
+        } catch (AtlasException e) {
+            throw new RuntimeException(e);
+        }
         LOG.info("Graph Initialized!");
     }
 
     private static String[] getIndexes() {
-        return new String[]{ INDEX_NAME_VERTEX_INDEX, INDEX_NAME_EDGE_INDEX, INDEX_NAME_FULLTEXT_INDEX};
+        return new String[]{ INDEX_NAME_VERTEX_INDEX, INDEX_NAME_EDGE_INDEX};
     }
 
     private static void reindexVertex(String indexName, IndexSerializer indexSerializer, Set<String> entityGUIDs) throws Exception {
@@ -81,7 +90,7 @@ public class RepairIndex {
                 }
             }
         }
-        mutator.getIndexTransaction(indexType.getBackingIndexName()).restore(documentsPerStore);
+        searchIndex.restore(documentsPerStore, indexSerializer.getIndexInfoRetriever(tx).get("search"));
     }
 
     private static Set<String> getEntityAndReferenceGuids(String guid, Map<String, AtlasEntity> referredEntities) throws Exception {

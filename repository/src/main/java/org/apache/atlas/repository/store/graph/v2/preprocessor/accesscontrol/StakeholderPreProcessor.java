@@ -86,7 +86,7 @@ public class StakeholderPreProcessor extends PersonaPreProcessor {
         super(graph, typeRegistry, entityRetriever, entityStore);
 
         try {
-            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
+            this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null, entityRetriever);
         } catch (AtlasException e) {
             e.printStackTrace();
         }

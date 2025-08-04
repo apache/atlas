@@ -57,7 +57,7 @@ import java.util.Set;
 public class FullTextMapperV2 implements IFullTextMapper {
     private static final Logger LOG = LoggerFactory.getLogger(FullTextMapperV2.class);
 
-    private static final String FULL_TEXT_DELIMITER                  = " ";
+    public static final String FULL_TEXT_DELIMITER                  = " ";
     private static final String FULL_TEXT_FOLLOW_REFERENCES          = "atlas.search.fulltext.followReferences";
     private static final String FULL_TEXT_EXCLUDE_ATTRIBUTE_PROPERTY = "atlas.search.fulltext.type";
 
@@ -69,13 +69,13 @@ public class FullTextMapperV2 implements IFullTextMapper {
 
 
     @Inject
-    public FullTextMapperV2(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, Configuration configuration) {
+    public FullTextMapperV2(AtlasGraph atlasGraph, AtlasTypeRegistry typeRegistry, Configuration configuration, EntityGraphRetriever entityGraphRetriever) {
         this.typeRegistry  = typeRegistry;
         this.configuration = configuration;
 
         followReferences = this.configuration != null && this.configuration.getBoolean(FULL_TEXT_FOLLOW_REFERENCES, false);
         // If followReferences = false then ignore relationship attr loading
-        entityGraphRetriever = new EntityGraphRetriever(atlasGraph, typeRegistry, !followReferences);
+        this.entityGraphRetriever = new EntityGraphRetriever(entityGraphRetriever, !followReferences);
     }
 
     /**
@@ -199,7 +199,8 @@ public class FullTextMapperV2 implements IFullTextMapper {
         }
     }
 
-    private void mapAttributes(AtlasStructType structType, Map<String, Object> attributes, AtlasEntityExtInfo entityExtInfo, StringBuilder sb,
+    @Override
+    public void mapAttributes(AtlasStructType structType, Map<String, Object> attributes, AtlasEntityExtInfo entityExtInfo, StringBuilder sb,
                                Set<String> processedGuids, Set<String> excludeAttributes, boolean isClassificationOnly) throws AtlasBaseException {
         if (MapUtils.isEmpty(attributes)) {
             return;

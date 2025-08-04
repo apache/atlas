@@ -277,6 +277,7 @@ public class AtlasJanusGraphFactory extends JanusGraphFactory {
 
     /**
      * Returns a {@link org.janusgraph.core.log.LogProcessorFramework} for processing transaction log entries
+     * Returns a {@link LogProcessorFramework} for processing transaction log entries
      * against the provided graph instance.
      *
      * @param graph

@@ -52,6 +52,7 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Inject;
@@ -208,6 +209,16 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     @Override
+    @Async
+    public void onClassificationPropagationAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+        setRequestContext(requestContext);
+        for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+            listener.onClassificationPropagationsAdded(entities, addedClassifications, forceInline);
+        }
+    }
+
+
+    @Override
     public void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications) throws AtlasBaseException {
         doFullTextMapping(entity.getGuid());
 
@@ -232,6 +243,49 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
                     }
                 }
             }
+        }
+    }
+
+    @Override
+    public void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications, boolean forceInline) throws AtlasBaseException {
+
+        if (isV2EntityNotificationEnabled) {
+            for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+                listener.onClassificationPropagationUpdated(entity, updatedClassifications, forceInline);
+            }
+        } else {
+            if (instanceConverter != null) {
+                Referenceable entityRef = toReferenceable(entity.getGuid());
+                List<Struct>  traits    = toStruct(updatedClassifications);
+
+                if (entityRef == null || CollectionUtils.isEmpty(traits)) {
+                    return;
+                }
+
+                for (EntityChangeListener listener : entityChangeListeners) {
+                    try {
+                        listener.onTraitsUpdated(entityRef, traits);
+                    } catch (AtlasException e) {
+                        throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitUpdate");
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onClassificationUpdatedToEntities(List<AtlasEntity> entities, AtlasClassification updatedClassification) throws AtlasBaseException {
+        for (AtlasEntity entity : entities) {
+            onClassificationUpdatedToEntity(entity, Collections.singletonList(updatedClassification));
+        }
+    }
+
+    @Override
+    @Async
+    public void onClassificationUpdatedToEntitiesV2(List<AtlasEntity> entities, AtlasClassification updatedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+        setRequestContext(requestContext);
+        for (AtlasEntity entity : entities) {
+            onClassificationUpdatedToEntity(entity, Collections.singletonList(updatedClassification), forceInline);
         }
     }
 
@@ -291,6 +345,55 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
                                 throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitDelete");
                             }
                         }
+                    }
+                }
+            }
+        }
+    }
+
+    @Override
+    public void onClassificationDeletedFromEntities(List<AtlasEntity> entities, AtlasClassification deletedClassification) throws AtlasBaseException {
+        for (AtlasEntity entity : entities) {
+            onClassificationDeletedFromEntity(entity, Collections.singletonList(deletedClassification));
+        }
+    }
+
+    @Override
+    @Async
+    public void onClassificationPropagationDeleted(List<AtlasEntity> entities, AtlasClassification deletedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+        setRequestContext(requestContext);
+        for (AtlasEntity entity : entities) {
+            onClassificationPropagationDeleted(entity, Collections.singletonList(deletedClassification), forceInline);
+        }
+    }
+    
+    public void setRequestContext(RequestContext requestContext) {
+        RequestContext.get().setRequestContextHeaders(requestContext.getRequestContextHeaders());
+        RequestContext.get().setUser(requestContext.getUser(), requestContext.getUserGroups());
+    }
+
+    @Override
+    public void onClassificationPropagationDeleted(AtlasEntity entity, List<AtlasClassification> deletedClassifications, boolean forceInline) throws AtlasBaseException {
+        doFullTextMapping(entity.getGuid());
+
+        if (isV2EntityNotificationEnabled) {
+            for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+                listener.onClassificationsDeletedV2(entity, deletedClassifications, forceInline);
+            }
+        } else {
+            if (instanceConverter != null) {
+                Referenceable entityRef = toReferenceable(entity.getGuid());
+                List<Struct>  traits    = toStruct(deletedClassifications);
+
+                if (entityRef == null || CollectionUtils.isEmpty(deletedClassifications)) {
+                    return;
+                }
+
+                for (EntityChangeListener listener : entityChangeListeners) {
+                    try {
+                        listener.onTraitsDeleted(entityRef, traits);
+                    } catch (AtlasException e) {
+                        throw new AtlasBaseException(AtlasErrorCode.NOTIFICATION_FAILED, e, getListenerName(listener), "TraitDelete");
                     }
                 }
             }

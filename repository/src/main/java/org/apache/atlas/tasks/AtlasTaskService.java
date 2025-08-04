@@ -9,7 +9,6 @@ import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.model.tasks.TaskSearchParams;
 import org.apache.atlas.model.tasks.TaskSearchResult;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.tasks.ClassificationPropagateTaskFactory;
@@ -26,6 +25,7 @@ import org.springframework.stereotype.Component;
 import javax.inject.Inject;
 import java.util.*;
 
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_ENTITY_GUID;
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.graph.GraphHelper.getClassificationVertex;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
@@ -107,6 +107,44 @@ public class AtlasTaskService implements TaskService {
         return tasks;
     }
 
+    @Override
+    public List<AtlasTask> getAllTasksByCondition(int batchSize, List<Map<String,Object>> mustConditions) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDuplicatePendingTasksV2");
+
+        List<AtlasTask> tasks = new ArrayList<>(0);
+        long from = 0;
+
+        Map<String, Object> dsl = mapOf("size", batchSize);
+        dsl.put("from", from);
+
+        dsl.put("query", mapOf("bool", mapOf("must", mustConditions)));
+        TaskSearchParams taskSearchParams = new TaskSearchParams();
+        taskSearchParams.setDsl(dsl);
+
+        boolean hasNext = true;
+
+        while (hasNext) {
+            TaskSearchResult page = getTasks(taskSearchParams);
+            if (page == null || CollectionUtils.isEmpty(page.getTasks())) {
+                hasNext = false;
+            } else {
+                tasks.addAll(page.getTasks());
+
+                if (page.getTasks().size() < batchSize) {
+                    hasNext = false;
+                } else {
+                    from += batchSize;
+                    dsl.put("from", from);
+                    taskSearchParams.setDsl(dsl);
+                }
+            }
+        }
+
+        RequestContext.get().endMetricRecord(recorder);
+
+        return tasks;
+    }
+
     private Map<String, Object> getMap(String key, Object value) {
         Map<String, Object> map = new HashMap<>();
         map.put(key, value);
@@ -150,7 +188,7 @@ public class AtlasTaskService implements TaskService {
                     throw new AtlasBaseException(AtlasErrorCode.TASK_TYPE_NOT_SUPPORTED, task.getType());
                 }
                 if (isClassificationTaskType(taskType) && !taskType.equals(ClassificationPropagateTaskFactory.CLEANUP_CLASSIFICATION_PROPAGATION)) {
-                    String classificationName = task.getClassificationTypeName();
+                    String classificationName = task.getTagTypeName();
                     String entityGuid = task.getEntityGuid();
                     String classificationId = StringUtils.isEmpty(task.getClassificationId()) ? resolveAndReturnClassificationId(classificationName, entityGuid) : task.getClassificationId();
                     if (StringUtils.isEmpty(classificationId)) {
@@ -236,12 +274,13 @@ public class AtlasTaskService implements TaskService {
         setEncodedProperty(ret, Constants.TASK_CREATED_TIME, task.getCreatedTime());
         setEncodedProperty(ret, Constants.TASK_UPDATED_TIME, task.getUpdatedTime());
 
-        if (task.getClassificationTypeName() != null) {
-            setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_TYPENAME, task.getClassificationTypeName());
+        if (task.getTagTypeName() != null) {
+            setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_TYPENAME, task.getTagTypeName());
         }
 
         if (task.getClassificationId() != null) {
             setEncodedProperty(ret, Constants.TASK_CLASSIFICATION_ID, task.getClassificationId());
+            validateAndAddParentEntityGuid(ret, task, task.getClassificationId());
         }
 
         if(task.getEntityGuid() != null) {
@@ -269,6 +308,7 @@ public class AtlasTaskService implements TaskService {
         setEncodedProperty(ret, Constants.TASK_PARAMETERS, AtlasJson.toJson(task.getParameters()));
         setEncodedProperty(ret, Constants.TASK_ATTEMPT_COUNT, task.getAttemptCount());
         setEncodedProperty(ret, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
+        setEncodedProperty(ret, Constants.TASK_WARNING_MESSAGE, task.getWarningMessage());
 
         LOG.info("Creating task vertex: {}: {}, {}: {}, {}: {} ",
                 Constants.TASK_TYPE, task.getType(),
@@ -276,6 +316,19 @@ public class AtlasTaskService implements TaskService {
                 TASK_GUID, task.getGuid());
 
         return ret;
+    }
+
+    private void validateAndAddParentEntityGuid(AtlasVertex ret, AtlasTask task, String classificationId) {
+        if (StringUtils.isNotEmpty(classificationId) && StringUtils.isNotEmpty(task.getEntityGuid())) {
+            AtlasVertex classificationVertex = graph.getVertex(classificationId);
+            if (classificationVertex != null) {
+                String parentEntityGuid = classificationVertex.getProperty(CLASSIFICATION_ENTITY_GUID, String.class);
+                if (StringUtils.isNotEmpty(parentEntityGuid)) {
+                    task.setParentEntityGuid(parentEntityGuid);
+                    setEncodedProperty(ret, Constants.TASK_PARENT_ENTITY_GUID, task.getParentEntityGuid());
+                }
+            }
+        }
     }
 
     @Override

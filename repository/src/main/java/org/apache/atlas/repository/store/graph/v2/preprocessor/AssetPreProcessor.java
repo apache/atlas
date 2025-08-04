@@ -49,7 +49,7 @@ public class AssetPreProcessor implements PreProcessor {
     public AssetPreProcessor(AtlasTypeRegistry typeRegistry, EntityGraphRetriever entityRetriever, AtlasGraph graph) {
         this.typeRegistry = typeRegistry;
         this.entityRetriever = entityRetriever;
-        this.retrieverNoRelation = new EntityGraphRetriever(graph, typeRegistry, true);
+        this.retrieverNoRelation = new EntityGraphRetriever(entityRetriever, true);
 
         try {
             this.discovery = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);

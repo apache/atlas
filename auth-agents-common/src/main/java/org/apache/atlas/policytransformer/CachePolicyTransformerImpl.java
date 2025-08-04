@@ -43,6 +43,8 @@ import org.apache.atlas.plugin.util.ServicePolicies.TagPolicies;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAO;
+import org.apache.atlas.repository.store.graph.v2.tags.TagDAOCassandraImpl;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
@@ -139,7 +141,7 @@ public class CachePolicyTransformerImpl {
         purposeTransformer = new PurposeCachePolicyTransformer(entityRetriever);
 
         try {
-            this.discoveryService = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null);
+            this.discoveryService = new EntityDiscoveryService(typeRegistry, graph, null, null, null, null, entityRetriever);
         } catch (AtlasException e) {
             LOG.error("Failed to initialize discoveryService");
             throw new AtlasBaseException(e.getCause());
@@ -658,6 +660,8 @@ public class CachePolicyTransformerImpl {
         List<AtlasEntityHeader> ret = new ArrayList<>();
         try {
             IndexSearchParams indexSearchParams = new IndexSearchParams();
+            indexSearchParams.setExcludeClassifications(true);
+
             Set<String> attributes = new HashSet<>();
             attributes.add(NAME);
             attributes.add(ATTR_POLICY_CATEGORY);
@@ -734,6 +738,8 @@ public class CachePolicyTransformerImpl {
 
     private AtlasEntityHeader getServiceEntity(String serviceName) throws AtlasBaseException {
         IndexSearchParams indexSearchParams = new IndexSearchParams();
+        indexSearchParams.setExcludeClassifications(true);
+
         Set<String> attributes = new HashSet<>();
         attributes.add(NAME);
         attributes.add(ATTR_SERVICE_SERVICE_TYPE);

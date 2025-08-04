@@ -72,9 +72,9 @@ public class ExportService {
     @Inject
     public ExportService(final AtlasTypeRegistry typeRegistry, AtlasGraph graph,
                          AuditsWriter auditsWriter, HdfsPathEntityCreator hdfsPathEntityCreator,
-                         GlossaryService glossaryService) {
+                         GlossaryService glossaryService, EntityGraphRetriever entityGraphRetriever) {
         this.typeRegistry         = typeRegistry;
-        this.entityGraphRetriever = new EntityGraphRetriever(graph, this.typeRegistry);
+        this.entityGraphRetriever = entityGraphRetriever;
         this.auditsWriter         = auditsWriter;
         this.hdfsPathEntityCreator = hdfsPathEntityCreator;
         this.glossaryService = glossaryService;

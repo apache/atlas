@@ -650,7 +650,6 @@ public class AtlasDebugMetricsSource {
                 break;
 
             default:
-                LOG.error("The signature '{}' is not handled!", name);
                 break;
         }
     }

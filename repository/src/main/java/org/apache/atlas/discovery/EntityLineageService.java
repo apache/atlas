@@ -98,10 +98,10 @@ public class EntityLineageService implements AtlasLineageService {
     private static final List<String> FETCH_ENTITY_ATTRIBUTES = Arrays.asList(ATTRIBUTE_NAME_GUID, QUALIFIED_NAME, NAME);
 
     @Inject
-    EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, VertexEdgeCache vertexEdgeCache) {
+    EntityLineageService(AtlasTypeRegistry typeRegistry, AtlasGraph atlasGraph, VertexEdgeCache vertexEdgeCache, EntityGraphRetriever entityRetriever) {
         this.graph = atlasGraph;
         this.gremlinQueryProvider = AtlasGremlinQueryProvider.INSTANCE;
-        this.entityRetriever = new EntityGraphRetriever(atlasGraph, typeRegistry);
+        this.entityRetriever = entityRetriever;
         this.atlasTypeRegistry = typeRegistry;
         this.vertexEdgeCache = vertexEdgeCache;
     }
