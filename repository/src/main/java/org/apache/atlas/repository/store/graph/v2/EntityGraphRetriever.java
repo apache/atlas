@@ -150,6 +150,7 @@ public class EntityGraphRetriever {
     public static final String CREATE_TIME    = "createTime";
     public static final String QUALIFIED_NAME = "qualifiedName";
 
+
     private static final TypeReference<List<TimeBoundary>> TIME_BOUNDARIES_LIST_TYPE = new TypeReference<List<TimeBoundary>>() {};
     private final GraphHelper graphHelper;
 
@@ -1537,11 +1538,12 @@ public class EntityGraphRetriever {
             }));
 
             edgeLabels.stream().forEach(e -> propertiesMap.put(e, StringUtils.SPACE));
-        } finally {
+        }
+        finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
-
     }
+
     private void updateAttrValue( Map<String, Object> propertiesMap, VertexProperty<Object> property){
         Object value = propertiesMap.get(property.key());
         if (value instanceof List) {
@@ -1779,6 +1781,7 @@ public class EntityGraphRetriever {
 
                 if (CollectionUtils.isNotEmpty(attributes)) {
                     for (String attrName : attributes) {
+                        // structs are processed here
                         AtlasAttribute attribute = entityType.getAttribute(attrName);
 
                         if (attribute == null) {
@@ -1792,9 +1795,15 @@ public class EntityGraphRetriever {
 
                             if (attribute == null) {
                                 attribute = entityType.getRelationshipAttribute(attrName, null);
+                                // if it is relationshipAttribute but UI does not want to show it, skip processing
+                                if (attribute != null
+                                        && context.isInvokedByIndexSearch()
+                                        && context.isInvokedByProduct() &&
+                                        CollectionUtils.isEmpty(RequestContext.get().getRelationAttrsForSearch())) {
+                                    continue;
+                                }
                             }
                         }
-
 
                         Object attrValue = getVertexAttribute(entityVertex, attribute);
 
@@ -1897,6 +1906,13 @@ public class EntityGraphRetriever {
                             if (attribute == null) {
                                 // dataContractLatest, meanings, links
                                 attribute = entityType.getRelationshipAttribute(attrName, null);
+
+                                if (attribute != null
+                                        && context.isInvokedByIndexSearch()
+                                        && context.isInvokedByProduct() &&
+                                        CollectionUtils.isEmpty(RequestContext.get().getRelationAttrsForSearch())) {
+                                    continue;
+                                }
                             }
                         }
 
