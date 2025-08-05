@@ -7,11 +7,14 @@ import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.IndexSearchParams;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
 import org.apache.atlas.repository.migration.ValidateProductEdgesMigrationService;
 import org.apache.atlas.repository.store.graph.AtlasEntityStore;
+import org.apache.atlas.repository.store.graph.StakeholderQNAttributeMigrationService;
 import org.apache.atlas.repository.store.graph.v2.*;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
 import org.apache.atlas.repository.store.users.KeycloakStore;
@@ -406,6 +409,36 @@ public class MigrationREST {
             AtlasPerfTracer.log(perf);
         }
         return flag;
+    }
+
+    @POST
+    @Path("repair-stakeholder-qualified-name")
+    @Timed
+    @Consumes(MediaType.APPLICATION_JSON)
+    public Boolean updateStakeholderQualifiedName(final AtlasEntitiesWithExtInfo entitiesRequest) throws Exception {
+        AtlasPerfTracer perf = null;
+        try {
+            if (entitiesRequest == null || CollectionUtils.isEmpty(entitiesRequest.getEntities())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Stakeholder entities are required for updating unique qualified name");
+            }
+
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.updateStakeholderQualifiedName(" + entitiesRequest.getEntities().size() + " entities)");
+            }
+
+            List<AtlasEntityHeader> entityHeaders = entitiesRequest.getEntities().stream()
+                .map(entity -> new AtlasEntityHeader(entity))
+                .collect(java.util.stream.Collectors.toList());
+
+            StakeholderQNAttributeMigrationService migrationService = new StakeholderQNAttributeMigrationService(entityRetriever, entityHeaders, transactionInterceptHelper);
+            migrationService.migrateStakeholderQN();
+        } catch (Exception e) {
+            LOG.error("Error while updating unique qualified name for stakeholders: {}", entitiesRequest, e);
+            throw e;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+        return Boolean.TRUE;
     }
 
     private List<AtlasEntity> getEntitiesByIndexSearch(IndexSearchParams indexSearchParams, Boolean minExtInfo, boolean ignoreRelationships) throws AtlasBaseException {
