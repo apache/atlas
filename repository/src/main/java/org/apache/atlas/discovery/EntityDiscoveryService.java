@@ -1147,6 +1147,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults,
                                      boolean useVertexEdgeBulkFetching) throws AtlasBaseException {
         SearchParams searchParams = ret.getSearchParameters();
+        AtlasPerfMetrics.MetricRecorder prepareSearchResultMetrics = RequestContext.get().startMetricRecord("prepareSearchResult");
         try {
             if(LOG.isDebugEnabled()){
                 LOG.debug("Preparing search results for ({})", ret.getSearchParameters());
@@ -1236,6 +1237,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
         } catch (Exception e) {
                 throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(prepareSearchResultMetrics);
         }
 
         if (!searchParams.getEnableFullRestriction()) {
