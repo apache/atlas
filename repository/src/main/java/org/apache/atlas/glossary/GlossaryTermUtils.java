@@ -188,17 +188,24 @@ public class GlossaryTermUtils extends GlossaryUtils {
 
         try {
             AtlasVertex targetVertex = getVertexById(targetEntity.getGuid());
+            if (targetVertex == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_NOT_FOUND, 
+                    "Target entity not found with GUID: " + targetEntity.getGuid());
+            }
             AtlasEntityHeader targetEntityHeader = entityGraphRetriever.toAtlasEntityHeader(targetVertex);
 
             AtlasVertex termVertex = getVertexById(glossaryTerm.getGuid());
+            if (termVertex == null) {
+                throw new AtlasBaseException(AtlasErrorCode.INSTANCE_NOT_FOUND, 
+                    "Glossary term not found with GUID: " + glossaryTerm.getGuid());
+            }
             AtlasEntityHeader termEntityHeader = entityGraphRetriever.toAtlasEntityHeader(termVertex);
 
             verifyAssetAccess(targetEntityHeader, targetEntityHeader.getDisplayText());
 
             verifyTermAccess(termEntityHeader, termEntityHeader.getDisplayText());
         } catch (AtlasBaseException e) {
-            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.get().getUser(),
-                    "link term " + glossaryTerm.getName() + " to entity " + targetEntity.getGuid());
+            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Error during authorization check: " + e.getMessage());
         }
     }
 
