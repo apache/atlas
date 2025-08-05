@@ -154,7 +154,6 @@ public enum AtlasConfiguration {
     MAX_EDGES_SUPER_VERTEX("atlas.jg.super.vertex.edge.count", 10000),
     TIMEOUT_SUPER_VERTEX_FETCH("atlas.jg.super.vertex.edge.timeout", 60),
     OPTIMISE_SUPER_VERTEX("atlas.jg.super.vertex.optimise", false),
-    MIN_EDGES_SUPER_VERTEX("atlas.jg.super.vertex.min.edge.count", 20),
     MIN_TIMEOUT_SUPER_VERTEX("atlas.jg.super.vertex.min.edge.timeout", 2),
 
     // Classification propagation thread pool configuration
