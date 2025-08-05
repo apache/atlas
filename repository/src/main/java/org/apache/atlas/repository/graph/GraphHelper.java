@@ -23,11 +23,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.schedulers.Schedulers;
-import org.apache.atlas.ApplicationProperties;
-import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.AtlasException;
-import org.apache.atlas.GraphTransactionInterceptor;
-import org.apache.atlas.RequestContext;
+import org.apache.atlas.*;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
@@ -446,7 +442,7 @@ public final class GraphHelper {
     public static List<AtlasVertex> getAllAssetsWithClassificationVertex(AtlasVertex classificationVertice, int availableSlots) {
         HashSet<AtlasVertex> entityVerticesSet = new HashSet<>();
         Iterator<AtlasVertex> attachedVerticesIterator = null;
-        
+
         try {
             Iterable attachedVertices = classificationVertice.query()
                     .direction(AtlasEdgeDirection.IN)
@@ -637,7 +633,7 @@ public final class GraphHelper {
     public static List<String> getPropagatedVerticesIds (AtlasVertex classificationVertex) {
         List<String>   ret      =  new ArrayList<>();
         Iterator<AtlasVertex> vertices = null;
-        
+
         try {
             vertices = classificationVertex.query().direction(AtlasEdgeDirection.IN).label(CLASSIFICATION_LABEL)
                     .has(CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, true)
@@ -737,24 +733,15 @@ public final class GraphHelper {
     }
 
     public static Iterator<AtlasEdge> getEdgesForLabel(AtlasVertex vertex, String edgeLabel, AtlasRelationshipEdgeDirection edgeDirection) {
-        Iterator<AtlasEdge> ret = null;
-
-        switch (edgeDirection) {
-            case IN:
-                ret = getIncomingEdgesByLabel(vertex, edgeLabel);
-                break;
-
-            case OUT:
-            ret = getOutGoingEdgesByLabel(vertex, edgeLabel);
-            break;
-
-            case BOTH:
-                ret = getAdjacentEdgesByLabel(vertex, AtlasEdgeDirection.BOTH, edgeLabel);
-                break;
+        RequestContext context = RequestContext.get();
+        if (context.isInvokedByIndexSearch() && context.isInvokedByProduct() && AtlasConfiguration.OPTIMISE_SUPER_VERTEX.getBoolean()) {
+            return getAdjacentEdgesByLabelWithTimeout(vertex, AtlasEdgeDirection.valueOf(edgeDirection.name()), edgeLabel,
+                    AtlasConfiguration.MIN_TIMEOUT_SUPER_VERTEX.getLong());
         }
-
-        return ret;
+        return getAdjacentEdgesByLabel(vertex, AtlasEdgeDirection.valueOf(edgeDirection.name()), edgeLabel);
     }
+
+
 
     /**
      * Returns the active edge for the given edge label.
@@ -902,7 +889,7 @@ public final class GraphHelper {
         Iterator<AtlasVertex> resultIterator = null;
         try {
             resultIterator = results.iterator();
-            
+
             while (resultIterator.hasNext()) {
                 AtlasVertex vertex = resultIterator.next();
                 if(vertex.exists()) {
@@ -1560,7 +1547,7 @@ public final class GraphHelper {
         Iterator<AtlasVertex> resultIterator = null;
         try {
             resultIterator = queryResult.iterator();
-            
+
             while (resultIterator.hasNext()) {
                 AtlasVertex matchingVertex = resultIterator.next();
                 Collection<IndexedInstance> matches = getInstancesForVertex(map, matchingVertex);
@@ -2135,6 +2122,18 @@ public final class GraphHelper {
      * @return Iterator of children edges
      */
     public static Iterator<AtlasEdge> getActiveEdges(AtlasVertex vertex, String childrenEdgeLabel, AtlasEdgeDirection direction) throws AtlasBaseException {
+        return getActiveEdges(vertex, childrenEdgeLabel, direction, MAX_EDGES_SUPER_VERTEX.getInt(), TIMEOUT_SUPER_VERTEX_FETCH.getLong());
+    }
+    /***
+     * Get all the active edges and cap number of edges to avoid excessive processing.
+     * @param vertex
+     * @param childrenEdgeLabel
+     * @param direction
+     * @param limit
+     * @return
+     * @throws AtlasBaseException
+     */
+    public static Iterator<AtlasEdge> getActiveEdges(AtlasVertex vertex, String childrenEdgeLabel, AtlasEdgeDirection direction, int limit, long timeout) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.getActiveEdges");
 
         try {
@@ -2143,14 +2142,14 @@ public final class GraphHelper {
                                 .direction(direction)
                                 .label(childrenEdgeLabel)
                                 .has(STATE_PROPERTY_KEY, ACTIVE_STATE_VALUE)
-                                .edges(MAX_EDGES_SUPER_VERTEX.getInt())
+                                .edges(limit)
                                 .iterator();
 
                         List<AtlasEdge> edgeList = new ArrayList<>();
                         while (it.hasNext()) {
                             edgeList.add(it.next());
                             // Optional: cap edge count to avoid excessive processing
-                            if (edgeList.size() > MAX_EDGES_SUPER_VERTEX.getLong()) {
+                            if (edgeList.size() > limit) {
                                 LOG.warn("Super vertex detected: vertex id = {}, edge label = {}, edge count = {}",
                                         vertex.getId(), childrenEdgeLabel, edgeList.size());
                                 break;
@@ -2159,7 +2158,7 @@ public final class GraphHelper {
 
                         return edgeList.iterator();
                     })
-                    .timeout(TIMEOUT_SUPER_VERTEX_FETCH.getLong(), TimeUnit.SECONDS)
+                    .timeout(timeout, TimeUnit.SECONDS)
                     .onErrorReturn(throwable -> {
                         if (throwable instanceof TimeoutException) {
                             LOG.warn("Timeout while getting active edges for vertex id: {}", vertex.getId());
@@ -2228,7 +2227,7 @@ public final class GraphHelper {
     }
     public Set<AbstractMap.SimpleEntry<String,String>> retrieveEdgeLabelsAndTypeName(AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("GraphHelper.retrieveEdgeLabelsAndTypeName");
-
+        long timeoutSeconds = org.apache.atlas.AtlasConfiguration.TIMEOUT_SUPER_VERTEX_FETCH.getLong();
         try {
             // Use try-with-resources to ensure stream is properly closed
             try (Stream<Map<String, Object>> stream = ((AtlasJanusGraph) graph).getGraph().traversal()
@@ -2238,8 +2237,9 @@ public final class GraphHelper {
                     .project(LABEL_PROPERTY_KEY, TYPE_NAME_PROPERTY_KEY)
                     .by(T.label)
                     .by(TYPE_NAME_PROPERTY_KEY)
+                    .dedup()
                     .toStream()) {
-                
+
                 return stream
                         .map(m -> {
                             Object label = m.get(LABEL_PROPERTY_KEY);
@@ -2261,5 +2261,53 @@ public final class GraphHelper {
         finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+    }
+
+    /**
+     * Retrieves adjacent edges by label with a timeout. Logs guid, qualifiedName, and reason on error.
+     * Timeout is configurable via AtlasConfiguration.TIMEOUT_SUPER_VERTEX_FETCH.
+     * Runs on the IO scheduler and returns an empty iterator on error.
+     */
+    public static Iterator<AtlasEdge> getAdjacentEdgesByLabelWithTimeout(
+            AtlasVertex instanceVertex,
+            AtlasEdgeDirection direction,
+            final String edgeLabel,
+            long timeoutSeconds
+    ) {
+        final String guid = getGuid(instanceVertex);
+
+        return Single.fromCallable(() -> {
+                if (instanceVertex != null && edgeLabel != null) {
+                    return instanceVertex.getEdges(direction, edgeLabel).iterator();
+                } else {
+                    return Collections.emptyIterator();
+                }
+            })
+            .timeout(timeoutSeconds, java.util.concurrent.TimeUnit.SECONDS)
+            .subscribeOn(Schedulers.io())
+            .onErrorReturn(throwable -> {
+                String reason;
+                if (throwable instanceof org.janusgraph.core.JanusGraphException) {
+                    reason = "JanusGraphException";
+                } else if (throwable instanceof java.util.concurrent.TimeoutException) {
+                    reason = "Timeout";
+                } else {
+                    reason = "Other";
+                }
+                LOG.warn(
+                    "getAdjacentEdgesByLabelWithTimeout failed: guid={}, reason={}. Falling back to getActiveEdges.",
+                    guid, reason, throwable
+                );
+                // Fallback: try to get active edges (already limited)
+                try {
+                    return getActiveEdges(instanceVertex, edgeLabel, direction,
+                            AtlasConfiguration.MIN_EDGES_SUPER_VERTEX.getInt(),
+                            AtlasConfiguration.MIN_TIMEOUT_SUPER_VERTEX.getLong());
+                } catch (Exception fallbackEx) {
+                    LOG.warn("Fallback getActiveEdges also failed: guid={}, reason={}", guid, reason, fallbackEx);
+                    return Collections.emptyIterator();
+                }
+            })
+            .blockingGet();
     }
 }
