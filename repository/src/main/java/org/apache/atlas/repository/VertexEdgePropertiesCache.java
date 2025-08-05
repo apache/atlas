@@ -1,9 +1,7 @@
 package org.apache.atlas.repository;
 
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasStructType;
-import org.apache.commons.collections.CollectionUtils;
 import org.javatuples.Pair;
 
 import java.util.*;

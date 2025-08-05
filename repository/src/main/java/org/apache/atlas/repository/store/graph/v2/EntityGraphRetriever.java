@@ -1181,6 +1181,11 @@ public class EntityGraphRetriever {
         }
     }
 
+    /*
+    Returns a pair containing:
+    1. A map of vertex IDs to their properties, where each property is a map of attribute names to lists of values.
+    2. A map of vertex IDs to their corresponding AtlasVertex objects.
+     */
     @SuppressWarnings("unchecked,rawtypes")
     private Pair<Map<String, Map<String, List<?>>>, Map<String, AtlasVertex>> getVertexPropertiesValueMap(Set<String> vertexIds, int batchSize) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getVertexPropertiesValueMap");
@@ -1264,7 +1269,11 @@ public class EntityGraphRetriever {
                return null;
            }
 
-           // Get vertex properties
+          /*
+            Returns a pair containing:
+            1. A map of vertex IDs to their properties, where each property is a map of attribute names to lists of values.
+            2. A map of vertex IDs to their corresponding AtlasVertex objects.
+          */
            Pair<Map<String, Map<String, List<?>>>, Map<String, AtlasVertex>> vertexCache = getVertexPropertiesValueMap(vertexIds, 100);
 
            for (Map.Entry<String, Map<String, List<?>>> entry : vertexCache.getValue0().entrySet()) {
@@ -1299,8 +1308,6 @@ public class EntityGraphRetriever {
                            continue;
                        }
 
-//                        Table1 --> [term1, term2] [Table1 -meanings-> term1]
-//                        Schema --> Table
                        // Check how this vertex relates to the edge
                        boolean isSelfLoop = vertexId.equals(outVertexId) && vertexId.equals(inVertexId);
                        boolean isSourceVertex = vertexId.equals(outVertexId);
