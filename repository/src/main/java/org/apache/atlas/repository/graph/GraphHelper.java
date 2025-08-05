@@ -32,6 +32,7 @@ import org.apache.atlas.model.instance.AtlasEntity.Status;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
+import org.apache.atlas.repository.VertexEdgePropertiesCache;
 import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.repository.graphdb.janus.*;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -65,6 +66,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.IteratorUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.tinkerpop.gremlin.structure.*;
+import org.javatuples.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -1691,7 +1693,7 @@ public final class GraphHelper {
         return typeName != null && typeName.startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX);
     }
 
-    public static List<Object> getArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, AtlasAttribute attribute) {
+    public static List<Object> getArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, AtlasAttribute attribute, VertexEdgePropertiesCache vertexEdgePropertiesCache) {
         String propertyName = attribute.getVertexPropertyName();
         boolean isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
         boolean isArrayOfEnum = elementType.getTypeCategory().equals(TypeCategory.ENUM);
@@ -1704,11 +1706,23 @@ public final class GraphHelper {
                 String edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(attribute.getName());
                 return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute, edgeLabel);
             } else {
+                if( vertexEdgePropertiesCache != null) {
+                    List values = vertexEdgePropertiesCache.getCollectionElementsUsingRelationship(instanceVertex.getIdForDisplay(), attribute);
+                    return values;
+                }
                 return (List) getCollectionElementsUsingRelationship(instanceVertex, attribute);
             }
         } else if (isArrayOfPrimitiveType || isArrayOfEnum) {
+            if (vertexEdgePropertiesCache != null) {
+                ArrayList values =  vertexEdgePropertiesCache.getMultiValuedProperties(instanceVertex.getIdForDisplay(), propertyName, elementType.getClass());
+                return values;
+            }
             return (List) instanceVertex.getMultiValuedProperty(propertyName, elementType.getClass());
         } else {
+            if (vertexEdgePropertiesCache != null) {
+                ArrayList values =  vertexEdgePropertiesCache.getMultiValuedProperties(instanceVertex.getIdForDisplay(), propertyName);
+                return values;
+            }
             return (List) instanceVertex.getListProperty(propertyName);
         }
     }
