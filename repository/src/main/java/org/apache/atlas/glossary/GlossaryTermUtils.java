@@ -18,6 +18,10 @@
 package org.apache.atlas.glossary;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasEntityAccessRequest;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.bulkimport.BulkImportResponse;
 import org.apache.atlas.bulkimport.BulkImportResponse.ImportInfo;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -26,14 +30,12 @@ import org.apache.atlas.model.glossary.AtlasGlossaryTerm;
 import org.apache.atlas.model.glossary.relations.AtlasGlossaryHeader;
 import org.apache.atlas.model.glossary.relations.AtlasRelatedTermHeader;
 import org.apache.atlas.model.glossary.relations.AtlasTermCategorizationHeader;
-import org.apache.atlas.model.instance.AtlasObjectId;
-import org.apache.atlas.model.instance.AtlasRelatedObjectId;
-import org.apache.atlas.model.instance.AtlasRelationship;
-import org.apache.atlas.model.instance.AtlasStruct;
+import org.apache.atlas.model.instance.*;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.ogm.DataAccess;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.FileUtils;
@@ -74,9 +76,11 @@ public class GlossaryTermUtils extends GlossaryUtils {
     private static final ThreadLocal<Map<String, String>>  glossaryNameGuidCache      = ThreadLocal.withInitial(() -> new LinkedHashMap<>());
     private static final ThreadLocal<Map<String, Integer>> glossaryTermOrderCache     = ThreadLocal.withInitial(() -> new HashMap<>());
     private static final ThreadLocal<Map<String, String>>  glossaryTermQNameGuidCache = ThreadLocal.withInitial(() -> new HashMap<>());
+    private final EntityGraphRetriever entityGraphRetriever;
 
-    protected GlossaryTermUtils(AtlasRelationshipStore relationshipStore, AtlasTypeRegistry typeRegistry, DataAccess dataAccess) {
+    protected GlossaryTermUtils(AtlasRelationshipStore relationshipStore, AtlasTypeRegistry typeRegistry, DataAccess dataAccess, EntityGraphRetriever entityGraphRetriever) {
         super(relationshipStore, typeRegistry, dataAccess);
+        this.entityGraphRetriever = entityGraphRetriever;
     }
 
     public void processTermRelations(AtlasGlossaryTerm storeObject, AtlasGlossaryTerm updatedTerm, RelationshipOperation op) throws AtlasBaseException {
@@ -108,6 +112,8 @@ public class GlossaryTermUtils extends GlossaryUtils {
                 }
                 continue;
             }
+
+            verifyTermUpdateAccess(glossaryTerm, objectId);
 
             if (DEBUG_ENABLED) {
                 LOG.debug("Assigning term guid={}, to entity guid = {}", glossaryTerm.getGuid(), objectId.getGuid());
@@ -141,6 +147,8 @@ public class GlossaryTermUtils extends GlossaryUtils {
 
         if (CollectionUtils.isNotEmpty(relatedObjectIds)) {
             for (AtlasRelatedObjectId relatedObjectId : relatedObjectIds) {
+                verifyTermUpdateAccess(glossaryTerm, relatedObjectId);
+
                 if (DEBUG_ENABLED) {
                     LOG.debug("Removing term guid={}, from entity guid = {}", glossaryTerm.getGuid(), relatedObjectId.getGuid());
                 }
@@ -171,6 +179,37 @@ public class GlossaryTermUtils extends GlossaryUtils {
         glossaryNameGuidCache.get().clear();
         glossaryTermOrderCache.get().clear();
         glossaryTermQNameGuidCache.get().clear();
+    }
+
+    private void verifyTermUpdateAccess(AtlasGlossaryTerm glossaryTerm, AtlasRelatedObjectId targetEntity) throws AtlasBaseException {
+        if (RequestContext.get().isSkipAuthorizationCheck()) {
+            return;
+        }
+
+        try {
+            AtlasVertex targetVertex = getVertexById(targetEntity.getGuid());
+            AtlasEntityHeader targetEntityHeader = entityGraphRetriever.toAtlasEntityHeader(targetVertex);
+
+            AtlasVertex termVertex = getVertexById(glossaryTerm.getGuid());
+            AtlasEntityHeader termEntityHeader = entityGraphRetriever.toAtlasEntityHeader(termVertex);
+
+            verifyAssetAccess(targetEntityHeader, targetEntityHeader.getDisplayText());
+
+            verifyTermAccess(termEntityHeader, termEntityHeader.getDisplayText());
+        } catch (AtlasBaseException e) {
+            throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, RequestContext.get().getUser(),
+                    "link term " + glossaryTerm.getName() + " to entity " + targetEntity.getGuid());
+        }
+    }
+
+    private void verifyAssetAccess(AtlasEntityHeader entityHeader, String errorMessage) throws AtlasBaseException {
+        AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, entityHeader);
+        AtlasAuthorizationUtils.verifyAccess(request, errorMessage);
+    }
+
+    private void verifyTermAccess(AtlasEntityHeader termHeader, String errorMessage) throws AtlasBaseException {
+        AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termHeader);
+        AtlasAuthorizationUtils.verifyAccess(request, errorMessage);
     }
 
     private boolean isRelationshipGuidSame(AtlasRelatedObjectId storeObject, AtlasRelatedObjectId relatedObjectId) {

@@ -39,6 +39,7 @@ import org.apache.atlas.repository.store.graph.AtlasEntityStore;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v2.AtlasEntityChangeNotifier;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
+import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.util.FileUtils;
@@ -80,15 +81,18 @@ public class GlossaryService {
     private final AtlasTypeRegistry         atlasTypeRegistry;
 
     private final AtlasEntityChangeNotifier entityChangeNotifier;
+    private final EntityGraphRetriever entityRetriever;
 
     private static final char[] invalidNameChars = {'@', '.'};
 
     @Inject
     public GlossaryService(DataAccess dataAccess, final AtlasRelationshipStore relationshipStore,
-                           final AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier) {
+                           final AtlasTypeRegistry typeRegistry, AtlasEntityChangeNotifier entityChangeNotifier,
+                           EntityGraphRetriever entityRetriever) {
         this.dataAccess           = dataAccess;
+        this.entityRetriever      = entityRetriever;
         atlasTypeRegistry         = typeRegistry;
-        glossaryTermUtils         = new GlossaryTermUtils(relationshipStore, typeRegistry, dataAccess);
+        glossaryTermUtils         = new GlossaryTermUtils(relationshipStore, typeRegistry, dataAccess, entityRetriever);
         glossaryCategoryUtils     = new GlossaryCategoryUtils(relationshipStore, typeRegistry, dataAccess);
         this.entityChangeNotifier = entityChangeNotifier;
     }
