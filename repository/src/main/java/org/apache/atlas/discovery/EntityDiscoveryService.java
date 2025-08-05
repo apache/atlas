@@ -40,6 +40,7 @@ import org.apache.atlas.query.executors.DSLQueryExecutor;
 import org.apache.atlas.query.executors.ScriptEngineBasedExecutor;
 import org.apache.atlas.query.executors.TraversalBasedExecutor;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.VertexEdgePropertiesCache;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
@@ -49,6 +50,7 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.userprofile.UserProfileService;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.searchlog.ESSearchLogger;
+import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.stats.StatsClient;
 import org.apache.atlas.type.*;
 import org.apache.atlas.type.AtlasBuiltInTypes.AtlasObjectIdType;
@@ -87,6 +89,7 @@ import static org.apache.atlas.util.AtlasGremlinQueryProvider.AtlasGremlinQuery.
 public class EntityDiscoveryService implements AtlasDiscoveryService {
     private static final Logger LOG = LoggerFactory.getLogger(EntityDiscoveryService.class);
     private static final String DEFAULT_SORT_ATTRIBUTE_NAME = "name";
+    public static final String USE_BULK_FETCH_INDEXSEARCH = "discovery_use_bulk_fetch_indexsearch";
 
     private final AtlasGraph                      graph;
     private final AtlasGremlinQueryProvider       gremlinQueryProvider;
@@ -986,6 +989,11 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     @Override
     public AtlasSearchResult directIndexSearch(SearchParams searchParams) throws AtlasBaseException {
+        return directIndexSearch(searchParams, false);
+    }
+
+    @Override
+    public AtlasSearchResult directIndexSearch(SearchParams searchParams, boolean useVertexEdgeBulkFetching) throws AtlasBaseException {
         IndexSearchParams params = (IndexSearchParams) searchParams;
         RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
         RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
@@ -1025,7 +1033,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 return null;
             }
             RequestContext.get().endMetricRecord(elasticSearchQueryMetric);
-            prepareSearchResult(ret, indexQueryResult, resultAttributes, true);
+            prepareSearchResult(ret, indexQueryResult, resultAttributes, true, useVertexEdgeBulkFetching);
 
             ret.setAggregations(indexQueryResult.getAggregationMap());
             ret.setApproximateCount(indexQuery.vertexTotals());
@@ -1136,28 +1144,54 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
         }
     }
 
-    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults) throws AtlasBaseException {
+    private void prepareSearchResult(AtlasSearchResult ret, DirectIndexQueryResult indexQueryResult, Set<String> resultAttributes, boolean fetchCollapsedResults,
+                                     boolean useVertexEdgeBulkFetching) throws AtlasBaseException {
         SearchParams searchParams = ret.getSearchParameters();
+        AtlasPerfMetrics.MetricRecorder prepareSearchResultMetrics = RequestContext.get().startMetricRecord("prepareSearchResult");
+        boolean useBulkFetch = useVertexEdgeBulkFetching && FeatureFlagStore.evaluate(USE_BULK_FETCH_INDEXSEARCH, "true");
         try {
             if(LOG.isDebugEnabled()){
                 LOG.debug("Preparing search results for ({})", ret.getSearchParameters());
             }
             Iterator<Result> iterator = indexQueryResult.getIterator();
+            List<Result> results = IteratorUtils.toList(iterator);
             boolean showSearchScore = searchParams.getShowSearchScore();
             if (iterator == null) {
                 return;
             }
+            Set<String> vertexIds = results.stream().map(result -> {
+                AtlasVertex vertex = result.getVertex();
+                if (vertex == null) {
+                    LOG.warn("vertex in null");
+                    return null;
+                }
+                return vertex.getId().toString();
+            }).filter(Objects::nonNull).collect(Collectors.toSet());
+            VertexEdgePropertiesCache vertexEdgePropertiesCache;
+            if (useBulkFetch) {
+                vertexEdgePropertiesCache = entityRetriever.enrichVertexPropertiesByVertexIds(vertexIds, resultAttributes);
+            } else {
+                vertexEdgePropertiesCache = null;
+            }
 
-            while (iterator.hasNext()) {
-                Result result = iterator.next();
+            // If valueMap of certain vertex is empty or null then remove that from processing results
+
+
+            for(Result result : results) {
                 AtlasVertex vertex = result.getVertex();
 
                 if (vertex == null) {
                     LOG.warn("vertex in null");
                     continue;
                 }
+                vertexIds.add(vertex.getId().toString());
+                AtlasEntityHeader header;
 
-                AtlasEntityHeader header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
+                if(useBulkFetch) {
+                  header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes, vertexEdgePropertiesCache);
+                } else {
+                    header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
+                }
 
                 if (showSearchScore) {
                     ret.addEntityScore(header.getGuid(), result.getScore());
@@ -1184,7 +1218,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
                         DirectIndexQueryResult indexQueryCollapsedResult = result.getCollapseVertices(collapseKey);
                         collapseRet.setApproximateCount(indexQueryCollapsedResult.getApproximateCount());
-                        prepareSearchResult(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false);
+                        prepareSearchResult(collapseRet, indexQueryCollapsedResult, collapseResultAttributes, false, useVertexEdgeBulkFetching);
 
                         collapseRet.setSearchParameters(null);
                         collapse.put(collapseKey, collapseRet);
@@ -1204,6 +1238,8 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
             }
         } catch (Exception e) {
                 throw e;
+        } finally {
+            RequestContext.get().endMetricRecord(prepareSearchResultMetrics);
         }
 
         if (!searchParams.getEnableFullRestriction()) {

@@ -133,7 +133,6 @@ public enum AtlasConfiguration {
     ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_RELATIONS("atlas.indexsearch.enable.janus.optimization.for.relationship", false),
     ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS("atlas.indexsearch.enable.janus.optimization.for.classifications", false),
     ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_LINEAGE("atlas.indexsearch.enable.janus.optimization.for.lineage", false),
-
     ATLAS_LINEAGE_ENABLE_CONNECTION_LINEAGE("atlas.lineage.enable.connection.lineage", false),
     ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_EXTENDED("atlas.indexsearch.enable.janus.optimization.extended", false),
     ATLAS_MAINTENANCE_MODE("atlas.maintenance.mode", false),
@@ -154,6 +153,9 @@ public enum AtlasConfiguration {
     MAX_THREADS_TYPE_UPDATE("atlas.types.update.thread.count", 4),
     MAX_EDGES_SUPER_VERTEX("atlas.jg.super.vertex.edge.count", 10000),
     TIMEOUT_SUPER_VERTEX_FETCH("atlas.jg.super.vertex.edge.timeout", 60),
+    OPTIMISE_SUPER_VERTEX("atlas.jg.super.vertex.optimise", false),
+    MIN_EDGES_SUPER_VERTEX("atlas.jg.super.vertex.min.edge.count", 20),
+    MIN_TIMEOUT_SUPER_VERTEX("atlas.jg.super.vertex.min.edge.timeout", 2),
 
     // Classification propagation thread pool configuration
     TAG_ASYNC_NOTIFIER_CORE_POOL_SIZE("atlas.classification.propagation.core.pool.size", 32),
@@ -163,10 +165,10 @@ public enum AtlasConfiguration {
 
     // ES and Cassandra batch operation configurations
     ES_BULK_BATCH_SIZE("atlas.es.bulk.batch.size", 500),
-    CASSANDRA_BATCH_SIZE("atlas.cassandra.batch.size", 100);
+    CASSANDRA_BATCH_SIZE("atlas.cassandra.batch.size", 100),
 
 
-
+    MIN_EDGES_SUPER_VERTEX("atlas.jg.super.vertex.min.edge.count", 100);
     private static final Configuration APPLICATION_PROPERTIES;
 
     static {

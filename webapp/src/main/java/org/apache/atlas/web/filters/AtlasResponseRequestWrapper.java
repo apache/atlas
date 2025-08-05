@@ -22,8 +22,38 @@ import javax.servlet.http.HttpServletResponseWrapper;
 
 
 public class AtlasResponseRequestWrapper extends HttpServletResponseWrapper {
+    private final long startTime;
+    private boolean timingHeaderSet = false;
+    private static final String RESPONSE_TIME_HEADER = "X-Atlan-Api-Response-Time";
+    
     public AtlasResponseRequestWrapper(HttpServletResponse response) {
         super(response);
+        this.startTime = System.currentTimeMillis();
+    }
+    
+    public AtlasResponseRequestWrapper(HttpServletResponse response, long startTime) {
+        super(response);
+        this.startTime = startTime;
+    }
+    
+    @Override
+    public void flushBuffer() throws java.io.IOException {
+        setTimingHeaderIfNeeded();
+        super.flushBuffer();
+    }
+    
+    @Override
+    public void setContentLength(int len) {
+        setTimingHeaderIfNeeded();
+        super.setContentLength(len);
+    }
+    
+    private void setTimingHeaderIfNeeded() {
+        if (!timingHeaderSet && !isCommitted()) {
+            long responseTime = System.currentTimeMillis() - startTime;
+            setHeader(RESPONSE_TIME_HEADER, String.valueOf(responseTime));
+            timingHeaderSet = true;
+        }
     }
 }
 
