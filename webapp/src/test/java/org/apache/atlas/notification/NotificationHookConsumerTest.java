@@ -66,7 +66,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertFalse;
@@ -125,7 +125,7 @@ public class NotificationHookConsumerTest {
 
         assertTrue(hookConsumer.serverAvailable(timer));
 
-        verifyZeroInteractions(timer);
+        verifyNoInteractions(timer);
     }
 
     @Test
@@ -173,7 +173,7 @@ public class NotificationHookConsumerTest {
 
         hookConsumer.handleMessage(new AtlasKafkaMessage(message, -1, KafkaNotification.ATLAS_HOOK_TOPIC, -1));
 
-        verifyZeroInteractions(consumer);
+        verifyNoInteractions(consumer);
     }
 
     @Test
@@ -220,7 +220,7 @@ public class NotificationHookConsumerTest {
 
         notificationHookConsumer.startInternal(configuration, executorService);
 
-        verifyZeroInteractions(notificationInterface);
+        verifyNoInteractions(notificationInterface);
     }
 
     @Test
