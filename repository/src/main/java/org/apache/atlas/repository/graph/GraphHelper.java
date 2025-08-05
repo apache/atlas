@@ -1706,6 +1706,7 @@ public final class GraphHelper {
         return typeName != null && typeName.startsWith(Constants.INTERNAL_PROPERTY_KEY_PREFIX);
     }
 
+    @SuppressWarnings("unchecked,rawtypes")
     public static List<Object> getArrayElementsProperty(AtlasType elementType, AtlasVertex instanceVertex, AtlasAttribute attribute, VertexEdgePropertiesCache vertexEdgePropertiesCache) {
         String propertyName = attribute.getVertexPropertyName();
         boolean isArrayOfPrimitiveType = elementType.getTypeCategory().equals(TypeCategory.PRIMITIVE);
@@ -1727,13 +1728,13 @@ public final class GraphHelper {
             }
         } else if (isArrayOfPrimitiveType || isArrayOfEnum) {
             if (vertexEdgePropertiesCache != null) {
-                ArrayList values =  vertexEdgePropertiesCache.getMultiValuedProperties(instanceVertex.getIdForDisplay(), propertyName, elementType.getClass());
+                List values =  vertexEdgePropertiesCache.getMultiValuedProperties(instanceVertex.getIdForDisplay(), propertyName, elementType.getClass());
                 return values;
             }
             return (List) instanceVertex.getMultiValuedProperty(propertyName, elementType.getClass());
         } else {
             if (vertexEdgePropertiesCache != null) {
-                ArrayList values =  vertexEdgePropertiesCache.getMultiValuedProperties(instanceVertex.getIdForDisplay(), propertyName);
+                List values =  vertexEdgePropertiesCache.getMultiValuedProperties(instanceVertex.getIdForDisplay(), propertyName);
                 return values;
             }
             return (List) instanceVertex.getListProperty(propertyName);

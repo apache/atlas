@@ -11,9 +11,9 @@ import java.util.*;
 import static org.apache.atlas.repository.Constants.GUID_PROPERTY_KEY;
 
 public class VertexEdgePropertiesCache {
-    Map<String, Map<String, ArrayList<?>>> vertexProperties;
+    Map<String, Map<String, List<?>>> vertexProperties;
     Map<String, Map<String, Object>> edgeProperties;
-    Map<String, Map<String, ArrayList<EdgeVertexReference>>> edgeLabelToVertexIds;
+    Map<String, Map<String, List<EdgeVertexReference>>> edgeLabelToVertexIds;
     Map<String, AtlasVertex> vertexIdToVertexMap;
 
     public VertexEdgePropertiesCache() {
@@ -37,11 +37,11 @@ public class VertexEdgePropertiesCache {
         return vertexIdToVertexMap.get(vertexId);
     }
 
-    public Map<String, ArrayList<?>> getVertexPropertiesById(String vertexId) {
+    public Map<String, List<?>> getVertexPropertiesById(String vertexId) {
         return vertexProperties.getOrDefault(vertexId, new HashMap<>());
     }
 
-    public void addVertexProperties(String vertexId, Map<String, ArrayList<?>> properties) {
+    public void addVertexProperties(String vertexId, Map<String, List<?>> properties) {
         vertexProperties.put(vertexId, properties);
     }
 
@@ -49,21 +49,21 @@ public class VertexEdgePropertiesCache {
         edgeProperties.put(edgeId, properties);
     }
 
-    public <T>  ArrayList<?> getMultiValuedProperties(String vertexId, String propertyName) {
-        Map<String, ArrayList<?>> properties = getVertexPropertiesById(vertexId);
+    public <T>  List<?> getMultiValuedProperties(String vertexId, String propertyName) {
+        Map<String, List<?>> properties = getVertexPropertiesById(vertexId);
         if (properties == null) {
             return null;
         }
         return properties.getOrDefault(propertyName, null);
     }
 
-    public <T>  ArrayList<T> getMultiValuedProperties(String vertexId, String propertyName, Class<T> clazz ) {
-        Map<String, ArrayList<?>> properties = getVertexPropertiesById(vertexId);
-        ArrayList<T> result = new ArrayList<>();
+    public <T>  List<T> getMultiValuedProperties(String vertexId, String propertyName, Class<T> clazz ) {
+        Map<String, List<?>> properties = getVertexPropertiesById(vertexId);
+        List<T> result = new ArrayList<>();
         if (properties == null) {
             return null;
         }
-         ArrayList<?> values =  properties.getOrDefault(propertyName, null);
+         List<?> values =  properties.getOrDefault(propertyName, null);
         if (values == null || values.isEmpty()) {
             return null;
         }
@@ -74,13 +74,13 @@ public class VertexEdgePropertiesCache {
     }
 
     public <Tp> Tp getPropertyValue(String elementId, String propertyName, Class<Tp> clazz) {
-        Map<String, ArrayList<?>> vertexProperties = getVertexPropertiesById(elementId);
+        Map<String, List<?>> vertexProperties = getVertexPropertiesById(elementId);
         Map<String , Object> edgeProperties = this.edgeProperties.get(elementId);
         if (vertexProperties == null && edgeProperties == null) {
             return null;
         }
         if(vertexProperties != null) {
-            ArrayList<?> values = vertexProperties.getOrDefault(propertyName, null);
+            List<?> values = vertexProperties.getOrDefault(propertyName, null);
             if (values == null || values.isEmpty()) {
                 return null;
             }
@@ -111,10 +111,9 @@ public class VertexEdgePropertiesCache {
         return getPropertyValue(vertexId, Constants.ENTITY_TYPE_PROPERTY_KEY, String.class);
     }
 
-    public Map<String, Map<String, ArrayList<?>>> getVertexProperties() {
+    public Map<String, Map<String, List<?>>> getVertexProperties() {
         return vertexProperties;
     }
-
 
 
     public boolean addEdgeLabelToVertexIds(String sourceVertexId, String edgeLabel, EdgeVertexReference targetElement, int maxEdgeCount) {
@@ -144,7 +143,7 @@ public class VertexEdgePropertiesCache {
             String edgeLabel,
             AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection direction) {
 
-        Map<String, ArrayList<EdgeVertexReference>> edgeMap = edgeLabelToVertexIds.get(sourceVertexId);
+        Map<String, List<EdgeVertexReference>> edgeMap = edgeLabelToVertexIds.get(sourceVertexId);
         if (edgeMap == null) {
             return Collections.emptyList();
         }

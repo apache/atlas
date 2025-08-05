@@ -81,9 +81,7 @@ import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.*;
 import org.janusgraph.core.Cardinality;
-import org.janusgraph.core.JanusGraph;
 import org.janusgraph.graphdb.relations.CacheVertexProperty;
-import org.janusgraph.graphdb.transaction.StandardJanusGraphTx;
 import org.javatuples.Pair;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -1118,8 +1116,8 @@ public class EntityGraphRetriever {
     }
 
     @NotNull
-    private static Map<String, ArrayList<?>> getStringArrayListMap(Map<Object, Object> properties) {
-        Map<String, ArrayList<?>> vertexProperties = new HashMap<>();
+    private static Map<String, List<?>> getStringArrayListMap(Map<Object, Object> properties) {
+        Map<String, List<?>> vertexProperties = new HashMap<>();
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
             String attributeName = entry.getKey().toString();
             Object attributeValue = entry.getValue();
@@ -1182,14 +1180,15 @@ public class EntityGraphRetriever {
         }
     }
 
-    private Pair<Map<String, Map<String, ArrayList<?>>>, Map<String, AtlasVertex>> getVertexPropertiesValueMap(Set<String> vertexIds, int batchSize) {
+    @SuppressWarnings("unchecked,rawtypes")
+    private Pair<Map<String, Map<String, List<?>>>, Map<String, AtlasVertex>> getVertexPropertiesValueMap(Set<String> vertexIds, int batchSize) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getVertexPropertiesValueMap");
         try {
             if (CollectionUtils.isEmpty(vertexIds)) {
                 return Pair.with(Collections.emptyMap(), Collections.emptyMap());
             }
 
-            Map<String, Map<String, ArrayList<?>>> vertexPropertyMap = new HashMap<>();
+            Map<String, Map<String, List<?>>> vertexPropertyMap = new HashMap<>();
             Map<String, AtlasVertex> vertexMap = new HashMap<>();
 
             ListUtils.partition(new ArrayList<>(vertexIds), batchSize).forEach(batch -> {
@@ -1212,7 +1211,7 @@ public class EntityGraphRetriever {
                             Long vertexId = (Long) properties.get(T.id);
                             properties.remove(T.id);
                             properties.remove(T.label);
-                            Map<String, ArrayList<?>> vertexProperties = getStringArrayListMap(properties);
+                            Map<String, List<?>> vertexProperties = getStringArrayListMap(properties);
                             vertexPropertyMap.put(vertexId.toString(), vertexProperties);
                         }
                     }
@@ -1225,8 +1224,8 @@ public class EntityGraphRetriever {
         }
     }
 
-    public List<Map<String, Object>> getConnectedEdges(Set<String> vertexIds, Set<String> edgeLabels, int relationAttrsSize) {
-        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getConnectedEdges");
+    public List<Map<String, Object>> getConnectedRelationEdges(Set<String> vertexIds, Set<String> edgeLabels, int relationAttrsSize) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getConnectedRelationEdges");
         try {
             if (CollectionUtils.isEmpty(vertexIds)) {
                 return Collections.emptyList();
@@ -1259,45 +1258,48 @@ public class EntityGraphRetriever {
            if (context.isInvokedByIndexSearch() && context.isInvokedByProduct()) {
                relationAttrsSize = MIN_EDGES_SUPER_VERTEX.getInt();
            }
-           VertexEdgePropertiesCache ret = new VertexEdgePropertiesCache();
+           VertexEdgePropertiesCache vertexEdgePropertyCache = new VertexEdgePropertiesCache();
            if (CollectionUtils.isEmpty(vertexIds)) {
                return null;
            }
 
            // Get vertex properties
-           Pair<Map<String, Map<String, ArrayList<?>>>, Map<String, AtlasVertex>> vertexCache = getVertexPropertiesValueMap(vertexIds, 100);
+           Pair<Map<String, Map<String, List<?>>>, Map<String, AtlasVertex>> vertexCache = getVertexPropertiesValueMap(vertexIds, 100);
 
-           for (Map.Entry<String, Map<String, ArrayList<?>>> entry : vertexCache.getValue0().entrySet()) {
+           for (Map.Entry<String, Map<String, List<?>>> entry : vertexCache.getValue0().entrySet()) {
                String vertexId = entry.getKey();
-               Map<String, ArrayList<?>> properties = entry.getValue();
+               Map<String, List<?>> properties = entry.getValue();
 
                if (MapUtils.isNotEmpty(properties)) {
-                   ret.addVertexProperties(vertexId, properties);
+                   vertexEdgePropertyCache.addVertexProperties(vertexId, properties);
                }
            }
-           ret.addVertices(vertexCache.getValue1());
+           vertexEdgePropertyCache.addVertices(vertexCache.getValue1());
 
-           Set<String> edgeLabelsToProcess = collectEdgeLabelsToProcess(ret, vertexIds, attributes);
+           Set<String> edgeLabelsToProcess = collectEdgeLabelsToProcess(vertexEdgePropertyCache, vertexIds, attributes);
 
            Set<String> vertexIdsToProcess = new HashSet<>();
            if (!CollectionUtils.isEmpty(edgeLabelsToProcess)) {
-               List<Map<String, Object>> results = getConnectedEdges(vertexIds, edgeLabelsToProcess, relationAttrsSize);
+               List<Map<String, Object>> relationEdges = getConnectedRelationEdges(vertexIds, edgeLabelsToProcess, relationAttrsSize);
 
                for(String vertexId : vertexIds) {
-                   for (Map<String, Object> result : results) {
-                       if (!(result.containsKey("id") && result.containsKey("valueMap"))) {
+                   for (Map<String, Object> relationEdge : relationEdges) {
+                       if (!(relationEdge.containsKey("id") && relationEdge.containsKey("valueMap"))) {
                            continue;
                        }
-                       LinkedHashMap<Object, Object> valueMap = (LinkedHashMap<Object, Object>) result.get("valueMap");
+                       LinkedHashMap<Object, Object> valueMap = (LinkedHashMap<Object, Object>) relationEdge.get("valueMap");
 
-                       String edgeId = result.get("id").toString();
-                       String edgeLabel = result.get("label").toString();
-                       String outVertexId = result.get("outVertexId").toString();
-                       String inVertexId = result.get("inVertexId").toString();
+                       String edgeId = relationEdge.get("id").toString();
+                       String edgeLabel = relationEdge.get("label").toString();
+                       String outVertexId = relationEdge.get("outVertexId").toString();
+                       String inVertexId = relationEdge.get("inVertexId").toString();
 
                        if (!edgeLabelsToProcess.contains(edgeLabel)) {
                            continue;
                        }
+
+//                        Table1 --> [term1, term2] [Table1 -meanings-> term1]
+//                        Schema --> Table
                        // Check how this vertex relates to the edge
                        boolean isSelfLoop = vertexId.equals(outVertexId) && vertexId.equals(inVertexId);
                        boolean isSourceVertex = vertexId.equals(outVertexId);
@@ -1323,7 +1325,7 @@ public class EntityGraphRetriever {
                                referencedVertex, edgeId, edgeLabel, inVertexId, outVertexId, valueMap
                        );
 
-                       boolean wasAdded = ret.addEdgeLabelToVertexIds(
+                       boolean wasAdded = vertexEdgePropertyCache.addEdgeLabelToVertexIds(
                                vertexId, edgeLabel, edgeRef, relationAttrsSize
                        );
 
@@ -1335,18 +1337,18 @@ public class EntityGraphRetriever {
                }
            }
 
-           Pair<Map<String, Map<String, ArrayList<?>>>, Map<String, AtlasVertex>> referenceVertices = getVertexPropertiesValueMap(vertexIdsToProcess, 1000);
-           for (Map.Entry<String, Map<String, ArrayList<?>>> entry : referenceVertices.getValue0().entrySet()) {
+           Pair<Map<String, Map<String, List<?>>>, Map<String, AtlasVertex>> referenceVertices = getVertexPropertiesValueMap(vertexIdsToProcess, 1000);
+           for (Map.Entry<String, Map<String, List<?>>> entry : referenceVertices.getValue0().entrySet()) {
                String vertexId = entry.getKey();
-               Map<String, ArrayList<?>> properties = entry.getValue();
+               Map<String, List<?>> properties = entry.getValue();
 
                if (MapUtils.isNotEmpty(properties)) {
-                   ret.addVertexProperties(vertexId, properties);
+                   vertexEdgePropertyCache.addVertexProperties(vertexId, properties);
                }
            }
-           ret.addVertices(referenceVertices.getValue1());
+           vertexEdgePropertyCache.addVertices(referenceVertices.getValue1());
 
-           return ret;
+           return vertexEdgePropertyCache;
        } finally {
            RequestContext.get().endMetricRecord(metricRecorder);
        }
@@ -1612,12 +1614,8 @@ public class EntityGraphRetriever {
         AtlasEntityHeader ret = new AtlasEntityHeader();
         String vertexId = entityVertex.getIdForDisplay();
         try {
-//            String  typeName     = entityVertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class);
             String typeName = vertexEdgePropertiesCache.getPropertyValue(vertexId, Constants.TYPE_NAME_PROPERTY_KEY, String.class);
-//            String  guid         = entityVertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
             String guid = vertexEdgePropertiesCache.getPropertyValue(vertexId, Constants.GUID_PROPERTY_KEY, String.class);
-
-            //Boolean isIncomplete = isEntityIncomplete(entityVertex);
 
             ret.setTypeName(typeName);
             ret.setGuid(guid);
@@ -1634,26 +1632,19 @@ public class EntityGraphRetriever {
                 }
                 ret.setClassificationNames(getAllTagNames(tags));
             }
-//            ret.setIsIncomplete(isIncomplete);
             ret.setLabels(getLabels(entityVertex));
 
-//            ret.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
             ret.setCreatedBy(vertexEdgePropertiesCache.getPropertyValue(vertexId, CREATED_BY_KEY, String.class));
-//            ret.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
             ret.setUpdatedBy(vertexEdgePropertiesCache.getPropertyValue(vertexId, MODIFIED_BY_KEY, String.class));
 
-            // Set entity creation time if available
-//            Long createdTime = GraphHelper.getCreatedTime(entityVertex);
             Long createdTime = vertexEdgePropertiesCache.getPropertyValue(vertexId, TIMESTAMP_PROPERTY_KEY, Long.class);
             if (createdTime != null) {
-                ret.setCreateTime(new Date(createdTime));
+                LOG.warn("DATA INCONSISTENCY ISSUE!! Vertex {} doesn't have created time, ", vertexId);
             }
 
-            // Set entity last update time if available
-//            Long updatedTime = GraphHelper.getModifiedTime(entityVertex);
             Long updatedTime = vertexEdgePropertiesCache.getPropertyValue(vertexId, MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
             if (updatedTime != null) {
-                ret.setUpdateTime(new Date(updatedTime));
+                ret.setUpdateTime(new Date(createdTime));
             }
 
             if(RequestContext.get().includeMeanings()) {
@@ -1675,7 +1666,6 @@ public class EntityGraphRetriever {
                     }
                 }
 
-//                Object displayText = getDisplayText(entityVertex, entityType);
                 Object displayText = getDisplayText(vertexId, entityType,vertexEdgePropertiesCache);
                 if (displayText != null) {
                     ret.setDisplayText(displayText.toString());
@@ -2325,7 +2315,7 @@ public class EntityGraphRetriever {
                     break;
                 case OBJECT_ID_TYPE:
                     if (includeReferences) {
-                        if (attribute.getDefinedInType().getTypeCategory() == TypeCategory.STRUCT) {
+                        if (TypeCategory.STRUCT == attribute.getDefinedInType().getTypeCategory()) {
                             //Struct attribute having ObjectId as type
                             edgeLabel = AtlasGraphUtilsV2.getEdgeLabel(attribute.getName());
                         }
@@ -2780,7 +2770,7 @@ public class EntityGraphRetriever {
         boolean isRelationshipAttribute = typeRegistry.getRelationshipDefByName(relationshipTypeName) != null;
 
 
-        if (isRelationshipAttribute) {             // Map Attributes
+        if (isRelationshipAttribute && RequestContext.get().isIncludeRelationshipAttributes()) {             // Map Attributes
             AtlasRelationshipType relationshipType = typeRegistry.getRelationshipTypeByName(relationshipTypeName);
             if (relationshipType == null) {
                 LOG.warn("Relationship type not found for typeName: {}", relationshipTypeName);
