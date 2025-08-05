@@ -26,6 +26,9 @@ pom.xml.releaseBackup
 *.iws
 .idea
 
+# gemini
+gemini.md
+
 # Eclipse
 .cache
 .classpath
