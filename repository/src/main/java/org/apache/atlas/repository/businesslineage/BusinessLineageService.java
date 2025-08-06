@@ -263,6 +263,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                     relationshipStoreV2.getOrCreate(assetVertex, productVertex, relationship, true);
                     LOG.info("Added input relation between asset and product");
                     updateInternalAttr(productVertex, assetGuid, operation);
+                    cacheDifferentialMeshEntity(productVertex, operation);
                 }
             }
         } catch (AtlasBaseException e){
@@ -279,6 +280,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                 if(inputPortEdge != null){
                     graph.removeEdge(inputPortEdge);
                     updateInternalAttr(productVertex, assetGuid, operation);
+                    cacheDifferentialMeshEntity(productVertex, operation);
                 }
             }
         } catch (AtlasBaseException | RepositoryException e){
@@ -331,6 +333,29 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         diffEntity.setUpdatedBy(ev.getProperty(MODIFIED_BY_KEY, String.class));
         diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
         diffEntity.setAttribute(assetDenormAttribute, existingValues);
+
+        requestContext.cacheDifferentialEntity(diffEntity);
+    }
+
+    private void cacheDifferentialMeshEntity(AtlasVertex productVertex, BusinessLineageRequest.OperationType operation) {
+        AtlasEntity diffEntity;
+        String productGuid = productVertex.getProperty(GUID_PROPERTY_KEY, String.class);
+
+        RequestContext requestContext = RequestContext.get();
+
+        if (requestContext.getDifferentialEntity(productGuid) != null) {
+            diffEntity = requestContext.getDifferentialEntity(productGuid);
+        } else {
+            diffEntity = new AtlasEntity(productVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+        }
+
+        diffEntity.setGuid(productGuid);
+        diffEntity.setUpdatedBy(productVertex.getProperty(MODIFIED_BY_KEY, String.class));
+        diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
+        List<String> inputPortGuids = productVertex.getMultiValuedProperty(INPUT_PORT_GUIDS_ATTR, String.class);
+        if (inputPortGuids != null) {
+            diffEntity.setAttribute(INPUT_PORT_GUIDS_ATTR, inputPortGuids);
+        }
 
         requestContext.cacheDifferentialEntity(diffEntity);
     }
