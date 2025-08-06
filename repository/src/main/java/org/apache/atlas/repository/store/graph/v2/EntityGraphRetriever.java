@@ -1647,13 +1647,13 @@ public class EntityGraphRetriever {
             ret.setUpdatedBy(vertexEdgePropertiesCache.getPropertyValue(vertexId, MODIFIED_BY_KEY, String.class));
 
             Long createdTime = vertexEdgePropertiesCache.getPropertyValue(vertexId, TIMESTAMP_PROPERTY_KEY, Long.class);
-            if (createdTime != null) {
-                LOG.warn("DATA INCONSISTENCY ISSUE!! Vertex {} doesn't have created time, ", vertexId);
-            }
-
             Long updatedTime = vertexEdgePropertiesCache.getPropertyValue(vertexId, MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class);
-            if (updatedTime != null) {
-                ret.setUpdateTime(new Date(createdTime));
+
+            if (createdTime == null) {
+                LOG.warn("DATA INCONSISTENCY ISSUE!! Vertex {} doesn't have created time", vertexId);
+            } else {
+                ret.setCreateTime(new Date(createdTime));
+                ret.setUpdateTime(new Date(Optional.ofNullable(updatedTime).orElse(createdTime)));
             }
 
             if(RequestContext.get().includeMeanings()) {
