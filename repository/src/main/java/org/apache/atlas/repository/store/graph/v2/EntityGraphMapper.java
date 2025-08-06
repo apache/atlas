@@ -2520,8 +2520,6 @@ public class EntityGraphMapper {
             }
         } else if (internalAttr.equals(INPUT_PORT_GUIDS_ATTR)) {
             //  When adding assets as inputPort, fail if they already exist as outputPorts.
-            //  Follows atomic transaction i.e if any of the inputPort assets already exist as outputPorts, then
-            //  complete inputPort batch fails
             handleInputPortUpdate(toVertex, addedGuids);
         }
     }
