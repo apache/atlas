@@ -1,6 +1,5 @@
 package org.apache.atlas.auth.client.auth;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.*;
 import okhttp3.logging.HttpLoggingInterceptor;
 import org.apache.atlas.auth.client.config.AuthConfig;
@@ -38,7 +37,7 @@ public final class KeycloakAuthenticationService {
         this.authConfig = authConfig;
         this.retrofit = new Retrofit.Builder().client(getOkHttpClient())
                 .baseUrl(this.authConfig.getAuthServerUrl())
-                .addConverterFactory(JacksonConverterFactory.create(new ObjectMapper())).build()
+                .addConverterFactory(JacksonConverterFactory.create(ObjectMapperUtils.KEYCLOAK_OBJECT_MAPPER)).build()
                 .create(RetrofitKeycloakClient.class);
     }
 
