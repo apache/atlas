@@ -67,11 +67,11 @@ public class AbstractAuthClient {
                 .build();
         this.retrofitKeycloakClient = new Retrofit.Builder().client(okHttpClient)
                 .baseUrl(this.authConfig.getAuthServerUrl())
-                .addConverterFactory(JacksonConverterFactory.create(ObjectMapperUtils.OBJECT_MAPPER)).build()
+                .addConverterFactory(JacksonConverterFactory.create(ObjectMapperUtils.KEYCLOAK_OBJECT_MAPPER)).build()
                 .create(RetrofitKeycloakClient.class);
         this.retrofitHeraclesClient = new Retrofit.Builder().client(okHttpClient)
                 .baseUrl(this.authConfig.getHeraclesApiServerUrl())
-                .addConverterFactory(JacksonConverterFactory.create(ObjectMapperUtils.OBJECT_MAPPER)).build()
+                .addConverterFactory(JacksonConverterFactory.create(ObjectMapperUtils.HERACLES_OBJECT_MAPPER)).build()
                 .create(RetrofitHeraclesClient.class);
         authService = new KeycloakAuthenticationService(authConfig);
     }

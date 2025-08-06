@@ -37,7 +37,7 @@ public final class KeycloakAuthenticationService {
         this.authConfig = authConfig;
         this.retrofit = new Retrofit.Builder().client(getOkHttpClient())
                 .baseUrl(this.authConfig.getAuthServerUrl())
-                .addConverterFactory(JacksonConverterFactory.create(ObjectMapperUtils.OBJECT_MAPPER)).build()
+                .addConverterFactory(JacksonConverterFactory.create(ObjectMapperUtils.KEYCLOAK_OBJECT_MAPPER)).build()
                 .create(RetrofitKeycloakClient.class);
     }
 
