@@ -2929,7 +2929,7 @@ public class EntityGraphMapper {
         AtlasEntityHeader targetEntityHeader = entityRetriever.toAtlasEntityHeader(targetEntityVertex);
 
         AtlasEntityAccessRequest targetRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetEntityHeader);
-        AtlasAuthorizationUtils.verifyAccess(targetRequest, "Cannot update entity: " + targetEntityHeader.getDisplayText());
+        AtlasAuthorizationUtils.verifyAccess(targetRequest, "update on asset: " + targetEntityHeader.getDisplayText());
 
         for (Object element : createdElements) {
             AtlasEdge edge = (AtlasEdge) element;
@@ -2937,7 +2937,7 @@ public class EntityGraphMapper {
             AtlasEntityHeader termEntityHeader = entityRetriever.toAtlasEntityHeader(termVertex);
 
             AtlasEntityAccessRequest termRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader);
-            AtlasAuthorizationUtils.verifyAccess(termRequest, "Cannot link term: " + termEntityHeader.getDisplayText());
+            AtlasAuthorizationUtils.verifyAccess(termRequest, "linking of term: " + termEntityHeader.getDisplayText());
         }
 
         for (AtlasEdge edge : deletedElements) {
@@ -2945,7 +2945,7 @@ public class EntityGraphMapper {
             AtlasEntityHeader termEntityHeader = entityRetriever.toAtlasEntityHeader(termVertex);
 
             AtlasEntityAccessRequest termRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader);
-            AtlasAuthorizationUtils.verifyAccess(termRequest, "Cannot unlink term: " + termEntityHeader.getDisplayText());
+            AtlasAuthorizationUtils.verifyAccess(termRequest, "linking of term: " + termEntityHeader.getDisplayText());
         }
     }
 
