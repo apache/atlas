@@ -13,6 +13,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import java.util.List;
 
+import static org.apache.atlas.authorizer.authorizers.AuthorizerCommonUtil.isTagKeyValueFormat;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_AND;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_OR;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_EQUALS;
@@ -89,6 +90,12 @@ public class JsonToElasticsearchQuery {
     private static JsonNode createAttributeQuery(String operator, String attributeName, JsonNode attributeValueNode) {
         ObjectNode queryNode = mapper.createObjectNode();
         String attributeValue = attributeValueNode.asText();
+
+        // handle special attribute value requirement like tag key value
+        if (isTagKeyValueFormat(attributeValueNode)) {
+            return createQueryWithOperatorForTag(operator, attributeName, attributeValueNode);
+        }
+
         switch (operator) {
             case POLICY_FILTER_CRITERIA_EQUALS:
                 if (attributeValueNode.isArray()) {
@@ -102,7 +109,7 @@ public class JsonToElasticsearchQuery {
                 break;
 
             case POLICY_FILTER_CRITERIA_NOT_EQUALS:
-                if (attributeValueNode.isArray()) {
+                if (attributeValueNode.isArray()) { // same as not_in operator
                     queryNode.putObject("bool").putObject("must_not").putObject("terms").set(attributeName, attributeValueNode);
                 } else {
                     queryNode.putObject("bool").putObject("must_not").putObject("term").put(attributeName, attributeValue);
@@ -144,6 +151,171 @@ public class JsonToElasticsearchQuery {
         return queryNode;
     }
 
+    // Repeating some code for tag key-value pairs query creation to avoid complexity in the main query creation logic
+    // This method can potentially be merged with createAttributeQuery if needed
+    public static JsonNode createQueryWithOperatorForTag(String operator, String attributeName, JsonNode attributeValueNode) {
+        ObjectNode queryNode = mapper.createObjectNode();
+        
+        if (!isTagKeyValueFormat(attributeValueNode)) {
+            return null;
+        }
+
+        switch (operator) {
+            case POLICY_FILTER_CRITERIA_EQUALS:
+                if (attributeValueNode.isArray()) {
+                    ArrayNode filterArray = queryNode.putObject("bool").putArray("filter");
+                    for (JsonNode valueNode : attributeValueNode) {
+                        filterArray.add(createDSLForTagKeyValue(attributeName, valueNode));
+                    }
+                } else {
+                    return createDSLForTagKeyValue(attributeName, attributeValueNode);
+                }
+                break;
+
+            case POLICY_FILTER_CRITERIA_NOT_EQUALS:
+                ObjectNode mustNotNode = queryNode.putObject("bool").putObject("must_not");
+                if (attributeValueNode.isArray()) {
+                    ArrayNode shouldArray = mustNotNode.putArray("should");
+                    for (JsonNode valueNode : attributeValueNode) {
+                        shouldArray.add(createDSLForTagKeyValue(attributeName, valueNode));
+                    }
+                } else {
+                    mustNotNode.setAll((ObjectNode) createDSLForTagKeyValue(attributeName, attributeValueNode));
+                }
+                break;
+
+            case POLICY_FILTER_CRITERIA_IN:
+                ArrayNode shouldArray = queryNode.putObject("bool").putArray("should");
+                if (attributeValueNode.isArray()) {
+                    for (JsonNode valueNode : attributeValueNode) {
+                        shouldArray.add(createDSLForTagKeyValue(attributeName, valueNode));
+                    }
+                } else {
+                    shouldArray.add(createDSLForTagKeyValue(attributeName, attributeValueNode));
+                }
+                break;
+
+            case POLICY_FILTER_CRITERIA_NOT_IN:
+                ObjectNode notInMustNot = queryNode.putObject("bool").putObject("must_not");
+                ArrayNode notInShouldArray = notInMustNot.putArray("should");
+                if (attributeValueNode.isArray()) {
+                    for (JsonNode valueNode : attributeValueNode) {
+                        notInShouldArray.add(createDSLForTagKeyValue(attributeName, valueNode));
+                    }
+                } else {
+                    notInShouldArray.add(createDSLForTagKeyValue(attributeName, attributeValueNode));
+                }
+                break;
+
+            default: LOG.warn("Found unknown operator {}", operator);
+        }
+        return queryNode;
+    }
+
+    /*
+        This should produce something like
+        {
+            "bool": {
+                "filter": [
+                    {
+                        "term": {"__traitNames": "tag"}
+                    },
+                    {
+                        "span_near": {
+                            "clauses": [
+                                {"span_term": {"__classificationsText.text": "tagAttachmentValue"}},
+                                {"span_term": {"__classificationsText.text": "value1"}},
+                                {"span_term": {"__classificationsText.text": "tagAttachmentKey"}}
+                            ],
+                            "in_order": true,
+                            "slop": 0
+                        }
+                    },
+                    {
+                        "span_near": {
+                            "clauses": [
+                                {"span_term": {"__classificationsText.text": "tagAttachmentValue"}},
+                                {"span_term": {"__classificationsText.text": "value2"}},
+                                {"span_term": {"__classificationsText.text": "tagAttachmentKey"}}
+                            ],
+                            "in_order": true,
+                            "slop": 0
+                        }
+                    }
+                ]
+            }
+        }
+     */
+    public static JsonNode createDSLForTagKeyValue(String attributeName, JsonNode tagKeyValueNode) {
+        ObjectNode queryNode = mapper.createObjectNode();
+
+        // handle simple tag string i.e. without key value object format
+        if (!isTagKeyValueFormat(tagKeyValueNode)) {
+            ArrayNode filter = queryNode.putObject("bool").putArray("filter");
+            filter.addObject().putObject("term").put(attributeName, tagKeyValueNode.asText());
+            return queryNode;
+        }
+
+        String tag = tagKeyValueNode.get("name").asText();
+
+        ArrayNode filterArray = queryNode.putObject("bool").putArray("filter");
+        // Add term query for tag name match
+        ObjectNode tagTermQuery = mapper.createObjectNode();
+        tagTermQuery.putObject("term").put(attributeName, tag);
+        filterArray.add(tagTermQuery);
+
+        ArrayNode tagKeyValues = (ArrayNode) tagKeyValueNode.get("tagValues");
+        if (tagKeyValues == null || !tagKeyValues.isArray()) {
+            return queryNode;
+        }
+
+        // add span_near clauses
+        for (JsonNode tagKeyValue : tagKeyValues) {
+
+            String key = tagKeyValue.get("key").asText();
+            JsonNode value = tagKeyValue.get("consolidatedValue");
+            if (value == null) {
+                continue;
+            }
+
+            // Add span_near query for key-value pair
+            ArrayNode clausesArray = mapper.createArrayNode();
+
+            // Create span_term for left side of the tag
+            ObjectNode tagClause = mapper.createObjectNode();
+            ObjectNode tagSpanTerm = mapper.createObjectNode();
+            tagSpanTerm.put("__classificationsText.text", "tagAttachmentValue");
+            tagClause.set("span_term", tagSpanTerm);
+            clausesArray.add(tagClause);
+
+            // Create span_term for value
+            ObjectNode keyClause = mapper.createObjectNode();
+            ObjectNode keySpanTerm = mapper.createObjectNode();
+            keySpanTerm.put("__classificationsText.text", value.asText());
+            keyClause.set("span_term", keySpanTerm);
+            clausesArray.add(keyClause);
+
+            // Create span_term for right side of the tag
+            ObjectNode valueClause = mapper.createObjectNode();
+            ObjectNode valueSpanTerm = mapper.createObjectNode();
+            valueSpanTerm.put("__classificationsText.text", "tagAttachmentKey");
+            valueClause.set("span_term", valueSpanTerm);
+            clausesArray.add(valueClause);
+
+            // Skipping clause for key to keep the DSL consistent with the FE query
+
+            ObjectNode spanNearNode = mapper.createObjectNode();
+            spanNearNode.set("clauses", clausesArray);
+            spanNearNode.put("in_order", true);
+            spanNearNode.put("slop", 0);
+
+            ObjectNode spanNearQuery = mapper.createObjectNode();
+            spanNearQuery.set("span_near", spanNearNode);
+            filterArray.add(spanNearQuery);
+        }
+        
+        return queryNode;
+    }
 
     public static JsonNode parseFilterJSON(String policyFilterCriteria, String rootKey) {
         JsonNode filterCriteriaNode = null;
