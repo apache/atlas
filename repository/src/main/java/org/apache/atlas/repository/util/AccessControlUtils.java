@@ -150,6 +150,10 @@ public final class AccessControlUtils {
     public static final String POLICY_FILTER_CRITERIA_NOT_IN = "NOT_IN";
     public static final String POLICY_FILTER_CRITERIA_STARTS_WITH = "STARTS_WITH";
     public static final String POLICY_FILTER_CRITERIA_ENDS_WITH = "ENDS_WITH";
+
+    public static final String ATTR_TAG = "__traitNames";
+    public static final String ATTR_PROPAGATED_TAG = "__propagatedTraitNames";
+    public static final List<String> ATTR_TAGS = List.of(ATTR_TAG, ATTR_PROPAGATED_TAG);
     
     public static final Set<String> POLICY_FILTER_CRITERIA_VALID_OPS = Set.of(POLICY_FILTER_CRITERIA_EQUALS,
             POLICY_FILTER_CRITERIA_NOT_EQUALS, POLICY_FILTER_CRITERIA_IN, POLICY_FILTER_CRITERIA_NOT_IN,

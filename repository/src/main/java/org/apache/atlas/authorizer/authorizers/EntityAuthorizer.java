@@ -24,6 +24,7 @@ import java.util.HashSet;
 
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_DENY;
+import static org.apache.atlas.repository.util.AccessControlUtils.ATTR_TAGS;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_EQUALS;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_ENDS_WITH;
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_NOT_EQUALS;
@@ -149,16 +150,17 @@ public class EntityAuthorizer {
         entityAttributeValues.addAll(handleSpecialAttributes(entity, attributeName));
 
         JsonNode attributeValueNode = crit.get("attributeValue");
-        String attributeValue = attributeValueNode.asText();
         String operator = crit.get("operator").asText();
+
+        if (ATTR_TAGS.contains(attributeName)) { // handling tag values separately to incorporate multiple values requirement
+            return evaluateTagFilterCriteria(attributeName, attributeValueNode, operator, entityAttributeValues);
+        }
 
         List<String> attributeValues = new ArrayList<>();
         if (attributeValueNode.isArray()) {
-            String finalAttributeName = attributeName;
-            attributeValueNode.elements().forEachRemaining(node -> attributeValues.add(getRequiredAttributeValue(finalAttributeName, node)));
+            attributeValueNode.elements().forEachRemaining(node -> attributeValues.add(node.asText()));
         } else {
-            attributeValue = getRequiredAttributeValue(attributeName, attributeValueNode);
-            attributeValues.add(attributeValue);
+            attributeValues.add(attributeValueNode.asText());
         }
 
         switch (operator) {
@@ -172,11 +174,7 @@ public class EntityAuthorizer {
                     }
                 }
                 break;
-            // case "LIKE":
-            //     if (AuthorizerCommonUtil.listMatchesWith(attributeValue, entityAttributeValues)) {
-            //         return true;
-            //     }
-            //     break;
+
             case POLICY_FILTER_CRITERIA_ENDS_WITH:
                 for (String value : attributeValues) {
                     if (AuthorizerCommonUtil.listEndsWith(value, entityAttributeValues)) {
@@ -251,6 +249,8 @@ public class EntityAuthorizer {
     private static List<String> extractTagAttachmentValues(AtlasClassification tag) {
         List<String> tagAttachmentValues = new ArrayList<>();
         if (tag.getAttributes() != null) {
+            LOG.info("Extracting tag attachment values for tag: {}, tag keyset: {}", tag.getAttributes(), tag.getAttributes().keySet());
+            LOG.info("Extracting tag attachment values for tag object: {}", tag);
             String tagTypeName = tag.getTypeName();
             for (String key : tag.getAttributes().keySet()) {
                 Object value = tag.getAttribute(key);
@@ -265,17 +265,6 @@ public class EntityAuthorizer {
             }
         }
         return tagAttachmentValues;
-    }
-
-    private static String getRequiredAttributeValue(String attributeName, JsonNode valueNode) {
-        // handle attribute specific value format
-        if (attributeName.equals("__traitNames") || attributeName.equals("__propagatedTraitNames")) {
-            if (AuthorizerCommonUtil.isTagKeyValueFormat(valueNode)) {
-                return AuthorizerCommonUtil.tagKeyValueRepr(valueNode.get("tag").asText(), valueNode.get("key").asText(), valueNode.get("value").asText());
-            }
-        }
-
-        return valueNode.asText();
     }
 
     private static List<String> getAttributeValue(AtlasEntityHeader entity, String attributeName, AtlasVertex vertex) {
@@ -316,5 +305,69 @@ public class EntityAuthorizer {
         }
 
         return relatedAttributes;
+    }
+
+    private static List<String> getRequiredTagValues(JsonNode tagValueNode) {
+        List<String> requiredTagValues = new ArrayList<>();
+        if (AuthorizerCommonUtil.isTagKeyValueFormat(tagValueNode)) {
+            String tagName = tagValueNode.get("name").asText();
+
+            JsonNode valuesNode = tagValueNode.get("tagValues");
+            if (valuesNode != null && valuesNode.isArray()) {
+                for (JsonNode valueNode : valuesNode) {
+                    String key = valueNode.get("key").asText();
+                    String value = valueNode.get("consolidatedValue").asText();
+                    requiredTagValues.add(AuthorizerCommonUtil.tagKeyValueRepr(tagName, key, value));
+                }
+            } else {
+                LOG.warn("Invalid tag values format for tag: {}", tagName);
+            }
+        } else {
+            requiredTagValues.add(tagValueNode.asText());
+        }
+        return requiredTagValues;
+    }
+
+    private static boolean evaluateTagFilterCriteria(String attributeName, JsonNode attributeValueNode, String operator, List<String> entityAttributeValues) {
+        List<List<String>> attributeValues = new ArrayList<>();
+        if (attributeValueNode.isArray()) {
+            for (JsonNode node : attributeValueNode) {
+                attributeValues.add(getRequiredTagValues(node));
+            }
+        } else {
+            attributeValues.add(getRequiredTagValues(attributeValueNode));
+        }
+
+        // no support required for starts_with and ends_with for tags
+        boolean result = false;
+        switch(operator) {
+            case POLICY_FILTER_CRITERIA_EQUALS:
+                for (List<String> tagValues : attributeValues) {
+                    if (!(new HashSet<>(entityAttributeValues).containsAll(tagValues))) {
+                        return false;
+                    }
+                }
+                result = true;
+                break;
+
+            case POLICY_FILTER_CRITERIA_NOT_EQUALS:
+            case POLICY_FILTER_CRITERIA_NOT_IN:
+                for (List<String> tagValues : attributeValues) {
+                    if (new HashSet<>(entityAttributeValues).containsAll(tagValues)) {
+                        return false;
+                    }
+                }
+                result = true;
+                break;
+
+            case POLICY_FILTER_CRITERIA_IN:
+                for (List<String> tagValues : attributeValues) {
+                    if (AuthorizerCommonUtil.arrayListContains(tagValues, entityAttributeValues)) {
+                        return true;
+                    }
+                }
+                break;
+        }
+        return result;
     }
 }

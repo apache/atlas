@@ -152,11 +152,19 @@ public class AuthorizerCommonUtil {
         return tag + "." + key + "=" + value;
     }
 
-    // Expected format for tag key value: {tag: "tag", key: "key", value: "value"}
+    /* Format required for tag with key value:
+            {
+                "name": "tagTypeName",
+                "tagValues": [
+                    {"consolidatedValue": "value1", "key": "key1"},
+                    {"consolidatedValue": "value2", "key": "key2"}
+                ]
+            }
+     */
     public static boolean isTagKeyValueFormat(JsonNode attributeValueNode) {
         JsonNode firstElement = attributeValueNode.isArray() && !attributeValueNode.isEmpty()
-            ? attributeValueNode.get(0) 
+            ? attributeValueNode.get(0)
             : attributeValueNode;
-        return firstElement.has("tag") && firstElement.has("key") && firstElement.has("value");
+        return firstElement.has("name") && firstElement.has("tagValues") && firstElement.get("tagValues").isArray();
     }
 }
