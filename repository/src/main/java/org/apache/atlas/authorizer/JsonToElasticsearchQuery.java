@@ -273,7 +273,10 @@ public class JsonToElasticsearchQuery {
         for (JsonNode tagKeyValue : tagKeyValues) {
 
             String key = tagKeyValue.get("key").asText();
-            String value = tagKeyValue.get("consolidatedValue").asText();
+            JsonNode value = tagKeyValue.get("consolidatedValue");
+            if (value == null) {
+                continue;
+            }
 
             // Add span_near query for key-value pair
             ArrayNode clausesArray = mapper.createArrayNode();
@@ -288,7 +291,7 @@ public class JsonToElasticsearchQuery {
             // Create span_term for value
             ObjectNode keyClause = mapper.createObjectNode();
             ObjectNode keySpanTerm = mapper.createObjectNode();
-            keySpanTerm.put("__classificationsText.text", value);
+            keySpanTerm.put("__classificationsText.text", value.asText());
             keyClause.set("span_term", keySpanTerm);
             clausesArray.add(keyClause);
 

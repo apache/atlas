@@ -148,6 +148,9 @@ public class EntityAuthorizer {
 
         List<String> entityAttributeValues = getAttributeValue(entity, attributeName, vertex);
         entityAttributeValues.addAll(handleSpecialAttributes(entity, attributeName));
+        if (entityAttributeValues.isEmpty()) {
+            LOG.warn("Value for attribute {} not found for {}:{}", attributeName, entity.getTypeName(), entity.getAttribute(ATTR_QUALIFIED_NAME));
+        }
 
         JsonNode attributeValueNode = crit.get("attributeValue");
         String operator = crit.get("operator").asText();
@@ -238,9 +241,6 @@ public class EntityAuthorizer {
                 Set<String> allValidTypes = AuthorizerCommonUtil.getTypeAndSupertypesList(typeName);
                 entityAttributeValues.addAll(allValidTypes);
                 break;
-
-            default:
-                LOG.warn("Value for attribute {} not found for {}:{}", attributeName, entity.getTypeName(), entity.getAttribute(ATTR_QUALIFIED_NAME));
         }
 
         return entityAttributeValues;
