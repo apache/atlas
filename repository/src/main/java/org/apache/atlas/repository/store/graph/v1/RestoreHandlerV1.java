@@ -54,6 +54,7 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromEdge;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 
 @Singleton
@@ -109,6 +110,13 @@ public class RestoreHandlerV1 {
                     continue;
                 }
 
+                String typeName = AtlasGraphUtilsV2.getTypeName(instanceVertex);
+                if (typeName.equals(DATA_DOMAIN_ENTITY_TYPE) || typeName.equals(DATA_PRODUCT_ENTITY_TYPE)) {
+                    if (validateDataMeshEntityRestore(typeName, instanceVertex)) {
+                        throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Cannot restore " + typeName + " with guid " + guid + " because it has no parent domain relationship");
+                    }
+                }
+
                 // Record all restoring candidate entities in RequestContext
                 // and gather restoring candidate vertices.
                 for (VertexInfo vertexInfo : getOwnedVertices(instanceVertex)) {
@@ -125,6 +133,28 @@ public class RestoreHandlerV1 {
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+    }
+
+    private boolean validateDataMeshEntityRestore(String typeName, AtlasVertex instanceVertex) throws AtlasBaseException {
+        AtlasEntity entity = entityRetriever.toAtlasEntity(instanceVertex);
+
+        if (typeName.equals(DATA_DOMAIN_ENTITY_TYPE) && entity.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE) == null) {
+            return verifyDataDomainEntityForRestore(instanceVertex);
+        } else if (typeName.equals(DATA_PRODUCT_ENTITY_TYPE) && entity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE) == null) {
+            return true;
+        }
+        return false;
+    }
+
+    private boolean verifyDataDomainEntityForRestore(AtlasVertex instanceVertex) throws AtlasBaseException {
+        // To ensure super domains can be restored
+        String parentQualifiedName = instanceVertex.getProperty(PARENT_DOMAIN_QN_ATTR, String.class);
+        String superDomainQualifiedName = instanceVertex.getProperty(SUPER_DOMAIN_QN_ATTR, String.class);
+
+        if (parentQualifiedName == null && superDomainQualifiedName == null) {
+            return false;
+        }
+        return true;
     }
 
     private void restoreEdgeBetweenVertices(AtlasVertex outVertex, AtlasVertex inVertex, AtlasStructType.AtlasAttribute attribute) throws AtlasBaseException {
