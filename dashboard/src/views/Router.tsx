@@ -15,9 +15,10 @@
  * limitations under the License.
  */
 
-import { Routes, Route, HashRouter } from "react-router-dom";
+import { Routes, Route, HashRouter, useLocation } from "react-router-dom";
 import { lazy } from "react";
 import DebugMetrics from "@views/Layout/DebugMetrics";
+import ErrorPage from "./ErrorPage";
 
 const Layout = lazy(() => import("@views/Layout/Layout"));
 const SearchResult = lazy(() => import("@views/SearchResult/SearchResult"));
@@ -50,7 +51,14 @@ const RelationshipDetailsLayout = lazy(
     import("@views/DetailPage/RelationshipDetails/RelationshipDetailsLayout")
 );
 
+const KnoxSSOWarningWrapper = () => {
+  const location = useLocation();
+  const errorCode = location.state?.errorCode || "";
+  return <ErrorPage errorCode={errorCode} />;
+};
+
 const Router = () => {
+
   return (
     <HashRouter>
       <Routes>
@@ -77,6 +85,11 @@ const Router = () => {
             element={<RelationshipDetailsLayout />}
           />
           <Route path="/debugMetrics" element={<DebugMetrics />} />
+
+          <Route
+            path="/knoxSSOWarning"
+            element={<KnoxSSOWarningWrapper />}
+          />
           <Route path="*" element={<DashBoard />} />
         </Route>
       </Routes>

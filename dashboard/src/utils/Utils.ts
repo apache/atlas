@@ -23,6 +23,8 @@ import sanitizeHtml from "sanitize-html";
 import { cloneDeep, toArrayifObject, uniq } from "./Helper";
 import { attributeFilter } from "./CommonViewFunction";
 import { Messages } from "./Messages";
+import { fetchApi } from "@api/apiMethods/fetchApi";
+import { NavigateFunction } from "react-router-dom";
 
 interface childrenInterface {
   gType: string;
@@ -797,6 +799,66 @@ const globalSearchParams = {
   dslParams: {}
 };
 
+export const handleLogout = async (
+  checkKnoxSSOVal: string | boolean | undefined,
+  navigate: NavigateFunction,
+  errorCode?:string
+) => {
+  try {
+    let logoutUrl = getBaseUrl(window.location.pathname) + "/logout";
+    await fetchApi(logoutUrl, {
+      headers: {
+        "cache-control": "no-cache"
+      }
+    });
+    if (checkKnoxSSOVal !== undefined || checkKnoxSSOVal !== null) {
+      if (checkKnoxSSOVal?.toString() == "false") {
+         localStorage.setItem("atlas_ui", "v3");
+        window.location.replace("login.jsp");
+        window.localStorage.clear();
+      } else {
+        navigate("/knoxSSOWarning", { state: { errorCode: errorCode || "" } });
+      }
+    } else {
+      localStorage.setItem("atlas_ui", "v3");
+      window.location.replace("login.jsp");
+    }
+  } catch (error) {
+    toast.error(`Error occurred while logout! ${error}`);
+  }
+};
+
+const checkKnoxSSO = async (navigate: NavigateFunction) => {
+  let checkKnoxSSOresp: any = {};
+  let checkssoUrl = getBaseUrl(window.location.pathname) + "/api/atlas/admin/checksso";
+  try {
+    checkKnoxSSOresp = await fetchApi(checkssoUrl, {
+      method: "GET",
+      headers: {
+        "cache-control": "no-cache"
+      }
+    });
+    const { data = "" } = checkKnoxSSOresp || {};
+    if (
+      localStorage.getItem("idleTimerLoggedOut") == "true" &&
+      data?.toString() == "true"
+    ) {
+      window.location.replace("index.html?action=timeout");
+    } else if (data?.toString() == "true") {
+      // Pass "checkSSOTrue" to handleLogout
+      handleLogout(data, navigate, "checkSSOTrue");
+    } else {
+      handleLogout(data, navigate);
+    }
+  } catch (error) {
+    const respStatus = checkKnoxSSOresp?.status || "";
+    if (respStatus == "419") {
+      window.location.replace("login.jsp");
+    }
+    console.error(`Error occurred while logout! ${error}`);
+  }
+};
+
 export {
   customSortBy,
   customSortByObjectKeys,
@@ -835,5 +897,6 @@ export {
   setNavigate,
   getNavigate,
   globalSearchParams,
-  globalSearchFilterInitialQuery
+  globalSearchFilterInitialQuery,
+  checkKnoxSSO
 };

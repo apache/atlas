@@ -16,34 +16,53 @@
  */
 
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
 import errorIcon from "/img/error-404-icon.png";
 import { Stack, Typography } from "@mui/material";
 import { CustomButton } from "@components/muiComponents";
+import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+
 
 export const ErrorPage = (props: { errorCode: string }) => {
   let navigate = useNavigate();
-  const [errorCode, setErrorCode] = useState<string | null>(null);
+  const location = useLocation();
+  const code = location.state?.errorCode || props.errorCode || "404";
+
+  const [errorCode, setErrorCode] = useState<string>("");
   const [errorInfo, setErrorInfo] = useState<any>(null);
 
   useEffect(() => {
-    if (props.errorCode == "checkSSOTrue") {
+    if (code == "checkSSOTrue") {
       setErrorCode("Sign Out Is Not Complete!");
       setErrorInfo(
         <Typography>
-          Authentication to this instance of Ranger is managed externally(for
-          example,Apache Knox). You can still open this instance of Ranger from
+          Authentication to this instance of Atlas is managed externally(for
+          example,Apache Knox). You can still open this instance of Atlas from
           the same web browser without re-authentication.To prevent
-          additionalPage not found (404). access to Ranger,
+          additionalPage not found (404). access to Atlas,
           <strong>close all browser windows and exit the browser</strong>.
         </Typography>
       );
     }
-    if (props.errorCode == "404") {
+    else if (code == "404") {
       setErrorCode("Page not found (404).");
       setErrorInfo("Sorry, this page isn't here or has moved.");
     }
   });
+
+  const handleBackWithReload = () => {
+    localStorage.setItem("doGoBackAfterReload", "true");
+    window.location.reload();
+  };
+
+  useEffect(() => {
+    if (localStorage.getItem("doGoBackAfterReload") === "true") {
+      localStorage.removeItem("doGoBackAfterReload");
+      setTimeout(() => {
+        window.history.back();
+      }, 1000); 
+    }
+  }, []);
 
   return (
     <Stack
@@ -74,7 +93,7 @@ export const ErrorPage = (props: { errorCode: string }) => {
           </Stack>
         </Stack>
         <Stack direction="row" spacing={2} className="mt-2">
-          {props.errorCode !== "checkSSOTrue" && (
+          {code !== "checkSSOTrue" && (
             <CustomButton
               size="small"
               variant="contained"
@@ -82,6 +101,16 @@ export const ErrorPage = (props: { errorCode: string }) => {
               onClick={() => navigate("/search")}
             >
               Return to Dashboard
+            </CustomButton>
+          )}
+          {code == "checkSSOTrue" && (
+            <CustomButton
+              size="small"
+              variant="contained"
+              color="primary"
+              onClick={handleBackWithReload}
+            >
+              Go Back
             </CustomButton>
           )}
         </Stack>
