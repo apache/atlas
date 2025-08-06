@@ -69,7 +69,7 @@ public class FeatureFlagStore {
                     throw new RuntimeException("Failed to load feature flag for " + FF_ENABLE_JANUS_OPTIMISATION_KEY + " after multiple retries.", e);
                 }
                 try {
-                    Thread.sleep(1000);
+                    Thread.sleep(3000);
                 } catch (InterruptedException interruptedException) {
                     Thread.currentThread().interrupt();
                 }
