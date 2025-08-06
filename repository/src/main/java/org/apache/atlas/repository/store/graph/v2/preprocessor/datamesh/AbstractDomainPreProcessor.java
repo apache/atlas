@@ -196,6 +196,12 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
                         entity.setAttribute(ATTR_DOMAIN_QUALIFIED_NAME, updatedDomainQualifiedNames.get(currentDomainQualifiedName));
                         updatedAttributes.put(ATTR_DOMAIN_QUALIFIED_NAME, updatedDomainQualifiedNames.get(currentDomainQualifiedName));
 
+                        String currentStakeholderQualifiedName = (String) asset.getAttribute(QUALIFIED_NAME);
+                        String updatedStakeholderQualifiedName = getUpdatedStakeholderQualifiedName(currentStakeholderQualifiedName, updatedDomainQualifiedNames, asset);
+                        if (updatedStakeholderQualifiedName != null) {
+                            entity.setAttribute(QUALIFIED_NAME, updatedStakeholderQualifiedName);
+                            updatedAttributes.put(QUALIFIED_NAME, updatedStakeholderQualifiedName);
+                        }
                     } else if (entity.getTypeName().equals(STAKEHOLDER_TITLE_ENTITY_TYPE)) {
                         entityType = typeRegistry.getEntityTypeByName(STAKEHOLDER_TITLE_ENTITY_TYPE);
 
@@ -223,6 +229,26 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+    }
+
+    protected String getUpdatedStakeholderQualifiedName(String currentStakeholderQualifiedName, 
+                                                      Map<String, String> updatedDomainQualifiedNames, AtlasEntityHeader asset) {
+        if (currentStakeholderQualifiedName == null) {
+            return null;
+        }
+        
+        String[] parts = currentStakeholderQualifiedName.split("/", 3);
+        if (parts.length == 3 && "default".equals(parts[0])) {
+            String uuid = parts[1];
+            String currentDomainQualifiedName = (String) asset.getAttribute(ATTR_DOMAIN_QUALIFIED_NAME);
+
+            String updatedDomainQN = updatedDomainQualifiedNames.get(currentDomainQualifiedName);
+            if (updatedDomainQN != null) {
+                return String.format("default/%s/%s", uuid, updatedDomainQN);
+            }
+        }
+        
+        return null;
     }
 
     protected void exists(String assetType, String assetName, String parentDomainQualifiedName, String guid) throws AtlasBaseException {
