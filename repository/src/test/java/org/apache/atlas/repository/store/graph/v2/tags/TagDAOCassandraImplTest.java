@@ -322,22 +322,21 @@ public class TagDAOCassandraImplTest {
 
         // Assertion: Fetch with pagination
         int pageSize = 2;
-        String cacheKey = "test_pagination_key";
 
         // Page 1
-        PaginatedTagResult page1 = tagDAO.getPropagationsForAttachmentBatchWithPagination(sourceAssetId, tagTypeName, null, pageSize, cacheKey);
+        PaginatedTagResult page1 = tagDAO.getPropagationsForAttachmentBatchWithPagination(sourceAssetId, tagTypeName, null, pageSize);
         assertEquals(pageSize, page1.getTags().size());
         assertNotNull(page1.getPagingState());
         assertFalse(page1.isDone());
 
         // Page 2
-        PaginatedTagResult page2 = tagDAO.getPropagationsForAttachmentBatchWithPagination(sourceAssetId, tagTypeName, page1.getPagingState(), pageSize, cacheKey);
+        PaginatedTagResult page2 = tagDAO.getPropagationsForAttachmentBatchWithPagination(sourceAssetId, tagTypeName, page1.getPagingState(), pageSize);
         assertEquals(pageSize, page2.getTags().size());
         assertNotNull(page2.getPagingState());
         assertFalse(page2.isDone());
 
         // Page 3
-        PaginatedTagResult page3 = tagDAO.getPropagationsForAttachmentBatchWithPagination(sourceAssetId, tagTypeName, page2.getPagingState(), pageSize, cacheKey);
+        PaginatedTagResult page3 = tagDAO.getPropagationsForAttachmentBatchWithPagination(sourceAssetId, tagTypeName, page2.getPagingState(), pageSize);
         assertEquals(1, page3.getTags().size()); // Last page has the remainder
         assertTrue(page3.isDone(), "Paging should be done on the last page.");
     }

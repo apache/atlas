@@ -53,6 +53,6 @@ public interface TagDAO {
      * @throws AtlasBaseException If an error occurs during retrieval
      */
     PaginatedTagResult getPropagationsForAttachmentBatchWithPagination(String sourceVertexId, String tagTypeName,
-                                                                       String pagingStateStr, int pageSize, String cacheKey) throws AtlasBaseException;
+                                                                       String pagingStateStr, int pageSize) throws AtlasBaseException;
 }
 
