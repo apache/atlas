@@ -1208,7 +1208,6 @@
                     "$admin",
                     "$api-token-default-access"
                 ],
-                "isPolicyEnabled": true,
                 "policyResourceCategory": "ENTITY",
                 "policyResources":
                 [
