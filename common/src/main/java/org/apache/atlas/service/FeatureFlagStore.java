@@ -51,18 +51,29 @@ public class FeatureFlagStore {
 
     private static void loadTagV2Cache() {
         if (redisService == null) {
-            LOG.warn("RedisService is not initialized. Cannot load tag V2 feature flag cache. Defaulting to false.");
-            cachedTagV2Enabled = false;
+            LOG.warn("RedisService is not initialized. Cannot load tag V2 feature flag cache.");
             return;
         }
 
-        try {
-            String value = redisService.getValue(addFeatureFlagNamespace(FF_ENABLE_JANUS_OPTIMISATION_KEY));
-            cachedTagV2Enabled = StringUtils.isNotEmpty(value);
-            LOG.info("Loaded feature flag '{}'. Value: {}", FF_ENABLE_JANUS_OPTIMISATION_KEY, cachedTagV2Enabled);
-        } catch (Exception e) {
-            LOG.error("Error loading feature flag cache for '{}'. Defaulting to false.", FF_ENABLE_JANUS_OPTIMISATION_KEY, e);
-            cachedTagV2Enabled = false; // Default to false on error
+        int retries = 5;
+        while (retries > 0) {
+            try {
+                String value = redisService.getValue(addFeatureFlagNamespace(FF_ENABLE_JANUS_OPTIMISATION_KEY));
+                cachedTagV2Enabled = StringUtils.isNotEmpty(value);
+                LOG.info("Loaded feature flag '{}'. Value: {}", FF_ENABLE_JANUS_OPTIMISATION_KEY, cachedTagV2Enabled);
+                return;
+            } catch (Exception e) {
+                retries--;
+                LOG.error("Error loading feature flag cache for '{}'. Retries left: {}.", FF_ENABLE_JANUS_OPTIMISATION_KEY, retries, e);
+                if (retries == 0) {
+                    throw new RuntimeException("Failed to load feature flag for " + FF_ENABLE_JANUS_OPTIMISATION_KEY + " after multiple retries.", e);
+                }
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException interruptedException) {
+                    Thread.currentThread().interrupt();
+                }
+            }
         }
     }
 

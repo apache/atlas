@@ -54,6 +54,7 @@ import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.getIdFromEdge;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.isReference;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.AtlasRelationshipEdgeDirection.OUT;
 
 @Singleton
@@ -109,6 +110,13 @@ public class RestoreHandlerV1 {
                     continue;
                 }
 
+                String typeName = AtlasGraphUtilsV2.getTypeName(instanceVertex);
+                if (typeName.equals(DATA_DOMAIN_ENTITY_TYPE) || typeName.equals(DATA_PRODUCT_ENTITY_TYPE)) {
+                    if (!canRestoreEntity(typeName, instanceVertex)) {
+                        throw new AtlasBaseException(AtlasErrorCode.OPERATION_NOT_SUPPORTED, "Cannot restore " + typeName + " with guid " + guid + " because it has no parent domain relationship");
+                    }
+                }
+
                 // Record all restoring candidate entities in RequestContext
                 // and gather restoring candidate vertices.
                 for (VertexInfo vertexInfo : getOwnedVertices(instanceVertex)) {
@@ -125,6 +133,26 @@ public class RestoreHandlerV1 {
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+    }
+
+    private boolean canRestoreEntity(String typeName, AtlasVertex instanceVertex) throws AtlasBaseException {
+        AtlasEntity entity = entityRetriever.toAtlasEntity(instanceVertex);
+        boolean flag = true;
+
+        if (typeName.equals(DATA_DOMAIN_ENTITY_TYPE)) {
+            boolean noParentRel = entity.getRelationshipAttribute(PARENT_DOMAIN_REL_TYPE) == null;
+            if (noParentRel) {
+                // To ensure super domains can be restored
+                String superDomainQualifiedName = instanceVertex.getProperty(SUPER_DOMAIN_QN_ATTR, String.class);
+                String parentQualifiedName = instanceVertex.getProperty(PARENT_DOMAIN_QN_ATTR, String.class);
+
+                boolean isSuperDomain = superDomainQualifiedName == null && parentQualifiedName == null;
+                flag = isSuperDomain;
+            }
+        } else if (typeName.equals(DATA_PRODUCT_ENTITY_TYPE)) {
+            flag = entity.getRelationshipAttribute(DATA_DOMAIN_REL_TYPE) != null;
+        }
+        return flag;
     }
 
     private void restoreEdgeBetweenVertices(AtlasVertex outVertex, AtlasVertex inVertex, AtlasStructType.AtlasAttribute attribute) throws AtlasBaseException {
