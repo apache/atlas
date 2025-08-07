@@ -6559,40 +6559,6 @@ public class EntityGraphMapper {
         }
     }
 
-    private void processAdditions_new(List<String> vertexIdsToAdd, String sourceVertexId, AtlasClassification sourceTag) throws AtlasBaseException {
-        LOG.debug("Processing addition of {} tags.", vertexIdsToAdd.size());
-
-        // Fetch metadata directly from the graph to ensure it's the source of truth for new additions.
-        Map<String, Map<String, Object>> assetMetadataMap = getMinimalAssetMapsFromGraph(vertexIdsToAdd);
-
-        tagDAO.putPropagatedTags(sourceVertexId, sourceTag.getTypeName(), new HashSet<>(vertexIdsToAdd), assetMetadataMap, sourceTag);
-
-        Map<String, Map<String, Object>> esDeNormMap = new HashMap<>();
-        List<AtlasEntity> notificationEntities = new ArrayList<>();
-
-        for (String addedVertexId : vertexIdsToAdd) {
-            List<Tag> allTagsForAsset = tagDAO.getAllTagsByVertexId(addedVertexId);
-            List<AtlasClassification> allClassifications = allTagsForAsset.stream()
-                    .map(t -> TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson()))
-                    .collect(Collectors.toList());
-
-            esDeNormMap.put(addedVertexId,
-                    TagDeNormAttributesUtil.getAllAttributesForAllTagsForRepair(addedVertexId, allClassifications, this.typeRegistry, this.fullTextMapperV2));
-
-            Map<String, Object> assetMetadata = assetMetadataMap.get(addedVertexId);
-            if (assetMetadata != null) {
-                notificationEntities.add(getEntityForNotification(assetMetadata));
-            }
-        }
-
-        if (!esDeNormMap.isEmpty()) {
-            ESConnector.writeTagProperties(esDeNormMap);
-        }
-        if (!notificationEntities.isEmpty()) {
-            entityChangeNotifier.onClassificationPropagationAddedToEntities(notificationEntities, Collections.singletonList(sourceTag), true, RequestContext.get());
-        }
-    }
-
     private Map<String, Map<String, Object>> getMinimalAssetMapsFromGraph(List<String> vertexIds) {
         Map<String, Map<String, Object>> ret = new HashMap<>();
         for (String vertexId : vertexIds) {
