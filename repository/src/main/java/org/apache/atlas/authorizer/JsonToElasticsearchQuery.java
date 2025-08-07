@@ -272,7 +272,7 @@ public class JsonToElasticsearchQuery {
         // add span_near clauses
         for (JsonNode tagKeyValue : tagKeyValues) {
 
-            String key = tagKeyValue.get("key").asText();
+            String key = tagKeyValue.get("key") == null ? null : tagKeyValue.get("key").asText();
             JsonNode value = tagKeyValue.get("consolidatedValue");
             if (value == null) {
                 continue;
