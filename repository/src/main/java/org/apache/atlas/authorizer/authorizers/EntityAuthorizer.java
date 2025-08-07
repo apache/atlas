@@ -315,8 +315,8 @@ public class EntityAuthorizer {
             JsonNode valuesNode = tagValueNode.get("tagValues");
             if (valuesNode != null && valuesNode.isArray()) {
                 for (JsonNode valueNode : valuesNode) {
-                    String key = valueNode.get("key").asText();
-                    String value = valueNode.get("consolidatedValue").asText();
+                    String key = valueNode.get("key") == null ? null : valueNode.get("key").asText();
+                    String value = valueNode.get("consolidatedValue") == null ? null : valueNode.get("consolidatedValue").asText();
                     requiredTagValues.add(AuthorizerCommonUtil.tagKeyValueRepr(tagName, key, value));
                 }
             } else {
