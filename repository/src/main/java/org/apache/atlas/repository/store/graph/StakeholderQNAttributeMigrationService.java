@@ -36,7 +36,7 @@ public class StakeholderQNAttributeMigrationService {
             int totalUpdatedCount = 0;
 
             for (String stakeholderGuid: stakeholderGuids) {
-                if (stakeholderGuid == null && stakeholderGuid.isEmpty()) {
+                if (stakeholderGuid == null || stakeholderGuid.isEmpty()) {
                     LOG.error("Stakeholder is null, skipping migration.");
                     continue;
                 }
