@@ -415,25 +415,21 @@ public class MigrationREST {
     @Path("repair-stakeholder-qualified-name")
     @Timed
     @Consumes(MediaType.APPLICATION_JSON)
-    public Boolean updateStakeholderQualifiedName(final AtlasEntitiesWithExtInfo entitiesRequest) throws Exception {
+    public Boolean updateStakeholderQualifiedName(final Set<String> guids) throws Exception {
         AtlasPerfTracer perf = null;
         try {
-            if (entitiesRequest == null || CollectionUtils.isEmpty(entitiesRequest.getEntities())) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Stakeholder entities are required for updating unique qualified name");
+            if (CollectionUtils.isEmpty(guids)) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Stakeholder guids are required for updating unique qualified name");
             }
 
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.updateStakeholderQualifiedName(" + entitiesRequest.getEntities().size() + " entities)");
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "MigrationREST.updateStakeholderQualifiedName(" + guids + " entities)");
             }
 
-            List<AtlasEntityHeader> entityHeaders = entitiesRequest.getEntities().stream()
-                .map(entity -> new AtlasEntityHeader(entity))
-                .collect(java.util.stream.Collectors.toList());
-
-            StakeholderQNAttributeMigrationService migrationService = new StakeholderQNAttributeMigrationService(entityRetriever, entityHeaders, transactionInterceptHelper);
+            StakeholderQNAttributeMigrationService migrationService = new StakeholderQNAttributeMigrationService(entityRetriever, guids, transactionInterceptHelper);
             migrationService.migrateStakeholderQN();
         } catch (Exception e) {
-            LOG.error("Error while updating unique qualified name for stakeholders: {}", entitiesRequest, e);
+            LOG.error("Error while updating unique qualified name for stakeholders: {}", guids, e);
             throw e;
         } finally {
             AtlasPerfTracer.log(perf);
