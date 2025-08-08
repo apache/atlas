@@ -13,6 +13,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.ApplicationProperties;
+import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.Tag;
@@ -20,6 +21,7 @@ import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -377,7 +379,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     @Override
     public PaginatedTagResult getPropagationsForAttachmentBatchWithPagination(String sourceVertexId, String tagTypeName,
-                                                                              String pagingStateStr, int pageSize, String cacheKey) throws AtlasBaseException {
+                                                                              String pagingStateStr, int pageSize) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getPropagationsForAttachmentBatchWithPagination");
         try {
             BoundStatement bound = findPropagationsBySourceStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
@@ -423,7 +425,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 LOG.warn("No propagations found for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName);
             }
 
-            PagingStateCache.setState(cacheKey, nextPagingState);
             return new PaginatedTagResult(tags, nextPagingState, done);
         } catch (Exception e) {
             LOG.error("Error fetching paginated propagations for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName, e);
@@ -579,13 +580,11 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     }
 
     @Override
-    public PaginatedTagResult getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
+    public PaginatedTagResult getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName, String storedPagingState) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getPropagationsForAttachmentBatch");
         try {
-            String cacheKey = sourceVertexId + "|" + tagTypeName;
-            String storedPagingState = PagingStateCache.getState(cacheKey);
             // Default page size of 100
-            return getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, storedPagingState, 100, cacheKey);
+            return getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, storedPagingState, 100);
         } catch (Exception e) {
             LOG.error("Error getting propagations for attachment batch for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName, e);
             throw new AtlasBaseException("Error getting propagations for attachment batch", e);
@@ -606,7 +605,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             LOG.info("Starting full propagation fetch for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName);
             do {
                 pageCount++;
-                result = getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, pagingState, 500, cacheKey);
+                result = getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, pagingState, 500);
                 List<Tag> currentPageTags = result.getTags();
                 int fetchedCount = currentPageTags.size();
 
@@ -823,18 +822,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     public void close() {
         if (cassSession != null && !cassSession.isClosed()) {
             cassSession.close();
-        }
-    }
-
-    private static class PagingStateCache {
-        private static final Map<String, String> pagingStates = new java.util.concurrent.ConcurrentHashMap<>();
-        public static String getState(String key) { return pagingStates.get(key); }
-        public static void setState(String key, String state) {
-            if (state == null || state.isEmpty()) {
-                pagingStates.remove(key);
-            } else {
-                pagingStates.put(key, state);
-            }
         }
     }
 }
