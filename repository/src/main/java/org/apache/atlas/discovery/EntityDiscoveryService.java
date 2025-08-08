@@ -161,12 +161,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                     CLIENT_ORIGIN_PRODUCT.equals(clientOrigin)) {
                 ElasticsearchDslOptimizer.OptimizationResult result = dslOptimizer.optimizeQueryWithValidation(dslQuery);
                 dslQuery = result.getOptimizedQuery();
-
-                // Log validation status for monitoring
-                if (!result.isValidationPassed()) {
-                    LOG.warn("DSL optimization validation failed: {} - falling back to original query",
-                             result.getValidationFailureReason());
-                }
             }
             AtlasSearchResult ret = dslQueryExecutor.execute(dslQuery, limit, offset);
 
