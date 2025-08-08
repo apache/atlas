@@ -211,7 +211,13 @@ public class ClassificationAssociator {
 
                     for (Object obj: vertices) {
                         AtlasVertex vertex = (AtlasVertex) obj;
-                        AtlasEntity entity = entityGraphMapper.getMinimalAtlasEntityForNotification(vertex);
+
+                        AtlasEntity entity;
+                        if (!FeatureFlagStore.isTagV2Enabled()) {
+                            entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), IGNORE_REL);
+                        } else {
+                            entity = entityGraphMapper.getMinimalAtlasEntityForNotification(vertex);
+                        }
 
                         allVertices.add(vertex);
                         propagatedEntities.add(entity);
@@ -229,7 +235,13 @@ public class ClassificationAssociator {
 
                     for (Object obj: vertices) {
                         AtlasVertex vertex = (AtlasVertex) obj;
-                        AtlasEntity entity = entityGraphMapper.getMinimalAtlasEntityForNotification(vertex);
+
+                        AtlasEntity entity;
+                        if (!FeatureFlagStore.isTagV2Enabled()) {
+                            entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), IGNORE_REL);
+                        } else {
+                            entity = entityGraphMapper.getMinimalAtlasEntityForNotification(vertex);
+                        }
 
                         allVertices.add(vertex);
                         propagatedEntities.add(entity);
