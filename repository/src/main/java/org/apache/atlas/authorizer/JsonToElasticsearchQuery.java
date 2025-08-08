@@ -11,6 +11,7 @@ import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.ArrayList;
 import java.util.List;
 
 import static org.apache.atlas.repository.util.AccessControlUtils.POLICY_FILTER_CRITERIA_AND;
@@ -121,11 +122,13 @@ public class JsonToElasticsearchQuery {
                 break;
 
             case POLICY_FILTER_CRITERIA_ENDS_WITH:
-                if (attributeValueNode.isArray()) {
-                    ArrayNode shouldArray = queryNode.putObject("bool").putArray("should");
+                if (attributeValueNode.isArray() && attributeValueNode.size() > 0) {
+                    List<String> escapedValues = new ArrayList<>();
                     for (JsonNode valueNode : attributeValueNode) {
-                        shouldArray.addObject().putObject("wildcard").put(attributeName, "*" + valueNode.asText());
+                        escapedValues.add(valueNode.asText().replaceAll("([\\[\\]{}()*+?.\\\\^$|])", "\\\\$1"));
                     }
+                    String regexPattern = ".*(" + String.join("|", escapedValues) + ")$";
+                    queryNode.putObject("regexp").put(attributeName, regexPattern);
                 } else {
                     queryNode.putObject("wildcard").put(attributeName, "*" + attributeValue);
                 }
