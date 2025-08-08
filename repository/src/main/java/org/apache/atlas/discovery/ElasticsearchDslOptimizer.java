@@ -1814,9 +1814,8 @@ public class ElasticsearchDslOptimizer {
                         // NEW: Special handling for default/*/*/*/* patterns - convert to terms query
                         if (pattern.startsWith("default/") && pattern.endsWith("*")) {
                             String pathWithoutTrailingWildcard = pattern.substring(0, pattern.length() - 1);
-                            String[] pathSegments = pathWithoutTrailingWildcard.split("/");
 
-                            log.debug("QualifiedNameHierarchyRule: Found default/*/*/*/* pattern, converting to terms query: '{}'", pathWithoutTrailingWildcard);
+                            log.debug("QualifiedNameHierarchyRule: Found default/*/*/* pattern, converting to terms query: '{}'", pathWithoutTrailingWildcard);
 
                             // Create terms query with __qualifiedNameHierarchy for better performance
                             ObjectNode termsNode = objectMapper.createObjectNode();
@@ -1836,6 +1835,10 @@ public class ElasticsearchDslOptimizer {
                             if (!prefix.contains("*")) {
                                 log.debug("QualifiedNameHierarchyRule: Transforming {} to __qualifiedNameHierarchy with prefix '{}'",
                                         currentField, prefix);
+                                //remove last char from prefix if it is *
+                                if (prefix.length() > 1 && prefix.endsWith("/")) {
+                                    prefix = prefix.substring(0, prefix.length() - 1);
+                                }
 
                                 // Create term query with __qualifiedNameHierarchy
                                 ObjectNode termNode = objectMapper.createObjectNode();
