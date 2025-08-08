@@ -259,19 +259,26 @@ public class EntityAuthorizer {
 
         for (String attrName : tag.getAttributes().keySet()) {
             try {
+                LOG.info("ABAC_AUTH: Tag attribute name={} value={}", attrName, tag.getAttribute(attrName));
                 Collection<AtlasStruct> attrValues = (Collection<AtlasStruct>) tag.getAttribute(attrName);
+                LOG.info("ABAC_AUTH: Tag attribute type casted name={} value={}", attrName, attrValues);
                 for (AtlasStruct attrValue : attrValues) {
                     Map<String, Object> attrValueAttributes = attrValue.getAttributes();
+                    LOG.info("ABAC_AUTH: Tag attribute value: {}", attrValueAttributes);
                     if (attrValueAttributes == null || attrValueAttributes.isEmpty()) {
                         LOG.warn("ABAC_AUTH: Tag attribute value is null, tag={}, attribute={}", tagTypeName, attrName);
                         continue;
                     }
+                    
                     List<AtlasStruct> sourceTagValue = (List<AtlasStruct>) attrValueAttributes.get("sourceTagValue");
+                    LOG.info("ABAC_AUTH: Tag attribute sourceTagValue: {}", sourceTagValue);
                     if (sourceTagValue == null || sourceTagValue.isEmpty()) {
                         LOG.warn("ABAC_AUTH: Tag attribute's sourceTagValue attribute is empty, tag={}, attribute={}.sourceTagValue", tagTypeName, attrName);
                         continue;
                     }
+
                     for (AtlasStruct item : sourceTagValue) {
+                        LOG.info("ABAC_AUTH: Tag attribute sourceTagValue item: {}", item);
                         String key = item.getAttribute("tagAttachmentKey") == null ? "" : item.getAttribute("tagAttachmentKey").toString();
                         String value = item.getAttribute("tagAttachmentValue") == null ? "" : item.getAttribute("tagAttachmentValue").toString();
                         tagAttachmentValues.add(AuthorizerCommonUtil.tagKeyValueRepr(tagTypeName, key, value));
@@ -280,7 +287,8 @@ public class EntityAuthorizer {
             } catch (ClassCastException | NullPointerException e) {
                 LOG.warn("ABAC_AUTH: Unexpected exception in tag attribute processing, tag={}, attribute={}, error={}", tagTypeName, attrName, e.getMessage());
             }
-         }
+        }
+        LOG.info("ABAC_AUTH: Tag attachment values: {}", tagAttachmentValues);
 
         return tagAttachmentValues;
     }
