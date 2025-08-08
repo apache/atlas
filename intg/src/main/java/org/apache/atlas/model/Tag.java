@@ -143,4 +143,16 @@ public class Tag {
     public AtlasClassification toAtlasClassification() throws AtlasBaseException {
         return objectMapper.convertValue(tagMetaJson, AtlasClassification.class);
     }
+
+    @Override
+    public String toString() {
+        return "Tag{" +
+                "bucket=" + bucket +
+                ", vertexId='" + vertexId + '\'' +
+                ", tagTypeName='" + tagTypeName + '\'' +
+                ", isPropagated=" + isPropagated +
+                ", sourceVertexId='" + sourceVertexId + '\'' +
+                ", updatedAt=" + updatedAt +
+                '}';
+    }
 }
