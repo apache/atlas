@@ -17,7 +17,6 @@
  */
 package org.apache.atlas.authorize;
 
-import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.type.AtlasClassificationType;
 import org.apache.atlas.type.AtlasEntityType;
@@ -173,14 +172,10 @@ public class AtlasAccessRequest {
     public Set<String> getClassificationNames(AtlasEntityHeader entity) {
         final Set<String> ret;
 
-        if (entity == null || entity.getClassifications() == null) {
+        if (entity == null || entity.getClassificationNames() == null) {
             ret = Collections.emptySet();
         } else {
-            ret = new HashSet<>();
-
-            for (AtlasClassification classify : entity.getClassifications()) {
-                ret.add(classify.getTypeName());
-            }
+            ret = new HashSet<>(entity.getClassificationNames());
         }
 
         return ret;
