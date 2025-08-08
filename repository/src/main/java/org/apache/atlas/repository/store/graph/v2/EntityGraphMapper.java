@@ -2703,8 +2703,17 @@ public class EntityGraphMapper {
      * TODO: Term.relationshipAttributes.assignedEntities case is not handled
      *
      */
-    private void addMeaningsToEntityRelations(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) {
+    private void addMeaningsToEntityRelations(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) throws AtlasBaseException {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("addMeaningsToEntityRelations");
+        if (!RequestContext.get().isSkipAuthorizationCheck()) {
+            try {
+                verifyMeaningsAuthorization(ctx, createdElements, deletedElements);
+            } catch (AtlasBaseException e) {
+                LOG.error("Failed to verify meanings authorization for entity relations: {}", ctx.getReferringVertex().getProperty(NAME, String.class), e);
+                throw e;
+            }
+        }
+
         List<AtlasVertex> assignedEntitiesVertices ;
         List<String> currentMeaningsQNames ;
         String newMeaningName = ctx.referringVertex.getProperty(NAME, String.class);
