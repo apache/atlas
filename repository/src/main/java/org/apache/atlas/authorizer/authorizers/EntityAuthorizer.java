@@ -6,6 +6,7 @@ import org.apache.atlas.authorize.AtlasAccessResult;
 import org.apache.atlas.authorizer.store.PoliciesStore;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.AtlasStruct;
 import org.apache.atlas.plugin.model.RangerPolicy;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
@@ -18,9 +19,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
-import java.util.Set;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_ALLOW;
 import static org.apache.atlas.authorizer.ABACAuthorizerUtils.POLICY_TYPE_DENY;
@@ -247,23 +249,39 @@ public class EntityAuthorizer {
     }
 
     private static List<String> extractTagAttachmentValues(AtlasClassification tag) {
+        String tagTypeName = tag.getTypeName();
         List<String> tagAttachmentValues = new ArrayList<>();
-        if (tag.getAttributes() != null) {
-            LOG.info("Extracting tag attachment values for tag: {}, tag keyset: {}", tag.getAttributes(), tag.getAttributes().keySet());
-            LOG.info("Extracting tag attachment values for tag object: {}", tag);
-            String tagTypeName = tag.getTypeName();
-            for (String key : tag.getAttributes().keySet()) {
-                Object value = tag.getAttribute(key);
-                if (value instanceof Collection) {
-                    Collection<?> collection = (Collection<?>) value;
-                    for (Object item : collection) {
-                        tagAttachmentValues.add(AuthorizerCommonUtil.tagKeyValueRepr(tagTypeName, key, String.valueOf(item)));
-                    }
-                } else {
-                    tagAttachmentValues.add(AuthorizerCommonUtil.tagKeyValueRepr(tagTypeName, key, String.valueOf(value)));
-                }
-            }
+
+        if (tag.getAttributes() == null || tag.getAttributes().isEmpty()) {
+            LOG.warn("ABAC_AUTH: Tag attributes are null or empty, tag={}", tagTypeName);
+            return tagAttachmentValues;
         }
+
+        for (String attrName : tag.getAttributes().keySet()) {
+            try {
+                Collection<AtlasStruct> attrValues = (Collection<AtlasStruct>) tag.getAttribute(attrName);
+                for (AtlasStruct attrValue : attrValues) {
+                    Map<String, Object> attrValueAttributes = attrValue.getAttributes();
+                    if (attrValueAttributes == null || attrValueAttributes.isEmpty()) {
+                        LOG.warn("ABAC_AUTH: Tag attribute value is null, tag={}, attribute={}", tagTypeName, attrName);
+                        continue;
+                    }
+                    List<AtlasStruct> sourceTagValue = (List<AtlasStruct>) attrValueAttributes.get("sourceTagValue");
+                    if (sourceTagValue == null || sourceTagValue.isEmpty()) {
+                        LOG.warn("ABAC_AUTH: Tag attribute's sourceTagValue attribute is empty, tag={}, attribute={}.sourceTagValue", tagTypeName, attrName);
+                        continue;
+                    }
+                    for (AtlasStruct item : sourceTagValue) {
+                        String key = item.getAttribute("tagAttachmentKey") == null ? "" : item.getAttribute("tagAttachmentKey").toString();
+                        String value = item.getAttribute("tagAttachmentValue") == null ? "" : item.getAttribute("tagAttachmentValue").toString();
+                        tagAttachmentValues.add(AuthorizerCommonUtil.tagKeyValueRepr(tagTypeName, key, value));
+                    }
+                }
+            } catch (ClassCastException | NullPointerException e) {
+                LOG.warn("ABAC_AUTH: Unexpected exception in tag attribute processing, tag={}, attribute={}, error={}", tagTypeName, attrName, e.getMessage());
+            }
+         }
+
         return tagAttachmentValues;
     }
 
