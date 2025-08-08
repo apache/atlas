@@ -5179,7 +5179,7 @@ public class EntityGraphMapper {
             int totalDeleted = 0;
             PaginatedTagResult pageToDelete;
 
-            pageToDelete = tagDAO.getPropagationsForAttachmentBatch(vertexIdForPropagations, tagTypeName);
+            pageToDelete = tagDAO.getPropagationsForAttachmentBatch(vertexIdForPropagations, tagTypeName, null);
 
             List<Tag> batchToDelete = pageToDelete.getTags();
             AtlasClassification originalClassification;
@@ -5222,7 +5222,8 @@ public class EntityGraphMapper {
                 if (pageToDelete.isDone()) {
                     break;
                 }
-                pageToDelete = tagDAO.getPropagationsForAttachmentBatch(vertexIdForPropagations, tagTypeName);
+                String pagingState = pageToDelete.getPagingState();
+                pageToDelete = tagDAO.getPropagationsForAttachmentBatch(vertexIdForPropagations, tagTypeName, pagingState);
                 batchToDelete = pageToDelete.getTags();
             }
 
@@ -6231,7 +6232,7 @@ public class EntityGraphMapper {
             int totalUpdated = 0;
 
             // fetch propagated‑tag attachments in batches
-            PaginatedTagResult paginatedResult = tagDAO.getPropagationsForAttachmentBatch(sourceEntityVertex.getIdForDisplay(), tagTypeName);
+            PaginatedTagResult paginatedResult = tagDAO.getPropagationsForAttachmentBatch(sourceEntityVertex.getIdForDisplay(), tagTypeName, null);
             AtlasClassification originalClassification = tagDAO.findDirectTagByVertexIdAndTagTypeName(sourceEntityVertex.getIdForDisplay(), tagTypeName, false);
             if (originalClassification == null) {
                 String warningMessage = String.format("updateClassificationTextPropagationV2(entityGuid=%s, tagTypeName=%s): classification not found, skipping task execution", sourceEntityGuid, tagTypeName);
@@ -6273,7 +6274,8 @@ public class EntityGraphMapper {
                 if (paginatedResult.isDone()) {
                     break;
                 }
-                paginatedResult = tagDAO.getPropagationsForAttachmentBatch(sourceEntityVertex.getIdForDisplay(), tagTypeName);
+                String pagingState = paginatedResult.getPagingState();
+                paginatedResult = tagDAO.getPropagationsForAttachmentBatch(sourceEntityVertex.getIdForDisplay(), tagTypeName, pagingState);
                 batchToUpdate = paginatedResult.getTags();
             }
 
