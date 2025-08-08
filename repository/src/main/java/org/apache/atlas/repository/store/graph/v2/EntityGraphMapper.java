@@ -2844,21 +2844,44 @@ public class EntityGraphMapper {
         AtlasEntityAccessRequest targetRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetEntityHeader);
         AtlasAuthorizationUtils.verifyAccess(targetRequest, "update on asset: " + targetEntityHeader.getDisplayText());
 
-        for (Object element : createdElements) {
-            AtlasEdge edge = (AtlasEdge) element;
-            AtlasVertex termVertex = edge.getOutVertex();
-            AtlasEntityHeader termEntityHeader = entityRetriever.toAtlasEntityHeader(termVertex);
+        boolean isGlossaryTermContext = ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(targetEntityVertex.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class));
 
-            AtlasEntityAccessRequest termRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader);
-            AtlasAuthorizationUtils.verifyAccess(termRequest, "linking of term: " + termEntityHeader.getDisplayText());
+        if (createdElements != null) {
+            for (Object element : createdElements) {
+                AtlasEdge edge = (AtlasEdge) element;
+                
+                if (isGlossaryTermContext) {
+                    AtlasVertex targetAssetVertex = edge.getInVertex();
+                    AtlasEntityHeader targetAssetHeader = entityRetriever.toAtlasEntityHeader(targetAssetVertex);
+                    
+                    AtlasEntityAccessRequest assetRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetAssetHeader);
+                    AtlasAuthorizationUtils.verifyAccess(assetRequest, "linking to asset: " + targetAssetHeader.getDisplayText());
+                } else {
+                    AtlasVertex termVertex = edge.getOutVertex();
+                    AtlasEntityHeader termEntityHeader = entityRetriever.toAtlasEntityHeader(termVertex);
+                    
+                    AtlasEntityAccessRequest termRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader);
+                    AtlasAuthorizationUtils.verifyAccess(termRequest, "linking of term: " + termEntityHeader.getDisplayText());
+                }
+            }
         }
 
-        for (AtlasEdge edge : deletedElements) {
-            AtlasVertex termVertex = edge.getOutVertex();
-            AtlasEntityHeader termEntityHeader = entityRetriever.toAtlasEntityHeader(termVertex);
-
-            AtlasEntityAccessRequest termRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader);
-            AtlasAuthorizationUtils.verifyAccess(termRequest, "linking of term: " + termEntityHeader.getDisplayText());
+        if (deletedElements != null) {
+            for (AtlasEdge edge : deletedElements) {
+                if (isGlossaryTermContext) {
+                    AtlasVertex targetAssetVertex = edge.getInVertex();
+                    AtlasEntityHeader targetAssetHeader = entityRetriever.toAtlasEntityHeader(targetAssetVertex);
+                    
+                    AtlasEntityAccessRequest assetRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetAssetHeader);
+                    AtlasAuthorizationUtils.verifyAccess(assetRequest, "unlinking from asset: " + targetAssetHeader.getDisplayText());
+                } else {
+                    AtlasVertex termVertex = edge.getOutVertex();
+                    AtlasEntityHeader termEntityHeader = entityRetriever.toAtlasEntityHeader(termVertex);
+                    
+                    AtlasEntityAccessRequest termRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader);
+                    AtlasAuthorizationUtils.verifyAccess(termRequest, "unlinking of term: " + termEntityHeader.getDisplayText());
+                }
+            }
         }
     }
 
