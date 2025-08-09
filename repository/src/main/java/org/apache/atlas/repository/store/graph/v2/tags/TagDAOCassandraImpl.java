@@ -582,11 +582,11 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     }
 
     @Override
-    public PaginatedTagResult getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
+    public PaginatedTagResult getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName, String storedPagingState) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getPropagationsForAttachmentBatch");
         try {
             // Default page size of 100
-            return getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, null, 100);
+            return getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, storedPagingState, BATCH_SIZE_LIMIT_FOR_DELETION);
         } catch (Exception e) {
             LOG.error("Error getting propagations for attachment batch for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName, e);
             throw new AtlasBaseException("Error getting propagations for attachment batch", e);
@@ -824,18 +824,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     public void close() {
         if (cassSession != null && !cassSession.isClosed()) {
             cassSession.close();
-        }
-    }
-
-    private static class PagingStateCache {
-        private static final Map<String, String> pagingStates = new java.util.concurrent.ConcurrentHashMap<>();
-        public static String getState(String key) { return pagingStates.get(key); }
-        public static void setState(String key, String state) {
-            if (state == null || state.isEmpty()) {
-                pagingStates.remove(key);
-            } else {
-                pagingStates.put(key, state);
-            }
         }
     }
 }
