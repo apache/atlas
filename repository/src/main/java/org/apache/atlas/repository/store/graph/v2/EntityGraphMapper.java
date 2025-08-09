@@ -5241,10 +5241,8 @@ public class EntityGraphMapper {
     public int deletePropagations(List<Tag> batchToDelete) throws AtlasBaseException {
         if(batchToDelete.isEmpty())
             return 0;
-        int totalDeleted = 0;
         tagDAO.deleteTags(batchToDelete);
-        totalDeleted += batchToDelete.size();
-        return totalDeleted;
+        return batchToDelete.size();
     }
 
     public void classificationRefreshPropagation(String classificationId) throws AtlasBaseException {
@@ -5780,14 +5778,10 @@ public class EntityGraphMapper {
                 //get current associated tags to asset ONLY from Cassandra namespace
                 List<Tag> tags = tagDAO.getAllTagsByVertexId(tagAttachment.getVertexId());
 
-                List<AtlasClassification> finalClassifications = tags.stream().map(t -> {
-                    return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
-                }).collect(Collectors.toList());
+                List<AtlasClassification> finalClassifications = tags.stream().map(t -> TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson())).collect(Collectors.toList());
 
                 tags = tags.stream().filter(Tag::isPropagated).toList();
-                List<AtlasClassification> propagatedClassifications = tags.stream().map(t -> {
-                    return TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson());
-                }).collect(Collectors.toList());
+                List<AtlasClassification> propagatedClassifications = tags.stream().map(t -> TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson())).collect(Collectors.toList());
 
                 Map<String, Object> deNormAttributes;
                 if (CollectionUtils.isEmpty(finalClassifications)) {
@@ -6428,6 +6422,152 @@ public class EntityGraphMapper {
         LOG.info("Completed refreshing propagation for classification typeName {} and source entity {}",classificationTypeName, sourceEntityGuid);
 
         RequestContext.get().endMetricRecord(classificationRefreshPropagationMetricRecorder);
+    }
+
+    /**
+     * Performs a scalable, batch-oriented refresh of propagated classifications.
+     *
+     * @param parameters Task parameters.
+     * @param parentEntityGuid The GUID of a potential parent entity.
+     * @param sourceEntityGuid The GUID of the entity that is the source of the propagation.
+     * @param classificationTypeName The type name of the classification to refresh.
+     * @throws AtlasBaseException if a critical error occurs.
+     */
+    public void classificationRefreshPropagationV2_new(Map<String, Object> parameters, String parentEntityGuid, String sourceEntityGuid, String classificationTypeName) throws AtlasBaseException {
+        final int BATCH_SIZE = 10000;
+        LOG.info("classificationRefreshPropagationV2_new: Starting scalable refresh for tag '{}' from source entity {}", classificationTypeName, sourceEntityGuid);
+
+        // === Phase 1: Initialization & Calculation ===
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, sourceEntityGuid);
+        if (entityVertex == null) {
+            String warningMessage = String.format("classificationRefreshPropagationV2_new(sourceEntityGuid=%s): entity vertex not found, skipping task execution", sourceEntityGuid);
+            LOG.warn(warningMessage);
+            RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
+            return;
+        }
+
+        String entityVertexId = entityVertex.getIdForDisplay();
+        AtlasClassification sourceTag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertexId, classificationTypeName, true);
+
+        if (sourceTag == null) {
+            if (StringUtils.isNotEmpty(parentEntityGuid) && !parentEntityGuid.equals(sourceEntityGuid)) {
+                entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, parentEntityGuid);
+                if (entityVertex == null) {
+                    String warningMessage = String.format("classificationRefreshPropagationV2_new(parentEntityGuid=%s): parent entity vertex not found", parentEntityGuid);
+                    LOG.warn(warningMessage);
+                    RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
+                    return;
+                }
+                entityVertexId = entityVertex.getIdForDisplay();
+                sourceTag = tagDAO.findDirectTagByVertexIdAndTagTypeName(entityVertexId, classificationTypeName, true);
+            }
+        }
+
+        if (sourceTag == null) {
+            throw new AtlasBaseException(String.format("classificationRefreshPropagationV2_new: Classification '%s' not found on entity '%s' or its parent '%s'. Aborting.", classificationTypeName, sourceEntityGuid, parentEntityGuid));
+        }
+
+        if (!sourceTag.isPropagate()) {
+            LOG.warn("classificationRefreshPropagationV2_new: Refresh task invalid as propagation is disabled for tag '{}' on entity {}. Aborting.", classificationTypeName, sourceEntityGuid);
+            return;
+        }
+
+        Set<String> expectedPropagatedVertexIds = calculateExpectedPropagations(entityVertex, sourceTag);
+        LOG.info("classificationRefreshPropagationV2_new: Graph traversal found {} assets that should have the tag '{}'", expectedPropagatedVertexIds.size(), classificationTypeName);
+
+        // === Phase 2: Reconciliation Loop (Deletions) ===
+        String pagingState = null;
+        boolean hasMorePages = true;
+        List<Tag> tagsToDelete = new ArrayList<>();
+
+        while (hasMorePages) {
+            PaginatedTagResult currentPage = tagDAO.getPropagationsForAttachmentBatchWithPagination(entityVertexId, classificationTypeName, pagingState, BATCH_SIZE);
+
+            for (Tag existingTag : currentPage.getTags()) {
+                if (expectedPropagatedVertexIds.contains(existingTag.getVertexId())) {
+                    expectedPropagatedVertexIds.remove(existingTag.getVertexId());
+                } else {
+                    tagsToDelete.add(existingTag);
+                }
+            }
+
+            if (tagsToDelete.size() >= BATCH_SIZE) {
+                processDeletions_new(tagsToDelete, sourceTag);
+                tagsToDelete.clear();
+            }
+
+            pagingState = currentPage.getPagingState();
+            hasMorePages = currentPage.hasMorePages();
+        }
+
+        if (!tagsToDelete.isEmpty()) {
+            processDeletions_new(tagsToDelete, sourceTag);
+        }
+
+        // === Phase 3: Process Net-New Additions ===
+        if (!expectedPropagatedVertexIds.isEmpty()) {
+            LOG.info("classificationRefreshPropagationV2_new: Found {} assets that need the tag '{}' to be newly propagated.", expectedPropagatedVertexIds.size(), classificationTypeName);
+            List<String> vertexIdsToAdd = new ArrayList<>(expectedPropagatedVertexIds);
+            for (int i = 0; i < vertexIdsToAdd.size(); i += BATCH_SIZE) {
+                int end = Math.min(i + BATCH_SIZE, vertexIdsToAdd.size());
+                List<String> batchIds = vertexIdsToAdd.subList(i, end);
+
+                List<AtlasVertex> verticesToPropagate = batchIds.stream()
+                        .map(id -> graph.getVertex(id))
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+
+                if (!verticesToPropagate.isEmpty()) {
+                    processClassificationPropagationAdditionV2(parameters, entityVertexId, verticesToPropagate, sourceTag);
+                }
+            }
+        }
+        LOG.info("classificationRefreshPropagationV2_new: Successfully completed scalable refresh for tag '{}' from source entity {}", classificationTypeName, sourceEntityGuid);
+    }
+
+    private Set<String> calculateExpectedPropagations(AtlasVertex sourceVertex, AtlasClassification sourceTag) throws AtlasBaseException {
+        String propagationMode = entityRetriever.determinePropagationMode(sourceTag.getRestrictPropagationThroughLineage(), sourceTag.getRestrictPropagationThroughHierarchy());
+        boolean toExclude = Objects.equals(propagationMode, CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE);
+        Set<String> impactedVertices = new HashSet<>();
+        entityRetriever.traverseImpactedVerticesByLevelV2(sourceVertex, null, null, impactedVertices, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, null);
+        transactionInterceptHelper.intercept();
+        return impactedVertices;
+    }
+
+    private void processDeletions_new(List<Tag> tagsToDelete, AtlasClassification sourceTag) throws AtlasBaseException {
+        LOG.debug("Processing deletion of {} tags.", tagsToDelete.size());
+        tagDAO.deleteTags(tagsToDelete);
+
+        List<String> vertexIdsToDelete = tagsToDelete.stream()
+                .map(Tag::getVertexId)
+                .toList();
+
+        Map<String, Map<String, Object>> deNormMap = new HashMap<>();
+        updateClassificationTextV2(sourceTag, vertexIdsToDelete, tagsToDelete, deNormMap);
+        if (MapUtils.isNotEmpty(deNormMap)) {
+            ESConnector.writeTagProperties(deNormMap);
+        }
+
+        List<AtlasEntity> notificationEntities = new ArrayList<>();
+
+        for (Tag deletedTag : tagsToDelete) {
+            notificationEntities.add(getEntityForNotification(deletedTag.getAssetMetadata()));
+        }
+
+        if (!notificationEntities.isEmpty()) {
+            entityChangeNotifier.onClassificationPropagationDeleted(notificationEntities, sourceTag, true, RequestContext.get());
+        }
+    }
+
+    private Map<String, Map<String, Object>> getMinimalAssetMapsFromGraph(List<String> vertexIds) {
+        Map<String, Map<String, Object>> ret = new HashMap<>();
+        for (String vertexId : vertexIds) {
+            AtlasVertex vertex = graph.getVertex(vertexId);
+            if (vertex != null) {
+                ret.put(vertexId, getMinimalAssetMap(vertex));
+            }
+        }
+        return ret;
     }
 
     public List<AtlasVertex> unlinkBusinessPolicyV2(Set<String> assetGuids, Set<String> unlinkGuids) {
