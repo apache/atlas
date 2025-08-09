@@ -607,7 +607,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             do {
                 pageCount++;
                 result = getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, pagingState, 500);
-                allTags.addAll(result.getTags());
                 List<Tag> currentPageTags = result.getTags();
                 int fetchedCount = currentPageTags.size();
 
