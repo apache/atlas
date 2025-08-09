@@ -23,23 +23,28 @@ import java.util.stream.Collectors;
  * Available optimization rules:
  * 0. Structure simplification (flatten nested bools)
  * 1. Empty bool elimination
- * 2. Multiple terms consolidation (should/filter/must_not only, NOT must)
- * 3. Array deduplication
- * 4. Multi-match consolidation
- * 5. Regexp simplification
- * 6. Aggregation optimization
- * 7. QualifiedName hierarchy optimization (default/* patterns)
- * 8. Multiple terms consolidation (should/filter/must_not only, NOT must)
- * 9. Wildcard consolidation (2+ wildcards, with 1000-char regexp splitting)
- * 10. Filter structure optimization (scoring-safe)
- * 11. Bool flattening (must+must_not to filter+must_not)
- * 12. Nested bool elimination
- * 13. Duplicate removal and consolidation
- * 14. Context-aware filter optimization (safe must->filter in function_score)
- * 15. Function score optimization
- * 16. Duplicate filter removal
+ * 2. Nested bool elimination (flatten structures first)
+ * 3. QualifiedName hierarchy optimization (UI contains + default/* patterns) - RUNS EARLY
+ * 4. Multiple terms consolidation (should/filter/must_not only, NOT must)
+ * 5. Array deduplication
+ * 6. Multi-match consolidation
+ * 7. Regexp simplification
+ * 8. Aggregation optimization
+ * 9. Multiple terms consolidation (should/filter/must_not only, NOT must)
+ * 10. Wildcard consolidation (2+ wildcards, with 1000-char regexp splitting)
+ * 11. Regexp consolidation (consolidate regexp patterns after wildcard conversion)
+ * 12. Must_not consolidation (consolidate bool.must_not wrappers in must arrays)
+ * 13. Filter structure optimization (scoring-safe)
+ * 14. Bool flattening (must+must_not to filter+must_not)
+ * 15. Duplicate removal and consolidation
+ * 16. Context-aware filter optimization (safe must->filter in function_score)
+ * 17. Function score optimization
+ * 18. Duplicate filter removal
  *
  * Performance Features:
+ * - UI "Contains" optimization: *default/path* → __qualifiedNameHierarchy term query (MAJOR)
+ * - Must_not consolidation with semantic preservation (De Morgan's Law)
+ * - Wildcard to regexp consolidation (2+ wildcards → single regexp)
  * - Only reports rules that made actual changes
  * - Detects queries that don't need Elasticsearch execution
  * - Splits large regexp patterns to avoid 1000-char limits
@@ -67,6 +72,8 @@ public class ElasticsearchDslOptimizer {
                 new AggregationOptimizationRule(),
                 new MultipleTermsConsolidationRule(), // Second consolidation after hierarchy conversion
                 new WildcardConsolidationRule(), // Now runs after hierarchy transformation
+                new RegexpConsolidationRule(), // Consolidate regexp patterns after wildcard conversion
+                new MustNotConsolidationRule(), // Consolidate bool.must_not wrappers in must arrays
                 new FilterStructureOptimizationRule(),
                 new BoolFlatteningRule(),
                 new DuplicateRemovalRule(),
@@ -1460,8 +1467,10 @@ public class ElasticsearchDslOptimizer {
 
             ObjectNode objectNode = (ObjectNode) node;
 
-            // Check all bool clause types: must, should, filter, must_not
-            for (String clauseType : Arrays.asList("must", "should", "filter", "must_not")) {
+            // Check bool clause types that allow wildcard consolidation
+            // must_not is safe for consolidation: NOT(A OR B) = NOT A AND NOT B (De Morgan's Law)
+            // must is NOT safe: changing (A AND B) to (A OR B) breaks semantics
+            for (String clauseType : Arrays.asList("should", "filter", "must_not")) {
                 if (objectNode.has("bool") && objectNode.get("bool").has(clauseType)) {
                     JsonNode clauseNode = objectNode.get("bool").get(clauseType);
 
@@ -1774,6 +1783,446 @@ public class ElasticsearchDslOptimizer {
     }
 
     /**
+     * Rule 8.5: Regexp Consolidation
+     * Consolidates multiple regexp queries on the same field into a single regexp with OR patterns
+     */
+    private class RegexpConsolidationRule implements OptimizationRule {
+
+        @Override
+        public String getName() {
+            return "RegexpConsolidation";
+        }
+
+        @Override
+        public JsonNode apply(JsonNode query) {
+            return traverseAndOptimize(query.deepCopy(), this::consolidateRegexpInNode);
+        }
+
+        private JsonNode consolidateRegexpInNode(JsonNode node) {
+            if (!node.isObject()) return node;
+
+            ObjectNode objectNode = (ObjectNode) node;
+
+            // Check bool clause types that allow regexp consolidation
+            // Safe for should, filter, must_not (same logic as wildcard consolidation)
+            for (String clauseType : Arrays.asList("should", "filter", "must_not")) {
+                if (objectNode.has("bool") && objectNode.get("bool").has(clauseType)) {
+                    JsonNode clauseNode = objectNode.get("bool").get(clauseType);
+
+                    if (clauseNode.isArray()) {
+                        ArrayNode clauseArray = (ArrayNode) clauseNode;
+                        
+                        // Group regexp queries by field
+                        Map<String, List<JsonNode>> regexpsByField = new HashMap<>();
+                        List<JsonNode> nonRegexps = new ArrayList<>();
+
+                        for (JsonNode clause : clauseArray) {
+                            if (clause.has("regexp")) {
+                                // Direct regexp query
+                                JsonNode regexpNode = clause.get("regexp");
+                                Iterator<String> fieldNames = regexpNode.fieldNames();
+                                if (fieldNames.hasNext()) {
+                                    String field = fieldNames.next();
+                                    regexpsByField.computeIfAbsent(field, k -> new ArrayList<>()).add(clause);
+                                }
+                            } else if (clause.has("bool") && isSimpleRegexpWrapper(clause)) {
+                                // Regexp wrapped in simple bool (e.g., {"bool": {"must_not": [{"regexp": {...}}]}})
+                                JsonNode regexpClause = extractRegexpFromSimpleWrapper(clause);
+                                if (regexpClause != null && regexpClause.has("regexp")) {
+                                    JsonNode regexpNode = regexpClause.get("regexp");
+                                    Iterator<String> fieldNames = regexpNode.fieldNames();
+                                    if (fieldNames.hasNext()) {
+                                        String field = fieldNames.next();
+                                        regexpsByField.computeIfAbsent(field, k -> new ArrayList<>()).add(clause); // Store the wrapper
+                                    }
+                                } else {
+                                    nonRegexps.add(clause);
+                                }
+                            } else {
+                                nonRegexps.add(clause);
+                            }
+                        }
+
+                        // Consolidate regexp groups
+                        boolean hasConsolidation = false;
+                        ArrayNode newArray = objectMapper.createArrayNode();
+                        
+                        // Add non-regexp clauses first
+                        for (JsonNode nonRegexp : nonRegexps) {
+                            newArray.add(nonRegexp);
+                        }
+
+                        // Process each regexp field group
+                        for (Map.Entry<String, List<JsonNode>> entry : regexpsByField.entrySet()) {
+                            String field = entry.getKey();
+                            List<JsonNode> regexps = entry.getValue();
+
+                            if (regexps.size() >= 2) {
+                                // Extract patterns (handle both direct and wrapped regexps)
+                                List<String> patterns = new ArrayList<>();
+                                String wrapperContext = null; // For preserving must_not, should, etc.
+                                
+                                for (JsonNode regexpContainer : regexps) {
+                                    JsonNode regexpClause;
+                                    if (regexpContainer.has("regexp")) {
+                                        // Direct regexp
+                                        regexpClause = regexpContainer;
+                                    } else {
+                                        // Extract from bool wrapper
+                                        regexpClause = extractRegexpFromSimpleWrapper(regexpContainer);
+                                        if (wrapperContext == null) {
+                                            // Determine the wrapper context (must_not, should, etc.)
+                                            JsonNode bool = regexpContainer.get("bool");
+                                            for (String esClauseType : Arrays.asList("must", "should", "filter", "must_not")) {
+                                                if (bool.has(esClauseType)) {
+                                                    wrapperContext = esClauseType;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                    }
+                                    
+                                    if (regexpClause != null && regexpClause.has("regexp")) {
+                                        String pattern = regexpClause.get("regexp").get(field).asText();
+                                        patterns.add(pattern);
+                                    }
+                                }
+
+                                // Create consolidated regexp with OR patterns
+                                List<String> consolidatedPatterns = createConsolidatedRegexpPatterns(patterns);
+                                
+                                for (String consolidatedPattern : consolidatedPatterns) {
+                                    ObjectNode consolidatedRegexp;
+                                    
+                                    if (wrapperContext != null) {
+                                        // Preserve the bool wrapper context (e.g., must_not)
+                                        consolidatedRegexp = objectMapper.createObjectNode();
+                                        ObjectNode boolWrapper = objectMapper.createObjectNode();
+                                        ArrayNode wrapperArray = objectMapper.createArrayNode();
+                                        
+                                        ObjectNode regexpQuery = objectMapper.createObjectNode();
+                                        ObjectNode regexpContent = objectMapper.createObjectNode();
+                                        regexpContent.put(field, consolidatedPattern);
+                                        regexpQuery.set("regexp", regexpContent);
+                                        wrapperArray.add(regexpQuery);
+                                        
+                                        boolWrapper.set(wrapperContext, wrapperArray);
+                                        consolidatedRegexp.set("bool", boolWrapper);
+                                    } else {
+                                        // Direct regexp without wrapper
+                                        consolidatedRegexp = objectMapper.createObjectNode();
+                                        ObjectNode regexpContent = objectMapper.createObjectNode();
+                                        regexpContent.put(field, consolidatedPattern);
+                                        consolidatedRegexp.set("regexp", regexpContent);
+                                    }
+                                    
+                                    newArray.add(consolidatedRegexp);
+                                }
+
+                                hasConsolidation = true;
+                                log.debug("RegexpConsolidation: Consolidated {} regexp patterns on field '{}' into {} pattern(s)", 
+                                         regexps.size(), field, consolidatedPatterns.size());
+                            } else {
+                                // Keep single regexp as-is
+                                for (JsonNode regexp : regexps) {
+                                    newArray.add(regexp);
+                                }
+                            }
+                        }
+
+                        // Update the clause array if consolidation occurred
+                        if (hasConsolidation) {
+                            ((ObjectNode) objectNode.get("bool")).set(clauseType, newArray);
+                        }
+                    }
+                }
+            }
+
+            return objectNode;
+        }
+
+        /**
+         * Creates consolidated regexp patterns from multiple individual patterns
+         * Handles the 1000-character limit by splitting if necessary
+         */
+        private List<String> createConsolidatedRegexpPatterns(List<String> patterns) {
+            if (patterns.isEmpty()) return new ArrayList<>();
+            if (patterns.size() == 1) return patterns;
+
+            // Create OR pattern: (pattern1|pattern2|pattern3)
+            String consolidatedPattern = "(" + String.join("|", patterns) + ")";
+            
+            // Check if pattern exceeds Elasticsearch's 1000-character limit
+            if (consolidatedPattern.length() <= 1000) {
+                return Arrays.asList(consolidatedPattern);
+            }
+
+            // Split into multiple patterns if too long
+            log.debug("RegexpConsolidation: Pattern exceeds 1000 chars ({}), splitting", consolidatedPattern.length());
+            
+            List<String> result = new ArrayList<>();
+            List<String> currentBatch = new ArrayList<>();
+            int currentLength = 2; // Account for opening parenthesis and initial pattern
+
+            for (String pattern : patterns) {
+                int additionalLength = pattern.length() + 1; // +1 for the "|" separator
+                
+                if (currentLength + additionalLength > 1000 && !currentBatch.isEmpty()) {
+                    // Create regexp from current batch
+                    String batchPattern = currentBatch.size() == 1 ? 
+                        currentBatch.get(0) : 
+                        "(" + String.join("|", currentBatch) + ")";
+                    result.add(batchPattern);
+                    
+                    // Start new batch
+                    currentBatch.clear();
+                    currentLength = 2;
+                }
+                
+                currentBatch.add(pattern);
+                currentLength += additionalLength;
+            }
+
+            // Add final batch
+            if (!currentBatch.isEmpty()) {
+                String batchPattern = currentBatch.size() == 1 ? 
+                    currentBatch.get(0) : 
+                    "(" + String.join("|", currentBatch) + ")";
+                result.add(batchPattern);
+            }
+
+            return result;
+        }
+        
+        /**
+         * Checks if a bool wrapper contains a single regexp query (similar to wildcard wrapper logic)
+         */
+        private boolean isSimpleRegexpWrapper(JsonNode boolWrapper) {
+            if (!boolWrapper.has("bool")) return false;
+
+            JsonNode bool = boolWrapper.get("bool");
+
+            // Check for single-clause bool with one regexp
+            int clauseCount = 0;
+            JsonNode targetClause = null;
+
+            for (String clauseType : Arrays.asList("must", "should", "filter", "must_not")) {
+                if (bool.has(clauseType)) {
+                    clauseCount++;
+                    targetClause = bool.get(clauseType);
+                }
+            }
+
+            // Must be exactly one clause type
+            if (clauseCount != 1 || targetClause == null) return false;
+
+            // Check if the clause contains exactly one regexp
+            if (targetClause.isArray()) {
+                ArrayNode array = (ArrayNode) targetClause;
+                return array.size() == 1 && array.get(0).has("regexp");
+            } else {
+                return targetClause.has("regexp");
+            }
+        }
+
+        /**
+         * Extracts the regexp query from a simple bool wrapper
+         */
+        private JsonNode extractRegexpFromSimpleWrapper(JsonNode boolWrapper) {
+            JsonNode bool = boolWrapper.get("bool");
+
+            for (String clauseType : Arrays.asList("must", "should", "filter", "must_not")) {
+                if (bool.has(clauseType)) {
+                    JsonNode clause = bool.get(clauseType);
+                    if (clause.isArray()) {
+                        ArrayNode array = (ArrayNode) clause;
+                        if (array.size() == 1 && array.get(0).has("regexp")) {
+                            return array.get(0);
+                        }
+                    } else if (clause.has("regexp")) {
+                        return clause;
+                    }
+                }
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Rule 8.6: Must_Not Consolidation Rule  
+     * Consolidates multiple bool.must_not wrappers in must arrays into a single consolidated must_not
+     * Specifically handles patterns like:
+     * [{"bool": {"must_not": [{"regexp": ...}]}}, {"bool": {"must_not": [{"regexp": ...}]}}]
+     * Into a single consolidated structure
+     */
+    private class MustNotConsolidationRule implements OptimizationRule {
+
+        @Override
+        public String getName() {
+            return "MustNotConsolidation";
+        }
+
+        @Override
+        public JsonNode apply(JsonNode query) {
+            return traverseAndOptimize(query.deepCopy(), this::consolidateMustNotWrappersInNode);
+        }
+
+        private JsonNode consolidateMustNotWrappersInNode(JsonNode node) {
+            if (!node.isObject()) return node;
+
+            ObjectNode objectNode = (ObjectNode) node;
+
+            // Look specifically for bool.must arrays that contain multiple bool.must_not wrappers
+            if (objectNode.has("bool")) {
+                JsonNode boolNode = objectNode.get("bool");
+                if (boolNode.has("must") && boolNode.get("must").isArray()) {
+                    ArrayNode mustArray = (ArrayNode) boolNode.get("must");
+                    
+                    // Group must_not wrappers by the field they operate on
+                    Map<String, List<JsonNode>> mustNotWrappersByField = new HashMap<>();
+                    List<JsonNode> nonMustNotItems = new ArrayList<>();
+                    
+                    for (JsonNode mustItem : mustArray) {
+                        if (isMustNotWrapper(mustItem)) {
+                            // Extract the inner condition (regexp/wildcard)
+                            JsonNode innerCondition = extractInnerConditionFromMustNotWrapper(mustItem);
+                            if (innerCondition != null) {
+                                String field = extractFieldFromCondition(innerCondition);
+                                if (field != null) {
+                                    mustNotWrappersByField.computeIfAbsent(field, k -> new ArrayList<>()).add(mustItem);
+                                    continue;
+                                }
+                            }
+                        }
+                        nonMustNotItems.add(mustItem);
+                    }
+                    
+                    // Check if we have multiple must_not wrappers for any field
+                    boolean hasConsolidation = false;
+                    ArrayNode newMustArray = objectMapper.createArrayNode();
+                    
+                    // Add non-must_not items first
+                    for (JsonNode nonMustNot : nonMustNotItems) {
+                        newMustArray.add(nonMustNot);
+                    }
+                    
+                    // Process each field group
+                    for (Map.Entry<String, List<JsonNode>> entry : mustNotWrappersByField.entrySet()) {
+                        String field = entry.getKey();
+                        List<JsonNode> wrappers = entry.getValue();
+                        
+                        if (wrappers.size() >= 2) {
+                            // Extract all patterns from the wrappers
+                            List<String> patterns = new ArrayList<>();
+                            for (JsonNode wrapper : wrappers) {
+                                JsonNode innerCondition = extractInnerConditionFromMustNotWrapper(wrapper);
+                                String pattern = extractPatternFromCondition(innerCondition);
+                                if (pattern != null) {
+                                    patterns.add(pattern);
+                                }
+                            }
+                            
+                            // Create consolidated regexp with OR patterns  
+                            String consolidatedPattern = "(" + String.join("|", patterns) + ")";
+                            
+                            // Create new consolidated must_not wrapper
+                            ObjectNode consolidatedWrapper = objectMapper.createObjectNode();
+                            ObjectNode boolWrapper = objectMapper.createObjectNode();
+                            ArrayNode mustNotArray = objectMapper.createArrayNode();
+                            
+                            ObjectNode regexpQuery = objectMapper.createObjectNode();
+                            ObjectNode regexpContent = objectMapper.createObjectNode();
+                            regexpContent.put(field, consolidatedPattern);
+                            regexpQuery.set("regexp", regexpContent);
+                            mustNotArray.add(regexpQuery);
+                            
+                            boolWrapper.set("must_not", mustNotArray);
+                            consolidatedWrapper.set("bool", boolWrapper);
+                            
+                            newMustArray.add(consolidatedWrapper);
+                            hasConsolidation = true;
+                            
+                            log.debug("MustNotConsolidation: Consolidated {} must_not wrappers on field '{}' into single regexp", 
+                                     wrappers.size(), field);
+                        } else {
+                            // Keep single wrapper as-is
+                            for (JsonNode wrapper : wrappers) {
+                                newMustArray.add(wrapper);
+                            }
+                        }
+                    }
+                    
+                    // Update the must array if consolidation occurred
+                    if (hasConsolidation) {
+                        ((ObjectNode) boolNode).set("must", newMustArray);
+                    }
+                }
+            }
+
+            return objectNode;
+        }
+        
+        private boolean isMustNotWrapper(JsonNode node) {
+            if (!node.has("bool")) return false;
+            
+            JsonNode bool = node.get("bool");
+            
+            // Check if it's a simple bool with only must_not clause
+            int clauseCount = 0;
+            for (String clauseType : Arrays.asList("must", "should", "filter", "must_not")) {
+                if (bool.has(clauseType)) {
+                    clauseCount++;
+                }
+            }
+            
+            return clauseCount == 1 && bool.has("must_not");
+        }
+        
+        private JsonNode extractInnerConditionFromMustNotWrapper(JsonNode mustNotWrapper) {
+            if (!mustNotWrapper.has("bool")) return null;
+            
+            JsonNode mustNotArray = mustNotWrapper.get("bool").get("must_not");
+            if (mustNotArray.isArray() && mustNotArray.size() == 1) {
+                return mustNotArray.get(0);
+            }
+            return null;
+        }
+        
+        private String extractFieldFromCondition(JsonNode condition) {
+            if (condition == null) return null;
+            
+            // Handle regexp, wildcard, term, etc.
+            for (String queryType : Arrays.asList("regexp", "wildcard", "term", "terms")) {
+                if (condition.has(queryType)) {
+                    JsonNode queryContent = condition.get(queryType);
+                    Iterator<String> fieldNames = queryContent.fieldNames();
+                    if (fieldNames.hasNext()) {
+                        return fieldNames.next();
+                    }
+                }
+            }
+            return null;
+        }
+        
+        private String extractPatternFromCondition(JsonNode condition) {
+            if (condition == null) return null;
+            
+            // Handle regexp, wildcard patterns
+            for (String queryType : Arrays.asList("regexp", "wildcard")) {
+                if (condition.has(queryType)) {
+                    JsonNode queryContent = condition.get(queryType);
+                    Iterator<String> fieldNames = queryContent.fieldNames();
+                    if (fieldNames.hasNext()) {
+                        String field = fieldNames.next();
+                        return queryContent.get(field).asText();
+                    }
+                }
+            }
+            return null;
+        }
+    }
+
+    /**
      * Rule 9: QualifiedName Hierarchy Optimization
      * Converts suffix wildcards to qualifiedNameHierarchy term queries and database term queries
      */
@@ -1810,6 +2259,25 @@ public class ElasticsearchDslOptimizer {
                         String pattern = wildcardNode.get(currentField).asText();
 
                         log.debug("QualifiedNameHierarchyRule: Checking field '{}' with pattern '{}'", currentField, pattern);
+
+                        // PRIORITY 1: UI "Contains" Optimization for patterns like "*default/something*"
+                        // This catches UI-generated wildcard queries from "contains" searches
+                        if (pattern.startsWith("*") && pattern.endsWith("*") && pattern.contains("default/")) {
+                            // Extract the core value by removing prefix * and suffix *
+                            String coreValue = pattern.substring(1, pattern.length() - 1);
+                            
+                            // If the core value starts with "default/", convert to efficient term query
+                            if (coreValue.startsWith("default/")) {
+                                log.info("QualifiedNameHierarchyRule: UI Contains optimization - converting wildcard '*{}*' to term query on __qualifiedNameHierarchy", coreValue);
+                                
+                                // Create term query with __qualifiedNameHierarchy for much better performance
+                                ObjectNode termNode = objectMapper.createObjectNode();
+                                ObjectNode termQuery = objectMapper.createObjectNode();
+                                termQuery.put("__qualifiedNameHierarchy", coreValue);
+                                termNode.set("term", termQuery);
+                                return termNode;
+                            }
+                        }
 
                         // NEW: Special handling for default/*/*/*/* patterns - convert to terms query
                         if (pattern.startsWith("default/") && pattern.endsWith("*")) {
