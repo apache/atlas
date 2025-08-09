@@ -88,14 +88,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import javax.annotation.PreDestroy;
 import javax.inject.Inject;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_JANUS_OPTIMISATION_FOR_CLASSIFICATIONS;
@@ -150,6 +148,11 @@ public class EntityGraphRetriever {
     public static final String CREATE_TIME    = "createTime";
     public static final String QUALIFIED_NAME = "qualifiedName";
 
+    final ThreadFactory threadFactory = new ThreadFactoryBuilder()
+            .setNameFormat("entity-retriever-bfs-%d")
+            .setDaemon(true)
+            .build();
+    private final ExecutorService executorService = Executors.newFixedThreadPool(AtlasConfiguration.GRAPH_TRAVERSAL_PARALLELISM.getInt(), threadFactory);;
 
     private static final TypeReference<List<TimeBoundary>> TIME_BOUNDARIES_LIST_TYPE = new TypeReference<List<TimeBoundary>>() {};
     private final GraphHelper graphHelper;
@@ -945,17 +948,11 @@ public class EntityGraphRetriever {
         RequestContext              requestContext                              = RequestContext.get();
         boolean                     storeVerticesWithoutClassification          = verticesWithClassification == null ? false : true;
 
-        final ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("Tasks-BFS-%d")
-                .setDaemon(true)
-                .build();
-
-        ExecutorService executorService = Executors.newFixedThreadPool(AtlasConfiguration.GRAPH_TRAVERSAL_PARALLELISM.getInt(), threadFactory);
-
         //Add Source vertex to level 1
         if (entityVertexStart != null) {
             verticesAtCurrentLevel.add(entityVertexStart.getIdForDisplay());
         }
+
         /*
             Steps in each level:
                 1. Add vertices to Visited Vertices set
@@ -995,17 +992,16 @@ public class EntityGraphRetriever {
                 verticesAtCurrentLevel.clear();
                 verticesAtCurrentLevel.addAll(verticesToVisitNextLevel);
             }
+
+            result.addAll(traversedVerticesIds);
+
+            if(storeVerticesWithoutClassification) {
+                verticesWithClassification.clear();
+                verticesWithClassification.addAll(verticesToPropagateTo);
+            }
         } finally {
-            executorService.shutdown();
+            requestContext.endMetricRecord(metricRecorder);
         }
-        result.addAll(traversedVerticesIds);
-
-        if(storeVerticesWithoutClassification) {
-            verticesWithClassification.clear();
-            verticesWithClassification.addAll(verticesToPropagateTo);
-        }
-
-        requestContext.endMetricRecord(metricRecorder);
     }
 
     private Set<String> getAdjacentVerticesIds(AtlasVertex entityVertex,final String classificationId, final String relationshipGuidToExclude
@@ -3338,5 +3334,24 @@ public class EntityGraphRetriever {
 
     private boolean isInactiveEdge(Object element, boolean ignoreInactive) {
         return ignoreInactive && element instanceof AtlasEdge && getStatus((AtlasEdge) element) != AtlasEntity.Status.ACTIVE;
+    }
+
+    /**
+     * Gracefully shuts down the thread pool when the application is stopping.
+     */
+    @PreDestroy
+    public void shutdownExecutor() {
+        LOG.info("Shutting down EntityGraphRetriever's executor service.");
+        if (executorService != null) {
+            executorService.shutdown();
+            try {
+                if (!executorService.awaitTermination(60, TimeUnit.SECONDS)) {
+                    executorService.shutdownNow();
+                }
+            } catch (InterruptedException e) {
+                executorService.shutdownNow();
+                Thread.currentThread().interrupt();
+            }
+        }
     }
 }
