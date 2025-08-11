@@ -2558,28 +2558,56 @@ public class EntityGraphMapper {
 
     private void trackInputPortRemoval(AtlasVertex toVertex, List<String> conflictingGuids) {
         String productGuid = toVertex.getProperty("__guid", String.class);
-        AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(productGuid);
+        AtlasEntity productDiffEntity = RequestContext.get().getDifferentialEntity(productGuid);
 
-        if (diffEntity == null) {
-            diffEntity = new AtlasEntity();
-            diffEntity.setGuid(productGuid);
-            diffEntity.setTypeName(TYPE_PRODUCT);
-            RequestContext.get().cacheDifferentialEntity(diffEntity);
+        if (productDiffEntity == null) {
+            productDiffEntity = new AtlasEntity();
+            productDiffEntity.setGuid(productGuid);
+            productDiffEntity.setTypeName(TYPE_PRODUCT);
+            RequestContext.get().cacheDifferentialEntity(productDiffEntity);
         }
 
-        // Track removed input ports in differential entity for change notifications and audit trail
-        Map<String, Object> removedAttrs = diffEntity.getRemovedRelationshipAttributes();
+        Map<String, Object> removedAttrs = productDiffEntity.getRemovedRelationshipAttributes();
         if (removedAttrs == null) {
             removedAttrs = new HashMap<>();
-            diffEntity.setRemovedRelationshipAttributes(removedAttrs);
+            productDiffEntity.setRemovedRelationshipAttributes(removedAttrs);
         }
 
-        List<String> existingRemovedInputPorts = (List<String>) removedAttrs.get(INPUT_PORTS);
-        if (existingRemovedInputPorts == null) {
-            existingRemovedInputPorts = new ArrayList<>();
+        productDiffEntity.setRemovedRelationshipAttribute(INPUT_PORTS, conflictingGuids);
+
+        for (String assetGuid : conflictingGuids) {
+            AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, assetGuid);
+            if (assetVertex != null) {
+                AtlasEntity assetDiffEntity = RequestContext.get().getDifferentialEntity(assetGuid);
+                
+                if (assetDiffEntity == null) {
+                    assetDiffEntity = new AtlasEntity();
+                    assetDiffEntity.setGuid(assetGuid);
+                    assetDiffEntity.setTypeName(assetVertex.getProperty("__typeName", String.class));
+                    RequestContext.get().cacheDifferentialEntity(assetDiffEntity);
+                }
+
+                Map<String, Object> assetRemovedAttrs = assetDiffEntity.getRemovedRelationshipAttributes();
+                if (assetRemovedAttrs == null) {
+                    assetRemovedAttrs = new HashMap<>();
+                    assetDiffEntity.setRemovedRelationshipAttributes(assetRemovedAttrs);
+                }
+
+                List<AtlasObjectId> existingRemovedProducts = (List<AtlasObjectId>) assetRemovedAttrs.get(INPUT_PORT_PRODUCT_EDGE_LABEL);
+                if (existingRemovedProducts == null) {
+                    existingRemovedProducts = new ArrayList<>();
+                }
+                
+                boolean productExists = existingRemovedProducts.stream()
+                    .anyMatch(obj -> productGuid.equals(obj.getGuid()));
+                
+                if (!productExists) {
+                    AtlasObjectId productObjectId = new AtlasObjectId(productGuid, TYPE_PRODUCT);
+                    existingRemovedProducts.add(productObjectId);
+                }
+                assetRemovedAttrs.put(INPUT_PORT_PRODUCT_EDGE_LABEL, existingRemovedProducts);
+            }
         }
-        existingRemovedInputPorts.addAll(conflictingGuids);
-        removedAttrs.put(INPUT_PORTS, existingRemovedInputPorts);
     }
 
     private void handleInputPortUpdate(AtlasVertex toVertex, List<String> addedGuids) throws AtlasBaseException {
