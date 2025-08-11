@@ -2073,7 +2073,7 @@ public class EntityGraphRetriever {
     }
 
     public List<AtlasClassification> handleGetAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
-        if(FeatureFlagStore.isTagV2Enabled()) {
+        if(!RequestContext.get().isSkipAuthorizationCheck() && FeatureFlagStore.isTagV2Enabled()) {
             return getAllClassifications_V2(entityVertex);
         } else {
             return getAllClassifications_V1(entityVertex);
