@@ -273,7 +273,11 @@ public class EntityGraphRetriever {
     public AtlasEntityHeader toAtlasEntityHeaderWithClassifications(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
         AtlasEntityHeader ret = toAtlasEntityHeader(entityVertex, attributes);
 
-        ret.setClassifications(handleGetAllClassifications(entityVertex));
+        if (!RequestContext.get().isSkipAuthorizationCheck()) {
+            // Avoid fetching tags if skip Auth check flag is enabled,
+            // to avoid NPE while bootstrapping auth policies for the very frst time
+            ret.setClassifications(handleGetAllClassifications(entityVertex));
+        }
 
         return ret;
     }
