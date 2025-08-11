@@ -3906,7 +3906,7 @@ public class EntityGraphMapper {
     }
 
     public void handleAddClassifications(final EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
-        if(FeatureFlagStore.isTagV2Enabled()){
+        if(!RequestContext.get().isSkipAuthorizationCheck() && FeatureFlagStore.isTagV2Enabled()){
             addClassificationsV2(context, guid, classifications);
         } else {
             addClassificationsV1(context, guid, classifications);
