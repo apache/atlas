@@ -322,7 +322,6 @@ public class TagDAOCassandraImplTest {
 
         // Assertion: Fetch with pagination
         int pageSize = 2;
-        String cacheKey = "test_pagination_key";
 
         // Page 1
         PaginatedTagResult page1 = tagDAO.getPropagationsForAttachmentBatchWithPagination(sourceAssetId, tagTypeName, null, pageSize);
