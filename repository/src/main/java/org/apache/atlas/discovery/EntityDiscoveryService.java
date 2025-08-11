@@ -1148,7 +1148,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                                      boolean useVertexEdgeBulkFetching) throws AtlasBaseException {
         SearchParams searchParams = ret.getSearchParameters();
         AtlasPerfMetrics.MetricRecorder prepareSearchResultMetrics = RequestContext.get().startMetricRecord("prepareSearchResult");
-        boolean useBulkFetch = useVertexEdgeBulkFetching && FeatureFlagStore.evaluate(USE_BULK_FETCH_INDEXSEARCH, "true");
         try {
             if(LOG.isDebugEnabled()){
                 LOG.debug("Preparing search results for ({})", ret.getSearchParameters());
@@ -1168,7 +1167,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 return vertex.getId().toString();
             }).filter(Objects::nonNull).collect(Collectors.toSet());
             VertexEdgePropertiesCache vertexEdgePropertiesCache;
-            if (useBulkFetch) {
+            if (useVertexEdgeBulkFetching) {
                 vertexEdgePropertiesCache = entityRetriever.enrichVertexPropertiesByVertexIds(vertexIds, resultAttributes);
             } else {
                 vertexEdgePropertiesCache = null;
@@ -1187,7 +1186,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
                 vertexIds.add(vertex.getId().toString());
                 AtlasEntityHeader header;
 
-                if(useBulkFetch) {
+                if(useVertexEdgeBulkFetching) {
                   header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes, vertexEdgePropertiesCache);
                 } else {
                     header = entityRetriever.toAtlasEntityHeader(vertex, resultAttributes);
