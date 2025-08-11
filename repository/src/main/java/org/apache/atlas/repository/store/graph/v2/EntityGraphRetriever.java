@@ -277,6 +277,8 @@ public class EntityGraphRetriever {
             // Avoid fetching tags if skip Auth check flag is enabled,
             // to avoid NPE while bootstrapping auth policies for the very frst time
             ret.setClassifications(handleGetAllClassifications(entityVertex));
+        } else {
+            ret.setClassifications(Collections.EMPTY_LIST);
         }
 
         return ret;
