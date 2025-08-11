@@ -1403,7 +1403,7 @@ public class EntityGraphRetriever {
                 }
             }
 
-            if(FeatureFlagStore.isTagV2Enabled()) {
+            if(!RequestContext.get().isSkipAuthorizationCheck() && FeatureFlagStore.isTagV2Enabled()) {
                 entity.setClassifications(tagDAO.getAllClassificationsForVertex(entityVertex.getIdForDisplay()));
             } else {
                 mapClassifications(entityVertex, entity);
