@@ -1206,19 +1206,23 @@ public abstract class DeleteHandlerV1 {
 
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 
-            tags.stream()
-                    .filter(Tag::isPropagated)
-                    .map(t -> TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson()))
-                    .forEach(t -> taskManagement.createTaskV2(CLASSIFICATION_REFRESH_PROPAGATION,
-                            RequestContext.getCurrentUser(),
-                            new HashMap<>() {{
-                                put(PARAM_ENTITY_GUID, t.getEntityGuid());
-                                put(PARAM_CLASSIFICATION_NAME, t.getTypeName());
-                            }},
-                            t.getTypeName(),
-                            t.getEntityGuid()
-                        )
-                    );
+            if (CollectionUtils.isNotEmpty(RequestContext.get().getDeletedEdgesIds())) {
+                // Create refresh propagation task only if SOFT deleted edges
+                // For HARD deleted edges, HardDeleteHandlerV1.deleteEdge calls createAndQueueClassificationRefreshPropagationTask
+                tags.stream()
+                        .filter(Tag::isPropagated)
+                        .map(t -> TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson()))
+                        .forEach(t -> taskManagement.createTaskV2(CLASSIFICATION_REFRESH_PROPAGATION,
+                                        RequestContext.getCurrentUser(),
+                                        new HashMap<>() {{
+                                            put(PARAM_ENTITY_GUID, t.getEntityGuid());
+                                            put(PARAM_CLASSIFICATION_NAME, t.getTypeName());
+                                        }},
+                                        t.getTypeName(),
+                                        t.getEntityGuid()
+                                )
+                        );
+            }
 
         } catch (AtlasBaseException e) {
             LOG.error("Error while deleting tags for vertex: {}", deletionCandidateVertex.getIdForDisplay());
