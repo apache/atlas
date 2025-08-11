@@ -103,7 +103,7 @@ public class AtlasAuditService {
         entry.setResult(result);
         entry.setResultCount(resultCount);
 
-        save(entry);
+        //save(entry);
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("addAuditEntry: user: {}, clientId: {}, operation: {} ", entry.getUserName(),

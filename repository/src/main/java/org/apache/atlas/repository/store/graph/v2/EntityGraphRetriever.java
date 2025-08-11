@@ -273,7 +273,13 @@ public class EntityGraphRetriever {
     public AtlasEntityHeader toAtlasEntityHeaderWithClassifications(AtlasVertex entityVertex, Set<String> attributes) throws AtlasBaseException {
         AtlasEntityHeader ret = toAtlasEntityHeader(entityVertex, attributes);
 
-        ret.setClassifications(handleGetAllClassifications(entityVertex));
+        if (!RequestContext.get().isSkipAuthorizationCheck()) {
+            // Avoid fetching tags if skip Auth check flag is enabled,
+            // to avoid NPE while bootstrapping auth policies for the very frst time
+            ret.setClassifications(handleGetAllClassifications(entityVertex));
+        } else {
+            ret.setClassifications(Collections.EMPTY_LIST);
+        }
 
         return ret;
     }
@@ -1397,7 +1403,7 @@ public class EntityGraphRetriever {
                 }
             }
 
-            if(FeatureFlagStore.isTagV2Enabled()) {
+            if(!RequestContext.get().isSkipAuthorizationCheck() && FeatureFlagStore.isTagV2Enabled()) {
                 entity.setClassifications(tagDAO.getAllClassificationsForVertex(entityVertex.getIdForDisplay()));
             } else {
                 mapClassifications(entityVertex, entity);
@@ -2067,7 +2073,7 @@ public class EntityGraphRetriever {
     }
 
     public List<AtlasClassification> handleGetAllClassifications(AtlasVertex entityVertex) throws AtlasBaseException {
-        if(FeatureFlagStore.isTagV2Enabled()) {
+        if(!RequestContext.get().isSkipAuthorizationCheck() && FeatureFlagStore.isTagV2Enabled()) {
             return getAllClassifications_V2(entityVertex);
         } else {
             return getAllClassifications_V1(entityVertex);
