@@ -136,6 +136,7 @@ public class AtlasAuditEntry extends AtlasBaseModelObject implements Serializabl
 
     public enum AuditOperation {
         PURGE("PURGE"),
+        AUTO_PURGE("AUTO_PURGE"),
         EXPORT("EXPORT"),
         IMPORT("IMPORT"),
         IMPORT_DELETE_REPL("IMPORT_DELETE_REPL"),
