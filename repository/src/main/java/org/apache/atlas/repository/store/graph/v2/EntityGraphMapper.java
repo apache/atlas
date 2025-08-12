@@ -2933,6 +2933,10 @@ public class EntityGraphMapper {
 
     private void verifyMeaningsAuthorization(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) throws AtlasBaseException {
         AtlasVertex targetEntityVertex = ctx.getReferringVertex();
+        AtlasEntityHeader targetEntityHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(targetEntityVertex);
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetEntityHeader),
+                "update on entity: " + targetEntityHeader.getDisplayText());
 
         boolean isGlossaryTermContext = ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(targetEntityVertex.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class));
 
