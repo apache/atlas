@@ -2839,10 +2839,6 @@ public class EntityGraphMapper {
 
     private void verifyMeaningsAuthorization(AttributeMutationContext ctx, List<Object> createdElements, List<AtlasEdge> deletedElements) throws AtlasBaseException {
         AtlasVertex targetEntityVertex = ctx.getReferringVertex();
-        AtlasEntityHeader targetEntityHeader = entityRetriever.toAtlasEntityHeader(targetEntityVertex);
-
-        AtlasEntityAccessRequest targetRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetEntityHeader);
-        AtlasAuthorizationUtils.verifyAccess(targetRequest, "update on asset: " + targetEntityHeader.getDisplayText());
 
         boolean isGlossaryTermContext = ATLAS_GLOSSARY_TERM_ENTITY_TYPE.equals(targetEntityVertex.getProperty(ENTITY_TYPE_PROPERTY_KEY, String.class));
 
@@ -2852,16 +2848,16 @@ public class EntityGraphMapper {
                 
                 if (isGlossaryTermContext) {
                     AtlasVertex targetAssetVertex = edge.getInVertex();
-                    AtlasEntityHeader targetAssetHeader = entityRetriever.toAtlasEntityHeader(targetAssetVertex);
+                    AtlasEntityHeader targetAssetHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(targetAssetVertex);
                     
-                    AtlasEntityAccessRequest assetRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetAssetHeader);
-                    AtlasAuthorizationUtils.verifyAccess(assetRequest, "linking to asset: " + targetAssetHeader.getDisplayText());
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetAssetHeader),
+                            "linking to asset: " + targetAssetHeader.getDisplayText());
                 } else {
                     AtlasVertex termVertex = edge.getOutVertex();
-                    AtlasEntityHeader termEntityHeader = entityRetriever.toAtlasEntityHeader(termVertex);
+                    AtlasEntityHeader termEntityHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(termVertex);
                     
-                    AtlasEntityAccessRequest termRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader);
-                    AtlasAuthorizationUtils.verifyAccess(termRequest, "linking of term: " + termEntityHeader.getDisplayText());
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader),
+                            "linking of term: " + termEntityHeader.getDisplayText());
                 }
             }
         }
@@ -2870,16 +2866,16 @@ public class EntityGraphMapper {
             for (AtlasEdge edge : deletedElements) {
                 if (isGlossaryTermContext) {
                     AtlasVertex targetAssetVertex = edge.getInVertex();
-                    AtlasEntityHeader targetAssetHeader = entityRetriever.toAtlasEntityHeader(targetAssetVertex);
+                    AtlasEntityHeader targetAssetHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(targetAssetVertex);
                     
-                    AtlasEntityAccessRequest assetRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetAssetHeader);
-                    AtlasAuthorizationUtils.verifyAccess(assetRequest, "unlinking from asset: " + targetAssetHeader.getDisplayText());
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, targetAssetHeader),
+                            "unlinking from asset: " + targetAssetHeader.getDisplayText());
                 } else {
                     AtlasVertex termVertex = edge.getOutVertex();
-                    AtlasEntityHeader termEntityHeader = entityRetriever.toAtlasEntityHeader(termVertex);
+                    AtlasEntityHeader termEntityHeader = retrieverNoRelation.toAtlasEntityHeaderWithClassifications(termVertex);
                     
-                    AtlasEntityAccessRequest termRequest = new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader);
-                    AtlasAuthorizationUtils.verifyAccess(termRequest, "unlinking of term: " + termEntityHeader.getDisplayText());
+                    AtlasAuthorizationUtils.verifyAccess(new AtlasEntityAccessRequest(typeRegistry, AtlasPrivilege.ENTITY_UPDATE, termEntityHeader),
+                            "unlinking of term: " + termEntityHeader.getDisplayText());
                 }
             }
         }
