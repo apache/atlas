@@ -288,13 +288,23 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         }
 
         private void printIndexRecoveryStats() {
-            AtlasGraphManagement management = this.graph.getManagementSystem();
+            AtlasGraphManagement management       = this.graph.getManagementSystem();
+            boolean              isRollbackNeeded = true;
 
             try {
                 management.printIndexRecoveryStats(txRecoveryObject);
-            } finally {
+
+                isRollbackNeeded = false;
+
                 management.commit();
-            }
+            } catch (Exception e) {
+                LOG.error("Index Recovery: printIndexRecoveryStats() failed!", e);
+            } finally {
+                if (isRollbackNeeded) {
+                    LOG.warn("Index Recovery: printIndexRecoveryStats() failed. Rolling back...");
+
+                    management.rollback();
+                }
         }
     }
 
