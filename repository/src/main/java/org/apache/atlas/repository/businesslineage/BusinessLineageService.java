@@ -24,6 +24,7 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.BusinessLineageRequest;
 import org.apache.atlas.repository.RepositoryException;
@@ -276,7 +277,8 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                     relationshipStoreV2.getOrCreate(assetVertex, productVertex, relationship, true);
                     LOG.info("Added input relation between asset and product");
                     updateInternalAttr(productVertex, assetGuid, operation);
-                    cacheDifferentialMeshEntity(productVertex);
+                    cacheDifferentialMeshRelationship(assetVertex, productVertex, "inputPortDataProducts", true);
+                    cacheDifferentialMeshRelationship(productVertex, assetVertex, INPUT_PORTS, true);
                 }
             }
         } catch (AtlasBaseException e){
@@ -293,7 +295,8 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                 if(inputPortEdge != null){
                     graph.removeEdge(inputPortEdge);
                     updateInternalAttr(productVertex, assetGuid, operation);
-                    cacheDifferentialMeshEntity(productVertex);
+                    cacheDifferentialMeshRelationship(assetVertex, productVertex, "inputPortDataProducts", false);
+                    cacheDifferentialMeshRelationship(productVertex, assetVertex, INPUT_PORTS, false);
                 }
             }
         } catch (AtlasBaseException | RepositoryException e){
@@ -350,24 +353,29 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         requestContext.cacheDifferentialEntity(diffEntity);
     }
 
-    private void cacheDifferentialMeshEntity(AtlasVertex productVertex) {
+    private void cacheDifferentialMeshRelationship(AtlasVertex entityVertex, AtlasVertex relatedVertex, String relationshipAttributeName, boolean isAdd) {
         AtlasEntity diffEntity;
-        String productGuid = productVertex.getProperty(GUID_PROPERTY_KEY, String.class);
+        String entityGuid = entityVertex.getProperty(GUID_PROPERTY_KEY, String.class);
+        String relatedGuid = relatedVertex.getProperty(GUID_PROPERTY_KEY, String.class);
+        String relatedTypeName = relatedVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
 
         RequestContext requestContext = RequestContext.get();
 
-        if (requestContext.getDifferentialEntity(productGuid) != null) {
-            diffEntity = requestContext.getDifferentialEntity(productGuid);
+        if (requestContext.getDifferentialEntity(entityGuid) != null) {
+            diffEntity = requestContext.getDifferentialEntity(entityGuid);
         } else {
-            diffEntity = new AtlasEntity(productVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+            diffEntity = new AtlasEntity(entityVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+            diffEntity.setGuid(entityGuid);
+            diffEntity.setUpdatedBy(entityVertex.getProperty(MODIFIED_BY_KEY, String.class));
+            diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
         }
 
-        diffEntity.setGuid(productGuid);
-        diffEntity.setUpdatedBy(productVertex.getProperty(MODIFIED_BY_KEY, String.class));
-        diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
-        List<String> inputPortGuids = productVertex.getMultiValuedProperty(INPUT_PORT_GUIDS_ATTR, String.class);
-        if (inputPortGuids != null) {
-            diffEntity.setAttribute(INPUT_PORT_GUIDS_ATTR, inputPortGuids);
+        AtlasObjectId relatedObjectId = new AtlasObjectId(relatedGuid, relatedTypeName);
+
+        if (isAdd) {
+            diffEntity.addOrAppendAddedRelationshipAttribute(relationshipAttributeName, relatedObjectId);
+        } else {
+            diffEntity.addOrAppendRemovedRelationshipAttribute(relationshipAttributeName, relatedObjectId);
         }
 
         requestContext.cacheDifferentialEntity(diffEntity);
