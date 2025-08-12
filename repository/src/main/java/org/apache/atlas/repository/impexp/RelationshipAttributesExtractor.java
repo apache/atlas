@@ -131,7 +131,7 @@ public class RelationshipAttributesExtractor implements ExtractStrategy {
         return isOutEdge ? OUTWARD : INWARD;
     }
 
-    private boolean isLineageType(String typeName) {
+    public boolean isLineageType(String typeName) {
         AtlasEntityDef entityDef = typeRegistry.getEntityDefByName(typeName);
 
         return entityDef.getSuperTypes().contains(AtlasBaseTypeDef.ATLAS_TYPE_PROCESS);
