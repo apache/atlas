@@ -305,6 +305,7 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
 
                     management.rollback();
                 }
+            }
         }
     }
 
