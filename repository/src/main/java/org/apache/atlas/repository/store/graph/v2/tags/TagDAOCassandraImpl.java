@@ -55,7 +55,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     // Configuration constants
     private static final int MAX_RETRIES = 3;
     private static final Duration INITIAL_BACKOFF = Duration.ofMillis(100);
-    private static final int BATCH_SIZE_LIMIT = 100;
+    private static final int BATCH_SIZE_LIMIT = 200;
     private static final int BATCH_SIZE_LIMIT_FOR_DELETION = 10000;
     private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(5);
     //private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(120);
@@ -595,48 +595,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         }
     }
 
-    @Override
-    public List<Tag> getTagPropagationsForAttachment(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagPropagationsForAttachment");
-        List<Tag> allTags = new ArrayList<>();
-        try {
-            PaginatedTagResult result;
-            String pagingState = null;
-            int pageCount = 0;
-            LOG.info("Starting full propagation fetch for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName);
-            do {
-                pageCount++;
-                result = getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, pagingState, 500);
-                List<Tag> currentPageTags = result.getTags();
-                int fetchedCount = currentPageTags.size();
-
-                if (fetchedCount > 0) {
-                    LOG.info("Page {}: First tag: {}", pageCount, currentPageTags.get(0));
-                    if (fetchedCount > 1) {
-                        LOG.info("Page {}: Last tag: {}", pageCount, currentPageTags.get(fetchedCount - 1));
-                    }
-                }
-
-                allTags.addAll(currentPageTags);
-                pagingState = result.getPagingState();
-                LOG.info("sourceVertexId={}, tagTypeName={}: Page {}: Fetched {} propagations. Total fetched: {}. Has next page: {}",
-                        sourceVertexId, tagTypeName, pageCount, fetchedCount, allTags.size(), !result.isDone());
-            } while (!result.isDone());
-
-            if (allTags.isEmpty()) {
-                LOG.warn("No propagations found for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName);
-            } else {
-                LOG.info("Finished full propagation fetch for sourceVertexId={}, tagTypeName={}. Total propagations loaded: {}",
-                        sourceVertexId, tagTypeName, allTags.size());
-            }
-            return allTags;
-        } catch (Exception e) {
-            LOG.error("Error fetching all propagations for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName, e);
-            throw new AtlasBaseException("Error fetching all propagations", e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-    }
 
     @Override
     public List<AtlasClassification> findByVertexIdAndPropagated(String vertexId) throws AtlasBaseException {
