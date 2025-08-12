@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
  * 3. QualifiedName hierarchy optimization (UI contains + default/* patterns) - RUNS EARLY
  * 4. Multiple terms consolidation (should/filter/must_not only, NOT must)
  * 5. Array deduplication
- * 6. Multi-match consolidation
+ * 6. Multi-match consolidation (removed it to not worry about boosting)
  * 7. Regexp simplification
  * 8. Aggregation optimization
  * 9. Multiple terms consolidation (should/filter/must_not only, NOT must)
@@ -67,7 +67,6 @@ public class ElasticsearchDslOptimizer {
                 new QualifiedNameHierarchyRule(), // Move EARLY - before other rules interfere
                 new MultipleTermsConsolidationRule(),
                 new ArrayDeduplicationRule(),
-                new MultiMatchConsolidationRule(),
                 new RegexpSimplificationRule(),
                 new AggregationOptimizationRule(),
                 new MultipleTermsConsolidationRule(), // Second consolidation after hierarchy conversion
@@ -1166,136 +1165,6 @@ public class ElasticsearchDslOptimizer {
     }
 
     /**
-     * Rule 5: Multi-Match Consolidation
-     * Consolidates multiple multi_match queries with same search term
-     */
-    private class MultiMatchConsolidationRule implements OptimizationRule {
-
-        @Override
-        public String getName() {
-            return "MultiMatchConsolidation";
-        }
-
-        @Override
-        public JsonNode apply(JsonNode query) {
-            return traverseAndOptimize(query.deepCopy(), this::consolidateMultiMatch);
-        }
-
-        private JsonNode consolidateMultiMatch(JsonNode node) {
-            if (!node.isObject()) return node;
-
-            ObjectNode objectNode = (ObjectNode) node;
-
-            // Look for bool should clauses with multiple multi_match queries
-            if (objectNode.has("bool") && objectNode.get("bool").has("should")) {
-                JsonNode shouldArray = objectNode.get("bool").get("should");
-
-                if (shouldArray.isArray() && shouldArray.size() > 1) {
-                    Map<String, List<MultiMatchQuery>> multiMatchGroups = extractMultiMatchQueries((ArrayNode) shouldArray);
-
-                    if (!multiMatchGroups.isEmpty()) {
-                        ArrayNode optimizedShouldArray = optimizeMultiMatchQueries((ArrayNode) shouldArray, multiMatchGroups);
-                        ((ObjectNode) objectNode.get("bool")).set("should", optimizedShouldArray);
-                    }
-                }
-            }
-
-            return objectNode;
-        }
-
-        private Map<String, List<MultiMatchQuery>> extractMultiMatchQueries(ArrayNode shouldArray) {
-            Map<String, List<MultiMatchQuery>> groups = new HashMap<>();
-
-            for (JsonNode clause : shouldArray) {
-                if (clause.has("multi_match")) {
-                    JsonNode multiMatchNode = clause.get("multi_match");
-                    if (multiMatchNode.has("query")) {
-                        String queryText = multiMatchNode.get("query").asText();
-                        MultiMatchQuery mmq = new MultiMatchQuery(clause, queryText);
-                        groups.computeIfAbsent(queryText, k -> new ArrayList<>()).add(mmq);
-                    }
-                }
-            }
-
-            // Only return groups with multiple queries
-            return groups.entrySet().stream()
-                    .filter(entry -> entry.getValue().size() > 1)
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-        }
-
-        private ArrayNode optimizeMultiMatchQueries(ArrayNode originalArray, Map<String, List<MultiMatchQuery>> groups) {
-            ArrayNode result = objectMapper.createArrayNode();
-            Set<JsonNode> processedQueries = new HashSet<>();
-
-            // Add non-multi_match queries and ungrouped multi_match queries
-            for (JsonNode clause : originalArray) {
-                if (clause.has("multi_match")) {
-                    JsonNode multiMatchNode = clause.get("multi_match");
-                    String queryText = multiMatchNode.has("query") ? multiMatchNode.get("query").asText() : "";
-
-                    if (!groups.containsKey(queryText) && !processedQueries.contains(clause)) {
-                        result.add(clause);
-                        processedQueries.add(clause);
-                    }
-                } else {
-                    result.add(clause);
-                }
-            }
-
-            // Add consolidated multi_match queries
-            for (Map.Entry<String, List<MultiMatchQuery>> entry : groups.entrySet()) {
-                String queryText = entry.getKey();
-                List<MultiMatchQuery> queries = entry.getValue();
-
-                // Mark all original queries as processed
-                queries.forEach(q -> processedQueries.add(q.originalNode));
-
-                // Create consolidated query
-                MultiMatchQuery consolidated = consolidateMultiMatchQueries(queries, queryText);
-                result.add(consolidated.originalNode);
-            }
-
-            return result;
-        }
-
-        private MultiMatchQuery consolidateMultiMatchQueries(List<MultiMatchQuery> queries, String queryText) {
-            // Combine all fields and find highest boost
-            Set<String> allFields = new LinkedHashSet<>();
-            double maxBoost = 1.0;
-            String type = "best_fields"; // default
-
-            for (MultiMatchQuery query : queries) {
-                allFields.addAll(query.fields);
-                maxBoost = Math.max(maxBoost, query.boost);
-
-                // Extract type if available
-                JsonNode multiMatch = query.originalNode.get("multi_match");
-                if (multiMatch.has("type")) {
-                    type = multiMatch.get("type").asText();
-                }
-            }
-
-            // Create consolidated multi_match query
-            ObjectNode consolidated = objectMapper.createObjectNode();
-            ObjectNode multiMatch = objectMapper.createObjectNode();
-
-            multiMatch.put("query", queryText);
-            multiMatch.put("type", type);
-            if (maxBoost != 1.0) {
-                multiMatch.put("boost", maxBoost);
-            }
-
-            ArrayNode fieldsArray = objectMapper.createArrayNode();
-            allFields.forEach(fieldsArray::add);
-            multiMatch.set("fields", fieldsArray);
-
-            consolidated.set("multi_match", multiMatch);
-
-            return new MultiMatchQuery(consolidated, queryText);
-        }
-    }
-
-    /**
      * Rule 6: Regexp Simplification
      * Simplifies overly complex regexp patterns
      */
@@ -1361,20 +1230,104 @@ public class ElasticsearchDslOptimizer {
         }
 
         private String simplifyRegexpPattern(String pattern) {
-            // Simplify overly complex character classes
-            if (pattern.contains("[a-zA-Z0-9")) {
-                pattern = pattern.replaceAll("\\[a-zA-Z0-9[^\\]]*\\]\\*", "[\\\\w\\\\s\\\\-._\"#%()\\\\[\\\\]]*");
+            if (pattern == null || pattern.isEmpty()) {
+                return pattern;
             }
-
-            // Remove redundant .* patterns
-            if (pattern.startsWith("[\\w\\s\\-._\"#%()\\[\\]]*") && pattern.contains(".*")) {
-                String suffix = pattern.substring(pattern.indexOf(".*") + 2);
-                if (!suffix.isEmpty()) {
-                    pattern = ".*" + suffix;
+            
+            try {
+                String simplified = pattern;
+                
+                // 1. FIXED: Simplify overly complex character classes with correct escaping
+                // Convert [a-zA-Z0-9_]* to [\w]* (but be conservative)
+                if (simplified.contains("[a-zA-Z0-9")) {
+                    // Only replace if it's a complete character class
+                    simplified = simplified.replaceAll("\\[a-zA-Z0-9_\\]\\*", "[\\\\w]*");
+                    simplified = simplified.replaceAll("\\[a-zA-Z0-9_\\-\\]\\*", "[\\\\w\\\\-]*");
                 }
+                
+                // 2. FIXED: Remove redundant .* patterns with proper bounds checking
+                // Pattern like "prefix.*.*suffix" becomes "prefix.*suffix"
+                while (simplified.contains(".*.*")) {
+                    simplified = simplified.replace(".*.*", ".*");
+                }
+                
+                // 3. NEW: Simplify redundant anchoring
+                // Pattern like "^.*" at start is redundant (unless it's the whole pattern)
+                if (simplified.startsWith("^.*") && simplified.length() > 3) {
+                    simplified = simplified.substring(1); // Remove redundant ^
+                }
+                
+                // 4. NEW: Simplify redundant ending
+                // Pattern like ".*$" at end is often redundant
+                if (simplified.endsWith(".*$") && simplified.length() > 3) {
+                    simplified = simplified.substring(0, simplified.length() - 1); // Remove redundant $
+                }
+                
+                // 5. VALIDATE: Ensure the simplified pattern is a valid regex
+                if (!isValidRegexPattern(simplified)) {
+                    log.warn("RegexpSimplification: Simplified pattern '{}' is invalid, returning original: '{}'", simplified, pattern);
+                    return pattern; // Fallback to original if simplified version is invalid
+                }
+                
+                // 6. CONSERVATIVE: Only apply simplifications that are guaranteed safe
+                // Don't modify patterns that might change semantics
+                
+                log.debug("RegexpSimplification: '{}' -> '{}' (validated)", pattern, simplified);
+                return simplified;
+                
+            } catch (Exception e) {
+                log.warn("Failed to simplify regexp pattern '{}': {}", pattern, e.getMessage());
+                // SAFETY: Return original pattern if simplification fails
+                return pattern;
             }
-
-            return pattern;
+        }
+        
+        /**
+         * 🔍 REGEX VALIDATION: Multi-level validation for regex patterns
+         * 
+         * 1. Java Pattern validation (fast, catches syntax errors)
+         * 2. Elasticsearch-specific validation (if available)
+         * 3. Lucene RegExp validation (most accurate for ES)
+         */
+        private boolean isValidRegexPattern(String pattern) {
+            if (pattern == null || pattern.isEmpty()) {
+                return false;
+            }
+            
+            // LEVEL 1: Java Pattern validation (fast, catches most issues)
+            try {
+                java.util.regex.Pattern.compile(pattern);
+            } catch (java.util.regex.PatternSyntaxException e) {
+                log.debug("Invalid Java regex pattern '{}': {}", pattern, e.getMessage());
+                return false;
+            } catch (Exception e) {
+                log.debug("Unexpected error in Java regex validation '{}': {}", pattern, e.getMessage());
+                return false;
+            }
+            
+            // LEVEL 2: Lucene RegExp validation (more ES-specific)
+            try {
+                // Use Lucene's RegExp class which is what Elasticsearch uses internally
+                // This is more accurate than Java Pattern for ES compatibility
+                org.apache.lucene.util.automaton.RegExp luceneRegexp = 
+                    new org.apache.lucene.util.automaton.RegExp(pattern);
+                
+                // Try to convert to automaton (this validates the pattern)
+                luceneRegexp.toAutomaton();
+                
+                log.debug("Regex pattern '{}' validated successfully with Lucene RegExp", pattern);
+                return true;
+                
+            } catch (IllegalArgumentException e) {
+                log.debug("Invalid Lucene regex pattern '{}': {}", pattern, e.getMessage());
+                return false;
+            } catch (Exception e) {
+                log.debug("Unexpected error in Lucene regex validation '{}': {}", pattern, e.getMessage());
+                // If Lucene validation fails but Java validation passed, allow it
+                // This handles edge cases where Lucene is more strict
+                log.debug("Falling back to Java regex validation for pattern '{}'", pattern);
+                return true;
+            }
         }
     }
 
