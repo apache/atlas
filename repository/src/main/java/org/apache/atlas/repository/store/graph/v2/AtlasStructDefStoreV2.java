@@ -647,32 +647,52 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
     private static void createPropertyKeys(AtlasStructDef structDef, AtlasTypeDefGraphStoreV2 typeDefStore) throws AtlasBaseException {
         AtlasGraphManagement management = typeDefStore.atlasGraph.getManagementSystem();
-
-        for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
-            // Validate the mandatory features of an attribute (compatibility with legacy type system)
-            if (StringUtils.isEmpty(attributeDef.getName())) {
-                throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "name");
-            }
-
-            if (StringUtils.isEmpty(attributeDef.getTypeName())) {
-                throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "typeName");
-            }
-
-            String propertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef, attributeDef.getName());
-
-            createPropertyKey(AtlasGraphUtilsV2.encodePropertyKey(propertyKey), String.class, AtlasCardinality.SINGLE, management);
-        }
-
-        String typeNamePropertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef);
-
-        createPropertyKey(AtlasGraphUtilsV2.encodePropertyKey(typeNamePropertyKey), Object.class, AtlasCardinality.SINGLE, management);
+        boolean              isSuccess  = false;
+        Exception            err        = null;
 
         try {
-            management.commit();
-        } catch (Exception e) {
-            LOG.error("PropertyKey creation failed", e);
+            for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
+                // Validate the mandatory features of an attribute (compatibility with legacy type system)
+                if (StringUtils.isEmpty(attributeDef.getName())) {
+                    throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "name");
+                }
 
-            throw new AtlasBaseException(new IndexException("Index commit failed", e));
+                if (StringUtils.isEmpty(attributeDef.getTypeName())) {
+                    throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "typeName");
+                }
+
+                String propertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef, attributeDef.getName());
+
+                createPropertyKey(AtlasGraphUtilsV2.encodePropertyKey(propertyKey), String.class, AtlasCardinality.SINGLE, management);
+            }
+
+            String typeNamePropertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef);
+
+            createPropertyKey(AtlasGraphUtilsV2.encodePropertyKey(typeNamePropertyKey), Object.class, AtlasCardinality.SINGLE, management);
+
+            isSuccess = true;
+        } catch (Exception t) {
+            err = t;
+        } finally {
+            try {
+                if (isSuccess) {
+                    management.commit();
+                } else {
+                    management.rollback();
+                }
+            } catch (Exception e) {
+                LOG.error("PropertyKey creation failed", e);
+
+                if (err == null) {
+                    err = new AtlasBaseException(new IndexException("Index " + (isSuccess ? "commit" : "rollback") + " failed", e));
+                }
+            }
+        }
+
+        if (err != null) {
+            LOG.error("PropertyKey creation failed for structDef: {}", structDef, err);
+
+            throw (err instanceof AtlasBaseException) ? (AtlasBaseException) err : new AtlasBaseException(err);
         }
     }
 }

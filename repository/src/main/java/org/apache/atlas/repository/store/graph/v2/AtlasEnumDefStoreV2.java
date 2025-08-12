@@ -309,31 +309,52 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
 
     private void createPropertyKeys(AtlasEnumDef enumDef) throws AtlasBaseException {
         AtlasGraphManagement management = typeDefStore.atlasGraph.getManagementSystem();
-
-        // create property keys first
-        for (AtlasEnumElementDef element : enumDef.getElementDefs()) {
-            // Validate the enum element
-            if (StringUtils.isEmpty(element.getValue()) || null == element.getOrdinal()) {
-                throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, enumDef.getName(), "elementValue");
-            }
-
-            String elemKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef, element.getValue());
-
-            createPropertyKey(encodePropertyKey(elemKey), Integer.class, AtlasCardinality.SINGLE, management);
-        }
-
-        String typeDefKey      = AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef);
-        String defaultValueKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef, "defaultValue");
-
-        createPropertyKey(encodePropertyKey(typeDefKey), Object.class, AtlasCardinality.SINGLE, management);
-        createPropertyKey(encodePropertyKey(defaultValueKey), String.class, AtlasCardinality.SINGLE, management);
+        boolean              isSuccess  = false;
+        Exception            err        = null;
 
         try {
-            management.commit();
-        } catch (Exception e) {
-            LOG.error("PropertyKey creation failed", e);
 
-            throw new AtlasBaseException(new IndexException("Index commit failed", e));
+            // create property keys first
+            for (AtlasEnumElementDef element : enumDef.getElementDefs()) {
+                // Validate the enum element
+                if (StringUtils.isEmpty(element.getValue()) || null == element.getOrdinal()) {
+                    throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, enumDef.getName(), "elementValue");
+                }
+
+                String elemKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef, element.getValue());
+
+                createPropertyKey(encodePropertyKey(elemKey), Integer.class, AtlasCardinality.SINGLE, management);
+            }
+
+            String typeDefKey      = AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef);
+            String defaultValueKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(enumDef, "defaultValue");
+
+            createPropertyKey(encodePropertyKey(typeDefKey), Object.class, AtlasCardinality.SINGLE, management);
+            createPropertyKey(encodePropertyKey(defaultValueKey), String.class, AtlasCardinality.SINGLE, management);
+
+            isSuccess = true;
+        } catch (Exception t) {
+            err = t;
+        } finally {
+            try {
+                if (isSuccess) {
+                    management.commit();
+                } else {
+                    management.rollback();
+                }
+            } catch (Exception e) {
+                LOG.error("PropertyKey creation failed", e);
+
+                if (err == null) {
+                    err = new AtlasBaseException(new IndexException("Index " + (isSuccess ? "commit" : "rollback") + " failed", e));
+                }
+            }
+        }
+
+        if (err != null) {
+            LOG.error("PropertyKey creation failed for enum {}", enumDef.getName(), err);
+
+            throw (err instanceof AtlasBaseException) ? (AtlasBaseException) err : new AtlasBaseException(err);
         }
     }
 }

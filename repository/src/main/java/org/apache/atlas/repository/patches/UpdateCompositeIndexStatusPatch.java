@@ -20,6 +20,7 @@ package org.apache.atlas.repository.patches;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,13 +48,27 @@ public class UpdateCompositeIndexStatusPatch extends AtlasPatchHandler {
             return;
         }
 
-        AtlasGraph graph = context.getGraph();
+        AtlasGraphManagement management       = context.getGraph().getManagementSystem();
+        boolean              isRollbackNeeded = true;
 
         try {
             LOG.info("UpdateCompositeIndexStatusPatch: Starting...");
-            graph.getManagementSystem().updateSchemaStatus();
-        } finally {
+            management.updateSchemaStatus();
+
+            isRollbackNeeded = false;
+
+            management.commit();
             LOG.info("UpdateCompositeIndexStatusPatch: Done!");
+        } finally {
+            if (isRollbackNeeded) {
+                LOG.warn("UpdateCompositeIndexStatusPatch: was not committed. Rolling back...");
+
+                try {
+                    management.rollback();
+                } catch (Exception e) {
+                    LOG.error("UpdateCompositeIndexStatusPatch: rollback failed!", e);
+                }
+            }
         }
 
         setStatus(UNKNOWN);

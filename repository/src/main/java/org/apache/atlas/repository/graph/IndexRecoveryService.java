@@ -24,6 +24,7 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.service.Service;
@@ -287,7 +288,13 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         }
 
         private void printIndexRecoveryStats() {
-            this.graph.getManagementSystem().printIndexRecoveryStats(txRecoveryObject);
+            AtlasGraphManagement management = this.graph.getManagementSystem();
+
+            try {
+                management.printIndexRecoveryStats(txRecoveryObject);
+            } finally {
+                management.commit();
+            }
         }
     }
 
