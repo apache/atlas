@@ -4090,13 +4090,12 @@ public class EntityGraphMapper {
                         String propagationMode = entityRetriever.determinePropagationMode(tag.getRestrictPropagationThroughLineage(), tag.getRestrictPropagationThroughHierarchy());
 
                         Set<String> impactedVertexIds;
-                        Set<String> vertexIdsToAddClassification;
 
                         if (!impactedVertexIdsMap.containsKey(propagationMode)) {
                             LOG.info("propagateClassificationV2_new: Cache miss for propagationMode '{}'. Performing graph traversal.", propagationMode);
                             Boolean toExclude = Objects.equals(propagationMode, CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE);
                             impactedVertexIds = new HashSet<>();
-                            vertexIdsToAddClassification = new HashSet<>();
+                            Set<String> vertexIdsToAddClassification = new HashSet<>();
                             entityRetriever.traverseImpactedVerticesByLevelV2(toVertex, null, null, impactedVertexIds, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, vertexIdsToAddClassification);
                             impactedVertexIds.remove(fromVertex.getIdForDisplay());
                             impactedVertexIds.addAll(vertexIdsToAddClassification);
