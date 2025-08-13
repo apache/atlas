@@ -1,0 +1,31 @@
+---
+description: Guidance for the LaunchDarkly feature flag implementation done in this conversation
+---
+### Feature flag implementation (LaunchDarkly)
+
+- Single-class design: all logic in [FeatureFlagStoreLaunchDarklyImpl.java](mdc:intg/src/main/java/org/apache/atlas/featureflag/FeatureFlagStoreLaunchDarklyImpl.java)
+  - Spring bean annotated `@Service` and `@Lazy(false)` ensured earlier; class exposes static `evaluate(...)` helpers.
+  - A single `LDClient` is constructed once in the constructor using env `USER_LAUNCH_DARKLY_SDK_KEY`.
+  - `@PostConstruct preloadOrFail()` waits for client readiness, preloads declared flags, and fails fast on error.
+
+- Evaluation API (boolean-only):
+  - `public static boolean evaluate(String flagKey, String attributeKey, boolean attributeValue)`
+  - `public static boolean evaluate(String flagKey, String attributeKey, String attributeValue)`
+  - These static methods delegate to the initialized bean; they throw if called before init.
+
+- Caching strategy:
+  - TTL cache 30s for current values: Caffeine `expireAfterWrite(ttlMs)`.
+  - LKG cache (no expiry) stores last-known-good values for resilience.
+  - Key format: `flagKey|attributeKey=normalizedValue` and a global key `flagKey|__global__`.
+  - On success: update both caches; on error: serve LKG for specific key, else global, else `false`.
+
+- Preload flags:
+  - Add new flags to `PRELOAD_FLAGS` set in the same class; startup fails if preload fails.
+
+- Constraints and tips:
+  - Keep it single-class; do not introduce new classes for this feature unless explicitly requested.
+  - Only boolean flags are supported (enabled/disabled).
+  - Do not instantiate this class manually; rely on Spring initialization and static `evaluate(...)` entry points.
+
+- Usage example:
+  - `FeatureFlagStoreLaunchDarklyImpl.evaluate("atlas-enable-tag-v2", "tenant", tenantId)`

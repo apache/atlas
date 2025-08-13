@@ -198,6 +198,67 @@ public class DiscoveryREST {
 
 
     /**
+     * Raw ES search: returns direct ES response as-is
+     */
+    @Path("es")
+    @POST
+    @Timed
+    public Object esSearch(@Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.esSearch(" + parameters + ")");
+            }
+
+            if (StringUtils.isEmpty(parameters.getQuery())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
+            }
+
+            if (AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_API_LIMIT.getBoolean() && parameters.getQuerySize() > AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong()) {
+                if(CollectionUtils.isEmpty(parameters.getUtmTags())) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY_SIZE, String.valueOf(AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong()));
+                }
+                for (String utmTag : parameters.getUtmTags()) {
+                    if (Arrays.stream(AtlasConfiguration.ATLAS_INDEXSEARCH_LIMIT_UTM_TAGS.getStringArray()).anyMatch(utmTag::equalsIgnoreCase)) {
+                        throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY_SIZE, String.valueOf(AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong()));
+                    }
+                }
+            }
+
+            java.util.Map<String, Object> esResponse = discoveryService.directEsIndexSearch(parameters);
+            return esResponse.get("hits");
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * ES Count API: returns count for the given query
+     */
+    @Path("count")
+    @POST
+    @Timed
+    public java.util.Map<String, Object> indexSearchCount(@Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearchCount(" + parameters + ")");
+            }
+
+            if (StringUtils.isEmpty(parameters.getQuery())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
+            }
+
+            Long count = discoveryService.directCountIndexSearch(parameters);
+            java.util.Map<String, Object> response = new java.util.HashMap<>();
+            response.put("count", count);
+            return response;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
      * Index based search for query direct on Elasticsearch Edge index
      *
      * @param parameters Index Search parameters @IndexSearchParams.java

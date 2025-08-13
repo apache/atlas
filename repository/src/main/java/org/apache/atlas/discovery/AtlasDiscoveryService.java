@@ -31,6 +31,7 @@ import org.apache.atlas.model.searchlog.SearchLogSearchParams;
 import org.apache.atlas.model.searchlog.SearchLogSearchResult;
 
 import java.util.List;
+import java.util.Map;
 
 public interface AtlasDiscoveryService {
     /**
@@ -58,5 +59,15 @@ public interface AtlasDiscoveryService {
      * @throws AtlasBaseException
      */
     SearchLogSearchResult searchLogs(SearchLogSearchParams searchParams) throws AtlasBaseException;
+
+    /**
+     * Raw Elasticsearch search. Returns direct ES response as-is.
+     */
+    Map<String, Object> directEsIndexSearch(SearchParams searchParams) throws AtlasBaseException;
+
+    /**
+     * Elasticsearch count API. Returns document count for the query.
+     */
+    Long directCountIndexSearch(SearchParams searchParams) throws AtlasBaseException;
 
 }
