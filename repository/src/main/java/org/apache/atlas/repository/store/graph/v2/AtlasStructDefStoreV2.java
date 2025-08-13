@@ -671,8 +671,8 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
             createPropertyKey(AtlasGraphUtilsV2.encodePropertyKey(typeNamePropertyKey), Object.class, AtlasCardinality.SINGLE, management);
 
             isSuccess = true;
-        } catch (Exception t) {
-            err = t;
+        } catch (Exception e) {
+            err = e;
         } finally {
             try {
                 if (isSuccess) {
@@ -681,10 +681,10 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
                     management.rollback();
                 }
             } catch (Exception e) {
-                LOG.error("PropertyKey creation failed", e);
-
                 if (err == null) {
                     err = new AtlasBaseException(new IndexException("Index " + (isSuccess ? "commit" : "rollback") + " failed", e));
+                } else {
+                    LOG.error("Index {} failed", (isSuccess ? "commit" : "rollback"), e);
                 }
             }
         }

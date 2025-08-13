@@ -333,8 +333,8 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
             createPropertyKey(encodePropertyKey(defaultValueKey), String.class, AtlasCardinality.SINGLE, management);
 
             isSuccess = true;
-        } catch (Exception t) {
-            err = t;
+        } catch (Exception e) {
+            err = e;
         } finally {
             try {
                 if (isSuccess) {
@@ -343,10 +343,10 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
                     management.rollback();
                 }
             } catch (Exception e) {
-                LOG.error("PropertyKey creation failed", e);
-
                 if (err == null) {
                     err = new AtlasBaseException(new IndexException("Index " + (isSuccess ? "commit" : "rollback") + " failed", e));
+                } else {
+                    LOG.error("Index {} failed", (isSuccess ? "commit" : "rollback"), e);
                 }
             }
         }

@@ -53,21 +53,19 @@ public class UpdateCompositeIndexStatusPatch extends AtlasPatchHandler {
 
         try {
             LOG.info("UpdateCompositeIndexStatusPatch: Starting...");
+
             management.updateSchemaStatus();
 
             isRollbackNeeded = false;
 
             management.commit();
+
             LOG.info("UpdateCompositeIndexStatusPatch: Done!");
         } finally {
             if (isRollbackNeeded) {
                 LOG.warn("UpdateCompositeIndexStatusPatch: was not committed. Rolling back...");
 
-                try {
-                    management.rollback();
-                } catch (Exception e) {
-                    LOG.error("UpdateCompositeIndexStatusPatch: rollback failed!", e);
-                }
+                management.rollback();
             }
         }
 

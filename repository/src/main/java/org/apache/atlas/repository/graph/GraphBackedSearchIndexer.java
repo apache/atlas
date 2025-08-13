@@ -296,6 +296,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         } catch (RepositoryException | IndexException e) {
             LOG.error("Failed to update indexes for changed typedefs", e);
 
+            isRollbackNeeded = false;
+
             attemptRollback(changedTypeDefs, management);
         } finally {
             if (isRollbackNeeded) {

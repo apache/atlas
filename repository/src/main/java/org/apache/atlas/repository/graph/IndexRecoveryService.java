@@ -303,7 +303,11 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
                 if (isRollbackNeeded) {
                     LOG.warn("Index Recovery: printIndexRecoveryStats() failed. Rolling back...");
 
-                    management.rollback();
+                    try {
+                        management.rollback();
+                    } catch (Exception rollbackEx) {
+                        LOG.error("Index Recovery: printIndexRecoveryStats() rollback failed!", rollbackEx);
+                    }
                 }
             }
         }
