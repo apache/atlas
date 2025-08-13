@@ -2763,7 +2763,7 @@ public class EntityGraphMapper {
                 addMeaningsToEntityV1(ctx, createdElements, deletedElements, isAppend);
             }
             catch (AtlasBaseException e) {
-                throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Failed to add meanings to entity: " + ctx.getReferringVertex().getProperty(NAME, String.class));
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "Failed to add meanings to entity: " + ctx.getReferringVertex().getProperty(NAME, String.class));
             }
         }
     }
