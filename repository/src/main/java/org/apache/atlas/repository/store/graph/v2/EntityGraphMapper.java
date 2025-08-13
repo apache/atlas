@@ -2803,8 +2803,7 @@ public class EntityGraphMapper {
             try {
                 verifyMeaningsAuthorization(ctx, createdElements, deletedElements);
             } catch (AtlasBaseException e) {
-                LOG.error("Failed to verify meanings authorization for entity relations: {}", ctx.getReferringVertex().getProperty(NAME, String.class), e);
-                throw e;
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "Failed to verify meanings authorization for entity: " + ctx.getReferringVertex().getProperty(NAME, String.class));
             }
         }
 
@@ -2858,8 +2857,7 @@ public class EntityGraphMapper {
                 addMeaningsToEntityV1(ctx, createdElements, deletedElements, isAppend);
             }
             catch (AtlasBaseException e) {
-                LOG.error("Failed to add meanings to entity: {}", ctx.getReferringVertex().getProperty(NAME, String.class), e);
-                throw e;
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "Failed to add meanings to entity: " + ctx.getReferringVertex().getProperty(NAME, String.class));
             }
         }
     }
@@ -2879,8 +2877,7 @@ public class EntityGraphMapper {
             try {
                 verifyMeaningsAuthorization(ctx, createdElements, deletedElements);
             } catch ( AtlasBaseException e) {
-                LOG.error("Failed to verify meanings authorization for entity: {}", ctx.getReferringVertex().getProperty(NAME, String.class), e);
-                throw e;
+                throw new AtlasBaseException(AtlasErrorCode.UNAUTHORIZED_ACCESS, "Failed to verify meanings authorization for entity: " + ctx.getReferringVertex().getProperty(NAME, String.class));
             }
         }
 
