@@ -1,0 +1,164 @@
+{
+    "from": 0,
+    "size": 100,
+    "query": {
+      "function_score": {
+        "query": {
+          "bool": {
+            "filter": {
+              "bool": {
+                "must": [
+                  {
+                    "term": {
+                      "starredBy": "sriram.aravamuthan"
+                    }
+                  },
+                  {
+                    "term": {
+                      "__state": "ACTIVE"
+                    }
+                  }
+                ],
+                "must_not": [
+                  {
+                    "term": {
+                      "isPartial": "true"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "functions": [
+          {
+            "filter": {
+              "match": {
+                "starredBy": "sriram.aravamuthan"
+              }
+            },
+            "weight": 10
+          },
+          {
+            "filter": {
+              "match": {
+                "certificateStatus": "VERIFIED"
+              }
+            },
+            "weight": 16
+          },
+          {
+            "filter": {
+              "match": {
+                "certificateStatus": "DRAFT"
+              }
+            },
+            "weight": 5
+          },
+          {
+            "filter": {
+              "bool": {
+                "must_not": {
+                  "exists": {
+                    "field": "certificateStatus"
+                  }
+                }
+              }
+            },
+            "weight": 3
+          },
+          {
+            "filter": {
+              "match": {
+                "certificateStatus": "DEPRECATED"
+              }
+            },
+            "weight": 1
+          },
+          {
+            "filter": {
+              "bool": {
+                "must_not": [
+                  {
+                    "terms": {
+                      "__typeName.keyword": [
+                        "Process",
+                        "DbtProcess"
+                      ]
+                    }
+                  }
+                ]
+              }
+            },
+            "weight": 20
+          },
+          {
+            "filter": {
+              "terms": {
+                "__typeName.keyword": [
+                  "Table",
+                  "View",
+                  "AtlasGlossaryTerm"
+                ]
+              }
+            },
+            "weight": 5
+          },
+          {
+            "filter": {
+              "term": {
+                "__typeName.keyword": "DataProduct"
+              }
+            },
+            "weight": 4
+          },
+          {
+            "filter": {
+              "terms": {
+                "__typeName.keyword": [
+                  "Column",
+                  "TableauDashboard",
+                  "TableauWorkbook",
+                  "TableauWorksheet",
+                  "LookerDashboard",
+                  "LookerExplore",
+                  "PowerBIDashboard",
+                  "PowerBIReport",
+                  "MetabaseDashboard"
+                ]
+              }
+            },
+            "weight": 3
+          },
+          {
+            "filter": {
+              "terms": {
+                "__typeName.keyword": [
+                  "MaterialisedView",
+                  "LookerField"
+                ]
+              }
+            },
+            "weight": 2
+          }
+        ],
+        "boost_mode": "sum",
+        "score_mode": "sum"
+      }
+    },
+    "aggs": {
+      "group_by_typeName": {
+        "terms": {
+          "field": "__typeName.keyword",
+          "size": 200
+        },
+        "aggs": {
+          "group_by_assetUserDefinedType": {
+            "terms": {
+              "field": "assetUserDefinedType"
+            }
+          }
+        }
+      }
+    }
+  }

@@ -1,0 +1,37 @@
+{
+    "from": 0,
+    "size": 50,
+    "sort": [
+      {
+        "name.keyword": {
+          "order": "asc"
+        }
+      }
+    ],
+    "query": {
+      "bool": {
+        "filter": {
+          "bool": {
+            "must": [
+              {
+                "terms": {
+                  "__typeName.keyword": [
+                    "DatabricksUnityCatalogTag",
+                    "BigqueryTag",
+                    "SourceTag",
+                    "SnowflakeTag",
+                    "DbtTag"
+                  ]
+                }
+              },
+              {
+                "term": {
+                  "__state": "ACTIVE"
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }

@@ -1,0 +1,139 @@
+{
+    "size": 0,
+    "query": {
+        "bool": {
+            "filter": {
+                "bool": {
+                    "must": [
+                        {
+                            "bool": {
+                                "should": [
+                                    {
+                                        "terms": {
+                                            "__superTypeNames.keyword": [
+                                                "AI",
+                                                "SQL",
+                                                "BI",
+                                                "SaaS",
+                                                "ObjectStore",
+                                                "EventStore",
+                                                "DataQuality",
+                                                "Dbt",
+                                                "API",
+                                                "Airflow",
+                                                "Spark",
+                                                "MWAA",
+                                                "GCP_Cloud_Composer",
+                                                "Astronomer",
+                                                "SchemaRegistry",
+                                                "Matillion",
+                                                "NoSQL",
+                                                "MultiDimensionalDataset",
+                                                "ERD",
+                                                "DataModeling",
+                                                "ADF",
+                                                "model",
+                                                "Fivetran",
+                                                "App",
+                                                "Custom",
+                                                "SAP",
+                                                "Alteryx",
+                                                "Flow"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "terms": {
+                                            "__typeName.keyword": [
+                                                "Query",
+                                                "Collection",
+                                                "AtlasGlossary",
+                                                "AtlasGlossaryCategory",
+                                                "AtlasGlossaryTerm",
+                                                "Connection",
+                                                "File",
+                                                "Process",
+                                                "DbtProcess"
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "must_not": [
+                                    {
+                                        "terms": {
+                                            "__typeName.keyword": [
+                                                "MCIncident",
+                                                "Procedure",
+                                                "DbtColumnProcess",
+                                                "BIProcess",
+                                                "MatillionComponent",
+                                                "ModelVersion",
+                                                "alpha_DQRule",
+                                                "FlowDatasetOperation",
+                                                "FlowFieldOperation",
+                                                "SnowflakeTag",
+                                                "DbtTag",
+                                                "BigqueryTag"
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "terms": {
+                                            "__superTypeNames.keyword": [
+                                                "Tag"
+                                            ]
+                                        }
+                                    }
+                                ],
+                                "minimum_should_match": 1
+                            }
+                        },
+                        {
+                            "term": {
+                                "__state": "ACTIVE"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    },
+    "aggs": {
+        "AERONRcHXiHXPwWkfF1ZC0": {
+            "filter": {
+                "bool": {
+                    "should": [
+                        {
+                            "term": {
+                                "__traitNames": "AERONRcHXiHXPwWkfF1ZC0"
+                            }
+                        },
+                        {
+                            "term": {
+                                "__propagatedTraitNames": "AERONRcHXiHXPwWkfF1ZC0"
+                            }
+                        }
+                    ]
+                }
+            }
+        },
+        "Aoqd7DnXaAb63nImdFC9Tq": {
+            "filter": {
+                "bool": {
+                    "should": [
+                        {
+                            "term": {
+                                "__traitNames": "Aoqd7DnXaAb63nImdFC9Tq"
+                            }
+                        },
+                        {
+                            "term": {
+                                "__propagatedTraitNames": "Aoqd7DnXaAb63nImdFC9Tq"
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    }
+}

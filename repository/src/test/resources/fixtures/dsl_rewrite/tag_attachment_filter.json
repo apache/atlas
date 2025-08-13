@@ -1,0 +1,40 @@
+{
+    "from": 0,
+    "size": 0,
+    "query": {
+      "bool": {
+        "filter": {
+          "bool": {
+            "must": [
+              {
+                "term": {
+                  "__state": "ACTIVE"
+                }
+              },
+              {
+                "term": {
+                  "__typeName.keyword": "TagAttachment"
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "aggs": {
+      "tagQualifiedName": {
+        "composite": {
+          "size": 5000,
+          "sources": [
+            {
+              "tagQualifiedName": {
+                "terms": {
+                  "field": "tagQualifiedName"
+                }
+              }
+            }
+          ]
+        }
+      }
+    }
+  }

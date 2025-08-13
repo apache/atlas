@@ -1,0 +1,20 @@
+{
+    "bool": {
+      "filter": {
+        "bool": {
+          "must": [
+            {
+              "term": {
+                "__state": "ACTIVE"
+              }
+            },
+            {
+              "term": {
+                "__typeName.keyword": "Purpose"
+              }
+            }
+          ]
+        }
+      }
+    }
+  }

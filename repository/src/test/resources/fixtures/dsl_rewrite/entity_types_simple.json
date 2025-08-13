@@ -1,0 +1,91 @@
+{
+    "size": 150,
+    "post_filter": {
+      "bool": {
+        "filter": {
+          "terms": {
+            "__typeName.keyword": [
+              "AtlasGlossary"
+            ]
+          }
+        },
+        "must": [
+          {
+            "term": {
+              "__state": "ACTIVE"
+            }
+          }
+        ]
+      }
+    },
+    "aggs": {
+      "group_by_terms": {
+        "filter": {
+          "bool": {
+            "filter": [
+              {
+                "terms": {
+                  "__typeName.keyword": [
+                    "AtlasGlossaryTerm"
+                  ]
+                }
+              }
+            ],
+            "must": [
+              {
+                "term": {
+                  "__state": "ACTIVE"
+                }
+              }
+            ]
+          }
+        },
+        "aggs": {
+          "nested_group": {
+            "terms": {
+              "field": "__glossary",
+              "size": 50
+            }
+          }
+        }
+      },
+      "group_by_category": {
+        "filter": {
+          "bool": {
+            "filter": [
+              {
+                "terms": {
+                  "__typeName.keyword": [
+                    "AtlasGlossaryCategory"
+                  ]
+                }
+              }
+            ],
+            "must": [
+              {
+                "term": {
+                  "__state": "ACTIVE"
+                }
+              }
+            ]
+          }
+        },
+        "aggs": {
+          "nested_group": {
+            "terms": {
+              "field": "__glossary",
+              "size": 50
+            }
+          }
+        }
+      }
+    },
+    "sort": [
+      {
+        "name.keyword": {
+          "order": "asc",
+          "missing": "_last"
+        }
+      }
+    ]
+  }
