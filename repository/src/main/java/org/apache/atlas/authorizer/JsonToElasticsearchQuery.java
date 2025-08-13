@@ -134,7 +134,7 @@ public class JsonToElasticsearchQuery {
                     for (JsonNode valueNode : attributeValueNode) {
                         escapedValues.add(valueNode.asText().replaceAll("([\\[\\]{}()*+?.\\\\^$|])", "\\\\$1"));
                     }
-                    String regexPattern = ".*(" + String.join("|", escapedValues) + ")$";
+                    String regexPattern = ".*(" + String.join("|", escapedValues) + ")";
                     queryNode.putObject("regexp").put(attributeName, regexPattern);
                 } else {
                     queryNode.putObject("wildcard").put(attributeName, "*" + attributeValue);

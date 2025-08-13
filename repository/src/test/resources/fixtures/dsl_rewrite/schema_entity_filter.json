@@ -1,0 +1,47 @@
+{
+    "sort": [
+      {
+        "name.keyword": {
+          "order": "asc"
+        }
+      }
+    ],
+    "size": 300,
+    "query": {
+      "bool": {
+        "filter": {
+          "bool": {
+            "must": [
+              {
+                "term": {
+                  "__state": "ACTIVE"
+                }
+              },
+              {
+                "bool": {
+                  "should": [
+                    {
+                      "term": {
+                        "__typeName.keyword": "Schema"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "bool": {
+                  "filter": {
+                    "terms": {
+                      "databaseQualifiedName": [
+                        "default/databricks/1731087869/hive_metastore"
+                      ]
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      }
+    }
+  }

@@ -1,0 +1,261 @@
+{
+    "aggs": {
+        "group_by_typeName": {
+            "terms": {
+                "field": "__typeName.keyword",
+                "size": 100
+            }
+        }
+    },
+    "query": {
+        "bool": {
+            "filter": {
+                "bool": {
+                    "must": [
+                        {
+                            "bool": {
+                                "must": [
+                                    {
+                                        "bool": {
+                                            "should": [
+                                                {
+                                                    "wildcard": {
+                                                        "databaseQualifiedName": "default/athena/1731597928/AwsDataCatalog*"
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "bool": {
+                                            "should": [
+                                                {
+                                                    "bool": {
+                                                        "should": [
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*_gbl_cf_alex2*"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "bool": {
+                                                        "should": [
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*_gbl_cf_cvents*"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "bool": {
+                                                        "should": [
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*_gbl_cf_googleanalytics*"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "bool": {
+                                                        "should": [
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*_us_cf_esker*"
+                                                                }
+                                                            },
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*_gbl_cf_engage_ocular_etl*"
+                                                                }
+                                                            },
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*_gbl_cf_salesforce_history*"
+                                                                }
+                                                            },
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*_gbl_cf_salesforce*"
+                                                                }
+                                                            },
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*_gbl_cf_p44*"
+                                                                }
+                                                            },
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*_gbl_cf_sapbods_p44*"
+                                                                }
+                                                            },
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*_gbl_cf_reference*"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "bool": {
+                                                        "should": [
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*_us_device_fda*"
+                                                                }
+                                                            },
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*_gbl_cf_hybris*"
+                                                                }
+                                                            },
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*_gbl_sg_sap_pn4_iol*"
+                                                                }
+                                                            },
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*_gbl_cf_sap_pn4_comm*"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "bool": {
+                                                        "should": [
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*adl_delivery_gbl_cf_sapbods*"
+                                                                }
+                                                            },
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*adl_trusted_gbl_cf_sapbods*"
+                                                                }
+                                                            },
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*adl_raw_gbl_cf_sapbods*"
+                                                                }
+                                                            },
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*adl_enriched_gbl_cf_sapbods*"
+                                                                }
+                                                            },
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*adl_audit_gbl_cf_sapbods*"
+                                                                }
+                                                            },
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*adl_landing_gbl_cf_sapbods*"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "term": {
+                                "__state": "ACTIVE"
+                            }
+                        }
+                    ],
+                    "should": [
+                        {
+                            "terms": {
+                                "__superTypeNames.keyword": [
+                                    "AI",
+                                    "SQL",
+                                    "BI",
+                                    "SaaS",
+                                    "ObjectStore",
+                                    "EventStore",
+                                    "DataQuality",
+                                    "Dbt",
+                                    "API",
+                                    "Airflow",
+                                    "Spark",
+                                    "MWAA",
+                                    "GCP_Cloud_Composer",
+                                    "Astronomer",
+                                    "SchemaRegistry",
+                                    "Matillion",
+                                    "NoSQL",
+                                    "MultiDimensionalDataset",
+                                    "ERD",
+                                    "DataModeling",
+                                    "ADF",
+                                    "model",
+                                    "Fivetran",
+                                    "App",
+                                    "Custom",
+                                    "SAP",
+                                    "Alteryx",
+                                    "Flow"
+                                ]
+                            }
+                        },
+                        {
+                            "terms": {
+                                "__typeName.keyword": [
+                                    "Query",
+                                    "Collection",
+                                    "AtlasGlossary",
+                                    "AtlasGlossaryCategory",
+                                    "AtlasGlossaryTerm",
+                                    "Connection",
+                                    "File",
+                                    "DataDomain",
+                                    "DataProduct"
+                                ]
+                            }
+                        }
+                    ],
+                    "must_not": [
+                        {
+                            "terms": {
+                                "__typeName.keyword": [
+                                    "MCIncident",
+                                    "Procedure",
+                                    "DbtColumnProcess",
+                                    "BIProcess",
+                                    "MatillionComponent",
+                                    "ModelVersion",
+                                    "alpha_DQRule",
+                                    "FlowDatasetOperation",
+                                    "FlowFieldOperation",
+                                    "SnowflakeTag",
+                                    "DbtTag",
+                                    "BigqueryTag"
+                                ]
+                            }
+                        },
+                        {
+                            "term": {
+                                "isPartial": "true"
+                            }
+                        }
+                    ],
+                    "minimum_should_match": 1
+                }
+            }
+        }
+    }
+}
