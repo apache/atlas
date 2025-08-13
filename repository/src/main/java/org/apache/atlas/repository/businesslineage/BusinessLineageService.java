@@ -277,8 +277,8 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                     relationshipStoreV2.getOrCreate(assetVertex, productVertex, relationship, true);
                     LOG.info("Added input relation between asset and product");
                     updateInternalAttr(productVertex, assetGuid, operation);
-                    cacheDifferentialMeshRelationship(assetVertex, productVertex, "inputPortDataProducts", true);
-                    cacheDifferentialMeshRelationship(productVertex, assetVertex, INPUT_PORTS, true);
+                    cacheDifferentialMeshRelationship(assetVertex, productVertex, "inputPortDataProducts", TYPE_PRODUCT, true);
+                    cacheDifferentialMeshRelationship(productVertex, assetVertex, INPUT_PORTS, "Asset", true);
                 }
             }
         } catch (AtlasBaseException e){
@@ -295,8 +295,8 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                 if(inputPortEdge != null){
                     graph.removeEdge(inputPortEdge);
                     updateInternalAttr(productVertex, assetGuid, operation);
-                    cacheDifferentialMeshRelationship(assetVertex, productVertex, "inputPortDataProducts", false);
-                    cacheDifferentialMeshRelationship(productVertex, assetVertex, INPUT_PORTS, false);
+                    cacheDifferentialMeshRelationship(assetVertex, productVertex, "inputPortDataProducts", TYPE_PRODUCT, false);
+                    cacheDifferentialMeshRelationship(productVertex, assetVertex, INPUT_PORTS, "Asset", false);
                 }
             }
         } catch (AtlasBaseException | RepositoryException e){
@@ -353,7 +353,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         requestContext.cacheDifferentialEntity(diffEntity);
     }
 
-    private void cacheDifferentialMeshRelationship(AtlasVertex entityVertex, AtlasVertex relatedVertex, String relationshipAttributeName, boolean isAdd) {
+    private void cacheDifferentialMeshRelationship(AtlasVertex entityVertex, AtlasVertex relatedVertex, String relationshipAttributeName, String superType, boolean isAdd) {
         AtlasEntity diffEntity;
         String entityGuid = entityVertex.getProperty(GUID_PROPERTY_KEY, String.class);
         String relatedGuid = relatedVertex.getProperty(GUID_PROPERTY_KEY, String.class);
@@ -370,7 +370,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
             diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
         }
 
-        AtlasObjectId relatedObjectId = new AtlasObjectId(relatedGuid, relatedTypeName);
+        AtlasObjectId relatedObjectId = new AtlasObjectId(relatedGuid, superType);
 
         if (isAdd) {
             diffEntity.addOrAppendAddedRelationshipAttribute(relationshipAttributeName, relatedObjectId);
