@@ -134,9 +134,7 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
         }
 
         private void createIndexForUniqueAttributes(String typeName, Collection<AtlasAttribute> attributes) {
-            try {
-                AtlasGraphManagement management = getGraph().getManagementSystem();
-
+            try (AtlasGraphManagement management = getGraph().getManagementSystem()) {
                 for (AtlasAttribute attribute : attributes) {
                     String uniquePropertyName = attribute.getVertexUniquePropertyName();
 
@@ -160,12 +158,11 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
                             AtlasAttributeDef.IndexType.STRING.equals(attribute.getIndexType()));
                 }
 
-                getIndexer().commit(management);
-                getGraph().commit();
-
                 LOG.info("Unique attributes: type: {}: Registered!", typeName);
-            } catch (IndexException e) {
+            } catch (Exception e) {
                 LOG.error("Error creating index: type: {}", typeName, e);
+            } finally {
+                getGraph().commit();
             }
         }
 
