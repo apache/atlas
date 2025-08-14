@@ -26,6 +26,7 @@ import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.glossary.GlossaryUtils.ATLAS_GLOSSARY_CATEGORY_TYPENAME;
 import static org.apache.atlas.glossary.GlossaryUtils.ATLAS_GLOSSARY_TERM_TYPENAME;
 import static org.apache.atlas.repository.Constants.*;
@@ -403,6 +404,19 @@ public class PreProcessorUtils {
         dsl.put("query", mapOf("bool", boolMap));
 
         return dsl;
+    }
+
+    public static void validateProductStatus(AtlasVertex assetVertex) throws AtlasBaseException {
+        if (assetVertex != null) {
+            if (DATA_PRODUCT_ENTITY_TYPE.equals(assetVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class))) {
+                String entityState = assetVertex.getProperty(STATE_PROPERTY_KEY, String.class);
+                String daapStatus = assetVertex.getProperty(DAAP_STATUS_ATTR, String.class);
+
+                if ((AtlasEntity.Status.DELETED.name().equals(entityState)) || DAAP_ARCHIVED_STATUS.equals(daapStatus)) {
+                    throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot update DataProduct that is Archived!");
+                }
+            }
+        }
     }
 
     private static Map<String, Object> buildBoolQuery(String glossaryQualifiedName, String parentQualifiedName) {
