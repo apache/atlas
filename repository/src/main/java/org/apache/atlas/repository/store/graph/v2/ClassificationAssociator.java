@@ -213,11 +213,7 @@ public class ClassificationAssociator {
                         AtlasVertex vertex = (AtlasVertex) obj;
 
                         AtlasEntity entity;
-                        if (!FeatureFlagStore.isTagV2Enabled()) {
-                            entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), IGNORE_REL);
-                        } else {
-                            entity = entityGraphMapper.getMinimalAtlasEntityForNotification(vertex);
-                        }
+                        entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), IGNORE_REL);
 
                         allVertices.add(vertex);
                         propagatedEntities.add(entity);
@@ -237,18 +233,14 @@ public class ClassificationAssociator {
                         AtlasVertex vertex = (AtlasVertex) obj;
 
                         AtlasEntity entity;
-                        if (!FeatureFlagStore.isTagV2Enabled()) {
-                            entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), IGNORE_REL);
-                        } else {
-                            entity = entityGraphMapper.getMinimalAtlasEntityForNotification(vertex);
-                        }
+                        entity = instanceConverter.getAndCacheEntity(GraphHelper.getGuid(vertex), IGNORE_REL);
 
                         allVertices.add(vertex);
                         propagatedVertices.add(vertex);
                         propagatedEntities.add(entity);
                     }
                     //new method to populate all primitive fields in kafka
-                    entityChangeNotifier.onClassificationsAddedToEntitiesV2(propagatedVertices, Collections.singletonList(addedClassification), false, RequestContext.get());
+                    entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(addedClassification), false);
                 }
             }
 
