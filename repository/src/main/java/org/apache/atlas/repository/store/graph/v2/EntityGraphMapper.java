@@ -3799,7 +3799,7 @@ public class EntityGraphMapper {
                 } else {
                     List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
 
-                    entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification), false);
+                    entityChangeNotifier.onClassificationsAddedToEntitiesV2(vertices, Collections.singletonList(classification), false, RequestContext.get());
                 }
             }
 
@@ -3959,7 +3959,7 @@ public class EntityGraphMapper {
                 } else {
                     List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
 
-                    entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification), false);
+                    entityChangeNotifier.onClassificationsAddedToEntitiesV2(vertices, Collections.singletonList(classification), false, RequestContext.get());
                 }
             }
 
@@ -4238,7 +4238,9 @@ public class EntityGraphMapper {
                 propagatedEntitiesGuids.addAll(chunkedPropagatedEntitiesGuids);
                 offset += CHUNK_SIZE;
                 transactionInterceptHelper.intercept();
-                entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), false);
+                //Convert entitiesPropagatedTo to Set
+                Set<AtlasVertex> entitiesPropagatedToSet = new HashSet<>(entitiesPropagatedTo);
+                entityChangeNotifier.onClassificationsAddedToEntitiesV2(entitiesPropagatedToSet, Collections.singletonList(classification), false, RequestContext.get());
             } while (offset < impactedVerticesSize);
         } catch (AtlasBaseException exception) {
             LOG.error("Error occurred while adding classification propagation for classification with propagation id {}", classificationVertex.getIdForDisplay());
@@ -4266,7 +4268,7 @@ public class EntityGraphMapper {
             do {
                 toIndex = Math.min(offset + CHUNK_SIZE, impactedVerticesSize);
                 List<AtlasVertex> chunkedVerticesToPropagate = verticesToPropagate.subList(offset, toIndex);
-
+                Set<AtlasVertex> chunkedVerticesToPropagateSet = new HashSet<>(chunkedVerticesToPropagate);
                 Map<String, Map<String, Object>> deNormAttributesMap = new HashMap<>();
                 Map<String, Map<String, Object>> assetMinAttrsMap = new HashMap<>();
 
@@ -4276,7 +4278,7 @@ public class EntityGraphMapper {
                 if (MapUtils.isNotEmpty(deNormAttributesMap)) {
                     ESConnector.writeTagProperties(deNormAttributesMap);
                 }
-                entityChangeNotifier.onClassificationPropagationAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), true, RequestContext.get()); // Async call
+                entityChangeNotifier.onClassificationPropagationAddedToEntitiesV2(chunkedVerticesToPropagateSet, Collections.singletonList(classification), true, RequestContext.get()); // Async call
                 offset += CHUNK_SIZE;
                 LOG.info("offset {}, impactedVerticesSize: {}", offset, impactedVerticesSize);
             } while (offset < impactedVerticesSize);
@@ -5185,10 +5187,10 @@ public class EntityGraphMapper {
         }
     }
 
-    private Set<AtlasStructType.AtlasAttribute> getEntityTypeAttributes(List<AtlasEntity> entities) {
+    public Set<AtlasStructType.AtlasAttribute> getEntityTypeAttributes(Set<AtlasVertex> entities) {
         Set<AtlasStructType.AtlasAttribute> atlasAttributes = new HashSet<>();
-        for (AtlasEntity entity : entities) {
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+        for (AtlasVertex entity : entities) {
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
             if (entityType != null) {
                 Map<String, AtlasStructType.AtlasAttribute> attributes = entityType.getAllAttributes();
                 if (MapUtils.isNotEmpty(attributes)) {
@@ -5302,8 +5304,11 @@ public class EntityGraphMapper {
                 if (MapUtils.isNotEmpty(deNormMap)) {
                     ESConnector.writeTagProperties(deNormMap);
                 }
+
+                Set<AtlasVertex> vertices = graph.getVertices(vertexIds.toArray(new String[0]));
+
                 // notify listeners (async)
-                entityChangeNotifier.onClassificationPropagationDeleted(entities, originalClassification, true, RequestContext.get());
+                entityChangeNotifier.onClassificationPropagationDeletedV2(vertices, originalClassification, true, RequestContext.get());
 
                 totalDeleted += batchToDelete.size();
 
@@ -5446,13 +5451,15 @@ public class EntityGraphMapper {
 
             List<AtlasEntity>  propagatedEntities = updateClassificationText(classification, entityVertices);
 
+            Set<AtlasVertex> propagatedAtlasVertices = new HashSet<>(entityVertices);
+
             if(! propagatedEntities.isEmpty()) {
                 deletedPropagationsGuid.addAll(propagatedEntities.stream().map(x -> x.getGuid()).collect(Collectors.toList()));
             }
 
             offset += CHUNK_SIZE;
             transactionInterceptHelper.intercept();
-            entityChangeNotifier.onClassificationDeletedFromEntities(propagatedEntities, classification);
+            entityChangeNotifier.onClassificationDeletedFromEntitiesV2(propagatedAtlasVertices, classification);
         } while (offset < propagatedEdgesSize);
 
         return deletedPropagationsGuid;
@@ -6350,8 +6357,13 @@ public class EntityGraphMapper {
                 if (MapUtils.isNotEmpty(deNormMap)) {
                     ESConnector.writeTagProperties(deNormMap);
                 }
+
+
+                //new bulk method to fetch in batches
+                Set<AtlasVertex> propagtedVertices = graph.getVertices(vertexIds.toArray(new String[0]));
+
                 // notify listeners (async) that these entities got their classification text updated
-                entityChangeNotifier.onClassificationUpdatedToEntitiesV2(entities, originalClassification, true, RequestContext.get());
+                entityChangeNotifier.onClassificationUpdatedToEntitiesV2(propagtedVertices, originalClassification, true, RequestContext.get());
 
                 totalUpdated += batchToUpdate.size();
                 // grab next batch
@@ -6638,14 +6650,9 @@ public class EntityGraphMapper {
             ESConnector.writeTagProperties(deNormMap);
         }
 
-        List<AtlasEntity> notificationEntities = new ArrayList<>();
-
-        for (Tag deletedTag : tagsToDelete) {
-            notificationEntities.add(getEntityForNotification(deletedTag.getAssetMetadata()));
-        }
-
-        if (!notificationEntities.isEmpty()) {
-            entityChangeNotifier.onClassificationPropagationDeleted(notificationEntities, sourceTag, true, RequestContext.get());
+        Set<AtlasVertex> vertices = graph.getVertices(vertexIdsToDelete.toArray(new String[0]));
+        if (!vertices.isEmpty()) {
+            entityChangeNotifier.onClassificationPropagationDeletedV2(vertices, sourceTag, true, RequestContext.get());
         }
     }
 

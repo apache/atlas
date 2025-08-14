@@ -232,7 +232,7 @@ public class ClassificationAssociator {
                 for (AtlasClassification addedClassification: added.keySet()) {
                     Collection<Object> vertices =  added.get(addedClassification);
                     List<AtlasEntity> propagatedEntities = new ArrayList<>();
-
+                    Set<AtlasVertex> propagatedVertices = new HashSet<>();
                     for (Object obj: vertices) {
                         AtlasVertex vertex = (AtlasVertex) obj;
 
@@ -244,10 +244,11 @@ public class ClassificationAssociator {
                         }
 
                         allVertices.add(vertex);
+                        propagatedVertices.add(vertex);
                         propagatedEntities.add(entity);
                     }
-
-                    entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(addedClassification), false);
+                    //new method to populate all primitive fields in kafka
+                    entityChangeNotifier.onClassificationsAddedToEntitiesV2(propagatedVertices, Collections.singletonList(addedClassification), false, RequestContext.get());
                 }
             }
 
