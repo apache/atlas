@@ -245,7 +245,7 @@ const Labels = ({ loading, labels }: any) => {
                               "& .MuiChip-label": {
                                 display: "block",
                                 overflow: "ellipsis",
-                                maxWidth: "76px"
+                                maxWidth: "90px"
                               }
                             }}
                             className="chip-items properties-labels-chip"

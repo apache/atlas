@@ -43,8 +43,7 @@ const App = () => {
             }}
           >
             <CircularProgress
-              disableShrink
-              color="success"
+              color="primary"
               sx={{
                 display: "inline-block",
                 position: "absolute",
