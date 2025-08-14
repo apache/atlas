@@ -28,6 +28,9 @@ import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.repository.Constants;
+import org.apache.atlas.repository.IndexException;
+import org.apache.atlas.repository.graphdb.AtlasCardinality;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasRelationshipType;
 import org.apache.atlas.type.AtlasStructType;
@@ -64,28 +67,19 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
     public static void updateVertexPreCreate(AtlasStructDef structDef, AtlasStructType structType, AtlasVertex vertex, AtlasTypeDefGraphStoreV2 typeDefStore) throws AtlasBaseException {
         List<String> attrNames = new ArrayList<>(structDef.getAttributeDefs().size());
 
+        createPropertyKeys(structDef, typeDefStore);
+
         for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
-            // Validate the mandatory features of an attribute (compatibility with legacy type system)
-            if (StringUtils.isEmpty(attributeDef.getName())) {
-                throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "name");
-            }
+            String propertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef, attributeDef.getName());
 
-            if (StringUtils.isEmpty(attributeDef.getTypeName())) {
-                throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "typeName");
-            }
-
-            String propertyKey        = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef, attributeDef.getName());
-            String encodedPropertyKey = AtlasGraphUtilsV2.encodePropertyKey(propertyKey);
-
-            vertex.setProperty(encodedPropertyKey, toJsonFromAttribute(structType.getAttribute(attributeDef.getName())));
+            vertex.setProperty(AtlasGraphUtilsV2.encodePropertyKey(propertyKey), toJsonFromAttribute(structType.getAttribute(attributeDef.getName())));
 
             attrNames.add(attributeDef.getName());
         }
 
-        String typeNamePropertyKey        = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef);
-        String encodedtypeNamePropertyKey = AtlasGraphUtilsV2.encodePropertyKey(typeNamePropertyKey);
+        String typeNamePropertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef);
 
-        vertex.setProperty(encodedtypeNamePropertyKey, attrNames);
+        vertex.setProperty(AtlasGraphUtilsV2.encodePropertyKey(typeNamePropertyKey), attrNames);
     }
 
     public static void updateVertexPreUpdate(AtlasStructDef structDef, AtlasStructType structType, AtlasVertex vertex, AtlasTypeDefGraphStoreV2 typeDefStore) throws AtlasBaseException {
@@ -99,11 +93,14 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
         String       structDefPropertyKey        = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef);
         String       encodedStructDefPropertyKey = encodePropertyKey(structDefPropertyKey);
-        List<String> currAttrNames               = vertex.getProperty(encodedStructDefPropertyKey, List.class);
+        Object       names                       = vertex.getProperty(encodedStructDefPropertyKey, Object.class);
+        List<String> currAttrNames               = names instanceof List ? (List<String>) names : new ArrayList<>();
 
         // delete attributes that are not present in updated structDef
         if (CollectionUtils.isNotEmpty(currAttrNames)) {
             List<String> removedAttributes = null;
+
+            createPropertyKeys(structDef, typeDefStore);
 
             for (String currAttrName : currAttrNames) {
                 if (!attrNames.contains(currAttrName)) {
@@ -129,6 +126,16 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
                 currAttrNames.removeAll(removedAttributes);
 
                 vertex.setListProperty(encodedStructDefPropertyKey, currAttrNames);
+
+                for (String removedAttribute : removedAttributes) {
+                    String propertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef, removedAttribute);
+
+                    vertex.removeProperty(propertyKey);
+                }
+            }
+        } else {
+            if (names == null) {
+                LOG.warn("failed to load attribute names for type {}", structDef.getName());
             }
         }
 
@@ -201,7 +208,8 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
         List<AtlasAttributeDef> attributeDefs          = new ArrayList<>();
         String                  typePropertyKey        = AtlasGraphUtilsV2.getTypeDefPropertyKey(ret);
         String                  encodedTypePropertyKey = AtlasGraphUtilsV2.encodePropertyKey(typePropertyKey);
-        List<String>            attrNames              = vertex.getProperty(encodedTypePropertyKey, List.class);
+        Object                  names                  = vertex.getProperty(encodedTypePropertyKey, Object.class);
+        List<String>            attrNames              = names instanceof List ? (List<String>) names : new ArrayList<>();
 
         if (CollectionUtils.isNotEmpty(attrNames)) {
             for (String attrName : attrNames) {
@@ -216,6 +224,10 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
                 }
 
                 attributeDefs.add(toAttributeDefFromJson(structDef, AtlasType.fromJson(attrJson, Map.class), typeDefStore));
+            }
+        } else {
+            if (names == null) {
+                LOG.warn("failed to load attribute names for type {}", structDef);
             }
         }
 
@@ -630,6 +642,57 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
                 typeDefStore.getOrCreateEdge(vertex, referencedTypeVertex, label);
             }
+        }
+    }
+
+    private static void createPropertyKeys(AtlasStructDef structDef, AtlasTypeDefGraphStoreV2 typeDefStore) throws AtlasBaseException {
+        AtlasGraphManagement management = typeDefStore.atlasGraph.getManagementSystem();
+        boolean              isSuccess  = false;
+        Exception            err        = null;
+
+        try {
+            for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
+                // Validate the mandatory features of an attribute (compatibility with legacy type system)
+                if (StringUtils.isEmpty(attributeDef.getName())) {
+                    throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "name");
+                }
+
+                if (StringUtils.isEmpty(attributeDef.getTypeName())) {
+                    throw new AtlasBaseException(AtlasErrorCode.MISSING_MANDATORY_ATTRIBUTE, structDef.getName(), "typeName");
+                }
+
+                String propertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef, attributeDef.getName());
+
+                createPropertyKey(AtlasGraphUtilsV2.encodePropertyKey(propertyKey), String.class, AtlasCardinality.SINGLE, management);
+            }
+
+            String typeNamePropertyKey = AtlasGraphUtilsV2.getTypeDefPropertyKey(structDef);
+
+            createPropertyKey(AtlasGraphUtilsV2.encodePropertyKey(typeNamePropertyKey), Object.class, AtlasCardinality.SINGLE, management);
+
+            isSuccess = true;
+        } catch (Exception e) {
+            err = e;
+        } finally {
+            try {
+                if (isSuccess) {
+                    management.commit();
+                } else {
+                    management.rollback();
+                }
+            } catch (Exception e) {
+                if (err == null) {
+                    err = new AtlasBaseException(new IndexException("Index " + (isSuccess ? "commit" : "rollback") + " failed", e));
+                } else {
+                    LOG.error("Index {} failed", (isSuccess ? "commit" : "rollback"), e);
+                }
+            }
+        }
+
+        if (err != null) {
+            LOG.error("PropertyKey creation failed for structDef: {}", structDef, err);
+
+            throw (err instanceof AtlasBaseException) ? (AtlasBaseException) err : new AtlasBaseException(err);
         }
     }
 }

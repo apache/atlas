@@ -45,6 +45,7 @@ define(['require',
             administrator: "[data-id='administrator']",
             showDebug: "[data-id='showDebug']",
             signOut: "[data-id='signOut']",
+            reactUISwitch: "[data-id='reactUISwitch']",
             uiSwitch: "[data-id='uiSwitch']",
             showDownloads: "[data-id='showDownloads']"
         },
@@ -82,6 +83,13 @@ define(['require',
                     trigger: true,
                     updateTabState: true
                 });
+            };
+            events["click " + this.ui.reactUISwitch] = function() {
+                var path = Utils.getBaseUrl(window.location.pathname) + "/n3/index.html";
+                if (window.location.hash.length > 2) {
+                    path += window.location.hash;
+                }
+                window.location.href = path;
             };
             events["click " + this.ui.uiSwitch] = function() {
                 var path = Utils.getBaseUrl(window.location.pathname) + "/index.html";

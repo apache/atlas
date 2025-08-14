@@ -35,6 +35,7 @@ import org.apache.atlas.model.typedef.AtlasClassificationDef;
 import org.apache.atlas.model.typedef.AtlasTypesDef;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.TestResourceFileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.DataProvider;
 import org.testng.annotations.Test;
@@ -42,6 +43,7 @@ import org.testng.annotations.Test;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -51,6 +53,7 @@ import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
 public class BasicSearchIT extends BaseResourceIT {
@@ -222,6 +225,115 @@ public class BasicSearchIT extends BaseResourceIT {
         } catch (IOException | AtlasServiceException e) {
             fail(e.getMessage());
         }
+    }
+
+    @Test
+    public void testComplexFilterInvalidOperator() {
+        runNegativeSearchTestForBasicSearch("search-parameters/operator", "ATLAS-400-00-103",
+                parameters -> (parameters.getEntityFilters() != null && containsAnyOperator(parameters.getEntityFilters())) ||
+                        (parameters.getTagFilters() != null && containsAnyOperator(parameters.getTagFilters())));
+        runNegativeSearchTestForQuickSearch("search-parameters/operator", "ATLAS-400-00-103",
+                parameters -> parameters.getEntityFilters() != null && containsAnyOperator(parameters.getEntityFilters()));
+    }
+
+    @Test
+    public void testComplexFilterEmptyAttributeName() {
+        runNegativeSearchTestForBasicSearch("search-parameters/attribute-name", "ATLAS-400-00-104",
+                parameters -> (parameters.getEntityFilters() != null && containsAnyAttributeName(parameters.getEntityFilters())) ||
+                        (parameters.getTagFilters() != null && containsAnyAttributeName(parameters.getTagFilters())));
+        runNegativeSearchTestForQuickSearch("search-parameters/attribute-name", "ATLAS-400-00-104",
+                parameters -> parameters.getEntityFilters() != null && containsAnyAttributeName(parameters.getEntityFilters()));
+    }
+
+    @Test
+    public void testComplexFilterEmptyAttributeValue() {
+        runNegativeSearchTestForBasicSearch("search-parameters/attribute-value", "ATLAS-400-00-105",
+                parameters -> (parameters.getEntityFilters() != null && containsAnyAttributeValue(parameters.getEntityFilters())) ||
+                        (parameters.getTagFilters() != null && containsAnyAttributeValue(parameters.getTagFilters())));
+        runNegativeSearchTestForQuickSearch("search-parameters/attribute-value", "ATLAS-400-00-105",
+                parameters -> parameters.getEntityFilters() != null && containsAnyAttributeValue(parameters.getEntityFilters()));
+    }
+
+    public void runNegativeSearchTestForBasicSearch(String jsonFile, String expectedErrorCode, java.util.function.Predicate<SearchParameters> paramFilter) {
+        try {
+            BasicSearchParametersWithExpectation[] testExpectations = TestResourceFileUtils.readObjectFromJson(jsonFile, BasicSearchParametersWithExpectation[].class);
+            assertNotNull(testExpectations);
+            Arrays
+                    .stream(testExpectations)
+                    .map(testExpectation -> testExpectation.getSearchParameters())
+                    .filter(paramFilter)
+                    .forEach(params -> {
+                        try {
+                            atlasClientV2.facetedSearch(params);
+                        }
+                        catch (AtlasServiceException e) {
+                            assertTrue(e.getMessage().contains(expectedErrorCode),
+                                    "Expected error code " + expectedErrorCode + " in exception message: " + e.getMessage());
+                        }
+                    });
+        } catch (IOException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    public void runNegativeSearchTestForQuickSearch(String jsonFile, String expectedErrorCode, java.util.function.Predicate<QuickSearchParameters> qspParamFilter) {
+        try {
+            BasicSearchParametersWithExpectation[] testExpectations = TestResourceFileUtils.readObjectFromJson(jsonFile, BasicSearchParametersWithExpectation[].class);
+            assertNotNull(testExpectations);
+            Arrays
+                    .stream(testExpectations)
+                    .map(testExpectation -> testExpectation.getSearchParameters())
+                    .map(sp -> {
+                        QuickSearchParameters qsp = new QuickSearchParameters();
+                        qsp.setTypeName(sp.getTypeName());
+                        qsp.setEntityFilters(sp.getEntityFilters());
+                        return qsp; })
+                    .filter(qspParamFilter)
+                    .forEach(params -> {
+                        try {
+                            atlasClientV2.quickSearch(params);
+                        }
+                        catch (AtlasServiceException e) {
+                            assertTrue(e.getMessage().contains(expectedErrorCode),
+                                    "Expected error code " + expectedErrorCode + " in exception message: " + e.getMessage());
+                        }
+                    });
+        } catch (IOException e) {
+            fail(e.getMessage());
+        }
+    }
+
+    private boolean containsAnyMatchingCriteria(SearchParameters.FilterCriteria filterCriteria, java.util.function.Predicate<SearchParameters.FilterCriteria> matcher) {
+        if (filterCriteria == null) {
+            return false;
+        }
+        if (matcher.test(filterCriteria)) {
+            return true;
+        }
+        if (filterCriteria.getCriterion() != null) {
+            return filterCriteria.getCriterion().stream()
+                    .filter(fc -> fc != null)
+                    .anyMatch(fc -> containsAnyMatchingCriteria(fc, matcher));
+        }
+
+        return false;
+    }
+
+    private boolean containsAnyOperator(SearchParameters.FilterCriteria filter) {
+        return containsAnyMatchingCriteria(filter, fc -> {
+            if (fc.getOperator() == null) {
+                return true;
+            }
+            return SearchParameters.Operator.fromString(fc.getOperator().toString()) == null;
+        });
+    }
+
+    private boolean containsAnyAttributeName(SearchParameters.FilterCriteria filter) {
+        return containsAnyMatchingCriteria(filter, fc -> StringUtils.isBlank(fc.getAttributeName()));
+    }
+
+    private boolean containsAnyAttributeValue(SearchParameters.FilterCriteria filter) {
+        return containsAnyMatchingCriteria(filter, fc -> StringUtils.isBlank(fc.getAttributeValue()));
     }
 
     @Test(dependsOnMethods = "testSavedSearch")

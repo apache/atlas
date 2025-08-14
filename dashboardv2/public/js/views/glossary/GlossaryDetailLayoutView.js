@@ -245,11 +245,8 @@ define(['require',
                     }
                 } else {;
                     Utils.showTitleLoader(this.$('.page-title .fontLoader'), this.ui.details);
-                    var getApiFunctionKey = "getCategory",
+                    var getApiFunctionKey =this.isTermView? "getTerm" : "getCategory",
                         that = this;
-                    if (this.isTermView) {
-                        getApiFunctionKey = "getTerm";
-                    }
                     this.glossaryCollection[getApiFunctionKey]({
                         "guid": this.guid,
                         "ajaxOptions": {
@@ -542,7 +539,9 @@ define(['require',
                             "value": {
                                 "searchType": "basic",
                                 "term": that.data.qualifiedName,
-                                "includeDE": options.value.includeDE || false
+                                "includeDE": options.value.includeDE || false,
+                                "pageLimit": options.value.pageLimit || 25,
+                                "pageOffset": options.value.pageOffset || 0,
                             },
                             "fromView": "glossary"
                         })));

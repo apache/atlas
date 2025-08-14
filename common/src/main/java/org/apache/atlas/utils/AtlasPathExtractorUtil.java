@@ -29,7 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.Arrays;
+import java.util.Optional;
 
 public class AtlasPathExtractorUtil {
     // Common
@@ -90,6 +90,10 @@ public class AtlasPathExtractorUtil {
     }
 
     public static AtlasEntityWithExtInfo getPathEntity(Path path, PathExtractorContext context) {
+        if (path == null || StringUtils.isEmpty(path.toString())) {
+            throw new IllegalArgumentException("Invalid Input: Path is Null");
+        }
+
         AtlasEntityWithExtInfo entityWithExtInfo = new AtlasEntityWithExtInfo();
         String                 strPath           = path.toString();
         AtlasEntity            ret;
@@ -344,111 +348,232 @@ public class AtlasPathExtractorUtil {
         return ret;
     }
 
+    /**
+     * Returns O3FS Authority i.e. "bucket-volume-Ozone_Service_Id"
+     * Example: query: 'o3fs://buck1.vol1.ozone1747118357/key1' - O3FS_Authority: buck1.vol1.ozone1747118357
+     */
+    private static String o3fsAuthorityExtractor(String path) {
+        return Optional.ofNullable(path)
+                .filter(p -> p.startsWith(OZONE_3_SCHEME))
+                .map(p -> p.substring(OZONE_3_SCHEME.length()).split("/", 2))
+                .filter(parts -> parts.length > 0)
+                .map(parts -> parts[0])
+                .orElse("");
+    }
+
+    /**
+     * Returns O3FS Keys defined in the path.
+     * Example: query: 'o3fs://buck1.vol1.ozone1747118357/key1' -> Keys: key1
+     * Example: query: 'o3fs://buck1.vol1.ozone1747118357/key1/key2' -> Keys: [key1, key2]
+     */
+    private static String[] o3fsKeyExtractor(String path) {
+        return Optional.ofNullable(path)
+                .filter(p -> p.startsWith(OZONE_3_SCHEME))
+                .map(p -> p.substring(OZONE_3_SCHEME.length()).split("/", 2))
+                .filter(parts -> parts.length == 2)
+                .map(parts -> parts[1].split("/"))
+                .orElse(new String[] {""});
+    }
+
+    /**
+     * Returns Count of O3FS paths - [bucket + volume + keys].
+     * Example: query: 'o3fs://buck1.vol1.ozone1747118357/key1': length = 1 (bucket) + 1 (volume) + 1 (key) = 3
+     * Example: query: 'o3fs://buck1.vol1.ozone1747118357/key1/key2': length = 1 (bucket) + 1 (volume) + 2 (key segments) = 4
+     *
+     * O3FS_AUTHORITY_WITH_KEYS: "buck1.vol1.ozone1747118357/key1/key2"
+     * Authority_And_Keys: [buck1.vol1.ozone1747118357, key1/key2]
+     * O3fs_Authority: "buck1.vol1.ozone1747118357"
+     * keyPath: "key1/key2"
+     */
+    private static int getO3fsPathLength(String path) {
+        if (!path.startsWith(OZONE_3_SCHEME)) {
+            return 0;
+        }
+        String o3fsAuthorityWithKeys = path.substring(OZONE_3_SCHEME.length());
+        String[] authorityAndKeys = o3fsAuthorityWithKeys.split("/", 2);
+        String o3fsAuthority = authorityAndKeys[0];
+        String keyPath = authorityAndKeys.length > 1 ? authorityAndKeys[1].trim() : "";
+
+        // Count bucket and volume from authority
+        String[] bucketAndVolume = o3fsAuthority.split("\\.");
+        int length = 0;
+        if (bucketAndVolume.length >= 1) {
+            length++;  // bucket
+        }
+        if (bucketAndVolume.length >= 2) {
+            length++;  // volume
+        }
+
+        // Count key segments if present
+        if (!keyPath.isEmpty()) {
+            String[] keys = keyPath.split("/");
+            length += keys.length;
+        }
+
+        return length;
+    }
+
+    /**
+     * Creates Ozone Entity for different Ozone Type Names: OZONE_BUCKET, OZONE_VOLUME, OZONE_KEY and sets relationshipAttribute between them
+     */
+    private static AtlasEntity createOzoneEntity(PathExtractorContext context, String typeName, String name, String qualifiedName, AtlasRelatedObjectId relationship) {
+        AtlasEntity ozoneEntity = context.getEntity(qualifiedName);
+
+        if (ozoneEntity == null) {
+            ozoneEntity = new AtlasEntity(typeName);
+            ozoneEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, qualifiedName);
+            ozoneEntity.setAttribute(ATTRIBUTE_NAME, name);
+
+            if (relationship != null) {
+                String relationshipAttribute = typeName.equals(OZONE_BUCKET) ? ATTRIBUTE_VOLUME : ATTRIBUTE_PARENT;
+                ozoneEntity.setRelationshipAttribute(relationshipAttribute, relationship);
+            }
+
+            context.putEntity(qualifiedName, ozoneEntity);
+            LOG.info("Added entity: typeName={}, qualifiedName={}", typeName, qualifiedName);
+        }
+
+        return ozoneEntity;
+    }
+
+    /**
+     * Adds Ozone Path Entity for Scheme: OZONE_SCHEME
+     */
+    private static AtlasEntity addOfsPathEntity(Path path, AtlasEntityExtInfo extInfo, PathExtractorContext context) {
+        String metadataNamespace = context.getMetadataNamespace();
+        String ozoneScheme = path.toUri().getScheme();
+        String ofsVolumeName = getOzoneVolumeName(path);
+        String ofsVolumeQualifiedName = OZONE_SCHEME + ofsVolumeName + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
+
+        String ofsDirPath = path.toUri().getPath();
+        if (StringUtils.isEmpty(ofsDirPath)) {
+            ofsDirPath = Path.SEPARATOR;
+        }
+
+        String[] ofsPath = ofsDirPath.split(Path.SEPARATOR);
+        if (ofsPath.length < 2) {
+            return null;
+        }
+
+        AtlasEntity volumeEntity = createOzoneEntity(context, OZONE_VOLUME, ofsVolumeName, ofsVolumeQualifiedName, null);
+        extInfo.addReferredEntity(volumeEntity);
+
+        if (ofsPath.length == 2) {
+            return volumeEntity;
+        }
+
+        String ofsBucketName = ofsPath[2];
+        String ofsBucketQualifiedName = OZONE_SCHEME + ofsVolumeName + QNAME_SEP_ENTITY_NAME + ofsBucketName + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
+        AtlasEntity bucketEntity = createOzoneEntity(context, OZONE_BUCKET, ofsBucketName, ofsBucketQualifiedName,
+                AtlasTypeUtil.getAtlasRelatedObjectId(volumeEntity, RELATIONSHIP_OZONE_VOLUME_BUCKET));
+        extInfo.addReferredEntity(bucketEntity);
+
+        if (ofsPath.length == 3) {
+            return bucketEntity;
+        }
+
+        AtlasEntity currentOfsKeyEntity = null;
+        StringBuilder keyPathBuilder = new StringBuilder();
+        String keyQNamePrefix = ozoneScheme + SCHEME_SEPARATOR + path.toUri().getAuthority();
+
+        AtlasEntity parentEntityForOfsKey = bucketEntity;
+
+        for (int i = 3; i < ofsPath.length; i++) {
+            String ofsKeyName = ofsPath[i];
+            if (StringUtils.isEmpty(ofsKeyName)) {
+                continue;
+            }
+
+            keyPathBuilder.append(Path.SEPARATOR).append(ofsKeyName);
+
+            String ofsKeyQualifiedName = keyQNamePrefix
+                    + Path.SEPARATOR + ofsVolumeName
+                    + Path.SEPARATOR + ofsBucketName
+                    + keyPathBuilder
+                    + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
+
+            currentOfsKeyEntity = createOzoneEntity(context, OZONE_KEY, ofsKeyName, ofsKeyQualifiedName,
+                    AtlasTypeUtil.getAtlasRelatedObjectId(parentEntityForOfsKey, RELATIONSHIP_OZONE_PARENT_CHILDREN));
+
+            parentEntityForOfsKey = currentOfsKeyEntity;
+            AtlasTypeUtil.getAtlasRelatedObjectId(parentEntityForOfsKey, RELATIONSHIP_OZONE_PARENT_CHILDREN);
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== addOzonePathEntity(strPath={})", path);
+        }
+
+        return currentOfsKeyEntity;
+    }
+
+    /**
+     * Adds Ozone Path Entity for Scheme: OZONE_3_SCHEME
+     */
+    private static AtlasEntity addO3fsPathEntity(Path path, AtlasEntityExtInfo extInfo, PathExtractorContext context) {
+        String[] o3fsKeys = o3fsKeyExtractor(path.toString());
+        int o3fsPathLength = getO3fsPathLength(path.toString());
+        String metadataNamespace = context.getMetadataNamespace();
+        String ozoneScheme = path.toUri().getScheme();
+        String o3fsBucketName = getOzoneBucketName(path);
+        String o3fsVolumeName = getOzoneVolumeName(path);
+        String o3fsVolumeQualifiedName = ozoneScheme + SCHEME_SEPARATOR + o3fsVolumeName + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
+
+        AtlasEntity volumeEntity = createOzoneEntity(context, OZONE_VOLUME, o3fsVolumeName, o3fsVolumeQualifiedName, null);
+        extInfo.addReferredEntity(volumeEntity);
+
+        String bucketQualifiedName = ozoneScheme + SCHEME_SEPARATOR + o3fsVolumeName + QNAME_SEP_ENTITY_NAME + o3fsBucketName + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
+        AtlasEntity bucketEntity = createOzoneEntity(context, OZONE_BUCKET, o3fsBucketName, bucketQualifiedName,
+                AtlasTypeUtil.getAtlasRelatedObjectId(volumeEntity, RELATIONSHIP_OZONE_VOLUME_BUCKET));
+        extInfo.addReferredEntity(bucketEntity);
+
+        if (o3fsPathLength < 1) {
+            return null;
+        }
+
+        if (o3fsPathLength == 1) {
+            return volumeEntity;
+        }
+        if (o3fsPathLength == 2) {
+            return bucketEntity;
+        }
+
+        AtlasEntity currentO3fsKeyEntity = null;
+        AtlasEntity parentEntityForO3fsKey = bucketEntity;
+        StringBuilder keyPathBuilder = new StringBuilder();
+        String authority = o3fsAuthorityExtractor(path.toString());
+
+        for (String o3fsKeyName : o3fsKeys) {
+            keyPathBuilder.append(Path.SEPARATOR).append(o3fsKeyName);
+
+            String o3fsKeyQualifiedName = ozoneScheme + SCHEME_SEPARATOR + authority + keyPathBuilder + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
+
+            currentO3fsKeyEntity = createOzoneEntity(context, OZONE_KEY, o3fsKeyName, o3fsKeyQualifiedName,
+                    AtlasTypeUtil.getAtlasRelatedObjectId(parentEntityForO3fsKey, RELATIONSHIP_OZONE_PARENT_CHILDREN));
+
+            parentEntityForO3fsKey = currentO3fsKeyEntity;
+            AtlasTypeUtil.getAtlasRelatedObjectId(parentEntityForO3fsKey, RELATIONSHIP_OZONE_PARENT_CHILDREN);
+        }
+
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("<== addOzonePathEntity(strPath={})", path);
+        }
+
+        return currentO3fsKeyEntity;
+    }
+
+    /**
+     * Adds Ozone Path Entity: OZONE_3_SCHEME | OZONE_3_SCHEME
+     */
     private static AtlasEntity addOzonePathEntity(Path path, AtlasEntityExtInfo extInfo, PathExtractorContext context) {
         String strPath = path.toString();
 
-        LOG.debug("==> addOzonePathEntity(strPath={})", strPath);
-
-        String      metadataNamespace = context.getMetadataNamespace();
-        String      ozoneScheme       = path.toUri().getScheme();
-        String      pathQualifiedName = strPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
-        AtlasEntity ret               = context.getEntity(pathQualifiedName);
-
-        if (ret == null) {
-            //create ozone volume entity
-            String      volumeName          = getOzoneVolumeName(path);
-            String      volumeQualifiedName = ozoneScheme + SCHEME_SEPARATOR + volumeName + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
-            AtlasEntity volumeEntity        = context.getEntity(volumeQualifiedName);
-
-            if (volumeEntity == null) {
-                volumeEntity = new AtlasEntity(OZONE_VOLUME);
-
-                volumeEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, volumeQualifiedName);
-                volumeEntity.setAttribute(ATTRIBUTE_NAME, volumeName);
-
-                LOG.debug("adding entity: typeName={}, qualifiedName={}", volumeEntity.getTypeName(), volumeEntity.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
-
-                context.putEntity(volumeQualifiedName, volumeEntity);
-            }
-
-            extInfo.addReferredEntity(volumeEntity);
-
-            //create ozone bucket entity
-            String      bucketName          = getOzoneBucketName(path);
-            String      bucketQualifiedName = ozoneScheme + SCHEME_SEPARATOR + volumeName + QNAME_SEP_ENTITY_NAME + bucketName + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
-            AtlasEntity bucketEntity        = context.getEntity(bucketQualifiedName);
-
-            if (bucketEntity == null) {
-                bucketEntity = new AtlasEntity(OZONE_BUCKET);
-
-                bucketEntity.setAttribute(ATTRIBUTE_QUALIFIED_NAME, bucketQualifiedName);
-                bucketEntity.setAttribute(ATTRIBUTE_NAME, bucketName);
-                bucketEntity.setRelationshipAttribute(ATTRIBUTE_VOLUME, AtlasTypeUtil.getAtlasRelatedObjectId(volumeEntity, RELATIONSHIP_OZONE_VOLUME_BUCKET));
-
-                LOG.debug("adding entity: typeName={}, qualifiedName={}", bucketEntity.getTypeName(), bucketEntity.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
-
-                context.putEntity(bucketQualifiedName, bucketEntity);
-            }
-
-            extInfo.addReferredEntity(bucketEntity);
-
-            AtlasRelatedObjectId parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(bucketEntity, RELATIONSHIP_OZONE_PARENT_CHILDREN);
-            String               parentPath  = Path.SEPARATOR;
-            String               dirPath     = path.toUri().getPath();
-
-            if (StringUtils.isEmpty(dirPath)) {
-                dirPath = Path.SEPARATOR;
-            }
-
-            String keyQNamePrefix = ozoneScheme + SCHEME_SEPARATOR + path.toUri().getAuthority();
-            String[] subDirNames   = dirPath.split(Path.SEPARATOR);
-            String[] subDirNameArr = subDirNames;
-
-            if (ozoneScheme.equals(OZONE_SCHEME_NAME)) {
-                subDirNames = Arrays.stream(subDirNameArr, 3, subDirNameArr.length).toArray(String[]::new);
-            }
-
-            boolean volumeBucketAdded = false;
-
-            for (String subDirName : subDirNames) {
-                if (StringUtils.isEmpty(subDirName)) {
-                    continue;
-                }
-
-                String subDirPath;
-
-                if (ozoneScheme.equals(OZONE_SCHEME_NAME) && !volumeBucketAdded) {
-                    subDirPath        = "%s%s" + Path.SEPARATOR + "%s" + Path.SEPARATOR + "%s";
-                    subDirPath        = String.format(subDirPath, parentPath, subDirNameArr[1], subDirNameArr[2], subDirName);
-                    volumeBucketAdded = true;
-                } else {
-                    subDirPath = parentPath + subDirName;
-                }
-
-                String subDirQualifiedName = keyQNamePrefix + subDirPath + QNAME_SEP_METADATA_NAMESPACE + metadataNamespace;
-
-                ret = context.getEntity(subDirQualifiedName);
-
-                if (ret == null) {
-                    ret = new AtlasEntity(OZONE_KEY);
-
-                    ret.setRelationshipAttribute(ATTRIBUTE_PARENT, parentObjId);
-                    ret.setAttribute(ATTRIBUTE_QUALIFIED_NAME, subDirQualifiedName);
-                    ret.setAttribute(ATTRIBUTE_NAME, subDirName);
-
-                    LOG.debug("adding entity: typeName={}, qualifiedName={}", ret.getTypeName(), ret.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
-
-                    context.putEntity(subDirQualifiedName, ret);
-                }
-
-                parentObjId = AtlasTypeUtil.getAtlasRelatedObjectId(ret, RELATIONSHIP_OZONE_PARENT_CHILDREN);
-                parentPath  = subDirPath + Path.SEPARATOR;
-            }
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("==> addOzonePathEntity(strPath={})", strPath);
         }
 
-        LOG.debug("<== addOzonePathEntity(strPath={})", strPath);
-
-        return ret;
+        return strPath.startsWith(OZONE_3_SCHEME)
+                ? addO3fsPathEntity(path, extInfo, context)
+                : addOfsPathEntity(path, extInfo, context);
     }
 
     private static AtlasEntity addGCSPathEntity(Path path, AtlasEntityExtInfo extInfo, PathExtractorContext context) {

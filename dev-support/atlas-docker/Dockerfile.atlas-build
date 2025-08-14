@@ -20,7 +20,7 @@ ARG ATLAS_BUILD_JAVA_VERSION
 ARG TARGETARCH
 
 # Install necessary packages to build Atlas
-RUN apt-get update && apt-get -y install git maven
+RUN apt-get update && apt-get -y install git maven unzip
 
 # Set environment variables
 ENV JAVA_HOME=/usr/lib/jvm/java-${ATLAS_BUILD_JAVA_VERSION}-openjdk-${TARGETARCH}

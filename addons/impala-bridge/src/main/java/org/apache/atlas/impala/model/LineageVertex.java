@@ -18,66 +18,74 @@
 
 package org.apache.atlas.impala.model;
 
-import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
-import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 /**
  * This represents an entity in Impala's lineage record.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class LineageVertex {
   // id is used to reference this entity. It is used in LineageEdge to specify source and target
   // https://github.com/apache/impala/blob/master/be/src/util/lineage-util.h#L40
   // Impala id is int64. Therefore, define this field as Long
-  private Long id;
+    private Long id;
 
   // specify the type of the entity, it could be "TABLE", "COLUMN" etc.
-  private ImpalaVertexType vertexType;
+    private ImpalaVertexType vertexType;
 
   // specify the name of the entity
-  private String vertexId;
+    private String vertexId;
 
   // It is optional, and could be null. It is only set if the entity is a column, and this field contains metadata of its table.
-  private LineageVertexMetadata metadata;
+    private LineageVertexMetadata metadata;
 
   // It is optional. Its unit in seconds.
-  private Long createTime;
+    private Long createTime;
 
-  public Long getId() { return id; }
+    public Long getId() {
+        return id;
+    }
 
-  public ImpalaVertexType getVertexType() {
-    return vertexType;
-  }
+    public ImpalaVertexType getVertexType() {
+        return vertexType;
+    }
 
-  public String getVertexId() {
-    return vertexId;
-  }
+    public String getVertexId() {
+        return vertexId;
+    }
 
-  public LineageVertexMetadata getMetadata() {
-    return metadata;
-  }
+    public LineageVertexMetadata getMetadata() {
+        return metadata;
+    }
 
-  public Long getCreateTime() { return createTime; }
+    public Long getCreateTime() {
+        return createTime;
+    }
 
-  public void setId(Long id) {
-    this.id = id;
-  }
+    public void setId(Long id) {
+        this.id = id;
+    }
 
-  public void setVertexType(ImpalaVertexType vertexType) {
-    this.vertexType = vertexType;
-  }
+    public void setVertexType(ImpalaVertexType vertexType) {
+        this.vertexType = vertexType;
+    }
 
-  public void setVertexId(String vertexId) {
-    this.vertexId = vertexId;
-  }
+    public void setVertexId(String vertexId) {
+        this.vertexId = vertexId;
+    }
 
-  public void setMetadata(LineageVertexMetadata metadata) { this.metadata = metadata; }
+    public void setMetadata(LineageVertexMetadata metadata) {
+        this.metadata = metadata;
+    }
 
-  public void setCreateTime(Long createTime) { this.createTime = createTime; }
+    public void setCreateTime(Long createTime) {
+        this.createTime = createTime;
+    }
 }

@@ -17,26 +17,26 @@
  */
 package org.apache.atlas.impala;
 
-import static org.apache.atlas.impala.hook.AtlasImpalaHookContext.QNAME_SEP_PROCESS;
-import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_END_TIME;
-import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_NAME;
-import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_QUERY_TEXT;
-
-import java.util.ArrayList;
-import java.util.List;
 import org.apache.atlas.impala.hook.AtlasImpalaHookContext;
 import org.apache.atlas.impala.hook.ImpalaLineageHook;
 import org.apache.atlas.impala.hook.events.BaseImpalaEvent;
 import org.apache.atlas.impala.model.ImpalaQuery;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasObjectId;
-import org.testng.Assert;
 import org.testng.annotations.Test;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.apache.atlas.impala.hook.AtlasImpalaHookContext.QNAME_SEP_PROCESS;
 import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_DDL_QUERIES;
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_END_TIME;
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_NAME;
+import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_QUERY_TEXT;
 import static org.apache.atlas.impala.hook.events.BaseImpalaEvent.ATTRIBUTE_START_TIME;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertTrue;
 
 public class ImpalaLineageToolIT extends ImpalaLineageITBase {
     public static final long TABLE_CREATE_TIME_SOURCE = 1554750070;
@@ -53,8 +53,8 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
     public void testCreateViewFromFile() {
         // this file contains a single lineage record for "create view".
         // It has table vertex with createTime
-        String IMPALA = dir + "impalaCreateView.json";
-        String IMPALA_WAL = dir + "WALimpala.wal";
+        String impala = dir + "impalaCreateView.json";
+        String impalaWal = dir + "WALimpala.wal";
 
         List<ImpalaQuery> lineageList = new ArrayList<>();
         ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
@@ -67,21 +67,21 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             createDatabase(dbName);
 
             String sourceTableName = "table_1";
-            createTable(dbName, sourceTableName,"(id string, count int)", false);
+            createTable(dbName, sourceTableName, "(id string, count int)", false);
 
             String targetTableName = "view_1";
-            createTable(dbName, targetTableName,"(count int, id string)", false);
+            createTable(dbName, targetTableName, "(count int, id string)", false);
 
             // process lineage record, and send corresponding notification to Atlas
-            String[] args = new String[]{"-d", "./", "-p", "impala"};
+            String[] args = new String[] {"-d", "./", "-p", "impala"};
             ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
-            toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+            toolInstance.importHImpalaEntities(impalaLineageHook, impala, impalaWal);
 
             // verify the process is saved in Atlas
             // the value is from info in IMPALA_3
-            String createTime = new Long((long)(1554750072)*1000).toString();
+            String createTime = new Long((long) (1554750072) * 1000).toString();
             String processQFName =
-                "db_1.view_1" + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
+                    "db_1.view_1" + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
                     CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
 
             processQFName = processQFName.toLowerCase();
@@ -92,9 +92,9 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
                     QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
             AtlasObjectId process1              = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
-                BaseImpalaEvent.ATTRIBUTE_PROCESS));
-            Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
-            Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+                    BaseImpalaEvent.ATTRIBUTE_PROCESS));
+            assertEquals(process1.getGuid(), processEntity1.getGuid());
+            assertEquals(numberOfProcessExecutions(processEntity1), 1);
             assertEquals(processQFName, processEntity1.getAttribute(ATTRIBUTE_NAME).toString());
             assertEquals(processExecutionQFName, processExecutionEntity1.getAttribute(ATTRIBUTE_NAME).toString());
 
@@ -119,8 +119,8 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
     public void testCreateViewWithCommentSpacesFromFile() {
         // this file contains a single lineage record for "create view".
         // It has table vertex with createTime
-        String IMPALA = dir + "impalaCreateViewWithCommentSpaces.json";
-        String IMPALA_WAL = dir + "WALimpala.wal";
+        String impala = dir + "impalaCreateViewWithCommentSpaces.json";
+        String impalaWal = dir + "WALimpala.wal";
 
         List<ImpalaQuery> lineageList = new ArrayList<>();
         ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
@@ -133,19 +133,19 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             createDatabase(dbName);
 
             String sourceTableName = "table_1";
-            createTable(dbName, sourceTableName,"(id string, count int)", false);
+            createTable(dbName, sourceTableName, "(id string, count int)", false);
 
             String targetTableName = "view_1";
-            createTable(dbName, targetTableName,"(count int, id string)", false);
+            createTable(dbName, targetTableName, "(count int, id string)", false);
 
             // process lineage record, and send corresponding notification to Atlas
-            String[] args = new String[]{"-d", "./", "-p", "impala"};
+            String[] args = new String[] {"-d", "./", "-p", "impala"};
             ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
-            toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+            toolInstance.importHImpalaEntities(impalaLineageHook, impala, impalaWal);
 
             // verify the process is saved in Atlas
             // the value is from info in IMPALA_3
-            String createTime = new Long((long)(1554750072)*1000).toString();
+            String createTime = new Long((long) (1554750072) * 1000).toString();
             String processQFName =
                     "db_8.view_1" + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
                             CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
@@ -157,8 +157,8 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
             AtlasObjectId process1              = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
                     BaseImpalaEvent.ATTRIBUTE_PROCESS));
-            Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
-            Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+            assertEquals(process1.getGuid(), processEntity1.getGuid());
+            assertEquals(numberOfProcessExecutions(processEntity1), 1);
             String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
                     QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
 
@@ -188,8 +188,8 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         // this file contains a single lineage record for "create view".
         // there is no table vertex with createTime, which is lineage record generated by Impala
         // originally. The table create time is hard-coded before Impala fixes this issue.
-        String IMPALA     = dir + "impalaCreateViewNoCreateTime.json";
-        String IMPALA_WAL = dir + "WALimpala.wal";
+        String impala     = dir + "impalaCreateViewNoCreateTime.json";
+        String impalaWal = dir + "WALimpala.wal";
 
         List<ImpalaQuery> lineageList       = new ArrayList<>();
         ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
@@ -202,25 +202,25 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             createDatabase(dbName);
 
             String sourceTableName = "table_1";
-            createTable(dbName, sourceTableName,"(id string, count int)", false);
+            createTable(dbName, sourceTableName, "(id string, count int)", false);
 
             String targetTableName = "view_1";
-            createTable(dbName, targetTableName,"(count int, id string)", false);
+            createTable(dbName, targetTableName, "(count int, id string)", false);
 
             // process lineage record, and send corresponding notification to Atlas
-            String[] args = new String[]{"-d", "./", "-p", "impala"};
+            String[] args = new String[] {"-d", "./", "-p", "impala"};
             ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
             Long beforeCreateTime = System.currentTimeMillis() / BaseImpalaEvent.MILLIS_CONVERT_FACTOR;
-            toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+            toolInstance.importHImpalaEntities(impalaLineageHook, impala, impalaWal);
             Long afterCreateTime = System.currentTimeMillis() / BaseImpalaEvent.MILLIS_CONVERT_FACTOR;
 
             String processQFNameWithoutTime =
-                dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
+                    dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
                     CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS;
             processQFNameWithoutTime = processQFNameWithoutTime.toLowerCase();
 
             List<String> processQFNames = new ArrayList<>();
-            String createTime = new Long(beforeCreateTime.longValue()*1000).toString();
+            String createTime = new Long(beforeCreateTime.longValue() * 1000).toString();
             processQFNames.add(processQFNameWithoutTime + createTime);
 
             if (beforeCreateTime != afterCreateTime) {
@@ -235,9 +235,9 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
             AtlasEntity processEntity1 = validateProcess(processQFNames, queryString);
             AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
             AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
-                BaseImpalaEvent.ATTRIBUTE_PROCESS));
-            Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
-            Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+                    BaseImpalaEvent.ATTRIBUTE_PROCESS));
+            assertEquals(process1.getGuid(), processEntity1.getGuid());
+            assertEquals(numberOfProcessExecutions(processEntity1), 1);
 
             String      guid       = assertTableIsRegistered(dbName, targetTableName);
             AtlasEntity entity     = atlasClientV2.getEntityByGuid(guid).getEntity();
@@ -259,8 +259,8 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
      */
     @Test
     public void testCreateTableAsSelectFromFile() throws Exception {
-        String IMPALA = dir + "impalaCreateTableAsSelect.json";
-        String IMPALA_WAL = dir + "WALimpala.wal";
+        String impala = dir + "impalaCreateTableAsSelect.json";
+        String impalaWal = dir + "WALimpala.wal";
 
         ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
 
@@ -271,21 +271,21 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         createDatabase(dbName);
 
         String sourceTableName = "table_1";
-        createTable(dbName, sourceTableName,"(id string, count int)", false);
+        createTable(dbName, sourceTableName, "(id string, count int)", false);
 
         String targetTableName = "table_2";
-        createTable(dbName, targetTableName,"(count int, id string)", false);
+        createTable(dbName, targetTableName, "(count int, id string)", false);
 
         // process lineage record, and send corresponding notification to Atlas
-        String[] args = new String[]{"-d", "./", "-p", "impala"};
+        String[] args = new String[] {"-d", "./", "-p", "impala"};
         ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
-        toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+        toolInstance.importHImpalaEntities(impalaLineageHook, impala, impalaWal);
 
         // verify the process is saved in Atlas
         // the value is from info in IMPALA_4.
-        String createTime = new Long(TABLE_CREATE_TIME*1000).toString();
+        String createTime = new Long(TABLE_CREATE_TIME * 1000).toString();
         String processQFName =
-            dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
+                dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
                 CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
 
         processQFName = processQFName.toLowerCase();
@@ -294,9 +294,9 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
         AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
         AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
-            BaseImpalaEvent.ATTRIBUTE_PROCESS));
-        Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
-        Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+                BaseImpalaEvent.ATTRIBUTE_PROCESS));
+        assertEquals(process1.getGuid(), processEntity1.getGuid());
+        assertEquals(numberOfProcessExecutions(processEntity1), 1);
         String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
                 QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
 
@@ -320,8 +320,8 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
      */
     @Test
     public void testCreateTableAsSelectWithCommentSpacesFromFile() throws Exception {
-        String IMPALA = dir + "impalaCreateTableAsSelectWithCommentSpaces.json";
-        String IMPALA_WAL = dir + "WALimpala.wal";
+        String impala = dir + "impalaCreateTableAsSelectWithCommentSpaces.json";
+        String impalaWal = dir + "WALimpala.wal";
 
         ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
 
@@ -332,19 +332,19 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         createDatabase(dbName);
 
         String sourceTableName = "table_1";
-        createTable(dbName, sourceTableName,"(id string, count int)", false);
+        createTable(dbName, sourceTableName, "(id string, count int)", false);
 
         String targetTableName = "table_2";
-        createTable(dbName, targetTableName,"(count int, id string)", false);
+        createTable(dbName, targetTableName, "(count int, id string)", false);
 
         // process lineage record, and send corresponding notification to Atlas
-        String[] args = new String[]{"-d", "./", "-p", "impala"};
+        String[] args = new String[] {"-d", "./", "-p", "impala"};
         ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
-        toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+        toolInstance.importHImpalaEntities(impalaLineageHook, impala, impalaWal);
 
         // verify the process is saved in Atlas
         // the value is from info in IMPALA_4.
-        String createTime = new Long(TABLE_CREATE_TIME*1000).toString();
+        String createTime = new Long(TABLE_CREATE_TIME * 1000).toString();
         String processQFName =
                 dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
                         CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
@@ -357,14 +357,13 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
         AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
                 BaseImpalaEvent.ATTRIBUTE_PROCESS));
-        Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
-        Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+        assertEquals(process1.getGuid(), processEntity1.getGuid());
+        assertEquals(numberOfProcessExecutions(processEntity1), 1);
         String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
                 QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
 
         assertEquals(processQFName, processEntity1.getAttribute(ATTRIBUTE_NAME).toString());
         assertEquals(processExecutionQFName, processExecutionEntity1.getAttribute(ATTRIBUTE_NAME).toString());
-
 
         String      guid       = assertTableIsRegistered(dbName, targetTableName);
         AtlasEntity entity     = atlasClientV2.getEntityByGuid(guid).getEntity();
@@ -383,8 +382,8 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
      */
     @Test
     public void testAlterViewAsSelectFromFile() throws Exception {
-        String IMPALA = dir + "impalaAlterViewAsSelect.json";
-        String IMPALA_WAL = dir + "WALimpala.wal";
+        String impala = dir + "impalaAlterViewAsSelect.json";
+        String impalaWal = dir + "WALimpala.wal";
 
         ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
 
@@ -395,21 +394,21 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         createDatabase(dbName);
 
         String sourceTableName = "table_1";
-        createTable(dbName, sourceTableName,"(id string, count int)", false);
+        createTable(dbName, sourceTableName, "(id string, count int)", false);
 
         String targetTableName = "view_1";
-        createTable(dbName, targetTableName,"(count int, id string)", false);
+        createTable(dbName, targetTableName, "(count int, id string)", false);
 
         // process lineage record, and send corresponding notification to Atlas
-        String[] args = new String[]{"-d", "./", "-p", "impala"};
+        String[] args = new String[] {"-d", "./", "-p", "impala"};
         ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
-        toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+        toolInstance.importHImpalaEntities(impalaLineageHook, impala, impalaWal);
 
         // verify the process is saved in Atlas
         // the value is from info in IMPALA_4.
-        String createTime = new Long(TABLE_CREATE_TIME*1000).toString();
+        String createTime = new Long(TABLE_CREATE_TIME * 1000).toString();
         String processQFName =
-            dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
+                dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
                 CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
 
         processQFName = processQFName.toLowerCase();
@@ -418,9 +417,9 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
         AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
         AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
-            BaseImpalaEvent.ATTRIBUTE_PROCESS));
-        Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
-        Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+                BaseImpalaEvent.ATTRIBUTE_PROCESS));
+        assertEquals(process1.getGuid(), processEntity1.getGuid());
+        assertEquals(numberOfProcessExecutions(processEntity1), 1);
         String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
                 QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
 
@@ -444,8 +443,8 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
      */
     @Test
     public void testAlterViewAsSelectWithCommentSpacesFromFile() throws Exception {
-        String IMPALA = dir + "impalaAlterViewAsSelectWithCommentSpaces.json";
-        String IMPALA_WAL = dir + "WALimpala.wal";
+        String impala = dir + "impalaAlterViewAsSelectWithCommentSpaces.json";
+        String impalaWal = dir + "WALimpala.wal";
 
         ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
 
@@ -456,19 +455,19 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         createDatabase(dbName);
 
         String sourceTableName = "table_1";
-        createTable(dbName, sourceTableName,"(id string, count int)", false);
+        createTable(dbName, sourceTableName, "(id string, count int)", false);
 
         String targetTableName = "view_1";
-        createTable(dbName, targetTableName,"(count int, id string)", false);
+        createTable(dbName, targetTableName, "(count int, id string)", false);
 
         // process lineage record, and send corresponding notification to Atlas
-        String[] args = new String[]{"-d", "./", "-p", "impala"};
+        String[] args = new String[] {"-d", "./", "-p", "impala"};
         ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
-        toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+        toolInstance.importHImpalaEntities(impalaLineageHook, impala, impalaWal);
 
         // verify the process is saved in Atlas
         // the value is from info in IMPALA_4.
-        String createTime = new Long(TABLE_CREATE_TIME*1000).toString();
+        String createTime = new Long(TABLE_CREATE_TIME * 1000).toString();
         String processQFName =
                 dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
                         CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
@@ -481,8 +480,8 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
         AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
                 BaseImpalaEvent.ATTRIBUTE_PROCESS));
-        Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
-        Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+        assertEquals(process1.getGuid(), processEntity1.getGuid());
+        assertEquals(numberOfProcessExecutions(processEntity1), 1);
         String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
                 QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
 
@@ -506,8 +505,8 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
      */
     @Test
     public void testInsertIntoAsSelectFromFile() throws Exception {
-        String IMPALA = dir + "impalaInsertIntoAsSelect.json";
-        String IMPALA_WAL = dir + "WALimpala.wal";
+        String impala = dir + "impalaInsertIntoAsSelect.json";
+        String impalaWal = dir + "WALimpala.wal";
 
         ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
 
@@ -518,26 +517,25 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         createDatabase(dbName);
 
         String sourceTableName = "table_1";
-        createTable(dbName, sourceTableName,"(id string, count int)", false);
+        createTable(dbName, sourceTableName, "(id string, count int)", false);
 
         String targetTableName = "table_2";
-        createTable(dbName, targetTableName,"(count int, id string, int_col int)", false);
+        createTable(dbName, targetTableName, "(count int, id string, int_col int)", false);
 
         // process lineage record, and send corresponding notification to Atlas
-        String[] args = new String[]{"-d", "./", "-p", "impala"};
+        String[] args = new String[] {"-d", "./", "-p", "impala"};
         ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
-        toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+        toolInstance.importHImpalaEntities(impalaLineageHook, impala, impalaWal);
 
         // verify the process is saved in Atlas
         // the value is from info in IMPALA_4.
-        String createTime1 = new Long(TABLE_CREATE_TIME_SOURCE*1000).toString();
-        String createTime2 = new Long(TABLE_CREATE_TIME*1000).toString();
+        String createTime1 = new Long(TABLE_CREATE_TIME_SOURCE * 1000).toString();
+        String createTime2 = new Long(TABLE_CREATE_TIME * 1000).toString();
         String sourceQFName = dbName + "." + sourceTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
-            CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime1;
+                CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime1;
         String targetQFName = dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
-            CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime2;
+                CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime2;
         String processQFName = "QUERY:" + sourceQFName.toLowerCase() + "->:INSERT:" + targetQFName.toLowerCase();
-
 
         String queryString = "insert into table " + dbName + "." + targetTableName + " (count, id) select count, id from " + dbName + "." + sourceTableName;
         AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
@@ -545,9 +543,9 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
                 QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();
         AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
-            BaseImpalaEvent.ATTRIBUTE_PROCESS));
-        Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
-        Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+                BaseImpalaEvent.ATTRIBUTE_PROCESS));
+        assertEquals(process1.getGuid(), processEntity1.getGuid());
+        assertEquals(numberOfProcessExecutions(processEntity1), 1);
         assertEquals(processQFName, processEntity1.getAttribute(ATTRIBUTE_NAME).toString());
         assertEquals(processExecutionQFName, processExecutionEntity1.getAttribute(ATTRIBUTE_NAME).toString());
 
@@ -568,8 +566,8 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
      */
     @Test
     public void testMultipleInsertIntoAsSelectFromFile() throws Exception {
-        String IMPALA = dir + "impalaMultipleInsertIntoAsSelect1.json";
-        String IMPALA_WAL = dir + "WALimpala.wal";
+        String impala = dir + "impalaMultipleInsertIntoAsSelect1.json";
+        String impalaWal = dir + "WALimpala.wal";
 
         ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
 
@@ -580,30 +578,30 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         createDatabase(dbName);
 
         String sourceTableName = "table_1";
-        createTable(dbName, sourceTableName,"(id string, count int)", false);
+        createTable(dbName, sourceTableName, "(id string, count int)", false);
 
         String targetTableName = "table_2";
-        createTable(dbName, targetTableName,"(count int, id string, int_col int)", false);
+        createTable(dbName, targetTableName, "(count int, id string, int_col int)", false);
 
         // process lineage record, and send corresponding notification to Atlas
-        String[] args = new String[]{"-d", "./", "-p", "impala"};
+        String[] args = new String[] {"-d", "./", "-p", "impala"};
         ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
-        toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+        toolInstance.importHImpalaEntities(impalaLineageHook, impala, impalaWal);
 
         // re-run the same lineage record, should have the same process entity and another process execution entity
         Thread.sleep(5000);
-        IMPALA = dir + "impalaMultipleInsertIntoAsSelect2.json";
-        toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+        impala = dir + "impalaMultipleInsertIntoAsSelect2.json";
+        toolInstance.importHImpalaEntities(impalaLineageHook, impala, impalaWal);
         Thread.sleep(5000);
 
         // verify the process is saved in Atlas
         // the value is from info in IMPALA_4.
-        String createTime1 = new Long(TABLE_CREATE_TIME_SOURCE*1000).toString();
-        String createTime2 = new Long(TABLE_CREATE_TIME*1000).toString();
+        String createTime1 = new Long(TABLE_CREATE_TIME_SOURCE * 1000).toString();
+        String createTime2 = new Long(TABLE_CREATE_TIME * 1000).toString();
         String sourceQFName = dbName + "." + sourceTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
-            CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime1;
+                CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime1;
         String targetQFName = dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
-            CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime2;
+                CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime2;
         String processQFName = "QUERY:" + sourceQFName.toLowerCase() + "->:INSERT:" + targetQFName.toLowerCase();
 
         String queryString = "insert into table " + dbName + "." + targetTableName + " (count, id) select count, id from " + dbName + "." + sourceTableName;
@@ -614,17 +612,16 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
 
         List<AtlasObjectId> processExecutions = toAtlasObjectIdList(processEntity1.getRelationshipAttribute(
-            BaseImpalaEvent.ATTRIBUTE_PROCESS_EXECUTIONS));
-        Assert.assertEquals(processExecutions.size(), 2);
+                BaseImpalaEvent.ATTRIBUTE_PROCESS_EXECUTIONS));
+        assertEquals(processExecutions.size(), 2);
         for (AtlasObjectId processExecutionId : processExecutions) {
-            AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = atlasClientV2.
-                getEntityByGuid(processExecutionId.getGuid());
+            AtlasEntity.AtlasEntityWithExtInfo atlasEntityWithExtInfo = atlasClientV2.getEntityByGuid(processExecutionId.getGuid());
 
             AtlasEntity processExecutionEntity = atlasEntityWithExtInfo.getEntity();
             String entityQueryText = String.valueOf(processExecutionEntity.getAttribute(ATTRIBUTE_QUERY_TEXT)).toLowerCase().trim();
             if (!(queryString.equalsIgnoreCase(entityQueryText) || queryString2.equalsIgnoreCase(entityQueryText))) {
                 String errorMessage = String.format("process query text '%s' does not match expected value of '%s' or '%s'", entityQueryText, queryString, queryString2);
-                Assert.assertTrue(false, errorMessage);
+                assertTrue(false, errorMessage);
             }
 
             String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity.getAttribute(ATTRIBUTE_START_TIME).toString() +
@@ -651,8 +648,8 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
      */
     @Test
     public void testCreateTableAsSelectVertexIdNoTableNameFromFile() throws Exception {
-        String IMPALA = dir + "impalaCreateTableAsSelectVertexIdNoTableName.json";
-        String IMPALA_WAL = dir + "WALimpala.wal";
+        String impala = dir + "impalaCreateTableAsSelectVertexIdNoTableName.json";
+        String impalaWal = dir + "WALimpala.wal";
 
         ImpalaLineageHook impalaLineageHook = new ImpalaLineageHook();
 
@@ -663,21 +660,21 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         createDatabase(dbName);
 
         String sourceTableName = "sales_asia";
-        createTable(dbName, sourceTableName,"(id string, name string)", false);
+        createTable(dbName, sourceTableName, "(id string, name string)", false);
 
         String targetTableName = "sales_china";
-        createTable(dbName, targetTableName,"(id string, name string)", false);
+        createTable(dbName, targetTableName, "(id string, name string)", false);
 
         // process lineage record, and send corresponding notification to Atlas
-        String[] args = new String[]{"-d", "./", "-p", "impala"};
+        String[] args = new String[] {"-d", "./", "-p", "impala"};
         ImpalaLineageTool toolInstance = new ImpalaLineageTool(args);
-        toolInstance.importHImpalaEntities(impalaLineageHook, IMPALA, IMPALA_WAL);
+        toolInstance.importHImpalaEntities(impalaLineageHook, impala, impalaWal);
 
         // verify the process is saved in Atlas
         // the value is from info in IMPALA_4.
-        String createTime = new Long((long)1560885039*1000).toString();
+        String createTime = new Long((long) 1560885039 * 1000).toString();
         String processQFName =
-            dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
+                dbName + "." + targetTableName + AtlasImpalaHookContext.QNAME_SEP_METADATA_NAMESPACE +
                 CLUSTER_NAME + AtlasImpalaHookContext.QNAME_SEP_PROCESS + createTime;
 
         processQFName = processQFName.toLowerCase();
@@ -686,9 +683,9 @@ public class ImpalaLineageToolIT extends ImpalaLineageITBase {
         AtlasEntity processEntity1 = validateProcess(processQFName, queryString);
         AtlasEntity processExecutionEntity1 = validateProcessExecution(processEntity1, queryString);
         AtlasObjectId process1 = toAtlasObjectId(processExecutionEntity1.getRelationshipAttribute(
-            BaseImpalaEvent.ATTRIBUTE_PROCESS));
-        Assert.assertEquals(process1.getGuid(), processEntity1.getGuid());
-        Assert.assertEquals(numberOfProcessExecutions(processEntity1), 1);
+                BaseImpalaEvent.ATTRIBUTE_PROCESS));
+        assertEquals(process1.getGuid(), processEntity1.getGuid());
+        assertEquals(numberOfProcessExecutions(processEntity1), 1);
 
         String processExecutionQFName = processQFName + QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_START_TIME).toString() +
                 QNAME_SEP_PROCESS + processExecutionEntity1.getAttribute(ATTRIBUTE_END_TIME).toString();

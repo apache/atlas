@@ -9,6 +9,7 @@
     "offset": 0,
     "entityFilters": {
       "attributeName": "name",
+      "operator": "contains",
       "attributeValue": "testtable",
       "condition" : "OR",
       "criterion" : [

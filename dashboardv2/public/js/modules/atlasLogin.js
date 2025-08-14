@@ -96,20 +96,26 @@ function doLogin() {
 function redirect(baseUrl) {
     $.ajax({
         url: baseUrl + "api/atlas/admin/session",
-        success: function(data) {
-            var PRIMARY_UI = "v2",
-                indexpath = "/n/index.html";
-            if (data && data["atlas.ui.default.version"]) {
-                PRIMARY_UI = data["atlas.ui.default.version"];
+        success: function(data)  {
+            // Default to react UI (v3)
+            var PRIMARY_UI = (data && data["atlas.ui.default.version"]) ? data["atlas.ui.default.version"] : "v3";
+            var lastUILoad = window.localStorage && window.localStorage.last_ui_load;
+            var uiVersion = lastUILoad || PRIMARY_UI;
+            var indexpath;
+
+            switch (uiVersion) {
+                case "v1":
+                    indexpath = "/index.html";      // classic UI
+                    break;
+                case "v2":
+                    indexpath = "/n/index.html";    // beta UI
+                    break;
+                case "v3":
+                default:
+                    indexpath = "/n3/index.html";   // react UI
+                    break;
             }
-            if (PRIMARY_UI !== "v2") {
-                indexpath = "/index.html";
-            }
-            if (window.localStorage.last_ui_load === "v1") {
-                indexpath = "/index.html";
-            } else if (window.localStorage.last_ui_load === "v2") {
-                indexpath = "/n/index.html";
-            }
+
             indexpath = baseUrl + indexpath;
             if (location.hash.length > 2) {
                 indexpath += location.hash;

@@ -17,17 +17,17 @@
  */
 package org.apache.impala.hooks;
 
-import java.util.Objects;
+import static java.util.Objects.requireNonNull;
 
 /**
  * {@link QueryCompleteContext} encapsulates immutable information sent from the
  * BE to a post-query hook.
  */
 public class QueryCompleteContext {
-    private final String lineageGraph_;
+    private final String lineageGraphObject;
 
     public QueryCompleteContext(String lineageGraph) {
-        lineageGraph_ = Objects.requireNonNull(lineageGraph);
+        lineageGraphObject = requireNonNull(lineageGraph);
     }
 
     /**
@@ -45,12 +45,14 @@ public class QueryCompleteContext {
      *
      * @return lineage graph from the query that executed
      */
-    public String getLineageGraph() { return lineageGraph_; }
+    public String getLineageGraph() {
+        return lineageGraphObject;
+    }
 
     @Override
     public String toString() {
         return "QueryCompleteContext{" +
-            "lineageGraph='" + lineageGraph_ + '\'' +
+            "lineageGraph='" + lineageGraphObject + '\'' +
             '}';
     }
 }

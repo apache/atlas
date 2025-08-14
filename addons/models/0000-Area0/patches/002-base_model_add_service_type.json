@@ -7,7 +7,7 @@
       "typeName":        "Referenceable",
       "applyToVersion":  "1.1",
       "updateToVersion": "1.2",
-	  "serviceType":     "atlas_core"
+      "serviceType":     "atlas_core"
     },
     {
       "id":              "TYPEDEF_PATCH_0000_003",
@@ -16,7 +16,7 @@
       "typeName":        "__internal",
       "applyToVersion":  "1.0",
       "updateToVersion": "1.1",
-	  "serviceType":     "atlas_core"
+      "serviceType":     "atlas_core"
     },
     {
       "id":              "TYPEDEF_PATCH_0000_004",
@@ -25,7 +25,7 @@
       "typeName":        "Asset",
       "applyToVersion":  "1.1",
       "updateToVersion": "1.2",
-	  "serviceType":     "atlas_core"
+      "serviceType":     "atlas_core"
     },
     {
       "id":              "TYPEDEF_PATCH_0000_005",
@@ -34,7 +34,7 @@
       "typeName":        "DataSet",
       "applyToVersion":  "1.1",
       "updateToVersion": "1.2",
-	  "serviceType":     "atlas_core"
+      "serviceType":     "atlas_core"
     },
     {
       "id":              "TYPEDEF_PATCH_0000_006",
@@ -43,7 +43,7 @@
       "typeName":        "Infrastructure",
       "applyToVersion":  "1.1",
       "updateToVersion": "1.2",
-	  "serviceType":     "atlas_core"
+      "serviceType":     "atlas_core"
     },
     {
       "id":              "TYPEDEF_PATCH_0000_007",
@@ -52,7 +52,7 @@
       "typeName":        "Process",
       "applyToVersion":  "1.1",
       "updateToVersion": "1.2",
-	  "serviceType":     "atlas_core"
+      "serviceType":     "atlas_core"
     },
     {
       "id":              "TYPEDEF_PATCH_0000_008",
@@ -61,7 +61,7 @@
       "typeName":        "AtlasServer",
       "applyToVersion":  "1.0",
       "updateToVersion": "1.1",
-	  "serviceType":     "atlas_core"
+      "serviceType":     "atlas_core"
     },
     {
       "id":              "TYPEDEF_PATCH_0000_009",
@@ -70,7 +70,7 @@
       "typeName":        "__AtlasUserProfile",
       "applyToVersion":  "1.0",
       "updateToVersion": "1.1",
-	  "serviceType":     "atlas_core"
+      "serviceType":     "atlas_core"
     },
     {
       "id":              "TYPEDEF_PATCH_0000_010",
@@ -79,7 +79,7 @@
       "typeName":        "__AtlasUserSavedSearch",
       "applyToVersion":  "1.0",
       "updateToVersion": "1.1",
-	  "serviceType":     "atlas_core"
+      "serviceType":     "atlas_core"
     },
     {
       "id":              "TYPEDEF_PATCH_0000_011",
@@ -88,7 +88,7 @@
       "typeName":        "__ExportImportAuditEntry",
       "applyToVersion":  "1.0",
       "updateToVersion": "1.1",
-	  "serviceType":     "atlas_core"
+      "serviceType":     "atlas_core"
     },
     {
       "id":              "TYPEDEF_PATCH_0000_012",
@@ -97,7 +97,7 @@
       "typeName":        "dataset_process_inputs",
       "applyToVersion":  "1.0",
       "updateToVersion": "1.1",
-	  "serviceType":     "atlas_core"
+      "serviceType":     "atlas_core"
     },
     {
       "id":              "TYPEDEF_PATCH_0000_013",
@@ -106,7 +106,7 @@
       "typeName":        "process_dataset_outputs",
       "applyToVersion":  "1.0",
       "updateToVersion": "1.1",
-	  "serviceType":     "atlas_core"
+      "serviceType":     "atlas_core"
     },
     {
       "id":              "TYPEDEF_PATCH_0000_014",
@@ -115,7 +115,7 @@
       "typeName":        "__AtlasUserProfile_savedsearches",
       "applyToVersion":  "1.0",
       "updateToVersion": "1.1",
-	  "serviceType":     "atlas_core"
+      "serviceType":     "atlas_core"
     },
     {
       "id":              "TYPEDEF_PATCH_0000_015",

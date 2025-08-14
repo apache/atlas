@@ -1,0 +1,128 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one or more
+ * contributor license agreements.  See the NOTICE file distributed with
+ * this work for additional information regarding copyright ownership.
+ * The ASF licenses this file to You under the Apache License, Version 2.0
+ * (the "License"); you may not use this file except in compliance with
+ * the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+@use "variables" as v;
+
+.show-more-less {
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.show-more-less:hover {
+  text-decoration: underline;
+}
+
+.show-more {
+  display: inline-flex;
+  flex-wrap: wrap;
+  font-size: 1rem;
+  width: 100%;
+}
+
+.show-less {
+  display: inline-flex;
+  flex-wrap: wrap;
+  font-size: 1rem;
+  width: 100%;
+  white-space: nowrap;
+}
+
+.MuiInputLabel-asterisk {
+  color: red;
+}
+
+.MuiIconButton-sizeSmall svg {
+  width: 0.875em;
+  height: 0.875em;
+}
+
+.MuiButton-outlinedSizeSmall {
+  line-height: 18px !important;
+  height: 28px;
+}
+
+.MuiButton-outlinedSizeSmall .MuiButton-startIcon {
+  margin-right: 2px;
+}
+
+.MuiButton-outlinedSizeSmall .MuiButton-endIcon {
+  margin-left: 2px;
+}
+
+.MuiButton-containedSizeSmall {
+  line-height: 18px !important;
+  height: 28px;
+}
+
+.MuiButton-containedSizeSmall .MuiButton-startIcon {
+  margin-right: 2px;
+}
+
+.MuiButton-containedSizeSmall .MuiButton-endIcon {
+  margin-left: 2px;
+}
+
+// .MuiChip-outlined {
+//   border-radius: 4px !important;
+//   display: flex;
+//   justify-content: center;
+//   flex-wrap: wrap;
+//   // "& > *": {
+//   margin: 0.5px;
+//   // }
+// }
+
+.MuiAccordionSummary-root {
+  background-color: #f2f6f7 !important;
+}
+
+.MuiAccordion-region {
+  background-color: rgba(255, 255, 255, 0.6);
+}
+
+.MuiDialog-paperWidthMd {
+  max-width: 800px !important;
+}
+
+.chip-items {
+  background: #f3fbff !important;
+  border: 1px solid #a3c9f7 !important;
+}
+
+.chip-items:hover {
+  background: #e1f1fd !important;
+  border: 1px solid #90caf9 !important;
+}
+
+.nav-link {
+  text-decoration: none !important;
+  cursor: pointer !important;
+}
+
+.nav-link:hover {
+  text-decoration: underline !important;
+}
+
+.react-datepicker-wrapper {
+  flex: 1;
+}
+
+.react-datepicker-wrapper input {
+  height: 32px;
+  padding: 4px 8px;
+  width: 100%;
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}

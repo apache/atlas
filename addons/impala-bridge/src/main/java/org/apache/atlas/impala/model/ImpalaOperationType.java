@@ -17,20 +17,20 @@
  */
 package org.apache.atlas.impala.model;
 
-public enum ImpalaOperationType{
+public enum ImpalaOperationType {
     // main operation type
-    CREATEVIEW ("CREATEVIEW"),
-    CREATETABLE_AS_SELECT ("CREATETABLE_AS_SELECT"),
-    ALTERVIEW_AS ("ALTERVIEW_AS"),
-    QUERY ("QUERY"),
-    QUERY_WITH_CLAUSE ("QUERY_WITH_CLAUSE"),
+    CREATEVIEW("CREATEVIEW"),
+    CREATETABLE_AS_SELECT("CREATETABLE_AS_SELECT"),
+    ALTERVIEW_AS("ALTERVIEW_AS"),
+    QUERY("QUERY"),
+    QUERY_WITH_CLAUSE("QUERY_WITH_CLAUSE"),
 
     // sub operation type, which is associated with output
-    INSERT ("INSERT"),
-    INSERT_OVERWRITE ("INSERT_OVERWRITE"),
+    INSERT("INSERT"),
+    INSERT_OVERWRITE("INSERT_OVERWRITE"),
 
     // default type
-    UNKNOWN ("UNKNOWN");
+    UNKNOWN("UNKNOWN");
 
     private final String name;
 

@@ -363,7 +363,7 @@ define(['require',
                 Utils.setUrl(_.extend({
                     url: Utils.getUrlState.getQueryUrl().queyParams[0],
                     urlParams: this.columnOrder ? _.extend(this.value, { 'uiParameters': this.getColumnOrderWithPosition() }) : this.value,
-                    mergeBrowserUrl: false,
+                    mergeBrowserUrl: Utils.getUrlState.isGlossaryTab()?true:false,
                     trigger: false,
                     updateTabState: true
                 }, options));

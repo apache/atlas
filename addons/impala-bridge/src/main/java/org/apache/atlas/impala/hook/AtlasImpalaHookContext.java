@@ -18,9 +18,6 @@
 
 package org.apache.atlas.impala.hook;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import org.apache.atlas.impala.model.ImpalaOperationType;
 import org.apache.atlas.impala.model.ImpalaQuery;
 import org.apache.atlas.impala.model.LineageVertex;
@@ -28,10 +25,13 @@ import org.apache.atlas.impala.model.LineageVertexMetadata;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.commons.lang.StringUtils;
 
-
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 /**
  * Contain the info related to an linear record from Impala
  */
+
 public class AtlasImpalaHookContext {
     public static final char QNAME_SEP_METADATA_NAMESPACE = '@';
     public static final char QNAME_SEP_ENTITY_NAME        = '.';
@@ -43,17 +43,19 @@ public class AtlasImpalaHookContext {
     private final Map<String, AtlasEntity> qNameEntityMap = new HashMap<>();
 
     public AtlasImpalaHookContext(ImpalaLineageHook hook, ImpalaOperationType operationType,
-        ImpalaQuery lineageQuery) throws Exception {
+            ImpalaQuery lineageQuery) throws Exception {
         this.hook          = hook;
         this.impalaOperation = operationType;
         this.lineageQuery   = lineageQuery;
-
     }
 
     public ImpalaQuery getLineageQuery() {
         return lineageQuery;
     }
-    public String getQueryStr() { return lineageQuery.getQueryText(); }
+
+    public String getQueryStr() {
+        return lineageQuery.getQueryText();
+    }
 
     public ImpalaOperationType getImpalaOperationType() {
         return impalaOperation;
@@ -67,7 +69,9 @@ public class AtlasImpalaHookContext {
         return qNameEntityMap.get(qualifiedName);
     }
 
-    public Collection<AtlasEntity> getEntities() { return qNameEntityMap.values(); }
+    public Collection<AtlasEntity> getEntities() {
+        return qNameEntityMap.values();
+    }
 
     public String getMetadataNamespace() {
         return hook.getMetadataNamespace();
@@ -96,7 +100,7 @@ public class AtlasImpalaHookContext {
             throw new IllegalArgumentException(fullTableName + " does not contain database name");
         }
 
-        return getQualifiedNameForTable(fullTableName.substring(0, sepPos), fullTableName.substring(sepPos+1));
+        return getQualifiedNameForTable(fullTableName.substring(0, sepPos), fullTableName.substring(sepPos + 1));
     }
 
     public String getQualifiedNameForTable(String dbName, String tableName) {
@@ -131,12 +135,12 @@ public class AtlasImpalaHookContext {
 
         int sepPosLast = columnName.lastIndexOf(QNAME_SEP_ENTITY_NAME);
         if (isSeparatorIndexValid(sepPosLast)) {
-            columnName = columnName.substring(sepPosLast+1);
+            columnName = columnName.substring(sepPosLast + 1);
         }
 
         return getQualifiedNameForColumn(
             fullTableName.substring(0, sepPos),
-            fullTableName.substring(sepPos+1),
+            fullTableName.substring(sepPos + 1),
             columnName);
     }
 
@@ -149,7 +153,7 @@ public class AtlasImpalaHookContext {
         int sepPosLast = fullColumnName.lastIndexOf(QNAME_SEP_ENTITY_NAME);
 
         if (!isSeparatorIndexValid(sepPosFirst) || !isSeparatorIndexValid(sepPosLast) ||
-            sepPosFirst == sepPosLast) {
+                sepPosFirst == sepPosLast) {
             throw new IllegalArgumentException(
                 String.format("fullColumnName {} does not contain database name or table name",
                     fullColumnName));
@@ -157,8 +161,8 @@ public class AtlasImpalaHookContext {
 
         return getQualifiedNameForColumn(
             fullColumnName.substring(0, sepPosFirst),
-            fullColumnName.substring(sepPosFirst+1, sepPosLast),
-            fullColumnName.substring(sepPosLast+1));
+            fullColumnName.substring(sepPosFirst + 1, sepPosLast),
+            fullColumnName.substring(sepPosLast + 1));
     }
 
     public String getColumnNameOnly(String fullColumnName) throws IllegalArgumentException {
@@ -172,7 +176,7 @@ public class AtlasImpalaHookContext {
             return fullColumnName;
         }
 
-        return fullColumnName.substring(sepPosLast+1);
+        return fullColumnName.substring(sepPosLast + 1);
     }
 
     public String getQualifiedNameForColumn(String dbName, String tableName, String columnName) {
@@ -181,7 +185,9 @@ public class AtlasImpalaHookContext {
              columnName + QNAME_SEP_METADATA_NAMESPACE).toLowerCase() + getMetadataNamespace();
     }
 
-    public String getUserName() { return lineageQuery.getUser(); }
+    public String getUserName() {
+        return lineageQuery.getUser();
+    }
 
     public String getDatabaseNameFromTable(String fullTableName) {
         int sepPos = fullTableName.lastIndexOf(QNAME_SEP_ENTITY_NAME);
@@ -209,5 +215,4 @@ public class AtlasImpalaHookContext {
     public boolean isSeparatorIndexValid(int index) {
         return index > 0;
     }
-
 }

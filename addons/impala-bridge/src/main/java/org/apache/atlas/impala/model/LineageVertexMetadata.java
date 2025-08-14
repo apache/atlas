@@ -18,19 +18,19 @@
 
 package org.apache.atlas.impala.model;
 
-import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
-import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
-
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
+import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
 /**
  * This represents optional metadata in Impala's lineage vertex entity.
  */
-@JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
-@JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown=true)
+
+@JsonAutoDetect(getterVisibility = PUBLIC_ONLY, setterVisibility = PUBLIC_ONLY, fieldVisibility = NONE)
+@JsonSerialize(include = JsonSerialize.Inclusion.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class LineageVertexMetadata {
     // specify the name of the table
     private String tableName;
@@ -38,11 +38,19 @@ public class LineageVertexMetadata {
     // the create time of the table. Its unit is in seconds.
     private Long tableCreateTime;
 
-    public String getTableName() { return tableName; }
+    public String getTableName() {
+        return tableName;
+    }
 
-    public Long getTableCreateTime() { return tableCreateTime; }
+    public Long getTableCreateTime() {
+        return tableCreateTime;
+    }
 
-    public void setTableName(String tableName) { this.tableName = tableName; }
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
+    }
 
-    public void setTableCreateTime(Long createTime) { this.tableCreateTime = createTime; }
+    public void setTableCreateTime(Long createTime) {
+        this.tableCreateTime = createTime;
+    }
 }

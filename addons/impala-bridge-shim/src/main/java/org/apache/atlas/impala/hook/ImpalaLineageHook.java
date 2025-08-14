@@ -33,9 +33,9 @@ public class ImpalaLineageHook implements QueryEventHook {
 
     private static final String ATLAS_PLUGIN_TYPE_IMPALA = "impala";
     private static final String ATLAS_IMPALA_LINEAGE_HOOK_IMPL_CLASSNAME =
-        "org.apache.atlas.impala.hook.ImpalaHook";
+            "org.apache.atlas.impala.hook.ImpalaHook";
 
-    private AtlasPluginClassLoader atlasPluginClassLoader = null;
+    private AtlasPluginClassLoader atlasPluginClassLoader;
     private QueryEventHook impalaLineageHookImpl;
 
     public ImpalaLineageHook() {
@@ -71,7 +71,7 @@ public class ImpalaLineageHook implements QueryEventHook {
 
             @SuppressWarnings("unchecked")
             Class<QueryEventHook> cls = (Class<QueryEventHook>) Class
-                .forName(ATLAS_IMPALA_LINEAGE_HOOK_IMPL_CLASSNAME, true, atlasPluginClassLoader);
+                    .forName(ATLAS_IMPALA_LINEAGE_HOOK_IMPL_CLASSNAME, true, atlasPluginClassLoader);
 
             activatePluginClassLoader();
 
