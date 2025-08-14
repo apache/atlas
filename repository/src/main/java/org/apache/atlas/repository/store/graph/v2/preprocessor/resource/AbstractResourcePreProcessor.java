@@ -29,6 +29,7 @@ import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessor;
+import org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.slf4j.Logger;
@@ -62,6 +63,9 @@ public abstract class AbstractResourcePreProcessor implements PreProcessor {
             if (asset != null) {
                 //Found linked asset in payload
                 AtlasVertex assetVertex = entityRetriever.getEntityVertex(asset);
+
+                PreProcessorUtils.validateProductStatus(assetVertex);
+
                 assetEntity = entityRetriever.toAtlasEntityHeaderWithClassifications(assetVertex);
 
             } else {
