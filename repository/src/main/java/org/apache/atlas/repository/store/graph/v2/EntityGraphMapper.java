@@ -94,8 +94,7 @@ import org.springframework.stereotype.Component;
 
 import static org.apache.atlas.AtlasConfiguration.LABEL_MAX_LENGTH;
 import static org.apache.atlas.AtlasConfiguration.STORE_DIFFERENTIAL_AUDITS;
-import static org.apache.atlas.model.TypeCategory.ARRAY;
-import static org.apache.atlas.model.TypeCategory.CLASSIFICATION;
+import static org.apache.atlas.model.TypeCategory.*;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.ACTIVE;
 import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.model.instance.AtlasObjectId.KEY_TYPENAME;
@@ -5186,6 +5185,26 @@ public class EntityGraphMapper {
         }
     }
 
+    private Set<AtlasStructType.AtlasAttribute> getEntityTypeAttributes(List<AtlasEntity> entities) {
+        Set<AtlasStructType.AtlasAttribute> atlasAttributes = new HashSet<>();
+        for (AtlasEntity entity : entities) {
+            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getTypeName());
+            if (entityType != null) {
+                Map<String, AtlasStructType.AtlasAttribute> attributes = entityType.getAllAttributes();
+                if (MapUtils.isNotEmpty(attributes)) {
+                    for (AtlasStructType.AtlasAttribute attribute : attributes.values()) {
+                        if (PRIMITIVE.equals(attribute.getAttributeType().getTypeCategory())) {
+                            atlasAttributes.add(attribute);
+                        }
+                    }
+                }
+            }
+        }
+
+        return atlasAttributes;
+
+    }
+
     public List<String> deleteClassificationPropagation(String entityGuid, String classificationVertexId) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(classificationVertexId)) {
@@ -5226,6 +5245,7 @@ public class EntityGraphMapper {
             throw new AtlasBaseException(e);
         }
     }
+
 
     public void deleteClassificationPropagationV2(String sourceEntityGuid, String sourceVertexId, String parentEntityGuid, String tagTypeName) throws AtlasBaseException {
         MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("deleteClassificationPropagationNew");
@@ -5809,6 +5829,7 @@ public class EntityGraphMapper {
                 entity.setClassifications(finalClassifications);
 
                 entity.setGuid((String) assetMinAttrs.get(GUID_PROPERTY_KEY));
+
                 entity.setTypeName((String) assetMinAttrs.get(TYPE_NAME_PROPERTY_KEY));
 
                 entity.setCreatedBy((String) assetMinAttrs.get(CREATED_BY_KEY));

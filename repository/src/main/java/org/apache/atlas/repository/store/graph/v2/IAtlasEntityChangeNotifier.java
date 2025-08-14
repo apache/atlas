@@ -26,6 +26,8 @@ import org.apache.atlas.model.instance.AtlasRelatedObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.notification.EntityNotification;
+import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.atlas.type.AtlasStructType;
 
 import java.util.List;
 import java.util.Map;
@@ -39,6 +41,8 @@ public interface IAtlasEntityChangeNotifier {
     void onClassificationAddedToEntity(AtlasEntity entity, List<AtlasClassification> addedClassifications) throws AtlasBaseException;
 
     void onClassificationsAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications, boolean forceInline) throws AtlasBaseException;
+
+    void onClassificationsAddedToEntitiesV2(Set<AtlasVertex> vertices, Set<AtlasStructType.AtlasAttribute> attributes, List<AtlasClassification> addedClassifications, boolean forceInline) throws AtlasBaseException;
 
     void onClassificationPropagationAddedToEntities(List<AtlasEntity> entities, List<AtlasClassification> addedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException;
 
