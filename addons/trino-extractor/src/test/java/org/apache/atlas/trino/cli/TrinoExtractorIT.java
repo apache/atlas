@@ -37,6 +37,6 @@ public class TrinoExtractorIT {
     Deleted schema
     Rename catalog
     Rename schema
-    Tag propogated*/
+    Tag propagated*/
 
 }

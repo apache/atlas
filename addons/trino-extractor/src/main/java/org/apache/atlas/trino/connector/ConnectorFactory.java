@@ -30,7 +30,7 @@ public class ConnectorFactory {
             case "hive":
                 return new HiveEntityConnector();
             default:
-                LOG.warn("{} type does not have hook implemented on Atlas");
+                LOG.warn("{} type does not have hook implemented on Atlas", connectorType);
                 return null;
         }
     }

@@ -65,7 +65,7 @@ public class ExtractorService {
         trinoNamespace    = context.getNamespace();
 
         Map<String, String> catalogs = trinoClientHelper.getAllTrinoCatalogs();
-        LOG.info("Found {} catalogs in Trino", catalogs.toString());
+        LOG.info("Found {} catalogs in Trino: {}", catalogs.size(), catalogs.keySet());
 
         try {
             processCatalogs(context, catalogs);

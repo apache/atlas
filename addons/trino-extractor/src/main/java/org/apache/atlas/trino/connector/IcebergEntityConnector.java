@@ -66,7 +66,7 @@ public class IcebergEntityConnector extends AtlasEntityConnector {
     @Override
     public void connectTrinoTable(String instanceName, String catalogName, String schemaName, String tableName, AtlasEntity trinoTable, List<AtlasEntity> columnEntities, AtlasEntity.AtlasEntityWithExtInfo entityWithExtInfo) {
         if (instanceName == null) {
-            LOG.warn("Failed attempting to entity since hook namespace is empty, Please configure in properties");
+            LOG.warn("Failed attempting to connect entity since hook namespace is empty, Please configure in properties");
             return;
         }
 

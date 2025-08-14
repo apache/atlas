@@ -49,17 +49,17 @@ import static org.apache.atlas.type.AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME;
 public class AtlasClientHelper {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasClientHelper.class);
 
-    public static final String TRINO_INSTANCE                   = "trino_instance";
-    public static final String TRINO_CATALOG                    = "trino_catalog";
-    public static final String TRINO_SCHEMA                     = "trino_schema";
-    public static final String TRINO_TABLE                      = "trino_table";
-    public static final String TRINO_COLUMN                     = "trino_column";
-    public static final String TRINO_INSTANCE_CATALOG_ATTRIBUTE = "catalogs";
-    public static final String TRINO_CATALOG_SCHEMA_ATTRIBUTE   = "schemas";
-    public static final String TRINO_SCHEMA_TABLE_ATTRIBUTE     = "tables";
-    public static final String QUALIFIED_NAME_ATTRIBUTE         = "qualifiedName";
-    public static final String NAME_ATTRIBUTE                   = "name";
-    public static final  int    pageLimit                                = 10000;
+    public static final String TRINO_INSTANCE                            = "trino_instance";
+    public static final String TRINO_CATALOG                             = "trino_catalog";
+    public static final String TRINO_SCHEMA                              = "trino_schema";
+    public static final String TRINO_TABLE                               = "trino_table";
+    public static final String TRINO_COLUMN                              = "trino_column";
+    public static final String TRINO_INSTANCE_CATALOG_ATTRIBUTE          = "catalogs";
+    public static final String TRINO_CATALOG_SCHEMA_ATTRIBUTE            = "schemas";
+    public static final String TRINO_SCHEMA_TABLE_ATTRIBUTE              = "tables";
+    public static final String QUALIFIED_NAME_ATTRIBUTE                  = "qualifiedName";
+    public static final String  NAME_ATTRIBUTE                           = "name";
+    public static final  int    DEFAULT_PAGE_LIMIT                       = 10000;
     private static final String DEFAULT_ATLAS_URL                        = "http://localhost:21000/";
     private static final String APPLICATION_PROPERTY_ATLAS_ENDPOINT      = "atlas.rest.address";
     private static final String TRINO_CATALOG_CONNECTOR_TYPE_ATTRIBUTE   = "connectorType";
@@ -145,7 +145,7 @@ public class AtlasClientHelper {
             return null;
         }
         List<AtlasEntityHeader> entities = new ArrayList<>();
-        final int               pageSize = pageLimit;
+        final int               pageSize = DEFAULT_PAGE_LIMIT;
 
         for (int i = 0; ; i++) {
             int offset = pageSize * i;
