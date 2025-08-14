@@ -56,24 +56,25 @@ public abstract class AbstractGraphDatabaseTest {
             LocalSolrRunner.start();
         }
 
-        AtlasJanusGraphDatabase db   = new AtlasJanusGraphDatabase();
-        AtlasGraphManagement    mgmt = db.getGraph().getManagementSystem();
+        AtlasJanusGraphDatabase db = new AtlasJanusGraphDatabase();
 
-        if (mgmt.getGraphIndex(BACKING_INDEX_NAME) == null) {
-            mgmt.createVertexMixedIndex(BACKING_INDEX_NAME, Constants.BACKING_INDEX, Collections.emptyList());
+        try (AtlasGraphManagement mgmt = db.getGraph().getManagementSystem()) {
+            if (mgmt.getGraphIndex(BACKING_INDEX_NAME) == null) {
+                mgmt.createVertexMixedIndex(BACKING_INDEX_NAME, Constants.BACKING_INDEX, Collections.emptyList());
+            }
+            mgmt.makePropertyKey("age13", Integer.class, AtlasCardinality.SINGLE);
+
+            createIndices(mgmt, "name", String.class, false, AtlasCardinality.SINGLE);
+            createIndices(mgmt, WEIGHT_PROPERTY, Integer.class, false, AtlasCardinality.SINGLE);
+            createIndices(mgmt, "size15", String.class, false, AtlasCardinality.SINGLE);
+            createIndices(mgmt, "typeName", String.class, false, AtlasCardinality.SINGLE);
+            createIndices(mgmt, "__type", String.class, false, AtlasCardinality.SINGLE);
+            createIndices(mgmt, Constants.GUID_PROPERTY_KEY, String.class, true, AtlasCardinality.SINGLE);
+            createIndices(mgmt, Constants.TRAIT_NAMES_PROPERTY_KEY, String.class, false, AtlasCardinality.SET);
+            createIndices(mgmt, Constants.SUPER_TYPES_PROPERTY_KEY, String.class, false, AtlasCardinality.SET);
+
+            mgmt.setIsSuccess(true);
         }
-        mgmt.makePropertyKey("age13", Integer.class, AtlasCardinality.SINGLE);
-
-        createIndices(mgmt, "name", String.class, false, AtlasCardinality.SINGLE);
-        createIndices(mgmt, WEIGHT_PROPERTY, Integer.class, false, AtlasCardinality.SINGLE);
-        createIndices(mgmt, "size15", String.class, false, AtlasCardinality.SINGLE);
-        createIndices(mgmt, "typeName", String.class, false, AtlasCardinality.SINGLE);
-        createIndices(mgmt, "__type", String.class, false, AtlasCardinality.SINGLE);
-        createIndices(mgmt, Constants.GUID_PROPERTY_KEY, String.class, true, AtlasCardinality.SINGLE);
-        createIndices(mgmt, Constants.TRAIT_NAMES_PROPERTY_KEY, String.class, false, AtlasCardinality.SET);
-        createIndices(mgmt, Constants.SUPER_TYPES_PROPERTY_KEY, String.class, false, AtlasCardinality.SET);
-
-        mgmt.commit();
     }
 
     @AfterClass

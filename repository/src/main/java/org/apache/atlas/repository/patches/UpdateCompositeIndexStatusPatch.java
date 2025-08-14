@@ -47,25 +47,18 @@ public class UpdateCompositeIndexStatusPatch extends AtlasPatchHandler {
             return;
         }
 
-        AtlasGraphManagement management       = context.getGraph().getManagementSystem();
-        boolean              isRollbackNeeded = true;
-
-        try {
+        try (AtlasGraphManagement management = context.getGraph().getManagementSystem()) {
             LOG.info("UpdateCompositeIndexStatusPatch: Starting...");
 
             management.updateSchemaStatus();
 
-            isRollbackNeeded = false;
-
-            management.commit();
+            management.setIsSuccess(true);
 
             LOG.info("UpdateCompositeIndexStatusPatch: Done!");
-        } finally {
-            if (isRollbackNeeded) {
-                LOG.warn("UpdateCompositeIndexStatusPatch: was not committed. Rolling back...");
+        } catch (Exception excp) {
+            LOG.warn("UpdateCompositeIndexStatusPatch: failed", excp);
 
-                management.rollback();
-            }
+            throw (excp instanceof AtlasBaseException) ? (AtlasBaseException) excp : new AtlasBaseException(excp);
         }
 
         setStatus(UNKNOWN);
