@@ -5187,26 +5187,6 @@ public class EntityGraphMapper {
         }
     }
 
-    public Set<AtlasStructType.AtlasAttribute> getEntityTypeAttributes(Set<AtlasVertex> entities) {
-        Set<AtlasStructType.AtlasAttribute> atlasAttributes = new HashSet<>();
-        for (AtlasVertex entity : entities) {
-            AtlasEntityType entityType = typeRegistry.getEntityTypeByName(entity.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
-            if (entityType != null) {
-                Map<String, AtlasStructType.AtlasAttribute> attributes = entityType.getAllAttributes();
-                if (MapUtils.isNotEmpty(attributes)) {
-                    for (AtlasStructType.AtlasAttribute attribute : attributes.values()) {
-                        if (PRIMITIVE.equals(attribute.getAttributeType().getTypeCategory())) {
-                            atlasAttributes.add(attribute);
-                        }
-                    }
-                }
-            }
-        }
-
-        return atlasAttributes;
-
-    }
-
     public List<String> deleteClassificationPropagation(String entityGuid, String classificationVertexId) throws AtlasBaseException {
         try {
             if (StringUtils.isEmpty(classificationVertexId)) {
