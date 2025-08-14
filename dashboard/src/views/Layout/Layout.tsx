@@ -17,17 +17,18 @@
 
 import { useEffect, useState } from "react";
 import SideBarBody from "../SideBar/SideBarBody";
-import { Navigate, useLocation } from "react-router-dom";
+import { Navigate, useLocation, useNavigate } from "react-router-dom";
 import Statistics from "@views/Statistics/Statistics";
 import CustomModal from "@components/Modal";
 import About from "./About";
 import { useIdleTimer } from "react-idle-timer";
 import { Typography } from "@mui/material";
-import { getBaseUrl } from "@utils/Utils";
+import { checkKnoxSSO } from "@utils/Utils";
 import { useAppSelector } from "@hooks/reducerHook";
 
 const Layout: React.FC = () => {
   const location = useLocation();
+  const navigate = useNavigate();
   const { sessionObj = "" }: any = useAppSelector(
     (state: any) => state.session
   );
@@ -90,8 +91,7 @@ const Layout: React.FC = () => {
 
   const handleLogout = () => {
     localStorage.setItem("atlas_ui", "v3");
-    let path = getBaseUrl(window.location.pathname);
-    window.location.href = path + "/logout.html";
+    checkKnoxSSO(navigate);
     handleCloseSessionModal();
   };
 

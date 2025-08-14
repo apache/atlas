@@ -57,6 +57,7 @@ import { globalSessionData } from "@utils/Enum";
 import { downloadSearchResultsFileUrl } from "@api/apiUrlLinks/downloadApiUrl";
 import ChevronLeftIcon from "@mui/icons-material/ChevronLeft";
 import { AntSwitch } from "@utils/Muiutils";
+import { checkKnoxSSO } from "@utils/Utils";
 
 interface Header {
   handleOpenModal: () => void;
@@ -145,8 +146,7 @@ const Header: React.FC<Header> = ({
 
   const handleLogout = () => {
     localStorage.setItem("atlas_ui", "v3");
-    let path = getBaseUrl(window.location.pathname);
-    window.location.href = path + "/logout.html";
+    checkKnoxSSO(navigate);
     handleClose();
   };
 

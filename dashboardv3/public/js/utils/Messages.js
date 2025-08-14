@@ -56,6 +56,11 @@ define(['require'], function(require) {
         getAbbreviationMsg: function(abbrev, type) {
             var msg = abbrev ? "s were" : " was";
             return msg + this[type];
+        },
+        errorMsg: {
+            signOutIsNotComplete: 'Authentication to this instance of Atlas is managed externally(for example,Apache Knox). \
+                                   You can still open this instance of Atlas from the same web browser without re-authentication. \
+                                   To prevent additional access to Atlas, <b>close all browser windows and exit the browser</b>.'
         }
     };
     return Messages;
