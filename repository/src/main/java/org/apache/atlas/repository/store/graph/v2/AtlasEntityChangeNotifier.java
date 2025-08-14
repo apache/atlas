@@ -38,6 +38,7 @@ import org.apache.atlas.model.instance.EntityMutations.EntityOperation;
 import org.apache.atlas.model.notification.EntityNotification;
 import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.atlas.type.AtlasEntityType;
+import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.atlas.v1.model.instance.Referenceable;
@@ -60,9 +61,11 @@ import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.model.TypeCategory.PRIMITIVE;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_ADD;
 import static org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2.PROPAGATED_CLASSIFICATION_DELETE;
 import static org.apache.atlas.repository.Constants.ENTITY_TEXT_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
 
 
 @Component
@@ -217,6 +220,28 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         }
     }
 
+    @Override
+    @Async
+    public void onClassificationPropagationAddedToEntitiesV2(Set<AtlasVertex> vertices, List<AtlasClassification> addedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+        Set<AtlasStructType.AtlasAttribute> primitiveAttributes = getEntityTypeAttributes(vertices);
+        List<AtlasEntity> entities = instanceConverter.getEnrichedEntitiesWithPrimitiveAttributes(vertices, primitiveAttributes);
+        setRequestContext(requestContext);
+        for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+            listener.onClassificationPropagationsAdded(entities, addedClassifications, forceInline);
+        }
+    }
+
+    @Override
+    @Async
+    public void onClassificationsAddedToEntitiesV2(Set<AtlasVertex> vertices, List<AtlasClassification> addedClassifications, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+        Set<AtlasStructType.AtlasAttribute> primitiveAttributes = getEntityTypeAttributes(vertices);
+        List<AtlasEntity> entities = instanceConverter.getEnrichedEntitiesWithPrimitiveAttributes(vertices, primitiveAttributes);
+        setRequestContext(requestContext);
+        for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
+            listener.onClassificationPropagationsAdded(entities, addedClassifications, forceInline);
+        }
+    }
+
 
     @Override
     public void onClassificationUpdatedToEntity(AtlasEntity entity, List<AtlasClassification> updatedClassifications) throws AtlasBaseException {
@@ -283,6 +308,17 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     @Override
     @Async
     public void onClassificationUpdatedToEntitiesV2(List<AtlasEntity> entities, AtlasClassification updatedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+        setRequestContext(requestContext);
+        for (AtlasEntity entity : entities) {
+            onClassificationUpdatedToEntity(entity, Collections.singletonList(updatedClassification), forceInline);
+        }
+    }
+
+    @Override
+    @Async
+    public void onClassificationUpdatedToEntitiesV2(Set<AtlasVertex> vertices, AtlasClassification updatedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+        Set<AtlasStructType.AtlasAttribute> primitiveAttributes = getEntityTypeAttributes(vertices);
+        List<AtlasEntity> entities = instanceConverter.getEnrichedEntitiesWithPrimitiveAttributes(vertices, primitiveAttributes);
         setRequestContext(requestContext);
         for (AtlasEntity entity : entities) {
             onClassificationUpdatedToEntity(entity, Collections.singletonList(updatedClassification), forceInline);
@@ -359,8 +395,28 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
     }
 
     @Override
+    public void onClassificationDeletedFromEntitiesV2(Set<AtlasVertex> vertices, AtlasClassification deletedClassification) throws AtlasBaseException {
+        Set<AtlasStructType.AtlasAttribute> primitiveAttributes = getEntityTypeAttributes(vertices);
+        List<AtlasEntity> entities = instanceConverter.getEnrichedEntitiesWithPrimitiveAttributes(vertices, primitiveAttributes);
+        for (AtlasEntity entity : entities) {
+            onClassificationDeletedFromEntity(entity, Collections.singletonList(deletedClassification));
+        }
+    }
+
+    @Override
     @Async
     public void onClassificationPropagationDeleted(List<AtlasEntity> entities, AtlasClassification deletedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+        setRequestContext(requestContext);
+        for (AtlasEntity entity : entities) {
+            onClassificationPropagationDeleted(entity, Collections.singletonList(deletedClassification), forceInline);
+        }
+    }
+
+    @Override
+    @Async
+    public void onClassificationPropagationDeletedV2(Set<AtlasVertex> vertices, AtlasClassification deletedClassification, boolean forceInline, RequestContext requestContext) throws AtlasBaseException {
+        Set<AtlasStructType.AtlasAttribute> primitiveAttributes = getEntityTypeAttributes(vertices);
+        List<AtlasEntity> entities = instanceConverter.getEnrichedEntitiesWithPrimitiveAttributes(vertices, primitiveAttributes);
         setRequestContext(requestContext);
         for (AtlasEntity entity : entities) {
             onClassificationPropagationDeleted(entity, Collections.singletonList(deletedClassification), forceInline);
@@ -892,5 +948,25 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
                 }
             }
         }
+    }
+
+    private Set<AtlasStructType.AtlasAttribute> getEntityTypeAttributes(Set<AtlasVertex> entities) {
+        Set<AtlasStructType.AtlasAttribute> atlasAttributes = new HashSet<>();
+        for (AtlasVertex entity : entities) {
+            AtlasEntityType entityType = atlasTypeRegistry.getEntityTypeByName(entity.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
+            if (entityType != null) {
+                Map<String, AtlasStructType.AtlasAttribute> attributes = entityType.getAllAttributes();
+                if (MapUtils.isNotEmpty(attributes)) {
+                    for (AtlasStructType.AtlasAttribute attribute : attributes.values()) {
+                        if (PRIMITIVE.equals(attribute.getAttributeType().getTypeCategory())) {
+                            atlasAttributes.add(attribute);
+                        }
+                    }
+                }
+            }
+        }
+
+        return atlasAttributes;
+
     }
 }
