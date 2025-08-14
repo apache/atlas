@@ -268,7 +268,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     public void onChange(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException {
         LOG.debug("Processing changed typedefs {}", changedTypeDefs);
 
-        AtlasGraphManagement management = null;
+        AtlasGraphManagement management       = null;
+        boolean              isRollbackNeeded = true;
 
         try {
             management = provider.get().getManagementSystem();
@@ -300,12 +301,22 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createEdgeLabels(management, changedTypeDefs.getCreatedTypeDefs());
             createEdgeLabels(management, changedTypeDefs.getUpdatedTypeDefs());
 
+            isRollbackNeeded = false;
+
             //Commit indexes
             commit(management);
         } catch (RepositoryException | IndexException e) {
             LOG.error("Failed to update indexes for changed typedefs", e);
 
+            isRollbackNeeded = false;
+
             attemptRollback(changedTypeDefs, management);
+        } finally {
+            if (isRollbackNeeded) {
+                LOG.warn("onChange({}): was not committed. Rolling back...", changedTypeDefs);
+
+                attemptRollback(changedTypeDefs, management);
+            }
         }
 
         populateUniqueIndexKeys();
