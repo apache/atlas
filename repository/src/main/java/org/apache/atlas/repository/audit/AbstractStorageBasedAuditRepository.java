@@ -159,10 +159,42 @@ public abstract class AbstractStorageBasedAuditRepository implements Service, En
         applicationProperties = config;
     }
 
-    protected byte[] getKey(String id, Long ts, int index) {
-        String keyStr = id + FIELD_SEPARATOR + ts + FIELD_SEPARATOR + index + FIELD_SEPARATOR + System.currentTimeMillis();
+    protected String getKeyStr(String id, Long ts, int index) {
+        return id + FIELD_SEPARATOR + ts + FIELD_SEPARATOR + index + FIELD_SEPARATOR + System.currentTimeMillis();
+    }
 
-        return Bytes.toBytes(keyStr);
+    protected byte[] getKey(String id, Long ts, int index) {
+        return Bytes.toBytes(getKeyStr(id, ts, index));
+    }
+
+    protected long getTimestampFromKey(String key) {
+        String[] parts = key.split(FIELD_SEPARATOR);
+
+        if (parts.length < 3) {
+            return 0L;
+        }
+
+        try {
+            return Long.parseLong(parts[1]);
+        } catch (NumberFormatException e) {
+            LOG.error("Error parsing timestamp from key: {}", key, e);
+            return 0L;
+        }
+    }
+
+    protected int getIndexFromKey(String key) {
+        String[] parts = key.split(FIELD_SEPARATOR);
+
+        if (parts.length < 3) {
+            return 0;
+        }
+
+        try {
+            return Integer.parseInt(parts[2]);
+        } catch (NumberFormatException e) {
+            LOG.error("Error parsing index from key: {}", key, e);
+            return 0;
+        }
     }
 
     static {
