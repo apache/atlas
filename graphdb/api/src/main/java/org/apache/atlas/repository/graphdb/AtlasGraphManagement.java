@@ -24,7 +24,7 @@ import java.util.List;
  * Management interface for a graph.
  *
  */
-public interface AtlasGraphManagement {
+public interface AtlasGraphManagement extends AutoCloseable {
     /**
      * Checks whether a property with the given key has been defined in the graph schema.
      *
@@ -32,17 +32,6 @@ public interface AtlasGraphManagement {
      * @return
      */
     boolean containsPropertyKey(String key);
-
-    /**
-     * Rolls back the changes that have been made to the management system.
-     */
-    void rollback();
-
-    /**
-     * Commits the changes that have been made to the management system.
-     */
-
-    void commit();
 
     /**
      * @param propertyName
@@ -203,4 +192,6 @@ public interface AtlasGraphManagement {
      * @param txRecoveryObject
      */
     void printIndexRecoveryStats(Object txRecoveryObject);
+
+    void setIsSuccess(boolean isSuccess);
 }

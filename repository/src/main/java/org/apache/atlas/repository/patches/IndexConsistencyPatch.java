@@ -20,6 +20,7 @@ package org.apache.atlas.repository.patches;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,10 +50,15 @@ public class IndexConsistencyPatch extends AtlasPatchHandler {
 
         AtlasGraph graph = context.getGraph();
 
-        try {
+        try (AtlasGraphManagement management = graph.getManagementSystem()) {
             LOG.info("IndexConsistencyPatch: Starting...");
 
-            graph.getManagementSystem().updateUniqueIndexesForConsistencyLock();
+            management.updateUniqueIndexesForConsistencyLock();
+            management.setIsSuccess(true);
+        } catch (Exception excp) {
+            LOG.warn("IndexConsistencyPatch: failed", excp);
+
+            throw (excp instanceof AtlasBaseException) ? (AtlasBaseException) excp : new AtlasBaseException("IndexConsistencyPatch failed", excp);
         } finally {
             LOG.info("IndexConsistencyPatch: Done!");
         }

@@ -28,7 +28,6 @@ import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasConstraintDef;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -646,11 +645,7 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
     }
 
     private static void createPropertyKeys(AtlasStructDef structDef, AtlasTypeDefGraphStoreV2 typeDefStore) throws AtlasBaseException {
-        AtlasGraphManagement management = typeDefStore.atlasGraph.getManagementSystem();
-        boolean              isSuccess  = false;
-        Exception            err        = null;
-
-        try {
+        try (AtlasGraphManagement management = typeDefStore.atlasGraph.getManagementSystem()) {
             for (AtlasAttributeDef attributeDef : structDef.getAttributeDefs()) {
                 // Validate the mandatory features of an attribute (compatibility with legacy type system)
                 if (StringUtils.isEmpty(attributeDef.getName())) {
@@ -670,29 +665,11 @@ public class AtlasStructDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasStructDe
 
             createPropertyKey(AtlasGraphUtilsV2.encodePropertyKey(typeNamePropertyKey), Object.class, AtlasCardinality.SINGLE, management);
 
-            isSuccess = true;
+            management.setIsSuccess(true);
         } catch (Exception e) {
-            err = e;
-        } finally {
-            try {
-                if (isSuccess) {
-                    management.commit();
-                } else {
-                    management.rollback();
-                }
-            } catch (Exception e) {
-                if (err == null) {
-                    err = new AtlasBaseException(new IndexException("Index " + (isSuccess ? "commit" : "rollback") + " failed", e));
-                } else {
-                    LOG.error("Index {} failed", (isSuccess ? "commit" : "rollback"), e);
-                }
-            }
-        }
+            LOG.error("PropertyKey creation failed for structDef: {}", structDef, e);
 
-        if (err != null) {
-            LOG.error("PropertyKey creation failed for structDef: {}", structDef, err);
-
-            throw (err instanceof AtlasBaseException) ? (AtlasBaseException) err : new AtlasBaseException(err);
+            throw e instanceof AtlasBaseException ? (AtlasBaseException) e : new AtlasBaseException(e);
         }
     }
 }

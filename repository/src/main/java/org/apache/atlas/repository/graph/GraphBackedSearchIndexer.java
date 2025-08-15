@@ -256,12 +256,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     public void onChange(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException {
         LOG.debug("Processing changed typedefs {}", changedTypeDefs);
 
-        AtlasGraphManagement management       = null;
-        boolean              isRollbackNeeded = true;
-
-        try {
-            management = provider.get().getManagementSystem();
-
+        try (AtlasGraphManagement management = provider.get().getManagementSystem()) {
             // Update index for newly created types
             if (CollectionUtils.isNotEmpty(changedTypeDefs.getCreatedTypeDefs())) {
                 for (AtlasBaseTypeDef typeDef : changedTypeDefs.getCreatedTypeDefs()) {
@@ -289,22 +284,11 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createEdgeLabels(management, changedTypeDefs.getCreatedTypeDefs());
             createEdgeLabels(management, changedTypeDefs.getUpdatedTypeDefs());
 
-            isRollbackNeeded = false;
-
-            //Commit indexes
-            commit(management);
-        } catch (RepositoryException | IndexException e) {
+            management.setIsSuccess(true);
+        } catch (Exception e) {
             LOG.error("Failed to update indexes for changed typedefs", e);
-
-            isRollbackNeeded = false;
-
-            attemptRollback(changedTypeDefs, management);
         } finally {
-            if (isRollbackNeeded) {
-                LOG.warn("onChange({}): was not committed. Rolling back...", changedTypeDefs);
-
-                attemptRollback(changedTypeDefs, management);
-            }
+            recomputeIndexedKeys = true;
         }
 
         notifyChangeListeners(changedTypeDefs);
@@ -319,33 +303,26 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         typeDefs.addAll(typeRegistry.getAllEntityDefs());
         typeDefs.addAll(typeRegistry.getAllBusinessMetadataDefs());
 
-        ChangedTypeDefs      changedTypeDefs = new ChangedTypeDefs(null, new ArrayList<>(typeDefs), null);
-        AtlasGraphManagement management      = null;
+        ChangedTypeDefs changedTypeDefs = new ChangedTypeDefs(null, new ArrayList<>(typeDefs), null);
 
-        try {
-            management = provider.get().getManagementSystem();
-
+        try (AtlasGraphManagement management = provider.get().getManagementSystem()) {
             //resolve index fields names
             resolveIndexFieldNames(management, changedTypeDefs);
 
             //Commit indexes
-            commit(management);
+            management.setIsSuccess(true);
 
             notifyInitializationCompletion(changedTypeDefs);
-        } catch (RepositoryException | IndexException e) {
+        } catch (Exception e) {
             LOG.error("Failed to update indexes for changed typedefs", e);
-
-            attemptRollback(changedTypeDefs, management);
+        } finally {
+            recomputeIndexedKeys = true;
         }
     }
 
     public Set<String> getVertexIndexKeys() {
         if (recomputeIndexedKeys) {
-            AtlasGraphManagement management = null;
-
-            try {
-                management = provider.get().getManagementSystem();
-
+            try (AtlasGraphManagement management = provider.get().getManagementSystem()) {
                 if (management != null) {
                     AtlasGraphIndex vertexIndex = management.getGraphIndex(VERTEX_INDEX);
 
@@ -361,18 +338,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                         recomputeIndexedKeys = false;
                     }
 
-                    management.commit();
+                    management.setIsSuccess(true);
                 }
             } catch (Exception excp) {
                 LOG.error("getVertexIndexKeys(): failed to get indexedKeys from graph", excp);
-
-                if (management != null) {
-                    try {
-                        management.rollback();
-                    } catch (Exception e) {
-                        LOG.error("getVertexIndexKeys(): rollback failed", e);
-                    }
-                }
             }
         }
 
@@ -381,11 +350,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
     public Set<String> getEdgeIndexKeys() {
         if (recomputeEdgeIndexedKeys) {
-            AtlasGraphManagement management = null;
-
-            try {
-                management = provider.get().getManagementSystem();
-
+            try (AtlasGraphManagement management = provider.get().getManagementSystem()) {
                 if (management != null) {
                     AtlasGraphIndex edgeIndex = management.getGraphIndex(EDGE_INDEX);
 
@@ -401,18 +366,10 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                         recomputeEdgeIndexedKeys = false;
                     }
 
-                    management.commit();
+                    management.setIsSuccess(true);
                 }
             } catch (Exception excp) {
                 LOG.error("getEdgeIndexKeys(): failed to get indexedKeys from graph", excp);
-
-                if (management != null) {
-                    try {
-                        management.rollback();
-                    } catch (Exception e) {
-                        LOG.error("getEdgeIndexKeys(): rollback failed", e);
-                    }
-                }
             }
         }
 
@@ -494,6 +451,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
                     createVertexCompositeIndexWithTypeName(management, propertyClass, propertyKey, uniqueKind == UniqueKind.PER_TYPE_UNIQUE);
                     createVertexCompositeIndexWithSuperTypeName(management, propertyClass, propertyKey);
                 }
+
+                recomputeIndexedKeys = true;
             } else {
                 LOG.warn("Index not created for {}: propertyKey is null", propertyName);
             }
@@ -528,30 +487,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
     }
 
-    public void commit(AtlasGraphManagement management) throws IndexException {
-        try {
-            management.commit();
-
-            recomputeIndexedKeys = true;
-        } catch (Exception e) {
-            LOG.error("Index commit failed", e);
-
-            throw new IndexException("Index commit failed ", e);
-        }
-    }
-
-    public void rollback(AtlasGraphManagement management) throws IndexException {
-        try {
-            management.rollback();
-
-            recomputeIndexedKeys = true;
-        } catch (Exception e) {
-            LOG.error("Index rollback failed ", e);
-
-            throw new IndexException("Index rollback failed ", e);
-        }
-    }
-
     /**
      * Initializes the indices for the graph - create indices for Global AtlasVertex Keys
      */
@@ -563,9 +498,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
      * Initializes the indices for the graph - create indices for Global AtlasVertex and AtlasEdge Keys
      */
     private void initialize(AtlasGraph graph) throws RepositoryException, IndexException {
-        AtlasGraphManagement management = graph.getManagementSystem();
-
-        try {
+        try (AtlasGraphManagement management = graph.getManagementSystem()) {
             LOG.info("Creating indexes for graph.");
 
             if (management.getGraphIndex(VERTEX_INDEX) == null) {
@@ -670,14 +603,15 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createPropertyKey(management, RELATIONSHIPTYPE_LABEL_KEY, String.class, SINGLE);
             createPropertyKey(management, RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, String.class, SINGLE);
 
-            commit(management);
+            management.setIsSuccess(true);
 
             LOG.info("Index creation for global keys complete.");
         } catch (Throwable t) {
             LOG.error("GraphBackedSearchIndexer.initialize() failed", t);
 
-            rollback(management);
             throw new RepositoryException(t);
+        } finally {
+            recomputeIndexedKeys = true;
         }
     }
 
@@ -1091,18 +1025,6 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
     private boolean isIndexApplicable(Class<?> propertyClass, AtlasCardinality cardinality) {
         return !(INDEX_EXCLUSION_CLASSES.contains(propertyClass) || cardinality.isMany());
-    }
-
-    private void attemptRollback(ChangedTypeDefs changedTypeDefs, AtlasGraphManagement management) throws AtlasBaseException {
-        if (null != management) {
-            try {
-                rollback(management);
-            } catch (IndexException e) {
-                LOG.error("Index rollback has failed", e);
-
-                throw new AtlasBaseException(AtlasErrorCode.INDEX_ROLLBACK_FAILED, e, changedTypeDefs.toString());
-            }
-        }
     }
 
     private void updateIndexForTypeDef(AtlasGraphManagement management, AtlasBaseTypeDef typeDef) {
