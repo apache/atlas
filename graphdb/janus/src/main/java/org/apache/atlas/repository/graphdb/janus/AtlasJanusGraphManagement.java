@@ -138,7 +138,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     }
 
     @Override
-    public void close() {
+    public void close() throws Exception {
         if (isSuccess) {
             commit();
         } else {
