@@ -87,7 +87,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     private final AtlasJanusGraph      graph;
     private final JanusGraphManagement management;
     private final Set<String>          newMultProperties = new HashSet<>();
-    private       boolean              isSuccess         = false;
+    private       boolean              isSuccess;
 
     public AtlasJanusGraphManagement(AtlasJanusGraph graph, JanusGraphManagement managementSystem) {
         this.management = managementSystem;
