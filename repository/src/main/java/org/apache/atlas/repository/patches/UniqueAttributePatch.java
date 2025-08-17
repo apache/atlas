@@ -22,7 +22,6 @@ import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.typedef.AtlasStructDef.AtlasAttributeDef;
 import org.apache.atlas.pc.WorkItemManager;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.graph.GraphBackedSearchIndexer.UniqueKind;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
@@ -134,9 +133,9 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
         }
 
         private void createIndexForUniqueAttributes(String typeName, Collection<AtlasAttribute> attributes) {
-            try {
-                AtlasGraphManagement management = getGraph().getManagementSystem();
+            boolean isSuccess = false;
 
+            try (AtlasGraphManagement management = getGraph().getManagementSystem()) {
                 for (AtlasAttribute attribute : attributes) {
                     String uniquePropertyName = attribute.getVertexUniquePropertyName();
 
@@ -160,12 +159,21 @@ public class UniqueAttributePatch extends AtlasPatchHandler {
                             AtlasAttributeDef.IndexType.STRING.equals(attribute.getIndexType()));
                 }
 
-                getIndexer().commit(management);
-                getGraph().commit();
+                management.setIsSuccess(true);
+
+                isSuccess = true;
 
                 LOG.info("Unique attributes: type: {}: Registered!", typeName);
-            } catch (IndexException e) {
+            } catch (Exception e) {
                 LOG.error("Error creating index: type: {}", typeName, e);
+
+                isSuccess = false;
+            } finally {
+                if (isSuccess) {
+                    getGraph().commit();
+                } else {
+                    getGraph().rollback();
+                }
             }
         }
 

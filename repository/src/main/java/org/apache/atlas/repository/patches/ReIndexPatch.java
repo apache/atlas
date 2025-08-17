@@ -26,6 +26,7 @@ import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasElement;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -188,8 +189,10 @@ public class ReIndexPatch extends AtlasPatchHandler {
 
         private void attemptCommit() {
             for (String indexName : indexNames) {
-                try {
-                    this.graph.getManagementSystem().reindex(indexName, list);
+                try (AtlasGraphManagement management = this.graph.getManagementSystem()) {
+                    management.reindex(indexName, list);
+
+                    management.setIsSuccess(true);
                 } catch (IllegalStateException e) {
                     LOG.error("IllegalStateException: Exception", e);
 

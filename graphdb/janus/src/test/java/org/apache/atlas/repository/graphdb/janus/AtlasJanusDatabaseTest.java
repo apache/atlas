@@ -391,21 +391,21 @@ public class AtlasJanusDatabaseTest {
 
             atlasGraph = db.getGraph();
 
-            AtlasGraphManagement mgmt = atlasGraph.getManagementSystem();
+            try (AtlasGraphManagement mgmt = atlasGraph.getManagementSystem()) {
+                // create the index (which defines these properties as being mult
+                // many)
+                for (String propertyName : new String[] {"__superTypeNames", "__traitNames"}) {
+                    AtlasPropertyKey propertyKey = mgmt.getPropertyKey(propertyName);
 
-            // create the index (which defines these properties as being mult
-            // many)
-            for (String propertyName : new String[] {"__superTypeNames", "__traitNames"}) {
-                AtlasPropertyKey propertyKey = mgmt.getPropertyKey(propertyName);
+                    if (propertyKey == null) {
+                        propertyKey = mgmt.makePropertyKey(propertyName, String.class, AtlasCardinality.SET);
 
-                if (propertyKey == null) {
-                    propertyKey = mgmt.makePropertyKey(propertyName, String.class, AtlasCardinality.SET);
-
-                    mgmt.createVertexCompositeIndex(propertyName, false, Collections.singletonList(propertyKey));
+                        mgmt.createVertexCompositeIndex(propertyName, false, Collections.singletonList(propertyKey));
+                    }
                 }
-            }
 
-            mgmt.commit();
+                mgmt.setIsSuccess(true);
+            }
         }
 
         return (AtlasGraph<V, E>) atlasGraph;
