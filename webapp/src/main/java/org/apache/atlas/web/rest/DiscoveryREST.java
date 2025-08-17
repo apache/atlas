@@ -20,22 +20,16 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
-import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
-import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
-import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.model.searchlog.SearchLogSearchParams;
 import org.apache.atlas.model.searchlog.SearchLogSearchResult;
 import org.apache.atlas.model.searchlog.SearchRequestLogData.SearchRequestLogDataBuilder;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.searchlog.SearchLoggingManagement;
-import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -51,26 +45,16 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
 import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.io.IOException;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.Arrays;
 
-import static org.apache.atlas.repository.Constants.NAME;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.Constants.REQUEST_HEADER_HOST;
-import static org.apache.atlas.repository.Constants.REQUEST_HEADER_USER_AGENT;
+import static org.apache.atlas.repository.Constants.*;
 
 /**
  * REST interface for data discovery using dsl or full text search
@@ -224,6 +208,37 @@ public class DiscoveryREST {
                     }
                 }
             }
+
+            // Inject _source filtering: always include header fields + system fields; merge requested attributes
+            java.util.Set<String> sourceFieldSet = new java.util.LinkedHashSet<>();
+            // mandatory header fields
+            sourceFieldSet.add(GUID_PROPERTY_KEY);
+            sourceFieldSet.add(QUALIFIED_NAME);
+            sourceFieldSet.add(NAME);
+            // additional system fields
+            sourceFieldSet.add(TYPENAME_PROPERTY_KEY);
+            sourceFieldSet.add(STATE_PROPERTY_KEY);
+            sourceFieldSet.add(MODIFIED_BY_KEY);
+            sourceFieldSet.add(MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+            sourceFieldSet.add(TIMESTAMP_PROPERTY_KEY);
+            sourceFieldSet.add(CREATED_BY_KEY);
+
+            if (CollectionUtils.isNotEmpty(parameters.getAttributes())) {
+                sourceFieldSet.addAll(parameters.getAttributes());
+            }
+            java.util.List<String> sourceFields = new java.util.ArrayList<>(sourceFieldSet);
+
+            java.util.Map dsl = parameters.getDsl();
+            if (dsl == null) {
+                // If only query string is provided, parse it into a map so we can add _source
+                if (StringUtils.isNotEmpty(parameters.getQuery())) {
+                    dsl = org.apache.atlas.type.AtlasType.fromJson(parameters.getQuery(), java.util.Map.class);
+                } else {
+                    dsl = new java.util.HashMap();
+                }
+            }
+            dsl.put("_source", sourceFields);
+            parameters.setDsl(dsl);
 
             java.util.Map<String, Object> esResponse = discoveryService.directEsIndexSearch(parameters);
             return esResponse.get("hits");
