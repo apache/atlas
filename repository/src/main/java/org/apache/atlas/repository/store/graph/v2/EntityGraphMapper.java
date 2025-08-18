@@ -4026,7 +4026,7 @@ public class EntityGraphMapper {
                 Boolean toExclude = Objects.equals(propagationMode, CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE);
 
                 // The traversal to find out impacted vertices
-                entityRetriever.traverseImpactedVerticesByLevelV2(entityVertex, null, null, impactedVerticeIds, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, null);
+                entityRetriever.traverseImpactedVerticesByLevelV2(entityVertex, null, null, impactedVerticeIds, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, null, null);
 
                 if (parentEntityGuid != null && !entityGuid.equals(parentEntityGuid)) {
                     impactedVerticeIds.add(entityVertex.getIdForDisplay());
@@ -4096,8 +4096,11 @@ public class EntityGraphMapper {
                             Boolean toExclude = Objects.equals(propagationMode, CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE);
                             impactedVertexIds = new HashSet<>();
                             Set<String> vertexIdsToAddClassification = new HashSet<>();
-                            entityRetriever.traverseImpactedVerticesByLevelV2(toVertex, null, null, impactedVertexIds, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, vertexIdsToAddClassification);
-                            impactedVertexIds.remove(fromVertex.getIdForDisplay());
+                            Set<String> verticesToExcludeDuringTraversal = new HashSet<>(
+                                    Arrays.asList(fromVertex.getIdForDisplay(), sourceVertex.getIdForDisplay())
+                            );
+                            entityRetriever.traverseImpactedVerticesByLevelV2(toVertex, null, null, impactedVertexIds, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, vertexIdsToAddClassification, verticesToExcludeDuringTraversal);
+
                             impactedVertexIds.addAll(vertexIdsToAddClassification);
                             impactedVertexIdsMap.put(propagationMode, impactedVertexIds);
                         } else {
@@ -6446,7 +6449,7 @@ public class EntityGraphMapper {
         String propagationMode = entityRetriever.determinePropagationMode(sourceTag.getRestrictPropagationThroughLineage(), sourceTag.getRestrictPropagationThroughHierarchy());
         boolean toExclude = Objects.equals(propagationMode, CLASSIFICATION_PROPAGATION_MODE_RESTRICT_LINEAGE);
         Set<String> impactedVertices = new HashSet<>();
-        entityRetriever.traverseImpactedVerticesByLevelV2(sourceVertex, null, null, impactedVertices, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, null);
+        entityRetriever.traverseImpactedVerticesByLevelV2(sourceVertex, null, null, impactedVertices, CLASSIFICATION_PROPAGATION_MODE_LABELS_MAP.get(propagationMode), toExclude, null, null);
         transactionInterceptHelper.intercept();
         return impactedVertices;
     }

@@ -945,18 +945,22 @@ public class EntityGraphRetriever {
     }
 
     public void traverseImpactedVerticesByLevelV2(final AtlasVertex entityVertexStart, final String relationshipGuidToExclude,
-                                                 final String classificationId, final Set<String> result, List<String> edgeLabelsToCheck,Boolean toExclude, Set<String> verticesWithClassification) {
+                                                 final String classificationId, final Set<String> result, List<String> edgeLabelsToCheck,Boolean toExclude, Set<String> verticesWithClassification, Set<String> verticesToExcludeFromTraversal) {
         AtlasPerfMetrics.MetricRecorder metricRecorder                          = RequestContext.get().startMetricRecord("traverseImpactedVerticesByLevel");
         Set<String>                 visitedVerticesIds                          = new HashSet<>();
         Set<String>                 verticesAtCurrentLevel                      = new HashSet<>();
         Set<String>                 traversedVerticesIds                        = new HashSet<>();
-        Set<String>                 verticesToPropagateTo               = new HashSet<>();
+        Set<String>                 verticesToPropagateTo                       = new HashSet<>();
         RequestContext              requestContext                              = RequestContext.get();
         boolean                     storeVerticesWithoutClassification          = verticesWithClassification == null ? false : true;
 
         //Add Source vertex to level 1
         if (entityVertexStart != null) {
             verticesAtCurrentLevel.add(entityVertexStart.getIdForDisplay());
+        }
+
+        if (CollectionUtils.isNotEmpty(verticesToExcludeFromTraversal)) {
+            visitedVerticesIds.addAll(verticesToExcludeFromTraversal);
         }
 
         /*
