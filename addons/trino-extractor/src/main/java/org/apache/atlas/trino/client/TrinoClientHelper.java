@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -45,9 +45,9 @@ public class TrinoClientHelper {
         Map<String, String> catalogs = new HashMap<>();
 
         try (Connection connection = getTrinoConnection();
-             Statement  stmt       = connection.createStatement()) {
-            String     query = "SELECT catalog_name, connector_name FROM system.metadata.catalogs";
-            ResultSet  rs    = stmt.executeQuery(query);
+                Statement stmt = connection.createStatement()) {
+            String    query = "SELECT catalog_name, connector_name FROM system.metadata.catalogs";
+            ResultSet rs    = stmt.executeQuery(query);
 
             while (rs.next()) {
                 catalogs.put(rs.getString("catalog_name"), rs.getString("connector_name"));
@@ -60,10 +60,10 @@ public class TrinoClientHelper {
     }
 
     public List<String> getTrinoSchemas(String catalog, String schemaToImport) throws SQLException {
-        List<String>  schemas    = new ArrayList<>();
+        List<String> schemas = new ArrayList<>();
 
         try (Connection connection = getTrinoConnection();
-             Statement  stmt       = connection.createStatement()) {
+                Statement stmt = connection.createStatement()) {
             StringBuilder query = new StringBuilder();
 
             query.append("SELECT schema_name FROM ").append(catalog).append(".information_schema.schemata");
@@ -83,10 +83,10 @@ public class TrinoClientHelper {
     }
 
     public Map<String, Map<String, Object>> getTrinoTables(String catalog, String schema, String tableToImport) throws SQLException {
-        Map<String, Map<String, Object>> tables     = new HashMap<>();
+        Map<String, Map<String, Object>> tables = new HashMap<>();
 
         try (Connection connection = getTrinoConnection();
-             Statement  stmt       = connection.createStatement()) {
+                Statement stmt = connection.createStatement()) {
             StringBuilder query = new StringBuilder();
 
             query.append("SELECT table_name, table_type FROM ").append(catalog).append(".information_schema.tables WHERE table_schema = '").append(schema).append("'");
@@ -114,7 +114,7 @@ public class TrinoClientHelper {
         Map<String, Map<String, Object>> columns = new HashMap<>();
 
         try (Connection connection = getTrinoConnection();
-             Statement  stmt       = connection.createStatement()) {
+                Statement stmt = connection.createStatement()) {
             StringBuilder query = new StringBuilder();
 
             query.append("SELECT column_name, ordinal_position, column_default, is_nullable, data_type FROM ").append(catalog).append(".information_schema.columns WHERE table_schema = '").append(schema).append("' AND table_name = '").append(table).append("'");

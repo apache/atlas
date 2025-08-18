@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -48,8 +48,6 @@ import java.util.Set;
 import static org.apache.atlas.type.AtlasTypeUtil.ATTRIBUTE_QUALIFIED_NAME;
 
 public class AtlasClientHelper {
-    private static final Logger LOG = LoggerFactory.getLogger(AtlasClientHelper.class);
-
     public static final String TRINO_INSTANCE                   = "trino_instance";
     public static final String TRINO_CATALOG                    = "trino_catalog";
     public static final String TRINO_SCHEMA                     = "trino_schema";
@@ -61,7 +59,7 @@ public class AtlasClientHelper {
     public static final String QUALIFIED_NAME_ATTRIBUTE         = "qualifiedName";
     public static final String NAME_ATTRIBUTE                   = "name";
     public static final int    DEFAULT_PAGE_LIMIT               = 10000;
-
+    private static final Logger LOG = LoggerFactory.getLogger(AtlasClientHelper.class);
     private static final String DEFAULT_ATLAS_URL                        = "http://localhost:21000/";
     private static final String APPLICATION_PROPERTY_ATLAS_ENDPOINT      = "atlas.rest.address";
     private static final String TRINO_CATALOG_CONNECTOR_TYPE_ATTRIBUTE   = "connectorType";
@@ -122,7 +120,7 @@ public class AtlasClientHelper {
         return entities;
     }
 
-    public AtlasEntityHeader getTrinoInstance(String namespace)  {
+    public AtlasEntityHeader getTrinoInstance(String namespace) {
         try {
             return atlasClientV2.getEntityHeaderByAttribute(TRINO_INSTANCE, Collections.singletonMap(QUALIFIED_NAME_ATTRIBUTE, namespace));
         } catch (AtlasServiceException e) {
@@ -268,7 +266,6 @@ public class AtlasClientHelper {
         }
     }
 
-
     private synchronized AtlasClientV2 getAtlasClientV2Instance(Configuration atlasConf) throws IOException {
         if (atlasClientV2 == null) {
             String[] atlasEndpoint = new String[] {DEFAULT_ATLAS_URL};
@@ -319,7 +316,7 @@ public class AtlasClientHelper {
         return entities;
     }
 
-    private AtlasEntityWithExtInfo toTableEntity(Catalog catalog, String schema, String table, Map<String, Object> tableMetadata, Map<String, Map<String, Object>> trinoColumns, AtlasEntity schemaEntity, AtlasEntityWithExtInfo tableEntityExt)  {
+    private AtlasEntityWithExtInfo toTableEntity(Catalog catalog, String schema, String table, Map<String, Object> tableMetadata, Map<String, Map<String, Object>> trinoColumns, AtlasEntity schemaEntity, AtlasEntityWithExtInfo tableEntityExt) {
         if (tableEntityExt == null) {
             tableEntityExt = new AtlasEntityWithExtInfo(new AtlasEntity(TRINO_TABLE));
         }

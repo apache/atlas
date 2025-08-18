@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -28,8 +28,6 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 
 public class HiveEntityConnector extends AtlasEntityConnector {
-    private static final Logger LOG = LoggerFactory.getLogger(HiveEntityConnector.class);
-
     public static final String HIVE_DB                               = "hive_db";
     public static final String HIVE_TABLE                            = "hive_table";
     public static final String HIVE_COLUMN                           = "hive_column";
@@ -39,6 +37,7 @@ public class HiveEntityConnector extends AtlasEntityConnector {
     public static final String TRINO_SCHEMA_HIVE_DB_ATTRIBUTE        = "hive_db";
     public static final String TRINO_TABLE_HIVE_TABLE_ATTRIBUTE      = "hive_table";
     public static final String TRINO_COLUMN_HIVE_COLUMN_ATTRIBUTE    = "hive_column";
+    private static final Logger LOG = LoggerFactory.getLogger(HiveEntityConnector.class);
 
     @Override
     public void connectTrinoCatalog(AtlasClientHelper atlasClient, String instanceName, String catalogName, AtlasEntity entity, AtlasEntityWithExtInfo entityWithExtInfo) {

@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -21,7 +21,6 @@ import org.apache.atlas.AtlasServiceException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntityWithExtInfo;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
-import org.apache.atlas.trino.client.AtlasClientHelper;
 import org.apache.atlas.trino.model.Catalog;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -41,12 +40,10 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class ExtractorService {
+    public static final int    THREAD_POOL_SIZE          = 5;
+    public static final int    CATALOG_EXECUTION_TIMEOUT = 60;
+    public static final String TRINO_NAME_ATTRIBUTE      = "name";
     private static final Logger LOG = LoggerFactory.getLogger(ExtractorService.class);
-
-    public static final  int    THREAD_POOL_SIZE         = 5;
-    public static final  int    CATALOG_EXECUTION_TIMEOUT = 60;
-    public static final  String TRINO_NAME_ATTRIBUTE = "name";
-
     private static final String TRINO_CATALOG_REGISTERED          = "atlas.trino.catalogs.registered";
     private static final String TRINO_CATALOG_HOOK_ENABLED_PREFIX = "atlas.trino.catalog.hook.enabled.";
     private static final String TRINO_CATALOG_HOOK_ENABLED_SUFFIX = ".namespace";
@@ -171,7 +168,7 @@ public class ExtractorService {
         }
     }
 
-    private void processTables(ExtractorContext context, Catalog catalog, String schemaName, AtlasEntity schemaEntity,  Map<String, Map<String, Object>> trinoTables) {
+    private void processTables(ExtractorContext context, Catalog catalog, String schemaName, AtlasEntity schemaEntity, Map<String, Map<String, Object>> trinoTables) {
         for (String trinoTableName : trinoTables.keySet()) {
             LOG.info("Started extracting table: {}", trinoTableName);
 

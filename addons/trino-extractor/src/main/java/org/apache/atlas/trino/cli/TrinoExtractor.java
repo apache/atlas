@@ -104,8 +104,8 @@ public class TrinoExtractor {
                 } else {
                     LOG.info("Scheduling extraction for cron expression: {}", cronExpression);
 
-                    JobDetail job     = JobBuilder.newJob(MetadataJob.class).withIdentity("metadataJob", "group1").build();
-                    Trigger   trigger = TriggerBuilder.newTrigger()
+                    JobDetail job = JobBuilder.newJob(MetadataJob.class).withIdentity("metadataJob", "group1").build();
+                    Trigger trigger = TriggerBuilder.newTrigger()
                             .withSchedule(CronScheduleBuilder.cronSchedule(cronExpression)).startNow()
                             .build();
 
@@ -158,7 +158,7 @@ public class TrinoExtractor {
         Options acceptedCliOptions = prepareCommandLineOptions();
 
         try {
-            CommandLine cmd = new BasicParser().parse(acceptedCliOptions, args, true);
+            CommandLine  cmd              = new BasicParser().parse(acceptedCliOptions, args, true);
             List<String> argsNotProcessed = cmd.getArgList();
 
             if (argsNotProcessed != null && !argsNotProcessed.isEmpty()) {

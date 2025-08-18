@@ -38,5 +38,4 @@ public class TrinoExtractorIT {
     Rename catalog
     Rename schema
     Tag propagated*/
-
 }
