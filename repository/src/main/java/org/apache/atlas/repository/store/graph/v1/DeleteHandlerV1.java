@@ -1207,21 +1207,30 @@ public abstract class DeleteHandlerV1 {
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 
             if (CollectionUtils.isNotEmpty(RequestContext.get().getDeletedEdgesIds())) {
-                // Create refresh propagation task only if SOFT deleted edges
-                // For HARD deleted edges, HardDeleteHandlerV1.deleteEdge calls createAndQueueClassificationRefreshPropagationTask
-                tags.stream()
-                        .filter(Tag::isPropagated)
-                        .map(t -> TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson()))
-                        .forEach(t -> taskManagement.createTaskV2(CLASSIFICATION_REFRESH_PROPAGATION,
-                                        RequestContext.getCurrentUser(),
-                                        new HashMap<>() {{
-                                            put(PARAM_ENTITY_GUID, t.getEntityGuid());
-                                            put(PARAM_CLASSIFICATION_NAME, t.getTypeName());
-                                        }},
-                                        t.getTypeName(),
-                                        t.getEntityGuid()
-                                )
-                        );
+                for (Tag tag: tags) {
+                    if (!tag.isPropagated()) {
+                        continue;
+                    }
+                    String entityGuid = TagDAOCassandraImpl.toAtlasClassification(tag.getTagMetaJson()).getEntityGuid();
+                    String tagTypeName = tag.getTagTypeName();
+
+                    if (skipClassificationTaskCreationV2(entityGuid, tagTypeName)) {
+                        LOG.info("Task is already scheduled for tag:entity pair {}:{}, no need to schedule task", tagTypeName, entityGuid);
+                        continue;
+                    }
+
+                    // Create refresh propagation task only if SOFT deleted edges
+                    // For HARD deleted edges, HardDeleteHandlerV1.deleteEdge calls createAndQueueClassificationRefreshPropagationTask
+                    taskManagement.createTaskV2(CLASSIFICATION_REFRESH_PROPAGATION,
+                            RequestContext.getCurrentUser(),
+                            new HashMap<>() {{
+                                put(PARAM_ENTITY_GUID, entityGuid);
+                                put(PARAM_CLASSIFICATION_NAME, tagTypeName);
+                            }},
+                            tagTypeName,
+                            entityGuid
+                    );
+                }
             }
 
         } catch (AtlasBaseException e) {

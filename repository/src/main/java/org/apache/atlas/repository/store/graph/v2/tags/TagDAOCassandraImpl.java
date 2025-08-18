@@ -778,7 +778,12 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     }
 
     public static AtlasClassification toAtlasClassification(Map<String, Object> tagMetaJsonMap) {
-        return objectMapper.convertValue(tagMetaJsonMap, AtlasClassification.class);
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("dao.toAtlasClassification");
+        try {
+            return objectMapper.convertValue(tagMetaJsonMap, AtlasClassification.class);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
     }
 
     /**
