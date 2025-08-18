@@ -28,11 +28,9 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
-import static org.apache.atlas.model.instance.AtlasEntity.KEY_STATUS;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
-import static org.apache.atlas.v1.model.instance.Id.EntityState.ACTIVE;
 import static org.apache.atlas.v1.model.instance.Id.EntityState.DELETED;
 
 public class DataProductPreProcessor extends AbstractDomainPreProcessor {
@@ -123,7 +121,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         if (currentEntityState.equals(DELETED.name()) && currentDaapStatus.equals(DAAP_ARCHIVED_STATUS)) {
             AtlasEntity.Status status = entity.getStatus();
 
-            if (status == null || !entity.getStatus().equals(AtlasEntity.Status.ACTIVE)) {
+            if (status == null || !AtlasEntity.Status.ACTIVE.equals(status)) {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot update DataProduct that is Archived!");
             }
         }
