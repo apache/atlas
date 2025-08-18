@@ -55,6 +55,7 @@ import java.util.Set;
 import java.util.Arrays;
 
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.web.filters.AuditFilter.X_ATLAN_CLIENT_ORIGIN;
 
 /**
  * REST interface for data discovery using dsl or full text search
@@ -80,7 +81,6 @@ public class DiscoveryREST {
     private static final String INDEXSEARCH_TAG_NAME = "indexsearch";
     private static final Set<String> TRACKING_UTM_TAGS = new HashSet<>(Arrays.asList("ui_main_list", "ui_popup_searchbar"));
     private static final String UTM_TAG_FROM_PRODUCT = "project_webapp";
-
     @Inject
     public DiscoveryREST(AtlasTypeRegistry typeRegistry, AtlasDiscoveryService discoveryService,
                          SearchLoggingManagement loggerManagement, Configuration configuration) {
@@ -189,9 +189,17 @@ public class DiscoveryREST {
     @Timed
     public Object esSearch(@Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
+        long startTime = System.currentTimeMillis();
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.esSearch(" + parameters + ")");
+            }
+
+            // Validate required origin header
+            String clientOrigin = servletRequest.getHeader(X_ATLAN_CLIENT_ORIGIN);
+            if (StringUtils.isEmpty(clientOrigin)) {
+                LOG.error("Required header {} is missing or empty", X_ATLAN_CLIENT_ORIGIN);
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Required header x-atlan-client-origin is missing or empty");
             }
 
             if (StringUtils.isEmpty(parameters.getQuery())) {
@@ -241,6 +249,11 @@ public class DiscoveryREST {
             parameters.setDsl(dsl);
 
             java.util.Map<String, Object> esResponse = discoveryService.directEsIndexSearch(parameters);
+
+            long elapsed = System.currentTimeMillis() - startTime;
+            if (elapsed > AtlasConfiguration.SEARCH_SLOW_QUERY_THRESHOLD_MS.getLong()) {
+                PERF_LOG.info("slow esSearch: {} ms, query={}", elapsed, parameters.getQuery());
+            }
             return esResponse.get("hits");
         } finally {
             AtlasPerfTracer.log(perf);
@@ -255,9 +268,17 @@ public class DiscoveryREST {
     @Timed
     public java.util.Map<String, Object> indexSearchCount(@Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
+        long startTime = System.currentTimeMillis();
         try {
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearchCount(" + parameters + ")");
+            }
+
+            // Validate required origin header
+            String clientOrigin = servletRequest.getHeader(X_ATLAN_CLIENT_ORIGIN);
+            if (StringUtils.isEmpty(clientOrigin)) {
+                LOG.error("Required header {} is missing or empty", X_ATLAN_CLIENT_ORIGIN);
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Required header x-atlan-client-origin is missing or empty");
             }
 
             if (StringUtils.isEmpty(parameters.getQuery())) {
@@ -267,6 +288,11 @@ public class DiscoveryREST {
             Long count = discoveryService.directCountIndexSearch(parameters);
             java.util.Map<String, Object> response = new java.util.HashMap<>();
             response.put("count", count);
+
+            long elapsed = System.currentTimeMillis() - startTime;
+            if (elapsed > AtlasConfiguration.SEARCH_SLOW_QUERY_THRESHOLD_MS.getLong()) {
+                PERF_LOG.info("slow indexSearchCount: {} ms, query={}", elapsed, parameters.getQuery());
+            }
             return response;
         } finally {
             AtlasPerfTracer.log(perf);

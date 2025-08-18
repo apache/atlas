@@ -140,6 +140,9 @@ public enum AtlasConfiguration {
 
     ATLAS_UD_RELATIONSHIPS_MAX_COUNT("atlas.ud.relationship.max.count", 100),
 
+    // Slow query logging threshold for search endpoints (ms)
+    SEARCH_SLOW_QUERY_THRESHOLD_MS("atlas.search.slow.query.threshold.ms", 1000),
+
     /***
      * OTEL Configuration
      */
