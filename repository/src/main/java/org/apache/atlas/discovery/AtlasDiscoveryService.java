@@ -34,6 +34,13 @@ import java.util.List;
 
 public interface AtlasDiscoveryService {
     /**
+     * Search for entities matching the search criteria
+     * @param searchParameters Search criteria
+     * @return Matching entities
+     * @throws AtlasBaseException
+     */
+    AtlasSearchResult searchWithParameters(SearchParameters searchParameters) throws AtlasBaseException;
+    /**
      * Search for direct ES query
      * @param searchParams Search criteria
      * @return Matching entities

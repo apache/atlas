@@ -109,6 +109,64 @@ public class DiscoveryREST {
     }
 
     /**
+     * Retrieve data for the specified fulltext query
+     *
+     * @param query          Fulltext query
+     * @param typeName       limit the result to only entities of specified type or its sub-types
+     * @param classification limit the result to only entities tagged with the given classification or or its sub-types
+     * @param limit          limit the result set to only include the specified number of entries
+     * @param offset         start offset of the result set (useful for pagination)
+     * @return Search results
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful FullText lookup with some results, might return an empty list if execution succeeded
+     * without any results
+     * @HTTP 400 Invalid fulltext or query parameters
+     */
+    @GET
+    @Path("/basic")
+    @Timed
+    public AtlasSearchResult searchUsingBasic(@QueryParam("query")                  String  query,
+                                              @QueryParam("typeName")               String  typeName,
+                                              @QueryParam("classification")         String  classification,
+                                              @QueryParam("sortBy")                 String    sortByAttribute,
+                                              @QueryParam("sortOrder")              SortOrder sortOrder,
+                                              @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
+                                              @QueryParam("limit")                  int     limit,
+                                              @QueryParam("offset")                 int     offset,
+                                              @QueryParam("marker")                 String  marker) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("typeName", typeName);
+        Servlets.validateQueryParamLength("classification", classification);
+        Servlets.validateQueryParamLength("sortBy", sortByAttribute);
+        if (StringUtils.isNotEmpty(query) && query.length() > maxFullTextQueryLength) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
+        }
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingBasic(" + query + "," +
+                        typeName + "," + classification + "," + limit + "," + offset + ")");
+            }
+
+            SearchParameters searchParameters = new SearchParameters();
+            searchParameters.setTypeName(typeName);
+            searchParameters.setClassification(classification);
+            searchParameters.setQuery(query);
+            searchParameters.setExcludeDeletedEntities(excludeDeletedEntities);
+            searchParameters.setLimit(limit);
+            searchParameters.setOffset(offset);
+            searchParameters.setMarker(marker);
+            searchParameters.setSortBy(sortByAttribute);
+            searchParameters.setSortOrder(sortOrder);
+
+            return discoveryService.searchWithParameters(searchParameters);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
      * Index based search for query direct on Elasticsearch
      *
      * @param parameters Index Search parameters @IndexSearchParams.java
