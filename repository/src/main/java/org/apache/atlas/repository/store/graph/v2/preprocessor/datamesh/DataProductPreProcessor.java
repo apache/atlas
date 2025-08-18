@@ -28,9 +28,12 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
+import static org.apache.atlas.model.instance.AtlasEntity.KEY_STATUS;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
+import static org.apache.atlas.v1.model.instance.Id.EntityState.ACTIVE;
+import static org.apache.atlas.v1.model.instance.Id.EntityState.DELETED;
 
 public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DataProductPreProcessor.class);
@@ -114,7 +117,16 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private void processUpdateProduct(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateProduct");
 
-        PreProcessorUtils.validateProductStatus(vertex);
+        String currentEntityState = vertex.getProperty(STATE_PROPERTY_KEY, String.class);
+        String currentDaapStatus = vertex.getProperty(DAAP_STATUS_ATTR, String.class);
+
+        if (currentEntityState.equals(DELETED.name()) && currentDaapStatus.equals(DAAP_ARCHIVED_STATUS)) {
+            AtlasEntity.Status status = entity.getStatus();
+
+            if (status == null || !entity.getStatus().equals(AtlasEntity.Status.ACTIVE)) {
+                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot update DataProduct that is Archived!");
+            }
+        }
 
         entity.removeAttribute(OUTPUT_PORT_GUIDS_ATTR);
         entity.removeAttribute(INPUT_PORT_GUIDS_ATTR);
