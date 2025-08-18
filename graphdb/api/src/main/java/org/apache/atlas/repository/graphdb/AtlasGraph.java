@@ -118,6 +118,14 @@ public interface AtlasGraph<V, E> {
      */
     AtlasVertex<V, E> getVertex(String vertexId);
 
+
+    /**
+     * Utility method to get AltasVertex in bulk
+     * @param vertexIds
+     * @return
+     */
+    Set<AtlasVertex> getVertices(String... vertexIds);
+
     /**
      * Gets the names of the indexes on edges
      * type.
