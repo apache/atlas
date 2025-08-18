@@ -201,9 +201,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     public Map<String, Object> directEsIndexSearch(SearchParams searchParams) throws AtlasBaseException {
         IndexSearchParams params = (IndexSearchParams) searchParams;
-        RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
-        RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
-        RequestContext.get().setIncludeRelationshipAttributes(params.isIncludeRelationshipAttributes());
         String clientOrigin = RequestContext.get().getClientOrigin();
 
         try {
@@ -230,9 +227,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     @Override
     public Long directCountIndexSearch(SearchParams searchParams) throws AtlasBaseException {
         IndexSearchParams params = (IndexSearchParams) searchParams;
-        RequestContext.get().setRelationAttrsForSearch(params.getRelationAttributes());
-        RequestContext.get().setAllowDeletedRelationsIndexsearch(params.isAllowDeletedRelations());
-        RequestContext.get().setIncludeRelationshipAttributes(params.isIncludeRelationshipAttributes());
         String clientOrigin = RequestContext.get().getClientOrigin();
 
         try {
