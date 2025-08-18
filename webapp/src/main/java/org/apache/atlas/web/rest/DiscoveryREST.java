@@ -167,6 +167,51 @@ public class DiscoveryREST {
     }
 
     /**
+     * Attribute based search for entities satisfying the search parameters
+     *
+     * @param parameters Search parameters
+     * @return Atlas search result
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful search
+     * @HTTP 400 Tag/Entity doesn't exist or Tag/entity filter is present without tag/type name
+     */
+    @Path("basic")
+    @POST
+    @Timed
+    public AtlasSearchResult searchWithParameters(SearchParameters parameters) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchWithParameters(" + parameters + ")");
+            }
+
+            if (parameters.getLimit() < 0 || parameters.getOffset() < 0) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Limit/offset should be non-negative");
+            }
+
+            if (StringUtils.isEmpty(parameters.getTypeName()) && !isEmpty(parameters.getEntityFilters())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "EntityFilters specified without Type name");
+            }
+
+            if (StringUtils.isEmpty(parameters.getClassification()) && !isEmpty(parameters.getTagFilters())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "TagFilters specified without tag name");
+            }
+
+            if (StringUtils.isEmpty(parameters.getTypeName()) && StringUtils.isEmpty(parameters.getClassification()) &&
+                StringUtils.isEmpty(parameters.getQuery()) && StringUtils.isEmpty(parameters.getTermName())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_SEARCH_PARAMS);
+            }
+
+            validateSearchParameters(parameters);
+
+            return discoveryService.searchWithParameters(parameters);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
      * Index based search for query direct on Elasticsearch
      *
      * @param parameters Index Search parameters @IndexSearchParams.java
@@ -321,6 +366,24 @@ public class DiscoveryREST {
         }
 
         return result;
+    }
+
+
+    private boolean isEmpty(SearchParameters.FilterCriteria filterCriteria) {
+        return filterCriteria == null ||
+                (StringUtils.isEmpty(filterCriteria.getAttributeName()) && CollectionUtils.isEmpty(filterCriteria.getCriterion()));
+    }
+
+    private void validateSearchParameters(SearchParameters parameters) throws AtlasBaseException {
+        if (parameters != null) {
+            Servlets.validateQueryParamLength("typeName", parameters.getTypeName());
+            Servlets.validateQueryParamLength("classification", parameters.getClassification());
+            Servlets.validateQueryParamLength("sortBy", parameters.getSortBy());
+            if (StringUtils.isNotEmpty(parameters.getQuery()) && parameters.getQuery().length() > maxFullTextQueryLength) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
+            }
+
+        }
     }
 
     private void logSearchLog(IndexSearchParams parameters, AtlasSearchResult result,
