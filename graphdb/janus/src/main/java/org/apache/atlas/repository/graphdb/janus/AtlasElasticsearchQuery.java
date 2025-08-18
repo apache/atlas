@@ -67,7 +67,7 @@ import static org.apache.atlas.AtlasErrorCode.INDEX_NOT_FOUND;
 public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasElasticsearchQuery.class);
 
-    private static final String CLIENT_ORIGIN_PRODUCT = "product_webapp";
+    public static final String CLIENT_ORIGIN_PRODUCT = "product_webapp";
 
     private AtlasJanusGraph graph;
     private RestHighLevelClient esClient;

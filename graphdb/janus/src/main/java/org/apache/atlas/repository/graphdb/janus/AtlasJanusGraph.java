@@ -426,6 +426,21 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
     @Override
+    public Set<AtlasVertex> getVertices(String... vertexIds) {
+        Set<AtlasVertex> result = new HashSet<>();
+        Iterator<Vertex> it     = getGraph().vertices(vertexIds);
+        while( it.hasNext()) {
+            Vertex vertex = it.next();
+            if (vertex == null) {
+                LOG.warn("Vertex with id {} not found", vertexIds);
+            } else {
+                result.add(GraphDbObjectFactory.createVertex(this, vertex));
+            }
+        }
+        return result;
+    }
+
+    @Override
     public Iterable<AtlasVertex<AtlasJanusVertex, AtlasJanusEdge>> getVertices(String key, Object value) {
         AtlasGraphQuery<AtlasJanusVertex, AtlasJanusEdge> query = query();
 

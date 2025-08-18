@@ -1,0 +1,158 @@
+{
+    "size": 400,
+    "sort": [
+      {
+        "__timestamp.date": {
+          "format": "epoch_second",
+          "order": "desc"
+        }
+      }
+    ],
+    "query": {
+      "bool": {
+        "filter": [
+          {
+            "term": {
+              "__state": "ACTIVE"
+            }
+          },
+          {
+            "bool": {
+              "must_not": [
+                {
+                  "terms": {
+                    "__typeName.keyword": [
+                      "Procedure",
+                      "DbtColumnProcess",
+                      "BIProcess",
+                      "MatillionComponent",
+                      "ModelVersion",
+                      "alpha_DQRule",
+                      "FlowDatasetOperation",
+                      "FlowFieldOperation",
+                      "SnowflakeTag",
+                      "DbtTag",
+                      "BigqueryTag",
+                      "MCIncident"
+                    ]
+                  }
+                },
+                {
+                  "term": {
+                    "isPartial": "true"
+                  }
+                }
+              ],
+              "should": [
+                {
+                  "terms": {
+                    "__superTypeNames.keyword": [
+                      "AI",
+                      "SQL",
+                      "BI",
+                      "SaaS",
+                      "ObjectStore",
+                      "EventStore",
+                      "DataQuality",
+                      "Dbt",
+                      "API",
+                      "Airflow",
+                      "Spark",
+                      "MWAA",
+                      "GCP_Cloud_Composer",
+                      "Astronomer",
+                      "SchemaRegistry",
+                      "Matillion",
+                      "NoSQL",
+                      "MultiDimensionalDataset",
+                      "ERD",
+                      "DataModeling",
+                      "ADF",
+                      "model",
+                      "Fivetran",
+                      "App",
+                      "Custom",
+                      "SAP",
+                      "Alteryx",
+                      "Flow"
+                    ]
+                  }
+                },
+                {
+                  "terms": {
+                    "__typeName.keyword": [
+                      "Query",
+                      "Collection",
+                      "AtlasGlossary",
+                      "AtlasGlossaryCategory",
+                      "AtlasGlossaryTerm",
+                      "Connection",
+                      "File",
+                      "DbtProcess",
+                      "Process"
+                    ]
+                  }
+                }
+              ],
+              "minimum_should_match": 1
+            }
+          }
+        ]
+      }
+    },
+    "post_filter": {
+      "bool": {
+        "filter": [
+          {
+            "terms": {
+              "__typeName.keyword": [
+                "Connection"
+              ]
+            }
+          }
+        ]
+      }
+    },
+    "aggs": {
+      "group_by_connection": {
+        "terms": {
+          "field": "connectionQualifiedName",
+          "size": 400
+        }
+      },
+      "group_by_popularity": {
+        "filter": {
+          "bool": {
+            "must": [
+              {
+                "range": {
+                  "popularityScore": {
+                    "gt": 1.1754943508222875e-38
+                  }
+                }
+              }
+            ]
+          }
+        },
+        "aggs": {
+          "percentile_division": {
+            "percentiles": {
+              "field": "popularityScore",
+              "percents": [
+                0,
+                25,
+                50,
+                75
+              ]
+            }
+          }
+        }
+      },
+      "group_by_typeName": {
+        "terms": {
+          "field": "__typeName.keyword",
+          "size": 400
+        }
+      }
+    }
+  }

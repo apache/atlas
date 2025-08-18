@@ -1720,10 +1720,6 @@ public final class GraphHelper {
             }
             return (List) instanceVertex.getMultiValuedProperty(propertyName, elementType.getClass());
         } else {
-            if (vertexEdgePropertiesCache != null) {
-                List values =  vertexEdgePropertiesCache.getMultiValuedProperties(instanceVertex.getIdForDisplay(), propertyName);
-                return values;
-            }
             return (List) instanceVertex.getListProperty(propertyName);
         }
     }

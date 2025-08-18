@@ -2,6 +2,7 @@ package org.apache.atlas.repository;
 
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.type.AtlasStructType;
+import org.apache.commons.collections.MapUtils;
 import org.javatuples.Pair;
 
 import java.util.*;
@@ -77,7 +78,7 @@ public class VertexEdgePropertiesCache {
         if (vertexProperties == null && edgeProperties == null) {
             return null;
         }
-        if(vertexProperties != null) {
+        if(MapUtils.isNotEmpty(vertexProperties)) {
             List<?> values = vertexProperties.getOrDefault(propertyName, null);
             if (values == null || values.isEmpty()) {
                 return null;
@@ -133,6 +134,7 @@ public class VertexEdgePropertiesCache {
 
         // Element doesn't exist, add it
         targetElements.add(targetElement);
+        addEdgeProperties(targetElement.getEdgeId(), targetElement.getProperties());
         return true;
     }
 

@@ -1,0 +1,53 @@
+{
+  "size": 0,
+  "query": {
+    "bool": {
+      "filter": [
+        {
+          "terms": {
+            "__typeName": ["DataSet", "Table"]
+          }
+        },
+        {
+          "term": {
+            "__state": "ACTIVE"
+          }
+        }
+      ]
+    }
+  },
+  "aggs": {
+    "types": {
+      "terms": {
+        "field": "__typeName.keyword",
+        "size": 10
+      },
+      "aggs": {
+        "status": {
+          "terms": {
+            "field": "__state.keyword",
+            "size": 5
+          }
+        }
+      }
+    },
+    "owners": {
+      "terms": {
+        "field": "owner.keyword",
+        "size": 20
+      }
+    },
+    "created_histogram": {
+      "date_histogram": {
+        "field": "createTime",
+        "calendar_interval": "month"
+      }
+    },
+    "classification_counts": {
+      "terms": {
+        "field": "__traitNames.keyword",
+        "size": 15
+      }
+    }
+  }
+} 
