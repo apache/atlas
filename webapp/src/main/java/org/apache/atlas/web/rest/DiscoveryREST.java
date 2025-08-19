@@ -289,76 +289,67 @@ public class DiscoveryREST {
     @POST
     @Timed
     public Object esSearch(@Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
-        AtlasPerfTracer perf = null;
         long startTime = System.currentTimeMillis();
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.esSearch(" + parameters + ")");
-            }
+        // Validate required origin header
+        String clientOrigin = servletRequest.getHeader(X_ATLAN_CLIENT_ORIGIN);
+        if (StringUtils.isEmpty(clientOrigin)) {
+            LOG.error("Required header {} is missing or empty", X_ATLAN_CLIENT_ORIGIN);
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Required header x-atlan-client-origin is missing or empty");
+        }
 
-            // Validate required origin header
-            String clientOrigin = servletRequest.getHeader(X_ATLAN_CLIENT_ORIGIN);
-            if (StringUtils.isEmpty(clientOrigin)) {
-                LOG.error("Required header {} is missing or empty", X_ATLAN_CLIENT_ORIGIN);
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Required header x-atlan-client-origin is missing or empty");
-            }
+        if (StringUtils.isEmpty(parameters.getQuery())) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
+        }
 
-            if (StringUtils.isEmpty(parameters.getQuery())) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
+        if (AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_API_LIMIT.getBoolean() && parameters.getQuerySize() > AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong()) {
+            if(CollectionUtils.isEmpty(parameters.getUtmTags())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY_SIZE, String.valueOf(AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong()));
             }
-
-            if (AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_API_LIMIT.getBoolean() && parameters.getQuerySize() > AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong()) {
-                if(CollectionUtils.isEmpty(parameters.getUtmTags())) {
+            for (String utmTag : parameters.getUtmTags()) {
+                if (Arrays.stream(AtlasConfiguration.ATLAS_INDEXSEARCH_LIMIT_UTM_TAGS.getStringArray()).anyMatch(utmTag::equalsIgnoreCase)) {
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY_SIZE, String.valueOf(AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong()));
                 }
-                for (String utmTag : parameters.getUtmTags()) {
-                    if (Arrays.stream(AtlasConfiguration.ATLAS_INDEXSEARCH_LIMIT_UTM_TAGS.getStringArray()).anyMatch(utmTag::equalsIgnoreCase)) {
-                        throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY_SIZE, String.valueOf(AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong()));
-                    }
-                }
             }
-
-            // Inject _source filtering: always include header fields + system fields; merge requested attributes
-            java.util.Set<String> sourceFieldSet = new java.util.LinkedHashSet<>();
-            // mandatory header fields
-            sourceFieldSet.add(GUID_PROPERTY_KEY);
-            sourceFieldSet.add(QUALIFIED_NAME);
-            sourceFieldSet.add(NAME);
-            // additional system fields
-            sourceFieldSet.add(TYPENAME_PROPERTY_KEY);
-            sourceFieldSet.add(STATE_PROPERTY_KEY);
-            sourceFieldSet.add(MODIFIED_BY_KEY);
-            sourceFieldSet.add(MODIFICATION_TIMESTAMP_PROPERTY_KEY);
-            sourceFieldSet.add(TIMESTAMP_PROPERTY_KEY);
-            sourceFieldSet.add(CREATED_BY_KEY);
-
-            if (CollectionUtils.isNotEmpty(parameters.getAttributes())) {
-                sourceFieldSet.addAll(parameters.getAttributes());
-            }
-            java.util.List<String> sourceFields = new java.util.ArrayList<>(sourceFieldSet);
-
-            java.util.Map dsl = parameters.getDsl();
-            if (dsl == null) {
-                // If only query string is provided, parse it into a map so we can add _source
-                if (StringUtils.isNotEmpty(parameters.getQuery())) {
-                    dsl = org.apache.atlas.type.AtlasType.fromJson(parameters.getQuery(), java.util.Map.class);
-                } else {
-                    dsl = new java.util.HashMap();
-                }
-            }
-            dsl.put("_source", sourceFields);
-            parameters.setDsl(dsl);
-
-            java.util.Map<String, Object> esResponse = discoveryService.directEsIndexSearch(parameters);
-
-            long elapsed = System.currentTimeMillis() - startTime;
-            if (elapsed > AtlasConfiguration.SEARCH_SLOW_QUERY_THRESHOLD_MS.getLong()) {
-                PERF_LOG.info("slow esSearch: {} ms, query={}", elapsed, parameters.getQuery());
-            }
-            return esResponse.get("hits");
-        } finally {
-            AtlasPerfTracer.log(perf);
         }
+
+        // Inject _source filtering: always include header fields + system fields; merge requested attributes
+        java.util.Set<String> sourceFieldSet = new java.util.LinkedHashSet<>();
+        // mandatory header fields
+        sourceFieldSet.add(GUID_PROPERTY_KEY);
+        sourceFieldSet.add(QUALIFIED_NAME);
+        sourceFieldSet.add(NAME);
+        // additional system fields
+        sourceFieldSet.add(TYPENAME_PROPERTY_KEY);
+        sourceFieldSet.add(STATE_PROPERTY_KEY);
+        sourceFieldSet.add(MODIFIED_BY_KEY);
+        sourceFieldSet.add(MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+        sourceFieldSet.add(TIMESTAMP_PROPERTY_KEY);
+        sourceFieldSet.add(CREATED_BY_KEY);
+
+        if (CollectionUtils.isNotEmpty(parameters.getAttributes())) {
+            sourceFieldSet.addAll(parameters.getAttributes());
+        }
+        java.util.List<String> sourceFields = new java.util.ArrayList<>(sourceFieldSet);
+
+        java.util.Map dsl = parameters.getDsl();
+        if (dsl == null) {
+            // If only query string is provided, parse it into a map so we can add _source
+            if (StringUtils.isNotEmpty(parameters.getQuery())) {
+                dsl = org.apache.atlas.type.AtlasType.fromJson(parameters.getQuery(), java.util.Map.class);
+            } else {
+                dsl = new java.util.HashMap();
+            }
+        }
+        dsl.put("_source", sourceFields);
+        parameters.setDsl(dsl);
+
+        java.util.Map<String, Object> esResponse = discoveryService.directEsIndexSearch(parameters);
+
+        long elapsed = System.currentTimeMillis() - startTime;
+        if (elapsed > AtlasConfiguration.SEARCH_SLOW_QUERY_THRESHOLD_MS.getLong()) {
+            PERF_LOG.info("slow esSearch: {} ms, query={}", elapsed, parameters.getQuery());
+        }
+        return esResponse.get("hits");
     }
 
     /**
@@ -368,36 +359,27 @@ public class DiscoveryREST {
     @POST
     @Timed
     public java.util.Map<String, Object> indexSearchCount(@Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
-        AtlasPerfTracer perf = null;
         long startTime = System.currentTimeMillis();
-        try {
-            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
-                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.indexSearchCount(" + parameters + ")");
-            }
-
-            // Validate required origin header
-            String clientOrigin = servletRequest.getHeader(X_ATLAN_CLIENT_ORIGIN);
-            if (StringUtils.isEmpty(clientOrigin)) {
-                LOG.error("Required header {} is missing or empty", X_ATLAN_CLIENT_ORIGIN);
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Required header x-atlan-client-origin is missing or empty");
-            }
-
-            if (StringUtils.isEmpty(parameters.getQuery())) {
-                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
-            }
-
-            Long count = discoveryService.directCountIndexSearch(parameters);
-            java.util.Map<String, Object> response = new java.util.HashMap<>();
-            response.put("count", count);
-
-            long elapsed = System.currentTimeMillis() - startTime;
-            if (elapsed > AtlasConfiguration.SEARCH_SLOW_QUERY_THRESHOLD_MS.getLong()) {
-                PERF_LOG.info("slow indexSearchCount: {} ms, query={}", elapsed, parameters.getQuery());
-            }
-            return response;
-        } finally {
-            AtlasPerfTracer.log(perf);
+        // Validate required origin header
+        String clientOrigin = servletRequest.getHeader(X_ATLAN_CLIENT_ORIGIN);
+        if (StringUtils.isEmpty(clientOrigin)) {
+            LOG.error("Required header {} is missing or empty", X_ATLAN_CLIENT_ORIGIN);
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Required header x-atlan-client-origin is missing or empty");
         }
+
+        if (StringUtils.isEmpty(parameters.getQuery())) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
+        }
+
+        Long count = discoveryService.directCountIndexSearch(parameters);
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("count", count);
+
+        long elapsed = System.currentTimeMillis() - startTime;
+        if (elapsed > AtlasConfiguration.SEARCH_SLOW_QUERY_THRESHOLD_MS.getLong()) {
+            PERF_LOG.info("slow indexSearchCount: {} ms, query={}", elapsed, parameters.getQuery());
+        }
+        return response;
     }
 
     /**
