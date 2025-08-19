@@ -90,6 +90,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.janusgraph.core.JanusGraphException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -931,11 +933,34 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             entityChangeNotifier.onEntitiesMutated(ret, false);
             atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
 
+        } catch (JanusGraphException jge) {
+            if (isPermanentBackendException(jge)) {
+                LOG.error("Failed to delete objects:{}", objectIds.stream().map(AtlasObjectId::getUniqueAttributes).collect(Collectors.toList()), jge);
+                throw new AtlasBaseException(AtlasErrorCode.PERMANENT_BACKEND_EXCEPTION_NO_RETRY, jge,
+                        "deleteByUniqueAttributes", "AtlasEntityStoreV2", jge.getMessage());
+            }
+            throw new AtlasBaseException(jge);
         } catch (Exception e) {
             LOG.error("Failed to delete objects:{}", objectIds.stream().map(AtlasObjectId::getUniqueAttributes).collect(Collectors.toList()), e);
             throw new AtlasBaseException(e);
         }
         return ret;
+    }
+
+    // Helper method to check for PermanentBackendException in the cause chain
+    private boolean isPermanentBackendException(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof org.janusgraph.diskstorage.PermanentBackendException) {
+                return true;
+            }
+            // Also check by class name in case of classloader issues
+            if ("org.janusgraph.diskstorage.PermanentBackendException".equalsIgnoreCase(current.getClass().getName())) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private void processTermEntityDeletion(List<AtlasEntityHeader> deletedEntities) throws AtlasBaseException{
