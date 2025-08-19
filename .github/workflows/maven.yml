@@ -32,7 +32,6 @@ on:
       - fixlabels
       - interceptapis
       - mlh-965
-      - mlh927
 
 jobs:
   build:
