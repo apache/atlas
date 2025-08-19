@@ -28,11 +28,13 @@ import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.audit.AtlasAuditEntry;
 import org.apache.atlas.model.impexp.AtlasServer;
 import org.apache.atlas.model.impexp.MigrationStatus;
 import org.apache.atlas.model.instance.AtlasCheckStateRequest;
 import org.apache.atlas.model.instance.AtlasCheckStateResult;
 import org.apache.atlas.model.instance.AtlasEntityHeader;
+import org.apache.atlas.model.instance.EntityMutationResponse;
 import org.apache.atlas.model.metrics.AtlasMetrics;
 import org.apache.atlas.model.patches.AtlasPatch.AtlasPatches;
 import org.apache.atlas.model.tasks.AtlasTask;
@@ -72,16 +74,7 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
@@ -536,6 +529,31 @@ public class AdminResource {
         importExportOperationLock.unlock();
     }
 
+    @PUT
+    @Path("/purge")
+    @Consumes(Servlets.JSON_MEDIA_TYPE)
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public EntityMutationResponse purgeByIds(Set<String> guids) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(guids)) {
+            for (String guid : guids) {
+                Servlets.validateQueryParamLength("guid", guid);
+            }
+        }
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.purgeByIds(" + guids  + ")");
+            }
+
+            EntityMutationResponse resp =  entityStore.purgeByIds(guids);
+
+            return resp;
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
 
     @GET
     @Path("/audit/{auditGuid}/details")
