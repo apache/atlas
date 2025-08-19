@@ -2567,12 +2567,6 @@ public class EntityGraphMapper {
             RequestContext.get().cacheDifferentialEntity(productDiffEntity);
         }
 
-        Map<String, Object> removedAttrs = productDiffEntity.getRemovedRelationshipAttributes();
-        if (removedAttrs == null) {
-            removedAttrs = new HashMap<>();
-            productDiffEntity.setRemovedRelationshipAttributes(removedAttrs);
-        }
-
         productDiffEntity.setRemovedRelationshipAttribute(INPUT_PORTS, conflictingGuids);
 
         for (String assetGuid : conflictingGuids) {
@@ -2587,25 +2581,7 @@ public class EntityGraphMapper {
                     RequestContext.get().cacheDifferentialEntity(assetDiffEntity);
                 }
 
-                Map<String, Object> assetRemovedAttrs = assetDiffEntity.getRemovedRelationshipAttributes();
-                if (assetRemovedAttrs == null) {
-                    assetRemovedAttrs = new HashMap<>();
-                    assetDiffEntity.setRemovedRelationshipAttributes(assetRemovedAttrs);
-                }
-
-                List<AtlasObjectId> existingRemovedProducts = (List<AtlasObjectId>) assetRemovedAttrs.get(INPUT_PORT_PRODUCT_EDGE_LABEL);
-                if (existingRemovedProducts == null) {
-                    existingRemovedProducts = new ArrayList<>();
-                }
-                
-                boolean productExists = existingRemovedProducts.stream()
-                    .anyMatch(obj -> productGuid.equals(obj.getGuid()));
-                
-                if (!productExists) {
-                    AtlasObjectId productObjectId = new AtlasObjectId(productGuid, TYPE_PRODUCT);
-                    existingRemovedProducts.add(productObjectId);
-                }
-                assetRemovedAttrs.put(INPUT_PORT_PRODUCT_EDGE_LABEL, existingRemovedProducts);
+                assetDiffEntity.setRemovedRelationshipAttribute(INPUT_PORT_PRODUCT_RELATIONSHIP_LABEL, Collections.singletonList(new AtlasObjectId(productGuid, TYPE_PRODUCT)));
             }
         }
     }
