@@ -204,13 +204,13 @@ public class TrinoExtractor {
 
     @DisallowConcurrentExecution
     public static class MetadataJob implements Job {
-        private final Logger LOG = LoggerFactory.getLogger(MetadataJob.class);
+        private final Logger logger = LoggerFactory.getLogger(MetadataJob.class);
 
         public void execute(JobExecutionContext context) throws JobExecutionException {
             ExtractorContext extractorContext = TrinoExtractor.instance != null ? TrinoExtractor.instance.extractorContext : null;
 
             if (extractorContext != null) {
-                LOG.info("Executing metadata extraction at: {}", java.time.LocalTime.now());
+                logger.info("Executing metadata extraction at: {}", java.time.LocalTime.now());
 
                 ExtractorService extractorService = new ExtractorService();
 
@@ -219,10 +219,10 @@ public class TrinoExtractor {
                         TrinoExtractor.instance.exitCode = EXIT_CODE_SUCCESS;
                     }
                 } catch (Exception e) {
-                    LOG.error("Error encountered: ", e);
+                    logger.error("Error encountered: ", e);
                     throw new JobExecutionException(e);
                 }
-                LOG.info("Completed executing metadata extraction at: {}", java.time.LocalTime.now());
+                logger.info("Completed executing metadata extraction at: {}", java.time.LocalTime.now());
             }
         }
     }

@@ -35,4 +35,8 @@ public class ConnectorFactory {
                 return null;
         }
     }
+
+    private ConnectorFactory() {
+        throw new UnsupportedOperationException("This is a utility class and cannot be instantiated");
+    }
 }

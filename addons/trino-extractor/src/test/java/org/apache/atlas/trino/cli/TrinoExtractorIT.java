@@ -18,7 +18,6 @@
 package org.apache.atlas.trino.cli;
 
 public class TrinoExtractorIT {
-
  /* List of testcases
     Invalid Arguments
     Invalid cron expression
