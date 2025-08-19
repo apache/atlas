@@ -24,18 +24,13 @@ import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
-import org.apache.atlas.discovery.EntityDiscoveryService;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.*;
-import org.apache.atlas.model.discovery.SearchParameters.FilterCriteria;
-import org.apache.atlas.model.profile.AtlasUserSavedSearch;
 import org.apache.atlas.model.searchlog.SearchLogSearchParams;
 import org.apache.atlas.model.searchlog.SearchLogSearchResult;
 import org.apache.atlas.model.searchlog.SearchRequestLogData.SearchRequestLogDataBuilder;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.searchlog.SearchLoggingManagement;
-import org.apache.atlas.type.AtlasEntityType;
-import org.apache.atlas.type.AtlasStructType;
 import org.apache.atlas.type.AtlasTypeRegistry;
 import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.atlas.utils.AtlasPerfTracer;
@@ -50,27 +45,15 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.io.IOException;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.Arrays;
 
-import static org.apache.atlas.repository.Constants.NAME;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.Constants.REQUEST_HEADER_HOST;
-import static org.apache.atlas.repository.Constants.REQUEST_HEADER_USER_AGENT;
+import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.web.filters.AuditFilter.X_ATLAN_CLIENT_ORIGIN;
 
 /**
  * REST interface for data discovery using dsl or full text search
@@ -96,7 +79,6 @@ public class DiscoveryREST {
     private static final String INDEXSEARCH_TAG_NAME = "indexsearch";
     private static final Set<String> TRACKING_UTM_TAGS = new HashSet<>(Arrays.asList("ui_main_list", "ui_popup_searchbar"));
     private static final String UTM_TAG_FROM_PRODUCT = "project_webapp";
-
     @Inject
     public DiscoveryREST(AtlasTypeRegistry typeRegistry, AtlasDiscoveryService discoveryService,
                          SearchLoggingManagement loggerManagement, Configuration configuration) {
@@ -106,6 +88,109 @@ public class DiscoveryREST {
         this.maxFullTextQueryLength = configuration.getInt(Constants.MAX_FULLTEXT_QUERY_STR_LENGTH, 4096);
         this.maxDslQueryLength      = configuration.getInt(Constants.MAX_DSL_QUERY_STR_LENGTH, 4096);
         this.enableSearchLogging    = AtlasConfiguration.ENABLE_SEARCH_LOGGER.getBoolean();
+    }
+
+    /**
+     * Retrieve data for the specified fulltext query
+     *
+     * @param query          Fulltext query
+     * @param typeName       limit the result to only entities of specified type or its sub-types
+     * @param classification limit the result to only entities tagged with the given classification or or its sub-types
+     * @param limit          limit the result set to only include the specified number of entries
+     * @param offset         start offset of the result set (useful for pagination)
+     * @return Search results
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful FullText lookup with some results, might return an empty list if execution succeeded
+     * without any results
+     * @HTTP 400 Invalid fulltext or query parameters
+     */
+    @GET
+    @Path("/basic")
+    @Timed
+    public AtlasSearchResult searchUsingBasic(@QueryParam("query")                  String  query,
+                                              @QueryParam("typeName")               String  typeName,
+                                              @QueryParam("classification")         String  classification,
+                                              @QueryParam("sortBy")                 String    sortByAttribute,
+                                              @QueryParam("sortOrder") SortOrder sortOrder,
+                                              @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
+                                              @QueryParam("limit")                  int     limit,
+                                              @QueryParam("offset")                 int     offset,
+                                              @QueryParam("marker")                 String  marker) throws AtlasBaseException {
+        Servlets.validateQueryParamLength("typeName", typeName);
+        Servlets.validateQueryParamLength("classification", classification);
+        Servlets.validateQueryParamLength("sortBy", sortByAttribute);
+        if (StringUtils.isNotEmpty(query) && query.length() > maxFullTextQueryLength) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
+        }
+
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchUsingBasic(" + query + "," +
+                        typeName + "," + classification + "," + limit + "," + offset + ")");
+            }
+
+            SearchParameters searchParameters = new SearchParameters();
+            searchParameters.setTypeName(typeName);
+            searchParameters.setClassification(classification);
+            searchParameters.setQuery(query);
+            searchParameters.setExcludeDeletedEntities(excludeDeletedEntities);
+            searchParameters.setLimit(limit);
+            searchParameters.setOffset(offset);
+            searchParameters.setMarker(marker);
+            searchParameters.setSortBy(sortByAttribute);
+            searchParameters.setSortOrder(sortOrder);
+
+            return discoveryService.searchWithParameters(searchParameters);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    /**
+     * Attribute based search for entities satisfying the search parameters
+     *
+     * @param parameters Search parameters
+     * @return Atlas search result
+     * @throws AtlasBaseException
+     * @HTTP 200 On successful search
+     * @HTTP 400 Tag/Entity doesn't exist or Tag/entity filter is present without tag/type name
+     */
+    @Path("basic")
+    @POST
+    @Timed
+    public AtlasSearchResult searchWithParameters(SearchParameters parameters) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "DiscoveryREST.searchWithParameters(" + parameters + ")");
+            }
+
+            if (parameters.getLimit() < 0 || parameters.getOffset() < 0) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Limit/offset should be non-negative");
+            }
+
+            if (StringUtils.isEmpty(parameters.getTypeName()) && !isEmpty(parameters.getEntityFilters())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "EntityFilters specified without Type name");
+            }
+
+            if (StringUtils.isEmpty(parameters.getClassification()) && !isEmpty(parameters.getTagFilters())) {
+                throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "TagFilters specified without tag name");
+            }
+
+            if (StringUtils.isEmpty(parameters.getTypeName()) && StringUtils.isEmpty(parameters.getClassification()) &&
+                StringUtils.isEmpty(parameters.getQuery()) && StringUtils.isEmpty(parameters.getTermName())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_SEARCH_PARAMS);
+            }
+
+            validateSearchParameters(parameters);
+
+            return discoveryService.searchWithParameters(parameters);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     /**
@@ -198,6 +283,106 @@ public class DiscoveryREST {
 
 
     /**
+     * Raw ES search: returns direct ES response as-is
+     */
+    @Path("es")
+    @POST
+    @Timed
+    public Object esSearch(@Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
+        long startTime = System.currentTimeMillis();
+        // Validate required origin header
+        String clientOrigin = servletRequest.getHeader(X_ATLAN_CLIENT_ORIGIN);
+        if (StringUtils.isEmpty(clientOrigin)) {
+            LOG.error("Required header {} is missing or empty", X_ATLAN_CLIENT_ORIGIN);
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Required header x-atlan-client-origin is missing or empty");
+        }
+
+        if (StringUtils.isEmpty(parameters.getQuery())) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
+        }
+
+        if (AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_API_LIMIT.getBoolean() && parameters.getQuerySize() > AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong()) {
+            if(CollectionUtils.isEmpty(parameters.getUtmTags())) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY_SIZE, String.valueOf(AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong()));
+            }
+            for (String utmTag : parameters.getUtmTags()) {
+                if (Arrays.stream(AtlasConfiguration.ATLAS_INDEXSEARCH_LIMIT_UTM_TAGS.getStringArray()).anyMatch(utmTag::equalsIgnoreCase)) {
+                    throw new AtlasBaseException(AtlasErrorCode.INVALID_DSL_QUERY_SIZE, String.valueOf(AtlasConfiguration.ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT.getLong()));
+                }
+            }
+        }
+
+        // Inject _source filtering: always include header fields + system fields; merge requested attributes
+        java.util.Set<String> sourceFieldSet = new java.util.LinkedHashSet<>();
+        // mandatory header fields
+        sourceFieldSet.add(GUID_PROPERTY_KEY);
+        sourceFieldSet.add(QUALIFIED_NAME);
+        sourceFieldSet.add(NAME);
+        // additional system fields
+        sourceFieldSet.add(TYPENAME_PROPERTY_KEY);
+        sourceFieldSet.add(STATE_PROPERTY_KEY);
+        sourceFieldSet.add(MODIFIED_BY_KEY);
+        sourceFieldSet.add(MODIFICATION_TIMESTAMP_PROPERTY_KEY);
+        sourceFieldSet.add(TIMESTAMP_PROPERTY_KEY);
+        sourceFieldSet.add(CREATED_BY_KEY);
+
+        if (CollectionUtils.isNotEmpty(parameters.getAttributes())) {
+            sourceFieldSet.addAll(parameters.getAttributes());
+        }
+        java.util.List<String> sourceFields = new java.util.ArrayList<>(sourceFieldSet);
+
+        java.util.Map dsl = parameters.getDsl();
+        if (dsl == null) {
+            // If only query string is provided, parse it into a map so we can add _source
+            if (StringUtils.isNotEmpty(parameters.getQuery())) {
+                dsl = org.apache.atlas.type.AtlasType.fromJson(parameters.getQuery(), java.util.Map.class);
+            } else {
+                dsl = new java.util.HashMap();
+            }
+        }
+        dsl.put("_source", sourceFields);
+        parameters.setDsl(dsl);
+
+        java.util.Map<String, Object> esResponse = discoveryService.directEsIndexSearch(parameters);
+
+        long elapsed = System.currentTimeMillis() - startTime;
+        if (elapsed > AtlasConfiguration.SEARCH_SLOW_QUERY_THRESHOLD_MS.getLong()) {
+            PERF_LOG.info("slow esSearch: {} ms, query={}", elapsed, parameters.getQuery());
+        }
+        return esResponse.get("hits");
+    }
+
+    /**
+     * ES Count API: returns count for the given query
+     */
+    @Path("count")
+    @POST
+    @Timed
+    public java.util.Map<String, Object> indexSearchCount(@Context HttpServletRequest servletRequest, IndexSearchParams parameters) throws AtlasBaseException {
+        long startTime = System.currentTimeMillis();
+        // Validate required origin header
+        String clientOrigin = servletRequest.getHeader(X_ATLAN_CLIENT_ORIGIN);
+        if (StringUtils.isEmpty(clientOrigin)) {
+            LOG.error("Required header {} is missing or empty", X_ATLAN_CLIENT_ORIGIN);
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Required header x-atlan-client-origin is missing or empty");
+        }
+
+        if (StringUtils.isEmpty(parameters.getQuery())) {
+            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Invalid search query");
+        }
+
+        Long count = discoveryService.directCountIndexSearch(parameters);
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("count", count);
+
+        long elapsed = System.currentTimeMillis() - startTime;
+        if (elapsed > AtlasConfiguration.SEARCH_SLOW_QUERY_THRESHOLD_MS.getLong()) {
+            PERF_LOG.info("slow indexSearchCount: {} ms, query={}", elapsed, parameters.getQuery());
+        }
+        return response;
+    }
+
+    /**
      * Index based search for query direct on Elasticsearch Edge index
      *
      * @param parameters Index Search parameters @IndexSearchParams.java
@@ -263,6 +448,24 @@ public class DiscoveryREST {
         }
 
         return result;
+    }
+
+
+    private boolean isEmpty(SearchParameters.FilterCriteria filterCriteria) {
+        return filterCriteria == null ||
+                (StringUtils.isEmpty(filterCriteria.getAttributeName()) && CollectionUtils.isEmpty(filterCriteria.getCriterion()));
+    }
+
+    private void validateSearchParameters(SearchParameters parameters) throws AtlasBaseException {
+        if (parameters != null) {
+            Servlets.validateQueryParamLength("typeName", parameters.getTypeName());
+            Servlets.validateQueryParamLength("classification", parameters.getClassification());
+            Servlets.validateQueryParamLength("sortBy", parameters.getSortBy());
+            if (StringUtils.isNotEmpty(parameters.getQuery()) && parameters.getQuery().length() > maxFullTextQueryLength) {
+                throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
+            }
+
+        }
     }
 
     private void logSearchLog(IndexSearchParams parameters, AtlasSearchResult result,
