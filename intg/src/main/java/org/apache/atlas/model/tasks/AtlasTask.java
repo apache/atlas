@@ -104,7 +104,8 @@ public class AtlasTask {
     private Status              status;
     private String              classificationId;
     private String              entityGuid;
-    private String tagTypeName;
+    private String              tagTypeName;
+    private Map<String, Object> headers;
 
     public AtlasTask() {
     }
@@ -122,7 +123,7 @@ public class AtlasTask {
         this.attemptCount       = 0;
         this.classificationId   = classificationId;
         this.entityGuid         = entityGuid;
-        this.tagTypeName = tagTypeName;
+        this.tagTypeName        = tagTypeName;
     }
 
     public String getGuid() {
@@ -163,6 +164,14 @@ public class AtlasTask {
 
     public void setParameters(Map<String, Object> val) {
         this.parameters = val;
+    }
+
+    public Map<String, Object> getHeaders() {
+        return headers;
+    }
+
+    public void setHeaders(Map<String, Object> headers) {
+        this.headers = headers;
     }
 
     public void setType(String val) {
