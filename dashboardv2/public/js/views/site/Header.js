@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-define(['require',
+define(['App','require',
     'hbs!tmpl/site/Header',
     'utils/CommonViewFunction',
     'utils/Globals',
@@ -24,7 +24,7 @@ define(['require',
     'utils/UrlLinks',
     'collection/VDownloadList',
     'jquery-ui'
-], function(require, tmpl, CommonViewFunction, Globals, Utils, UrlLinks, VDownloadList) {
+], function(App,require, tmpl, CommonViewFunction, Globals, Utils, UrlLinks, VDownloadList) {
     'use strict';
 
     var Header = Marionette.LayoutView.extend({
@@ -72,11 +72,7 @@ define(['require',
                 });
                 $('body').toggleClass("full-screen");
             };
-            events['click ' + this.ui.signOut] = function() {
-                Utils.localStorage.setValue("last_ui_load", "v1");
-                var path = Utils.getBaseUrl(window.location.pathname);
-                window.location = path + "/logout.html";
-            };
+            events['click ' + this.ui.signOut] = 'checkKnoxSSO';
             events["click " + this.ui.reactUISwitch] = function() {
                 var path = Utils.getBaseUrl(window.location.pathname) + "/n3/index.html";
                 if (window.location.hash.length > 2) {
@@ -122,6 +118,63 @@ define(['require',
             _.extend(this, _.pick(options, 'exportVent'));
             this.bindEvent();
             this.options = options;
+        },
+        onLogout: function(checksso) {
+            var url = UrlLinks.logOutUrl(),
+            that = this;
+            $.ajax({
+                url: url,
+                type : 'GET',
+                headers : {
+                    "cache-control" : "no-cache"
+                },
+                success : function() {
+                    if(!_.isUndefined(checksso) && checksso){
+                        if(checksso == 'false'){
+                            window.location.replace('locallogin');
+                        }else{
+                            that.errorAction();
+                        }
+                    } else {
+                        Utils.localStorage.setValue("atlas_ui", "classic");
+                        window.location.replace('login.jsp');
+                    }
+                }
+            });
+        },
+        errorAction: function() {
+            require(["views/common/ErrorView"], function(ErrorView) {
+                var errorView = new ErrorView({ status: "checkSSOTrue" });
+                App.rNContent.show(errorView);
+            });
+
+        },
+        checkKnoxSSO: function() {
+            var that =this
+            var url = UrlLinks.checkKnoxSsoApiUrl();
+            $.ajax({
+                url : url,
+                type : 'GET',
+                headers : {
+                    "cache-control" : "no-cache"
+                },
+                success : function(resp) {
+                    if (localStorage.getItem('idleTimerLoggedOut') == "true" && resp == "true") {
+                        window.location.replace('index.html?action=timeout');
+                    } else {
+//                        if (Globals.idealTimeoutSeconds > 0 && resp == "true") {
+//                            window.location.replace('index.html?action=timeout');
+//                        } else {
+                            that.onLogout(resp);
+//                        }
+                    }
+                },
+                error : function(jqXHR, textStatus, err ) {
+                    if( jqXHR.status == 419 ){
+                        window.location.replace('login.jsp');
+                    }
+                }
+            });
         },
         setSearchBoxWidth: function(options) {
             var atlasHeaderWidth = this.$el.find(".atlas-header").width(),
