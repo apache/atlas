@@ -1,0 +1,62 @@
+---
+alwaysApply: false
+description: search-apis
+---
+# Search APIs and ES Integration
+
+This rule documents the search API implementations and ES integration to help navigation and consistent usage across the repo.
+
+## Endpoints
+
+- POST `/search/indexsearch` → Atlas-shaped search using DSL. See [DiscoveryREST.java](mdc:webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java)
+- POST `/search/es` → Raw ES search response passthrough, trimmed to the `hits` object if present. See [DiscoveryREST.java](mdc:webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java)
+- POST `/search/count` → ES `_count` API; returns `{ "count": <long> }`. See [DiscoveryREST.java](mdc:webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java)
+- POST `/search/relationship/indexsearch` → Edge index search. See [DiscoveryREST.java](mdc:webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java)
+
+## Service Flow
+
+Service implementation: [EntityDiscoveryService.java](mdc:repository/src/main/java/org/apache/atlas/discovery/EntityDiscoveryService.java)
+
+- `directIndexSearch(params, useVertexEdgeBulkFetching)` → standard Atlas result shaping
+- `directEsIndexSearch(params)` → returns raw ES map from index query
+- `directCountIndexSearch(params)` → returns `Long` count
+
+Common behavior (all three):
+- Index selection via `getIndexName(IndexSearchParams)`; supports persona/purpose and access control exclusive DSL
+- Optional pre-filtering when `enableFullRestriction` is true via `addPreFiltersToSearchQuery`
+- Optional DSL optimization when feature flag is enabled and request originates from product client (see below)
+- Error handling: propagate exceptions; upstream layers map network/ES errors to appropriate codes
+
+### DSL Optimization
+
+Reusable helper: `optimizeQueryIfApplicable(SearchParams, clientOrigin)` in [EntityDiscoveryService.java](mdc:repository/src/main/java/org/apache/atlas/discovery/EntityDiscoveryService.java)
+
+- Controlled by feature flag key `discovery_use_dsl_optimisation`
+- Only applied when `RequestContext.clientOrigin == product_webapp`
+- Uses `ElasticsearchDslOptimizer.optimizeQueryWithValidation(...)`
+- On validation failure: logs a warning and continues
+- On optimizer error: logs and proceeds with original query
+
+## ES Layer
+
+Implementation: [AtlasElasticsearchQuery.java](mdc:graphdb/janus/src/main/java/org/apache/atlas/repository/graphdb/janus/AtlasElasticsearchQuery.java)
+
+- `vertices(SearchParams)` → executes query via low-level client, returns `DirectIndexQueryResult`
+- `directIndexQuery(String)` → returns parsed ES response with `total`, `data`, optional `aggregations`
+- `directEsIndexQuery(String)` → returns raw ES response as `Map<String,Object>` (unmodified)
+- `countIndexQuery(String)` → calls `/_count`, parses and returns `Long`
+- Request isolation: selects ES client based on `RequestContext.clientOrigin`; `product_webapp` → UI cluster; others → Non-UI cluster; fallback to default client
+- Network errors: mapped to `SERVICE_UNAVAILABLE` or gateway timeout codes
+
+Note: The Janus in-memory index implementation ([AtlasJanusIndexQuery.java](mdc:graphdb/janus/src/main/java/org/apache/atlas/repository/graphdb/janus/AtlasJanusIndexQuery.java)) does not implement `directEsIndexQuery`/`countIndexQuery` (throws `NotImplementedException`).
+
+## REST Response Shaping
+
+- `/search/es` returns only the `hits` object when present; otherwise returns the full ES response map
+- `/search/count` wraps the `Long` in `{ "count": <long> }`
+
+## Limits and Logging
+
+- Query size limits enforced when `ATLAS_INDEXSEARCH_ENABLE_API_LIMIT` is true; see `ATLAS_INDEXSEARCH_QUERY_SIZE_MAX_LIMIT` and `ATLAS_INDEXSEARCH_LIMIT_UTM_TAGS`
+- Optional search logging; some utmTag patterns skip logging; see `shouldSkipSearchLog` in [DiscoveryREST.java](mdc:webapp/src/main/java/org/apache/atlas/web/rest/DiscoveryREST.java)
+

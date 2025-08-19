@@ -51,6 +51,17 @@ public interface AtlasIndexQuery<V, E> {
     Map<String, Object> directIndexQuery(String query) throws AtlasBaseException;
 
     /**
+     * Executes a raw Elasticsearch search query and returns the direct ES response as a map
+     * without Atlas-specific transformations.
+     */
+    Map<String, Object> directEsIndexQuery(String query) throws AtlasBaseException;
+
+    /**
+     * Executes an Elasticsearch _count query and returns the count value.
+     */
+    Long countIndexQuery(String query) throws AtlasBaseException;
+
+    /**
      * Gets the query results.
      *
      * @return
