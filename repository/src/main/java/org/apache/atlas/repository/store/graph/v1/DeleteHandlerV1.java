@@ -478,11 +478,18 @@ public abstract class DeleteHandlerV1 {
     }
 
     private void addTagPropagation(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasEdge edge) throws AtlasBaseException {
-        //below needs to be forked ?
         if(FeatureFlagStore.isTagV2Enabled()) {
             // foreground
             // classificationTypeName can be empty
-            createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_ADD, fromVertex, toVertex, "");
+            List<Tag> tags = tagDAO.getAllTagsByVertexId(fromVertex.getIdForDisplay());
+
+            if (CollectionUtils.isNotEmpty(tags)) {
+                boolean shouldCreateTask = tags.stream().anyMatch(Tag::isPropagatable);
+
+                if (shouldCreateTask) {
+                    createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_ADD, fromVertex, toVertex, "");
+                }
+            }
         } else {
             final List<AtlasVertex> classificationVertices = getPropagationEnabledClassificationVertices(fromVertex);
             String relationshipGuid = getRelationshipGuid(edge);
