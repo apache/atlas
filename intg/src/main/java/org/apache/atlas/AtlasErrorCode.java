@@ -240,7 +240,7 @@ public enum AtlasErrorCode {
 
     CATEGORY_PARENT_FROM_OTHER_GLOSSARY(409, "ATLAS-400-00-0015", "Parent category from another Anchor(glossary) not supported"),
     CLASSIFICATION_TYPE_HAS_REFERENCES(409, "ATLAS-400-00-0016", "Given classification {0} [{1}] has references"),
-    PERMANENT_BACKEND_EXCEPTION_NO_RETRY(410, "ATLAS-410-00-0017", "Permanent backend exception, no retry possible. Error: {0}"),
+    PERMANENT_BACKEND_EXCEPTION_NO_RETRY(410, "ATLAS-410-00-0001", "Permanent backend exception, no retry possible. Error: {0}"),
     // All internal errors go here
     UNKNOWN_SERVER_ERROR(500, "ATLAS-500-00-000", "Unknown server error detected {0}"),
 
