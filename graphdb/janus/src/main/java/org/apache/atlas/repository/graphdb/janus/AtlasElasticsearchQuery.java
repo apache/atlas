@@ -68,6 +68,7 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     private static final Logger LOG = LoggerFactory.getLogger(AtlasElasticsearchQuery.class);
 
     public static final String CLIENT_ORIGIN_PRODUCT = "product_webapp";
+    public static final String CLIENT_ORIGIN_PLAYBOOK = "playbook";
 
     private AtlasJanusGraph graph;
     private RestHighLevelClient esClient;
