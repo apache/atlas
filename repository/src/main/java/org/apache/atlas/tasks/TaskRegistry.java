@@ -60,6 +60,7 @@ import java.util.LinkedHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.repository.Constants.ATLAN_HEADER_PREFIX_PATTERN;
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.Constants.TASK_STATUS;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
@@ -659,6 +660,18 @@ public class TaskRegistry {
         String warningMessage = v.getProperty(Constants.TASK_WARNING_MESSAGE, String.class);
         if (warningMessage != null) {
             ret.setWarningMessage(warningMessage);
+        }
+
+        List<String> headerKeys = v.getPropertyKeys().stream().filter(key -> key.toLowerCase().startsWith(ATLAN_HEADER_PREFIX_PATTERN)).collect(Collectors.toUnmodifiableList());
+        if (CollectionUtils.isNotEmpty(headerKeys)) {
+            Map<String, Object> headers = new HashMap<>(headerKeys.size());
+            for (String headerKey : headerKeys) {
+                Object headerValue = v.getProperty(headerKey, Object.class);
+                if (headerValue != null) {
+                    headers.put(headerKey, headerValue);
+                }
+            }
+            ret.setHeaders(headers);
         }
 
         return ret;
