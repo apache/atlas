@@ -131,7 +131,12 @@ const EnumCreateUpdate = ({
                           sx={{ flex: "1" }}
                           size="small"
                           value={value}
-                          onChange={(_event, newValue) => {
+                          onChange={(_event, newValue, reason) => {
+                            if (reason == "clear") {
+                              onChange("");
+                              setValue("enumValues", []);
+                              return;
+                            }
                             if (!isEmpty(newValue.label)) {
                               onChange(newValue.value);
                             } else {
@@ -170,6 +175,7 @@ const EnumCreateUpdate = ({
 
                             return filtered;
                           }}
+                          clearIcon={null}
                           filterSelectedOptions
                           onBlur={onBlur}
                           options={
@@ -261,7 +267,6 @@ const EnumCreateUpdate = ({
                               : []
                           }
                           onBlur={onBlur}
-                          className="advanced-search-autocomplete"
                           renderInput={(params) => (
                             <TextField
                               {...params}
