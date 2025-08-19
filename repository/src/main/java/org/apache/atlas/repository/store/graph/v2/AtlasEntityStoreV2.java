@@ -955,7 +955,7 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
                 return true;
             }
             // Also check by class name in case of classloader issues
-            if (current.getClass().getName().equals("org.janusgraph.diskstorage.PermanentBackendException")) {
+            if ("org.janusgraph.diskstorage.PermanentBackendException".equalsIgnoreCase(current.getClass().getName())) {
                 return true;
             }
             current = current.getCause();
