@@ -762,8 +762,20 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
                 } else {
                     String entityGuid = entityHeader.getGuid();
                     entity = fullTextMapperV2.getAndCacheEntity(entityGuid);
+
+                    // MLH-927: Fix for ENTITY_UPDATE events missing attributes on relationship changes
+                    // Previously, we unconditionally replaced entity.attributes with entityHeader.attributes
+                    // For relationship-driven updates, the header often has null/sparse attributes,
+                    // causing attribute loss in notifications. Now we safely merge only when header has attributes.
                     if (operation == EntityOperation.UPDATE || entityHeader.getAttributes() != null) {
-                        entity.setAttributes(entityHeader.getAttributes());
+                        if (entity != null && MapUtils.isNotEmpty(entityHeader.getAttributes())) {
+                            Map<String, Object> mergedAttributes = entity.getAttributes() != null
+                                    ? new HashMap<>(entity.getAttributes())
+                                    : new HashMap<>();
+
+                            mergedAttributes.putAll(entityHeader.getAttributes());
+                            entity.setAttributes(mergedAttributes);
+                        }
                     }
                 }
 
