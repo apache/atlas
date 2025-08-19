@@ -20,6 +20,7 @@ package org.apache.atlas.web.rest;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
+import org.apache.atlas.SortOrder;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.discovery.AtlasDiscoveryService;
@@ -44,10 +45,7 @@ import org.springframework.stereotype.Service;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import java.util.HashSet;
@@ -113,7 +111,7 @@ public class DiscoveryREST {
                                               @QueryParam("typeName")               String  typeName,
                                               @QueryParam("classification")         String  classification,
                                               @QueryParam("sortBy")                 String    sortByAttribute,
-                                              @QueryParam("sortOrder")              SortOrder sortOrder,
+                                              @QueryParam("sortOrder") SortOrder sortOrder,
                                               @QueryParam("excludeDeletedEntities") boolean excludeDeletedEntities,
                                               @QueryParam("limit")                  int     limit,
                                               @QueryParam("offset")                 int     offset,
