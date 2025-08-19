@@ -30,12 +30,15 @@ import org.apache.atlas.authorize.AtlasEntityAccessRequest;
 import org.apache.atlas.authorize.AtlasPrivilege;
 import org.apache.atlas.discovery.SearchContext;
 import org.apache.atlas.exception.AtlasBaseException;
+import org.apache.atlas.model.PList;
 import org.apache.atlas.model.audit.AtlasAuditEntry;
 import org.apache.atlas.model.audit.AtlasAuditEntry.AuditOperation;
 import org.apache.atlas.model.audit.AuditReductionCriteria;
 import org.apache.atlas.model.audit.AuditSearchParameters;
 import org.apache.atlas.model.audit.EntityAuditEventV2;
 import org.apache.atlas.model.audit.EntityAuditEventV2.EntityAuditActionV2;
+import org.apache.atlas.model.impexp.AsyncImportStatus;
+import org.apache.atlas.model.impexp.AtlasAsyncImportRequest;
 import org.apache.atlas.model.impexp.AtlasExportRequest;
 import org.apache.atlas.model.impexp.AtlasExportResult;
 import org.apache.atlas.model.impexp.AtlasImportRequest;
@@ -150,7 +153,7 @@ public class AdminResource {
     private static final String        editableEntityTypes              = "atlas.ui.editable.entity.types";
     private static final String        DEFAULT_EDITABLE_ENTITY_TYPES    = "hdfs_path";
     private static final String        DEFAULT_UI_VERSION               = "atlas.ui.default.version";
-    private static final String        UI_VERSION_V2                    = "v2";
+    private static final String        UI_VERSION_V3                    = "v3"; //v1:Classic UI, v2:Beta UI, v3:react ui
     private static final String        UI_DATE_TIMEZONE_FORMAT_ENABLED  = "atlas.ui.date.timezone.format.enabled";
     private static final String        UI_DATE_FORMAT                   = "atlas.ui.date.format";
     private static final String        UI_DATE_DEFAULT_FORMAT           = "MM/DD/YYYY hh:mm:ss A";
@@ -223,7 +226,7 @@ public class AdminResource {
         this.atlasMetricsUtil          = atlasMetricsUtil;
 
         if (atlasProperties != null) {
-            this.defaultUIVersion            = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V2);
+            this.defaultUIVersion            = atlasProperties.getString(DEFAULT_UI_VERSION, UI_VERSION_V3);
             this.isTimezoneFormatEnabled     = atlasProperties.getBoolean(UI_DATE_TIMEZONE_FORMAT_ENABLED, true);
             this.uiDateFormat                = atlasProperties.getString(UI_DATE_FORMAT, UI_DATE_DEFAULT_FORMAT);
             this.isDebugMetricsEnabled       = AtlasConfiguration.DEBUG_METRICS_ENABLED.getBoolean();
@@ -233,7 +236,7 @@ public class AdminResource {
             this.defaultLineageNodeCount     = AtlasConfiguration.LINEAGE_ON_DEMAND_DEFAULT_NODE_COUNT.getInt();
             this.isRelationshipSearchEnabled = AtlasConfiguration.RELATIONSHIP_SEARCH_ENABLED.getBoolean();
         } else {
-            this.defaultUIVersion            = UI_VERSION_V2;
+            this.defaultUIVersion            = UI_VERSION_V3;
             this.isTimezoneFormatEnabled     = true;
             this.uiDateFormat                = UI_DATE_DEFAULT_FORMAT;
             this.isDebugMetricsEnabled       = false;
@@ -677,6 +680,96 @@ public class AdminResource {
         addToImportOperationAudits(result);
 
         return result;
+    }
+
+    @POST
+    @Path("/async/import")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(MediaType.MULTIPART_FORM_DATA)
+    public AtlasAsyncImportRequest importAsync(@DefaultValue("{}") @FormDataParam("request") String jsonData, @FormDataParam("data") InputStream inputStream) throws AtlasBaseException {
+        LOG.debug("==> AdminResource.importAsync(jsonData={}, inputStream={})", jsonData, (inputStream != null));
+
+        AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "asyncImportData");
+
+        AtlasAsyncImportRequest asyncImportRequest;
+        boolean                 releaseExportImportLockOnCompletion = false;
+
+        try {
+            AtlasImportRequest request                 = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
+            boolean            preventMultipleRequests = request != null && request.getOptions() != null && !request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM);
+
+            if (preventMultipleRequests) {
+                acquireExportImportLock("import");
+
+                releaseExportImportLockOnCompletion = true;
+            }
+
+            asyncImportRequest = importService.run(request, inputStream, Servlets.getUserName(httpServletRequest), Servlets.getHostName(httpServletRequest), AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
+        } catch (AtlasBaseException excp) {
+            if (excp.getAtlasErrorCode().equals(AtlasErrorCode.IMPORT_ATTEMPTING_EMPTY_ZIP)) {
+                LOG.info(excp.getMessage());
+
+                return new AtlasAsyncImportRequest();
+            } else {
+                LOG.error("importAsync(binary) failed", excp);
+
+                throw excp;
+            }
+        } catch (Exception excp) {
+            LOG.error("importAsync(binary) failed", excp);
+
+            throw new AtlasBaseException(excp);
+        } finally {
+            if (releaseExportImportLockOnCompletion) {
+                releaseExportImportLock();
+            }
+
+            LOG.debug("<== AdminResource.importAsync(binary)");
+        }
+
+        return asyncImportRequest;
+    }
+
+    @DELETE
+    @Path("/async/import/{importId}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    @Consumes(MediaType.APPLICATION_JSON)
+    public void abortAsyncImport(@PathParam("importId") String importId) throws AtlasBaseException {
+        importService.abortAsyncImport(importId);
+    }
+
+    @GET
+    @Path("/async/import/status")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public PList<AsyncImportStatus> getAsyncImportStatus(@QueryParam("offset") @DefaultValue("0") int offset, @QueryParam("limit") @DefaultValue("50") int limit) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAsyncImportStatus()");
+            }
+
+            return importService.getAsyncImportsStatus(offset, limit);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
+    }
+
+    @GET
+    @Path("/async/import/status/{importId}")
+    @Produces(Servlets.JSON_MEDIA_TYPE)
+    public AtlasAsyncImportRequest getAsyncImportStatusById(@PathParam("importId") String importId) throws AtlasBaseException {
+        AtlasPerfTracer perf = null;
+
+        try {
+            if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
+                perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "AdminResource.getAsyncImportStatusById(importId=" + importId + ")");
+            }
+
+            return importService.getAsyncImportRequest(importId);
+        } finally {
+            AtlasPerfTracer.log(perf);
+        }
     }
 
     @PUT

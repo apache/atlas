@@ -885,7 +885,65 @@ public class DiscoveryREST {
             if (StringUtils.isNotEmpty(parameters.getQuery()) && parameters.getQuery().length() > maxFullTextQueryLength) {
                 throw new AtlasBaseException(AtlasErrorCode.INVALID_QUERY_LENGTH, Constants.MAX_FULLTEXT_QUERY_STR_LENGTH);
             }
+
+            validateEntityFilter(parameters);
         }
+    }
+
+    private void validateEntityFilter(SearchParameters parameters) throws AtlasBaseException {
+        validateNestedCriteria(parameters.getEntityFilters());
+        validateNestedCriteria(parameters.getTagFilters());
+    }
+
+    private void validateNestedCriteria(SearchParameters.FilterCriteria criteria) throws AtlasBaseException {
+        if (criteria == null) {
+            return; // Nothing to validate
+        }
+
+        boolean hasComposite = criteria.getCriterion() != null && !criteria.getCriterion().isEmpty();
+        boolean hasLeaf = StringUtils.isNotEmpty(criteria.getAttributeName())
+                || criteria.getOperator() != null
+                || StringUtils.isNotEmpty(criteria.getAttributeValue());
+
+        if (!hasComposite && !hasLeaf) {
+            // It's an empty filter object — skip (backward compatibility)
+            return;
+        }
+
+        if (hasComposite) {
+            if (criteria.getCondition() == null || StringUtils.isEmpty(criteria.getCondition().toString())) {
+                throw new AtlasBaseException("Condition (AND/OR) must be specified when using multiple filters.");
+            }
+
+            for (FilterCriteria filterCriteria : criteria.getCriterion()) {
+                if (filterCriteria != null) {
+                    validateNestedCriteria(filterCriteria); // Recursive check
+                }
+            }
+        }
+
+        if (hasLeaf) {
+            validateLeafFilterCriteria(criteria);
+        }
+    }
+
+    private void validateLeafFilterCriteria(SearchParameters.FilterCriteria criteria) throws AtlasBaseException {
+        if (criteria.getOperator() == null) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_OPERATOR, criteria.getAttributeName());
+        }
+
+        if (StringUtils.isBlank(criteria.getAttributeName())) {
+            throw new AtlasBaseException(AtlasErrorCode.BLANK_NAME_ATTRIBUTE);
+        }
+
+        if (requiresValue(criteria.getOperator()) && StringUtils.isBlank(criteria.getAttributeValue())) {
+            throw new AtlasBaseException(AtlasErrorCode.BLANK_VALUE_ATTRIBUTE);
+        }
+    }
+
+    private boolean requiresValue(SearchParameters.Operator operator) {
+        return operator != SearchParameters.Operator.IS_NULL
+                && operator != SearchParameters.Operator.NOT_NULL;
     }
 
     private void validateSearchParameters(QuickSearchParameters parameters) throws AtlasBaseException {

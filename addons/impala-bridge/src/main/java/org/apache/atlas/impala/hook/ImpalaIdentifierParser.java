@@ -18,11 +18,11 @@
 
 package org.apache.atlas.impala.hook;
 
+import org.apache.commons.lang.StringUtils;
+
 import java.util.Arrays;
 import java.util.HashSet;
-
 import java.util.Set;
-import org.apache.commons.lang.StringUtils;
 
 /**
  * Check if a string is a valid Impala table identifier.
@@ -34,6 +34,8 @@ public class ImpalaIdentifierParser {
     // VALID_IMPALA_IDENTIFIER_REGEX = re.compile(r'^[a-zA-Z][a-zA-Z0-9_]{,127}$')
     // add "." to allow <dbName>.<tableName>
     public static final String VALID_IMPALA_IDENTIFIER_REGEX = "^[a-zA-Z][a-zA-Z0-9_.]{0,127}$";
+
+    private ImpalaIdentifierParser() {}
 
     public static boolean isTableNameValid(String inTableName) {
         if (StringUtils.isEmpty(inTableName)) {
@@ -73,7 +75,6 @@ public class ImpalaIdentifierParser {
     // Reserved words are words that cannot be used as identifiers. It is a superset of
     // keywords.
     static Set<String> reservedWords;
-
 
     public static void init() {
         // initilize keywords
@@ -312,7 +313,6 @@ public class ImpalaIdentifierParser {
         tokenIdMap.add("COMMENTED_PLAN_HINT_END");
         tokenIdMap.add("Unexpected character");
 
-
         // For impala 3.0, reserved words = keywords + sql16ReservedWords - builtinFunctions
         // - whitelist
         // unused reserved words = reserved words - keywords. These words are reserved for
@@ -320,50 +320,50 @@ public class ImpalaIdentifierParser {
         reservedWords = new HashSet<>(keywordMap);
         // Add SQL:2016 reserved words
         reservedWords.addAll(Arrays.asList(new String[] {
-            "abs", "acos", "allocate", "any", "are", "array_agg", "array_max_cardinality",
-            "asensitive", "asin", "asymmetric", "at", "atan", "atomic", "avg", "begin",
-            "begin_frame", "begin_partition", "blob", "both", "call", "called", "cardinality",
-            "cascaded", "ceil", "ceiling", "char_length", "character", "character_length",
-            "check", "classifier", "clob", "close", "coalesce", "collate", "collect",
-            "commit", "condition", "connect", "constraint", "contains", "convert", "copy",
-            "corr", "corresponding", "cos", "cosh", "count", "covar_pop", "covar_samp",
-            "cube", "cume_dist", "current_catalog", "current_date",
-            "current_default_transform_group", "current_path", "current_path", "current_role",
-            "current_role", "current_row", "current_schema", "current_time",
-            "current_timestamp", "current_transform_group_for_type", "current_user", "cursor",
-            "cycle", "day", "deallocate", "dec", "decfloat", "declare", "define",
-            "dense_rank", "deref", "deterministic", "disconnect", "dynamic", "each",
-            "element", "empty", "end-exec", "end_frame", "end_partition", "equals", "escape",
-            "every", "except", "exec", "execute", "exp", "extract", "fetch", "filter",
-            "first_value", "floor", "foreign", "frame_row", "free", "fusion", "get", "global",
-            "grouping", "groups", "hold", "hour", "identity", "indicator", "initial", "inout",
-            "insensitive", "integer", "intersect", "intersection", "json_array",
-            "json_arrayagg", "json_exists", "json_object", "json_objectagg", "json_query",
-            "json_table", "json_table_primitive", "json_value", "lag", "language", "large",
-            "last_value", "lateral", "lead", "leading", "like_regex", "listagg", "ln",
-            "local", "localtime", "localtimestamp", "log", "log10 ", "lower", "match",
-            "match_number", "match_recognize", "matches", "max", "member", "merge", "method",
-            "min", "minute", "mod", "modifies", "module", "month", "multiset", "national",
-            "natural", "nchar", "nclob", "new", "no", "none", "normalize", "nth_value",
-            "ntile", "nullif", "numeric", "occurrences_regex", "octet_length", "of", "old",
-            "omit", "one", "only", "open", "out", "overlaps", "overlay", "parameter",
-            "pattern", "per", "percent", "percent_rank", "percentile_cont", "percentile_disc",
-            "period", "portion", "position", "position_regex", "power", "precedes",
-            "precision", "prepare", "procedure", "ptf", "rank", "reads", "real", "recursive",
-            "ref", "references", "referencing", "regr_avgx", "regr_avgy", "regr_count",
-            "regr_intercept", "regr_r2", "regr_slope", "regr_sxx", "regr_sxy", "regr_syy",
-            "release", "result", "return", "rollback", "rollup", "row_number", "running",
-            "savepoint", "scope", "scroll", "search", "second", "seek", "sensitive",
-            "session_user", "similar", "sin", "sinh", "skip", "some", "specific",
-            "specifictype", "sql", "sqlexception", "sqlstate", "sqlwarning", "sqrt", "start",
-            "static", "stddev_pop", "stddev_samp", "submultiset", "subset", "substring",
-            "substring_regex", "succeeds", "sum", "symmetric", "system", "system_time",
-            "system_user", "tan", "tanh", "time", "timezone_hour", "timezone_minute",
-            "trailing", "translate", "translate_regex", "translation", "treat", "trigger",
-            "trim", "trim_array", "uescape", "unique", "unknown", "unnest", "update  ",
-            "upper", "user", "value", "value_of", "var_pop", "var_samp", "varbinary",
-            "varying", "versioning", "whenever", "width_bucket", "window", "within",
-            "without", "year"}));
+                "abs", "acos", "allocate", "any", "are", "array_agg", "array_max_cardinality",
+                "asensitive", "asin", "asymmetric", "at", "atan", "atomic", "avg", "begin",
+                "begin_frame", "begin_partition", "blob", "both", "call", "called", "cardinality",
+                "cascaded", "ceil", "ceiling", "char_length", "character", "character_length",
+                "check", "classifier", "clob", "close", "coalesce", "collate", "collect",
+                "commit", "condition", "connect", "constraint", "contains", "convert", "copy",
+                "corr", "corresponding", "cos", "cosh", "count", "covar_pop", "covar_samp",
+                "cube", "cume_dist", "current_catalog", "current_date",
+                "current_default_transform_group", "current_path", "current_path", "current_role",
+                "current_role", "current_row", "current_schema", "current_time",
+                "current_timestamp", "current_transform_group_for_type", "current_user", "cursor",
+                "cycle", "day", "deallocate", "dec", "decfloat", "declare", "define",
+                "dense_rank", "deref", "deterministic", "disconnect", "dynamic", "each",
+                "element", "empty", "end-exec", "end_frame", "end_partition", "equals", "escape",
+                "every", "except", "exec", "execute", "exp", "extract", "fetch", "filter",
+                "first_value", "floor", "foreign", "frame_row", "free", "fusion", "get", "global",
+                "grouping", "groups", "hold", "hour", "identity", "indicator", "initial", "inout",
+                "insensitive", "integer", "intersect", "intersection", "json_array",
+                "json_arrayagg", "json_exists", "json_object", "json_objectagg", "json_query",
+                "json_table", "json_table_primitive", "json_value", "lag", "language", "large",
+                "last_value", "lateral", "lead", "leading", "like_regex", "listagg", "ln",
+                "local", "localtime", "localtimestamp", "log", "log10 ", "lower", "match",
+                "match_number", "match_recognize", "matches", "max", "member", "merge", "method",
+                "min", "minute", "mod", "modifies", "module", "month", "multiset", "national",
+                "natural", "nchar", "nclob", "new", "no", "none", "normalize", "nth_value",
+                "ntile", "nullif", "numeric", "occurrences_regex", "octet_length", "of", "old",
+                "omit", "one", "only", "open", "out", "overlaps", "overlay", "parameter",
+                "pattern", "per", "percent", "percent_rank", "percentile_cont", "percentile_disc",
+                "period", "portion", "position", "position_regex", "power", "precedes",
+                "precision", "prepare", "procedure", "ptf", "rank", "reads", "real", "recursive",
+                "ref", "references", "referencing", "regr_avgx", "regr_avgy", "regr_count",
+                "regr_intercept", "regr_r2", "regr_slope", "regr_sxx", "regr_sxy", "regr_syy",
+                "release", "result", "return", "rollback", "rollup", "row_number", "running",
+                "savepoint", "scope", "scroll", "search", "second", "seek", "sensitive",
+                "session_user", "similar", "sin", "sinh", "skip", "some", "specific",
+                "specifictype", "sql", "sqlexception", "sqlstate", "sqlwarning", "sqrt", "start",
+                "static", "stddev_pop", "stddev_samp", "submultiset", "subset", "substring",
+                "substring_regex", "succeeds", "sum", "symmetric", "system", "system_time",
+                "system_user", "tan", "tanh", "time", "timezone_hour", "timezone_minute",
+                "trailing", "translate", "translate_regex", "translation", "treat", "trigger",
+                "trim", "trim_array", "uescape", "unique", "unknown", "unnest", "update  ",
+                "upper", "user", "value", "value_of", "var_pop", "var_samp", "varbinary",
+                "varying", "versioning", "whenever", "width_bucket", "window", "within",
+                "without", "year"}));
         // TODO: Remove impala builtin function names. Need to find content of
         // BuiltinsDb.getInstance().getAllFunctions()
         //reservedWords.removeAll(BuiltinsDb.getInstance().getAllFunctions().keySet());
@@ -371,11 +371,11 @@ public class ImpalaIdentifierParser {
         // Remove whitelist words. These words might be heavily used in production, and
         // impala is unlikely to implement SQL features around these words in the near future.
         reservedWords.removeAll(Arrays.asList(new String[] {
-            // time units
-            "year", "month", "day", "hour", "minute", "second",
-            "begin", "call", "check", "classifier", "close", "identity", "language",
-            "localtime", "member", "module", "new", "nullif", "old", "open", "parameter",
-            "period", "result", "return", "sql", "start", "system", "time", "user", "value"
+                // time units
+                "year", "month", "day", "hour", "minute", "second",
+                "begin", "call", "check", "classifier", "close", "identity", "language",
+                "localtime", "member", "module", "new", "nullif", "old", "open", "parameter",
+                "period", "result", "return", "sql", "start", "system", "time", "user", "value"
         }));
     }
 

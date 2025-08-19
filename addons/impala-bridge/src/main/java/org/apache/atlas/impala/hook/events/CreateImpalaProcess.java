@@ -18,20 +18,13 @@
 
 package org.apache.atlas.impala.hook.events;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 import org.apache.atlas.impala.hook.AtlasImpalaHookContext;
 import org.apache.atlas.impala.model.ImpalaDataType;
 import org.apache.atlas.impala.model.ImpalaDependencyType;
 import org.apache.atlas.impala.model.ImpalaNode;
+import org.apache.atlas.impala.model.ImpalaQuery;
 import org.apache.atlas.impala.model.ImpalaVertexType;
 import org.apache.atlas.impala.model.LineageEdge;
-import org.apache.atlas.impala.model.ImpalaQuery;
 import org.apache.atlas.impala.model.LineageVertex;
 import org.apache.atlas.impala.model.LineageVertexMetadata;
 import org.apache.atlas.model.instance.AtlasEntity;
@@ -41,6 +34,14 @@ import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 public class CreateImpalaProcess extends BaseImpalaEvent {
     private static final Logger LOG = LoggerFactory.getLogger(CreateImpalaProcess.class);
@@ -117,10 +118,10 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
 
         if (!inputs.isEmpty() || !outputs.isEmpty()) {
             AtlasEntity process = getImpalaProcessEntity(inputs, outputs);
-            if (process!= null) {
+            if (process != null) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("get process entity with qualifiedName: {}",
-                        process.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                                process.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
                 }
 
                 ret.addEntity(process);
@@ -129,7 +130,7 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
                 if (processExecution != null) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("get process executition entity with qualifiedName: {}",
-                            processExecution.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
+                                    processExecution.getAttribute(ATTRIBUTE_QUALIFIED_NAME));
                     }
 
                     ret.addEntity(processExecution);
@@ -142,8 +143,6 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
         } else {
             ret = null;
         }
-
-
         return ret;
     }
 
@@ -158,7 +157,6 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
         final Set<String>       processedOutputCols = new HashSet<>();
 
         for (LineageEdge edge : edges) {
-
             if (!edge.getEdgeType().equals(ImpalaDependencyType.PROJECTION)) {
                 // Impala dependency type can only be predicate or projection.
                 // Impala predicate dependency: This is a dependency between a set of target
@@ -176,7 +174,7 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
 
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("processColumnLineage(): target id = {}, target column name = {}",
-                        targetId, outputColName);
+                                targetId, outputColName);
                 }
 
                 if (outputColumn == null) {
@@ -215,8 +213,8 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
 
             AtlasEntity columnLineageProcess = new AtlasEntity(ImpalaDataType.IMPALA_COLUMN_LINEAGE.getName());
 
-            String columnQualifiedName = (String)impalaProcess.getAttribute(ATTRIBUTE_QUALIFIED_NAME) +
-                AtlasImpalaHookContext.QNAME_SEP_PROCESS + outputColumns.get(0).getAttribute(ATTRIBUTE_NAME);
+            String columnQualifiedName = (String) impalaProcess.getAttribute(ATTRIBUTE_QUALIFIED_NAME) +
+                    AtlasImpalaHookContext.QNAME_SEP_PROCESS + outputColumns.get(0).getAttribute(ATTRIBUTE_NAME);
             columnLineageProcess.setAttribute(ATTRIBUTE_NAME, columnQualifiedName);
             columnLineageProcess.setAttribute(ATTRIBUTE_QUALIFIED_NAME, columnQualifiedName);
             columnLineageProcess.setAttribute(ATTRIBUTE_INPUTS, getObjectIds(inputColumns));
@@ -240,7 +238,7 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
         }
 
         for (AtlasEntity columnLineage : columnLineages) {
-            String columnQualifiedName = (String)columnLineage.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
+            String columnQualifiedName = (String) columnLineage.getAttribute(ATTRIBUTE_QUALIFIED_NAME);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("get column lineage entity with qualifiedName: {}", columnQualifiedName);
             }
@@ -253,9 +251,9 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
     // Then organize the vertices into hierarchical structure: put all column vertices of a table
     // as children of a ImpalaNode representing that table.
     private void getInputOutList(ImpalaQuery lineageQuery, List<ImpalaNode> inputNodes,
-        List<ImpalaNode> outputNodes) {
-        // get vertex map with key being its id and
-        // ImpalaNode map with its own vertex's vertexId as its key
+                List<ImpalaNode> outputNodes) {
+            // get vertex map with key being its id and
+            // ImpalaNode map with its own vertex's vertexId as its key
         for (LineageVertex vertex : lineageQuery.getVertices()) {
             updateVertexMap(vertex);
         }
@@ -308,7 +306,7 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
      * @return the table name to ImpalaNode map, whose table node contains its columns
      */
     private Map<String, ImpalaNode> buildInputOutputList(Set<Long> idSet, Map<Long, LineageVertex> vertexMap,
-        Map<String, ImpalaNode> vertexNameMap) {
+            Map<String, ImpalaNode> vertexNameMap) {
         Map<String, ImpalaNode> returnTableMap = new HashMap<>();
 
         for (Long id : idSet) {
@@ -323,7 +321,7 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
                 String tableName = getTableNameFromVertex(vertex);
                 if (tableName == null) {
                     LOG.warn("cannot find tableName for vertex with id: {}, column name : {}",
-                        id, vertex.getVertexId() == null? "null" : vertex.getVertexId());
+                            id, vertex.getVertexId() == null ? "null" : vertex.getVertexId());
 
                     continue;
                 }
@@ -335,7 +333,7 @@ public class CreateImpalaProcess extends BaseImpalaEvent {
 
                     if (tableNode == null) {
                         LOG.warn("cannot find table node for vertex with id: {}, column name : {}",
-                            id, vertex.getVertexId());
+                                id, vertex.getVertexId());
 
                         tableNode = createTableNode(tableName, getCreateTimeInVertex(null));
                         vertexNameMap.put(tableName, tableNode);

@@ -25,6 +25,12 @@ services:
         condition: service_started
       atlas-kafka:
         condition: service_started
+    healthcheck:
+      test: [ "CMD", "wget", "-q", "--spider", "http://localhost:16030/rs-status" ]
+      interval: 30s
+      timeout: 10s
+      retries: 30
+      start_period: 40s
     environment:
       - HBASE_VERSION
       - ATLAS_VERSION

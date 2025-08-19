@@ -90,6 +90,8 @@ import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_INT;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_LONG;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_SHORT;
 import static org.apache.atlas.model.typedef.AtlasBaseTypeDef.ATLAS_TYPE_STRING;
+import static org.apache.atlas.repository.Constants.ATTRIBUTE_INDEX_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.ATTRIBUTE_KEY_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.BACKING_INDEX;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.CLASSIFICATION_EDGE_NAME_PROPERTY_KEY;
@@ -121,6 +123,11 @@ import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPE
 import static org.apache.atlas.repository.Constants.PROPERTY_KEY_AUDIT_REDUCTION_NAME;
 import static org.apache.atlas.repository.Constants.PROPERTY_KEY_INDEX_RECOVERY_NAME;
 import static org.apache.atlas.repository.Constants.PROVENANCE_TYPE_KEY;
+import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_CATEGORY_KEY;
+import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_END1_KEY;
+import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_END2_KEY;
+import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_LABEL_KEY;
+import static org.apache.atlas.repository.Constants.RELATIONSHIPTYPE_TAG_PROPAGATION_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_GUID_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
@@ -131,8 +138,13 @@ import static org.apache.atlas.repository.Constants.TASK_STATUS;
 import static org.apache.atlas.repository.Constants.TASK_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPEDESCRIPTION_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPEOPTIONS_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TYPESERVICETYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPEVERSION_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPE_CATEGORY_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.VERSION_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.VERTEX_INDEX;
 import static org.apache.atlas.repository.Constants.VERTEX_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.graphdb.AtlasCardinality.LIST;
@@ -244,7 +256,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     public void onChange(ChangedTypeDefs changedTypeDefs) throws AtlasBaseException {
         LOG.debug("Processing changed typedefs {}", changedTypeDefs);
 
-        AtlasGraphManagement management = null;
+        AtlasGraphManagement management       = null;
+        boolean              isRollbackNeeded = true;
 
         try {
             management = provider.get().getManagementSystem();
@@ -276,12 +289,22 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createEdgeLabels(management, changedTypeDefs.getCreatedTypeDefs());
             createEdgeLabels(management, changedTypeDefs.getUpdatedTypeDefs());
 
+            isRollbackNeeded = false;
+
             //Commit indexes
             commit(management);
         } catch (RepositoryException | IndexException e) {
             LOG.error("Failed to update indexes for changed typedefs", e);
 
+            isRollbackNeeded = false;
+
             attemptRollback(changedTypeDefs, management);
+        } finally {
+            if (isRollbackNeeded) {
+                LOG.warn("onChange({}): was not committed. Rolling back...", changedTypeDefs);
+
+                attemptRollback(changedTypeDefs, management);
+            }
         }
 
         notifyChangeListeners(changedTypeDefs);
@@ -615,6 +638,9 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             createCommonVertexIndex(management, " __AtlasMetricsStat.collectionTime", UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, false);
             createCommonVertexIndex(management, " __AtlasMetricsStat.timeToLiveMillis", UniqueKind.NONE, String.class, SINGLE, true, false);
 
+            // atlas async import request index
+            createCommonVertexIndex(management, "__AtlasAsyncImportRequest.importId", UniqueKind.GLOBAL_UNIQUE, String.class, SINGLE, true, true);
+
             // create vertex-centric index
             createVertexCentricIndex(management, CLASSIFICATION_LABEL, AtlasEdgeDirection.BOTH, CLASSIFICATION_EDGE_NAME_PROPERTY_KEY, String.class, SINGLE);
             createVertexCentricIndex(management, CLASSIFICATION_LABEL, AtlasEdgeDirection.BOTH, CLASSIFICATION_EDGE_IS_PROPAGATED_PROPERTY_KEY, Boolean.class, SINGLE);
@@ -628,9 +654,21 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             // create fulltext indexes
             createFullTextIndex(management, ENTITY_TEXT_PROPERTY_KEY, String.class, SINGLE);
 
+            createPropertyKey(management, TYPE_CATEGORY_PROPERTY_KEY, String.class, SINGLE);
+            createPropertyKey(management, TYPEDESCRIPTION_PROPERTY_KEY, String.class, SINGLE);
+            createPropertyKey(management, TYPEVERSION_PROPERTY_KEY, String.class, SINGLE);
+            createPropertyKey(management, VERSION_PROPERTY_KEY, Long.class, SINGLE);
+            createPropertyKey(management, TYPEOPTIONS_PROPERTY_KEY, String.class, SINGLE);
             createPropertyKey(management, IS_PROXY_KEY, Boolean.class, SINGLE);
             createPropertyKey(management, PROVENANCE_TYPE_KEY, Integer.class, SINGLE);
             createPropertyKey(management, HOME_ID_KEY, String.class, SINGLE);
+            createPropertyKey(management, ATTRIBUTE_INDEX_PROPERTY_KEY, Integer.class, SINGLE);
+            createPropertyKey(management, ATTRIBUTE_KEY_PROPERTY_KEY, String.class, SINGLE);
+            createPropertyKey(management, RELATIONSHIPTYPE_END1_KEY, String.class, SINGLE);
+            createPropertyKey(management, RELATIONSHIPTYPE_END2_KEY, String.class, SINGLE);
+            createPropertyKey(management, RELATIONSHIPTYPE_CATEGORY_KEY, String.class, SINGLE);
+            createPropertyKey(management, RELATIONSHIPTYPE_LABEL_KEY, String.class, SINGLE);
+            createPropertyKey(management, RELATIONSHIPTYPE_TAG_PROPAGATION_KEY, String.class, SINGLE);
 
             commit(management);
 

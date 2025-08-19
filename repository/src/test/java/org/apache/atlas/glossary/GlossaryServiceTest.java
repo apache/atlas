@@ -18,6 +18,7 @@
 package org.apache.atlas.glossary;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
 import org.apache.atlas.SortOrder;
 import org.apache.atlas.TestModules;
 import org.apache.atlas.bulkimport.BulkImportResponse;
@@ -1035,6 +1036,8 @@ public class GlossaryServiceTest {
         assetEntity.setAttribute("qualifiedName", "testAsset");
         assetEntity.setAttribute("name", "testAsset");
 
+        long originalUpdateTime         = 0L;
+        long updatedTimeAfterAssignment = 0L;
         try {
             EntityMutationResponse response           = entityStore.createOrUpdate(new AtlasEntityStream(assetEntity), false);
             AtlasEntityHeader      firstEntityCreated = response.getFirstEntityCreated();
@@ -1045,12 +1048,31 @@ public class GlossaryServiceTest {
             relatedObjectId.setTypeName(firstEntityCreated.getTypeName());
 
             assertNotNull(relatedObjectId);
+            AtlasEntity.AtlasEntityWithExtInfo entityInfo    = entityStore.getById(relatedObjectId.getGuid());
+            AtlasEntity                        createdEntity = entityInfo.getEntity();
+            assertNotNull(createdEntity);
+            originalUpdateTime = createdEntity.getUpdateTime().getTime();
         } catch (AtlasBaseException e) {
             fail("Entity creation should've succeeded", e);
         }
 
+        long mockRequestTimeAssign = System.currentTimeMillis() + 5000;  // simulate later timestamp
         try {
-            glossaryService.assignTermToEntities(fixedRateMortgage.getGuid(), Collections.singletonList(relatedObjectId));
+            try (MockedStatic<RequestContext> mockedRequestContext = Mockito.mockStatic(RequestContext.class)) {
+                RequestContext mockContext = mock(RequestContext.class);
+                when(mockContext.getRequestTime()).thenReturn(mockRequestTimeAssign);
+                mockedRequestContext.when(RequestContext::get).thenReturn(mockContext);
+
+                glossaryService.assignTermToEntities(fixedRateMortgage.getGuid(), Collections.singletonList(relatedObjectId));
+
+                //verify updateTime after assignment
+                AtlasEntity.AtlasEntityWithExtInfo updatedInfo                  = entityStore.getById(relatedObjectId.getGuid());
+                AtlasEntity                        updatedEntityAfterAssignment = updatedInfo.getEntity();
+                updatedTimeAfterAssignment = updatedEntityAfterAssignment.getUpdateTime().getTime();
+
+                assertEquals(updatedTimeAfterAssignment, mockRequestTimeAssign);
+                assertTrue(updatedTimeAfterAssignment > originalUpdateTime, "updateTime should have increased after term assignment");
+            }
         } catch (AtlasBaseException e) {
             fail("Term assignment to asset should've succeeded", e);
         }
@@ -1072,8 +1094,22 @@ public class GlossaryServiceTest {
 
         // Dissociate term from entities
         try {
-            glossaryService.removeTermFromEntities(fixedRateMortgage.getGuid(), Collections.singletonList(relatedObjectId));
+            long mockRequestTimeRemove = mockRequestTimeAssign + 5000;
+            try (MockedStatic<RequestContext> mockedRequestContext = Mockito.mockStatic(RequestContext.class)) {
+                RequestContext mockContext = mock(RequestContext.class);
+                when(mockContext.getRequestTime()).thenReturn(mockRequestTimeRemove);
+                mockedRequestContext.when(RequestContext::get).thenReturn(mockContext);
 
+                glossaryService.removeTermFromEntities(fixedRateMortgage.getGuid(), Collections.singletonList(relatedObjectId));
+
+                //verify updateTime after dissociation
+                AtlasEntity.AtlasEntityWithExtInfo updatedInfo                    = entityStore.getById(relatedObjectId.getGuid());
+                AtlasEntity                        updatedEntityAfterDissociation = updatedInfo.getEntity();
+                long                               updatedTimeAfterDissociation   = updatedEntityAfterDissociation.getUpdateTime().getTime();
+
+                assertEquals(updatedTimeAfterDissociation, mockRequestTimeRemove);
+                assertTrue(updatedTimeAfterDissociation > updatedTimeAfterAssignment, "updateTime should have increased after term dissociation");
+            }
             AtlasGlossaryTerm term = glossaryService.getTerm(fixedRateMortgage.getGuid());
 
             assertNotNull(term);

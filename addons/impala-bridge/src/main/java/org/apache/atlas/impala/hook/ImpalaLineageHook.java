@@ -18,10 +18,7 @@
 
 package org.apache.atlas.impala.hook;
 
-import java.net.InetAddress;
-import java.net.UnknownHostException;
 import com.google.common.collect.Sets;
-import java.io.IOException;
 import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.impala.hook.events.BaseImpalaEvent;
 import org.apache.atlas.impala.hook.events.CreateImpalaProcess;
@@ -32,8 +29,13 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.security.UserGroupInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 import javax.security.auth.Subject;
 import javax.security.auth.kerberos.KerberosPrincipal;
+
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.HashSet;
 
 import static org.apache.atlas.repository.Constants.IMPALA_SOURCE;
@@ -63,9 +65,7 @@ public class ImpalaLineageHook extends AtlasHook {
         }
     }
 
-    public ImpalaLineageHook() {
-
-    }
+    public ImpalaLineageHook() {}
 
     public String getMessageSource() {
         return IMPALA_SOURCE;
@@ -99,17 +99,17 @@ public class ImpalaLineageHook extends AtlasHook {
         try {
             ImpalaOperationType operationType = ImpalaOperationParser.getImpalaOperationType(lineageQuery.getQueryText());
             AtlasImpalaHookContext context =
-                new AtlasImpalaHookContext(this, operationType, lineageQuery);
+                    new AtlasImpalaHookContext(this, operationType, lineageQuery);
             BaseImpalaEvent event = null;
 
             switch (operationType) {
-                    case CREATEVIEW:
-                    case CREATETABLE_AS_SELECT:
-                    case ALTERVIEW_AS:
-                    case QUERY:
-                    case QUERY_WITH_CLAUSE:
-                        event = new CreateImpalaProcess(context);
-                        break;
+                case CREATEVIEW:
+                case CREATETABLE_AS_SELECT:
+                case ALTERVIEW_AS:
+                case QUERY:
+                case QUERY_WITH_CLAUSE:
+                    event = new CreateImpalaProcess(context);
+                    break;
                 default:
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("HiveHook.run({}): operation ignored", lineageQuery.getQueryText());
@@ -125,9 +125,8 @@ public class ImpalaLineageHook extends AtlasHook {
                 super.notifyEntities(event.getNotificationMessages(), ugi);
             }
         } catch (Throwable t) {
-
             LOG.error("ImpalaLineageHook.process(): failed to process query {}",
-                AtlasType.toJson(lineageQuery), t);
+                    AtlasType.toJson(lineageQuery), t);
         }
 
         if (LOG.isDebugEnabled()) {
@@ -140,9 +139,9 @@ public class ImpalaLineageHook extends AtlasHook {
     }
 
     private UserGroupInformation getUgiFromUserName(String userName)  throws IOException {
-        String userPrincipal = userName.contains(REALM_SEPARATOR)? userName : userName + "@" + getRealm();
+        String userPrincipal = userName.contains(REALM_SEPARATOR) ? userName : userName + "@" + getRealm();
         Subject userSubject = new Subject(false, Sets.newHashSet(
-            new KerberosPrincipal(userPrincipal)), new HashSet<Object>(),new HashSet<Object>());
+                new KerberosPrincipal(userPrincipal)), new HashSet<Object>(), new HashSet<Object>());
         return UserGroupInformation.getUGIFromSubject(userSubject);
     }
 

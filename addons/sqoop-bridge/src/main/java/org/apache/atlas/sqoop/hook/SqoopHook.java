@@ -17,8 +17,6 @@
  */
 
 package org.apache.atlas.sqoop.hook;
-
-
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasClient;
 import org.apache.atlas.AtlasConstants;
@@ -28,9 +26,9 @@ import org.apache.atlas.hook.AtlasHook;
 import org.apache.atlas.hook.AtlasHookException;
 import org.apache.atlas.model.instance.AtlasEntity;
 import org.apache.atlas.model.instance.AtlasEntity.AtlasEntitiesWithExtInfo;
+import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.notification.HookNotification;
 import org.apache.atlas.model.notification.HookNotification.EntityCreateRequestV2;
-import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.sqoop.model.SqoopDataTypes;
 import org.apache.atlas.type.AtlasTypeUtil;
 import org.apache.atlas.utils.AtlasConfigurationUtil;
@@ -42,11 +40,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
-import java.util.Map;
-import java.util.HashMap;
-import java.util.Properties;
-import java.util.List;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 import static org.apache.atlas.repository.Constants.SQOOP_SOURCE;
 
@@ -98,7 +96,6 @@ public class SqoopHook extends SqoopJobDataPublisher {
             AtlasEntity entHiveTable = data.getHiveTable() != null ? toHiveTableEntity(entHiveDb, data.getHiveTable()) : null;
             AtlasEntity entProcess   = toSqoopProcessEntity(entDbStore, entHiveDb, entHiveTable, data, metadataNamespace);
 
-
             AtlasEntitiesWithExtInfo entities = new AtlasEntitiesWithExtInfo(entProcess);
 
             entities.addReferredEntity(entDbStore);
@@ -110,9 +107,8 @@ public class SqoopHook extends SqoopJobDataPublisher {
             HookNotification message = new EntityCreateRequestV2(AtlasHook.getUser(), entities);
 
             atlasHook.sendNotification(message);
-        } catch(Exception e) {
+        } catch (Exception e) {
             LOG.error("SqoopHook.publish() failed", e);
-
             throw new AtlasHookException("SqoopHook.publish() failed.", e);
         }
     }
@@ -134,12 +130,11 @@ public class SqoopHook extends SqoopJobDataPublisher {
 
     private AtlasEntity toHiveTableEntity(AtlasEntity entHiveDb, String tableName) {
         AtlasEntity entHiveTable  = new AtlasEntity(HiveDataTypes.HIVE_TABLE.getName());
-        String      qualifiedName = HiveMetaStoreBridge.getTableQualifiedName((String)entHiveDb.getAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE), (String)entHiveDb.getAttribute(AtlasClient.NAME), tableName);
+        String      qualifiedName = HiveMetaStoreBridge.getTableQualifiedName((String) entHiveDb.getAttribute(AtlasConstants.CLUSTER_NAME_ATTRIBUTE), (String) entHiveDb.getAttribute(AtlasClient.NAME), tableName);
 
         entHiveTable.setAttribute(AtlasClient.NAME, tableName.toLowerCase());
         entHiveTable.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, qualifiedName);
         entHiveTable.setRelationshipAttribute(ATTRIBUTE_DB, AtlasTypeUtil.getAtlasRelatedObjectId(entHiveDb, RELATIONSHIP_HIVE_TABLE_DB));
-
         return entHiveTable;
     }
 
@@ -177,13 +172,12 @@ public class SqoopHook extends SqoopJobDataPublisher {
         Properties          options          = data.getOptions();
 
         for (Object k : options.keySet()) {
-            sqoopOptionsMap.put((String)k, (String) options.get(k));
+            sqoopOptionsMap.put((String) k, (String) options.get(k));
         }
 
         entProcess.setAttribute(AtlasClient.NAME, sqoopProcessName);
         entProcess.setAttribute(AtlasClient.REFERENCEABLE_ATTRIBUTE_NAME, sqoopProcessName);
         entProcess.setAttribute(SqoopHook.OPERATION, data.getOperation());
-
         List<AtlasObjectId> sqoopObjects = Collections.singletonList(AtlasTypeUtil.getAtlasObjectId(entDbStore));
         List<AtlasObjectId> hiveObjects  = Collections.singletonList(AtlasTypeUtil.getAtlasObjectId(entHiveTable != null ? entHiveTable : entHiveDb));
 
@@ -246,7 +240,6 @@ public class SqoopHook extends SqoopJobDataPublisher {
     }
 
     private static class AtlasHookImpl extends AtlasHook {
-
         public String getMessageSource() {
             return SQOOP_SOURCE;
         }

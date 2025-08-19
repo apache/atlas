@@ -1,96 +1,38 @@
 {
-    "enumDefs": [],
     "structDefs": [
         {
             "name":        "aws_s3_bucket_lifeCycleRule",
-            "description": "Atlas Type representing the life cycle rules for S3 object store bucket",
             "serviceType": "aws",
             "typeVersion": "1.0",
+            "description": "Atlas Type representing the life cycle rules for S3 object store bucket",
             "attributeDefs": [
-                {
-                    "name":        "ruleType",
-                    "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  false,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "days",
-                    "typeName":    "int",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  false,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "storageClass",
-                    "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  true,
-                    "isUnique":    false
-                }
+                { "name": "ruleType",     "typeName": "string", "cardinality": "SINGLE", "isIndexable": true,  "isOptional": false, "isUnique": false },
+                { "name": "days",         "typeName": "int",    "cardinality": "SINGLE", "isIndexable": false, "isOptional": false, "isUnique": false },
+                { "name": "storageClass", "typeName": "string", "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true,  "isUnique": false }
             ]
         },
         {
             "name":        "aws_s3_access_policy",
-            "description": "Atlas Type representing an access policy statement on an S3 bucket. Can later be fleshed out to represent the JSON structure of the statement.",
             "serviceType": "aws",
             "typeVersion": "1.0",
+            "description": "Atlas Type representing an access policy statement on an S3 bucket. Can later be fleshed out to represent the JSON structure of the statement.",
             "attributeDefs": [
-                {
-                    "name":        "policyString",
-                    "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  false,
-                    "isUnique":    false
-                }
+                { "name": "policyString", "typeName": "string", "cardinality": "SINGLE", "isIndexable": true, "isOptional": false, "isUnique": false }
             ]
         }
     ],
-    "classificationDefs": [],
     "entityDefs": [
         {
             "name":        "aws_s3_object",
-            "description": "Atlas Type representing an Object (file) in an S3 Object Store Bucket",
             "superTypes":  [ "DataSet" ],
             "serviceType": "aws",
             "typeVersion": "1.0",
+            "description": "Atlas Type representing an Object (file) in an S3 Object Store Bucket",
             "attributeDefs": [
-                {
-                    "name":        "dataType",
-                    "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "compressionType",
-                    "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "awsTags",
-                    "typeName":    "array<aws_tag>",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "createTime",
-                    "typeName":    "date",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  true,
-                    "isUnique":    false
-                }
+                { "name": "dataType",        "typeName": "string",         "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true, "isUnique": false },
+                { "name": "compressionType", "typeName": "string",         "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
+                { "name": "awsTags",         "typeName": "array<aws_tag>", "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
+                { "name": "createTime",      "typeName": "date",           "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true, "isUnique": false }
             ]
         },
         {
@@ -100,62 +42,13 @@
             "serviceType": "aws",
             "typeVersion": "1.1",
             "attributeDefs": [
-                {
-                    "name":        "objectPrefix",
-                    "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  false,
-                    "isUnique":    true
-                },
-                {
-                    "name":        "subdomain",
-                    "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "subject",
-                    "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "currentStorageLocation",
-                    "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "dataType",
-                    "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "awsTags",
-                    "typeName":    "array<aws_tag>",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "createTime",
-                    "typeName":    "date",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  true,
-                    "isUnique":    false
-                }
+                { "name": "objectPrefix",           "typeName": "string",         "cardinality": "SINGLE", "isIndexable": true,  "isOptional": false, "isUnique": true },
+                { "name": "subdomain",              "typeName": "string",         "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true,  "isUnique": false },
+                { "name": "subject",                "typeName": "string",         "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true,  "isUnique": false },
+                { "name": "currentStorageLocation", "typeName": "string",         "cardinality": "SINGLE", "isIndexable": false, "isOptional": true,  "isUnique": false },
+                { "name": "dataType",               "typeName": "string",         "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true,  "isUnique": false },
+                { "name": "awsTags",                "typeName": "array<aws_tag>", "cardinality": "SINGLE", "isIndexable": false, "isOptional": true,  "isUnique": false },
+                { "name": "createTime",             "typeName": "date",           "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true,  "isUnique": false }
             ]
         },
         {
@@ -165,86 +58,16 @@
             "serviceType": "aws",
             "typeVersion": "1.0",
             "attributeDefs": [
-                {
-                    "name":        "partner",
-                    "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "domain",
-                    "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "region",
-                    "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "s3AccessPolicies",
-                    "typeName":    "array<aws_s3_access_policy>",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "isEncrypted",
-                    "typeName":    "boolean",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "encryptionType",
-                    "typeName":    "string",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "lifeCycleRules",
-                    "typeName":    "array<aws_s3_bucket_lifeCycleRule>",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "awsTags",
-                    "typeName":    "array<aws_tag>",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "cloudWatchMetrics",
-                    "typeName":    "array<aws_cloud_watch_metric>",
-                    "cardinality": "SINGLE",
-                    "isIndexable": false,
-                    "isOptional":  true,
-                    "isUnique":    false
-                },
-                {
-                    "name":        "createtime",
-                    "typeName":    "date",
-                    "cardinality": "SINGLE",
-                    "isIndexable": true,
-                    "isOptional":  true,
-                    "isUnique":    false
-                }
+                { "name": "partner",           "typeName": "string",                             "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true, "isUnique": false },
+                { "name": "domain",            "typeName": "string",                             "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true, "isUnique": false },
+                { "name": "region",            "typeName": "string",                             "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
+                { "name": "s3AccessPolicies",  "typeName": "array<aws_s3_access_policy>",        "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
+                { "name": "isEncrypted",       "typeName": "boolean",                            "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
+                { "name": "encryptionType",    "typeName": "string",                             "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
+                { "name": "lifeCycleRules",    "typeName": "array<aws_s3_bucket_lifeCycleRule>", "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
+                { "name": "awsTags",           "typeName": "array<aws_tag>",                     "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
+                { "name": "cloudWatchMetrics", "typeName": "array<aws_cloud_watch_metric>",      "cardinality": "SINGLE", "isIndexable": false, "isOptional": true, "isUnique": false },
+                { "name": "createtime",        "typeName": "date",                               "cardinality": "SINGLE", "isIndexable": true,  "isOptional": true, "isUnique": false }
             ]
         }
     ],
@@ -255,21 +78,9 @@
             "typeVersion":          "1.0",
             "relationshipCategory": "COMPOSITION",
             "relationshipLabel":    "__aws_s3_bucket.pseudoDirectories",
-            "endDef1": {
-                "type":              "aws_s3_bucket",
-                "name":              "pseudoDirectories",
-                "isContainer":       true,
-                "cardinality":       "SET",
-                "isLegacyAttribute": true
-            },
-            "endDef2": {
-                "type":               "aws_s3_pseudo_dir",
-                "name":               "bucket",
-                "isContainer":       false,
-                "cardinality":       "SINGLE",
-                "isLegacyAttribute": true
-            },
-            "propagateTags": "ONE_TO_TWO"
+            "propagateTags":        "ONE_TO_TWO",
+            "endDef1": { "type": "aws_s3_bucket",     "name": "pseudoDirectories", "isContainer": true,  "cardinality": "SET",    "isLegacyAttribute": true },
+            "endDef2": { "type": "aws_s3_pseudo_dir", "name": "bucket",            "isContainer": false, "cardinality": "SINGLE", "isLegacyAttribute": true }
         },
         {
             "name":                 "aws_s3_pseudo_dir_aws_objects",
@@ -277,21 +88,9 @@
             "typeVersion":          "1.0",
             "relationshipCategory": "COMPOSITION",
             "relationshipLabel":    "__aws_s3_pseudo_dir.s3Objects",
-            "endDef1": {
-                "type":              "aws_s3_pseudo_dir",
-                "name":              "s3Objects",
-                "isContainer":       true,
-                "cardinality":       "SET",
-                "isLegacyAttribute": true
-            },
-            "endDef2": {
-                "type":              "aws_s3_object",
-                "name":              "pseudoDirectory",
-                "isContainer":       false,
-                "cardinality":       "SINGLE",
-                "isLegacyAttribute": true
-            },
-            "propagateTags": "ONE_TO_TWO"
+            "propagateTags":        "ONE_TO_TWO",
+            "endDef1": { "type": "aws_s3_pseudo_dir", "name": "s3Objects",       "isContainer": true,  "cardinality": "SET",    "isLegacyAttribute": true },
+            "endDef2": { "type": "aws_s3_object",     "name": "pseudoDirectory", "isContainer": false, "cardinality": "SINGLE", "isLegacyAttribute": true }
         },
         {
             "name":                 "aws_s3_object_avro_schema",
@@ -299,20 +98,9 @@
             "typeVersion":          "1.0",
             "relationshipCategory": "ASSOCIATION",
             "relationshipLabel":    "__aws_s3_object.avroSchema",
-            "endDef1": {
-                "type":              "aws_s3_object",
-                "name":              "avroSchema",
-                "isContainer":       false,
-                "cardinality":       "SINGLE",
-                "isLegacyAttribute": true
-            },
-            "endDef2": {
-                "type":              "avro_schema",
-                "name":              "s3Objects",
-                "isContainer":       false,
-                "cardinality":       "SET"
-            },
-            "propagateTags": "NONE"
+            "propagateTags":        "NONE",
+            "endDef1": { "type": "aws_s3_object", "name": "avroSchema", "isContainer": false, "cardinality": "SINGLE", "isLegacyAttribute": true },
+            "endDef2": { "type": "avro_schema",   "name": "s3Objects",  "isContainer": false, "cardinality": "SET" }
         },
         {
             "name":                 "aws_s3_pseudo_dir_avro_schema",
@@ -320,20 +108,9 @@
             "typeVersion":          "1.0",
             "relationshipCategory": "ASSOCIATION",
             "relationshipLabel":    "__aws_s3_pseudo_dir.avroSchemas",
-            "endDef1": {
-                "type":              "aws_s3_pseudo_dir",
-                "name":              "avroSchemas",
-                "isContainer":       false,
-                "cardinality":       "SET",
-                "isLegacyAttribute": true
-            },
-            "endDef2": {
-                "type":              "avro_schema",
-                "name":              "s3PseudoDirs",
-                "isContainer":       false,
-                "cardinality":       "SET"
-            },
-            "propagateTags": "NONE"
+            "propagateTags":        "NONE",
+            "endDef1": { "type": "aws_s3_pseudo_dir", "name": "avroSchemas",  "isContainer": false, "cardinality": "SET", "isLegacyAttribute": true },
+            "endDef2": { "type": "avro_schema",       "name": "s3PseudoDirs", "isContainer": false, "cardinality": "SET" }
         }
     ]
 }

@@ -57,6 +57,7 @@
         <module>build-tools</module>
         <module>client</module>
         <module>common</module>
+        <module>dashboard</module>
         <module>dashboardv2</module>
         <module>dashboardv3</module>
 
@@ -128,6 +129,7 @@
         <ivy.version>2.5.2</ivy.version>
         <jackson.databind.version>2.12.7</jackson.databind.version>
         <jackson.version>2.12.7</jackson.version>
+        <jacoco.version>0.8.13</jacoco.version>
         <janusgraph.cassandra.version>0.5.3</janusgraph.cassandra.version>
         <janusgraph.version>1.0.0</janusgraph.version>
         <java.version.required>1.8</java.version.required>
@@ -154,13 +156,16 @@
         <maven-plugin-sortpom.version>3.0.1</maven-plugin-sortpom.version>
         <maven-site-plugin.version>3.7</maven-site-plugin.version>
         <netty.version>4.1.118.Final</netty.version>
+        <node-for-v1.version>v22.14.0</node-for-v1.version>
         <node-for-v2.version>v12.16.0</node-for-v2.version>
+        <npm-for-v1.version>10.9.2</npm-for-v1.version>
         <npm-for-v2.version>6.13.7</npm-for-v2.version>
         <okio.version>3.4.0</okio.version>
         <opencsv.version>5.0</opencsv.version>
         <paranamer.version>2.7</paranamer.version>
-        <poi-ooxml.version>5.2.2</poi-ooxml.version>
-        <poi.version>5.2.2</poi.version>
+        <poi-ooxml.version>5.4.0</poi-ooxml.version>
+        <poi.version>5.4.0</poi.version>
+        <project.build.dashboard.gruntBuild>run build</project.build.dashboard.gruntBuild>
         <project.build.dashboardv2.gruntBuild>build-minify</project.build.dashboardv2.gruntBuild>
         <project.build.dashboardv3.gruntBuild>build-minify</project.build.dashboardv3.gruntBuild>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -178,6 +183,7 @@
         <solr-test-framework.version>8.11.3</solr-test-framework.version>
         <solr.version>8.11.3</solr.version>
         <spray.version>1.3.1</spray.version>
+        <spring-ldap-core.version>2.4.4</spring-ldap-core.version>
         <spring.security.version>5.8.15</spring.security.version>
         <spring.version>5.3.39</spring.version>
         <sqoop.classifier>hadoop260</sqoop.classifier>
@@ -435,6 +441,13 @@
                 <groupId>org.apache.atlas</groupId>
                 <artifactId>atlas-common</artifactId>
                 <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.atlas</groupId>
+                <artifactId>atlas-dashboard</artifactId>
+                <version>${project.version}</version>
+                <type>war</type>
             </dependency>
 
             <dependency>
@@ -894,6 +907,12 @@
             </dependency>
 
             <dependency>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>jul-to-slf4j</artifactId>
                 <version>${slf4j.version}</version>
@@ -1032,11 +1051,6 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-        </dependency>
-
-        <dependency>
-            <groupId>org.slf4j</groupId>
-            <artifactId>slf4j-log4j12</artifactId>
         </dependency>
 
     </dependencies>
@@ -1327,7 +1341,7 @@
                     <forkCount>${surefire.forkCount}</forkCount>
                     <reuseForks>false</reuseForks>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                    <argLine>-Djava.awt.headless=true -Dproject.version=${project.version}
+                    <argLine>${argLine} -Djava.awt.headless=true -Dproject.version=${project.version}
                         -Dhadoop.tmp.dir="${project.build.directory}/tmp-hadoop-${user.name}"
                         -Xmx1024m -Djava.net.preferIPv4Stack=true ${atlas.surefire.options}</argLine>
                     <skip>${skipUTs}</skip>
@@ -1558,6 +1572,27 @@
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>javancss-maven-plugin</artifactId>
+            </plugin>
+
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>${jacoco.version}</version>
+                <executions>
+                    <execution>
+                        <id>jacoco-initialize</id>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>jacoco-site</id>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                        <phase>package</phase>
+                    </execution>
+                </executions>
             </plugin>
 
             <plugin>

@@ -53,6 +53,9 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.util.List;
 
+import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_DEFAULT_PROTOCOL;
+import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_ENABLED_ALGORITHMS;
+import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_ENABLED_PROTOCOLS;
 import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_EXCLUDE_CIPHER_SUITES;
 import static org.apache.atlas.security.SecurityProperties.ATLAS_SSL_EXCLUDE_PROTOCOLS;
 import static org.apache.atlas.security.SecurityProperties.CLIENT_AUTH_KEY;
@@ -115,6 +118,17 @@ public class SecureEmbeddedServer extends EmbeddedServer {
 
         if (excludedProtocols != null && excludedProtocols.length > 0) {
             sslContextFactory.addExcludeProtocols(excludedProtocols);
+        }
+
+        List<Object> enabledCiphersList = config.getList(ATLAS_SSL_ENABLED_ALGORITHMS);
+        if (enabledCiphersList != null && !enabledCiphersList.isEmpty()) {
+            sslContextFactory.setIncludeCipherSuites(enabledCiphersList.toArray(new String[enabledCiphersList.size()]));
+        }
+        String[] enabledProtocols = config.containsKey(ATLAS_SSL_ENABLED_PROTOCOLS) ?
+                config.getStringArray(ATLAS_SSL_ENABLED_PROTOCOLS) : ATLAS_SSL_DEFAULT_PROTOCOL;
+
+        if (enabledProtocols != null && enabledProtocols.length > 0) {
+            sslContextFactory.setIncludeProtocols(enabledProtocols);
         }
 
         // SSL HTTP Configuration

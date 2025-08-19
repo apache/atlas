@@ -27,6 +27,8 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasBaseTypeDef;
 import org.apache.atlas.model.typedef.AtlasStructDef;
 import org.apache.atlas.query.AtlasDSL;
+import org.apache.atlas.repository.graphdb.AtlasCardinality;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.AtlasDefStore;
 import org.apache.atlas.type.AtlasType;
@@ -168,5 +170,11 @@ abstract class AtlasAbstractDefStoreV2<T extends AtlasBaseTypeDef> implements At
 
     public boolean isInvalidTypeDefName(String typeName) {
         return INVALID_TYPEDEF_NAMES_LIST.contains(typeName);
+    }
+
+    protected static void createPropertyKey(String propertyKey, Class<?> clz, AtlasCardinality cardinality, AtlasGraphManagement management) {
+        if (!management.containsPropertyKey(propertyKey)) {
+            management.makePropertyKey(propertyKey, clz, cardinality);
+        }
     }
 }

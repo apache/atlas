@@ -67,6 +67,7 @@ import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
 import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.PROPERTY_KEY_RECEIVED_TIME;
 import static org.apache.atlas.repository.Constants.RELATIONSHIP_TYPE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
@@ -232,30 +233,14 @@ public class AtlasGraphUtilsV2 {
             propertyName = encodePropertyKey(propertyName);
         }
 
-        Object existingValue = element.getProperty(propertyName, Object.class);
-
         if (value == null) {
-            if (existingValue != null) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Removing property {} from {}", propertyName, toString(element));
-                }
-
-                element.removeProperty(propertyName);
-            }
+            element.removeProperty(propertyName);
         } else {
-            if (!value.equals(existingValue)) {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Setting property {} in {}", propertyName, toString(element));
-                }
-
-                if (value instanceof Date) {
-                    Long encodedValue = ((Date) value).getTime();
-
-                    element.setProperty(propertyName, encodedValue);
-                } else {
-                    element.setProperty(propertyName, value);
-                }
+            if (value instanceof Date) {
+                value = ((Date) value).getTime();
             }
+
+            element.setProperty(propertyName, value);
         }
     }
 
@@ -545,6 +530,41 @@ public class AtlasGraphUtilsV2 {
 
     public static List<String> findEntityGUIDsByType(AtlasGraph graph, String typename) {
         return findEntityGUIDsByType(graph, typename, null);
+    }
+
+    public static List<String> findEntityPropertyValuesByTypeAndAttributes(String typeName, Map<String, Object> attributeValues, String propertyKey) {
+        return findEntityPropertyValuesByTypeAndAttributes(getGraphInstance(), typeName, attributeValues, propertyKey);
+    }
+
+    public static List<String> findEntityPropertyValuesByTypeAndAttributes(AtlasGraph graph, String typeName, Map<String, Object> attributeValues, String propertyKey) {
+        MetricRecorder  metric = RequestContext.get().startMetricRecord("findEntityPropertyValuesByTypeAndAttributes");
+        AtlasGraphQuery query  = graph.query().has(ENTITY_TYPE_PROPERTY_KEY, typeName);
+
+        for (Map.Entry<String, Object> entry : attributeValues.entrySet()) {
+            String attrName  = entry.getKey();
+            Object attrValue = entry.getValue();
+
+            if (attrName != null && attrValue != null) {
+                query.has(attrName, attrValue);
+            }
+        }
+
+        query.orderBy(PROPERTY_KEY_RECEIVED_TIME, ASC);
+
+        List<String> propertyValues = new ArrayList<>();
+
+        for (Iterator<AtlasVertex<?, ?>> results = query.vertices().iterator(); results.hasNext(); ) {
+            AtlasVertex<?, ?> vertex        = results.next();
+            String            propertyValue = AtlasGraphUtilsV2.getProperty(vertex, propertyKey, String.class);
+
+            if (propertyValue != null) {
+                propertyValues.add(propertyValue);
+            }
+        }
+
+        RequestContext.get().endMetricRecord(metric);
+
+        return propertyValues;
     }
 
     public static Iterator<AtlasVertex> findActiveEntityVerticesByType(AtlasGraph graph, String typename) {
