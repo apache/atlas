@@ -45,7 +45,6 @@ import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.repository.userprofile.UserProfileService;
 import org.apache.atlas.repository.util.AccessControlUtils;
 import org.apache.atlas.searchlog.ESSearchLogger;
-import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.atlas.stats.StatsClient;
 import org.apache.atlas.type.*;
 import org.apache.atlas.util.AtlasGremlinQueryProvider;
@@ -71,7 +70,6 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
     private static final Logger LOG = LoggerFactory.getLogger(EntityDiscoveryService.class);
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("discovery.EntityDiscoveryService");
     private static final String DEFAULT_SORT_ATTRIBUTE_NAME = "name";
-    public static final String USE_DSL_OPTIMISATION = "discovery_use_dsl_optimisation";
 
     private final AtlasGraph                      graph;
     private final AtlasGremlinQueryProvider       gremlinQueryProvider;
@@ -326,7 +324,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             optimizeQueryIfApplicable(searchParams, clientOrigin);
-            if (FeatureFlagStore.evaluate(USE_DSL_OPTIMISATION, "true") && CLIENT_ORIGIN_PRODUCT.equals(clientOrigin)) {
+            if (CLIENT_ORIGIN_PRODUCT.equals(clientOrigin)) {
                 if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                     perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityDiscoveryService.directIndexSearch(" + searchParams.getQuery() + ")");
                 }
@@ -406,7 +404,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     private void optimizeQueryIfApplicable(SearchParams searchParams, String clientOrigin) {
         try {
-            if (FeatureFlagStore.evaluate(USE_DSL_OPTIMISATION, "true") && CLIENT_ORIGIN_PRODUCT.equals(clientOrigin)) {
+            if (CLIENT_ORIGIN_PRODUCT.equals(clientOrigin)) {
                 ElasticsearchDslOptimizer.OptimizationResult result = dslOptimizer.optimizeQueryWithValidation(searchParams.getQuery());
                 String dslOptimised = result.getOptimizedQuery();
                 searchParams.setQuery(dslOptimised);
