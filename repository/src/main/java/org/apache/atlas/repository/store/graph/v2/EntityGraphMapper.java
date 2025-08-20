@@ -2496,15 +2496,14 @@ public class EntityGraphMapper {
 
         // Add more info to outputPort update event.
         if (internalAttr.equals(OUTPUT_PORT_GUIDS_ATTR)) {
-            List<String> conflictingGuids = fetchConflictingGuids(currentElements, toVertex, addedGuids);
+            List<String> conflictingGuids = fetchConflictingGuids(toVertex, addedGuids);
 
             // When adding assets as outputPort, remove them from inputPorts if they already exist there.
             if (CollectionUtils.isNotEmpty(conflictingGuids)) {
                 try {
                     removeInputPortEdges(toVertex, conflictingGuids);
                 } catch (AtlasBaseException e) {
-                    LOG.error("Failed to remove input port edges for conflicting GUIDs: {}", conflictingGuids, e);
-                    throw e;
+                    throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Failed to remove input port edges for conflicting GUIDs: " + conflictingGuids, String.valueOf(e));
                 }
 
                 conflictingGuids.forEach(guid ->
@@ -2538,7 +2537,7 @@ public class EntityGraphMapper {
         }
     }
 
-    private List<String> fetchConflictingGuids(List<Object> currentElements, AtlasVertex toVertex, List<String> addedGuids) {
+    private List<String> fetchConflictingGuids(AtlasVertex toVertex, List<String> addedGuids) {
         List<String> conflictingGuids = new ArrayList<>();
         if (CollectionUtils.isNotEmpty(addedGuids)) {
             List<String> existingInputPortGuids = toVertex.getMultiValuedProperty(INPUT_PORT_GUIDS_ATTR, String.class);
@@ -2581,12 +2580,6 @@ public class EntityGraphMapper {
             RequestContext.get().cacheDifferentialEntity(productDiffEntity);
         }
 
-        Map<String, Object> removedAttrs = productDiffEntity.getRemovedRelationshipAttributes();
-        if (removedAttrs == null) {
-            removedAttrs = new HashMap<>();
-            productDiffEntity.setRemovedRelationshipAttributes(removedAttrs);
-        }
-
         productDiffEntity.setRemovedRelationshipAttribute(INPUT_PORTS, conflictingGuids);
 
         for (String assetGuid : conflictingGuids) {
@@ -2601,25 +2594,7 @@ public class EntityGraphMapper {
                     RequestContext.get().cacheDifferentialEntity(assetDiffEntity);
                 }
 
-                Map<String, Object> assetRemovedAttrs = assetDiffEntity.getRemovedRelationshipAttributes();
-                if (assetRemovedAttrs == null) {
-                    assetRemovedAttrs = new HashMap<>();
-                    assetDiffEntity.setRemovedRelationshipAttributes(assetRemovedAttrs);
-                }
-
-                List<AtlasObjectId> existingRemovedProducts = (List<AtlasObjectId>) assetRemovedAttrs.get(INPUT_PORT_PRODUCT_EDGE_LABEL);
-                if (existingRemovedProducts == null) {
-                    existingRemovedProducts = new ArrayList<>();
-                }
-                
-                boolean productExists = existingRemovedProducts.stream()
-                    .anyMatch(obj -> productGuid.equals(obj.getGuid()));
-                
-                if (!productExists) {
-                    AtlasObjectId productObjectId = new AtlasObjectId(productGuid, TYPE_PRODUCT);
-                    existingRemovedProducts.add(productObjectId);
-                }
-                assetRemovedAttrs.put(INPUT_PORT_PRODUCT_EDGE_LABEL, existingRemovedProducts);
+                assetDiffEntity.setRemovedRelationshipAttribute(INPUT_PORT_PRODUCT_RELATIONSHIP_LABEL, Collections.singletonList(new AtlasObjectId(productGuid, TYPE_PRODUCT)));
             }
         }
     }

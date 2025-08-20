@@ -24,7 +24,6 @@ import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.instance.AtlasEntity;
-import org.apache.atlas.model.instance.AtlasObjectId;
 import org.apache.atlas.model.instance.AtlasRelationship;
 import org.apache.atlas.model.instance.BusinessLineageRequest;
 import org.apache.atlas.repository.RepositoryException;
@@ -120,12 +119,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                         updatedVertices.add(updatedVertex);
                     }
                 } else {
-                    Set<AtlasVertex> inputRelationVertices = processProductAssetInputRelation(assetGuid, productGuid, operation, edgeLabel);
-                    for (AtlasVertex updatedVertex : inputRelationVertices) {
-                        if (!updatedVertices.contains(updatedVertex) && updatedVertex != null) {
-                            updatedVertices.add(updatedVertex);
-                        }
-                    }
+                    processProductAssetInputRelation(assetGuid, productGuid, operation, edgeLabel);
                 }
             }
             handleEntityMutation(updatedVertices);
@@ -180,9 +174,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         }
     }
 
-    public Set<AtlasVertex> processProductAssetInputRelation(String assetGuid, String productGuid, BusinessLineageRequest.OperationType operation, String edgeLabel) throws AtlasBaseException, RepositoryException {
-        Set<AtlasVertex> modifiedVertices = new HashSet<>();
-        
+    public void processProductAssetInputRelation(String assetGuid, String productGuid, BusinessLineageRequest.OperationType operation, String edgeLabel) throws AtlasBaseException, RepositoryException {
         try {
             AtlasVertex assetVertex;
             AtlasVertex productVertex;
@@ -190,35 +182,29 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                 assetVertex = entityRetriever.getEntityVertex(assetGuid);
                 if (assetVertex == null) {
                     LOG.warn("Asset not found for assetGuid: {}", assetGuid);
-                    return modifiedVertices;
+                    return;
                 }
 
                 productVertex = entityRetriever.getEntityVertex(productGuid);
                 if (productVertex == null) {
                     LOG.warn("Product not found for productGuid: {}", productGuid);
-                    return modifiedVertices;
+                    return;
                 }
             } catch (AtlasBaseException e){
                 LOG.warn("Entity Vertex not found", e);
-                return modifiedVertices;
+                return;
             }
 
             switch (operation) {
                 case ADD:
                     addInputRelation(assetVertex, productVertex, edgeLabel, assetGuid, operation);
-                    modifiedVertices.add(assetVertex);
-                    modifiedVertices.add(productVertex);
                     break;
                 case REMOVE:
                     removeInputRelation(assetVertex, productVertex, edgeLabel, assetGuid, operation);
-                    modifiedVertices.add(assetVertex);
-                    modifiedVertices.add(productVertex);
                     break;
                 default:
                     throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "Invalid operation type");
             }
-
-            return modifiedVertices;
         } catch (AtlasBaseException | RepositoryException e){
             LOG.error("Error while processing product asset input relation", e);
             throw e;
@@ -277,8 +263,6 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                     relationshipStoreV2.getOrCreate(assetVertex, productVertex, relationship, true);
                     LOG.info("Added input relation between asset and product");
                     updateInternalAttr(productVertex, assetGuid, operation);
-                    cacheDifferentialMeshRelationship(assetVertex, productVertex, "inputPortDataProducts", TYPE_PRODUCT, true);
-                    cacheDifferentialMeshRelationship(productVertex, assetVertex, INPUT_PORTS, "Asset", true);
                 }
             }
         } catch (AtlasBaseException e){
@@ -295,8 +279,6 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
                 if(inputPortEdge != null){
                     graph.removeEdge(inputPortEdge);
                     updateInternalAttr(productVertex, assetGuid, operation);
-                    cacheDifferentialMeshRelationship(assetVertex, productVertex, "inputPortDataProducts", TYPE_PRODUCT, false);
-                    cacheDifferentialMeshRelationship(productVertex, assetVertex, INPUT_PORTS, "Asset", false);
                 }
             }
         } catch (AtlasBaseException | RepositoryException e){
@@ -349,34 +331,6 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         diffEntity.setUpdatedBy(ev.getProperty(MODIFIED_BY_KEY, String.class));
         diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
         diffEntity.setAttribute(assetDenormAttribute, existingValues);
-
-        requestContext.cacheDifferentialEntity(diffEntity);
-    }
-
-    private void cacheDifferentialMeshRelationship(AtlasVertex entityVertex, AtlasVertex relatedVertex, String relationshipAttributeName, String superType, boolean isAdd) {
-        AtlasEntity diffEntity;
-        String entityGuid = entityVertex.getProperty(GUID_PROPERTY_KEY, String.class);
-        String relatedGuid = relatedVertex.getProperty(GUID_PROPERTY_KEY, String.class);
-        String relatedTypeName = relatedVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
-
-        RequestContext requestContext = RequestContext.get();
-
-        if (requestContext.getDifferentialEntity(entityGuid) != null) {
-            diffEntity = requestContext.getDifferentialEntity(entityGuid);
-        } else {
-            diffEntity = new AtlasEntity(entityVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class));
-            diffEntity.setGuid(entityGuid);
-            diffEntity.setUpdatedBy(entityVertex.getProperty(MODIFIED_BY_KEY, String.class));
-            diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
-        }
-
-        AtlasObjectId relatedObjectId = new AtlasObjectId(relatedGuid, superType);
-
-        if (isAdd) {
-            diffEntity.addOrAppendAddedRelationshipAttribute(relationshipAttributeName, relatedObjectId);
-        } else {
-            diffEntity.addOrAppendRemovedRelationshipAttribute(relationshipAttributeName, relatedObjectId);
-        }
 
         requestContext.cacheDifferentialEntity(diffEntity);
     }
