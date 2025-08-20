@@ -63,6 +63,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery.CLIENT_ORIGIN_PLAYBOOK;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery.CLIENT_ORIGIN_PRODUCT;
 
 @Component
@@ -324,7 +325,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
             AtlasPerfMetrics.MetricRecorder elasticSearchQueryMetric = RequestContext.get().startMetricRecord("elasticSearchQuery");
             optimizeQueryIfApplicable(searchParams, clientOrigin);
-            if (CLIENT_ORIGIN_PRODUCT.equals(clientOrigin)) {
+            if (CLIENT_ORIGIN_PRODUCT.equals(clientOrigin) || CLIENT_ORIGIN_PLAYBOOK.equals(clientOrigin)) {
                 if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
                     perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "EntityDiscoveryService.directIndexSearch(" + searchParams.getQuery() + ")");
                 }
@@ -404,7 +405,7 @@ public class EntityDiscoveryService implements AtlasDiscoveryService {
 
     private void optimizeQueryIfApplicable(SearchParams searchParams, String clientOrigin) {
         try {
-            if (CLIENT_ORIGIN_PRODUCT.equals(clientOrigin)) {
+            if (CLIENT_ORIGIN_PRODUCT.equals(clientOrigin) || CLIENT_ORIGIN_PLAYBOOK.equals(clientOrigin)) {
                 ElasticsearchDslOptimizer.OptimizationResult result = dslOptimizer.optimizeQueryWithValidation(searchParams.getQuery());
                 String dslOptimised = result.getOptimizedQuery();
                 searchParams.setQuery(dslOptimised);

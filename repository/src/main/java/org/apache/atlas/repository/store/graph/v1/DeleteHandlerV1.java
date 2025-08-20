@@ -1218,7 +1218,7 @@ public abstract class DeleteHandlerV1 {
                     if (!tag.isPropagated()) {
                         continue;
                     }
-                    String entityGuid = (String) tag.getTagMetaJson().get("entityGuid");
+                    String entityGuid = TagDAOCassandraImpl.toAtlasClassification(tag.getTagMetaJson()).getEntityGuid();
                     String tagTypeName = tag.getTagTypeName();
 
                     if (skipClassificationTaskCreationV2(entityGuid, tagTypeName)) {
