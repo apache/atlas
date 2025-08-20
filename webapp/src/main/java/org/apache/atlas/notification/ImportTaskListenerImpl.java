@@ -58,13 +58,14 @@ import static org.apache.atlas.AtlasErrorCode.IMPORT_QUEUEING_FAILED;
 @Order(8)
 @DependsOn(value = "notificationHookConsumer")
 public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler, ImportTaskListener {
-    private static final Logger LOG = LoggerFactory.getLogger(ImportTaskListenerImpl.class);
+    private static final Logger            LOG                  = LoggerFactory.getLogger(ImportTaskListenerImpl.class);
 
-    private static final String THREADNAME_PREFIX    = ImportTaskListener.class.getSimpleName();
-    private static final int    ASYNC_IMPORT_PERMITS = 1; // Only one asynchronous import task is permitted
+    private static final String            THREADNAME_PREFIX    = ImportTaskListener.class.getSimpleName();
+    private static final int               ASYNC_IMPORT_PERMITS = 1; // Only one asynchronous import task is permitted
 
+    private volatile boolean               isActiveInstance     = true;
+    private volatile ExecutorService       executorService; // Single-thread executor for sequential processing
     private final BlockingQueue<String>    requestQueue;    // Blocking queue for requests
-    private final ExecutorService          executorService; // Single-thread executor for sequential processing
     private final AsyncImportService       asyncImportService;
     private final NotificationHookConsumer notificationHookConsumer;
     private final Semaphore                asyncImportSemaphore;
@@ -81,8 +82,6 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
         this.requestQueue             = requestQueue;
         this.asyncImportSemaphore     = new Semaphore(ASYNC_IMPORT_PERMITS);
         this.applicationProperties    = ApplicationProperties.get();
-        this.executorService          = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d")
-                .setUncaughtExceptionHandler((thread, throwable) -> LOG.error("Uncaught exception in thread {}: {}", thread.getName(), throwable.getMessage(), throwable)).build());
     }
 
     @Override
@@ -109,11 +108,13 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     public void instanceIsActive() {
         LOG.info("Reacting to active state: initializing Kafka consumers");
 
+        isActiveInstance = true;
         startInternal();
     }
 
     @Override
     public void instanceIsPassive() {
+        isActiveInstance = false;
         try {
             stopImport();
         } finally {
@@ -166,6 +167,10 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     public void stopImport() {
         LOG.info("Shutting down import processor...");
 
+        if (executorService == null) {
+            LOG.info("Executor service is already null, nothing to shut down.");
+            return;
+        }
         executorService.shutdown(); // Initiate an orderly shutdown
 
         try {
@@ -217,6 +222,10 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     void startAsyncImportIfAvailable(String importId) {
         LOG.info("==> startAsyncImportIfAvailable()");
 
+        if (!isActiveInstance) {
+            LOG.warn("Import processing attempted while instance is passive. Skipping import.");
+            return;
+        }
         try {
             if (!asyncImportSemaphore.tryAcquire()) {
                 LOG.info("An async import is in progress, import request is queued");
@@ -232,7 +241,12 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
                 return;
             }
 
-            executorService.submit(() -> startImportConsumer(nextImport));
+            ExecutorService exec = ensureExecutorAlive();
+            if (exec != null) {
+                exec.submit(() -> startImportConsumer(nextImport));
+            } else {
+                LOG.warn("No executor available to process import task (instance is passive).");
+            }
         } catch (Exception e) {
             LOG.error("Error while starting the next import, releasing the lock if held", e);
 
@@ -294,6 +308,24 @@ public class ImportTaskListenerImpl implements Service, ActiveStateChangeHandler
     boolean isNotValidImportRequest(AtlasAsyncImportRequest importRequest) {
         return importRequest == null ||
                 (!ImportStatus.WAITING.equals(importRequest.getStatus()) && !ImportStatus.PROCESSING.equals(importRequest.getStatus()));
+    }
+
+    @VisibleForTesting
+    ExecutorService ensureExecutorAlive() {
+        if (!isActiveInstance) {
+            LOG.warn("Attempted to create executor while instance is passive. No executor will be created.");
+            return null;
+        }
+        if (executorService == null || executorService.isShutdown() || executorService.isTerminated()) {
+            synchronized (this) {
+                if (executorService == null || executorService.isShutdown() || executorService.isTerminated()) {
+                    executorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder().setNameFormat(THREADNAME_PREFIX + " thread-%d")
+                            .setUncaughtExceptionHandler((thread, throwable) -> LOG.error("Uncaught exception in thread {}: {}", thread.getName(), throwable.getMessage(), throwable)).build());
+                    LOG.info("ExecutorService was recreated.");
+                }
+            }
+        }
+        return executorService;
     }
 
     void populateRequestQueue() {
