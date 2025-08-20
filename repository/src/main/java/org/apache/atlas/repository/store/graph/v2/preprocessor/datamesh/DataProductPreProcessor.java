@@ -118,7 +118,7 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
 
         String state = vertex.getProperty(STATE_PROPERTY_KEY, String.class);
 
-        if (state.equals(DELETED.name())) {
+        if (DELETED.name().equals(state)) {
             AtlasEntity.Status entityStatus = entity.getStatus();
             Object entityState =  entity.getAttribute(STATE_PROPERTY_KEY);
 
