@@ -47,16 +47,16 @@ public class ImportTransformsTest {
 
     private final String lowerCaseCL1                    = "@cl1";
     private final String lowerCaseCL2                    = "@cl2";
-    private final String jsonLowerCaseReplace            = "{ \"hive_table\": { \"qualifiedName\":[ \"lowercase\", \"replace:@cl1:@cl2\" ] } }";
-    private final String jsonReplaceLowerCase            = "{ \"Asset\": { \"qualifiedName\":[ \"replace:@cl1:@cl2\" ] }, \"hive_table\": { \"qualifiedName\":[ \"lowercase\", \"replace:@cl1:@cl2\" ] } }";
-    private final String jsonReplaceRemoveClassification = "{ \"hive_table\": { \"qualifiedName\":[ \"replace:@%s:@%s\"], \"*\":[ \"removeClassification:%s_to_%s\" ] } }";
-    private final String jsonReplaceAndAddAttrValue      = "{ \"hive_table\": { \"qualifiedName\":[ \"replace:@%s:@%s\"], \"*\":[ \"add:%s=list:%s\" ] } }";
-    private final String jsonSingleClearAttrValue        = "{ \"hive_table\": { \"*\":[ \"clearAttrValue:replicatedToCluster\", \"clearAttrValue:replicatedFromCluster\" ] } }";
-    private final String jsonMultipleClearAttrValue      = "{ \"hive_table\": { \"*\":[ \"clearAttrValue:replicatedToCluster,replicatedFromCluster\" ] } }";
-    private final String jsonSetDeleted                  = "{ \"hive_table\": { \"*\":[ \"setDeleted\" ] } }";
-    private final String jsonAddClasification            = "{ \"hive_table\": { \"*\":[ \"addClassification:REPLICATED\" ] } }";
-    private final String jsonAddClasification2           = "{ \"hive_table\": { \"*\":[ \"addClassification:REPLICATED_2\" ] } }";
-    private final String jsonAddClasificationScoped      = "{ \"hive_column\": { \"*\":[ \"addClassification:REPLICATED_2:topLevel\" ] } }";
+    private final String jsonLowerCaseReplace = "{ \"hive_table\": { \"qualifiedName\":[ \"lowercase\", \"replace~@cl1~@cl2\" ] } }";
+    private final String jsonReplaceLowerCase = "{ \"Asset\": { \"qualifiedName\":[ \"replace~@cl1~@cl2\" ] }, \"hive_table\": { \"qualifiedName\":[ \"lowercase\", \"replace~@cl1~@cl2\" ] } }";
+    private final String jsonReplaceRemoveClassification = "{ \"hive_table\": { \"qualifiedName\":[ \"replace~@%s~@%s\"], \"*\":[ \"removeClassification~%s_to_%s\" ] } }";
+    private final String jsonReplaceAndAddAttrValue = "{ \"hive_table\": { \"qualifiedName\":[ \"replace~@%s~@%s\"], \"*\":[ \"add~%s=list:%s\" ] } }";
+    private final String jsonSingleClearAttrValue = "{ \"hive_table\": { \"*\":[ \"clearAttrValue~replicatedToCluster\", \"clearAttrValue~replicatedFromCluster\" ] } }";
+    private final String jsonMultipleClearAttrValue = "{ \"hive_table\": { \"*\":[ \"clearAttrValue~replicatedToCluster,replicatedFromCluster\" ] } }";
+    private final String jsonSetDeleted = "{ \"hive_table\": { \"*\":[ \"setDeleted\" ] } }";
+    private final String jsonAddClasification = "{ \"hive_table\": { \"*\":[ \"addClassification~REPLICATED\" ] } }";
+    private final String jsonAddClasification2 = "{ \"hive_table\": { \"*\":[ \"addClassification~REPLICATED_2\" ] } }";
+    private final String jsonAddClasificationScoped = "{ \"hive_column\": { \"*\":[ \"addClassification~REPLICATED_2~topLevel\" ] } }";
 
     private ImportTransforms transform;
 
@@ -278,7 +278,7 @@ public class ImportTransformsTest {
         Map<String, List<ImportTransformer>> tr     = new HashMap<>();
         List<ImportTransformer>              trList = new ArrayList<>();
 
-        trList.add(ImportTransformer.getTransformer(String.format("replace:%s:%s", lowerCaseCL1, lowerCaseCL2)));
+        trList.add(ImportTransformer.getTransformer(String.format("replace~%s~%s", lowerCaseCL1, lowerCaseCL2)));
         tr.put(ATTR_NAME_QUALIFIED_NAME, trList);
 
         transform.getTransforms().put("hive_column", tr);

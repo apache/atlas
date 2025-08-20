@@ -102,7 +102,7 @@ public class AtlasImportRequestTest {
 
     @Test
     public void serializeAtlasImportRequstFromJsonWith1Transform() {
-        String jsonData = "{ \"options\": { \"transforms\": \"{ \\\"hive_db\\\": { \\\"qualifiedName\\\": [ \\\"replace:@cl1:@cl2\\\" ] } }\" } }";
+        String jsonData = "{ \"options\": { \"transforms\": \"{ \\\"hive_db\\\": { \\\"qualifiedName\\\": [ \\\"replace~@cl1~@cl2\\\" ] } }\" } }";
 
         AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
 
@@ -123,7 +123,7 @@ public class AtlasImportRequestTest {
 
     @Test
     public void serializeAtlasImportRequstFromJson() {
-        String jsonData = "{ \"options\": { \"transforms\": \"{ \\\"hive_db\\\": { \\\"qualifiedName\\\": [ \\\"replace:@cl1:@cl2\\\" ] }, \\\"hive_table\\\": { \\\"qualifiedName\\\": [ \\\"lowercase\\\", \\\"replace:@cl1:@cl2\\\" ] } }\" } } }";
+        String jsonData = "{ \"options\": { \"transforms\": \"{ \\\"hive_db\\\": { \\\"qualifiedName\\\": [ \\\"replace~@cl1~@cl2\\\" ] }, \\\"hive_table\\\": { \\\"qualifiedName\\\": [ \\\"lowercase\\\", \\\"replace~@cl1~@cl2\\\" ] } }\" } } }";
 
         AtlasImportRequest request = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
 
