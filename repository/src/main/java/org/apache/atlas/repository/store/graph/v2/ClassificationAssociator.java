@@ -273,7 +273,7 @@ public class ClassificationAssociator {
                     String entityState = assetVertex.getProperty(STATE_PROPERTY_KEY, String.class);
                     String daapStatus = assetVertex.getProperty(DAAP_STATUS_ATTR, String.class);
 
-                    if ((AtlasEntity.Status.DELETED.name().equals(entityState)) || DAAP_ARCHIVED_STATUS.equals(daapStatus)) {
+                    if ((AtlasEntity.Status.DELETED.name().equals(entityState)) && DAAP_ARCHIVED_STATUS.equals(daapStatus)) {
                         throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot update DataProduct that is Archived!");
                     }
                 }

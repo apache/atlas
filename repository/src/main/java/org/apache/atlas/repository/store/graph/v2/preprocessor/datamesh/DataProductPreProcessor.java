@@ -31,6 +31,7 @@ import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
+import static org.apache.atlas.v1.model.instance.Id.EntityState.ACTIVE;
 import static org.apache.atlas.v1.model.instance.Id.EntityState.DELETED;
 
 public class DataProductPreProcessor extends AbstractDomainPreProcessor {
@@ -115,13 +116,17 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private void processUpdateProduct(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateProduct");
 
-        String currentEntityState = vertex.getProperty(STATE_PROPERTY_KEY, String.class);
-        String currentDaapStatus = vertex.getProperty(DAAP_STATUS_ATTR, String.class);
+        String vertexState = vertex.getProperty(STATE_PROPERTY_KEY, String.class);
+        String vertexDaapStatus = vertex.getProperty(DAAP_STATUS_ATTR, String.class);
 
-        if (currentEntityState.equals(DELETED.name()) && currentDaapStatus.equals(DAAP_ARCHIVED_STATUS)) {
-            AtlasEntity.Status status = entity.getStatus();
+        if (vertexState.equals(DELETED.name()) && vertexDaapStatus.equals(DAAP_ARCHIVED_STATUS)) {
+            AtlasEntity.Status entityStatus = entity.getStatus();
+            Object entityState =  entity.getAttribute(STATE_PROPERTY_KEY);
 
-            if (status == null || !AtlasEntity.Status.ACTIVE.equals(status)) {
+            boolean isBeingUnarchived = (entityStatus != null && AtlasEntity.Status.ACTIVE.equals(entityStatus)) ||
+                    (entityState != null && ACTIVE.name().equals(entityState.toString()));
+
+            if (!isBeingUnarchived) {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot update DataProduct that is Archived!");
             }
         }
