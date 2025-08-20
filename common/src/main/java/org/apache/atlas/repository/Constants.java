@@ -388,6 +388,8 @@ public final class Constants {
     public static final String TASK_PARENT_ENTITY_GUID             = encodePropertyKey(TASK_PREFIX + "parentEntityGuid");
     public static final String TASK_CLASSIFICATION_TYPENAME = encodePropertyKey(TASK_PREFIX + "classificationTypeName");
     public static final String ACTIVE_STATE_VALUE           = "ACTIVE";
+
+    public static final String ATLAN_HEADER_PREFIX_PATTERN  = "x-atlan-";
     public static final String TASK_HEADER_ATLAN_AGENT      = "x-atlan-agent";
     public static final String TASK_HEADER_ATLAN_AGENT_ID   = "x-atlan-agent-id";
     public static final String TASK_HEADER_ATLAN_PKG_NAME   = "x-atlan-package-name";

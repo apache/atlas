@@ -144,6 +144,14 @@ public class Tag {
         return objectMapper.convertValue(tagMetaJson, AtlasClassification.class);
     }
 
+    public boolean isPropagatable() {
+        // Return True if
+        // 1. tag itself is propagated
+        // OR
+        // 2. tag is a direct attachment with propagate option as true
+        return this.isPropagated() || this.isPropagationEnabled();
+    }
+
     @Override
     public String toString() {
         return "Tag{" +
