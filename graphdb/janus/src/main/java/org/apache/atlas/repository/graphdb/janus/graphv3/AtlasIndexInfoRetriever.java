@@ -59,7 +59,7 @@ public class AtlasIndexInfoRetriever extends org.janusgraph.graphdb.database.ind
                     final MixedIndexType extIndex = IndexRecordUtil.getMixedIndex(store, transaction);
                     assert extIndex.getBackingIndexName().equals(index);
                     final ImmutableMap.Builder<String,KeyInformation> b = ImmutableMap.builder();
-                    if ("edge_index".equals(store)) {
+                    if ("edge_index".equals(store) || "vertex_index".equals(store)) {
                         Set<String> processedKeys = new HashSet<>();
                         for (final ParameterIndexField field : extIndex.getFieldKeys()) {
                             String key = key2Field(field);
