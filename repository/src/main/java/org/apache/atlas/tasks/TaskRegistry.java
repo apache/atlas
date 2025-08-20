@@ -20,6 +20,7 @@ package org.apache.atlas.tasks;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.atlas.AtlasConfiguration;
+import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -40,6 +41,19 @@ import org.apache.atlas.utils.AtlasPerfMetrics;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpHost;
+import org.elasticsearch.ElasticsearchException;
+import org.elasticsearch.action.support.WriteRequest;
+import org.elasticsearch.action.update.UpdateRequest;
+import org.elasticsearch.action.update.UpdateResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.client.RestClient;
+import org.elasticsearch.client.RestClientBuilder;
+import org.elasticsearch.client.RestHighLevelClient;
+import org.elasticsearch.core.TimeValue;
+import org.elasticsearch.rest.RestStatus;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.janusgraph.util.encoding.LongEncoding;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +77,7 @@ import java.util.stream.Collectors;
 import static org.apache.atlas.repository.Constants.ATLAN_HEADER_PREFIX_PATTERN;
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.Constants.TASK_STATUS;
+import static org.apache.atlas.repository.audit.ESBasedAuditRepository.getHttpHosts;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
 @Component
@@ -77,16 +92,35 @@ public class TaskRegistry {
     private TaskService taskService;
     private int queueSize;
     private boolean useGraphQuery;
-
+    private final RestHighLevelClient hlClient;
     private static final List<Map<String, Object>> STATUS_CLAUSE_LIST = Arrays.asList(mapOf("match", mapOf(TASK_STATUS, AtlasTask.Status.IN_PROGRESS.toString())));
     private static final Map<String, Object> QUERY_MAP = mapOf("bool", mapOf("must", STATUS_CLAUSE_LIST));
 
     @Inject
-    public TaskRegistry(AtlasGraph graph, TaskService taskService) {
+    public TaskRegistry(AtlasGraph graph, TaskService taskService) throws AtlasException {
+
         this.graph = graph;
         this.taskService = taskService;
         queueSize = AtlasConfiguration.TASKS_QUEUE_SIZE.getInt();
         useGraphQuery = AtlasConfiguration.TASKS_REQUEUE_GRAPH_QUERY.getBoolean();
+        RestClientBuilder lowLevelClient = null;
+        lowLevelClient = initializeClient();
+        this.hlClient = new RestHighLevelClient(lowLevelClient);
+    }
+
+
+    public static RestClientBuilder initializeClient() throws AtlasException {
+        try {
+            List<HttpHost> httpHosts = getHttpHosts();
+            RestClientBuilder builder = RestClient.builder(httpHosts.get(0))
+                    .setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
+                            .setConnectTimeout(AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
+                            .setSocketTimeout(AtlasConfiguration.INDEX_CLIENT_SOCKET_TIMEOUT.getInt()));
+
+            return builder;
+        } catch (Exception e) {
+            throw new AtlasException("Failed to initialize Elasticsearch client", e);
+        }
     }
 
     @GraphTransaction
@@ -102,7 +136,7 @@ public class TaskRegistry {
         try {
             AtlasGraphQuery query = graph.query()
                                          .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
-                                         .has(Constants.TASK_STATUS, AtlasTask.Status.PENDING)
+                                         .has(TASK_STATUS, AtlasTask.Status.PENDING)
                                          .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
 
             Iterator<AtlasVertex> results = query.vertices().iterator();
@@ -127,7 +161,7 @@ public class TaskRegistry {
         try {
             AtlasGraphQuery query = graph.query()
                     .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME)
-                    .has(Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS)
+                    .has(TASK_STATUS, AtlasTask.Status.IN_PROGRESS)
                     .orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
 
             Iterator<AtlasVertex> results = query.vertices().iterator();
@@ -182,7 +216,7 @@ public class TaskRegistry {
         }
 
         setEncodedProperty(taskVertex, Constants.TASK_ATTEMPT_COUNT, task.getAttemptCount());
-        setEncodedProperty(taskVertex, Constants.TASK_STATUS, task.getStatus().toString());
+        setEncodedProperty(taskVertex, TASK_STATUS, task.getStatus().toString());
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
         setEncodedProperty(taskVertex, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
         setEncodedProperty(taskVertex, Constants.TASK_WARNING_MESSAGE, task.getWarningMessage());
@@ -257,7 +291,7 @@ public class TaskRegistry {
         task.setStartTime(new Date());
 
         setEncodedProperty(taskVertex, Constants.TASK_START_TIME, task.getStartTime());
-        setEncodedProperty(taskVertex, Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS);
+        setEncodedProperty(taskVertex, TASK_STATUS, AtlasTask.Status.IN_PROGRESS);
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
         graph.commit();
     }
@@ -294,7 +328,7 @@ public class TaskRegistry {
 
     @GraphTransaction
     public AtlasVertex getVertex(String taskGuid) {
-        AtlasGraphQuery query = graph.query().has(Constants.TASK_GUID, taskGuid);
+        AtlasGraphQuery query = graph.query().has(TASK_GUID, taskGuid);
 
         Iterator<AtlasVertex> results = query.vertices().iterator();
 
@@ -331,7 +365,7 @@ public class TaskRegistry {
             List<AtlasGraphQuery> orConditions = new LinkedList<>();
 
             for (String status : statusList) {
-                orConditions.add(query.createChildQuery().has(Constants.TASK_STATUS, AtlasTask.Status.from(status)));
+                orConditions.add(query.createChildQuery().has(TASK_STATUS, AtlasTask.Status.from(status)));
             }
 
             query.or(orConditions);
@@ -374,8 +408,8 @@ public class TaskRegistry {
                 .has(Constants.TASK_TYPE_PROPERTY_KEY, Constants.TASK_TYPE_NAME);
 
         List<AtlasGraphQuery> orConditions = new LinkedList<>();
-        orConditions.add(query.createChildQuery().has(Constants.TASK_STATUS, AtlasTask.Status.IN_PROGRESS));
-        orConditions.add(query.createChildQuery().has(Constants.TASK_STATUS, AtlasTask.Status.PENDING));
+        orConditions.add(query.createChildQuery().has(TASK_STATUS, AtlasTask.Status.IN_PROGRESS));
+        orConditions.add(query.createChildQuery().has(TASK_STATUS, AtlasTask.Status.PENDING));
         query.or(orConditions);
 
         query.orderBy(Constants.TASK_CREATED_TIME, AtlasGraphQuery.SortOrder.ASC);
@@ -488,55 +522,75 @@ public class TaskRegistry {
     }
 
     private void repairMismatchedTask(AtlasTask atlasTask, String docId) {
-        AtlasElasticsearchQuery indexQuery = null;
+        // Tune these if you want it even more "forceful"
+        final int MAX_ATTEMPTS = 6;          // extra attempts beyond built-in retry_on_conflict
+        final int RETRY_ON_CONFLICT = 10;    // built-in ES retries inside a single Update call
+        final long BASE_BACKOFF_MS = 50L;    // backoff between attempts
 
         try {
-            // Create a map for the fields to be updated
+            // Build fields to update (same as your semantics)
             Map<String, Object> fieldsToUpdate = new HashMap<>();
-            if(Objects.nonNull(atlasTask.getEndTime())) {
+            if (atlasTask.getEndTime() != null) {
                 fieldsToUpdate.put("__task_endTime", atlasTask.getEndTime().getTime());
             }
-            if(Objects.nonNull(atlasTask.getTimeTakenInSeconds())) {
+            if (atlasTask.getTimeTakenInSeconds() != null) {
                 fieldsToUpdate.put("__task_timeTakenInSeconds", atlasTask.getTimeTakenInSeconds());
             }
             fieldsToUpdate.put("__task_status", atlasTask.getStatus().toString());
             fieldsToUpdate.put("__task_modificationTimestamp", atlasTask.getUpdatedTime().getTime());
 
-            // Convert fieldsToUpdate map to JSON using Jackson
-            ObjectMapper objectMapper = new ObjectMapper();
-            String fieldsToUpdateJson = objectMapper.writeValueAsString(fieldsToUpdate);
+            // Script sets all fields atomically on the doc
+            String scriptSource =
+                    "for (entry in params.fields.entrySet()) { " +
+                            "  ctx._source[entry.getKey()] = entry.getValue(); " +
+                            "}";
 
-            // Construct the Elasticsearch update by query DSL
-            String queryDsl = "{"
-                    + "\"script\": {"
-                    + "    \"source\": \"for (entry in params.fields.entrySet()) { ctx._source[entry.getKey()] = entry.getValue() }\","
-                    + "    \"params\": {"
-                    + "        \"fields\": " + fieldsToUpdateJson
-                    + "    }"
-                    + "},"
-                    + "\"query\": {"
-                    + "    \"term\": {"
-                    + "        \"_id\": \"" + docId + "\""
-                    + "    }"
-                    + "}"
-                    + "}";
+            UpdateRequest req = new UpdateRequest(JANUSGRAPH_VERTEX_INDEX, docId)
+                    .script(new Script(ScriptType.INLINE, "painless", scriptSource,
+                            Collections.singletonMap("fields", fieldsToUpdate)))
+                    .retryOnConflict(RETRY_ON_CONFLICT)                       // built-in ES retry
+                    .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)   // visible immediately
+                    .timeout(TimeValue.timeValueSeconds(30));                 // request timeout
 
-            // Execute the Elasticsearch query
-            indexQuery = (AtlasElasticsearchQuery) graph.elasticsearchQuery(JANUSGRAPH_VERTEX_INDEX);
-            Map<String, LinkedHashMap> result = indexQuery.directUpdateByQuery(queryDsl);
+            // If you want to create the doc if it's missing, uncomment:
+            // req.doc(new HashMap<String, Object>()).docAsUpsert(true);
 
-            if (result != null) {
-                LOG.info("Elasticsearch UpdateByQuery Result: " + result);
-            } else {
-                LOG.info("No documents updated in Elasticsearch for guid: " + atlasTask.getGuid());
+            boolean success = false;
+            for (int attempt = 1; attempt <= MAX_ATTEMPTS && !success; attempt++) {
+                try {
+                    UpdateResponse resp = hlClient.update(req, RequestOptions.DEFAULT);
+                    LOG.info("ES Update(v7) attempt {}: result={}, version={}",
+                            attempt, resp.getResult(), resp.getVersion());
+                    success = true;
+                } catch (ElasticsearchException e) {
+                    // Handle version conflicts and retry; rethrow others
+                    RestStatus status = e.status();
+                    String msg = String.valueOf(e.getMessage());
+                    boolean isConflict = status == RestStatus.CONFLICT
+                            || msg.contains("version_conflict_engine_exception");
+                    if (isConflict && attempt < MAX_ATTEMPTS) {
+                        long sleep = Math.min(BASE_BACKOFF_MS * (1L << (attempt - 1)), 1000L);
+                        LOG.warn("Version conflict on attempt {} for docId={}. Retrying in {} ms…",
+                                attempt, docId, sleep);
+                        try { Thread.sleep(sleep); } catch (InterruptedException ie) {
+                            Thread.currentThread().interrupt();
+                        }
+                    } else {
+                        throw e; // non-conflict or out of attempts
+                    }
+                }
             }
-        } catch (JsonProcessingException e) {
-            LOG.error("Error converting fieldsToUpdate to JSON for task with guid: {} and docId: {}. Error: {}", atlasTask.getGuid(), docId, e.getMessage(), e);
+
+            if (!success) {
+                LOG.error("Failed to force-update docId={} for guid={} after {} attempts "
+                                + "(each with retry_on_conflict={})",
+                        docId, atlasTask.getGuid(), MAX_ATTEMPTS, RETRY_ON_CONFLICT);
+            }
+        } catch (Exception e) {
+            LOG.error("Error updating ES for task guid={} docId={}: {}", atlasTask.getGuid(), docId, e.getMessage(), e);
         }
-         catch (AtlasBaseException e) {
-             LOG.error("Error executing Elasticsearch query for task with guid: {} and docId: {}. Error: {}", atlasTask.getGuid(), docId, e.getMessage(), e);
-         }
     }
+
 
     public void commit() {
         this.graph.commit();
@@ -577,7 +631,7 @@ public class TaskRegistry {
     public static AtlasTask toAtlasTask(AtlasVertex v) {
         AtlasTask ret = new AtlasTask();
 
-        String guid = v.getProperty(Constants.TASK_GUID, String.class);
+        String guid = v.getProperty(TASK_GUID, String.class);
         if (guid != null) {
             ret.setGuid(guid);
         }
@@ -587,7 +641,7 @@ public class TaskRegistry {
             ret.setType(type);
         }
 
-        String status = v.getProperty(Constants.TASK_STATUS, String.class);
+        String status = v.getProperty(TASK_STATUS, String.class);
         if (status != null) {
             ret.setStatus(status);
         }
