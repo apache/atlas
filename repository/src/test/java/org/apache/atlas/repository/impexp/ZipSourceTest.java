@@ -202,6 +202,6 @@ public class ZipSourceTest {
     }
 
     private ImportTransforms getTransformForHiveDB() {
-        return ImportTransforms.fromJson("{ \"hive_db\": { \"qualifiedName\": [ \"replace:@cl1:@cl2\" ] } }");
+        return ImportTransforms.fromJson("{ \"hive_db\": { \"qualifiedName\": [ \"replace~@cl1~@cl2\" ] } }");
     }
 }
