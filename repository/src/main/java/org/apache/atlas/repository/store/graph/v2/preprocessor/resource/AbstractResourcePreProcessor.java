@@ -132,9 +132,8 @@ public abstract class AbstractResourcePreProcessor implements PreProcessor {
         if (assetVertex != null) {
             if (DATA_PRODUCT_ENTITY_TYPE.equals(assetVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class))) {
                 String entityState = assetVertex.getProperty(STATE_PROPERTY_KEY, String.class);
-                String daapStatus = assetVertex.getProperty(DAAP_STATUS_ATTR, String.class);
 
-                if ((AtlasEntity.Status.DELETED.name().equals(entityState)) && DAAP_ARCHIVED_STATUS.equals(daapStatus)) {
+                if ((AtlasEntity.Status.DELETED.name().equals(entityState))) {
                     throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot update DataProduct that is Archived!");
                 }
             }

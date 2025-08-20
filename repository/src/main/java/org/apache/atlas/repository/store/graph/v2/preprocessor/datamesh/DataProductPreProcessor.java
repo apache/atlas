@@ -116,13 +116,13 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private void processUpdateProduct(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateProduct");
 
-        String vertexState = vertex.getProperty(STATE_PROPERTY_KEY, String.class);
-        String vertexDaapStatus = vertex.getProperty(DAAP_STATUS_ATTR, String.class);
+        String state = vertex.getProperty(STATE_PROPERTY_KEY, String.class);
 
-        if (vertexState.equals(DELETED.name()) && vertexDaapStatus.equals(DAAP_ARCHIVED_STATUS)) {
+        if (state.equals(DELETED.name())) {
             AtlasEntity.Status entityStatus = entity.getStatus();
             Object entityState =  entity.getAttribute(STATE_PROPERTY_KEY);
 
+            //  To allow product restoration but block all other updates if the product is archived
             boolean isBeingUnarchived = (entityStatus != null && AtlasEntity.Status.ACTIVE.equals(entityStatus)) ||
                     (entityState != null && ACTIVE.name().equals(entityState.toString()));
 
@@ -139,7 +139,6 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         }
 
         AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(entity.getGuid());
-        String state = vertex.getProperty(STATE_PROPERTY_KEY, String.class);
 
         if(entity.getAttribute(DAAP_LINEAGE_STATUS_ATTR) != null && entity.getAttribute(DAAP_LINEAGE_STATUS_ATTR).equals(DAAP_LINEAGE_STATUS_COMPLETED)){
             if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {
