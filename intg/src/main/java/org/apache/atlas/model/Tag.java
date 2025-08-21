@@ -141,7 +141,18 @@ public class Tag {
     }
 
     public AtlasClassification toAtlasClassification() throws AtlasBaseException {
-        return objectMapper.convertValue(tagMetaJson, AtlasClassification.class);
+        AtlasClassification classification = objectMapper.convertValue(tagMetaJson, AtlasClassification.class);
+        // Set default value is tagMetadataJson fields are null
+        if (classification.getRestrictPropagationThroughLineage() == null) {
+            classification.setRestrictPropagationThroughLineage(false);
+        }
+        if (classification.getRestrictPropagationThroughHierarchy() == null) {
+            classification.setRestrictPropagationThroughHierarchy(false);
+        }
+        if (classification.getRemovePropagationsOnEntityDelete() == null) {
+            classification.setRemovePropagationsOnEntityDelete(true);
+        }
+        return classification;
     }
 
     public boolean isPropagatable() {

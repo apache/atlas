@@ -780,7 +780,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 classification.setRestrictPropagationThroughHierarchy(false);
             }
             if (classification.getRemovePropagationsOnEntityDelete() == null) {
-                classification.setRemovePropagationsOnEntityDelete(false);
+                classification.setRemovePropagationsOnEntityDelete(true);
             }
             return classification;
         } catch (JsonProcessingException e) {
