@@ -752,6 +752,7 @@
         <PermGen>64m</PermGen>
         <poi-ooxml.version>4.1.1</poi-ooxml.version>
         <poi.version>4.1.1</poi.version>
+        <commons-lang3.version>3.12.0</commons-lang3.version>
 <!--        <project.build.dashboardv2.gruntBuild>build-minify</project.build.dashboardv2.gruntBuild>-->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
@@ -1476,7 +1477,7 @@
             <dependency>
                 <groupId>org.apache.commons</groupId>
                 <artifactId>commons-lang3</artifactId>
-                <version>3.4</version>
+                <version>${commons-lang3.version}</version>
             </dependency>
 
             <dependency>
