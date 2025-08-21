@@ -78,6 +78,7 @@ import static org.apache.atlas.repository.Constants.ATLAN_HEADER_PREFIX_PATTERN;
 import static org.apache.atlas.repository.Constants.TASK_GUID;
 import static org.apache.atlas.repository.Constants.TASK_STATUS;
 import static org.apache.atlas.repository.audit.ESBasedAuditRepository.getHttpHosts;
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchDatabase.getClient;
 import static org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2.setEncodedProperty;
 
 @Component
@@ -103,9 +104,7 @@ public class TaskRegistry {
         this.taskService = taskService;
         queueSize = AtlasConfiguration.TASKS_QUEUE_SIZE.getInt();
         useGraphQuery = AtlasConfiguration.TASKS_REQUEUE_GRAPH_QUERY.getBoolean();
-        RestClientBuilder lowLevelClient = null;
-        lowLevelClient = initializeClient();
-        this.hlClient = new RestHighLevelClient(lowLevelClient);
+        this.hlClient = getClient();
     }
 
 
