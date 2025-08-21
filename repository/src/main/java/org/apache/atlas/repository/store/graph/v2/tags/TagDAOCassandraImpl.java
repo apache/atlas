@@ -771,7 +771,18 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     public static AtlasClassification convertToAtlasClassification(String tagMetaJson) throws AtlasBaseException {
         try {
-            return objectMapper.readValue(tagMetaJson, AtlasClassification.class);
+            AtlasClassification classification = objectMapper.readValue(tagMetaJson, AtlasClassification.class);
+            // Set default value is tagMetadataJson fields are null
+            if (classification.getRestrictPropagationThroughLineage() == null) {
+                classification.setRestrictPropagationThroughLineage(false);
+            }
+            if (classification.getRestrictPropagationThroughHierarchy() == null) {
+                classification.setRestrictPropagationThroughHierarchy(false);
+            }
+            if (classification.getRemovePropagationsOnEntityDelete() == null) {
+                classification.setRemovePropagationsOnEntityDelete(false);
+            }
+            return classification;
         } catch (JsonProcessingException e) {
             throw new AtlasBaseException("Unable to map to AtlasClassification", e);
         }
