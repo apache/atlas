@@ -313,7 +313,6 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
         Exception            err        = null;
 
         try {
-
             // create property keys first
             for (AtlasEnumElementDef element : enumDef.getElementDefs()) {
                 // Validate the enum element
