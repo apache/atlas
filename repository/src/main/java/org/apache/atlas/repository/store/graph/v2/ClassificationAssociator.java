@@ -57,10 +57,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES;
-import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
-import static org.apache.atlas.repository.Constants.*;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.DAAP_ARCHIVED_STATUS;
-import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.DAAP_STATUS_ATTR;
+import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateProductStatus;
 
 @Component
 public class ClassificationAssociator {
@@ -265,18 +262,6 @@ public class ClassificationAssociator {
 
             RequestContext.get().endMetricRecord(recorder);
             RequestContext.get().setDelayTagNotifications(false);
-        }
-
-        public static void validateProductStatus(AtlasVertex assetVertex) throws AtlasBaseException {
-            if (assetVertex != null) {
-                if (DATA_PRODUCT_ENTITY_TYPE.equals(assetVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class))) {
-                    String entityState = assetVertex.getProperty(STATE_PROPERTY_KEY, String.class);
-
-                    if ((AtlasEntity.Status.DELETED.name().equals(entityState))) {
-                        throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot update DataProduct that is Archived!");
-                    }
-                }
-            }
         }
 
         private Map<String, List<AtlasClassification>> validateAndTransfer(AtlasEntityHeader incomingEntityHeader, AtlasEntityHeader entityToBeChanged) throws AtlasBaseException {
