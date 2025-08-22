@@ -506,10 +506,9 @@ public class TaskRegistry {
     }
 
     private void repairMismatchedTask(AtlasTask atlasTask, String docId) {
-        // Tune these if you want it even more "forceful"
-        final int MAX_ATTEMPTS = 6;          // extra attempts beyond built-in retry_on_conflict
-        final int RETRY_ON_CONFLICT = 10;    // built-in ES retries inside a single Update call
-        final long BASE_BACKOFF_MS = 50L;    // backoff between attempts
+        final int MAX_ATTEMPTS = 6;
+        final int RETRY_ON_CONFLICT = 10;
+        final long BASE_BACKOFF_MS = 50L;
 
         try {
             Map<String, Object> fieldsToUpdate = new HashMap<>();
@@ -542,11 +541,13 @@ public class TaskRegistry {
                     LOG.info("ES Update(v7) attempt {}: result={}, version={}",
                             attempt, resp.getResult(), resp.getVersion());
                     success = true;
-                } catch (ElasticsearchException e) {
-                    RestStatus status = e.status();
+                } catch (Exception e) {
+                    // Handle both ElasticsearchException and other exceptions
                     String msg = String.valueOf(e.getMessage());
-                    boolean isConflict = status == RestStatus.CONFLICT
-                            || msg.contains("version_conflict_engine_exception");
+                    boolean isConflict = (e instanceof ElasticsearchException &&
+                            (((ElasticsearchException) e).status() == RestStatus.CONFLICT
+                                    || msg.contains("version_conflict_engine_exception")));
+
                     if (isConflict && attempt < MAX_ATTEMPTS) {
                         long sleep = Math.min(BASE_BACKOFF_MS * (1L << (attempt - 1)), 1000L);
                         LOG.warn("Version conflict on attempt {} for docId={}. Retrying in {} ms…",
@@ -558,11 +559,9 @@ public class TaskRegistry {
                         LOG.error("Version conflict still present after max attempts={} for docId={}",
                                 MAX_ATTEMPTS, docId);
                     } else {
-                        LOG.error("Non-conflict ES error on attempt {} for docId={}: {}",
+                        LOG.error("Non-conflict error on attempt {} for docId={}: {}",
                                 attempt, docId, msg, e);
                     }
-                } catch (Exception e) {
-                    LOG.error("Unexpected error on attempt {} for docId={}: {}", attempt, docId, e.getMessage(), e);
                 }
             }
 
@@ -572,7 +571,7 @@ public class TaskRegistry {
                         docId, atlasTask.getGuid(), MAX_ATTEMPTS, RETRY_ON_CONFLICT);
             }
         } catch (Exception e) {
-            LOG.error("Error building ES update for task guid={} docId={}: {}",
+            LOG.error("Error preparing ES update for task guid={} docId={}: {}",
                     atlasTask.getGuid(), docId, e.getMessage(), e);
         }
     }
