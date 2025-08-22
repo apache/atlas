@@ -48,7 +48,7 @@ public class ClassificationPropagationTasks {
 
             if (org.apache.atlas.service.FeatureFlagStore.isTagV2Enabled()) {
                 LOG.info("Using v2 tag flow (Cassandra) for Add propagation task");
-                entityGraphMapper.propagateClassificationV2_new(parameters, entityGuid, tagTypeName, parentEntityGuid, toEntityGuid);
+                entityGraphMapper.propagateClassificationV2_Optimised(parameters, entityGuid, tagTypeName, parentEntityGuid, toEntityGuid);
             } else {
                 LOG.info("Using v1 tag flow (JanusGraph) for Add propagation task");
                 String classificationVertexId   = (String) parameters.get(PARAM_CLASSIFICATION_VERTEX_ID);
