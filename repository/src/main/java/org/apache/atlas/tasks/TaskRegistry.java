@@ -107,21 +107,6 @@ public class TaskRegistry {
         this.hlClient = getClient();
     }
 
-
-    public static RestClientBuilder initializeClient() throws AtlasException {
-        try {
-            List<HttpHost> httpHosts = getHttpHosts();
-            RestClientBuilder builder = RestClient.builder(httpHosts.get(0))
-                    .setRequestConfigCallback(requestConfigBuilder -> requestConfigBuilder
-                            .setConnectTimeout(AtlasConfiguration.INDEX_CLIENT_CONNECTION_TIMEOUT.getInt())
-                            .setSocketTimeout(AtlasConfiguration.INDEX_CLIENT_SOCKET_TIMEOUT.getInt()));
-
-            return builder;
-        } catch (Exception e) {
-            throw new AtlasException("Failed to initialize Elasticsearch client", e);
-        }
-    }
-
     @GraphTransaction
     public AtlasTask save(AtlasTask task) {
         AtlasVertex vertex = createVertex(task);
@@ -527,7 +512,6 @@ public class TaskRegistry {
         final long BASE_BACKOFF_MS = 50L;    // backoff between attempts
 
         try {
-            // Build fields to update (same as your semantics)
             Map<String, Object> fieldsToUpdate = new HashMap<>();
             if (atlasTask.getEndTime() != null) {
                 fieldsToUpdate.put("__task_endTime", atlasTask.getEndTime().getTime());
@@ -538,7 +522,6 @@ public class TaskRegistry {
             fieldsToUpdate.put("__task_status", atlasTask.getStatus().toString());
             fieldsToUpdate.put("__task_modificationTimestamp", atlasTask.getUpdatedTime().getTime());
 
-            // Script sets all fields atomically on the doc
             String scriptSource =
                     "for (entry in params.fields.entrySet()) { " +
                             "  ctx._source[entry.getKey()] = entry.getValue(); " +
@@ -547,14 +530,12 @@ public class TaskRegistry {
             UpdateRequest req = new UpdateRequest(JANUSGRAPH_VERTEX_INDEX, docId)
                     .script(new Script(ScriptType.INLINE, "painless", scriptSource,
                             Collections.singletonMap("fields", fieldsToUpdate)))
-                    .retryOnConflict(RETRY_ON_CONFLICT)                       // built-in ES retry
-                    .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)   // visible immediately
-                    .timeout(TimeValue.timeValueSeconds(30));                 // request timeout
-
-            // If you want to create the doc if it's missing, uncomment:
-            // req.doc(new HashMap<String, Object>()).docAsUpsert(true);
+                    .retryOnConflict(RETRY_ON_CONFLICT)
+                    .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+                    .timeout(TimeValue.timeValueSeconds(30));
 
             boolean success = false;
+
             for (int attempt = 1; attempt <= MAX_ATTEMPTS && !success; attempt++) {
                 try {
                     UpdateResponse resp = hlClient.update(req, RequestOptions.DEFAULT);
@@ -562,7 +543,6 @@ public class TaskRegistry {
                             attempt, resp.getResult(), resp.getVersion());
                     success = true;
                 } catch (ElasticsearchException e) {
-                    // Handle version conflicts and retry; rethrow others
                     RestStatus status = e.status();
                     String msg = String.valueOf(e.getMessage());
                     boolean isConflict = status == RestStatus.CONFLICT
@@ -574,19 +554,26 @@ public class TaskRegistry {
                         try { Thread.sleep(sleep); } catch (InterruptedException ie) {
                             Thread.currentThread().interrupt();
                         }
+                    } else if (isConflict) {
+                        LOG.error("Version conflict still present after max attempts={} for docId={}",
+                                MAX_ATTEMPTS, docId);
                     } else {
-                        throw e; // non-conflict or out of attempts
+                        LOG.error("Non-conflict ES error on attempt {} for docId={}: {}",
+                                attempt, docId, msg, e);
                     }
+                } catch (Exception e) {
+                    LOG.error("Unexpected error on attempt {} for docId={}: {}", attempt, docId, e.getMessage(), e);
                 }
             }
 
             if (!success) {
-                LOG.error("Failed to force-update docId={} for guid={} after {} attempts "
+                LOG.error("Failed to update ES docId={} for guid={} after {} attempts "
                                 + "(each with retry_on_conflict={})",
                         docId, atlasTask.getGuid(), MAX_ATTEMPTS, RETRY_ON_CONFLICT);
             }
         } catch (Exception e) {
-            LOG.error("Error updating ES for task guid={} docId={}: {}", atlasTask.getGuid(), docId, e.getMessage(), e);
+            LOG.error("Error building ES update for task guid={} docId={}: {}",
+                    atlasTask.getGuid(), docId, e.getMessage(), e);
         }
     }
 
