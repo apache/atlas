@@ -71,6 +71,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.LinkedHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -506,11 +507,13 @@ public class TaskRegistry {
     }
 
     private void repairMismatchedTask(AtlasTask atlasTask, String docId) {
-        final int MAX_ATTEMPTS = 6;
-        final int RETRY_ON_CONFLICT = 10;
-        final long BASE_BACKOFF_MS = 50L;
+        final int MAX_ATTEMPTS = 6;           // extra attempts beyond built-in retry_on_conflict
+        final int RETRY_ON_CONFLICT = 10;     // ES internal retries for a single Update call
+        final long BASE_BACKOFF_MS = 50L;     // starting backoff for conflicts
+        final long MAX_BACKOFF_MS = 1000L;    // cap for backoff
 
         try {
+            // Build fields to update
             Map<String, Object> fieldsToUpdate = new HashMap<>();
             if (atlasTask.getEndTime() != null) {
                 fieldsToUpdate.put("__task_endTime", atlasTask.getEndTime().getTime());
@@ -541,40 +544,56 @@ public class TaskRegistry {
                     LOG.info("ES Update(v7) attempt {}: result={}, version={}",
                             attempt, resp.getResult(), resp.getVersion());
                     success = true;
-                } catch (Exception e) {
-                    // Handle both ElasticsearchException and other exceptions
-                    String msg = String.valueOf(e.getMessage());
-                    boolean isConflict = (e instanceof ElasticsearchException &&
-                            (((ElasticsearchException) e).status() == RestStatus.CONFLICT
-                                    || msg.contains("version_conflict_engine_exception")));
 
-                    if (isConflict && attempt < MAX_ATTEMPTS) {
-                        long sleep = Math.min(BASE_BACKOFF_MS * (1L << (attempt - 1)), 1000L);
-                        LOG.warn("Version conflict on attempt {} for docId={}. Retrying in {} ms…",
-                                attempt, docId, sleep);
-                        try { Thread.sleep(sleep); } catch (InterruptedException ie) {
-                            Thread.currentThread().interrupt();
+                } catch (Exception e) {
+                    // Classify conflict vs non-conflict
+                    final String msg = String.valueOf(e.getMessage());
+                    final boolean isConflict = isVersionConflict(e, msg);
+
+                    if (isConflict) {
+                        if (attempt < MAX_ATTEMPTS) {
+                            long backoff = Math.min(BASE_BACKOFF_MS * (1L << (attempt - 1)), MAX_BACKOFF_MS);
+                            // tiny jitter to avoid thundering herd
+                            backoff += ThreadLocalRandom.current().nextLong(0, BASE_BACKOFF_MS);
+                            LOG.warn("Version conflict on attempt {}/{} for docId={}. Retrying in {} ms…",
+                                    attempt, MAX_ATTEMPTS, docId, backoff);
+                            try {
+                                Thread.sleep(backoff);
+                            } catch (InterruptedException ie) {
+                                Thread.currentThread().interrupt();
+                                LOG.warn("Retry sleep interrupted for docId={}, attempt={}", docId, attempt);
+                            }
+                        } else {
+                            LOG.error("Version conflict persists after max attempts={} for docId={}", MAX_ATTEMPTS, docId);
                         }
-                    } else if (isConflict) {
-                        LOG.error("Version conflict still present after max attempts={} for docId={}",
-                                MAX_ATTEMPTS, docId);
                     } else {
-                        LOG.error("Non-conflict error on attempt {} for docId={}: {}",
-                                attempt, docId, msg, e);
+                        // Non-conflict (e.g., auth/network/4xx/5xx other than 409): log and EXIT loop (no retries)
+                        LOG.error("Non-conflict error on attempt {}/{} for docId={}: {}",
+                                attempt, MAX_ATTEMPTS, docId, msg, e);
+                        break; // exit retry loop immediately for non-conflict errors
                     }
                 }
             }
 
             if (!success) {
-                LOG.error("Failed to update ES docId={} for guid={} after {} attempts "
-                                + "(each with retry_on_conflict={})",
+                LOG.error("Failed to update ES docId={} for guid={} after {} attempts (retry_on_conflict={})",
                         docId, atlasTask.getGuid(), MAX_ATTEMPTS, RETRY_ON_CONFLICT);
             }
         } catch (Exception e) {
-            LOG.error("Error preparing ES update for task guid={} docId={}: {}",
+            // Failure in preparing request, scripting params, etc.
+            LOG.error("Error preparing or executing ES update for task guid={} docId={}: {}",
                     atlasTask.getGuid(), docId, e.getMessage(), e);
         }
     }
+
+    private static boolean isVersionConflict(Exception e, String msg) {
+        if (e instanceof ElasticsearchException) {
+            ElasticsearchException ee = (ElasticsearchException) e;
+            if (ee.status() == RestStatus.CONFLICT) return true; // 409
+        }
+        return msg != null && msg.contains("version_conflict_engine_exception");
+    }
+
 
 
     public void commit() {
