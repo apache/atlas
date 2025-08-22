@@ -119,14 +119,14 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         String state = vertex.getProperty(STATE_PROPERTY_KEY, String.class);
 
         if (DELETED.name().equals(state)) {
-            AtlasEntity.Status entityStatus = entity.getStatus();
-            Object entityState =  entity.getAttribute(STATE_PROPERTY_KEY);
-
             //  To allow product restoration but block all other updates if the product is archived
-            boolean isBeingUnarchived = (entityStatus != null && AtlasEntity.Status.ACTIVE.equals(entityStatus)) ||
-                    (entityState != null && ACTIVE.name().equals(entityState.toString()));
+            boolean isBeingRestored = false;
 
-            if (!isBeingUnarchived) {
+            if (context != null && context.getEntitiesToRestore() != null) {
+                isBeingRestored = context.getEntitiesToRestore().contains(vertex);
+            }
+
+            if (!isBeingRestored) {
                 throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot update DataProduct that is Archived!");
             }
         }
