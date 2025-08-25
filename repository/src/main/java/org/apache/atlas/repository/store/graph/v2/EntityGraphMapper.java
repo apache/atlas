@@ -2505,17 +2505,11 @@ public class EntityGraphMapper {
             // When adding assets as outputPort, remove them from inputPorts if they already exist there.
             if (CollectionUtils.isNotEmpty(conflictingGuids)) {
                 try {
-                    removeInputPortEdges(toVertex, conflictingGuids);
+                    removeInputPortReferences(toVertex, conflictingGuids);
                 } catch (AtlasBaseException e) {
                     throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Failed to remove input port edges for conflicting GUIDs: " + conflictingGuids, String.valueOf(e));
                 }
-
-                conflictingGuids.forEach(guid ->
-                        AtlasGraphUtilsV2.removeItemFromListPropertyValue(toVertex, INPUT_PORT_GUIDS_ATTR, guid));
-
-                trackInputPortRemoval(toVertex, conflictingGuids);
             }
-
 
             if (CollectionUtils.isNotEmpty(currentElements)) {
                 List<String> currentElementGuids = currentElements.stream()
@@ -2537,7 +2531,7 @@ public class EntityGraphMapper {
             }
         } else if (internalAttr.equals(INPUT_PORT_GUIDS_ATTR)) {
             //  When adding assets as inputPort, fail if they already exist as outputPorts.
-            handleInputPortUpdate(toVertex, addedGuids);
+            validateInputPortUpdate(toVertex, addedGuids);
         }
     }
 
@@ -2554,7 +2548,7 @@ public class EntityGraphMapper {
         return conflictingGuids;
     }
 
-    private void removeInputPortEdges(AtlasVertex toVertex, List<String> conflictingGuids) throws AtlasBaseException {
+    private void removeInputPortReferences(AtlasVertex toVertex, List<String> conflictingGuids) throws AtlasBaseException {
         for (String assetGuid: conflictingGuids) {
             AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, assetGuid);
             if (assetVertex == null) {
@@ -2571,39 +2565,12 @@ public class EntityGraphMapper {
                 }
             }
         }
+
+        conflictingGuids.forEach(guid ->
+                AtlasGraphUtilsV2.removeItemFromListPropertyValue(toVertex, INPUT_PORT_GUIDS_ATTR, guid));
     }
 
-    private void trackInputPortRemoval(AtlasVertex toVertex, List<String> conflictingGuids) {
-        String productGuid = toVertex.getProperty("__guid", String.class);
-        AtlasEntity productDiffEntity = RequestContext.get().getDifferentialEntity(productGuid);
-
-        if (productDiffEntity == null) {
-            productDiffEntity = new AtlasEntity();
-            productDiffEntity.setGuid(productGuid);
-            productDiffEntity.setTypeName(TYPE_PRODUCT);
-            RequestContext.get().cacheDifferentialEntity(productDiffEntity);
-        }
-
-        productDiffEntity.setRemovedRelationshipAttribute(INPUT_PORTS, conflictingGuids);
-
-        for (String assetGuid : conflictingGuids) {
-            AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, assetGuid);
-            if (assetVertex != null) {
-                AtlasEntity assetDiffEntity = RequestContext.get().getDifferentialEntity(assetGuid);
-                
-                if (assetDiffEntity == null) {
-                    assetDiffEntity = new AtlasEntity();
-                    assetDiffEntity.setGuid(assetGuid);
-                    assetDiffEntity.setTypeName(assetVertex.getProperty("__typeName", String.class));
-                    RequestContext.get().cacheDifferentialEntity(assetDiffEntity);
-                }
-
-                assetDiffEntity.setRemovedRelationshipAttribute(INPUT_PORT_PRODUCT_RELATIONSHIP_LABEL, Collections.singletonList(new AtlasObjectId(productGuid, TYPE_PRODUCT)));
-            }
-        }
-    }
-
-    private void handleInputPortUpdate(AtlasVertex toVertex, List<String> addedGuids) throws AtlasBaseException {
+    private void validateInputPortUpdate(AtlasVertex toVertex, List<String> addedGuids) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(addedGuids)) {
             List<String> existingOutputPortGuids = toVertex.getMultiValuedProperty(OUTPUT_PORT_GUIDS_ATTR, String.class);
             if (CollectionUtils.isNotEmpty(existingOutputPortGuids)) {
