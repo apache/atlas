@@ -110,20 +110,20 @@ public class AtlasTaskService implements TaskService {
 
     /**
      *
-     * Retrieves a single page of tasks matching a given set of 'must' conditions.
-     * Unlike getAllTasksByCondition, this method does not paginate through all results.
+     * Fetches a single page of tasks based on a given set of 'must' conditions, from a specific offset.
+     * This is used for controlled pagination.
      *
-     * @param batchSize      The maximum number of tasks to return.
-     * @param mustConditions A list of 'must' conditions for the search query.
-     * @return A list of tasks for the first page of results.
+     * @param from           The starting offset for the results.
+     * @param size           The number of tasks to retrieve (page size).
+     * @param mustConditions A list of 'must' conditions for the Elasticsearch query.
+     * @return A list of tasks for the specified page.
      * @throws AtlasBaseException
      */
-    @Override
-    public List<AtlasTask> getFirstPageOfTasksByCondition(int batchSize, List<Map<String, Object>> mustConditions) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getFirstPageOfTasksByCondition");
+    public List<AtlasTask> getTasksByCondition(int from, int size, List<Map<String, Object>> mustConditions) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTasksByCondition_singlePage");
 
-        Map<String, Object> dsl = mapOf("size", batchSize);
-        dsl.put("from", 0);
+        Map<String, Object> dsl = mapOf("size", size);
+        dsl.put("from", from);
         dsl.put("query", mapOf("bool", mapOf("must", mustConditions)));
 
         TaskSearchParams taskSearchParams = new TaskSearchParams();
@@ -139,6 +139,7 @@ public class AtlasTaskService implements TaskService {
 
         return Collections.emptyList();
     }
+
 
     private Map<String, Object> getMap(String key, Object value) {
         Map<String, Object> map = new HashMap<>();

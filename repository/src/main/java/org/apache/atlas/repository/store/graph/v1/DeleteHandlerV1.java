@@ -1763,19 +1763,35 @@ public abstract class DeleteHandlerV1 {
             if (hasDuplicateTask(tasksInRequestContext, entityGuid, tagTypeName))
                 return true;
 
-            List<AtlasTask> pendingTasks = taskUtil.findFirstPageOfPendingTasks(PENDING_TASK_QUERY_SIZE_PAGE_SIZE, entityGuid, tagTypeName, taskTypesToSkip);
+            // Paginate through ES results and validate each page against the graph
+            boolean hasMorePages = true;
+            int from = 0;
+            final int pageSize = PENDING_TASK_QUERY_SIZE_PAGE_SIZE;
 
-            if(CollectionUtils.isEmpty(pendingTasks)) {
-                return false;
-            }
+            while (hasMorePages) {
+                List<AtlasTask> potentialDuplicates = taskUtil.findAPageOfPendingTasks(from, pageSize, entityGuid, tagTypeName, taskTypesToSkip);
 
-            // If the list is not empty, a duplicate exists. No further filtering is needed.
-            if (CollectionUtils.isNotEmpty(pendingTasks)) {
-                if (pendingTasks.stream().anyMatch(task -> CLASSIFICATION_REFRESH_PROPAGATION.equals(task.getType()))) {
-                    LOG.warn("More than one {} task found for tag:entity pair {}:{}", CLASSIFICATION_REFRESH_PROPAGATION, tagTypeName, entityGuid);
+                // Validate the true status of tasks in this page against the graph
+                boolean hasDuplicates = hasDuplicateTask(potentialDuplicates, entityGuid, tagTypeName);
+                if (hasDuplicates) {
+                    long refreshTaskCount = potentialDuplicates.stream()
+                            .filter(task -> isDuplicateTask(task, entityGuid, tagTypeName)) // Ensure we only count true duplicates
+                            .filter(task -> CLASSIFICATION_REFRESH_PROPAGATION.equals(task.getType()))
+                            .count();
+
+                    if (refreshTaskCount > 1) {
+                        LOG.warn("More than one {} task found for tag:entity pair {}:{}", CLASSIFICATION_REFRESH_PROPAGATION, tagTypeName, entityGuid);
+                    }
+                    return true;
                 }
-                return true;
+
+                if (potentialDuplicates.size() < pageSize) {
+                    hasMorePages = false;
+                } else {
+                    from += pageSize;
+                }
             }
+
         } catch (AtlasBaseException e) {
             LOG.error("Error while checking if classification task creation is required for tag:entity pair {}:{}", tagTypeName, entityGuid, e);
             throw e;
