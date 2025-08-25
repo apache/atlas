@@ -37,6 +37,7 @@
         <module>common</module>
         <module>graphdb-impls</module>
         <module>janus</module>
+        <module>janusgraph-rdbms</module>
     </modules>
 
     <properties>
