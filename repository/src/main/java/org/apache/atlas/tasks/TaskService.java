@@ -52,6 +52,7 @@ public interface TaskService {
                                          List<Map<String,Object>> mustNotConditions) throws AtlasBaseException;
 
 
+    List<AtlasTask> getTasksByCondition(int from, int size, List<Map<String, Object>> mustConditions) throws AtlasBaseException;
 
     /**
      * Retry the task by changing its status to PENDING and increment attempt count

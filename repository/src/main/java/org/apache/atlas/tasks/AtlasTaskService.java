@@ -119,6 +119,7 @@ public class AtlasTaskService implements TaskService {
      * @return A list of tasks for the specified page.
      * @throws AtlasBaseException
      */
+    @Override
     public List<AtlasTask> getTasksByCondition(int from, int size, List<Map<String, Object>> mustConditions) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTasksByCondition_singlePage");
 
