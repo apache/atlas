@@ -1769,15 +1769,6 @@ public abstract class DeleteHandlerV1 {
                 return false;
             }
 
-            List<AtlasTask> pendingRefreshPropagationTasks = pendingTasks.stream()
-                    .filter(task -> CLASSIFICATION_REFRESH_PROPAGATION.equals(task.getType()))
-                    .collect(Collectors.toList());
-
-            // Ideally there should be only refresh propagation task
-            if (pendingRefreshPropagationTasks.size() > 1) {
-                LOG.warn("More than one {} task found for tag:entity pair {}:{}", CLASSIFICATION_REFRESH_PROPAGATION, tagTypeName, entityGuid);
-            }
-
             // If the list is not empty, a duplicate exists. No further filtering is needed.
             if (CollectionUtils.isNotEmpty(pendingTasks)) {
                 if (pendingTasks.stream().anyMatch(task -> CLASSIFICATION_REFRESH_PROPAGATION.equals(task.getType()))) {
