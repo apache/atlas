@@ -238,7 +238,7 @@ public class AtlasEntityChangeNotifier implements IAtlasEntityChangeNotifier {
         List<AtlasEntity> entities = instanceConverter.getEnrichedEntitiesWithPrimitiveAttributes(vertices, primitiveAttributes);
         setRequestContext(requestContext);
         for (EntityChangeListenerV2 listener : entityChangeListenersV2) {
-            listener.onClassificationPropagationsAdded(entities, addedClassifications, forceInline);
+            listener.onClassificationsAdded(entities, addedClassifications, forceInline);
         }
     }
 
