@@ -103,6 +103,7 @@ public class AtlasTaskService implements TaskService {
 
         boolCondition.get("bool").put("must", mustConditions);
         boolCondition.get("bool").put("must_not", mustNotConditions);
+        dsl.put("query", boolCondition);
 
         TaskSearchParams taskSearchParams = new TaskSearchParams();
         taskSearchParams.setDsl(dsl);
