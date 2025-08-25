@@ -57,6 +57,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.apache.atlas.AtlasConfiguration.ENTITY_CHANGE_NOTIFY_IGNORE_RELATIONSHIP_ATTRIBUTES;
+import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateProductStatus;
 
 @Component
 public class ClassificationAssociator {
@@ -166,6 +167,9 @@ public class ClassificationAssociator {
                 AtlasEntityHeader incomingEntityHeader = map.get(guid);
                 String typeName = incomingEntityHeader.getTypeName();
                 AtlasEntityHeader entityToBeChanged;
+                AtlasVertex assetVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
+
+                validateProductStatus(assetVertex);
 
                 AtlasEntityType entityType = typeRegistry.getEntityTypeByName(typeName);
                 if (entityType == null) {
