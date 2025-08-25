@@ -100,7 +100,7 @@ public class ImportTransformsShaperTest extends AtlasTestBase {
     private AtlasImportRequest getImporRequest() {
         AtlasImportRequest request = new AtlasImportRequest();
 
-        request.getOptions().put("transforms", "{ \"Referenceable\": { \"*\":[ \"addClassification:REPLICATED\" ] } }");
+        request.getOptions().put("transforms", "{ \"Referenceable\": { \"*\":[ \"addClassification~REPLICATED\" ] } }");
 
         return request;
     }
