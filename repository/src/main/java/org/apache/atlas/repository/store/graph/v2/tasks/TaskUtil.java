@@ -72,6 +72,36 @@ public class TaskUtil {
         return taskService.getAllTasksByCondition(size, mustConditions);
     }
 
+    /**
+     *
+     * Finds the first page of pending tasks that match the specified criteria.
+     * This avoids fetching all tasks and is more performant for existence checks.
+     *
+     * @param size        The page size.
+     * @param entityGuid  The GUID of the entity.
+     * @param tagTypeName The type name of the classification/tag.
+     * @param types       A list of task types to search for.
+     * @return A list of tasks from the first page of results.
+     * @throws AtlasBaseException
+     */
+    public List<AtlasTask> findFirstPageOfPendingTasks(int size, String entityGuid, String tagTypeName, List<String> types) throws AtlasBaseException {
+        List<Map<String,Object>> mustConditions = new ArrayList<>();
+
+        if (StringUtils.isNotEmpty(entityGuid))
+            mustConditions.add(getMap("term", getMap(TASK_ENTITY_GUID, entityGuid)));
+
+        if (StringUtils.isNotEmpty(tagTypeName))
+            mustConditions.add(getMap("term", getMap(TASK_CLASSIFICATION_TYPENAME, tagTypeName)));
+
+        if (CollectionUtils.isNotEmpty(types)) {
+            mustConditions.add(getMap("terms", getMap(TASK_TYPE, types)));
+        }
+
+        mustConditions.add(getMap("term", getMap(TASK_STATUS + ".keyword", TASK_STATUS_PENDING)));
+
+        return taskService.getFirstPageOfTasksByCondition(size, mustConditions);
+    }
+
 
     private Map<String, Object> getMap(String key, Object value) {
         Map<String, Object> map = new HashMap<>();

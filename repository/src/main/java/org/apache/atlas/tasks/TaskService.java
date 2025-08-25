@@ -57,6 +57,8 @@ public interface TaskService {
     List<AtlasTask> getAllTasksByCondition(int batchSize, List<Map<String,Object>> mustConditions) throws AtlasBaseException;
 
 
+    List<AtlasTask> getFirstPageOfTasksByCondition(int batchSize, List<Map<String, Object>> mustConditions) throws AtlasBaseException;
+
     /**
      * Retry the task by changing its status to PENDING and increment attempt count
      * @param taskGuid Guid of the task

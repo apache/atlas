@@ -146,6 +146,38 @@ public class AtlasTaskService implements TaskService {
         return tasks;
     }
 
+    /**
+     *
+     * Retrieves a single page of tasks matching a given set of 'must' conditions.
+     * Unlike getAllTasksByCondition, this method does not paginate through all results.
+     *
+     * @param batchSize      The maximum number of tasks to return.
+     * @param mustConditions A list of 'must' conditions for the search query.
+     * @return A list of tasks for the first page of results.
+     * @throws AtlasBaseException
+     */
+    @Override
+    public List<AtlasTask> getFirstPageOfTasksByCondition(int batchSize, List<Map<String, Object>> mustConditions) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getFirstPageOfTasksByCondition");
+
+        Map<String, Object> dsl = mapOf("size", batchSize);
+        dsl.put("from", 0);
+        dsl.put("query", mapOf("bool", mapOf("must", mustConditions)));
+
+        TaskSearchParams taskSearchParams = new TaskSearchParams();
+        taskSearchParams.setDsl(dsl);
+
+        TaskSearchResult page = getTasks(taskSearchParams);
+
+        RequestContext.get().endMetricRecord(recorder);
+
+        if (page != null && CollectionUtils.isNotEmpty(page.getTasks())) {
+            return page.getTasks();
+        }
+
+        return Collections.emptyList();
+    }
+
     private Map<String, Object> getMap(String key, Object value) {
         Map<String, Object> map = new HashMap<>();
         map.put(key, value);

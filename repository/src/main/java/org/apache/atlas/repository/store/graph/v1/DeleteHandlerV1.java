@@ -1763,7 +1763,7 @@ public abstract class DeleteHandlerV1 {
             if (hasDuplicateTask(tasksInRequestContext, entityGuid, tagTypeName))
                 return true;
 
-            List<AtlasTask> pendingTasks = taskUtil.getAllTasksByCondition(PENDING_TASK_QUERY_SIZE_PAGE_SIZE, entityGuid, tagTypeName, taskTypesToSkip);
+            List<AtlasTask> pendingTasks = taskUtil.findFirstPageOfPendingTasks(PENDING_TASK_QUERY_SIZE_PAGE_SIZE, entityGuid, tagTypeName, taskTypesToSkip);
 
             if(CollectionUtils.isEmpty(pendingTasks)) {
                 return false;
