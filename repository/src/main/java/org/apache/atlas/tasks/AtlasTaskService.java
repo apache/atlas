@@ -95,55 +95,56 @@ public class AtlasTaskService implements TaskService {
                                                 List<Map<String,Object>> mustNotConditions) throws AtlasBaseException {
         Map<String, Object> dsl = getMap("from", from);
         dsl.put("size", size);
+
         Map<String, Map<String, Object>> boolCondition = Collections.singletonMap("bool", new HashMap<>());
+
         Map<String, Object> shouldQuery = getMap("bool", getMap("should", shouldConditions));
         mustConditions.add(shouldQuery);
+
         boolCondition.get("bool").put("must", mustConditions);
         boolCondition.get("bool").put("must_not", mustNotConditions);
 
-        dsl.put("query", boolCondition);
         TaskSearchParams taskSearchParams = new TaskSearchParams();
         taskSearchParams.setDsl(dsl);
         TaskSearchResult tasks = getTasks(taskSearchParams);
         return tasks;
     }
 
+    /**
+     *
+     * Fetches a single page of tasks based on a given set of 'must' conditions, from a specific offset.
+     * This is used for controlled pagination.
+     *
+     * @param from           The starting offset for the results.
+     * @param size           The number of tasks to retrieve (page size).
+     * @param mustConditions A list of 'must' conditions for the Elasticsearch query.
+     * @return A list of tasks for the specified page.
+     * @throws AtlasBaseException
+     */
     @Override
-    public List<AtlasTask> getAllTasksByCondition(int batchSize, List<Map<String,Object>> mustConditions) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDuplicatePendingTasksV2");
+    public List<AtlasTask> getTasksByCondition(int from, int size, List<Map<String, Object>> mustConditions) throws AtlasBaseException {
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTasksByCondition_singlePage");
 
-        List<AtlasTask> tasks = new ArrayList<>(0);
-        long from = 0;
-
-        Map<String, Object> dsl = mapOf("size", batchSize);
+        Map<String, Object> dsl = mapOf("size", size);
         dsl.put("from", from);
-
         dsl.put("query", mapOf("bool", mapOf("must", mustConditions)));
+
+        Map<String, Object> sortOrder = mapOf("order", "asc");
+        Map<String, Object> sortField = mapOf(Constants.TASK_CREATED_TIME, sortOrder);
+        dsl.put("sort", Collections.singletonList(sortField));
+
         TaskSearchParams taskSearchParams = new TaskSearchParams();
         taskSearchParams.setDsl(dsl);
 
-        boolean hasNext = true;
-
-        while (hasNext) {
-            TaskSearchResult page = getTasks(taskSearchParams);
-            if (page == null || CollectionUtils.isEmpty(page.getTasks())) {
-                hasNext = false;
-            } else {
-                tasks.addAll(page.getTasks());
-
-                if (page.getTasks().size() < batchSize) {
-                    hasNext = false;
-                } else {
-                    from += batchSize;
-                    dsl.put("from", from);
-                    taskSearchParams.setDsl(dsl);
-                }
-            }
-        }
+        TaskSearchResult page = getTasks(taskSearchParams);
 
         RequestContext.get().endMetricRecord(recorder);
 
-        return tasks;
+        if (page != null && CollectionUtils.isNotEmpty(page.getTasks())) {
+            return page.getTasks();
+        }
+
+        return Collections.emptyList();
     }
 
     private Map<String, Object> getMap(String key, Object value) {
