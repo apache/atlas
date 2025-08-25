@@ -54,24 +54,6 @@ public class TaskUtil {
 
     }
 
-    public List<AtlasTask> getAllTasksByCondition(int size, String entityGuid, String tagTypeName, List<String> types) throws AtlasBaseException {
-        List<Map<String,Object>> mustConditions = new ArrayList<>();
-
-        if (StringUtils.isNotEmpty(entityGuid))
-            mustConditions.add(getMap("term", getMap(TASK_ENTITY_GUID, entityGuid)));
-
-        if (StringUtils.isNotEmpty(tagTypeName))
-            mustConditions.add(getMap("term", getMap(TASK_CLASSIFICATION_TYPENAME, tagTypeName)));
-
-        if (CollectionUtils.isNotEmpty(types)) {
-            mustConditions.add(getMap("terms", getMap(TASK_TYPE, types)));
-        }
-
-        mustConditions.add(getMap("term", getMap(TASK_STATUS + ".keyword", TASK_STATUS_PENDING)));
-
-        return taskService.getAllTasksByCondition(size, mustConditions);
-    }
-
     /**
      *
      * Finds the first page of pending tasks that match the specified criteria.

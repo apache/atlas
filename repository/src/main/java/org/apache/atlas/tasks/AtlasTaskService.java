@@ -108,44 +108,6 @@ public class AtlasTaskService implements TaskService {
         return tasks;
     }
 
-    @Override
-    public List<AtlasTask> getAllTasksByCondition(int batchSize, List<Map<String,Object>> mustConditions) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDuplicatePendingTasksV2");
-
-        List<AtlasTask> tasks = new ArrayList<>(0);
-        long from = 0;
-
-        Map<String, Object> dsl = mapOf("size", batchSize);
-        dsl.put("from", from);
-
-        dsl.put("query", mapOf("bool", mapOf("must", mustConditions)));
-        TaskSearchParams taskSearchParams = new TaskSearchParams();
-        taskSearchParams.setDsl(dsl);
-
-        boolean hasNext = true;
-
-        while (hasNext) {
-            TaskSearchResult page = getTasks(taskSearchParams);
-            if (page == null || CollectionUtils.isEmpty(page.getTasks())) {
-                hasNext = false;
-            } else {
-                tasks.addAll(page.getTasks());
-
-                if (page.getTasks().size() < batchSize) {
-                    hasNext = false;
-                } else {
-                    from += batchSize;
-                    dsl.put("from", from);
-                    taskSearchParams.setDsl(dsl);
-                }
-            }
-        }
-
-        RequestContext.get().endMetricRecord(recorder);
-
-        return tasks;
-    }
-
     /**
      *
      * Retrieves a single page of tasks matching a given set of 'must' conditions.

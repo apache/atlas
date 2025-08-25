@@ -1778,11 +1778,12 @@ public abstract class DeleteHandlerV1 {
                 LOG.warn("More than one {} task found for tag:entity pair {}:{}", CLASSIFICATION_REFRESH_PROPAGATION, tagTypeName, entityGuid);
             }
 
-            // if any task have status as PENDING, then skip task creation
-            if (hasDuplicateTask(pendingTasks, entityGuid, tagTypeName)) {
+            // If the list is not empty, a duplicate exists. No further filtering is needed.
+            if (CollectionUtils.isNotEmpty(pendingTasks)) {
+                if (pendingTasks.stream().anyMatch(task -> CLASSIFICATION_REFRESH_PROPAGATION.equals(task.getType()))) {
+                    LOG.warn("More than one {} task found for tag:entity pair {}:{}", CLASSIFICATION_REFRESH_PROPAGATION, tagTypeName, entityGuid);
+                }
                 return true;
-            } else {
-                LOG.warn("There is inconsistency in task queue, there are no pending tasks for tag:entity pair {}:{} but there are tasks in queue", tagTypeName, entityGuid);
             }
         } catch (AtlasBaseException e) {
             LOG.error("Error while checking if classification task creation is required for tag:entity pair {}:{}", tagTypeName, entityGuid, e);

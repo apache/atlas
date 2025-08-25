@@ -51,11 +51,6 @@ public interface TaskService {
     TaskSearchResult getTasksByCondition(int from, int size, List<Map<String,Object>> mustConditions, List<Map<String,Object>> shouldConditions,
                                          List<Map<String,Object>> mustNotConditions) throws AtlasBaseException;
 
-    /*
-    * Returns all tasks mathing the criteria with paginated requests
-    * */
-    List<AtlasTask> getAllTasksByCondition(int batchSize, List<Map<String,Object>> mustConditions) throws AtlasBaseException;
-
 
     List<AtlasTask> getFirstPageOfTasksByCondition(int batchSize, List<Map<String, Object>> mustConditions) throws AtlasBaseException;
 
