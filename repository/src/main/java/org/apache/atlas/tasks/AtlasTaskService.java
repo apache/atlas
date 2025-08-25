@@ -125,7 +125,6 @@ public class AtlasTaskService implements TaskService {
         Map<String, Object> dsl = mapOf("size", size);
         dsl.put("from", from);
         dsl.put("query", mapOf("bool", mapOf("must", mustConditions)));
-
         TaskSearchParams taskSearchParams = new TaskSearchParams();
         taskSearchParams.setDsl(dsl);
 
@@ -139,7 +138,6 @@ public class AtlasTaskService implements TaskService {
 
         return Collections.emptyList();
     }
-
 
     private Map<String, Object> getMap(String key, Object value) {
         Map<String, Object> map = new HashMap<>();

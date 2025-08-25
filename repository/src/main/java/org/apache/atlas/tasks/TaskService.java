@@ -53,7 +53,6 @@ public interface TaskService {
 
 
 
-
     /**
      * Retry the task by changing its status to PENDING and increment attempt count
      * @param taskGuid Guid of the task
