@@ -130,7 +130,7 @@ public class AtlasTaskService implements TaskService {
         dsl.put("from", from);
         dsl.put("query", mapOf("bool", mapOf("must", mustConditions)));
 
-        Map<String, Object> sortOrder = mapOf("order", "asc");
+        Map<String, Object> sortOrder = mapOf("order", "desc");
         Map<String, Object> sortField = mapOf(Constants.TASK_CREATED_TIME, sortOrder);
         dsl.put("sort", Collections.singletonList(sortField));
 
