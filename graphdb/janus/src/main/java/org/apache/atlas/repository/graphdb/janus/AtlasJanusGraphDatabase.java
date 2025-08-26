@@ -238,14 +238,21 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
     }
 
     static void validateIndexBackend(Configuration config) {
-        String               configuredIndexBackend = config.getString(INDEX_BACKEND_CONF);
-        JanusGraphManagement managementSystem       = getGraphInstance().openManagement();
-        String               currentIndexBackend    = managementSystem.get(INDEX_BACKEND_CONF);
+        JanusGraphManagement managementSystem = null;
 
-        managementSystem.commit();
+        try {
+            managementSystem = getGraphInstance().openManagement();
 
-        if (!configuredIndexBackend.equals(currentIndexBackend)) {
-            throw new RuntimeException("Configured Index Backend " + configuredIndexBackend + " differs from earlier configured Index Backend " + currentIndexBackend + ". Aborting!");
+            String configuredIndexBackend = config.getString(INDEX_BACKEND_CONF);
+            String currentIndexBackend    = managementSystem.get(INDEX_BACKEND_CONF);
+
+            if (!configuredIndexBackend.equals(currentIndexBackend)) {
+                throw new RuntimeException("Configured Index Backend " + configuredIndexBackend + " differs from earlier configured Index Backend " + currentIndexBackend + ". Aborting!");
+            }
+        } finally {
+            if (managementSystem != null) {
+                managementSystem.commit();
+            }
         }
     }
 

@@ -250,10 +250,12 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
                 return;
             }
 
-            try {
-                txRecoveryObject = this.graph.getManagementSystem().startIndexRecovery(startTime);
+            try (AtlasGraphManagement management = this.graph.getManagementSystem()) {
+                txRecoveryObject = management.startIndexRecovery(startTime);
 
                 printIndexRecoveryStats();
+
+                management.setIsSuccess(true);
 
                 LOG.info("Index Recovery: Started! Recovery time: {}", Instant.ofEpochMilli(startTime));
             } catch (Exception e) {
@@ -276,10 +278,12 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         }
 
         private void stopIndexRecovery() {
-            try {
-                this.graph.getManagementSystem().stopIndexRecovery(txRecoveryObject);
+            try (AtlasGraphManagement management = this.graph.getManagementSystem()) {
+                management.stopIndexRecovery(txRecoveryObject);
 
                 printIndexRecoveryStats();
+
+                management.setIsSuccess(true);
             } catch (Exception e) {
                 LOG.info("Index Recovery: Stopped! Error!", e);
             } finally {
@@ -288,27 +292,11 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         }
 
         private void printIndexRecoveryStats() {
-            AtlasGraphManagement management       = this.graph.getManagementSystem();
-            boolean              isRollbackNeeded = true;
-
-            try {
+            try (AtlasGraphManagement management = this.graph.getManagementSystem()) {
                 management.printIndexRecoveryStats(txRecoveryObject);
-
-                isRollbackNeeded = false;
-
-                management.commit();
+                management.setIsSuccess(true);
             } catch (Exception e) {
                 LOG.error("Index Recovery: printIndexRecoveryStats() failed!", e);
-            } finally {
-                if (isRollbackNeeded) {
-                    LOG.warn("Index Recovery: printIndexRecoveryStats() failed. Rolling back...");
-
-                    try {
-                        management.rollback();
-                    } catch (Exception rollbackEx) {
-                        LOG.error("Index Recovery: printIndexRecoveryStats() rollback failed!", rollbackEx);
-                    }
-                }
             }
         }
     }

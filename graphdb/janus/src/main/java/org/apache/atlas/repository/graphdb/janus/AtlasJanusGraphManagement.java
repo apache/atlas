@@ -87,6 +87,7 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     private final AtlasJanusGraph      graph;
     private final JanusGraphManagement management;
     private final Set<String>          newMultProperties = new HashSet<>();
+    private       boolean              isSuccess         = false;
 
     public AtlasJanusGraphManagement(AtlasJanusGraph graph, JanusGraphManagement managementSystem) {
         this.management = managementSystem;
@@ -107,11 +108,19 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
                 try {
                     if (status == REGISTERED) {
-                        JanusGraphManagement management    = graph.openManagement();
-                        JanusGraphIndex      indexToUpdate = management.getGraphIndex(indexName);
+                        JanusGraphManagement management = null;
 
-                        management.updateIndex(indexToUpdate, ENABLE_INDEX).get();
-                        management.commit();
+                        try {
+                            management = graph.openManagement();
+
+                            JanusGraphIndex indexToUpdate = management.getGraphIndex(indexName);
+
+                            management.updateIndex(indexToUpdate, ENABLE_INDEX).get();
+                        } finally {
+                            if (management != null) {
+                                management.commit();
+                            }
+                        }
 
                         GraphIndexStatusReport report = ManagementSystem.awaitGraphIndexStatus(graph, indexName).status(ENABLED).call();
 
@@ -137,20 +146,22 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
     }
 
     @Override
+    public void close() throws Exception {
+        if (isSuccess) {
+            commit();
+        } else {
+            rollback();
+        }
+    }
+
+    @Override
+    public void setIsSuccess(boolean isSuccess) {
+        this.isSuccess = isSuccess;
+    }
+
+    @Override
     public boolean containsPropertyKey(String propertyName) {
         return management.containsPropertyKey(propertyName);
-    }
-
-    @Override
-    public void rollback() {
-        management.rollback();
-    }
-
-    @Override
-    public void commit() {
-        graph.addMultiProperties(newMultProperties);
-        newMultProperties.clear();
-        management.commit();
     }
 
     @Override
@@ -325,12 +336,8 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
 
     @Override
     public void updateUniqueIndexesForConsistencyLock() {
-        try {
-            setConsistency(this.management, Vertex.class);
-            setConsistency(this.management, Edge.class);
-        } finally {
-            commit();
-        }
+        setConsistency(this.management, Vertex.class);
+        setConsistency(this.management, Edge.class);
     }
 
     @Override
@@ -421,6 +428,16 @@ public class AtlasJanusGraphManagement implements AtlasGraphManagement {
         } catch (Exception e) {
             LOG.error("Error: Retrieving log transaction stats!", e);
         }
+    }
+
+    private void rollback() {
+        management.rollback();
+    }
+
+    private void commit() {
+        graph.addMultiProperties(newMultProperties);
+        newMultProperties.clear();
+        management.commit();
     }
 
     private static void checkName(String name) {
