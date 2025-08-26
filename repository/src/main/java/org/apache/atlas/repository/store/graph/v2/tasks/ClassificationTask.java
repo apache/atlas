@@ -115,7 +115,7 @@ public abstract class ClassificationTask extends AbstractTask {
 
             // Now log with MDC context
             LOG.info("Starting classification task execution");
-
+            setStatus(IN_PROGRESS);
             run(params, context);
             setStatus(AtlasTask.Status.COMPLETE);  // This will commit the graph
 
