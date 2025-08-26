@@ -24,7 +24,6 @@ import org.apache.atlas.model.discovery.AtlasAggregationEntry;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AggregationContext;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndexClient;
-import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
@@ -482,24 +481,6 @@ public class AtlasJanusGraphIndexClient implements AtlasGraphIndexClient {
         String              janusVertexIndex = ApplicationProperties.DEFAULT_INDEX_NAME + "_" + Constants.VERTEX_INDEX;
 
         return client != null && client.indexExists(janusVertexIndex);
-    }
-
-    private void graphManagementCommit(AtlasGraphManagement management) {
-        try {
-            management.commit();
-        } catch (Exception ex) {
-            LOG.warn("Graph transaction management commit failed; attempting rollback", ex);
-
-            graphManagementRollback(management);
-        }
-    }
-
-    private void graphManagementRollback(AtlasGraphManagement management) {
-        try {
-            management.rollback();
-        } catch (Exception ex) {
-            LOG.warn("Graph transaction management rollback failed", ex);
-        }
     }
 
     private SolrResponse updateFreeTextRequestHandler(SolrClient solrClient, String collectionName, Map<String, Integer> indexFieldName2SearchWeightMap, Solr6Index.Mode mode) throws IOException, SolrServerException, AtlasBaseException {

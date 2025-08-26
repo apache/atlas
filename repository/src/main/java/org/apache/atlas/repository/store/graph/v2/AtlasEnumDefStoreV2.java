@@ -25,7 +25,6 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.model.typedef.AtlasEnumDef.AtlasEnumElementDef;
 import org.apache.atlas.repository.Constants;
-import org.apache.atlas.repository.IndexException;
 import org.apache.atlas.repository.graphdb.AtlasCardinality;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
@@ -308,11 +307,7 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
     }
 
     private void createPropertyKeys(AtlasEnumDef enumDef) throws AtlasBaseException {
-        AtlasGraphManagement management = typeDefStore.atlasGraph.getManagementSystem();
-        boolean              isSuccess  = false;
-        Exception            err        = null;
-
-        try {
+        try (AtlasGraphManagement management = typeDefStore.atlasGraph.getManagementSystem()) {
             // create property keys first
             for (AtlasEnumElementDef element : enumDef.getElementDefs()) {
                 // Validate the enum element
@@ -331,29 +326,11 @@ class AtlasEnumDefStoreV2 extends AtlasAbstractDefStoreV2<AtlasEnumDef> {
             createPropertyKey(encodePropertyKey(typeDefKey), Object.class, AtlasCardinality.SINGLE, management);
             createPropertyKey(encodePropertyKey(defaultValueKey), String.class, AtlasCardinality.SINGLE, management);
 
-            isSuccess = true;
+            management.setIsSuccess(true);
         } catch (Exception e) {
-            err = e;
-        } finally {
-            try {
-                if (isSuccess) {
-                    management.commit();
-                } else {
-                    management.rollback();
-                }
-            } catch (Exception e) {
-                if (err == null) {
-                    err = new AtlasBaseException(new IndexException("Index " + (isSuccess ? "commit" : "rollback") + " failed", e));
-                } else {
-                    LOG.error("Index {} failed", (isSuccess ? "commit" : "rollback"), e);
-                }
-            }
-        }
+            LOG.error("PropertyKey creation failed for enum {}", enumDef.getName(), e);
 
-        if (err != null) {
-            LOG.error("PropertyKey creation failed for enum {}", enumDef.getName(), err);
-
-            throw (err instanceof AtlasBaseException) ? (AtlasBaseException) err : new AtlasBaseException(err);
+            throw (e instanceof AtlasBaseException) ? (AtlasBaseException) e : new AtlasBaseException(e);
         }
     }
 }
