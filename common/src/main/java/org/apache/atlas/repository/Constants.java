@@ -162,6 +162,7 @@ public final class Constants {
     public static final String OUTPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.outputPortDataProducts";
 
     public static final String OUTPUT_PORTS = "outputPorts";
+    public static final String INPUT_PORTS = "inputPorts";
     public static final String ADDED_OUTPUT_PORTS = "addedOutputPorts";
     public static final String REMOVED_OUTPUT_PORTS = "removedOutputPorts";
 
