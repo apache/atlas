@@ -68,6 +68,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     public static final boolean DEFAULT_INDEX_RECOVERY          = true;
     public static final AtlasRunMode DEFAULT_ATLAS_RUN_MODE     = AtlasRunMode.PROD;
     public static final String INDEX_SEARCH_MAX_RESULT_SET_SIZE = "atlas.graph.index.search.max-result-set-size";
+    public static final String TYPEDEF_LOCK_NAME                = "atlas.typedef.lock.name";
 
     public static final SimpleEntry<String, String> DB_CACHE_CONF               = new SimpleEntry<>("atlas.graph.cache.db-cache", "true");
     public static final SimpleEntry<String, String> DB_CACHE_CLEAN_WAIT_CONF    = new SimpleEntry<>("atlas.graph.cache.db-cache-clean-wait", "20");
