@@ -52,12 +52,15 @@ import java.util.Map;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
-import static org.testng.AssertJUnit.assertTrue;
+import static org.testng.Assert.assertTrue;
 
 public class KafkaBridgeTest {
     @Mock
@@ -616,5 +619,124 @@ public class KafkaBridgeTest {
         } catch (Exception e) {
             assertTrue(e.getCause() instanceof RuntimeException || e.getCause() instanceof IOException);
         }
+    }
+
+    @Test
+    public void testImportTopicRegexFilters() throws Exception {
+        when(mockConfiguration.getString("atlas.cluster.name", "primary")).thenReturn(TEST_CLUSTER_NAME);
+        when(mockConfiguration.getStringArray("atlas.metadata.namespace")).thenReturn(TEST_NAMESPACE_ARRAY);
+        when(mockKafkaUtils.listAllTopics()).thenReturn(Arrays.asList("payments", "orders", "inventory"));
+        KafkaBridge bridge = new KafkaBridge(mockConfiguration, mockAtlasClient, mockKafkaUtils);
+        KafkaBridge spyBridge = spy(bridge);
+        AtlasEntity.AtlasEntityWithExtInfo dummy = new AtlasEntity.AtlasEntityWithExtInfo(new AtlasEntity(KafkaDataTypes.KAFKA_TOPIC.getName()));
+        doReturn(dummy).when(spyBridge).createOrUpdateTopic(anyString());
+        spyBridge.importTopic("orders|inven.*");
+        verify(spyBridge).createOrUpdateTopic("orders");
+        verify(spyBridge).createOrUpdateTopic("inventory");
+        verify(spyBridge, never()).createOrUpdateTopic("payments");
+    }
+
+    @Test(expectedExceptions = Exception.class)
+    public void testGetTopicEntity_partitionErrorThrows() throws Exception {
+        when(mockConfiguration.getString("atlas.cluster.name", "primary")).thenReturn(TEST_CLUSTER_NAME);
+        when(mockConfiguration.getStringArray("atlas.metadata.namespace")).thenReturn(TEST_NAMESPACE_ARRAY);
+        when(mockKafkaUtils.listAllTopics()).thenReturn(Collections.singletonList(TEST_TOPIC_NAME));
+        when(mockKafkaUtils.getPartitionCount(TEST_TOPIC_NAME)).thenThrow(new java.util.concurrent.ExecutionException("fail", new RuntimeException("boom")));
+        KafkaBridge bridge = new KafkaBridge(mockConfiguration, mockAtlasClient, mockKafkaUtils);
+        bridge.getTopicEntity(TEST_TOPIC_NAME, null);
+    }
+
+    @Test
+    public void testGetSchemaEntity_namespaceFallback() throws Exception {
+        when(mockConfiguration.getString("atlas.cluster.name", "primary")).thenReturn(TEST_CLUSTER_NAME);
+        when(mockConfiguration.getStringArray("atlas.metadata.namespace")).thenReturn(TEST_NAMESPACE_ARRAY);
+        when(mockKafkaUtils.listAllTopics()).thenReturn(Collections.singletonList(TEST_TOPIC_NAME));
+        // Schema without namespace triggers fallback to key constant when input namespace is null
+        String schemaNoNs = "{\"type\":\"record\",\"name\":\"Rec\",\"fields\":[{\"name\":\"a\",\"type\":\"string\"}]}";
+        KafkaBridge bridge = new KafkaBridge(mockConfiguration, mockAtlasClient, mockKafkaUtils);
+        KafkaBridge spyBridge = spy(bridge);
+        doReturn(Collections.emptyList())
+                .when(spyBridge)
+                .createNestedFields(any(Schema.class), anyString(), anyString(), any(int.class), anyString());
+        AtlasEntity entity = spyBridge.getSchemaEntity(schemaNoNs, TEST_SCHEMA_NAME, null, 1, null);
+        assertEquals(entity.getAttribute("namespace"), "atlas.metadata.namespace");
+    }
+
+    @Test
+    public void testCreateNestedFields_arrayAndNestedRecord() throws Exception {
+        when(mockConfiguration.getString("atlas.cluster.name", "primary")).thenReturn(TEST_CLUSTER_NAME);
+        when(mockConfiguration.getStringArray("atlas.metadata.namespace")).thenReturn(TEST_NAMESPACE_ARRAY);
+        when(mockKafkaUtils.listAllTopics()).thenReturn(Collections.singletonList(TEST_TOPIC_NAME));
+        // Avro schema with array and nested record to cover both branches
+        String complexSchema = "{\"type\":\"record\",\"name\":\"Top\",\"fields\":["
+                + "{\"name\":\"items\",\"type\":{\"type\":\"array\",\"items\":{\"type\":\"record\",\"name\":\"Sub\",\"fields\":[{\"name\":\"x\",\"type\":\"string\"}]}}},"
+                + "{\"name\":\"inner\",\"type\":{\"type\":\"record\",\"name\":\"Inner\",\"fields\":[{\"name\":\"y\",\"type\":\"int\"}]}}]}";
+        KafkaBridge bridge = new KafkaBridge(mockConfiguration, mockAtlasClient, mockKafkaUtils);
+        KafkaBridge spyBridge = spy(bridge);
+        // Stub createOrUpdateField to avoid Atlas interactions and return simple entities
+        doReturn(new AtlasEntity.AtlasEntityWithExtInfo(new AtlasEntity(KafkaDataTypes.AVRO_FIELD.getName())))
+                .when(spyBridge).createOrUpdateField(any(Schema.Field.class), anyString(), anyString(), any(int.class), anyString());
+        List<AtlasEntity> fields = spyBridge.createNestedFields(new Schema.Parser().parse(complexSchema), TEST_SCHEMA_NAME, TEST_NAMESPACE, 1, "");
+        assertNotNull(fields);
+        // Expect 2 leaf fields (x and y)
+        assertEquals(fields.size(), 2);
+    }
+
+    @Test
+    public void testCreateEntityInAtlas_noCreatedEntities() throws Exception {
+        EntityMutationResponse mockResponse = mock(EntityMutationResponse.class);
+        when(mockResponse.getCreatedEntities()).thenReturn(Collections.emptyList());
+        when(mockAtlasClient.createEntity(any(AtlasEntity.AtlasEntityWithExtInfo.class))).thenReturn(mockResponse);
+        when(mockConfiguration.getString("atlas.cluster.name", "primary")).thenReturn(TEST_CLUSTER_NAME);
+        when(mockConfiguration.getStringArray("atlas.metadata.namespace")).thenReturn(TEST_NAMESPACE_ARRAY);
+        when(mockKafkaUtils.listAllTopics()).thenReturn(Collections.singletonList(TEST_TOPIC_NAME));
+        KafkaBridge bridge = new KafkaBridge(mockConfiguration, mockAtlasClient, mockKafkaUtils);
+        AtlasEntity.AtlasEntityWithExtInfo input = new AtlasEntity.AtlasEntityWithExtInfo(new AtlasEntity(KafkaDataTypes.KAFKA_TOPIC.getName()));
+        AtlasEntity.AtlasEntityWithExtInfo ret = bridge.createEntityInAtlas(input);
+        assertEquals(ret, null);
+    }
+
+    @Test
+    public void testUpdateEntityInAtlas_nullResponseReturnsInput() throws Exception {
+        when(mockAtlasClient.updateEntity(any(AtlasEntity.AtlasEntityWithExtInfo.class))).thenReturn(null);
+        when(mockConfiguration.getString("atlas.cluster.name", "primary")).thenReturn(TEST_CLUSTER_NAME);
+        when(mockConfiguration.getStringArray("atlas.metadata.namespace")).thenReturn(TEST_NAMESPACE_ARRAY);
+        when(mockKafkaUtils.listAllTopics()).thenReturn(Collections.singletonList(TEST_TOPIC_NAME));
+        KafkaBridge bridge = new KafkaBridge(mockConfiguration, mockAtlasClient, mockKafkaUtils);
+        AtlasEntity.AtlasEntityWithExtInfo input = new AtlasEntity.AtlasEntityWithExtInfo(new AtlasEntity(KafkaDataTypes.KAFKA_TOPIC.getName()));
+        AtlasEntity.AtlasEntityWithExtInfo ret = bridge.updateEntityInAtlas(input);
+        assertEquals(ret, input);
+    }
+
+    @Test
+    public void testUpdateEntityInAtlas_emptyUpdatedEntitiesReturnsInput() throws Exception {
+        EntityMutationResponse mockResponse = mock(EntityMutationResponse.class);
+        when(mockResponse.getUpdatedEntities()).thenReturn(Collections.emptyList());
+        when(mockAtlasClient.updateEntity(any(AtlasEntity.AtlasEntityWithExtInfo.class))).thenReturn(mockResponse);
+        when(mockConfiguration.getString("atlas.cluster.name", "primary")).thenReturn(TEST_CLUSTER_NAME);
+        when(mockConfiguration.getStringArray("atlas.metadata.namespace")).thenReturn(TEST_NAMESPACE_ARRAY);
+        when(mockKafkaUtils.listAllTopics()).thenReturn(Collections.singletonList(TEST_TOPIC_NAME));
+        KafkaBridge bridge = new KafkaBridge(mockConfiguration, mockAtlasClient, mockKafkaUtils);
+        AtlasEntity.AtlasEntityWithExtInfo input = new AtlasEntity.AtlasEntityWithExtInfo(new AtlasEntity(KafkaDataTypes.KAFKA_TOPIC.getName()));
+        AtlasEntity.AtlasEntityWithExtInfo ret = bridge.updateEntityInAtlas(input);
+        assertEquals(ret, input);
+    }
+
+    @Test
+    public void testQualifiedNameFormats() {
+        assertEquals(KafkaBridge.getTopicQualifiedName("ns", "TopicA"), "topica@ns");
+        assertEquals(KafkaBridge.getSchemaQualifiedName("ns", "name-value", "v1"), "name-value@v1@ns");
+        assertEquals(KafkaBridge.getFieldQualifiedName("ns", "A.B", "name-value", "v1"), "a.b@name-value@v1@ns");
+    }
+
+    @Test
+    public void testFindEntityInAtlas_exceptionHandled() throws Exception {
+        when(mockConfiguration.getString("atlas.cluster.name", "primary")).thenReturn(TEST_CLUSTER_NAME);
+        when(mockConfiguration.getStringArray("atlas.metadata.namespace")).thenReturn(TEST_NAMESPACE_ARRAY);
+        when(mockKafkaUtils.listAllTopics()).thenReturn(Collections.singletonList(TEST_TOPIC_NAME));
+        when(mockAtlasClient.getEntityByAttribute(anyString(), any(Map.class))).thenThrow(new RuntimeException("fail"));
+        KafkaBridge bridge = new KafkaBridge(mockConfiguration, mockAtlasClient, mockKafkaUtils);
+        AtlasEntity.AtlasEntityWithExtInfo ret = bridge.findEntityInAtlas("type", "qn");
+        assertEquals(ret, null);
     }
 }

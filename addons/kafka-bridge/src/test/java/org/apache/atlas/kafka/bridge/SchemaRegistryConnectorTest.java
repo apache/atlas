@@ -23,6 +23,7 @@ import org.apache.http.StatusLine;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.testng.annotations.BeforeMethod;
@@ -271,6 +272,32 @@ public class SchemaRegistryConnectorTest {
         assertNull(result);
 
         verify(mockHttpClient).execute(any(HttpGet.class));
+        verify(mockHttpResponse).close();
+    }
+
+    @Test
+    public void testGetVersionsKafkaSchemaRegistry_URLConstruction() throws IOException {
+        when(mockHttpClient.execute(any(HttpGet.class))).thenReturn(mockHttpResponse);
+        when(mockStatusLine.getStatusCode()).thenReturn(HttpStatus.SC_NOT_FOUND);
+        ArrayList<Integer> result = SchemaRegistryConnector.getVersionsKafkaSchemaRegistry(mockHttpClient, TEST_SUBJECT);
+        assertNotNull(result);
+        ArgumentCaptor<HttpGet> captor = ArgumentCaptor.forClass(HttpGet.class);
+        verify(mockHttpClient).execute(captor.capture());
+        String url = captor.getValue().getURI().toString();
+        assertTrue(url.contains("http://" + TEST_HOSTNAME + "/subjects/" + TEST_SUBJECT + "/versions/"));
+        verify(mockHttpResponse).close();
+    }
+
+    @Test
+    public void testGetSchemaFromKafkaSchemaRegistry_URLConstruction() throws IOException {
+        when(mockHttpClient.execute(any(HttpGet.class))).thenReturn(mockHttpResponse);
+        when(mockStatusLine.getStatusCode()).thenReturn(HttpStatus.SC_NOT_FOUND);
+        String result = SchemaRegistryConnector.getSchemaFromKafkaSchemaRegistry(mockHttpClient, TEST_SUBJECT, TEST_VERSION);
+        assertNull(result);
+        ArgumentCaptor<HttpGet> captor = ArgumentCaptor.forClass(HttpGet.class);
+        verify(mockHttpClient).execute(captor.capture());
+        String url = captor.getValue().getURI().toString();
+        assertTrue(url.contains("http://" + TEST_HOSTNAME + "/subjects/" + TEST_SUBJECT + "/versions/" + TEST_VERSION));
         verify(mockHttpResponse).close();
     }
 }
