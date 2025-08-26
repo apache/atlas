@@ -545,15 +545,22 @@ public class AtlasJanusGraph implements AtlasGraph<AtlasJanusVertex, AtlasJanusE
     }
 
     private Set<String> getIndexKeys(Class<? extends Element> janusGraphElementClass) {
-        JanusGraphManagement      mgmt    = getGraph().openManagement();
-        Iterable<JanusGraphIndex> indices = mgmt.getGraphIndexes(janusGraphElementClass);
-        Set<String>               result  = new HashSet<>();
+        Set<String>          result = new HashSet<>();
+        JanusGraphManagement mgmt   = null;
 
-        for (JanusGraphIndex index : indices) {
-            result.add(index.name());
+        try {
+            mgmt = getGraph().openManagement();
+
+            Iterable<JanusGraphIndex> indices = mgmt.getGraphIndexes(janusGraphElementClass);
+
+            for (JanusGraphIndex index : indices) {
+                result.add(index.name());
+            }
+        } finally {
+            if (mgmt != null) {
+                mgmt.commit();
+            }
         }
-
-        mgmt.commit();
 
         return result;
     }
