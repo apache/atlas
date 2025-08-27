@@ -169,6 +169,8 @@ public enum AtlasConfiguration {
     // ES and Cassandra batch operation configurations
     ES_BULK_BATCH_SIZE("atlas.es.bulk.batch.size", 500),
     CASSANDRA_BATCH_SIZE("atlas.cassandra.batch.size", 100),
+    ES_MAX_RETRIES("atlas.es.max.retries", 5),
+    ES_RETRY_DELAY_MS("atlas.es.retry.delay.ms", 1000),
 
 
     MIN_EDGES_SUPER_VERTEX("atlas.jg.super.vertex.min.edge.count", 100);

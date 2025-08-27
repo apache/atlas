@@ -112,7 +112,7 @@ public class ESConnector implements Closeable {
                 String docId = LongEncoding.encode(vertexId);
                 bulkRequestBody.append("{\"update\":{\"_index\":\"janusgraph_vertex_index\",\"_id\":\"").append(docId).append("\" }}\n");
 
-                bulkRequestBody.append("{");
+                bulkRequestBody.append("{ ");
                 String attrsToUpdate = AtlasType.toJson(toUpdate);
                 bulkRequestBody.append("\"doc\":").append(attrsToUpdate);
 
@@ -126,12 +126,31 @@ public class ESConnector implements Closeable {
             Request request = new Request("POST", "/_bulk");
             request.setEntity(new StringEntity(bulkRequestBody.toString(), ContentType.APPLICATION_JSON));
 
-            try {
-                lowLevelClient.performRequest(request);
-            } catch (IOException e) {
-                LOG.error("Failed to update ES doc for denorm attributes");
-                throw new RuntimeException(e);
+            int maxRetries = AtlasConfiguration.ES_MAX_RETRIES.getInt();
+            long retryDelay = AtlasConfiguration.ES_RETRY_DELAY_MS.getLong();
+
+            for (int retryCount = 0; retryCount < maxRetries; retryCount++) {
+                try {
+                    lowLevelClient.performRequest(request);
+                    return; // Success
+                } catch (IOException e) {
+                    LOG.warn("Failed to update ES doc for denorm attributes. Retrying... ({}/{})", retryCount + 1, maxRetries, e);
+                    if (retryCount < maxRetries - 1) {
+                        try {
+                            Thread.sleep(retryDelay);
+                        } catch (InterruptedException interruptedException) {
+                            Thread.currentThread().interrupt();
+                            throw new RuntimeException("ES update interrupted during retry delay", interruptedException);
+                        }
+                    } else {
+                        LOG.error("Failed to update ES doc for denorm attributes after {} retries", maxRetries);
+                        throw new RuntimeException(e);
+                    }
+                }
             }
+        } catch (Exception e) {
+            LOG.error("Failed to update ES doc for denorm attributes");
+            throw new RuntimeException(e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
