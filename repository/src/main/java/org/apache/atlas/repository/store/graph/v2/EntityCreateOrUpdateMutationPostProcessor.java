@@ -66,28 +66,7 @@ public class EntityCreateOrUpdateMutationPostProcessor implements EntityMutation
                     }
 
                     if (!batchPayload.isEmpty()) {
-                        int maxRetries = AtlasConfiguration.ES_MAX_RETRIES.getInt();
-                        long retryDelay = AtlasConfiguration.ES_RETRY_DELAY_MS.getLong();
-
-                        for (int retryCount = 0; retryCount < maxRetries; retryCount++) {
-                            try {
-                                ESConnector.writeTagProperties(batchPayload, upsert);
-                                break; // Success
-                            } catch (Exception e) {
-                                LOG.warn("Failed to execute ES operation. Retrying... ({}/{})", retryCount + 1, maxRetries, e);
-                                if (retryCount < maxRetries - 1) {
-                                    try {
-                                        Thread.sleep(retryDelay);
-                                    } catch (InterruptedException interruptedException) {
-                                        Thread.currentThread().interrupt();
-                                        throw new RuntimeException("ES operation interrupted during retry delay", interruptedException);
-                                    }
-                                } else {
-                                    LOG.error("Failed to execute ES operation after {} retries", maxRetries, e);
-                                    throw e; // Rethrow the exception after all retries have failed
-                                }
-                            }
-                        }
+                        ESConnector.writeTagProperties(batchPayload, upsert);
                     }
                 }
             }
