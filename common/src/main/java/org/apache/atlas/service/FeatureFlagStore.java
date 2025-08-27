@@ -2,6 +2,7 @@ package org.apache.atlas.service;
 
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -9,9 +10,11 @@ import org.slf4j.LoggerFactory;
 import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.List;
+import java.util.Objects;
 
 
 @Component
+@DependsOn("redisServiceImpl")
 public class FeatureFlagStore {
     private static final Logger LOG = LoggerFactory.getLogger(FeatureFlagStore.class);
 
@@ -27,9 +30,12 @@ public class FeatureFlagStore {
     @Inject
     public FeatureFlagStore(RedisService redisService, FeatureFlagConfig config, 
                            FeatureFlagCacheStore cacheStore) {
-        this.redisService = redisService;
-        this.config = config;
-        this.cacheStore = cacheStore;
+        this.redisService = Objects.requireNonNull(redisService, "RedisService cannot be null - critical dependency missing!");
+        this.config = Objects.requireNonNull(config, "FeatureFlagConfig cannot be null");
+        this.cacheStore = Objects.requireNonNull(cacheStore, "FeatureFlagCacheStore cannot be null");
+        
+        LOG.info("FeatureFlagStore dependencies injected successfully - RedisService: {}", 
+                redisService.getClass().getSimpleName());
     }
 
     @PostConstruct
@@ -38,13 +44,48 @@ public class FeatureFlagStore {
         long startTime = System.currentTimeMillis();
         
         try {
+            validateDependencies();
             preloadAllFlags();
             initialized = true;
+            
+            long duration = System.currentTimeMillis() - startTime;
+            LOG.info("FeatureFlagStore initialization completed successfully in {}ms", duration);
+            
         } catch (Exception e) {
             long duration = System.currentTimeMillis() - startTime;
             LOG.error("FeatureFlagStore initialization FAILED after {}ms", duration, e);
             throw new RuntimeException("Failed to initialize FeatureFlagStore - cannot start application", e);
         }
+    }
+
+    private void validateDependencies() {
+        LOG.info("Validating FeatureFlagStore dependencies...");
+        
+        // Validate RedisService is operational
+        try {
+            // Test Redis connectivity with a simple operation
+            String testKey = "ff:_health_check";
+            redisService.putValue(testKey, "test");
+            String testValue = redisService.getValue(testKey);
+            redisService.removeValue(testKey);
+            
+            if (!"test".equals(testValue)) {
+                throw new RuntimeException("Redis connectivity test failed - value mismatch");
+            }
+            
+            LOG.info("Redis connectivity validated successfully");
+            
+        } catch (Exception e) {
+            LOG.error("Redis connectivity validation failed", e);
+            throw new RuntimeException("RedisService is not operational - cannot initialize FeatureFlagStore", e);
+        }
+        
+        // Validate required configuration
+        if (config.getRedisRetryAttempts() <= 0) {
+            throw new RuntimeException("Invalid configuration: redisRetryAttempts must be > 0");
+        }
+        
+        LOG.info("All dependencies validated successfully");
     }
 
     private void preloadAllFlags() {
@@ -94,7 +135,7 @@ public class FeatureFlagStore {
         return null; // This line should never be reached
     }
 
-    public static boolean isTagV2Enabled() throws Exception {
+    public static boolean isTagV2Enabled() {
         return evaluate(FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey(), "true") || 
                StringUtils.isNotEmpty(getFlag(FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey()));
     }
@@ -127,6 +168,11 @@ public class FeatureFlagStore {
         if (!initialized) {
             LOG.warn("FeatureFlagStore not fully initialized yet, attempting to get flag: {}", key);
             throw new IllegalStateException("FeatureFlagStore not initialized");
+        }
+        
+        if (redisService == null) {
+            LOG.error("RedisService is null - this should never happen after proper initialization");
+            throw new IllegalStateException("RedisService is not available");
         }
         
         if (StringUtils.isEmpty(key)) {

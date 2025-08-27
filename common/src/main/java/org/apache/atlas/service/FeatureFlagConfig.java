@@ -16,7 +16,7 @@ public class FeatureFlagConfig {
     private final long redisRetryDelayMs;
     
     public FeatureFlagConfig() throws AtlasException {
-        ApplicationProperties props = ApplicationProperties.get();
+        ApplicationProperties props = (ApplicationProperties) ApplicationProperties.get();
         
         this.primaryCacheTtlMinutes = props.getInt("atlas.feature.flag.cache.primary.ttl.minutes", 5);
         this.primaryCacheMaxSize = props.getLong("atlas.feature.flag.cache.primary.max.size", 1000L);
