@@ -166,7 +166,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                     response = lowLevelClient.performRequest(request);
                     int statusCode = response.getStatusLine().getStatusCode();
 
-                    // FIX: Accept any 2xx status code as a success.
+                    // Accept any 2xx status code as a success.
                     if (statusCode >= 200 && statusCode < 300) {
                         String responseString = EntityUtils.toString(response.getEntity());
                         Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
@@ -188,7 +188,6 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                         return; // Success, exit the method.
                     }
 
-                    // FIX: Always consume the response entity to prevent connection leaks.
                     String responseBody = EntityUtils.toString(response.getEntity());
 
                     if (statusCode >= 500 && statusCode < 600) {
