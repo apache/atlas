@@ -161,11 +161,13 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             long retryDelay = AtlasConfiguration.ES_RETRY_DELAY_MS.getLong();
 
             for (int retryCount = 0; retryCount < maxRetries; retryCount++) {
+                Response response = null;
                 try {
-                    Response response = lowLevelClient.performRequest(request);
+                    response = lowLevelClient.performRequest(request);
                     int statusCode = response.getStatusLine().getStatusCode();
 
-                    if (statusCode == 200) {
+                    // FIX: Accept any 2xx status code as a success.
+                    if (statusCode >= 200 && statusCode < 300) {
                         String responseString = EntityUtils.toString(response.getEntity());
                         Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
 
@@ -181,25 +183,25 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                                     }
                                 }
                             }
-                            // This is a non-retryable, partial failure from ES. Throw immediately.
                             throw new AtlasBaseException("Error pushing entity audits to ES: " + errors);
                         }
                         return; // Success, exit the method.
                     }
 
-                    // Retry on transient 5xx server errors.
+                    // FIX: Always consume the response entity to prevent connection leaks.
+                    String responseBody = EntityUtils.toString(response.getEntity());
+
                     if (statusCode >= 500 && statusCode < 600) {
-                        LOG.warn("Failed to push entity audits to ES due to server error ({}). Retrying... ({}/{})", statusCode, retryCount + 1, maxRetries);
+                        LOG.warn("Failed to push entity audits to ES due to server error ({}). Retrying... ({}/{}) Response: {}",
+                                statusCode, retryCount + 1, maxRetries, responseBody);
                     } else {
-                        // Do not retry on client errors (e.g., 4xx) or other unexpected codes.
-                        throw new AtlasBaseException("Unable to push entity audits to ES. Status code: " + statusCode);
+                        throw new AtlasBaseException("Unable to push entity audits to ES. Status code: " + statusCode + ", Response: " + responseBody);
                     }
 
                 } catch (IOException e) {
                     LOG.warn("Failed to push entity audits to ES due to IOException. Retrying... ({}/{})", retryCount + 1, maxRetries, e);
                 }
 
-                // Wait before the next attempt, if it's not the last one.
                 if (retryCount < maxRetries - 1) {
                     try {
                         Thread.sleep(retryDelay);
@@ -210,15 +212,13 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 }
             }
 
-            // If the loop completes without returning, all retries have failed.
             LOG.error("Failed to push entity audits to ES after {} retries", maxRetries);
             throw new AtlasBaseException("Unable to push entity audits to ES after " + maxRetries + " retries");
 
         } catch (Exception e) {
             if (e instanceof AtlasBaseException) {
-                throw (AtlasBaseException) e;
+                throw e;
             }
-            // Wrap any other unexpected exceptions.
             throw new AtlasBaseException("Unable to push entity audits to ES", e);
         } finally {
             RequestContext.get().endMetricRecord(metric);
