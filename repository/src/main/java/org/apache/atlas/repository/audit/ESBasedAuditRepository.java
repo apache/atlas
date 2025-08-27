@@ -33,6 +33,7 @@ import org.apache.atlas.model.instance.AtlasEntityHeader;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
 import org.apache.atlas.type.AtlasType;
 import org.apache.atlas.utils.AtlasPerfMetrics;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.NotImplementedException;
@@ -121,8 +122,9 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
     @Override
     public void putEventsV2(List<EntityAuditEventV2> events) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("pushInES");
+
         try {
-            if (events == null || events.isEmpty()) {
+            if (CollectionUtils.isEmpty(events)) {
                 return;
             }
 
@@ -157,17 +159,48 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
             int maxRetries = AtlasConfiguration.ES_MAX_RETRIES.getInt();
             long retryDelay = AtlasConfiguration.ES_RETRY_DELAY_MS.getLong();
-            Response response = null;
 
-            for (int retryCount = 0; ; retryCount++) {
+            for (int retryCount = 0; retryCount < maxRetries; retryCount++) {
                 try {
-                    response = lowLevelClient.performRequest(request);
-                    break; // Success
-                } catch (IOException e) {
-                    LOG.warn("Failed to push entity audits to ES. Retrying... ({}/{})", retryCount + 1, maxRetries, e);
-                    if (retryCount >= maxRetries - 1) {
-                        throw new AtlasBaseException("Unable to push entity audits to ES after " + maxRetries + " retries", e);
+                    Response response = lowLevelClient.performRequest(request);
+                    int statusCode = response.getStatusLine().getStatusCode();
+
+                    if (statusCode == 200) {
+                        String responseString = EntityUtils.toString(response.getEntity());
+                        Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
+
+                        if ((boolean) responseMap.get("errors")) {
+                            LOG.error("Elasticsearch returned errors for bulk audit event request. Full response: {}", responseString);
+                            List<String> errors = new ArrayList<>();
+                            List<Map<String, Object>> resultItems = (List<Map<String, Object>>) responseMap.get("items");
+                            for (Map<String, Object> resultItem : resultItems) {
+                                if (resultItem.get("index") != null) {
+                                    Map<String, Object> resultIndex = (Map<String, Object>) resultItem.get("index");
+                                    if (resultIndex.get("error") != null) {
+                                        errors.add(resultIndex.get("error").toString());
+                                    }
+                                }
+                            }
+                            // This is a non-retryable, partial failure from ES. Throw immediately.
+                            throw new AtlasBaseException("Error pushing entity audits to ES: " + errors);
+                        }
+                        return; // Success, exit the method.
                     }
+
+                    // Retry on transient 5xx server errors.
+                    if (statusCode >= 500 && statusCode < 600) {
+                        LOG.warn("Failed to push entity audits to ES due to server error ({}). Retrying... ({}/{})", statusCode, retryCount + 1, maxRetries);
+                    } else {
+                        // Do not retry on client errors (e.g., 4xx) or other unexpected codes.
+                        throw new AtlasBaseException("Unable to push entity audits to ES. Status code: " + statusCode);
+                    }
+
+                } catch (IOException e) {
+                    LOG.warn("Failed to push entity audits to ES due to IOException. Retrying... ({}/{})", retryCount + 1, maxRetries, e);
+                }
+
+                // Wait before the next attempt, if it's not the last one.
+                if (retryCount < maxRetries - 1) {
                     try {
                         Thread.sleep(retryDelay);
                     } catch (InterruptedException interruptedException) {
@@ -177,31 +210,15 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
                 }
             }
 
-            int statusCode = response.getStatusLine().getStatusCode();
-            if (statusCode != 200) {
-                throw new AtlasException("Unable to push entity audits to ES. Status code: " + statusCode);
-            }
-
-            String responseString = EntityUtils.toString(response.getEntity());
-            Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
-            if ((boolean) responseMap.get("errors")) {
-                List<String> errors = new ArrayList<>();
-                List<Map<String, Object>> resultItems = (List<Map<String, Object>>) responseMap.get("items");
-                for (Map<String, Object> resultItem : resultItems) {
-                    if (resultItem.get("index") != null) {
-                        Map<String, Object> resultIndex = (Map<String, Object>) resultItem.get("index");
-                        if (resultIndex.get("error") != null) {
-                            errors.add(resultIndex.get("error").toString());
-                        }
-                    }
-                }
-                throw new AtlasException("Error pushing entity audits to ES: " + errors);
-            }
+            // If the loop completes without returning, all retries have failed.
+            LOG.error("Failed to push entity audits to ES after {} retries", maxRetries);
+            throw new AtlasBaseException("Unable to push entity audits to ES after " + maxRetries + " retries");
 
         } catch (Exception e) {
             if (e instanceof AtlasBaseException) {
                 throw (AtlasBaseException) e;
             }
+            // Wrap any other unexpected exceptions.
             throw new AtlasBaseException("Unable to push entity audits to ES", e);
         } finally {
             RequestContext.get().endMetricRecord(metric);
