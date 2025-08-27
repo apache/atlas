@@ -19,6 +19,7 @@ package org.apache.atlas.web.rest;
 
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -68,20 +69,22 @@ import java.util.concurrent.TimeUnit;
 public class TypesREST {
     private static final Logger PERF_LOG = AtlasPerfTracer.getPerfLogger("rest.TypesREST");
     private static final Logger LOG = LoggerFactory.getLogger(TypesREST.class);
-    private static final String ATLAS_TYPEDEF_LOCK = "atlas:type-def:lock";
-
+    // private static final String ATLAS_TYPEDEF_LOCK = "atlas:type-def:lock";
 
     private final AtlasTypeDefStore typeDefStore;
     private final RedisService redisService;
     private final TypeCacheRefresher typeCacheRefresher;
     private final ExecutorService cacheRefreshExecutor;
+    private String typeDefLock;
 
     @Inject
     public TypesREST(AtlasTypeDefStore typeDefStore, RedisService redisService, Configuration configuration, TypeCacheRefresher typeCacheRefresher) {
         this.typeDefStore = typeDefStore;
         this.redisService = redisService;
         this.typeCacheRefresher = typeCacheRefresher;
-        
+        this.typeDefLock = configuration.getString(ApplicationProperties.TYPEDEF_LOCK_NAME, "atlas:type-def:lock");
+        LOG.info("TypeDef lock name: {}", this.typeDefLock);
+
         this.cacheRefreshExecutor = Executors.newFixedThreadPool(AtlasConfiguration.MAX_THREADS_TYPE_UPDATE.getInt(), r -> {
             Thread t = new Thread(r);
             t.setName("Atlas-Cache-Refresh-" + t.getId());
@@ -393,7 +396,7 @@ public class TypesREST {
     private void attemptAcquiringLock() throws AtlasBaseException {
         final String traceId = RequestContext.get().getTraceId();
         try {
-            if (!redisService.acquireDistributedLock(ATLAS_TYPEDEF_LOCK)) {
+            if (!redisService.acquireDistributedLock(typeDefLock)) {
                 LOG.info("Lock is already acquired. Returning now :: traceId {}", traceId);
                 throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK);
             }
@@ -411,15 +414,15 @@ public class TypesREST {
         Lock lock = null;
         try {
 
-            lock = redisService.acquireDistributedLockV2(ATLAS_TYPEDEF_LOCK);
+            lock = redisService.acquireDistributedLockV2(typeDefLock);
             if (lock == null) {
-                LOG.info("Lock is already acquired. for key {} : Returning now :: traceId {}", ATLAS_TYPEDEF_LOCK, traceId);
+                LOG.info("Lock is already acquired. for key {} : Returning now :: traceId {}", typeDefLock, traceId);
                 throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK);
             }
-            LOG.info("Successfully acquired lock with key {} :: traceId {}", ATLAS_TYPEDEF_LOCK, traceId);
+            LOG.info("Successfully acquired lock with key {} :: traceId {}", typeDefLock, traceId);
             return lock;
         } catch (AtlasBaseException e) {
-            redisService.releaseDistributedLockV2(lock, ATLAS_TYPEDEF_LOCK);
+            redisService.releaseDistributedLockV2(lock, typeDefLock);
             throw e;
         } catch (Exception e) {
             LOG.error("Error while acquiring lock on type-defs :: traceId " + traceId + " ." + e.getMessage(), e);
@@ -470,7 +473,7 @@ public class TypesREST {
         }
         finally {
             if (lock != null) {
-                redisService.releaseDistributedLockV2(lock, ATLAS_TYPEDEF_LOCK);
+                redisService.releaseDistributedLockV2(lock, typeDefLock);
             }
             AtlasPerfTracer.log(perf);
         }
@@ -554,7 +557,7 @@ public class TypesREST {
             throw new AtlasBaseException("Error while updating a type definition");
         } finally {
             if (lock != null) {
-                redisService.releaseDistributedLockV2(lock, ATLAS_TYPEDEF_LOCK);
+                redisService.releaseDistributedLockV2(lock, typeDefLock);
             }
             RequestContext.clear();
             AtlasPerfTracer.log(perf);
@@ -593,7 +596,7 @@ public class TypesREST {
             throw new AtlasBaseException("Error while deleting a type definition");
         } finally {
             if (lock != null) {
-                redisService.releaseDistributedLockV2(lock, ATLAS_TYPEDEF_LOCK);
+                redisService.releaseDistributedLockV2(lock, typeDefLock);
             }
             AtlasPerfTracer.log(perf);
         }
@@ -629,7 +632,7 @@ public class TypesREST {
             throw new AtlasBaseException("Error while deleting a type definition");
         } finally {
             if (lock != null) {
-                redisService.releaseDistributedLockV2(lock, ATLAS_TYPEDEF_LOCK);
+                redisService.releaseDistributedLockV2(lock, typeDefLock);
             }
             AtlasPerfTracer.log(perf);
         }
@@ -729,6 +732,6 @@ public class TypesREST {
             }
         }
 
-        this.redisService.releaseDistributedLock(ATLAS_TYPEDEF_LOCK);
+        this.redisService.releaseDistributedLock(typeDefLock);
     }
 }
