@@ -148,19 +148,19 @@ public class ESConnector implements Closeable {
                     }
                 } catch (IOException e) {
                     LOG.warn("Failed to update ES doc for denorm attributes. Retrying... ({}/{})", retryCount + 1, maxRetries, e);
-                    if (retryCount < maxRetries - 1) {
-                        try {
-                            Thread.sleep(retryDelay);
-                        } catch (InterruptedException interruptedException) {
-                            Thread.currentThread().interrupt();
-                            throw new RuntimeException("ES update interrupted during retry delay", interruptedException);
-                        }
-                    } else {
-                        LOG.error("Failed to update ES doc for denorm attributes after {} retries", maxRetries);
-                        throw new RuntimeException(e);
+                }
+
+                if (retryCount < maxRetries - 1) {
+                    try {
+                        Thread.sleep(retryDelay);
+                    } catch (InterruptedException interruptedException) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("ES update interrupted during retry delay", interruptedException);
                     }
                 }
             }
+            // If the loop completes, all retries have failed. Throw an exception.
+            throw new RuntimeException("Failed to update ES doc for denorm attributes after " + maxRetries + " retries");
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
