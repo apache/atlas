@@ -127,6 +127,7 @@ public class ESConnector implements Closeable {
 
             int maxRetries = AtlasConfiguration.ES_MAX_RETRIES.getInt();
             long retryDelay = AtlasConfiguration.ES_RETRY_DELAY_MS.getLong();
+            long initialRetryDelay = AtlasConfiguration.ES_RETRY_DELAY_MS.getLong();
 
             for (int retryCount = 0; retryCount < maxRetries; retryCount++) {
                 try {
@@ -152,7 +153,8 @@ public class ESConnector implements Closeable {
 
                 if (retryCount < maxRetries - 1) {
                     try {
-                        Thread.sleep(retryDelay);
+                        long exponentialBackoffDelay = initialRetryDelay * (long) Math.pow(2, retryCount);
+                        Thread.sleep(exponentialBackoffDelay);
                     } catch (InterruptedException interruptedException) {
                         Thread.currentThread().interrupt();
                         throw new RuntimeException("ES update interrupted during retry delay", interruptedException);

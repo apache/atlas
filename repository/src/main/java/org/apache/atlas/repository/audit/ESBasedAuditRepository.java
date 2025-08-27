@@ -158,7 +158,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
             request.setEntity(entity);
 
             int maxRetries = AtlasConfiguration.ES_MAX_RETRIES.getInt();
-            long retryDelay = AtlasConfiguration.ES_RETRY_DELAY_MS.getLong();
+            long initialRetryDelay = AtlasConfiguration.ES_RETRY_DELAY_MS.getLong();
 
             for (int retryCount = 0; retryCount < maxRetries; retryCount++) {
                 Response response = null;
@@ -203,7 +203,8 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
                 if (retryCount < maxRetries - 1) {
                     try {
-                        Thread.sleep(retryDelay);
+                        long exponentialBackoffDelay = initialRetryDelay * (long) Math.pow(2, retryCount);
+                        Thread.sleep(exponentialBackoffDelay);
                     } catch (InterruptedException interruptedException) {
                         Thread.currentThread().interrupt();
                         throw new AtlasBaseException("ES audit push interrupted during retry delay", interruptedException);
