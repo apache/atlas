@@ -148,9 +148,6 @@ public class ESConnector implements Closeable {
                     }
                 }
             }
-        } catch (Exception e) {
-            LOG.error("Failed to update ES doc for denorm attributes");
-            throw new RuntimeException(e);
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
