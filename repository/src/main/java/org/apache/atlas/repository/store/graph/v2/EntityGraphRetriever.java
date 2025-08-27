@@ -77,6 +77,7 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.collections4.ListUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.GraphTraversal;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
 import org.apache.tinkerpop.gremlin.structure.*;
@@ -1245,7 +1246,14 @@ public class EntityGraphRetriever {
 
             GraphTraversal<Edge, Map<String, Object>> edgeTraversal =
                     ((AtlasJanusGraph) graph).V(vertexIds)
-                            .bothE()
+                            .bothE();
+            
+            // Filter by edge labels if provided
+            if (!CollectionUtils.isEmpty(edgeLabels)) {
+                edgeTraversal = edgeTraversal.hasLabel(P.within(edgeLabels));
+            }
+            
+            edgeTraversal = edgeTraversal
                             .has(STATE_PROPERTY_KEY, ACTIVE.name())
                             .has(RELATIONSHIP_GUID_PROPERTY_KEY)
                             .project( "id", "valueMap","label", "inVertexId", "outVertexId")
