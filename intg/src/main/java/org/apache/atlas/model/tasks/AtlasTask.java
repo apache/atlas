@@ -100,7 +100,6 @@ public class AtlasTask {
     private Map<String, Object> parameters;
     private int                 attemptCount;
     private String              errorMessage;
-    private String              warningMessage;
     private Status              status;
     private String              classificationId;
     private String              entityGuid;
@@ -220,14 +219,6 @@ public class AtlasTask {
         this.errorMessage = errorMessage;
     }
 
-    public String getWarningMessage() {
-        return warningMessage;
-    }
-
-    public void setWarningMessage(String warningMessage) {
-        this.warningMessage = warningMessage;
-    }
-
     public Date getStartTime() {
         return startTime;
     }
@@ -298,7 +289,6 @@ public class AtlasTask {
                 ", parameters=" + parameters +
                 ", attemptCount=" + attemptCount +
                 ", errorMessage='" + errorMessage + '\'' +
-                ", warningMessage='" + warningMessage + '\'' +
                 ", status=" + status +
                 ", classificationId='" + classificationId + '\'' +
                 ", entityGuid='" + entityGuid + '\'' +
