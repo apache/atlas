@@ -204,7 +204,6 @@ public class TaskRegistry {
         setEncodedProperty(taskVertex, TASK_STATUS, task.getStatus().toString());
         setEncodedProperty(taskVertex, Constants.TASK_UPDATED_TIME, System.currentTimeMillis());
         setEncodedProperty(taskVertex, Constants.TASK_ERROR_MESSAGE, task.getErrorMessage());
-        setEncodedProperty(taskVertex, Constants.TASK_WARNING_MESSAGE, task.getWarningMessage());
     }
 
     @GraphTransaction
@@ -713,11 +712,6 @@ public class TaskRegistry {
         String errorMessage = v.getProperty(Constants.TASK_ERROR_MESSAGE, String.class);
         if (errorMessage != null) {
             ret.setErrorMessage(errorMessage);
-        }
-
-        String warningMessage = v.getProperty(Constants.TASK_WARNING_MESSAGE, String.class);
-        if (warningMessage != null) {
-            ret.setWarningMessage(warningMessage);
         }
 
         List<String> headerKeys = v.getPropertyKeys().stream().filter(key -> key.toLowerCase().startsWith(ATLAN_HEADER_PREFIX_PATTERN)).collect(Collectors.toUnmodifiableList());
