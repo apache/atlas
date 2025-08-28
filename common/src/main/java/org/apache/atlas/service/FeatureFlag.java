@@ -8,7 +8,8 @@ import java.util.stream.Collectors;
 public enum FeatureFlag {
     ENABLE_JANUS_OPTIMISATION("ENABLE_JANUS_OPTIMISATION", false),
     ENABLE_PERSONA_HIERARCHY_FILTER("enable_persona_hierarchy_filter", false),
-    DISABLE_WRITE_FLAG("DISABLE_WRITE_FLAG", false);
+    DISABLE_WRITE_FLAG("DISABLE_WRITE_FLAG", false),
+    USE_TEMP_ES_INDEX("use_temp_es_index", false);
 
     private final String key;
     private final boolean defaultValue;
