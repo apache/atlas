@@ -49,8 +49,6 @@ public class RepairREST {
         }
 
         LOG.info("Single index repair requested for QN: {}", qualifiedName);
-
-
         try {
             RepairResult result = indexRepairService.repairSingleIndex(qualifiedName);
 
@@ -64,7 +62,6 @@ public class RepairREST {
             return Response.ok(response).build();
 
         } catch (Exception e) {
-            graph.rollback();
             LOG.error("Single index repair failed", e);
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Repair failed: " + e.getMessage());
         }
@@ -104,7 +101,6 @@ public class RepairREST {
             return Response.ok(response).build();
 
         } catch (Exception e) {
-            graph.rollback();
             LOG.error("Composite index repair failed", e);
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Repair failed: " + e.getMessage());
         }
@@ -143,7 +139,6 @@ public class RepairREST {
             return Response.ok(response).build();
 
         } catch (Exception e) {
-            graph.rollback();
             LOG.error("Auto repair failed", e);
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Repair failed: " + e.getMessage());
         }
@@ -174,11 +169,8 @@ public class RepairREST {
 
         try {
             BatchRepairResult result = indexRepairService.repairBatch(request.getEntities(), indexType);
-            graph.commit();
             return Response.ok(result).build();
-
         } catch (Exception e) {
-            graph.rollback();
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR,
                     "Batch repair failed: " + e.getMessage());
         }

@@ -1,30 +1,27 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import org.apache.atlas.AtlasErrorCode;
-import org.apache.atlas.annotation.GraphTransaction;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.repair.*;
+import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
+import org.apache.commons.collections.CollectionUtils;
 import org.janusgraph.core.JanusGraph;
 import org.janusgraph.graphdb.database.util.StaleIndexRecordUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.stereotype.Service;
 
 import javax.inject.Inject;
 import java.util.*;
 
+@Service
 public class IndexRepairService {
     private static final Logger LOG = LoggerFactory.getLogger(IndexRepairService.class);
-
-    // Property keys
-    private static final String QUALIFIED_NAME_PROPERTY = "__u_qualifiedName";
-    private static final String TYPE_NAME_PROPERTY = "__typeName";
-    private static final String GUID_PROPERTY_KEY = "__guid";
-    private static final String STATE_PROPERTY_KEY = "__state";
 
     // Index names
     private static final String COMPOSITE_INDEX_QN_TYPE = "__u_qualifiedName__typeName";
@@ -55,14 +52,14 @@ public class IndexRepairService {
         }
 
         AtlasGraphQuery query = graph.query()
-                .has(QUALIFIED_NAME_PROPERTY, qualifiedName);
+                .has(Constants.UNIQUE_QUALIFIED_NAME, qualifiedName);
 
         Iterator<AtlasVertex> vertices = query.vertices().iterator();
 
         if (vertices.hasNext()) {
             AtlasVertex vertex = vertices.next();
             // Check if vertex is corrupted
-            if (StringUtils.isNotEmpty(vertex.getProperty(GUID_PROPERTY_KEY, String.class)) || StringUtils.isNotEmpty(vertex.getProperty(TYPE_NAME_PROPERTY, String.class))){
+            if (CollectionUtils.isEmpty(vertex.getPropertyKeys()) && StringUtils.isNotEmpty(vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class)) || StringUtils.isNotEmpty(vertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class))){
                 return vertex.getId() instanceof Long ? Optional.of((Long) vertex.getId()) : Optional.empty();
             }
         }
@@ -72,7 +69,6 @@ public class IndexRepairService {
     /**
      * Repair single index for a given qualifiedName
      */
-    @GraphTransaction
     public RepairResult repairSingleIndex(String qualifiedName) throws AtlasBaseException {
         LOG.info("Starting single index repair for QN: {}", qualifiedName);
 
@@ -90,16 +86,17 @@ public class IndexRepairService {
             AtlasVertex vertex = graph.getVertex(vertexId.toString());
             if (vertex != null) {
                 // Rename the indexed property to remove from index
-                String tempPropertyName = QUALIFIED_NAME_PROPERTY + "_corrupted_" + System.currentTimeMillis();
-                Object oldValue = vertex.getProperty(QUALIFIED_NAME_PROPERTY, String.class);
+                String tempPropertyName = Constants.UNIQUE_QUALIFIED_NAME + "_corrupted_" + System.currentTimeMillis();
+                Object oldValue = vertex.getProperty(Constants.UNIQUE_QUALIFIED_NAME, String.class);
 
                 if (oldValue != null) {
                     vertex.setProperty(tempPropertyName, oldValue);
-                    vertex.removeProperty(QUALIFIED_NAME_PROPERTY);
+                    vertex.removeProperty(Constants.UNIQUE_QUALIFIED_NAME);
                 }
 
                 // Now remove the vertex
                 graph.removeVertex(vertex);
+                graph.commit();
 
                 LOG.info("Successfully repaired single index for QN: {}, VertexId: {}",
                         qualifiedName, vertexId);
@@ -134,24 +131,23 @@ public class IndexRepairService {
         }
 
         AtlasGraphQuery query = graph.query()
-                .has(QUALIFIED_NAME_PROPERTY, qualifiedName)
-                .has(TYPE_NAME_PROPERTY, typeName);
+                .has(Constants.UNIQUE_QUALIFIED_NAME, qualifiedName)
+                .has(Constants.TYPE_NAME_PROPERTY_KEY , typeName);
 
         Iterator<AtlasVertex> vertices = query.vertices().iterator();
 
         if (vertices.hasNext()) {
             AtlasVertex vertex = vertices.next();
-            if (StringUtils.isNotEmpty(vertex.getProperty(GUID_PROPERTY_KEY, String.class)) || StringUtils.isNotEmpty(vertex.getProperty(STATE_PROPERTY_KEY, String.class))) {
+            if (CollectionUtils.isEmpty(vertex.getPropertyKeys()) && StringUtils.isEmpty(vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class)) && StringUtils.isEmpty(vertex.getProperty(Constants.QUALIFIED_NAME, String.class))) {
                 return vertex.getId() instanceof Long ? Optional.of((Long) vertex.getId()) : Optional.empty();
             }
         }
-        return Optional.empty();
+         return Optional.empty();
     }
 
     /**
      * Repair composite index for given qualifiedName and typeName
      */
-    @GraphTransaction
     public RepairResult repairCompositeIndex(String qualifiedName, String typeName) throws AtlasBaseException {
         LOG.info("Starting composite index repair for QN: {}, Type: {}", qualifiedName, typeName);
 
@@ -165,8 +161,8 @@ public class IndexRepairService {
         Long vertexId = corruptedVertexId.get();
 
         Map<String, Object> indexProperties = new HashMap<>();
-        indexProperties.put(QUALIFIED_NAME_PROPERTY, qualifiedName);
-        indexProperties.put(TYPE_NAME_PROPERTY, typeName);
+        indexProperties.put(Constants.UNIQUE_QUALIFIED_NAME, qualifiedName);
+        indexProperties.put(Constants.TYPE_NAME_PROPERTY_KEY, typeName);
 
         removeCorruptedCompositeIndexEntry(vertexId, indexProperties, COMPOSITE_INDEX_QN_TYPE);
 
@@ -194,15 +190,7 @@ public class IndexRepairService {
                     compositeIndexName
             );
 
-            try {
-                AtlasVertex vertex = graph.getVertex(vertexId.toString());
-                if (vertex != null) {
-                    graph.removeVertex(vertex);
-                }
-            } catch (Exception e) {
-                LOG.debug("Vertex {} already removed or not accessible", vertexId);
-            }
-
+            janusGraph.tx().commit();
             LOG.info("Removed corrupted composite index entry for vertex: {}", vertexId);
 
         } catch (Exception e) {
@@ -217,7 +205,6 @@ public class IndexRepairService {
     /**
      * Automatically detect and repair both single and composite indexes
      */
-    @GraphTransaction
     public RepairResult autoRepair(String qualifiedName, String typeName) throws AtlasBaseException {
         LOG.info("Starting auto repair for QN: {}, Type: {}", qualifiedName, typeName);
 
