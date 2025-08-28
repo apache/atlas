@@ -105,45 +105,6 @@ public class RepairREST {
             throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Repair failed: " + e.getMessage());
         }
     }
-
-    /**
-     * Auto repair - checks and repairs both indexes
-     */
-    @POST
-    @Path("/auto")
-    @Consumes(MediaType.APPLICATION_JSON)
-    @Produces(MediaType.APPLICATION_JSON)
-    public Response autoRepair(RepairRequest request) throws AtlasBaseException {
-
-        if (StringUtils.isBlank(request.getQualifiedName())) {
-            throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "qualifiedName is required");
-        }
-
-        LOG.info("Auto repair requested for QN: {}, Type: {}",
-                request.getQualifiedName(), request.getTypeName());
-
-        try {
-            RepairResult result = indexRepairService.autoRepair(
-                    request.getQualifiedName(),
-                    request.getTypeName()
-            );
-
-            Map<String, Object> response = new HashMap<>();
-            response.put("success", result.isRepaired());
-            response.put("message", result.getMessage());
-            response.put("repairedVertexId", result.getRepairedVertexId());
-            response.put("qualifiedName", request.getQualifiedName());
-            response.put("typeName", request.getTypeName());
-            response.put("indexType", "AUTO");
-
-            return Response.ok(response).build();
-
-        } catch (Exception e) {
-            LOG.error("Auto repair failed", e);
-            throw new AtlasBaseException(AtlasErrorCode.INTERNAL_ERROR, "Repair failed: " + e.getMessage());
-        }
-    }
-
     /**
      * Batch repair with index type specification
      */

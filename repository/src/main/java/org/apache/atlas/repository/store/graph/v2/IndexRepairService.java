@@ -199,52 +199,6 @@ public class IndexRepairService {
                     "Failed to repair composite index: " + e.getMessage());
         }
     }
-
-    // =============== AUTO REPAIR (BOTH INDEXES) ===============
-
-    /**
-     * Automatically detect and repair both single and composite indexes
-     */
-    public RepairResult autoRepair(String qualifiedName, String typeName) throws AtlasBaseException {
-        LOG.info("Starting auto repair for QN: {}, Type: {}", qualifiedName, typeName);
-
-        RepairResult result = null;
-        boolean singleIndexRepaired = false;
-        boolean compositeIndexRepaired = false;
-        Long repairedVertexId = null;
-
-        // Check and repair single index
-        if (isCorruptedSingleVertex(qualifiedName)) {
-            LOG.info("Detected corruption in single index for QN: {}", qualifiedName);
-            RepairResult singleResult = repairSingleIndex(qualifiedName);
-            singleIndexRepaired = singleResult.isRepaired();
-            if (singleIndexRepaired) {
-                repairedVertexId = singleResult.getRepairedVertexId();
-            }
-        }
-
-        // Check and repair composite index (if typeName is provided)
-        if (StringUtils.isNotBlank(typeName) && isCorruptedCompositeVertex(qualifiedName, typeName)) {
-            LOG.info("Detected corruption in composite index for QN: {}, Type: {}", qualifiedName, typeName);
-            RepairResult compositeResult = repairCompositeIndex(qualifiedName, typeName);
-            compositeIndexRepaired = compositeResult.isRepaired();
-            if (compositeIndexRepaired && repairedVertexId == null) {
-                repairedVertexId = compositeResult.getRepairedVertexId();
-            }
-        }
-
-        // Determine final result
-        if (singleIndexRepaired && compositeIndexRepaired) {
-            return new RepairResult(true, repairedVertexId, "Repaired both single and composite indexes");
-        } else if (singleIndexRepaired) {
-            return new RepairResult(true, repairedVertexId, "Repaired single index");
-        } else if (compositeIndexRepaired) {
-            return new RepairResult(true, repairedVertexId, "Repaired composite index");
-        } else {
-            return new RepairResult(false, null, "No corruption detected in any index");
-        }
-    }
-
     // =============== BATCH OPERATIONS ===============
 
     /**
@@ -272,13 +226,6 @@ public class IndexRepairService {
                                 request.getTypeName()
                         );
                         break;
-
-                    case AUTO:
-                        repairResult = autoRepair(
-                                request.getQualifiedName(),
-                                request.getTypeName()
-                        );
-                        break;
                 }
 
                 if (repairResult != null && repairResult.isRepaired()) {
@@ -301,7 +248,6 @@ public class IndexRepairService {
 
     public enum IndexType {
         SINGLE,      // Only single index (__u_qualifiedName)
-        COMPOSITE,   // Only composite index (__u_qualifiedName__typeName)
-        AUTO         // Check and repair both
+        COMPOSITE   // Only composite index (__u_qualifiedName__typeName)
     }
 }
