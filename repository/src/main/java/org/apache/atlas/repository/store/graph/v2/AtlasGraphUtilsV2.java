@@ -83,8 +83,6 @@ public class AtlasGraphUtilsV2 {
     private static boolean USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = false;
     private static boolean USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY = true;
     private static String INDEX_SEARCH_PREFIX;
-    private static boolean SELF_REPAIR_GHOST_INDEX_ENABLED = false;
-    private static String SELF_REPAIR_TOMBSTONE_SUFFIX = "::atlas-stale::";
 
     static {
         try {
@@ -93,8 +91,6 @@ public class AtlasGraphUtilsV2 {
             USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = conf.getBoolean("atlas.use.index.query.to.find.entity.by.unique.attributes", USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES);
             USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY = conf.getBoolean("atlas.unique.index.property.to.find.entity", USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY);
             INDEX_SEARCH_PREFIX = conf.getString(INDEX_SEARCH_VERTEX_PREFIX_PROPERTY, INDEX_SEARCH_VERTEX_PREFIX_DEFAULT);
-            SELF_REPAIR_GHOST_INDEX_ENABLED = conf.getBoolean("atlas.selfRepair.ghostIndex.enabled", SELF_REPAIR_GHOST_INDEX_ENABLED);
-            SELF_REPAIR_TOMBSTONE_SUFFIX = conf.getString("atlas.selfRepair.ghostIndex.tombstoneSuffix", SELF_REPAIR_TOMBSTONE_SUFFIX);
         } catch (Exception excp) {
             LOG.error("Error reading configuration", excp);
         } finally {
@@ -546,92 +542,9 @@ public class AtlasGraphUtilsV2 {
         Iterator<AtlasVertex> results = query.vertices().iterator();
         AtlasVertex           vertex  = results.hasNext() ? results.next() : null;
 
-        if (vertex != null && SELF_REPAIR_GHOST_INDEX_ENABLED && isGhostVertex(vertex, attributeValues)) {
-            try {
-                LOG.warn("Detected ghost vertex via unique-index lookup: type={}, vertexId={}", typeName, vertex.getIdForDisplay());
-                repairGhostIndexedVertex(graph, vertex, attributeValues);
-            } catch (Exception e) {
-                LOG.warn("Self-repair of ghost vertex failed: type={}, vertexId={}", typeName, vertex.getIdForDisplay(), e);
-            }
-            // Treat as not found after repair
-            vertex = null;
-        }
-
         RequestContext.get().endMetricRecord(metric);
 
         return vertex;
-    }
-
-    private static boolean isGhostVertex(AtlasVertex vertex, Map<String, Object> attributeValues) {
-        try {
-            // A valid Atlas entity vertex must have at least guid, typeName, and state
-            String guid  = vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class);
-            String tName = vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class);
-            String state = vertex.getProperty(STATE_PROPERTY_KEY, String.class);
-            String qualifiedName = vertex.getProperty(QUALIFIED_NAME, String.class);
-
-            boolean hasCoreProps = StringUtils.isNotEmpty(guid) || StringUtils.isNotEmpty(tName) || StringUtils.isNotEmpty(state) || StringUtils.isNotEmpty(qualifiedName);
-
-            boolean hasAnyUniqueProp = false;
-            if (attributeValues != null) {
-                for (String key : attributeValues.keySet()) {
-                    Object val = vertex.getProperty(key, Object.class);
-                    if (val != null) {
-                        hasAnyUniqueProp = true;
-                        break;
-                    }
-                }
-            }
-
-            // Ghost indicators: no properties at all, or missing all core props and no unique props
-            boolean noProps = vertex.getPropertyKeys() == null || vertex.getPropertyKeys().isEmpty();
-            return noProps || (!hasCoreProps && !hasAnyUniqueProp);
-        } catch (Throwable t) {
-            // If anything goes wrong reading properties, be conservative and do not mark as ghost
-            LOG.warn("isGhostVertex check failed for vertex {}", vertex != null ? vertex.getIdForDisplay() : null, t);
-            return false;
-        }
-    }
-
-    private static void repairGhostIndexedVertex(AtlasGraph graph, AtlasVertex vertex, Map<String, Object> attributeValues) {
-        if (attributeValues != null) {
-            for (Map.Entry<String, Object> e : attributeValues.entrySet()) {
-                String key = e.getKey();
-                Object original = e.getValue();
-                Object tombstone = computeTombstoneValue(original);
-                try {
-                    vertex.setProperty(key, tombstone);
-                    LOG.info("Set tombstone value on ghost vertex: key={}, old={}, new={}", key, original, tombstone);
-                } catch (Throwable t) {
-                    LOG.warn("Failed setting tombstone value on ghost vertex for key={}", key, t);
-                }
-            }
-        }
-
-        try {
-            graph.removeVertex(vertex);
-        } catch (Throwable t) {
-            LOG.warn("Failed removing ghost vertex {} after tombstoning unique attributes", vertex.getIdForDisplay(), t);
-        }
-    }
-
-    private static Object computeTombstoneValue(Object original) {
-        if (original instanceof String) {
-            return ((String) original) + SELF_REPAIR_TOMBSTONE_SUFFIX + System.currentTimeMillis();
-        }
-        if (original instanceof Integer) {
-            return ((Integer) original) + 1;
-        }
-        if (original instanceof Long) {
-            return ((Long) original) + 1L;
-        }
-        if (original instanceof Short) {
-            return (short) (((Short) original) + 1);
-        }
-        if (original instanceof Number) {
-            return ((Number) original).longValue() + 1L;
-        }
-        return String.valueOf(original) + SELF_REPAIR_TOMBSTONE_SUFFIX + System.currentTimeMillis();
     }
 
     public static AtlasVertex glossaryFindByTypeAndPropertyName(AtlasEntityType entityType, String name) {
