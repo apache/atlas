@@ -153,7 +153,7 @@ public class RepairREST {
     @Produces(MediaType.APPLICATION_JSON)
     public Response repairBatch(
             BatchRepairRequest request,
-            @QueryParam("indexType") @DefaultValue("AUTO") String indexTypeStr) throws AtlasBaseException {
+            @QueryParam("indexType") @DefaultValue("COMPOSITE") String indexTypeStr) throws AtlasBaseException {
 
         if (request.getEntities() == null || request.getEntities().isEmpty()) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Entities list is required");
