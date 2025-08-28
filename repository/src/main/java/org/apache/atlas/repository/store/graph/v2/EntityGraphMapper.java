@@ -4311,7 +4311,7 @@ public class EntityGraphMapper {
                 List<AtlasVertex>   entitiesPropagatedTo = deleteDelegate.getHandler().addTagPropagation(classificationVertex, chunkedVerticesToPropagate);
 
                 if (CollectionUtils.isEmpty(entitiesPropagatedTo)) {
-                    return null;
+                    return Collections.emptyList();
                 }
 
                 List<AtlasEntity>   propagatedEntitiesChunked       = updateClassificationText(classification, entitiesPropagatedTo);
@@ -5277,15 +5277,13 @@ public class EntityGraphMapper {
         try {
             if (StringUtils.isEmpty(classificationVertexId)) {
                 LOG.warn("deleteClassificationPropagation(classificationVertexId={}): classification vertex id is empty", classificationVertexId);
-
-                return null;
+                return Collections.emptyList();
             }
 
             AtlasVertex classificationVertex = graph.getVertex(classificationVertexId);
             if (classificationVertex == null) {
                 LOG.warn("deleteClassificationPropagation(classificationVertexId={}): classification vertex not found", classificationVertexId);
-
-                return null;
+                return Collections.emptyList();
             }
 
             AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
@@ -5293,8 +5291,7 @@ public class EntityGraphMapper {
             List<AtlasEdge> propagatedEdges = getPropagatedEdges(classificationVertex);
             if (propagatedEdges.isEmpty()) {
                 LOG.warn("deleteClassificationPropagation(classificationVertexId={}): classification edges empty", classificationVertexId);
-
-                return null;
+                return Collections.emptyList();
             }
 
             int propagatedEdgesSize = propagatedEdges.size();
