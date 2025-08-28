@@ -87,6 +87,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
+import org.apache.tinkerpop.gremlin.process.traversal.P;
 
 import javax.annotation.PreDestroy;
 import javax.inject.Inject;
@@ -1245,7 +1246,14 @@ public class EntityGraphRetriever {
 
             GraphTraversal<Edge, Map<String, Object>> edgeTraversal =
                     ((AtlasJanusGraph) graph).V(vertexIds)
-                            .bothE()
+                            .bothE();
+
+            // Filter by edge labels if provided
+            if (!CollectionUtils.isEmpty(edgeLabels)) {
+                edgeTraversal = edgeTraversal.hasLabel(P.within(edgeLabels));
+            }
+
+            edgeTraversal = edgeTraversal
                             .has(STATE_PROPERTY_KEY, ACTIVE.name())
                             .has(RELATIONSHIP_GUID_PROPERTY_KEY)
                             .project( "id", "valueMap","label", "inVertexId", "outVertexId")
