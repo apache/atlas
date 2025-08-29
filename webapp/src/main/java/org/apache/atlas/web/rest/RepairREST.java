@@ -1,6 +1,11 @@
 package org.apache.atlas.web.rest;
 
 import org.apache.atlas.AtlasErrorCode;
+import org.apache.atlas.RequestContext;
+import org.apache.atlas.authorize.AtlasAdminAccessRequest;
+import org.apache.atlas.authorize.AtlasAuthorizationException;
+import org.apache.atlas.authorize.AtlasPrivilege;
+import org.apache.atlas.authorizer.AtlasAuthorizationUtils;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.repair.BatchRepairRequest;
 import org.apache.atlas.model.repair.BatchRepairResult;
@@ -48,6 +53,12 @@ public class RepairREST {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "qualifiedName is required");
         }
 
+        AtlasAuthorizationUtils.verifyAccess(
+                new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_REPAIR_INDEX),
+                "Repair single index"
+        );
+
+
         LOG.info("Single index repair requested for QN: {}", qualifiedName);
         try {
             RepairResult result = indexRepairService.repairSingleIndex(qualifiedName);
@@ -79,6 +90,12 @@ public class RepairREST {
         if (StringUtils.isBlank(request.getQualifiedName()) || StringUtils.isBlank(request.getTypeName())) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Both qualifiedName and typeName are required");
         }
+
+        AtlasAuthorizationUtils.verifyAccess(
+                new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_REPAIR_INDEX),
+                "Repair composite index"
+        );
+
 
         LOG.info("Composite index repair requested for QN: {}, Type: {}",
                 request.getQualifiedName(), request.getTypeName());
@@ -119,6 +136,12 @@ public class RepairREST {
         if (request.getEntities() == null || request.getEntities().isEmpty()) {
             throw new AtlasBaseException(AtlasErrorCode.BAD_REQUEST, "Entities list is required");
         }
+
+        AtlasAuthorizationUtils.verifyAccess(
+                new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_REPAIR_INDEX),
+                "Repair composite index in batch mode"
+        );
+
 
         IndexRepairService.IndexType indexType;
         try {
