@@ -23,7 +23,6 @@ import ClassificationStats from "./ClassificationStats";
 import {
   Autocomplete,
   Badge,
-  CircularProgress,
   IconButton,
   Stack,
   TextField
@@ -37,6 +36,7 @@ import { LightTooltip } from "@components/muiComponents";
 import { useAppDispatch } from "@hooks/reducerHook";
 import { fetchMetricEntity } from "@redux/slice/metricsSlice";
 import { toast } from "react-toastify";
+import SkeletonLoader from "@components/SkeletonLoader";
 
 export const getStatsValue = (options: { value: any; type: any }) => {
   let value = options.value;
@@ -152,7 +152,7 @@ const Statistics = ({
       >
         <Stack
           spacing={4}
-          sx={{ width: "100%", minHeight: "100px", alignItems: "flex-end" }}
+          sx={{ width: "100%", minHeight: "100px", alignItems: "flex-end", marginBottom: '10px'}}
         >
           <Stack spacing={2} sx={{ alignSelf: "flex-end" }}>
             <Autocomplete
@@ -183,22 +183,15 @@ const Statistics = ({
               defaultValue={"Current"}
               sx={{
                 minWidth: "250px",
-                backgroundColor: "#f6f7fb"
+                backgroundColor: "#f6f7fb",
+                marginBottom: "10px !important"                
               }}
             />
           </Stack>
 
           {loading ? (
-            <CircularProgress
-              disableShrink
-              sx={{
-                display: "inline-block",
-                position: "absolute",
-                left: "50%",
-                marginLeft: "-20px !important"
-              }}
-            />
-          ) : (
+          <SkeletonLoader animation="wave" variant="text" width={'100%'} count={4} sx={{marginTop: '0px !important'}}/>
+        ) : (
             <Stack spacing={2} width="100%">
               <EntityStats
                 selectedValue={selectedValue}
