@@ -142,7 +142,7 @@ public class AtlasSimpleAuthorizerTest {
         try {
             AtlasEntityHeader entityHeader = new AtlasEntityHeader();
 
-            entityHeader.setClassifications(Arrays.asList(new AtlasClassification("TAG1"), new AtlasClassification("TAG2")));
+            entityHeader.setClassificationNames(Arrays.asList("TAG1", "TAG2"));
 
             AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, AtlasPrivilege.ENTITY_ADD_CLASSIFICATION, entityHeader, new AtlasClassification("PII"));
 
@@ -203,7 +203,7 @@ public class AtlasSimpleAuthorizerTest {
         try {
             AtlasEntityHeader entity = new AtlasEntityHeader();
 
-            entity.setClassifications(Arrays.asList(new AtlasClassification("FINANCE"), new AtlasClassification("PII")));
+            entity.setClassificationNames(Arrays.asList("FINANCE", "PII"));
 
             for (AtlasPrivilege privilege : ENTITY_PRIVILEGES) {
                 AtlasEntityAccessRequest request = new AtlasEntityAccessRequest(null, privilege, entity, new AtlasClassification("PII"));

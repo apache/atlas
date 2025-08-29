@@ -844,7 +844,7 @@ public class ImportServiceTest extends AtlasTestBase {
         loadBaseModel();
         loadHiveModel();
 
-        String    transformJSON = "{ \"Asset\": { \"qualifiedName\":[ \"lowercase\", \"replace:@cl1:@cl2\" ] } }";
+        String    transformJSON = "{ \"Asset\": { \"qualifiedName\":[ \"lowercase\", \"replace~@cl1~@cl2\" ] } }";
         ZipSource zipSource     = new ZipSource(inputStream);
         importService.setImportTransform(zipSource, transformJSON);
         ImportTransforms importTransforms = zipSource.getImportTransform();
@@ -859,7 +859,7 @@ public class ImportServiceTest extends AtlasTestBase {
         loadBaseModel();
         loadHiveModel();
 
-        String    transformJSON = "{ \"Asset\": { \"qualifiedName\":[ \"replace:@cl1:@cl2\" ] }, \"hive_table\": { \"qualifiedName\":[ \"lowercase\" ] } }";
+        String    transformJSON = "{ \"Asset\": { \"qualifiedName\":[ \"replace~@cl1~@cl2\" ] }, \"hive_table\": { \"qualifiedName\":[ \"lowercase\" ] } }";
         ZipSource zipSource     = new ZipSource(inputStream);
         importService.setImportTransform(zipSource, transformJSON);
         ImportTransforms importTransforms = zipSource.getImportTransform();

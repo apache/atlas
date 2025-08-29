@@ -17,8 +17,6 @@
  */
 
 package org.apache.atlas.sqoop.hook;
-
-
 import org.apache.atlas.plugin.classloader.AtlasPluginClassLoader;
 import org.apache.sqoop.SqoopJobDataPublisher;
 import org.slf4j.Logger;
@@ -33,8 +31,8 @@ public class SqoopHook extends SqoopJobDataPublisher {
     private static final String ATLAS_PLUGIN_TYPE = "sqoop";
     private static final String ATLAS_SQOOP_HOOK_IMPL_CLASSNAME = "org.apache.atlas.sqoop.hook.SqoopHook";
 
-    private AtlasPluginClassLoader atlasPluginClassLoader = null;
-    private SqoopJobDataPublisher sqoopHookImpl = null;
+    private AtlasPluginClassLoader atlasPluginClassLoader;
+    private SqoopJobDataPublisher sqoopHookImpl;
 
     public SqoopHook() {
         this.initialize();

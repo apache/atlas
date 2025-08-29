@@ -28,13 +28,13 @@ import {
   useState,
   useMemo,
   SyntheticEvent,
-  memo
+  memo,
 } from "react";
 import {
   TreeItem,
   TreeItemProps,
   useTreeItemState,
-  TreeItemContentProps
+  TreeItemContentProps,
 } from "@mui/x-tree-view/TreeItem";
 import clsx from "clsx";
 import { SimpleTreeView } from "@mui/x-tree-view";
@@ -48,7 +48,7 @@ import {
   Menu,
   MenuItem,
   ListItemIcon,
-  Typography
+  Typography,
 } from "@components/muiComponents";
 import AddIcon from "@mui/icons-material/Add";
 import { getBusinessMetadataImportTmpl } from "@api/apiMethods/entitiesApiMethods";
@@ -56,7 +56,7 @@ import {
   NavigateFunction,
   useLocation,
   useNavigate,
-  useParams
+  useParams,
 } from "react-router-dom";
 
 import Stack from "@mui/material/Stack";
@@ -74,6 +74,7 @@ import ClassificationForm from "@views/Classification/ClassificationForm";
 import AddUpdateGlossaryForm from "@views/Glossary/AddUpdateGlossaryForm";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { AntSwitch } from "@utils/Muiutils";
+import { IconButton } from "@components/muiComponents";
 
 type CustomContentRootProps = HTMLAttributes<HTMLDivElement> & {
   selectedNodeType?: any;
@@ -89,29 +90,29 @@ const CustomContentRoot = styled("div")<CustomContentRootProps>(
     WebkitTapHighlightColor: "#0E8173",
     "&&:hover, &&.Mui-disabled, &&.Mui-focused, &&.Mui-selected, &&.Mui-selected.Mui-focused, &&.Mui-selected:hover":
       {
-        backgroundColor: "transparent"
+        backgroundColor: "transparent",
       },
     ".MuiTreeItem-contentBar": {
       position: "absolute",
       width: "100%",
       height: 29,
-      left: 0
+      left: 0,
     },
     ".MuiTreeItem-iconContainer": {
-      zIndex: 9
+      zIndex: 9,
     },
     "&:hover .MuiTreeItem-contentBar": {
       backgroundColor: theme.palette.action.hover,
       "@media (hover: none)": {
-        backgroundColor: "transparent"
-      }
+        backgroundColor: "transparent",
+      },
     },
     "&.Mui-disabled .MuiTreeItem-contentBar": {
       opacity: theme.palette.action.disabledOpacity,
-      backgroundColor: "transparent"
+      backgroundColor: "transparent",
     },
     "&.Mui-focused .MuiTreeItem-contentBar": {
-      backgroundColor: theme.palette.action.focus
+      backgroundColor: theme.palette.action.focus,
     },
     ...((props.selectedNodeType === props.node ||
       props.selectedNodeTag === props.node ||
@@ -119,20 +120,20 @@ const CustomContentRoot = styled("div")<CustomContentRootProps>(
       props.selectedNodeBM === props.node) && {
       "&.Mui-selected .MuiTreeItem-contentBar": {
         backgroundColor: "rgba(255,255,255,0.08)",
-        borderLeft: "4px solid #2ccebb"
+        borderLeft: "4px solid #2ccebb",
         // color: "white"
         // borderRadius: "4px"
-      }
+      },
     }),
     ...(props?.selectedNode == props?.node && {
       "&.Mui-selected .MuiTreeItem-label": {
-        color: "white"
-      }
+        color: "white",
+      },
     }),
     ...(props?.selectedNode == props?.node && {
       "&.Mui-selected & .MuiTreeItem-content svg": {
-        color: "white"
-      }
+        color: "white",
+      },
     }),
     "&.Mui-selected:hover .MuiTreeItem-contentBar": {
       backgroundColor: alpha(
@@ -144,13 +145,13 @@ const CustomContentRoot = styled("div")<CustomContentRootProps>(
         backgroundColor: alpha(
           theme.palette.primary.main,
           theme.palette.action.selectedOpacity
-        )
-      }
+        ),
+      },
     },
     "&.Mui-selected.Mui-focused .MuiTreeItem-contentBar": {
       // backgroundColor: "#0E8173"
-      backgroundColor: "rgba(255,255,255,0.08)"
-    }
+      backgroundColor: "rgba(255,255,255,0.08)",
+    },
   })
 );
 
@@ -165,7 +166,7 @@ const CustomContent = forwardRef(function CustomContent(
     itemId,
     icon: iconProp,
     expansionIcon,
-    displayIcon
+    displayIcon,
   } = props;
 
   const {
@@ -175,7 +176,7 @@ const CustomContent = forwardRef(function CustomContent(
     focused,
     handleExpansion,
     handleSelection,
-    preventSelection
+    preventSelection,
   } = useTreeItemState(itemId);
 
   const icon = iconProp || expansionIcon || displayIcon;
@@ -205,7 +206,7 @@ const CustomContent = forwardRef(function CustomContent(
               props.label.props.selectedNodeBM === props.label.props.node)) ||
           selected,
         "Mui-focused": focused,
-        "Mui-disabled": disabled
+        "Mui-disabled": disabled,
       })}
       sx={{ position: "relative" }}
       // selectedNode={props.label.props.selectedNode}
@@ -257,13 +258,13 @@ const CustomTreeItem = memo(
             // fontWeight: "400  !important",
             fontSize: "14px  !important",
             lineHeight: "24px !important",
-            color: "rgba(255,255,255,0.8)"
+            color: "rgba(255,255,255,0.8)",
           },
 
           "& .MuiTreeItem-content svg": {
             color: "rgba(255,255,255,0.8)",
-            fontSize: "14px !important"
-          }
+            fontSize: "14px !important",
+          },
         }}
         ContentComponent={CustomContent}
         {...props}
@@ -294,7 +295,7 @@ const BarTreeView: FC<{
   setisGroupView,
   sideBarOpen,
   searchTerm,
-  loader
+  loader,
 }) => {
   const { savedSearchData }: any = useAppSelector(
     (state: any) => state.savedSearch
@@ -313,7 +314,7 @@ const BarTreeView: FC<{
     type: null,
     tag: null,
     relationship: null,
-    businessMetadata: null
+    businessMetadata: null,
   });
 
   const [openModal, setOpenModal] = useState<boolean>(false);
@@ -359,7 +360,7 @@ const BarTreeView: FC<{
     const allNodeIds = filteredData.flatMap((node) => {
       return [
         node.id,
-        ...(node.children ? node.children.map((child) => child.id) : [])
+        ...(node.children ? node.children.map((child) => child.id) : []),
       ];
     });
     return [...allNodeIds, ...[treeName]];
@@ -392,7 +393,7 @@ const BarTreeView: FC<{
       type: nodeIdFromParamsType,
       tag: nodeIdFromParamsTag,
       relationship: nodeIdFromParamsRelationshipName,
-      businessMetadata: nodeIdFromBMName ? name : null
+      businessMetadata: nodeIdFromBMName ? name : null,
     });
 
     if (
@@ -405,7 +406,7 @@ const BarTreeView: FC<{
         type: null,
         tag: null,
         relationship: null,
-        businessMetadata: null
+        businessMetadata: null,
       });
     }
   }, [location.search]);
@@ -473,7 +474,7 @@ const BarTreeView: FC<{
         type: nodeId,
         tag: null,
         relationship: null,
-        businessMetadata: null
+        businessMetadata: null,
       });
     }
     if (isTagMatch) {
@@ -481,7 +482,7 @@ const BarTreeView: FC<{
         type: null,
         tag: nodeId,
         relationship: null,
-        businessMetadata: null
+        businessMetadata: null,
       });
     }
     if (isRelationshipMatch) {
@@ -489,7 +490,7 @@ const BarTreeView: FC<{
         type: null,
         tag: null,
         relationship: nodeId,
-        businessMetadata: null
+        businessMetadata: null,
       });
     }
     if (isBusinessMetadataMatch) {
@@ -497,7 +498,7 @@ const BarTreeView: FC<{
         type: null,
         tag: null,
         relationship: null,
-        businessMetadata: nodeId
+        businessMetadata: nodeId,
       });
     }
   };
@@ -702,7 +703,7 @@ const BarTreeView: FC<{
               pathname: `glossary/${
                 node.cGuid !== undefined ? node.cGuid : node.guid
               }`,
-              search: searchParams.toString()
+              search: searchParams.toString(),
             },
             { replace: true }
           );
@@ -714,7 +715,7 @@ const BarTreeView: FC<{
           navigate(
             {
               pathname: "/search/searchResult",
-              search: searchParams.toString()
+              search: searchParams.toString(),
             },
             { replace: true }
           );
@@ -729,7 +730,7 @@ const BarTreeView: FC<{
           navigate(
             {
               pathname: `relationship/relationshipSearchresult`,
-              search: searchParams.toString()
+              search: searchParams.toString(),
             },
             { replace: true }
           );
@@ -738,7 +739,7 @@ const BarTreeView: FC<{
           navigate(
             {
               pathname: "/search/searchResult",
-              search: searchParams.toString()
+              search: searchParams.toString(),
             },
             { replace: true }
           );
@@ -775,7 +776,7 @@ const BarTreeView: FC<{
             maxWidth: "100%",
             overflow: "hidden",
             textOverflow: "ellipsis",
-            whiteSpace: "nowrap"
+            whiteSpace: "nowrap",
           }}
         >
           {highlightText(label)}
@@ -808,7 +809,7 @@ const BarTreeView: FC<{
                   toastId
                 );
               },
-              className: "custom-treeitem-label"
+              className: "custom-treeitem-label",
             } as any)}
           >
             {node.id != "No Records Found" && (
@@ -878,11 +879,11 @@ const BarTreeView: FC<{
         sx={{
           ...(sideBarOpen == false && {
             visibility: "hidden !important",
-            top: "62px !important"
+            top: "62px !important",
           }),
           minWidth: "30px",
           width: `100% !important`,
-          overflowX: "auto"
+          overflowX: "auto",
         }}
       >
         <SimpleTreeView
@@ -905,22 +906,24 @@ const BarTreeView: FC<{
                 </Stack>
                 <Stack direction="row" alignItems="center" gap="0.375rem">
                   <LightTooltip title="Refresh">
-                    <RefreshIcon
+                    <IconButton
+                      size="small"
+                      data-cy="refreshTree"
                       onClick={(e) => {
                         e.stopPropagation();
                         refreshData();
                       }}
-                      sx={{ marginRight: "5px" }}
-                      fontSize="small"
-                      data-cy="refreshTree"
-                    />
+                      disabled={loader}
+                    >
+                      <RefreshIcon />
+                    </IconButton>
                   </LightTooltip>
 
                   {treeName == "CustomFilters" && (
                     <LightTooltip title={getEmptyTypesTitle()}>
                       <AccountTreeIcon
                         sx={{
-                          color: !isEmptyServicetype ? "#999 !important" : ""
+                          color: !isEmptyServicetype ? "#999 !important" : "",
                         }}
                         onClick={(e) => {
                           e.stopPropagation();
@@ -982,7 +985,7 @@ const BarTreeView: FC<{
                           navigate(
                             {
                               pathname: `administrator`,
-                              search: newSearchParams.toString()
+                              search: newSearchParams.toString(),
                             },
                             { replace: true }
                           );
@@ -1004,8 +1007,8 @@ const BarTreeView: FC<{
                   anchorOrigin={{ horizontal: "right", vertical: "bottom" }}
                   sx={{
                     "& .MuiPaper-root": {
-                      transition: "none !important"
-                    }
+                      transition: "none !important",
+                    },
                   }}
                   disableScrollLock={true}
                 >
@@ -1131,12 +1134,12 @@ const BarTreeView: FC<{
                 fontWeight: "600  !important",
                 fontSize: "14px  !important",
                 lineHeight: "26px !important",
-                color: "white"
+                color: "white",
               },
               "& .MuiTreeItem-content svg": {
                 color: "white",
-                fontSize: "20px !important"
-              }
+                fontSize: "20px !important",
+              },
             }}
           >
             {loader ? (

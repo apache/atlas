@@ -37,7 +37,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -61,7 +63,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.testng.Assert.assertEquals;
 import static org.testng.Assert.assertNotNull;
+import static org.testng.Assert.assertNotSame;
 import static org.testng.Assert.assertNull;
+import static org.testng.Assert.assertSame;
 import static org.testng.Assert.assertTrue;
 import static org.testng.Assert.fail;
 
@@ -286,6 +290,7 @@ public class ImportTaskListenerImplTest {
 
     @Test
     public void testStartImportConsumer_Successful() throws Exception {
+        Mockito.doReturn("import123").when(importRequest).getImportId();
         when(importRequest.getStatus()).thenReturn(WAITING);
         when(importRequest.getTopicName()).thenReturn("topic1");
 
@@ -563,6 +568,168 @@ public class ImportTaskListenerImplTest {
 
         // Unblock async method so thread can exit
         blockStartNextLatch.countDown();
+    }
+
+    @Test
+    public void testImportNotProcessedWhenPassive() throws Exception {
+        Mockito.doReturn("import123").when(importRequest).getImportId();
+        when(importRequest.getStatus()).thenReturn(WAITING);
+        when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
+        importTaskListener.instanceIsPassive();
+        importTaskListener.onReceiveImportRequest(importRequest);
+        Thread.sleep(200);
+        verify(notificationHookConsumer, never()).startAsyncImportConsumer(any(), anyString(), anyString());
+    }
+
+    @Test
+    public void testExecutorNotRecreatedWhenPassive() throws Exception {
+        Mockito.doReturn("import123").when(importRequest).getImportId();
+        when(importRequest.getStatus()).thenReturn(WAITING);
+        when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
+        when(importRequest.getStatus()).thenReturn(WAITING);
+        when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
+        importTaskListener.instanceIsPassive();
+        Field executorField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+        executorField.setAccessible(true);
+        ExecutorService exec = (ExecutorService) executorField.get(importTaskListener);
+        if (exec != null) {
+            exec.shutdownNow();
+        }
+        importTaskListener.onReceiveImportRequest(importRequest);
+        Thread.sleep(200);
+        ExecutorService execAfter = (ExecutorService) executorField.get(importTaskListener);
+        // Should remain null when passive
+        assertTrue(execAfter == null);
+    }
+
+    @Test
+    public void testExecutorRecreatedWhenActive() throws Exception {
+        when(importRequest.getStatus()).thenReturn(WAITING);
+        when(requestQueue.poll(anyLong(), any(TimeUnit.class))).thenReturn("import123");
+        importTaskListener.instanceIsActive();
+        Field executorField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+        executorField.setAccessible(true);
+        ExecutorService exec = (ExecutorService) executorField.get(importTaskListener);
+        if (exec != null) {
+            exec.shutdownNow();
+        }
+        importTaskListener.onReceiveImportRequest(importRequest);
+        Thread.sleep(200);
+        ExecutorService execAfter = (ExecutorService) executorField.get(importTaskListener);
+        assertNotNull(execAfter);
+        assertTrue(!execAfter.isShutdown() && !execAfter.isTerminated());
+    }
+
+    @Test
+    public void ensureExecutorAliveCreatesSingleInstanceUnderConcurrency() throws Exception {
+        // Ensure active mode and a clean executor state
+        importTaskListener.instanceIsActive();
+
+        Field execField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+        execField.setAccessible(true);
+        execField.set(importTaskListener, null);
+
+        int threads = 64;
+        CyclicBarrier start = new CyclicBarrier(threads);
+        ExecutorService callers = java.util.concurrent.Executors.newFixedThreadPool(threads);
+
+        List<Future<ExecutorService>> futures = new ArrayList<>();
+        for (int i = 0; i < threads; i++) {
+            futures.add(callers.submit(() -> {
+                start.await();
+                return importTaskListener.ensureExecutorAlive();
+            }));
+        }
+
+        ExecutorService first = null;
+        for (Future<ExecutorService> f : futures) {
+            ExecutorService es = f.get(10, TimeUnit.SECONDS);
+            assertNotNull(es, "Executor should be created");
+            if (first == null) {
+                first = es;
+            }
+            else {
+                assertSame(first, es, "All callers must see the same instance");
+            }
+        }
+
+        callers.shutdownNow();
+        first.shutdownNow();
+    }
+
+    @Test
+    public void ensureExecutorAliveRecreatesOnceIfShutdownUnderConcurrency() throws Exception {
+        // Ensure active mode
+        importTaskListener.instanceIsActive();
+
+        // First creation
+        ExecutorService first = importTaskListener.ensureExecutorAlive();
+        assertNotNull(first);
+
+        // Force recreate path: mark current as shutdown and ensure the field holds that value
+        first.shutdown();
+
+        Field execField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+        execField.setAccessible(true);
+        execField.set(importTaskListener, first);
+
+        int threads = 64;
+        CyclicBarrier start = new CyclicBarrier(threads);
+        ExecutorService callers = java.util.concurrent.Executors.newFixedThreadPool(threads);
+
+        List<Future<ExecutorService>> futures = new ArrayList<>();
+        for (int i = 0; i < threads; i++) {
+            futures.add(callers.submit(() -> {
+                start.await();
+                return importTaskListener.ensureExecutorAlive();
+            }));
+        }
+
+        ExecutorService second = null;
+        for (Future<ExecutorService> f : futures) {
+            ExecutorService es = f.get(10, TimeUnit.SECONDS);
+            assertNotNull(es);
+            if (second == null) {
+                second = es;
+            }
+            else {
+                assertSame(second, es, "All callers must see the same new instance");
+            }
+        }
+
+        assertNotSame(first, second, "Executor must be replaced after shutdown");
+        callers.shutdownNow();
+        second.shutdownNow();
+    }
+
+    @Test
+    public void ensureExecutorAliveReturnsNullWhenPassiveEvenUnderConcurrency() throws Exception {
+        // Put into passive mode (ensureExecutorAlive should early-return null)
+        importTaskListener.instanceIsPassive();
+
+        Field execField = ImportTaskListenerImpl.class.getDeclaredField("executorService");
+        execField.setAccessible(true);
+        execField.set(importTaskListener, null);
+
+        int threads = 32;
+        CyclicBarrier start = new CyclicBarrier(threads);
+        ExecutorService callers = java.util.concurrent.Executors.newFixedThreadPool(threads);
+
+        List<Future<ExecutorService>> futures = new ArrayList<>();
+        for (int i = 0; i < threads; i++) {
+            futures.add(callers.submit(() -> {
+                start.await();
+                return importTaskListener.ensureExecutorAlive();
+            }));
+        }
+
+        for (Future<ExecutorService> f : futures) {
+            assertNull(f.get(5, TimeUnit.SECONDS), "No executor should be created in passive mode");
+        }
+
+        // Field should remain null
+        assertNull(execField.get(importTaskListener));
+        callers.shutdownNow();
     }
 
     private void setExecutorServiceAndSemaphore(ImportTaskListenerImpl importTaskListener, ExecutorService mockExecutor, Semaphore mockSemaphore) {

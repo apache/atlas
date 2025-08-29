@@ -24,10 +24,12 @@ import org.apache.atlas.AtlasException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasGraphQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.service.Service;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.math.NumberUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -132,12 +134,13 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         long ret = 0L;
 
         try {
-            String           time       = config.getString(SOLR_INDEX_RECOVERY_CONFIGURED_START_TIME);
-            SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
+            String time = config.getString(SOLR_INDEX_RECOVERY_CONFIGURED_START_TIME);
+            if (StringUtils.isNotBlank(time)) {
+                SimpleDateFormat dateFormat = new SimpleDateFormat(DATE_FORMAT);
+                dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-            dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-
-            ret = dateFormat.parse(time).toInstant().toEpochMilli();
+                ret = dateFormat.parse(time).toInstant().toEpochMilli();
+            }
         } catch (Exception e) {
             LOG.error("Error fetching: {}", SOLR_INDEX_RECOVERY_CONFIGURED_START_TIME, e);
         }
@@ -247,10 +250,12 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
                 return;
             }
 
-            try {
-                txRecoveryObject = this.graph.getManagementSystem().startIndexRecovery(startTime);
+            try (AtlasGraphManagement management = this.graph.getManagementSystem()) {
+                txRecoveryObject = management.startIndexRecovery(startTime);
 
                 printIndexRecoveryStats();
+
+                management.setIsSuccess(true);
 
                 LOG.info("Index Recovery: Started! Recovery time: {}", Instant.ofEpochMilli(startTime));
             } catch (Exception e) {
@@ -273,10 +278,12 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         }
 
         private void stopIndexRecovery() {
-            try {
-                this.graph.getManagementSystem().stopIndexRecovery(txRecoveryObject);
+            try (AtlasGraphManagement management = this.graph.getManagementSystem()) {
+                management.stopIndexRecovery(txRecoveryObject);
 
                 printIndexRecoveryStats();
+
+                management.setIsSuccess(true);
             } catch (Exception e) {
                 LOG.info("Index Recovery: Stopped! Error!", e);
             } finally {
@@ -285,7 +292,12 @@ public class IndexRecoveryService implements Service, ActiveStateChangeHandler {
         }
 
         private void printIndexRecoveryStats() {
-            this.graph.getManagementSystem().printIndexRecoveryStats(txRecoveryObject);
+            try (AtlasGraphManagement management = this.graph.getManagementSystem()) {
+                management.printIndexRecoveryStats(txRecoveryObject);
+                management.setIsSuccess(true);
+            } catch (Exception e) {
+                LOG.error("Index Recovery: printIndexRecoveryStats() failed!", e);
+            }
         }
     }
 

@@ -28,7 +28,7 @@ public class ImportTransformerJSONTest {
     public void createAtlasImportTransformFromJson() throws Exception {
         String hiveTableType  = "hive_table";
         String qualifiedName  = "qualifiedName";
-        String jsonTransforms = "{ \"hive_table\": { \"qualifiedName\":[ \"lowercase\", \"replace:@cl1:@cl2\" ] } }";
+        String jsonTransforms = "{ \"hive_table\": { \"qualifiedName\":[ \"lowercase\", \"replace~@cl1~@cl2\" ] } }";
 
         ImportTransforms transforms = ImportTransforms.fromJson(jsonTransforms);
 

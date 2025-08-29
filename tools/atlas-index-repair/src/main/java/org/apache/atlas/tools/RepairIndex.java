@@ -143,12 +143,21 @@ public class RepairIndex {
     private void restoreAll() throws Exception {
         for (String indexName : getIndexes()) {
             displayCrlf("Restoring: " + indexName);
-            long startTime = System.currentTimeMillis();
 
-            ManagementSystem mgmt  = (ManagementSystem) graph.openManagement();
-            JanusGraphIndex  index = mgmt.getGraphIndex(indexName);
-            mgmt.updateIndex(index, SchemaAction.REINDEX).get();
-            mgmt.commit();
+            long             startTime = System.currentTimeMillis();
+            ManagementSystem mgmt      = null;
+
+            try {
+                mgmt = (ManagementSystem) graph.openManagement();
+
+                JanusGraphIndex index = mgmt.getGraphIndex(indexName);
+
+                mgmt.updateIndex(index, SchemaAction.REINDEX).get();
+            } finally {
+                if (mgmt != null) {
+                    mgmt.commit();
+                }
+            }
 
             ManagementSystem.awaitGraphIndexStatus(graph, indexName).status(SchemaStatus.ENABLED).call();
 
@@ -175,27 +184,37 @@ public class RepairIndex {
     }
 
     private static void reindexVertex(String indexName, IndexSerializer indexSerializer, Set<String> entityGUIDs) throws Exception {
-        Map<String, Map<String, List<IndexEntry>>> documentsPerStore = new java.util.HashMap<>();
-        ManagementSystem                           mgmt              = (ManagementSystem) graph.openManagement();
-        StandardJanusGraphTx                       tx                = mgmt.getWrappedTx();
-        BackendTransaction                         mutator           = tx.getTxHandle();
-        JanusGraphIndex                            index             = mgmt.getGraphIndex(indexName);
-        MixedIndexType                             indexType         = (MixedIndexType) mgmt.getSchemaVertex(index).asIndexType();
+        ManagementSystem mgmt = null;
 
-        for (String entityGuid : entityGUIDs) {
-            for (int attemptCount = 1; attemptCount <= MAX_TRIES_ON_FAILURE; attemptCount++) {
-                AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entityGuid);
-                try {
-                    indexSerializer.reindexElement(vertex.getWrappedElement(), indexType, documentsPerStore);
-                    break;
-                } catch (Exception e) {
-                    displayCrlf("Exception: " + e.getMessage());
-                    displayCrlf("Pausing before retry..");
-                    Thread.sleep(2000 * attemptCount);
+        try {
+            mgmt = (ManagementSystem) graph.openManagement();
+
+            StandardJanusGraphTx tx        = mgmt.getWrappedTx();
+            BackendTransaction   mutator   = tx.getTxHandle();
+            JanusGraphIndex      index     = mgmt.getGraphIndex(indexName);
+            MixedIndexType       indexType = (MixedIndexType) mgmt.getSchemaVertex(index).asIndexType();
+
+            Map<String, Map<String, List<IndexEntry>>> documentsPerStore = new java.util.HashMap<>();
+
+            for (String entityGuid : entityGUIDs) {
+                for (int attemptCount = 1; attemptCount <= MAX_TRIES_ON_FAILURE; attemptCount++) {
+                    AtlasVertex vertex = AtlasGraphUtilsV2.findByGuid(entityGuid);
+                    try {
+                        indexSerializer.reindexElement(vertex.getWrappedElement(), indexType, documentsPerStore);
+                        break;
+                    } catch (Exception e) {
+                        displayCrlf("Exception: " + e.getMessage());
+                        displayCrlf("Pausing before retry..");
+                        Thread.sleep(2000 * attemptCount);
+                    }
                 }
             }
+            mutator.getIndexTransaction(indexType.getBackingIndexName()).restore(documentsPerStore);
+        } finally {
+            if (mgmt != null) {
+                mgmt.commit();
+            }
         }
-        mutator.getIndexTransaction(indexType.getBackingIndexName()).restore(documentsPerStore);
     }
 
     private static Set<String> getEntityAndReferenceGuids(String guid) throws Exception {

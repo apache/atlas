@@ -14,6 +14,12 @@ services:
     tty: true
     networks:
       - atlas
+    healthcheck:
+      test: [ "CMD-SHELL", "su hdfs -c \"/opt/hadoop/bin/hdfs dfsadmin -report | grep -q 'Live datanodes'\"" ]
+      interval: 30s
+      timeout: 10s
+      retries: 30
+      start_period: 40s
     ports:
       - "10000:10000"
     depends_on:
@@ -40,11 +46,10 @@ services:
     networks:
       - atlas
     healthcheck:
-      test: [ "CMD-SHELL", "su hdfs -c \"/opt/hadoop/bin/hdfs dfsadmin -report | grep -q 'Live datanodes'\"" ]
-      interval: 30s
-      timeout: 10s
+      test: 'su -c "pg_isready -q" postgres'
+      interval: 10s
+      timeout: 2s
       retries: 30
-      start_period: 40s
 
 networks:
   atlas:

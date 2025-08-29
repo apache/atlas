@@ -15,9 +15,11 @@
  * limitations under the License.
  */
 
-export const apiBaseurl = window.location.origin;
-const baseUrl = apiBaseurl + "/api/atlas";
-const baseUrlV2 = apiBaseurl + "/api/atlas/v2";
+import { getBaseUrl } from "@utils/Utils";
+
+export const apiBaseurl = window.location.pathname;
+const baseUrl = getBaseUrl(apiBaseurl) + "/api/atlas";
+const baseUrlV2 = getBaseUrl(apiBaseurl) + "/api/atlas/v2";
 
 const getBaseApiUrl = (url: string) => {
   if (url == "url") {

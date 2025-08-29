@@ -406,10 +406,9 @@ const LineageUtils = {
 
       if (errorUrl) {
         // Check if the default img path has error, if yes then stop recursion.
-        if (errorUrl.indexOf("table.png") > -1) {
-          //removed condition for default process image
-          return null;
-        }
+        let errorUrlParams = errorUrl.split("/");
+        if (errorUrlParams.length > 0)  errorUrlParams = errorUrlParams[errorUrlParams.length - 1];
+        if (errorUrlParams === "table.png")  return null;
         var isErrorInTypeName =
           errorUrl &&
           errorUrl.match(

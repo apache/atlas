@@ -31,7 +31,7 @@ import java.util.Map;
 import java.util.Objects;
 
 public abstract class ImportTransformer {
-    private static final String TRANSFORMER_PARAMETER_SEPARATOR = "\\:";
+    private static final String TRANSFORMER_PARAMETER_SEPARATOR = "~";
 
     private static final String TRANSFORMER_NAME_ADD                   = "add";
     private static final String TRANSFORMER_NAME_CLEAR_ATTR            = "clearAttrValue";
@@ -49,6 +49,11 @@ public abstract class ImportTransformer {
     }
 
     public static ImportTransformer getTransformer(String transformerSpec) throws AtlasBaseException {
+        if (transformerSpec.contains(":") && !transformerSpec.contains(TRANSFORMER_PARAMETER_SEPARATOR)) {
+            throw new AtlasBaseException(AtlasErrorCode.INVALID_VALUE,
+                    "Invalid transformer specification. The parameter separator ':' is no longer supported. Use '~' instead. Transformer specification: " + transformerSpec);
+        }
+
         String[] params = StringUtils.split(transformerSpec, TRANSFORMER_PARAMETER_SEPARATOR);
         String   key    = (params == null || params.length < 1) ? transformerSpec : params[0];
 
@@ -66,13 +71,13 @@ public abstract class ImportTransformer {
         } else if (key.equals(TRANSFORMER_NAME_UPPERCASE)) {
             ret = new Uppercase();
         } else if (key.equals(TRANSFORMER_NAME_REMOVE_CLASSIFICATION)) {
-            String name = (params == null || params.length < 1) ? "" : StringUtils.join(params, ":", 1, params.length);
+            String name = (params == null || params.length < 1) ? "" : StringUtils.join(params, "~", 1, params.length);
             ret = new RemoveClassification(name);
         } else if (key.equals(TRANSFORMER_NAME_ADD)) {
-            String name = (params == null || params.length < 1) ? "" : StringUtils.join(params, ":", 1, params.length);
+            String name = (params == null || params.length < 1) ? "" : StringUtils.join(params, "~", 1, params.length);
             ret = new AddValueToAttribute(name);
         } else if (key.equals(TRANSFORMER_NAME_CLEAR_ATTR)) {
-            String name = (params == null || params.length < 1) ? "" : StringUtils.join(params, ":", 1, params.length);
+            String name = (params == null || params.length < 1) ? "" : StringUtils.join(params, "~", 1, params.length);
             ret = new ClearAttributes(name);
         } else if (key.equals(TRANSFORMER_SET_DELETED)) {
             ret = new SetDeleted();

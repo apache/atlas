@@ -70,7 +70,7 @@ const Layout: React.FC = () => {
     crossTab: true,
     throttle: 1000,
     eventsThrottle: 1000,
-    startOnMount: true
+    startOnMount: true,
   });
   const handleStillHere = () => {
     setOpenSessionModal(false);
@@ -89,7 +89,7 @@ const Layout: React.FC = () => {
   }, [getRemainingTime, isPrompted]);
 
   const handleLogout = () => {
-    localStorage.setItem("atlas_ui", "beta");
+    localStorage.setItem("atlas_ui", "v3");
     let path = getBaseUrl(window.location.pathname);
     window.location.href = path + "/logout.html";
     handleCloseSessionModal();
