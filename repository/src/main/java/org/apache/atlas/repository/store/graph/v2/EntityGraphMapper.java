@@ -6319,7 +6319,7 @@ public class EntityGraphMapper {
     private void setEntityCommonAttributes(AtlasVertex ev, AtlasEntity diffEntity) {
         diffEntity.setGuid(ev.getProperty(GUID_PROPERTY_KEY, String.class));
         diffEntity.setUpdatedBy(ev.getProperty(MODIFIED_BY_KEY, String.class));
-        diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
+        diffEntity.setUpdateTime(new Date(ev.getProperty(MODIFICATION_TIMESTAMP_PROPERTY_KEY, Long.class)));
     }
 
     private void isAuthorizedToLink(AtlasVertex vertex) throws AtlasBaseException {
