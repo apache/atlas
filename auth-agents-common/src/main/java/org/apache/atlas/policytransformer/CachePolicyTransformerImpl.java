@@ -375,6 +375,10 @@ public class CachePolicyTransformerImpl {
 
         for (RangerPolicy policy : rangerPolicies) {
             Integer changeType = auditEventToDeltaChangeType.get(policyChanges.get(policy.getAtlasGuid()));
+            if (changeType == null) {
+                LOG.warn("PolicyDelta: {}: No change type found for policy guid={} audit_event={}", serviceName, policy.getAtlasGuid(), policyChanges.get(policy.getAtlasGuid()));
+                continue;
+            }
             RangerPolicyDelta delta = new RangerPolicyDelta(policy.getId(), changeType, policy.getVersion(), policy);
             policyDeltas.add(delta);
         }
@@ -383,9 +387,7 @@ public class CachePolicyTransformerImpl {
         List<RangerPolicyDelta> deletedPolicyDeltas = new ArrayList<>();
         for (String policyGuid : policyGuids) {
             Integer deltaChangeType = auditEventToDeltaChangeType.get(policyChanges.get(policyGuid));
-            if (deltaChangeType == null) {
-                LOG.warn("PolicyDelta: {}: No change type found for policy audit guid={} audit_event={}", serviceName, policyGuid, policyChanges.get(policyGuid));
-            } else if (deltaChangeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE) {
+            if (deltaChangeType == RangerPolicyDelta.CHANGE_TYPE_POLICY_DELETE) {
                 RangerPolicy deletedPolicy = new RangerPolicy();
                 deletedPolicy.setGuid(policyGuid);
                 deletedPolicy.setService(serviceName);
