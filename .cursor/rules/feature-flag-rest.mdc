@@ -1,0 +1,584 @@
+---
+description: Feature flag store rest api 
+alwaysApply: false
+---
+# Feature Flag REST API
+
+The Feature Flag REST API provides comprehensive CRUD operations for managing Atlas feature flags through HTTP endpoints.
+
+## Base URL
+```
+/api/atlas/v2/featureflags
+```
+
+## Endpoints
+
+### 1. Get All Feature Flags
+**GET** `/api/atlas/v2/featureflags`
+
+Returns all predefined feature flags with their current values and metadata.
+
+**Response:**
+```json
+{
+  "featureFlags": [
+    {
+      "key": "ENABLE_JANUS_OPTIMISATION",
+      "currentValue": "true",
+      "defaultValue": "false",
+      "hasCustomValue": true,
+      "timestamp": "2024-01-20T10:30:00.000Z"
+    },
+    {
+      "key": "enable_persona_hierarchy_filter",
+      "currentValue": null,
+      "defaultValue": "false",
+      "hasCustomValue": false,
+      "timestamp": "2024-01-20T10:30:00.000Z"
+    }
+  ],
+  "totalCount": 2,
+  "timestamp": "2024-01-20T10:30:00.000Z"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X GET "http://localhost:21000/api/atlas/v2/featureflags" \
+  -H "Content-Type: application/json"
+```
+
+### 2. Get Single Feature Flag
+**GET** `/api/atlas/v2/featureflags/{key}`
+
+Returns details for a specific feature flag.
+
+**Parameters:**
+- `key` (path parameter): Feature flag key name
+
+**Response:**
+```json
+{
+  "key": "ENABLE_JANUS_OPTIMISATION",
+  "currentValue": "true",
+  "defaultValue": "false",
+  "hasCustomValue": true,
+  "timestamp": "2024-01-20T10:30:00.000Z"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X GET "http://localhost:21000/api/atlas/v2/featureflags/ENABLE_JANUS_OPTIMISATION" \
+  -H "Content-Type: application/json"
+```
+
+**Error Response (Invalid Key):**
+```json
+{
+  "errorCode": "ATLAS_400_00_001",
+  "errorMessage": "Invalid feature flag key: INVALID_KEY. Valid keys are: [ENABLE_JANUS_OPTIMISATION, enable_persona_hierarchy_filter, DISABLE_WRITE_FLAG]"
+}
+```
+
+### 3. Update Feature Flag
+**PUT** `/api/atlas/v2/featureflags/{key}`
+
+Updates or sets a feature flag value.
+
+**Parameters:**
+- `key` (path parameter): Feature flag key name
+
+**Request Body:**
+```json
+{
+  "value": "true"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Feature flag 'ENABLE_JANUS_OPTIMISATION' updated successfully to: true",
+  "key": "ENABLE_JANUS_OPTIMISATION",
+  "value": "true",
+  "timestamp": "2024-01-20T10:35:00.000Z"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X PUT "http://localhost:21000/api/atlas/v2/featureflags/ENABLE_JANUS_OPTIMISATION" \
+  -H "Content-Type: application/json" \
+  -d '{"value": "true"}'
+```
+
+### 4. Delete Feature Flag
+**DELETE** `/api/atlas/v2/featureflags/{key}`
+
+Deletes a feature flag (resets to default value).
+
+**Parameters:**
+- `key` (path parameter): Feature flag key name
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Feature flag 'ENABLE_JANUS_OPTIMISATION' deleted successfully (reset to default: false)",
+  "key": "ENABLE_JANUS_OPTIMISATION",
+  "value": "false",
+  "timestamp": "2024-01-20T10:40:00.000Z"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X DELETE "http://localhost:21000/api/atlas/v2/featureflags/ENABLE_JANUS_OPTIMISATION" \
+  -H "Content-Type: application/json"
+```
+
+### 5. Health Check
+**GET** `/api/atlas/v2/featureflags/health`
+
+Returns the health status of the Feature Flag service.
+
+**Response:**
+```json
+{
+  "service": "FeatureFlagREST",
+  "status": "UP",
+  "timestamp": "2024-01-20T10:30:00.000Z",
+  "availableFlags": 3
+}
+```
+
+**cURL Example:**
+```bash
+curl -X GET "http://localhost:21000/api/atlas/v2/featureflags/health" \
+  -H "Content-Type: application/json"
+```
+
+## Available Feature Flags
+
+The following feature flags are currently defined in the system:
+
+| Key | Default Value | Description |
+|-----|---------------|-------------|
+| `ENABLE_JANUS_OPTIMISATION` | `false` | Enables Janus graph optimizations |
+| `enable_persona_hierarchy_filter` | `false` | Enables persona hierarchy filtering |
+| `DISABLE_WRITE_FLAG` | `false` | Disables write operations |
+
+## Error Handling
+
+The API uses standard HTTP status codes and returns detailed error information:
+
+### Common Error Responses
+
+**400 Bad Request - Invalid Key:**
+```json
+{
+  "errorCode": "ATLAS_400_00_001",
+  "errorMessage": "Invalid feature flag key: INVALID_KEY. Valid keys are: [ENABLE_JANUS_OPTIMISATION, enable_persona_hierarchy_filter, DISABLE_WRITE_FLAG]"
+}
+```
+
+**400 Bad Request - Empty Value:**
+```json
+{
+  "errorCode": "ATLAS_400_00_001",
+  "errorMessage": "Feature flag value cannot be empty"
+}
+```
+
+**500 Internal Server Error:**
+```json
+{
+  "errorCode": "ATLAS_500_00_001",
+  "errorMessage": "Internal server error occurred"
+}
+```
+
+## Usage Examples
+
+### JavaScript/Fetch API
+```javascript
+// Get all feature flags
+async function getAllFeatureFlags() {
+  const response = await fetch('/api/atlas/v2/featureflags');
+  return await response.json();
+}
+
+// Update a feature flag
+async function updateFeatureFlag(key, value) {
+  const response = await fetch(`/api/atlas/v2/featureflags/${key}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ value: value })
+  });
+  return await response.json();
+}
+
+// Delete a feature flag
+async function deleteFeatureFlag(key) {
+  const response = await fetch(`/api/atlas/v2/featureflags/${key}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+  return await response.json();
+}
+```
+
+### Python/Requests
+```python
+import requests
+import json
+
+base_url = "http://localhost:21000/api/atlas/v2/featureflags"
+
+# Get all feature flags
+def get_all_feature_flags():
+    response = requests.get(base_url)
+    return response.json()
+
+# Update a feature flag
+def update_feature_flag(key, value):
+    url = f"{base_url}/{key}"
+    data = {"value": value}
+    response = requests.put(url, json=data)
+    return response.json()
+
+# Delete a feature flag
+def delete_feature_flag(key):
+    url = f"{base_url}/{key}"
+    response = requests.delete(url)
+    return response.json()
+```
+
+## Security Considerations
+
+- The API inherits Atlas security configurations
+- All operations are logged with user information when available
+- Feature flag modifications are audited
+- Only predefined feature flags can be modified (no dynamic flag creation)
+
+## Performance
+
+- All endpoints use performance tracing with AtlasPerfTracer
+- Operations are optimized for quick response times
+- Feature flag reads leverage the existing cache infrastructure
+- Bulk operations are supported via the "get all" endpoint
+
+## Integration with Existing Code
+
+The REST API integrates seamlessly with the existing `FeatureFlagStore` service:
+
+```java
+// Existing code continues to work
+boolean isEnabled = FeatureFlagStore.evaluate("ENABLE_JANUS_OPTIMISATION", "true");
+
+// REST API provides external access to the same underlying service
+// PUT /api/atlas/v2/featureflags/ENABLE_JANUS_OPTIMISATION {"value": "true"}
+```
+
+## Monitoring and Observability
+
+- All operations are logged with appropriate levels (INFO for modifications, DEBUG for reads)
+- Performance metrics are collected via @Timed annotations
+- Health check endpoint provides service status
+- Error cases are properly logged with context information
+# Feature Flag REST API
+
+The Feature Flag REST API provides comprehensive CRUD operations for managing Atlas feature flags through HTTP endpoints.
+
+## Base URL
+```
+/api/atlas/v2/featureflags
+```
+
+## Endpoints
+
+### 1. Get All Feature Flags
+**GET** `/api/atlas/v2/featureflags`
+
+Returns all predefined feature flags with their current values and metadata.
+
+**Response:**
+```json
+{
+  "featureFlags": [
+    {
+      "key": "ENABLE_JANUS_OPTIMISATION",
+      "currentValue": "true",
+      "defaultValue": "false",
+      "hasCustomValue": true,
+      "timestamp": "2024-01-20T10:30:00.000Z"
+    },
+    {
+      "key": "enable_persona_hierarchy_filter",
+      "currentValue": null,
+      "defaultValue": "false",
+      "hasCustomValue": false,
+      "timestamp": "2024-01-20T10:30:00.000Z"
+    }
+  ],
+  "totalCount": 2,
+  "timestamp": "2024-01-20T10:30:00.000Z"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X GET "http://localhost:21000/api/atlas/v2/featureflags" \
+  -H "Content-Type: application/json"
+```
+
+### 2. Get Single Feature Flag
+**GET** `/api/atlas/v2/featureflags/{key}`
+
+Returns details for a specific feature flag.
+
+**Parameters:**
+- `key` (path parameter): Feature flag key name
+
+**Response:**
+```json
+{
+  "key": "ENABLE_JANUS_OPTIMISATION",
+  "currentValue": "true",
+  "defaultValue": "false",
+  "hasCustomValue": true,
+  "timestamp": "2024-01-20T10:30:00.000Z"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X GET "http://localhost:21000/api/atlas/v2/featureflags/ENABLE_JANUS_OPTIMISATION" \
+  -H "Content-Type: application/json"
+```
+
+**Error Response (Invalid Key):**
+```json
+{
+  "errorCode": "ATLAS_400_00_001",
+  "errorMessage": "Invalid feature flag key: INVALID_KEY. Valid keys are: [ENABLE_JANUS_OPTIMISATION, enable_persona_hierarchy_filter, DISABLE_WRITE_FLAG]"
+}
+```
+
+### 3. Update Feature Flag
+**PUT** `/api/atlas/v2/featureflags/{key}`
+
+Updates or sets a feature flag value.
+
+**Parameters:**
+- `key` (path parameter): Feature flag key name
+
+**Request Body:**
+```json
+{
+  "value": "true"
+}
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Feature flag 'ENABLE_JANUS_OPTIMISATION' updated successfully to: true",
+  "key": "ENABLE_JANUS_OPTIMISATION",
+  "value": "true",
+  "timestamp": "2024-01-20T10:35:00.000Z"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X PUT "http://localhost:21000/api/atlas/v2/featureflags/ENABLE_JANUS_OPTIMISATION" \
+  -H "Content-Type: application/json" \
+  -d '{"value": "true"}'
+```
+
+### 4. Delete Feature Flag
+**DELETE** `/api/atlas/v2/featureflags/{key}`
+
+Deletes a feature flag (resets to default value).
+
+**Parameters:**
+- `key` (path parameter): Feature flag key name
+
+**Response:**
+```json
+{
+  "success": true,
+  "message": "Feature flag 'ENABLE_JANUS_OPTIMISATION' deleted successfully (reset to default: false)",
+  "key": "ENABLE_JANUS_OPTIMISATION",
+  "value": "false",
+  "timestamp": "2024-01-20T10:40:00.000Z"
+}
+```
+
+**cURL Example:**
+```bash
+curl -X DELETE "http://localhost:21000/api/atlas/v2/featureflags/ENABLE_JANUS_OPTIMISATION" \
+  -H "Content-Type: application/json"
+```
+
+### 5. Health Check
+**GET** `/api/atlas/v2/featureflags/health`
+
+Returns the health status of the Feature Flag service.
+
+**Response:**
+```json
+{
+  "service": "FeatureFlagREST",
+  "status": "UP",
+  "timestamp": "2024-01-20T10:30:00.000Z",
+  "availableFlags": 3
+}
+```
+
+**cURL Example:**
+```bash
+curl -X GET "http://localhost:21000/api/atlas/v2/featureflags/health" \
+  -H "Content-Type: application/json"
+```
+
+## Available Feature Flags
+
+The following feature flags are currently defined in the system:
+
+| Key | Default Value | Description |
+|-----|---------------|-------------|
+| `ENABLE_JANUS_OPTIMISATION` | `false` | Enables Janus graph optimizations |
+| `enable_persona_hierarchy_filter` | `false` | Enables persona hierarchy filtering |
+| `DISABLE_WRITE_FLAG` | `false` | Disables write operations |
+
+## Error Handling
+
+The API uses standard HTTP status codes and returns detailed error information:
+
+### Common Error Responses
+
+**400 Bad Request - Invalid Key:**
+```json
+{
+  "errorCode": "ATLAS_400_00_001",
+  "errorMessage": "Invalid feature flag key: INVALID_KEY. Valid keys are: [ENABLE_JANUS_OPTIMISATION, enable_persona_hierarchy_filter, DISABLE_WRITE_FLAG]"
+}
+```
+
+**400 Bad Request - Empty Value:**
+```json
+{
+  "errorCode": "ATLAS_400_00_001",
+  "errorMessage": "Feature flag value cannot be empty"
+}
+```
+
+**500 Internal Server Error:**
+```json
+{
+  "errorCode": "ATLAS_500_00_001",
+  "errorMessage": "Internal server error occurred"
+}
+```
+
+## Usage Examples
+
+### JavaScript/Fetch API
+```javascript
+// Get all feature flags
+async function getAllFeatureFlags() {
+  const response = await fetch('/api/atlas/v2/featureflags');
+  return await response.json();
+}
+
+// Update a feature flag
+async function updateFeatureFlag(key, value) {
+  const response = await fetch(`/api/atlas/v2/featureflags/${key}`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ value: value })
+  });
+  return await response.json();
+}
+
+// Delete a feature flag
+async function deleteFeatureFlag(key) {
+  const response = await fetch(`/api/atlas/v2/featureflags/${key}`, {
+    method: 'DELETE',
+    headers: {
+      'Content-Type': 'application/json'
+    }
+  });
+  return await response.json();
+}
+```
+
+### Python/Requests
+```python
+import requests
+import json
+
+base_url = "http://localhost:21000/api/atlas/v2/featureflags"
+
+# Get all feature flags
+def get_all_feature_flags():
+    response = requests.get(base_url)
+    return response.json()
+
+# Update a feature flag
+def update_feature_flag(key, value):
+    url = f"{base_url}/{key}"
+    data = {"value": value}
+    response = requests.put(url, json=data)
+    return response.json()
+
+# Delete a feature flag
+def delete_feature_flag(key):
+    url = f"{base_url}/{key}"
+    response = requests.delete(url)
+    return response.json()
+```
+
+## Security Considerations
+
+- The API inherits Atlas security configurations
+- All operations are logged with user information when available
+- Feature flag modifications are audited
+- Only predefined feature flags can be modified (no dynamic flag creation)
+
+## Performance
+
+- All endpoints use performance tracing with AtlasPerfTracer
+- Operations are optimized for quick response times
+- Feature flag reads leverage the existing cache infrastructure
+- Bulk operations are supported via the "get all" endpoint
+
+## Integration with Existing Code
+
+The REST API integrates seamlessly with the existing `FeatureFlagStore` service:
+
+```java
+// Existing code continues to work
+boolean isEnabled = FeatureFlagStore.evaluate("ENABLE_JANUS_OPTIMISATION", "true");
+
+// REST API provides external access to the same underlying service
+// PUT /api/atlas/v2/featureflags/ENABLE_JANUS_OPTIMISATION {"value": "true"}
+```
+
+## Monitoring and Observability
+
+- All operations are logged with appropriate levels (INFO for modifications, DEBUG for reads)
+- Performance metrics are collected via @Timed annotations
+- Health check endpoint provides service status
+- Error cases are properly logged with context information
