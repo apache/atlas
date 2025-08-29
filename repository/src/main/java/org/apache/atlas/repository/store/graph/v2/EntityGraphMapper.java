@@ -609,16 +609,16 @@ public class EntityGraphMapper {
     private void setSystemAttributesToEntity(AtlasVertex entityVertex, AtlasEntity createdEntity) {
 
         createdEntity.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
-        createdEntity.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
+        createdEntity.setUpdatedBy(RequestContext.get().getUser());
         createdEntity.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
-        createdEntity.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
+        createdEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
 
 
         if (DIFFERENTIAL_AUDITS) {
             AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(createdEntity.getGuid());
             if (diffEntity != null) {
-                diffEntity.setUpdateTime(createdEntity.getUpdateTime());
-                diffEntity.setUpdatedBy(createdEntity.getUpdatedBy());
+                diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
+                diffEntity.setUpdatedBy(RequestContext.get().getUser());
             }
         }
     }
