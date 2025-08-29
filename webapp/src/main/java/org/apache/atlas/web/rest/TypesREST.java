@@ -452,7 +452,7 @@ public class TypesREST {
     public AtlasTypesDef createAtlasTypeDefs(@Context HttpServletRequest servletRequest, final AtlasTypesDef typesDef, @QueryParam("allowDuplicateDisplayName") @DefaultValue("false") boolean allowDuplicateDisplayName) throws AtlasBaseException {
         Lock lock = null;
         AtlasPerfTracer perf = null;
-        validateTypeCreateOrUpdate(typesDef);
+        validateTypeBeforeAction(typesDef);
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
         try {
             typeCacheRefresher.verifyCacheRefresherHealth();
@@ -483,8 +483,17 @@ public class TypesREST {
         }
     }
 
-    private void validateTypeCreateOrUpdate(AtlasTypesDef typesDef) throws AtlasBaseException {
+    private void validateTypeBeforeAction(AtlasTypesDef typesDef) throws AtlasBaseException {
+        try {
+            validateBuiltInTypeNames(typesDef);
+        } catch (AtlasBaseException e) {
+            // If validation fails, try refreshing cache once and revalidate
+            typeDefStore.init();
+            validateBuiltInTypeNames(typesDef);
+        }
+    }
 
+    private void validateBuiltInTypeNames(AtlasTypesDef typesDef) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
             for (AtlasBaseTypeDef typeDef : typesDef.getEnumDefs())
                 if (typeDefStore.hasBuiltInTypeName(typeDef))
@@ -516,7 +525,7 @@ public class TypesREST {
     public AtlasTypesDef updateAtlasTypeDefs(@Context HttpServletRequest servletRequest, final AtlasTypesDef typesDef, @QueryParam("patch") final boolean patch,
                                              @QueryParam("allowDuplicateDisplayName") @DefaultValue("false") boolean allowDuplicateDisplayName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-        validateTypeCreateOrUpdate(typesDef);
+        validateTypeBeforeAction(typesDef);
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
         Lock lock = null;
         try {
@@ -584,6 +593,7 @@ public class TypesREST {
         AtlasPerfTracer perf = null;
         Lock lock = null;
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
+        validateTypeBeforeAction(typesDef);
         try {
             typeCacheRefresher.verifyCacheRefresherHealth();
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
