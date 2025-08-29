@@ -328,7 +328,7 @@ public class BusinessLineageService implements AtlasBusinessLineageService {
         }
 
         diffEntity.setGuid(ev.getProperty(GUID_PROPERTY_KEY, String.class));
-        diffEntity.setUpdatedBy(ev.getProperty(MODIFIED_BY_KEY, String.class));
+        diffEntity.setUpdatedBy(requestContext.getUser());
         diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
         diffEntity.setAttribute(assetDenormAttribute, existingValues);
 
