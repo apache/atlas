@@ -509,6 +509,16 @@ public class TypesREST {
                 if (typeDefStore.hasBuiltInTypeName(typeDef))
                     throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
         }
+        if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
+            for (AtlasBaseTypeDef typeDef : typesDef.getBusinessMetadataDefs())
+                if (typeDefStore.hasBuiltInTypeName(typeDef))
+                    throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
+            for (AtlasBaseTypeDef typeDef : typesDef.getClassificationDefs())
+                if (typeDefStore.hasBuiltInTypeName(typeDef))
+                    throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
+        }
     }
     /**
      * Bulk update API for all types, changes detected in the type definitions would be persisted
