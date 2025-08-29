@@ -33,15 +33,6 @@ public class IndexRepairService {
         this.graph = graph;
     }
 
-    // =============== SINGLE INDEX REPAIR ===============
-
-    /**
-     * Check if a vertex is corrupted via single index lookup (qualifiedName only)
-     */
-    public boolean isCorruptedSingleVertex(String qualifiedName) {
-        Optional<Long> corruptedVertexId = findCorruptedSingleVertex(qualifiedName);
-        return corruptedVertexId.isPresent();
-    }
 
     /**
      * Find corrupted vertex using single index (qualifiedName only)
@@ -59,7 +50,7 @@ public class IndexRepairService {
         if (vertices.hasNext()) {
             AtlasVertex vertex = vertices.next();
             // Check if vertex is corrupted
-            if (CollectionUtils.isEmpty(vertex.getPropertyKeys()) && StringUtils.isNotEmpty(vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class)) || StringUtils.isNotEmpty(vertex.getProperty(Constants.TYPE_NAME_PROPERTY_KEY, String.class))){
+            if (CollectionUtils.isEmpty(vertex.getPropertyKeys())){
                 return vertex.getId() instanceof Long ? Optional.of((Long) vertex.getId()) : Optional.empty();
             }
         }
@@ -112,16 +103,6 @@ public class IndexRepairService {
         return new RepairResult(false, null, "Vertex not found");
     }
 
-    // =============== COMPOSITE INDEX REPAIR ===============
-
-    /**
-     * Check if a vertex is corrupted via composite index lookup
-     */
-    public boolean isCorruptedCompositeVertex(String qualifiedName, String typeName) {
-        Optional<Long> corruptedVertexId = findCorruptedCompositeVertex(qualifiedName, typeName);
-        return corruptedVertexId.isPresent();
-    }
-
     /**
      * Find corrupted vertex using composite index
      */
@@ -138,7 +119,7 @@ public class IndexRepairService {
 
         if (vertices.hasNext()) {
             AtlasVertex vertex = vertices.next();
-            if (CollectionUtils.isEmpty(vertex.getPropertyKeys()) && StringUtils.isEmpty(vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class)) && StringUtils.isEmpty(vertex.getProperty(Constants.QUALIFIED_NAME, String.class))) {
+            if (CollectionUtils.isEmpty(vertex.getPropertyKeys())) {
                 return vertex.getId() instanceof Long ? Optional.of((Long) vertex.getId()) : Optional.empty();
             }
         }
