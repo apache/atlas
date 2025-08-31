@@ -27,6 +27,8 @@ public class LineageListRequest {
     private Boolean                         excludeClassifications;
     private Boolean                         immediateNeighbours=false;
 
+    public static final String LINEAGE_TYPE_PRODUCT_ASSET_LINEAGE = "ProductAssetLineage";
+
     public Boolean getImmediateNeighbours() {
         return immediateNeighbours;
     }
@@ -34,6 +36,8 @@ public class LineageListRequest {
     public void setImmediateNeighbours(Boolean immediateNeighbours) {
         this.immediateNeighbours = immediateNeighbours;
     }
+
+    private String lineageType = LINEAGE_TYPE_PRODUCT_ASSET_LINEAGE;
 
     public enum LineageDirection {INPUT, OUTPUT}
 
@@ -89,6 +93,14 @@ public class LineageListRequest {
 
     public void setDepth(Integer depth) {
         this.depth = depth;
+    }
+
+    public String getLineageType() {
+        return lineageType;
+    }
+
+    public void setLineageType(String lineageType) {
+        this.lineageType = lineageType;
     }
 
     public LineageDirection getDirection() {
