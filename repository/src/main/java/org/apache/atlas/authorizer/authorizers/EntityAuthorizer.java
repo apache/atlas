@@ -288,7 +288,11 @@ public class EntityAuthorizer {
                 LOG.warn("ABAC_AUTH: Unexpected exception in tag attribute processing, tag={}, attribute={}, error={}", tagTypeName, attrName, e.getMessage());
             }
         }
-        LOG.info("ABAC_AUTH: Tag attachment values: {}", tagAttachmentValues);
+
+        if (tagAttachmentValues.isEmpty()) {
+            tagAttachmentValues.add(tagTypeName + ".="); // to support tag with no attachment values
+        }
+        LOG.info("ABAC_AUTH: Tag attachment values for tag={} value={}", tagTypeName, tagAttachmentValues);
 
         return tagAttachmentValues;
     }
@@ -348,6 +352,10 @@ public class EntityAuthorizer {
             } else {
                 LOG.warn("Invalid tag values format for tag: {}", tagName);
             }
+
+            if (requiredTagValues.isEmpty()) {
+                requiredTagValues.add(tagName);
+            }
         } else {
             requiredTagValues.add(tagValueNode.asText());
         }
@@ -369,7 +377,7 @@ public class EntityAuthorizer {
         switch(operator) {
             case POLICY_FILTER_CRITERIA_EQUALS:
                 for (List<String> tagValues : attributeValues) {
-                    if (!(new HashSet<>(entityAttributeValues).containsAll(tagValues))) {
+                    if (!AuthorizerCommonUtil.arrayListContains(entityAttributeValues, tagValues)) {
                         return false;
                     }
                 }
@@ -379,7 +387,7 @@ public class EntityAuthorizer {
             case POLICY_FILTER_CRITERIA_NOT_EQUALS:
             case POLICY_FILTER_CRITERIA_NOT_IN:
                 for (List<String> tagValues : attributeValues) {
-                    if (new HashSet<>(entityAttributeValues).containsAll(tagValues)) {
+                    if (AuthorizerCommonUtil.arrayListContains(entityAttributeValues, tagValues)) {
                         return false;
                     }
                 }
@@ -388,7 +396,7 @@ public class EntityAuthorizer {
 
             case POLICY_FILTER_CRITERIA_IN:
                 for (List<String> tagValues : attributeValues) {
-                    if (AuthorizerCommonUtil.arrayListContains(tagValues, entityAttributeValues)) {
+                    if (AuthorizerCommonUtil.arrayListContains(entityAttributeValues, tagValues)) {
                         return true;
                     }
                 }
