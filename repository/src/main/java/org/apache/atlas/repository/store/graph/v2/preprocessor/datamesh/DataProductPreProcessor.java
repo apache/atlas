@@ -31,6 +31,8 @@ import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.util.AccessControlUtils.*;
+import static org.apache.atlas.v1.model.instance.Id.EntityState.ACTIVE;
+import static org.apache.atlas.v1.model.instance.Id.EntityState.DELETED;
 
 public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(DataProductPreProcessor.class);
@@ -114,6 +116,21 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
     private void processUpdateProduct(AtlasEntity entity, AtlasVertex vertex) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("processUpdateProduct");
 
+        String state = vertex.getProperty(STATE_PROPERTY_KEY, String.class);
+
+        if (DELETED.name().equals(state)) {
+            //  To allow product restoration but block all other updates if the product is archived
+            boolean isBeingRestored = false;
+
+            if (context != null && context.getEntitiesToRestore() != null) {
+                isBeingRestored = context.getEntitiesToRestore().contains(vertex);
+            }
+
+            if (!isBeingRestored) {
+                throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot update DataProduct that is Archived!");
+            }
+        }
+
         entity.removeAttribute(OUTPUT_PORT_GUIDS_ATTR);
         entity.removeAttribute(INPUT_PORT_GUIDS_ATTR);
 
@@ -122,7 +139,6 @@ public class DataProductPreProcessor extends AbstractDomainPreProcessor {
         }
 
         AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(entity.getGuid());
-        String state = vertex.getProperty(STATE_PROPERTY_KEY, String.class);
 
         if(entity.getAttribute(DAAP_LINEAGE_STATUS_ATTR) != null && entity.getAttribute(DAAP_LINEAGE_STATUS_ATTR).equals(DAAP_LINEAGE_STATUS_COMPLETED)){
             if (!ARGO_SERVICE_USER_NAME.equals(RequestContext.getCurrentUser())) {

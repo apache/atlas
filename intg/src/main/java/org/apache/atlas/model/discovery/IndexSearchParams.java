@@ -18,6 +18,7 @@ public class IndexSearchParams extends SearchParams {
     private String purpose;
     private String persona;
     private String queryString;
+    private String optimizedQueryString;
 
     /*
     * Indexsearch includes all relations (if requested with param attributes) even if relationshipStatus is DELETED
@@ -33,6 +34,14 @@ public class IndexSearchParams extends SearchParams {
     @Override
     public String getQuery() {
         return queryString;
+    }
+
+    public String getOptimizedQueryString() {
+        return optimizedQueryString;
+    }
+
+    public void setOptimizedQueryString(String optimizedQueryString) {
+        this.optimizedQueryString = optimizedQueryString;
     }
 
     public Map getDsl() {

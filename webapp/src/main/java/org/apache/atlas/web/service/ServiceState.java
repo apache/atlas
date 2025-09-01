@@ -21,23 +21,14 @@ package org.apache.atlas.web.service;
 import com.google.common.base.Preconditions;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
-import org.apache.atlas.RequestContext;
-import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
-import org.apache.atlas.model.audit.AtlasAuditEntry;
-import org.apache.atlas.repository.audit.AtlasAuditService;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.inject.Singleton;
-
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.util.Date;
 
 import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 
@@ -51,9 +42,6 @@ import static org.apache.atlas.AtlasConstants.ATLAS_MIGRATION_MODE_FILENAME;
 @Component
 public class ServiceState {
     private static final Logger LOG = LoggerFactory.getLogger(ServiceState.class);
-
-    @Autowired
-    AtlasAuditService auditService;
 
     public enum ServiceStateValue {
         ACTIVE,
@@ -94,25 +82,12 @@ public class ServiceState {
             Preconditions.checkState(HAConfiguration.isHAEnabled(configuration), "Cannot change state as requested, as HA is not enabled for this instance.");
         }
         state = newState;
-        auditServerStatus();
     }
 
     private void setState(ServiceStateValue newState) {
         this.setState(newState, false);
     }
 
-    private void auditServerStatus() {
-
-        if (state == ServiceState.ServiceStateValue.ACTIVE) {
-            Date   date        = new Date();
-            try {
-                auditService.add(AtlasAuditEntry.AuditOperation.SERVER_START, EmbeddedServer.SERVER_START_TIME, date, null, null, 0);
-                auditService.add(AtlasAuditEntry.AuditOperation.SERVER_STATE_ACTIVE, date, date, null, null, 0);
-            } catch (AtlasBaseException e) {
-                LOG.error("Exception occurred during audit", e);
-            }
-        }
-    }
 
     public void setActive() {
         LOG.warn("Instance is active from {}", state);

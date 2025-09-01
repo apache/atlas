@@ -31,6 +31,8 @@ on:
       - tagscanarymerge
       - fixlabels
       - interceptapis
+      - mlh-965
+
 
 jobs:
   build:

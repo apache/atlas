@@ -24,6 +24,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.discovery.SearchParams;
 import org.apache.atlas.repository.graphdb.AtlasIndexQuery;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
+import org.apache.commons.lang.NotImplementedException;
 
 import com.google.common.base.Function;
 import com.google.common.collect.Iterators;
@@ -55,8 +56,18 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
     }
 
     @Override
+    public Map<String, Object> directEsIndexQuery(String query) throws AtlasBaseException {
+        throw new NotImplementedException();
+    }
+
+    @Override
+    public Long countIndexQuery(String query) throws AtlasBaseException {
+        throw new NotImplementedException();
+    }
+
+    @Override
     public Iterator<Result<AtlasJanusVertex, AtlasJanusEdge>> vertices() {
-        Iterator<JanusGraphIndexQuery.Result<JanusGraphVertex>> results = query.vertices().iterator();
+        Iterator<JanusGraphIndexQuery.Result<JanusGraphVertex>> results = query.vertexStream().iterator();
 
         Function<JanusGraphIndexQuery.Result<JanusGraphVertex>, Result<AtlasJanusVertex, AtlasJanusEdge>> function =
             new Function<JanusGraphIndexQuery.Result<JanusGraphVertex>, Result<AtlasJanusVertex, AtlasJanusEdge>>() {
@@ -77,7 +88,7 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
         Iterator<JanusGraphIndexQuery.Result<JanusGraphVertex>> results = query
                 .offset(offset)
                 .limit(limit)
-                .vertices().iterator();
+                .vertexStream().iterator();
 
         Function<JanusGraphIndexQuery.Result<JanusGraphVertex>, Result<AtlasJanusVertex, AtlasJanusEdge>> function =
                 new Function<JanusGraphIndexQuery.Result<JanusGraphVertex>, Result<AtlasJanusVertex, AtlasJanusEdge>>() {
@@ -100,7 +111,7 @@ public class AtlasJanusIndexQuery implements AtlasIndexQuery<AtlasJanusVertex, A
                 .orderBy(sortBy, sortOrder)
                 .offset(offset)
                 .limit(limit)
-                .vertices().iterator();
+                .vertexStream().iterator();
 
         Function<JanusGraphIndexQuery.Result<JanusGraphVertex>, Result<AtlasJanusVertex, AtlasJanusEdge>> function =
                 new Function<JanusGraphIndexQuery.Result<JanusGraphVertex>, Result<AtlasJanusVertex, AtlasJanusEdge>>() {

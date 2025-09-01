@@ -478,11 +478,18 @@ public abstract class DeleteHandlerV1 {
     }
 
     private void addTagPropagation(AtlasVertex fromVertex, AtlasVertex toVertex, AtlasEdge edge) throws AtlasBaseException {
-        //below needs to be forked ?
         if(FeatureFlagStore.isTagV2Enabled()) {
             // foreground
             // classificationTypeName can be empty
-            createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_ADD, fromVertex, toVertex, "");
+            List<Tag> tags = tagDAO.getAllTagsByVertexId(fromVertex.getIdForDisplay());
+
+            if (CollectionUtils.isNotEmpty(tags)) {
+                boolean shouldCreateTask = tags.stream().anyMatch(Tag::isPropagatable);
+
+                if (shouldCreateTask) {
+                    createAndQueueTaskWithoutCheckV2(CLASSIFICATION_PROPAGATION_ADD, fromVertex, toVertex, "");
+                }
+            }
         } else {
             final List<AtlasVertex> classificationVertices = getPropagationEnabledClassificationVertices(fromVertex);
             String relationshipGuid = getRelationshipGuid(edge);
@@ -1206,19 +1213,32 @@ public abstract class DeleteHandlerV1 {
 
             deleteTypeVertex(deletionCandidateVertex, isInternalType(deletionCandidateVertex));
 
-            tags.stream()
-                    .filter(Tag::isPropagated)
-                    .map(t -> TagDAOCassandraImpl.toAtlasClassification(t.getTagMetaJson()))
-                    .forEach(t -> taskManagement.createTaskV2(CLASSIFICATION_REFRESH_PROPAGATION,
+            if (CollectionUtils.isNotEmpty(RequestContext.get().getDeletedEdgesIds())) {
+                for (Tag tag: tags) {
+                    if (!tag.isPropagated()) {
+                        continue;
+                    }
+                    String entityGuid = TagDAOCassandraImpl.toAtlasClassification(tag.getTagMetaJson()).getEntityGuid();
+                    String tagTypeName = tag.getTagTypeName();
+
+                    if (skipClassificationTaskCreationV2(entityGuid, tagTypeName)) {
+                        LOG.info("Task is already scheduled for tag:entity pair {}:{}, no need to schedule task", tagTypeName, entityGuid);
+                        continue;
+                    }
+
+                    // Create refresh propagation task only if SOFT deleted edges
+                    // For HARD deleted edges, HardDeleteHandlerV1.deleteEdge calls createAndQueueClassificationRefreshPropagationTask
+                    taskManagement.createTaskV2(CLASSIFICATION_REFRESH_PROPAGATION,
                             RequestContext.getCurrentUser(),
                             new HashMap<>() {{
-                                put(PARAM_ENTITY_GUID, t.getEntityGuid());
-                                put(PARAM_CLASSIFICATION_NAME, t.getTypeName());
+                                put(PARAM_ENTITY_GUID, entityGuid);
+                                put(PARAM_CLASSIFICATION_NAME, tagTypeName);
                             }},
-                            t.getTypeName(),
-                            t.getEntityGuid()
-                        )
+                            tagTypeName,
+                            entityGuid
                     );
+                }
+            }
 
         } catch (AtlasBaseException e) {
             LOG.error("Error while deleting tags for vertex: {}", deletionCandidateVertex.getIdForDisplay());
@@ -1743,27 +1763,35 @@ public abstract class DeleteHandlerV1 {
             if (hasDuplicateTask(tasksInRequestContext, entityGuid, tagTypeName))
                 return true;
 
-            List<AtlasTask> pendingTasks = taskUtil.getAllTasksByCondition(PENDING_TASK_QUERY_SIZE_PAGE_SIZE, entityGuid, tagTypeName, taskTypesToSkip);
+            // Paginate through ES results and validate each page against the graph
+            boolean hasMorePages = true;
+            int from = 0;
+            final int pageSize = PENDING_TASK_QUERY_SIZE_PAGE_SIZE;
 
-            if(CollectionUtils.isEmpty(pendingTasks)) {
-                return false;
+            while (hasMorePages) {
+                List<AtlasTask> potentialDuplicates = taskUtil.findAPageOfPendingTasks(from, pageSize, entityGuid, tagTypeName, taskTypesToSkip);
+
+                // Validate the true status of tasks in this page against the graph
+                boolean hasDuplicates = hasDuplicateTask(potentialDuplicates, entityGuid, tagTypeName);
+                if (hasDuplicates) {
+                    long refreshTaskCount = potentialDuplicates.stream()
+                            .filter(task -> isDuplicateTask(task, entityGuid, tagTypeName)) // Ensure we only count true duplicates
+                            .filter(task -> CLASSIFICATION_REFRESH_PROPAGATION.equals(task.getType()))
+                            .count();
+
+                    if (refreshTaskCount > 1) {
+                        LOG.warn("More than one {} task found for tag:entity pair {}:{}", CLASSIFICATION_REFRESH_PROPAGATION, tagTypeName, entityGuid);
+                    }
+                    return true;
+                }
+
+                if (potentialDuplicates.size() < pageSize) {
+                    hasMorePages = false;
+                } else {
+                    from += pageSize;
+                }
             }
 
-            List<AtlasTask> pendingRefreshPropagationTasks = pendingTasks.stream()
-                    .filter(task -> CLASSIFICATION_REFRESH_PROPAGATION.equals(task.getType()))
-                    .collect(Collectors.toList());
-
-            // Ideally there should be only refresh propagation task
-            if (pendingRefreshPropagationTasks.size() > 1) {
-                LOG.warn("More than one {} task found for tag:entity pair {}:{}", CLASSIFICATION_REFRESH_PROPAGATION, tagTypeName, entityGuid);
-            }
-
-            // if any task have status as PENDING, then skip task creation
-            if (hasDuplicateTask(pendingTasks, entityGuid, tagTypeName)) {
-                return true;
-            } else {
-                LOG.warn("There is inconsistency in task queue, there are no pending tasks for tag:entity pair {}:{} but there are tasks in queue", tagTypeName, entityGuid);
-            }
         } catch (AtlasBaseException e) {
             LOG.error("Error while checking if classification task creation is required for tag:entity pair {}:{}", tagTypeName, entityGuid, e);
             throw e;

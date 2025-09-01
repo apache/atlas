@@ -3,6 +3,7 @@ package org.apache.atlas.auth.client.heracles.models;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import org.keycloak.representations.idm.UserRepresentation;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -31,11 +32,11 @@ public class HeraclesUserViewRepresentation {
     }
 
     public List<String> getRoles() {
-        return roles;
+        return roles == null ? new ArrayList<>() : roles;
     }
 
     public List<String> getGroups() {
-        return groups;
+        return groups == null ? new ArrayList<>() : groups;
     }
 
     public void setId(String id) {

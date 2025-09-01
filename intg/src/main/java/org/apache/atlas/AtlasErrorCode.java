@@ -240,6 +240,7 @@ public enum AtlasErrorCode {
 
     CATEGORY_PARENT_FROM_OTHER_GLOSSARY(409, "ATLAS-400-00-0015", "Parent category from another Anchor(glossary) not supported"),
     CLASSIFICATION_TYPE_HAS_REFERENCES(409, "ATLAS-400-00-0016", "Given classification {0} [{1}] has references"),
+    PERMANENT_BACKEND_EXCEPTION_NO_RETRY(410, "ATLAS-410-00-0001", "Permanent backend exception, no retry possible. Error: {0}"),
     // All internal errors go here
     UNKNOWN_SERVER_ERROR(500, "ATLAS-500-00-000", "Unknown server error detected {0}"),
 
@@ -270,6 +271,7 @@ public enum AtlasErrorCode {
     INDEX_SEARCH_CLIENT_NOT_INITIATED(500, "ATLAS-500-00-103", "Error occurred while running direct index query on ES: restClient is not initiated"),
 
     INDEX_SEARCH_FAILED_DUE_TO_TIMEOUT(429, "ATLAS-400-00-502", "ES query exceeded timeout: {0}"),
+    INDEX_SEARCH_FAILED_WITH_RESPONSE_CODE(400, "ATLAS-400-00-503", "ES query failed with response: {0}"),
     INDEX_SEARCH_GATEWAY_TIMEOUT(504, "ATLAS-504-00-001", "ES query gateway timeout: {0}"),
     DEPRECATED_API(400, "ATLAS-400-00-103", "Deprecated API. Use {0} instead"),
     DISABLED_API(400, "ATLAS-400-00-104", "API temporarily disabled. Reason: {0}"),

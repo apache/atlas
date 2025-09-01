@@ -36,9 +36,11 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Iterator;
 
-import static org.apache.atlas.repository.Constants.ACTIVE_STATE_VALUE;
-import static org.apache.atlas.repository.Constants.ASSET_RELATION_ATTR;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
+import static org.apache.atlas.AtlasErrorCode.OPERATION_NOT_SUPPORTED;
+import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.DAAP_ARCHIVED_STATUS;
+import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.DAAP_STATUS_ATTR;
 
 public abstract class AbstractResourcePreProcessor implements PreProcessor {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractResourcePreProcessor.class);
@@ -62,6 +64,9 @@ public abstract class AbstractResourcePreProcessor implements PreProcessor {
             if (asset != null) {
                 //Found linked asset in payload
                 AtlasVertex assetVertex = entityRetriever.getEntityVertex(asset);
+
+                validateProductStatus(assetVertex);
+
                 assetEntity = entityRetriever.toAtlasEntityHeaderWithClassifications(assetVertex);
 
             } else {
@@ -121,6 +126,18 @@ public abstract class AbstractResourcePreProcessor implements PreProcessor {
         }
 
         return ret;
+    }
+
+    public static void validateProductStatus(AtlasVertex assetVertex) throws AtlasBaseException {
+        if (assetVertex != null) {
+            if (DATA_PRODUCT_ENTITY_TYPE.equals(assetVertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class))) {
+                String entityState = assetVertex.getProperty(STATE_PROPERTY_KEY, String.class);
+
+                if ((AtlasEntity.Status.DELETED.name().equals(entityState))) {
+                    throw new AtlasBaseException(OPERATION_NOT_SUPPORTED, "Cannot update DataProduct that is Archived!");
+                }
+            }
+        }
     }
 
     private void verifyAssetAccess(AtlasEntityHeader asset, AtlasPrivilege assetPrivilege,

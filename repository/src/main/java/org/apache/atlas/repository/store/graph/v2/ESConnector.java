@@ -1,7 +1,4 @@
 package org.apache.atlas.repository.store.graph.v2;
-
-import com.datastax.oss.driver.shaded.json.JSONArray;
-import com.datastax.oss.driver.shaded.json.JSONObject;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
 import org.apache.atlas.RequestContext;
@@ -33,7 +30,8 @@ import static org.apache.atlas.repository.Constants.CLASSIFICATION_TEXT_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
 import static org.apache.atlas.repository.Constants.PROPAGATED_TRAIT_NAMES_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.TRAIT_NAMES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;import static org.apache.atlas.repository.audit.ESBasedAuditRepository.getHttpHosts;
+import static org.apache.atlas.repository.Constants.VERTEX_INDEX_NAME;
+import static org.apache.atlas.repository.audit.ESBasedAuditRepository.getHttpHosts;
 
 public class ESConnector implements Closeable {
     private static final Logger LOG      = LoggerFactory.getLogger(ESConnector.class);
@@ -108,8 +106,6 @@ public class ESConnector implements Closeable {
                 Map<String, Object> toUpdate = new HashMap<>();
 
                 DENORM_ATTRS.stream().filter(entry::containsKey).forEach(x -> toUpdate.put(x, entry.get(x)));
-//                toUpdate.put("__modificationTimestamp", System.currentTimeMillis());
-
 
                 long vertexId = Long.parseLong(assetVertexId);
                 String docId = LongEncoding.encode(vertexId);
@@ -129,70 +125,47 @@ public class ESConnector implements Closeable {
             Request request = new Request("POST", "/_bulk");
             request.setEntity(new StringEntity(bulkRequestBody.toString(), ContentType.APPLICATION_JSON));
 
-            try {
-                lowLevelClient.performRequest(request);
-            } catch (IOException e) {
-                LOG.error("Failed to update ES doc for denorm attributes");
-                throw new RuntimeException(e);
-            }
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-    }
+            int maxRetries = AtlasConfiguration.ES_MAX_RETRIES.getInt();
+            long retryDelay = AtlasConfiguration.ES_RETRY_DELAY_MS.getLong();
+            long initialRetryDelay = AtlasConfiguration.ES_RETRY_DELAY_MS.getLong();
 
-    public static Map<String, Map<String, Object>> getTagAttributes(Collection<AtlasVertex> vertices) {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagAttributesES");
-        Map<String, Map<String, Object>> ret = new HashMap<>();
+            for (int retryCount = 0; retryCount < maxRetries; retryCount++) {
+                try {
+                    Response response = lowLevelClient.performRequest(request); // Capture the response
+                    int statusCode = response.getStatusLine().getStatusCode();
 
-        try {
-            Map<String, String> docIdTovertexIdMap = new HashMap<>();
-            List<String> vertexIds = vertices.stream().map(x -> x.getIdForDisplay()).toList();
-            vertexIds.forEach(vertexId -> docIdTovertexIdMap.put(LongEncoding.encode(Long.parseLong(vertexId)), vertexId));
-            Set<String> docIds = docIdTovertexIdMap.keySet();
-
-            JSONObject requestBody = new JSONObject();
-            requestBody.put("ids", new JSONArray(docIds));
-
-
-            Request request = new Request("POST", GET_DOCS_BY_ID + "?_source=" + StringUtils.join(DENORM_ATTRS, ","));
-            HttpEntity entity = new NStringEntity(requestBody.toString(), ContentType.APPLICATION_JSON);
-            request.setEntity(entity);
-
-            Response response = lowLevelClient.performRequest(request);
-            String responseBody = EntityUtils.toString(response.getEntity());
-
-            JSONObject jsonResponse = new JSONObject(responseBody);
-            JSONArray docs = jsonResponse.getJSONArray("docs");
-
-            for (int i = 0; i < docs.length(); i++) {
-                JSONObject doc = docs.getJSONObject(i);
-                String docId = doc.getString("_id");
-                Map<String, Object> assetAttributes = new HashMap<>();
-
-                if (doc.getBoolean("found")) {
-                    JSONObject source = doc.getJSONObject("_source");
-
-                    // Print all properties in the source
-                    Iterator<String> keys = source.keys();
-                    while (keys.hasNext()) {
-                        String key = keys.next();
-                        assetAttributes.put(key, source.get(key));
+                    if (statusCode >= 200 && statusCode < 300) {
+                        // Check response body for partial failures if necessary
+                        return; // Success
                     }
-                } else {
-                    LOG.warn("Document with docId {} not found", docId);
+
+                    // Add logic to retry on 5xx or throw on 4xx
+                    if (statusCode >= 500) {
+                        LOG.warn("Failed to update ES doc due to server error ({}). Retrying...", statusCode);
+                    } else {
+                        // Not a retryable error
+                        String responseBody = EntityUtils.toString(response.getEntity());
+                        throw new RuntimeException("Failed to update ES doc. Status: " + statusCode + ", Body: " + responseBody);
+                    }
+                } catch (IOException e) {
+                    LOG.warn("Failed to update ES doc for denorm attributes. Retrying... ({}/{})", retryCount + 1, maxRetries, e);
                 }
 
-                ret.put(docIdTovertexIdMap.get(docId) ,assetAttributes);
+                if (retryCount < maxRetries - 1) {
+                    try {
+                        long exponentialBackoffDelay = initialRetryDelay * (long) Math.pow(2, retryCount);
+                        Thread.sleep(exponentialBackoffDelay);
+                    } catch (InterruptedException interruptedException) {
+                        Thread.currentThread().interrupt();
+                        throw new RuntimeException("ES update interrupted during retry delay", interruptedException);
+                    }
+                }
             }
-
-        } catch (IOException e) {
-            LOG.error("Failed to GET denorm attributes from ES");
-            throw new RuntimeException(e);
+            // If the loop completes, all retries have failed. Throw an exception.
+            throw new RuntimeException("Failed to update ES doc for denorm attributes after " + maxRetries + " retries");
         } finally {
             RequestContext.get().endMetricRecord(recorder);
         }
-
-        return ret;
     }
 
     @Override

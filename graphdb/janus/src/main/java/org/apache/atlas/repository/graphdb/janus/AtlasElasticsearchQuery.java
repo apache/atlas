@@ -67,7 +67,8 @@ import static org.apache.atlas.AtlasErrorCode.INDEX_NOT_FOUND;
 public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex, AtlasJanusEdge> {
     private static final Logger LOG = LoggerFactory.getLogger(AtlasElasticsearchQuery.class);
 
-    private static final String CLIENT_ORIGIN_PRODUCT = "product_webapp";
+    public static final String CLIENT_ORIGIN_PRODUCT = "product_webapp";
+    public static final String CLIENT_ORIGIN_PLAYBOOK = "playbook";
 
     private AtlasJanusGraph graph;
     private RestHighLevelClient esClient;
@@ -218,6 +219,44 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         }
     }
 
+    private Map<String, Object> runRawQueryWithLowLevelClient(String query) throws AtlasBaseException {
+        try {
+            String responseString = performDirectIndexQuery(query, true);
+            Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
+            return responseMap;
+        } catch (IOException e) {
+            LOG.error("Failed to execute raw direct query on ES {}", e.getMessage());
+
+            handleNetworkErrors(e);
+
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
+        }
+    }
+
+    private Long runCountWithLowLevelClient(String query) throws AtlasBaseException {
+        try {
+            String responseString = performDirectCountQuery(query);
+            Map<String, Object> responseMap = AtlasType.fromJson(responseString, Map.class);
+            Object countObj = responseMap.get("count");
+            if (countObj == null) {
+                return 0L;
+            }
+            long countVal;
+            if (countObj instanceof Number) {
+                countVal = ((Number) countObj).longValue();
+            } else {
+                countVal = Long.parseLong(String.valueOf(countObj));
+            }
+            return countVal;
+        } catch (IOException e) {
+            LOG.error("Failed to execute _count query on ES {}", e.getMessage());
+
+            handleNetworkErrors(e);
+
+            throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
+        }
+    }
+
     private Map<String, LinkedHashMap> runUpdateByQueryWithLowLevelClient(String query) throws AtlasBaseException {
         try {
             String responseString = performDirectUpdateByQuery(query);
@@ -265,12 +304,11 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 }
                 response = getAsyncSearchResponse(searchParams, esSearchId).get();
                 if (response == null) {
-                    // If the response is null, we want to return a timeout exception to the user
-                    // This should correspond to a 504 Gateway Timeout since the issue is server-side (Elasticsearch timeout)
-                    throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_GATEWAY_TIMEOUT, KeepAliveTime);
+                    // If the response is null, that request was cancelled by user return HTTP 204
+                    return null;
                 }
 
-                if(response.isTimedOut()) {
+                if (response.isTimedOut()) {
                     LOG.error("timeout exceeded for query {}:", searchParams.getQuery());
                     RequestContext.get().endMetricRecord(RequestContext.get().startMetricRecord("elasticQueryTimeout"));
                     throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED_DUE_TO_TIMEOUT, KeepAliveTime);
@@ -280,10 +318,15 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
                 result = getResultFromResponse(response.getFullResponse(), true);
             }
         }catch (Exception e) {
-            LOG.error("Failed to execute direct query on ES {}", e.getMessage());
+            LOG.error("Failed to execute async query on ES {}", e.getMessage());
 
             if (e instanceof IOException) {
                 handleNetworkErrors((IOException) e);
+            }
+
+            if (e instanceof ResponseException) {
+                int statusCode = ((ResponseException) e).getResponse().getStatusLine().getStatusCode();
+                throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED_WITH_RESPONSE_CODE, "Elasticsearch returned status code: " + statusCode + ", message: " + e.getMessage());
             }
 
             throw new AtlasBaseException(AtlasErrorCode.INDEX_SEARCH_FAILED, e.getMessage());
@@ -432,23 +475,28 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     }
 
     private void deleteAsyncSearchResponse(String searchContextId) {
-        String endPoint = "_async_search/" + searchContextId;
-        Request request = new Request("DELETE", endPoint);
-        ResponseListener responseListener = new ResponseListener() {
-            @Override
-            public void onSuccess(Response response) {
-                LOG.debug("Deleted async search response");
-            }
-            @Override
-            public void onFailure(Exception exception) {
-                if (exception instanceof ResponseException && ((ResponseException) exception).getResponse().getStatusLine().getStatusCode() == 404) {
-                    LOG.debug("Async search response not found");
-                } else {
-                    LOG.error("Failed to delete async search response {}", exception.getMessage());
+        AtlasPerfMetrics.MetricRecorder metric = RequestContext.get().startMetricRecord("deleteAsyncSearchResponse");
+        try {
+            String endPoint = "_async_search/" + searchContextId;
+            Request request = new Request("DELETE", endPoint);
+            ResponseListener responseListener = new ResponseListener() {
+                @Override
+                public void onSuccess(Response response) {
+                    LOG.debug("Deleted async search response");
                 }
-            }
-        };
-        getESClient().performRequestAsync(request, responseListener);
+                @Override
+                public void onFailure(Exception exception) {
+                    if (exception instanceof ResponseException && ((ResponseException) exception).getResponse().getStatusLine().getStatusCode() == 404) {
+                        LOG.debug("Async search response not found");
+                    } else {
+                        LOG.error("Failed to delete async search response {}", exception.getMessage());
+                    }
+                }
+            };
+            getESClient().performRequestAsync(request, responseListener);
+        } finally {
+            RequestContext.get().endMetricRecord(metric);
+        }
     }
 
     private Future<AsyncQueryResult> submitAsyncSearch(SearchParams searchParams, String KeepAliveTime, boolean source) {
@@ -533,6 +581,28 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
         return EntityUtils.toString(response.getEntity());
     }
 
+    private String performDirectCountQuery(String query) throws AtlasBaseException, IOException {
+        HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
+        String endPoint = index + "/_count";
+
+        Request request = new Request("GET", endPoint);
+        request.setEntity(entity);
+
+        Response response;
+        try {
+            response = getESClient().performRequest(request);
+        } catch (ResponseException rex) {
+            if (rex.getResponse().getStatusLine().getStatusCode() == 404) {
+                LOG.warn(String.format("ES index with name %s not found", index));
+                throw new AtlasBaseException(INDEX_NOT_FOUND, index);
+            } else {
+                throw new AtlasBaseException(String.format("Error in executing elastic count query: %s", EntityUtils.toString(entity)), rex);
+            }
+        }
+
+        return EntityUtils.toString(response.getEntity());
+    }
+
     private String performDirectUpdateByQuery(String query) throws AtlasBaseException, IOException {
         HttpEntity entity = new NStringEntity(query, ContentType.APPLICATION_JSON);
         String endPoint;
@@ -606,6 +676,16 @@ public class AtlasElasticsearchQuery implements AtlasIndexQuery<AtlasJanusVertex
     @Override
     public Map<String, Object> directIndexQuery(String query) throws AtlasBaseException {
         return runQueryWithLowLevelClient(query);
+    }
+
+    @Override
+    public Map<String, Object> directEsIndexQuery(String query) throws AtlasBaseException {
+        return runRawQueryWithLowLevelClient(query);
+    }
+
+    @Override
+    public Long countIndexQuery(String query) throws AtlasBaseException {
+        return runCountWithLowLevelClient(query);
     }
 
     public Map<String, LinkedHashMap> directUpdateByQuery(String query) throws AtlasBaseException {

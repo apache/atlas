@@ -122,7 +122,9 @@ public class AuditFilter implements Filter {
 
             HeadersUtil.setRequestContextHeaders((HttpServletRequest)request);
 
-            filterChain.doFilter(request, response);
+            // Use wrapper to set response headers before the response is committed
+            AtlasResponseRequestWrapper responseWrapper = new AtlasResponseRequestWrapper(httpResponse, startTime);
+            filterChain.doFilter(request, responseWrapper);
         } finally {
             long timeTaken = System.currentTimeMillis() - startTime;
 

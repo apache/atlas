@@ -55,10 +55,10 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     // Configuration constants
     private static final int MAX_RETRIES = 3;
     private static final Duration INITIAL_BACKOFF = Duration.ofMillis(100);
-    private static final int BATCH_SIZE_LIMIT = 100;
-    private static final int BATCH_SIZE_LIMIT_FOR_DELETION = 1000;
+    private static final int BATCH_SIZE_LIMIT = 200;
+    private static final int BATCH_SIZE_LIMIT_FOR_DELETION = 10000;
     private static final Duration CONNECTION_TIMEOUT = Duration.ofSeconds(5);
-    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(120);
+    //private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(120);
     private static final Duration HEARTBEAT_INTERVAL = Duration.ofSeconds(30);
     public static final String DEFAULT_HOST = "localhost";
     public static final String DATACENTER = "datacenter1";
@@ -115,7 +115,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             Map<String, String> replicationConfig = Map.of("class", "SimpleStrategy", "replication_factor", ApplicationProperties.get().getString(CASSANDRA_REPLICATION_FACTOR_PROPERTY, "3"));
 
             DriverConfigLoader configLoader = DriverConfigLoader.programmaticBuilder()
-                    .withDuration(DefaultDriverOption.REQUEST_TIMEOUT, REQUEST_TIMEOUT)
+                    //.withDuration(DefaultDriverOption.REQUEST_TIMEOUT, REQUEST_TIMEOUT)
                     .withDuration(DefaultDriverOption.CONNECTION_INIT_QUERY_TIMEOUT, CONNECTION_TIMEOUT)
                     .withDuration(DefaultDriverOption.CONNECTION_CONNECT_TIMEOUT, CONNECTION_TIMEOUT)
                     .withDuration(DefaultDriverOption.CONTROL_CONNECTION_TIMEOUT, CONNECTION_TIMEOUT)
@@ -377,7 +377,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     @Override
     public PaginatedTagResult getPropagationsForAttachmentBatchWithPagination(String sourceVertexId, String tagTypeName,
-                                                                              String pagingStateStr, int pageSize, String cacheKey) throws AtlasBaseException {
+                                                                              String pagingStateStr, int pageSize) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getPropagationsForAttachmentBatchWithPagination");
         try {
             BoundStatement bound = findPropagationsBySourceStmt.bind(sourceVertexId, tagTypeName).setPageSize(pageSize);
@@ -407,6 +407,8 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 count++;
             }
 
+            LOG.debug("Fetched {} propagations in this page for sourceVertexId={}, tagTypeName={}", tags.size(), sourceVertexId, tagTypeName);
+
             ByteBuffer pagingStateBuffer = rs.getExecutionInfo().getPagingState();
             String nextPagingState = null;
 
@@ -422,8 +424,9 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             if (tags.isEmpty() && done) {
                 LOG.warn("No propagations found for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName);
             }
+            LOG.debug("Next paging state for sourceVertexId={}, tagTypeName={}. Has more pages: {}",
+                    sourceVertexId, tagTypeName, !done);
 
-            PagingStateCache.setState(cacheKey, nextPagingState);
             return new PaginatedTagResult(tags, nextPagingState, done);
         } catch (Exception e) {
             LOG.error("Error fetching paginated propagations for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName, e);
@@ -514,10 +517,10 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     }
 
     @Override
-    public AtlasClassification findDirectTagByVertexIdAndTagTypeName(String assetVertexId, String tagTypeName) throws AtlasBaseException {
+    public AtlasClassification findDirectTagByVertexIdAndTagTypeName(String assetVertexId, String tagTypeName, boolean includeDeleted) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDirectTagByVertexIdAndTagTypeName");
         try {
-            Tag tag = findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(assetVertexId, tagTypeName);
+            Tag tag = findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(assetVertexId, tagTypeName, includeDeleted);
             return tag != null ? toAtlasClassification(tag.getTagMetaJson()) : null;
         } finally {
             RequestContext.get().endMetricRecord(recorder);
@@ -525,7 +528,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     }
 
     @Override
-    public Tag findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(String vertexId, String tagTypeName) throws AtlasBaseException {
+    public Tag findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata(String vertexId, String tagTypeName, boolean includeDeleted) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("findDirectTagByVertexIdAndTagTypeNameWithAssetMetadata");
         try {
             int bucket = calculateBucket(vertexId);
@@ -533,7 +536,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             ResultSet rs = executeWithRetry(bound);
             Row row = rs.one();
 
-            if (row == null || row.getBoolean("is_deleted")) {
+            if (row == null || (!includeDeleted && row.getBoolean("is_deleted"))) {
                 LOG.warn("No active direct tag found for vertexId={}, tagTypeName={}, bucket={}", vertexId, tagTypeName, bucket);
                 return null;
             }
@@ -579,13 +582,11 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     }
 
     @Override
-    public PaginatedTagResult getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
+    public PaginatedTagResult getPropagationsForAttachmentBatch(String sourceVertexId, String tagTypeName, String storedPagingState) throws AtlasBaseException {
         AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getPropagationsForAttachmentBatch");
         try {
-            String cacheKey = sourceVertexId + "|" + tagTypeName;
-            String storedPagingState = PagingStateCache.getState(cacheKey);
             // Default page size of 100
-            return getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, storedPagingState, 100, cacheKey);
+            return getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, storedPagingState, BATCH_SIZE_LIMIT_FOR_DELETION);
         } catch (Exception e) {
             LOG.error("Error getting propagations for attachment batch for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName, e);
             throw new AtlasBaseException("Error getting propagations for attachment batch", e);
@@ -594,40 +595,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         }
     }
 
-    @Override
-    public List<Tag> getTagPropagationsForAttachment(String sourceVertexId, String tagTypeName) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getTagPropagationsForAttachment");
-        List<Tag> allTags = new ArrayList<>();
-        try {
-            PaginatedTagResult result;
-            String pagingState = null;
-            String cacheKey = "full_fetch_" + sourceVertexId + "|" + tagTypeName;
-            int pageCount = 0;
-            LOG.info("Starting full propagation fetch for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName);
-            do {
-                pageCount++;
-                result = getPropagationsForAttachmentBatchWithPagination(sourceVertexId, tagTypeName, pagingState, 500, cacheKey);
-                int fetchedCount = result.getTags().size();
-                allTags.addAll(result.getTags());
-                pagingState = result.getPagingState();
-                LOG.info("sourceVertexId={}, tagTypeName={}: Page {}: Fetched {} propagations. Total fetched: {}. Has next page: {}",
-                        sourceVertexId, tagTypeName, pageCount, fetchedCount, allTags.size(), !result.isDone());
-            } while (!result.isDone());
-
-            if (allTags.isEmpty()) {
-                LOG.warn("No propagations found for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName);
-            } else {
-                LOG.info("Finished full propagation fetch for sourceVertexId={}, tagTypeName={}. Total propagations loaded: {}",
-                        sourceVertexId, tagTypeName, allTags.size());
-            }
-            return allTags;
-        } catch (Exception e) {
-            LOG.error("Error fetching all propagations for sourceVertexId={}, tagTypeName={}", sourceVertexId, tagTypeName, e);
-            throw new AtlasBaseException("Error fetching all propagations", e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-    }
 
     @Override
     public List<AtlasClassification> findByVertexIdAndPropagated(String vertexId) throws AtlasBaseException {
@@ -762,14 +729,30 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
 
     public static AtlasClassification convertToAtlasClassification(String tagMetaJson) throws AtlasBaseException {
         try {
-            return objectMapper.readValue(tagMetaJson, AtlasClassification.class);
+            AtlasClassification classification = objectMapper.readValue(tagMetaJson, AtlasClassification.class);
+            // Set default value is tagMetadataJson fields are null
+            if (classification.getRestrictPropagationThroughLineage() == null) {
+                classification.setRestrictPropagationThroughLineage(false);
+            }
+            if (classification.getRestrictPropagationThroughHierarchy() == null) {
+                classification.setRestrictPropagationThroughHierarchy(false);
+            }
+            if (classification.getRemovePropagationsOnEntityDelete() == null) {
+                classification.setRemovePropagationsOnEntityDelete(true);
+            }
+            return classification;
         } catch (JsonProcessingException e) {
             throw new AtlasBaseException("Unable to map to AtlasClassification", e);
         }
     }
 
     public static AtlasClassification toAtlasClassification(Map<String, Object> tagMetaJsonMap) {
-        return objectMapper.convertValue(tagMetaJsonMap, AtlasClassification.class);
+        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("dao.toAtlasClassification");
+        try {
+            return objectMapper.convertValue(tagMetaJsonMap, AtlasClassification.class);
+        } finally {
+            RequestContext.get().endMetricRecord(recorder);
+        }
     }
 
     /**
@@ -814,18 +797,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
     public void close() {
         if (cassSession != null && !cassSession.isClosed()) {
             cassSession.close();
-        }
-    }
-
-    private static class PagingStateCache {
-        private static final Map<String, String> pagingStates = new java.util.concurrent.ConcurrentHashMap<>();
-        public static String getState(String key) { return pagingStates.get(key); }
-        public static void setState(String key, String state) {
-            if (state == null || state.isEmpty()) {
-                pagingStates.remove(key);
-            } else {
-                pagingStates.put(key, state);
-            }
         }
     }
 }

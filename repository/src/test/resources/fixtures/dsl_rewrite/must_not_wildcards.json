@@ -1,0 +1,367 @@
+{
+    "size": 0,
+    "from": 0,
+    "query": {
+        "bool": {
+            "filter": {
+                "bool": {
+                    "must": [
+                        {
+                            "bool": {
+                                "should": [
+                                    {
+                                        "bool": {
+                                            "must": [
+                                                {
+                                                    "bool": {
+                                                        "should": [
+                                                            {
+                                                                "wildcard": {
+                                                                    "qualifiedName": "*adl_business_gbl_cf_finance_c*"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "bool": {
+                                                        "must_not": [
+                                                            {
+                                                                "terms": {
+                                                                    "__typeName.keyword": [
+                                                                        "Column",
+                                                                        "Process"
+                                                                    ]
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "bool": {
+                                                        "must": [
+                                                            {
+                                                                "bool": {
+                                                                    "must_not": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*digital_channel*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "bool": {
+                                                                    "must_not": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*functional_reporting*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "bool": {
+                                                                    "must_not": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*_ea*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "bool": {
+                                                                    "must_not": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*_int*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "bool": {
+                                                                    "must_not": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*_gn*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "bool": {
+                                                                    "must_not": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*_it*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "bool": {
+                                                                    "must_not": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*_im*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    },
+                                    {
+                                        "bool": {
+                                            "must": [
+                                                {
+                                                    "bool": {
+                                                        "must_not": [
+                                                            {
+                                                                "terms": {
+                                                                    "__typeName.keyword": [
+                                                                        "TableauCalculatedField",
+                                                                        "TableauDatasourceField",
+                                                                        "TableauFlow",
+                                                                        "TableauMetric",
+                                                                        "Process",
+                                                                        "TableauWorksheet"
+                                                                    ]
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "bool": {
+                                                        "should": [
+                                                            {
+                                                                "term": {
+                                                                    "projectQualifiedName.keyword": "default/tableau/1731325497/89430a5d-09ef-453d-a262-ebbd2e514373/3261055c-b205-42c2-a5ee-f0c5e7f43e26"
+                                                                }
+                                                            },
+                                                            {
+                                                                "term": {
+                                                                    "projectQualifiedName.keyword": "default/tableau/1731325497/89430a5d-09ef-453d-a262-ebbd2e514373/65f6598a-e360-4bfd-b33a-ba28e6fa262e"
+                                                                }
+                                                            },
+                                                            {
+                                                                "term": {
+                                                                    "projectQualifiedName.keyword": "default/tableau/1731325497/89430a5d-09ef-453d-a262-ebbd2e514373/3de1c012-227f-40a1-a9e1-fb368fcb8ea8"
+                                                                }
+                                                            },
+                                                            {
+                                                                "term": {
+                                                                    "projectQualifiedName.keyword": "default/tableau/1731325497/89430a5d-09ef-453d-a262-ebbd2e514373/718729a7-c067-4b02-9e73-2a3903936dcf"
+                                                                }
+                                                            },
+                                                            {
+                                                                "term": {
+                                                                    "projectQualifiedName.keyword": "default/tableau/1731325497/89430a5d-09ef-453d-a262-ebbd2e514373/f44bb063-bdbd-42c4-bebf-cc5cd6104422"
+                                                                }
+                                                            },
+                                                            {
+                                                                "term": {
+                                                                    "projectQualifiedName.keyword": "default/tableau/1731325497/89430a5d-09ef-453d-a262-ebbd2e514373/bdda4c31-16dd-4352-9863-47cf3d724b70"
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                },
+                                                {
+                                                    "bool": {
+                                                        "should": [
+                                                            {
+                                                                "bool": {
+                                                                    "should": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*default/tableau/1731325497/89430a5d-09ef-453d-a262-ebbd2e514373/f44bb063-bdbd-42c4-bebf-cc5cd6104422/b6dfc3dc-f9cc-46cd-ad8a-5552c0d93136*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "bool": {
+                                                                    "should": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*default/tableau/1731325497/89430a5d-09ef-453d-a262-ebbd2e514373/f44bb063-bdbd-42c4-bebf-cc5cd6104422/6afbd707-4ad3-445a-9805-5a97d2490a1c*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "bool": {
+                                                                    "should": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*default/tableau/1731325497/89430a5d-09ef-453d-a262-ebbd2e514373/f44bb063-bdbd-42c4-bebf-cc5cd6104422/998d95c8-4731-40a3-9bc5-7e6da1b32330*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "bool": {
+                                                                    "should": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*default/tableau/1731325497/89430a5d-09ef-453d-a262-ebbd2e514373/f44bb063-bdbd-42c4-bebf-cc5cd6104422/4ef7ae84-b291-49d5-8642-f77aa3ed689a*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "bool": {
+                                                                    "should": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*default/tableau/1731325497/89430a5d-09ef-453d-a262-ebbd2e514373/f44bb063-bdbd-42c4-bebf-cc5cd6104422/d189de23-a85c-4ed0-a913-0887bc9374c1*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "bool": {
+                                                                    "should": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*default/tableau/1731325497/89430a5d-09ef-453d-a262-ebbd2e514373/f44bb063-bdbd-42c4-bebf-cc5cd6104422/8c7882c1-2dbd-4974-a47d-140e744d938f*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "bool": {
+                                                                    "should": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*default/tableau/1731325497/89430a5d-09ef-453d-a262-ebbd2e514373/65f6598a-e360-4bfd-b33a-ba28e6fa262e/70d9ea6b-0520-4d1b-9354-097d990648e0*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            },
+                                                            {
+                                                                "bool": {
+                                                                    "should": [
+                                                                        {
+                                                                            "wildcard": {
+                                                                                "qualifiedName": "*default/tableau/1731325497/89430a5d-09ef-453d-a262-ebbd2e514373/f44bb063-bdbd-42c4-bebf-cc5cd6104422/c2381367-22af-4f50-8107-c67bc8f7ece5*"
+                                                                            }
+                                                                        }
+                                                                    ]
+                                                                }
+                                                            }
+                                                        ]
+                                                    }
+                                                }
+                                            ]
+                                        }
+                                    }
+                                ]
+                            }
+                        },
+                        {
+                            "term": {
+                                "__state": "ACTIVE"
+                            }
+                        }
+                    ],
+                    "should": [
+                        {
+                            "terms": {
+                                "__superTypeNames.keyword": [
+                                    "AI",
+                                    "SQL",
+                                    "BI",
+                                    "SaaS",
+                                    "ObjectStore",
+                                    "EventStore",
+                                    "DataQuality",
+                                    "Dbt",
+                                    "API",
+                                    "Airflow",
+                                    "Spark",
+                                    "MWAA",
+                                    "GCP_Cloud_Composer",
+                                    "Astronomer",
+                                    "SchemaRegistry",
+                                    "Matillion",
+                                    "NoSQL",
+                                    "MultiDimensionalDataset",
+                                    "ERD",
+                                    "DataModeling",
+                                    "ADF",
+                                    "model",
+                                    "Fivetran",
+                                    "App",
+                                    "Custom",
+                                    "SAP",
+                                    "Alteryx"
+                                ]
+                            }
+                        },
+                        {
+                            "terms": {
+                                "__typeName.keyword": [
+                                    "Query",
+                                    "Collection",
+                                    "AtlasGlossary",
+                                    "AtlasGlossaryCategory",
+                                    "AtlasGlossaryTerm",
+                                    "Connection",
+                                    "File",
+                                    "Process"
+                                ]
+                            }
+                        }
+                    ],
+                    "must_not": [
+                        {
+                            "terms": {
+                                "__typeName.keyword": [
+                                    "MCIncident",
+                                    "Procedure",
+                                    "DbtColumnProcess",
+                                    "BIProcess",
+                                    "MatillionComponent",
+                                    "ModelVersion",
+                                    "alpha_DQRule",
+                                    "SnowflakeTag",
+                                    "DbtTag",
+                                    "BigqueryTag"
+                                ]
+                            }
+                        },
+                        {
+                            "term": {
+                                "isPartial": "true"
+                            }
+                        }
+                    ],
+                    "minimum_should_match": 1
+                }
+            }
+        }
+    },
+    "track_total_hits": true
+}

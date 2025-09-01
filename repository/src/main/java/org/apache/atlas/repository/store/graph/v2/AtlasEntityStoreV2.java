@@ -90,6 +90,8 @@ import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.tinkerpop.gremlin.process.traversal.dsl.graph.__;
+import org.janusgraph.core.JanusGraphException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -114,6 +116,7 @@ import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.GraphHelper.*;
 import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateLabels;
+import static org.apache.atlas.repository.store.graph.v2.EntityGraphMapper.validateProductStatus;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_HARD_DELETE;
 import static org.apache.atlas.repository.store.graph.v2.tasks.MeaningsTaskFactory.UPDATE_ENTITY_MEANINGS_ON_TERM_SOFT_DELETE;
 import static org.apache.atlas.repository.util.AccessControlUtils.REL_ATTR_POLICIES;
@@ -931,11 +934,34 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
             entityChangeNotifier.onEntitiesMutated(ret, false);
             atlasRelationshipStore.onRelationshipsMutated(RequestContext.get().getRelationshipMutationMap());
 
+        } catch (JanusGraphException jge) {
+            if (isPermanentBackendException(jge)) {
+                LOG.error("Failed to delete objects:{}", objectIds.stream().map(AtlasObjectId::getUniqueAttributes).collect(Collectors.toList()), jge);
+                throw new AtlasBaseException(AtlasErrorCode.PERMANENT_BACKEND_EXCEPTION_NO_RETRY, jge,
+                        "deleteByUniqueAttributes", "AtlasEntityStoreV2", jge.getMessage());
+            }
+            throw new AtlasBaseException(jge);
         } catch (Exception e) {
             LOG.error("Failed to delete objects:{}", objectIds.stream().map(AtlasObjectId::getUniqueAttributes).collect(Collectors.toList()), e);
             throw new AtlasBaseException(e);
         }
         return ret;
+    }
+
+    // Helper method to check for PermanentBackendException in the cause chain
+    private boolean isPermanentBackendException(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof org.janusgraph.diskstorage.PermanentBackendException) {
+                return true;
+            }
+            // Also check by class name in case of classloader issues
+            if ("org.janusgraph.diskstorage.PermanentBackendException".equalsIgnoreCase(current.getClass().getName())) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private void processTermEntityDeletion(List<AtlasEntityHeader> deletedEntities) throws AtlasBaseException{
@@ -1102,6 +1128,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
 
+        validateProductStatus(entityVertex);
+
         if (entityVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
         }
@@ -1151,6 +1179,8 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
 
         AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(graph, guid);
+
+        validateProductStatus(entityVertex);
 
         if (entityVertex == null) {
             throw new AtlasBaseException(AtlasErrorCode.INSTANCE_GUID_NOT_FOUND, guid);
@@ -1249,6 +1279,10 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
         if (StringUtils.isEmpty(classificationName)) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS, "classifications not specified");
         }
+
+        AtlasVertex entityVertex = AtlasGraphUtilsV2.findByGuid(this.graph, guid);
+
+        validateProductStatus(entityVertex);
 
         GraphTransactionInterceptor.lockObjectAndReleasePostCommit(guid);
 
@@ -1759,7 +1793,6 @@ public class AtlasEntityStoreV2 implements AtlasEntityStore {
 
     private EntityMutationContext preCreateOrUpdate(EntityStream entityStream, EntityGraphMapper entityGraphMapper, boolean isPartialUpdate) throws AtlasBaseException {
         MetricRecorder metric = RequestContext.get().startMetricRecord("preCreateOrUpdate");
-        this.graph.setEnableCache(RequestContext.get().isCacheEnabled());
         EntityGraphDiscovery        graphDiscoverer  = new AtlasEntityGraphDiscoveryV2(graph, typeRegistry, entityStream, entityGraphMapper);
         EntityGraphDiscoveryContext discoveryContext = graphDiscoverer.discoverEntities();
         EntityMutationContext       context          = new EntityMutationContext(discoveryContext);

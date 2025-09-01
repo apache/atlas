@@ -162,6 +162,7 @@ public final class Constants {
     public static final String OUTPUT_PORT_PRODUCT_EDGE_LABEL = "__Asset.outputPortDataProducts";
 
     public static final String OUTPUT_PORTS = "outputPorts";
+    public static final String INPUT_PORTS = "inputPorts";
     public static final String ADDED_OUTPUT_PORTS = "addedOutputPorts";
     public static final String REMOVED_OUTPUT_PORTS = "removedOutputPorts";
 
@@ -379,6 +380,7 @@ public final class Constants {
     public static final String TASK_ATTEMPT_COUNT     = encodePropertyKey(TASK_PREFIX + "attemptCount");
     public static final String TASK_PARAMETERS        = encodePropertyKey(TASK_PREFIX + "parameters");
     public static final String TASK_ERROR_MESSAGE     = encodePropertyKey(TASK_PREFIX + "errorMessage");
+    public static final String TASK_WARNING_MESSAGE     = encodePropertyKey(TASK_PREFIX + "warning");
     public static final String TASK_START_TIME        = encodePropertyKey(TASK_PREFIX + "startTime");
     public static final String TASK_END_TIME          = encodePropertyKey(TASK_PREFIX + "endTime");
     public static final String TASK_TIME_TAKEN_IN_SECONDS   = encodePropertyKey(TASK_PREFIX + "timeTakenInSeconds");
@@ -387,6 +389,8 @@ public final class Constants {
     public static final String TASK_PARENT_ENTITY_GUID             = encodePropertyKey(TASK_PREFIX + "parentEntityGuid");
     public static final String TASK_CLASSIFICATION_TYPENAME = encodePropertyKey(TASK_PREFIX + "classificationTypeName");
     public static final String ACTIVE_STATE_VALUE           = "ACTIVE";
+
+    public static final String ATLAN_HEADER_PREFIX_PATTERN  = "x-atlan-";
     public static final String TASK_HEADER_ATLAN_AGENT      = "x-atlan-agent";
     public static final String TASK_HEADER_ATLAN_AGENT_ID   = "x-atlan-agent-id";
     public static final String TASK_HEADER_ATLAN_PKG_NAME   = "x-atlan-package-name";
