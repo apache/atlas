@@ -216,7 +216,7 @@ public class JsonToElasticsearchQuery {
     }
 
     /*
-        This should produce something like
+        For single value, this should produce something like:
         {
             "bool": {
                 "filter": [
@@ -233,16 +233,44 @@ public class JsonToElasticsearchQuery {
                             "in_order": true,
                             "slop": 0
                         }
+                    }
+                ]
+            }
+        }
+        
+        For multiple values, this should produce something like:
+        {
+            "bool": {
+                "filter": [
+                    {
+                        "term": {"__traitNames": "tag"}
                     },
                     {
-                        "span_near": {
-                            "clauses": [
-                                {"span_term": {"__classificationsText.text": "tagAttachmentValue"}},
-                                {"span_term": {"__classificationsText.text": "value2"}},
-                                {"span_term": {"__classificationsText.text": "tagAttachmentKey"}}
-                            ],
-                            "in_order": true,
-                            "slop": 0
+                        "bool": {
+                            "should": [
+                                {
+                                    "span_near": {
+                                        "clauses": [
+                                            {"span_term": {"__classificationsText.text": "tagAttachmentValue"}},
+                                            {"span_term": {"__classificationsText.text": "value1"}},
+                                            {"span_term": {"__classificationsText.text": "tagAttachmentKey"}}
+                                        ],
+                                        "in_order": true,
+                                        "slop": 0
+                                    }
+                                },
+                                {
+                                    "span_near": {
+                                        "clauses": [
+                                            {"span_term": {"__classificationsText.text": "tagAttachmentValue"}},
+                                            {"span_term": {"__classificationsText.text": "value2"}},
+                                            {"span_term": {"__classificationsText.text": "tagAttachmentKey"}}
+                                        ],
+                                        "in_order": true,
+                                        "slop": 0
+                                    }
+                                }
+                            ]
                         }
                     }
                 ]
@@ -272,52 +300,62 @@ public class JsonToElasticsearchQuery {
             return queryNode;
         }
 
+        ArrayNode valuesQuery = filterArray;
+        if (tagKeyValues.size() > 1) {
+            ObjectNode boolQuery = mapper.createObjectNode();
+            valuesQuery = boolQuery.putObject("bool").putArray("should");
+            filterArray.add(boolQuery);
+        }
+
         // add span_near clauses
         for (JsonNode tagKeyValue : tagKeyValues) {
-
             String key = tagKeyValue.get("key") == null ? null : tagKeyValue.get("key").asText();
             JsonNode value = tagKeyValue.get("consolidatedValue");
             if (value == null) {
                 continue;
             }
-
-            // Add span_near query for key-value pair
-            ArrayNode clausesArray = mapper.createArrayNode();
-
-            // Create span_term for left side of the tag
-            ObjectNode tagClause = mapper.createObjectNode();
-            ObjectNode tagSpanTerm = mapper.createObjectNode();
-            tagSpanTerm.put("__classificationsText.text", "tagAttachmentValue");
-            tagClause.set("span_term", tagSpanTerm);
-            clausesArray.add(tagClause);
-
-            // Create span_term for value
-            ObjectNode keyClause = mapper.createObjectNode();
-            ObjectNode keySpanTerm = mapper.createObjectNode();
-            keySpanTerm.put("__classificationsText.text", value.asText());
-            keyClause.set("span_term", keySpanTerm);
-            clausesArray.add(keyClause);
-
-            // Create span_term for right side of the tag
-            ObjectNode valueClause = mapper.createObjectNode();
-            ObjectNode valueSpanTerm = mapper.createObjectNode();
-            valueSpanTerm.put("__classificationsText.text", "tagAttachmentKey");
-            valueClause.set("span_term", valueSpanTerm);
-            clausesArray.add(valueClause);
-
-            // Skipping clause for key to keep the DSL consistent with the FE query
-
-            ObjectNode spanNearNode = mapper.createObjectNode();
-            spanNearNode.set("clauses", clausesArray);
-            spanNearNode.put("in_order", true);
-            spanNearNode.put("slop", 0);
-
-            ObjectNode spanNearQuery = mapper.createObjectNode();
-            spanNearQuery.set("span_near", spanNearNode);
-            filterArray.add(spanNearQuery);
+            valuesQuery.add(createSpanNearQuery(value));
         }
         
         return queryNode;
+    }
+
+    private static ObjectNode createSpanNearQuery(JsonNode value) {
+        // Add span_near query for key-value pair
+        ArrayNode clausesArray = mapper.createArrayNode();
+
+        // Create span_term for left side of the tag
+        ObjectNode tagClause = mapper.createObjectNode();
+        ObjectNode tagSpanTerm = mapper.createObjectNode();
+        tagSpanTerm.put("__classificationsText.text", "tagAttachmentValue");
+        tagClause.set("span_term", tagSpanTerm);
+        clausesArray.add(tagClause);
+
+        // Create span_term for value
+        ObjectNode keyClause = mapper.createObjectNode();
+        ObjectNode keySpanTerm = mapper.createObjectNode();
+        keySpanTerm.put("__classificationsText.text", value.asText());
+        keyClause.set("span_term", keySpanTerm);
+        clausesArray.add(keyClause);
+
+        // Create span_term for right side of the tag
+        ObjectNode valueClause = mapper.createObjectNode();
+        ObjectNode valueSpanTerm = mapper.createObjectNode();
+        valueSpanTerm.put("__classificationsText.text", "tagAttachmentKey");
+        valueClause.set("span_term", valueSpanTerm);
+        clausesArray.add(valueClause);
+
+        // Skipping clause for key to keep the DSL consistent with the FE query
+
+        ObjectNode spanNearNode = mapper.createObjectNode();
+        spanNearNode.set("clauses", clausesArray);
+        spanNearNode.put("in_order", true);
+        spanNearNode.put("slop", 0);
+
+        ObjectNode spanNearQuery = mapper.createObjectNode();
+        spanNearQuery.set("span_near", spanNearNode);
+        
+        return spanNearQuery;
     }
 
     public static JsonNode parseFilterJSON(String policyFilterCriteria, String rootKey) {
