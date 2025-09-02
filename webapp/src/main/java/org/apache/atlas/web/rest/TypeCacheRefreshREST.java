@@ -67,7 +67,7 @@ public class TypeCacheRefreshREST {
         }
     }
 
-    private void refreshTypeDef(int expectedFieldKeys,final String traceId) throws RepositoryException, InterruptedException, AtlasBaseException {
+    private synchronized void refreshTypeDef(int expectedFieldKeys,final String traceId) throws RepositoryException, InterruptedException, AtlasBaseException {
         LOG.info("Initiating type-def cache refresh with expectedFieldKeys = {} :: traceId {}", expectedFieldKeys,traceId);
         int currentSize = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
         LOG.info("Size of field keys before refresh = {} :: traceId {}", currentSize,traceId);
@@ -91,7 +91,7 @@ public class TypeCacheRefreshREST {
             LOG.info("Found desired size of fieldKeys in iteration {} :: traceId {}", counter, traceId);
         }
         //Reload in-memory cache of type-registry
-        typeDefStore.init();
+        typeDefStore.initWithoutLock();
 
         LOG.info("Size of field keys after refresh = {}", provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size());
         LOG.info("Completed type-def cache refresh :: traceId {}", traceId);

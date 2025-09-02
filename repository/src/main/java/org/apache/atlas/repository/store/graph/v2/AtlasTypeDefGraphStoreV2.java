@@ -122,6 +122,16 @@ public class AtlasTypeDefGraphStoreV2 extends AtlasTypeDefGraphStore {
         LOG.info("<== AtlasTypeDefGraphStoreV1.init()");
     }
 
+    @Override
+    @GraphTransaction
+    public void initWithoutLock() throws AtlasBaseException {
+        LOG.info("==> AtlasTypeDefGraphStoreV1.initWithoutLock()");
+
+        super.initWithoutLock();
+
+        LOG.info("<== AtlasTypeDefGraphStoreV1.initWithoutLock()");
+    }
+
     AtlasGraph getAtlasGraph() { return atlasGraph; }
 
     @VisibleForTesting
