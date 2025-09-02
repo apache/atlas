@@ -1269,6 +1269,53 @@ public class EntityGraphRetriever {
         }
     }
 
+    public List<Map<String, Object>> getConnectedRelationEdgesVertexBatching(
+            Set<String> vertexIds, Set<String> edgeLabels, int relationAttrsSize) {
+        AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("getConnectedRelationEdgesVertexBatching");
+        try {
+            if (CollectionUtils.isEmpty(vertexIds)) {
+                return Collections.emptyList();
+            }
+
+            List<Map<String, Object>> allResults = new ArrayList<>();
+            List<String> vertexIdList = new ArrayList<>(vertexIds);
+            int vertexBatchSize = AtlasConfiguration.ATLAS_INDEXSEARCH_BULK_FETCHING_SIZE.getInt(); // Process 100 vertices at a time
+
+            for (int i = 0; i < vertexIdList.size(); i += vertexBatchSize) {
+                int end = Math.min(i + vertexBatchSize, vertexIdList.size());
+                Set<String> vertexBatch = new HashSet<>(vertexIdList.subList(i, end));
+
+                GraphTraversal<Edge, Map<String, Object>> edgeTraversal =
+                        ((AtlasJanusGraph) graph).V(vertexBatch)
+                                .bothE();
+
+                if (!CollectionUtils.isEmpty(edgeLabels)) {
+                    edgeTraversal = edgeTraversal.hasLabel(P.within(edgeLabels));
+                }
+
+                List<Map<String, Object>> batchResults = edgeTraversal
+                        .has(STATE_PROPERTY_KEY, ACTIVE.name())
+                        .has(RELATIONSHIP_GUID_PROPERTY_KEY)
+                        .project("id", "valueMap", "label", "inVertexId", "outVertexId")
+                        .by(__.id())
+                        .by(__.valueMap(true))
+                        .by(__.label())
+                        .by(__.inV().id())
+                        .by(__.outV().id())
+                        .toList();
+
+                allResults.addAll(batchResults);
+
+                LOG.debug("Processed vertex batch {}-{} of {}, found {} edges",
+                        i, end, vertexIdList.size(), batchResults.size());
+            }
+
+            return allResults;
+        } finally {
+            RequestContext.get().endMetricRecord(metricRecorder);
+        }
+    }
+
 
     public VertexEdgePropertiesCache enrichVertexPropertiesByVertexIds(Set<String> vertexIds, Set<String> attributes) {
         AtlasPerfMetrics.MetricRecorder metricRecorder = RequestContext.get().startMetricRecord("enrichVertexPropertiesByVertexIds");
@@ -1304,7 +1351,13 @@ public class EntityGraphRetriever {
 
            Set<String> vertexIdsToProcess = new HashSet<>();
            if (!CollectionUtils.isEmpty(edgeLabelsToProcess)) {
-               List<Map<String, Object>> relationEdges = getConnectedRelationEdges(vertexIds, edgeLabelsToProcess, relationAttrsSize);
+               List<Map<String, Object>> relationEdges;
+               if (AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_BULK_FETCHING.getBoolean()) {
+                   relationEdges = getConnectedRelationEdgesVertexBatching(vertexIds, edgeLabelsToProcess, relationAttrsSize);
+               } else {
+                   relationEdges = getConnectedRelationEdges(vertexIds, edgeLabelsToProcess, relationAttrsSize);
+               }
+
 
                for(String vertexId : vertexIds) {
                    for (Map<String, Object> relationEdge : relationEdges) {
