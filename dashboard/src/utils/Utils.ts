@@ -22,7 +22,7 @@ import moment from "moment-timezone";
 import sanitizeHtml from "sanitize-html";
 import { cloneDeep, toArrayifObject, uniq } from "./Helper";
 import { attributeFilter } from "./CommonViewFunction";
-import { Messages } from "./Messages";
+import Messages from "./Messages";
 
 interface childrenInterface {
   gType: string;
