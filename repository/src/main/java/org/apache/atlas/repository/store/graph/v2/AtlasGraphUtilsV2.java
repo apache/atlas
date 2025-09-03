@@ -575,6 +575,9 @@ public class AtlasGraphUtilsV2 {
                     // let it work as it was working earlier
                     return vertex;
                 }
+            }else {
+                // if it can be repaired in future
+                return vertex;
             }
         }
 
