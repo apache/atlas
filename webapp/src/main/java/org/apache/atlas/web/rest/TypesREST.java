@@ -680,7 +680,7 @@ public class TypesREST {
             validateTypeNames(typesDef);
         } catch (AtlasBaseException e) {
             if(AtlasErrorCode.TYPE_NAME_NOT_FOUND.equals(e.getAtlasErrorCode())) {
-                typeDefStore.init();
+                typeDefStore.initWithoutLock();
                 validateTypeNames(typesDef);
             }
         }

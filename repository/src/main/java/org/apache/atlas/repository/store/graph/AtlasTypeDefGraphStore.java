@@ -123,6 +123,20 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     }
 
     @Override
+    public void initWithoutLock() throws AtlasBaseException {
+        // need even better approach than this
+        AtlasTypesDef typesDef = new AtlasTypesDef(getEnumDefStore(typeRegistry).getAll(),
+                getStructDefStore(typeRegistry).getAll(),
+                getClassificationDefStore(typeRegistry).getAll(),
+                getEntityDefStore(typeRegistry).getAll(),
+                getRelationshipDefStore(typeRegistry).getAll(),
+                getBusinessMetadataDefStore(typeRegistry).getAll());
+
+        rectifyTypeErrorsIfAny(typesDef);
+        typeRegistry.addTypes(typesDef);
+    }
+
+    @Override
     public AtlasEnumDef getEnumDefByName(String name) throws AtlasBaseException {
         AtlasEnumDef ret = typeRegistry.getEnumDefByName(name);
         if (ret == null) {
