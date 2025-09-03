@@ -548,8 +548,8 @@ public class AtlasGraphUtilsV2 {
 
         if (vertex != null) {
             if ((vertex.getProperty(GUID_PROPERTY_KEY, String.class) != null &&
-                vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class) != null &&
-                 vertex.getProperty(UNIQUE_QUALIFIED_NAME, String.class) != null)) {
+                    vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class) != null &&
+                    vertex.getProperty(UNIQUE_QUALIFIED_NAME, String.class) != null)) {
                 return vertex;
             } else if (vertex.getPropertyKeys().isEmpty() && !uniqueQualifiedName.isEmpty()) {
                 // definitely a corrupted vertex
@@ -568,14 +568,14 @@ public class AtlasGraphUtilsV2 {
                     );
 
                     // explore the repercussion as other methods that use this method use @GraphTransaction
-                   janusGraph.tx().commit();
+                    janusGraph.tx().commit();
                 } catch (BackendException be) {
                     janusGraph.tx().rollback();
                     LOG.warn("findByTypeAndUniquePropertyName: failed to delete corrupted vertex {} ", vertex.getIdForDisplay(), be);
                     // let it work as it was working earlier
                     return vertex;
                 }
-            }else {
+            } else {
                 // if it can be repaired in future
                 return vertex;
             }
