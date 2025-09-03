@@ -332,11 +332,13 @@ public class JsonToElasticsearchQuery {
         clausesArray.add(tagClause);
 
         // Create span_term for value
-        ObjectNode keyClause = mapper.createObjectNode();
-        ObjectNode keySpanTerm = mapper.createObjectNode();
-        keySpanTerm.put("__classificationsText.text", value.asText());
-        keyClause.set("span_term", keySpanTerm);
-        clausesArray.add(keyClause);
+        if (StringUtils.isNotEmpty(value.asText())) {
+            ObjectNode keyClause = mapper.createObjectNode();
+            ObjectNode keySpanTerm = mapper.createObjectNode();
+            keySpanTerm.put("__classificationsText.text", value.asText());
+            keyClause.set("span_term", keySpanTerm);
+            clausesArray.add(keyClause);
+        }
 
         // Create span_term for right side of the tag
         ObjectNode valueClause = mapper.createObjectNode();
