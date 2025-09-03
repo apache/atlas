@@ -1283,7 +1283,7 @@ public class EntityGraphRetriever {
 
             for (int i = 0; i < vertexIdList.size(); i += vertexBatchSize) {
                 int end = Math.min(i + vertexBatchSize, vertexIdList.size());
-                Set<String> vertexBatch = new HashSet<>(vertexIdList.subList(i, end));
+                List<String> vertexBatch = vertexIdList.subList(i, end);
 
                 GraphTraversal<Edge, Map<String, Object>> edgeTraversal =
                         ((AtlasJanusGraph) graph).V(vertexBatch)
@@ -1296,6 +1296,7 @@ public class EntityGraphRetriever {
                 List<Map<String, Object>> batchResults = edgeTraversal
                         .has(STATE_PROPERTY_KEY, ACTIVE.name())
                         .has(RELATIONSHIP_GUID_PROPERTY_KEY)
+                        .dedup()
                         .project("id", "valueMap", "label", "inVertexId", "outVertexId")
                         .by(__.id())
                         .by(__.valueMap(true))
