@@ -44,6 +44,7 @@ import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,19 +52,7 @@ import org.slf4j.LoggerFactory;
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
-import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
-import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.GLOSSARY_TERMS_EDGE_LABEL;
-import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
-import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
-import static org.apache.atlas.repository.Constants.NAME;
-import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
-import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
-import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
-import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.*;
 import static org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
@@ -544,7 +533,18 @@ public class AtlasGraphUtilsV2 {
 
         RequestContext.get().endMetricRecord(metric);
 
-        return vertex;
+
+        // vertex is discoverable via index
+        // this will prevent corrupted vertices to get processed further
+        // vertex can't be repaired if all the core properties are not present
+        if (vertex != null && (vertex.getProperty(GUID_PROPERTY_KEY, String.class) != null &&
+                vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class) != null &&
+                vertex.getProperty(UNIQUE_QUALIFIED_NAME, String.class) != null)) {
+            return vertex;
+        } else {
+            return null;
+        }
+
     }
 
     public static AtlasVertex glossaryFindByTypeAndPropertyName(AtlasEntityType entityType, String name) {
