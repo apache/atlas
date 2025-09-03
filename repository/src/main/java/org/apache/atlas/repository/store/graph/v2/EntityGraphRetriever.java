@@ -1279,7 +1279,7 @@ public class EntityGraphRetriever {
 
             List<Map<String, Object>> allResults = new ArrayList<>();
             List<String> vertexIdList = new ArrayList<>(vertexIds);
-            int vertexBatchSize = AtlasConfiguration.ATLAS_INDEXSEARCH_BULK_FETCHING_SIZE.getInt(); // Process 100 vertices at a time
+            int vertexBatchSize = AtlasConfiguration.ATLAS_INDEXSEARCH_EDGE_BULK_FETCH_BATCH_SIZE.getInt(); // Process 100 vertices at a time
 
             for (int i = 0; i < vertexIdList.size(); i += vertexBatchSize) {
                 int end = Math.min(i + vertexBatchSize, vertexIdList.size());
@@ -1353,7 +1353,7 @@ public class EntityGraphRetriever {
            Set<String> vertexIdsToProcess = new HashSet<>();
            if (!CollectionUtils.isEmpty(edgeLabelsToProcess)) {
                List<Map<String, Object>> relationEdges;
-               if (AtlasConfiguration.ATLAS_INDEXSEARCH_ENABLE_BULK_FETCHING.getBoolean()) {
+               if (AtlasConfiguration.ATLAS_INDEXSEARCH_EDGE_BULK_FETCH_ENABLE.getBoolean()) {
                    relationEdges = getConnectedRelationEdgesVertexBatching(vertexIds, edgeLabelsToProcess, relationAttrsSize);
                } else {
                    relationEdges = getConnectedRelationEdges(vertexIds, edgeLabelsToProcess, relationAttrsSize);
