@@ -58,6 +58,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.TimeUnit;
 
+import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery.CLIENT_ORIGIN_PRODUCT;
+import static org.apache.atlas.web.filters.AuditFilter.X_ATLAN_CLIENT_ORIGIN;
+
 /**
  * REST interface for CRUD operations on type definitions
  */
@@ -446,10 +449,10 @@ public class TypesREST {
     @POST
     @Path("/typedefs")
     @Timed
-    public AtlasTypesDef createAtlasTypeDefs(final AtlasTypesDef typesDef, @QueryParam("allowDuplicateDisplayName") @DefaultValue("false") boolean allowDuplicateDisplayName) throws AtlasBaseException {
+    public AtlasTypesDef createAtlasTypeDefs(@Context HttpServletRequest servletRequest, final AtlasTypesDef typesDef, @QueryParam("allowDuplicateDisplayName") @DefaultValue("false") boolean allowDuplicateDisplayName) throws AtlasBaseException {
         Lock lock = null;
         AtlasPerfTracer perf = null;
-        validateTypeCreateOrUpdate(typesDef);
+        validateBuiltInTypeNames(typesDef);
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
         try {
             typeCacheRefresher.verifyCacheRefresherHealth();
@@ -462,7 +465,8 @@ public class TypesREST {
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
             AtlasTypesDef atlasTypesDef = typeDefStore.createTypesDef(typesDef);
-            refreshAllHostCache(RequestContext.get().getTraceId());
+            String clientOrigin = servletRequest.getHeader(X_ATLAN_CLIENT_ORIGIN);
+            refreshAllHostCache(RequestContext.get().getTraceId(), clientOrigin);
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.createAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
@@ -479,24 +483,6 @@ public class TypesREST {
         }
     }
 
-    private void validateTypeCreateOrUpdate(AtlasTypesDef typesDef) throws AtlasBaseException {
-
-        if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
-            for (AtlasBaseTypeDef typeDef : typesDef.getEnumDefs())
-                if (typeDefStore.hasBuiltInTypeName(typeDef))
-                    throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
-        }
-        if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
-            for (AtlasBaseTypeDef typeDef : typesDef.getEntityDefs())
-                if (typeDefStore.hasBuiltInTypeName(typeDef))
-                    throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
-        }
-        if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
-            for (AtlasBaseTypeDef typeDef : typesDef.getStructDefs())
-                if (typeDefStore.hasBuiltInTypeName(typeDef))
-                    throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
-        }
-    }
     /**
      * Bulk update API for all types, changes detected in the type definitions would be persisted
      * @param typesDef A composite object that captures all type definition changes
@@ -509,10 +495,11 @@ public class TypesREST {
     @Path("/typedefs")
     @Experimental
     @Timed
-    public AtlasTypesDef updateAtlasTypeDefs(final AtlasTypesDef typesDef, @QueryParam("patch") final boolean patch,
+    public AtlasTypesDef updateAtlasTypeDefs(@Context HttpServletRequest servletRequest, final AtlasTypesDef typesDef, @QueryParam("patch") final boolean patch,
                                              @QueryParam("allowDuplicateDisplayName") @DefaultValue("false") boolean allowDuplicateDisplayName) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
-        validateTypeCreateOrUpdate(typesDef);
+        validateBuiltInTypeNames(typesDef);
+        validateTypeNameExists(typesDef);
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
         Lock lock = null;
         try {
@@ -546,7 +533,8 @@ public class TypesREST {
             RequestContext.get().setAllowDuplicateDisplayName(allowDuplicateDisplayName);
             LOG.info("TypesRest.updateAtlasTypeDefs:: Typedef patch enabled:" + patch);
             AtlasTypesDef atlasTypesDef = typeDefStore.updateTypesDef(typesDef);
-            refreshAllHostCache(RequestContext.get().getTraceId());
+            String clientOrigin = servletRequest.getHeader(X_ATLAN_CLIENT_ORIGIN);
+            refreshAllHostCache(RequestContext.get().getTraceId(), clientOrigin);
             LOG.info("TypesRest.updateAtlasTypeDefs:: Done");
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
@@ -575,10 +563,12 @@ public class TypesREST {
     @Path("/typedefs")
     @Experimental
     @Timed
-    public void deleteAtlasTypeDefs(final AtlasTypesDef typesDef) throws AtlasBaseException {
+    public void deleteAtlasTypeDefs(@Context HttpServletRequest servletRequest, final AtlasTypesDef typesDef) throws AtlasBaseException {
         AtlasPerfTracer perf = null;
         Lock lock = null;
         RequestContext.get().setTraceId(UUID.randomUUID().toString());
+        validateBuiltInTypeNames(typesDef);
+        validateTypeNameExists(typesDef);
         try {
             typeCacheRefresher.verifyCacheRefresherHealth();
             if (AtlasPerfTracer.isPerfTraceEnabled(PERF_LOG)) {
@@ -587,7 +577,8 @@ public class TypesREST {
             }
             lock = attemptAcquiringLockV2();
             typeDefStore.deleteTypesDef(typesDef);
-            refreshAllHostCache(RequestContext.get().getTraceId());
+            String clientOrigin = servletRequest.getHeader(X_ATLAN_CLIENT_ORIGIN);
+            refreshAllHostCache(RequestContext.get().getTraceId(), clientOrigin);
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.deleteAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
             throw atlasBaseException;
@@ -638,6 +629,63 @@ public class TypesREST {
         }
     }
 
+    private void validateBuiltInTypeNames(AtlasTypesDef typesDef) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
+            for (AtlasBaseTypeDef typeDef : typesDef.getEnumDefs())
+                if (typeDefStore.hasBuiltInTypeName(typeDef))
+                    throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
+            for (AtlasBaseTypeDef typeDef : typesDef.getEntityDefs())
+                if (typeDefStore.hasBuiltInTypeName(typeDef))
+                    throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
+            for (AtlasBaseTypeDef typeDef : typesDef.getStructDefs())
+                if (typeDefStore.hasBuiltInTypeName(typeDef))
+                    throw new AtlasBaseException(AtlasErrorCode.FORBIDDEN_TYPENAME, typeDef.getName());
+        }
+    }
+
+    private void validateTypeNames(AtlasTypesDef typesDef) throws AtlasBaseException {
+        if (CollectionUtils.isNotEmpty(typesDef.getEnumDefs())) {
+            for (AtlasBaseTypeDef typeDef : typesDef.getEnumDefs()) {
+                typeDefStore.getByName(typeDef.getName());
+            }
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getEntityDefs())) {
+            for (AtlasBaseTypeDef typeDef : typesDef.getEntityDefs()) {
+                typeDefStore.getByName(typeDef.getName());
+            }
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getStructDefs())) {
+            for (AtlasBaseTypeDef typeDef : typesDef.getStructDefs()) {
+                typeDefStore.getByName(typeDef.getName());
+            }
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getClassificationDefs())) {
+            for (AtlasBaseTypeDef typeDef : typesDef.getClassificationDefs()) {
+                typeDefStore.getByName(typeDef.getName());
+            }
+        }
+        if (CollectionUtils.isNotEmpty(typesDef.getBusinessMetadataDefs())) {
+            for (AtlasBaseTypeDef typeDef : typesDef.getBusinessMetadataDefs()) {
+                typeDefStore.getByName(typeDef.getName());
+            }
+        }
+    }
+
+    private void validateTypeNameExists(AtlasTypesDef typesDef) throws AtlasBaseException {
+        try {
+            validateTypeNames(typesDef);
+        } catch (AtlasBaseException e) {
+            if(AtlasErrorCode.TYPE_NAME_NOT_FOUND.equals(e.getAtlasErrorCode())) {
+                typeDefStore.init();
+                validateTypeNames(typesDef);
+            }
+        }
+    }
+
     /**
      * Populate a SearchFilter on the basis of the Query Parameters
      * @return
@@ -668,8 +716,8 @@ public class TypesREST {
         return ret;
     }
 
-    private void refreshAllHostCache(String traceId){
-        if (AtlasConfiguration.ENABLE_ASYNC_TYPE_UPDATE.getBoolean()){
+    private void refreshAllHostCache(String traceId, String clientOrigin){
+        if (CLIENT_ORIGIN_PRODUCT.equals(clientOrigin) && AtlasConfiguration.ENABLE_ASYNC_TYPE_UPDATE.getBoolean()){
             cacheRefreshExecutor.submit(() -> {
                 RequestContext.get().setTraceId(traceId);
                 try {

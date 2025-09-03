@@ -609,16 +609,16 @@ public class EntityGraphMapper {
     private void setSystemAttributesToEntity(AtlasVertex entityVertex, AtlasEntity createdEntity) {
 
         createdEntity.setCreatedBy(GraphHelper.getCreatedByAsString(entityVertex));
-        createdEntity.setUpdatedBy(GraphHelper.getModifiedByAsString(entityVertex));
+        createdEntity.setUpdatedBy(RequestContext.get().getUser());
         createdEntity.setCreateTime(new Date(GraphHelper.getCreatedTime(entityVertex)));
-        createdEntity.setUpdateTime(new Date(GraphHelper.getModifiedTime(entityVertex)));
+        createdEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
 
 
         if (DIFFERENTIAL_AUDITS) {
             AtlasEntity diffEntity = RequestContext.get().getDifferentialEntity(createdEntity.getGuid());
             if (diffEntity != null) {
-                diffEntity.setUpdateTime(createdEntity.getUpdateTime());
-                diffEntity.setUpdatedBy(createdEntity.getUpdatedBy());
+                diffEntity.setUpdateTime(new Date(RequestContext.get().getRequestTime()));
+                diffEntity.setUpdatedBy(RequestContext.get().getUser());
             }
         }
     }
@@ -4145,7 +4145,6 @@ public class EntityGraphMapper {
                 if (entityVertex == null) {
                     String warningMessage = String.format("propagateClassificationV2_Optimised(entityGuid=%s, tagTypeName=%s): entity vertex not found, skipping task execution", entityGuid, tagTypeName);
                     LOG.warn(warningMessage);
-                    RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
                     return 0;
                 }
 
@@ -4157,7 +4156,6 @@ public class EntityGraphMapper {
                         if (parentEntityVertex == null) {
                             String warningMessage = String.format("propagateClassificationV2_Optimised(parentEntityGuid=%s, tagTypeName=%s): parentEntityVertex vertex not found, skipping task execution", parentEntityGuid, tagTypeName);
                             LOG.warn(warningMessage);
-                            RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
                             return 0;
                         }
                         tag = tagDAO.findDirectTagByVertexIdAndTagTypeName(parentEntityVertex.getIdForDisplay(), tagTypeName, false);
@@ -4165,7 +4163,6 @@ public class EntityGraphMapper {
                     if (tag == null) {
                         String warningMessage = String.format("propagateClassificationV2_Optimised(entityGuid=%s,parentEntityGuid=%s, tagTypeName=%s): tag not found, skipping task execution", entityGuid, parentEntityGuid, tagTypeName);
                         LOG.warn(warningMessage);
-                        RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
                         return 0;
                     }
                 }
@@ -4215,7 +4212,6 @@ public class EntityGraphMapper {
                 if (fromVertex == null) {
                     String warningMessage = String.format("propagateClassificationV2_Optimised(fromVertexId=%s, tagTypeName=%s): fromVertex not found, skipping task execution", entityGuid, tagTypeName);
                     LOG.warn(warningMessage);
-                    RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
                     return assetsAffected;
                 }
 
@@ -4223,7 +4219,6 @@ public class EntityGraphMapper {
                 if (toVertex == null) {
                     String warningMessage = String.format("propagateClassificationV2_Optimised(toVertexId=%s, tagTypeName=%s): toVertex not found, skipping task execution", toVertexGuid, tagTypeName);
                     LOG.warn(warningMessage);
-                    RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
                     return assetsAffected;
                 }
 
@@ -4238,7 +4233,6 @@ public class EntityGraphMapper {
                         if (sourceVertex == null) {
                             String warningMessage = String.format("propagateClassificationV2_Optimised(sourceVertex=%s, tagTypeName=%s): sourceVertex not found, skipping task execution", sourceEntityGuid, tagTypeName);
                             LOG.warn(warningMessage);
-                            RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
                             continue;
                         }
 
@@ -4317,7 +4311,7 @@ public class EntityGraphMapper {
                 List<AtlasVertex>   entitiesPropagatedTo = deleteDelegate.getHandler().addTagPropagation(classificationVertex, chunkedVerticesToPropagate);
 
                 if (CollectionUtils.isEmpty(entitiesPropagatedTo)) {
-                    return null;
+                    return Collections.emptyList();
                 }
 
                 List<AtlasEntity>   propagatedEntitiesChunked       = updateClassificationText(classification, entitiesPropagatedTo);
@@ -5283,15 +5277,13 @@ public class EntityGraphMapper {
         try {
             if (StringUtils.isEmpty(classificationVertexId)) {
                 LOG.warn("deleteClassificationPropagation(classificationVertexId={}): classification vertex id is empty", classificationVertexId);
-
-                return null;
+                return Collections.emptyList();
             }
 
             AtlasVertex classificationVertex = graph.getVertex(classificationVertexId);
             if (classificationVertex == null) {
                 LOG.warn("deleteClassificationPropagation(classificationVertexId={}): classification vertex not found", classificationVertexId);
-
-                return null;
+                return Collections.emptyList();
             }
 
             AtlasClassification classification = entityRetriever.toAtlasClassification(classificationVertex);
@@ -5299,8 +5291,7 @@ public class EntityGraphMapper {
             List<AtlasEdge> propagatedEdges = getPropagatedEdges(classificationVertex);
             if (propagatedEdges.isEmpty()) {
                 LOG.warn("deleteClassificationPropagation(classificationVertexId={}): classification edges empty", classificationVertexId);
-
-                return null;
+                return Collections.emptyList();
             }
 
             int propagatedEdgesSize = propagatedEdges.size();
@@ -6391,7 +6382,6 @@ public class EntityGraphMapper {
             if (sourceEntityVertex == null) {
                 String warningMessage = String.format("updateClassificationTextPropagationV2(entityGuid=%s, tagTypeName=%s): entity vertex not found, skipping task execution", sourceEntityGuid, tagTypeName);
                 LOG.warn(warningMessage);
-                RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
                 return 0;
             }
 
@@ -6403,7 +6393,6 @@ public class EntityGraphMapper {
             if (originalClassification == null) {
                 String warningMessage = String.format("updateClassificationTextPropagationV2(entityGuid=%s, tagTypeName=%s): classification not found, skipping task execution", sourceEntityGuid, tagTypeName);
                 LOG.warn(warningMessage);
-                RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
                 return 0;
             }
 
@@ -6529,7 +6518,6 @@ public class EntityGraphMapper {
             if (entityVertex == null) {
                 String warningMessage = String.format("classificationRefreshPropagationV2_new(sourceEntityGuid=%s): entity vertex not found, skipping task execution", sourceEntityGuid);
                 LOG.warn(warningMessage);
-                RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
                 return assetsAffected;
             }
 
@@ -6542,7 +6530,6 @@ public class EntityGraphMapper {
                     if (entityVertex == null) {
                         String warningMessage = String.format("classificationRefreshPropagationV2_new(parentEntityGuid=%s): parent entity vertex not found", parentEntityGuid);
                         LOG.warn(warningMessage);
-                        RequestContext.get().getCurrentTask().setWarningMessage(warningMessage);
                         return assetsAffected;
                     }
                     entityVertexId = entityVertex.getIdForDisplay();
