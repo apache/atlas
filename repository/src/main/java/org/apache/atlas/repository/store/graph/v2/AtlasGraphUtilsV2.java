@@ -32,6 +32,7 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasStructType;
@@ -46,6 +47,9 @@ import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
+import org.janusgraph.core.JanusGraph;
+import org.janusgraph.diskstorage.BackendException;
+import org.janusgraph.graphdb.database.util.StaleIndexRecordUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -518,6 +522,7 @@ public class AtlasGraphUtilsV2 {
         MetricRecorder  metric          = RequestContext.get().startMetricRecord(metricName);
         String          typePropertyKey = isSuperType ? SUPER_TYPES_PROPERTY_KEY : ENTITY_TYPE_PROPERTY_KEY;
         AtlasGraphQuery query           = graph.query().has(typePropertyKey, typeName);
+        String uniqueQualifiedName= "";
 
         for (Map.Entry<String, Object> entry : attributeValues.entrySet()) {
             String attrName  = entry.getKey();
@@ -525,6 +530,9 @@ public class AtlasGraphUtilsV2 {
 
             if (attrName != null && attrValue != null) {
                 query.has(attrName, attrValue);
+                if (attrName.equals(UNIQUE_QUALIFIED_NAME)){
+                    uniqueQualifiedName =  (String) attrValue;
+                }
             }
         }
 
@@ -537,14 +545,40 @@ public class AtlasGraphUtilsV2 {
         // vertex is discoverable via index
         // this will prevent corrupted vertices to get processed further
         // vertex can't be repaired if all the core properties are not present
-        if (vertex != null && (vertex.getProperty(GUID_PROPERTY_KEY, String.class) != null &&
+
+        if (vertex != null) {
+            if ((vertex.getProperty(GUID_PROPERTY_KEY, String.class) != null &&
                 vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class) != null &&
-                vertex.getProperty(UNIQUE_QUALIFIED_NAME, String.class) != null)) {
-            return vertex;
-        } else {
-            return null;
+                 vertex.getProperty(UNIQUE_QUALIFIED_NAME, String.class) != null)) {
+                return vertex;
+            } else if (vertex.getPropertyKeys().isEmpty() && !uniqueQualifiedName.isEmpty()) {
+                // definitely a corrupted vertex
+                LOG.warn("findByTypeAndUniquePropertyName: vertex {} is corrupted - deleting it", vertex.getIdForDisplay());
+
+                Map<String, Object> indexProperties = new HashMap<>();
+                indexProperties.put(Constants.UNIQUE_QUALIFIED_NAME, uniqueQualifiedName);
+                indexProperties.put(Constants.TYPE_NAME_PROPERTY_KEY, typeName);
+                JanusGraph janusGraph = ((AtlasJanusGraph) graph).getGraph().tx().begin();
+                try {
+                    StaleIndexRecordUtil.forceRemoveVertexFromGraphIndex(
+                            (Long) vertex.getId(),
+                            indexProperties,
+                            janusGraph,
+                            "__u_qualifiedName__typeName"
+                    );
+
+                    // explore the repercussion as other methods that use this method use @GraphTransaction
+                   janusGraph.tx().commit();
+                } catch (BackendException be) {
+                    janusGraph.tx().rollback();
+                    LOG.error("findByTypeAndUniquePropertyName: failed to delete corrupted vertex {} ", vertex.getIdForDisplay(), be);
+                    // let it work as it was working earlier
+                    return vertex;
+                }
+            }
         }
 
+        return null;
     }
 
     public static AtlasVertex glossaryFindByTypeAndPropertyName(AtlasEntityType entityType, String name) {
