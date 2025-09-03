@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import { Grid } from "@mui/material";
+import Stack from "@mui/material/Stack";
 import { extractKeyValueFromEntity, isArray, isEmpty } from "@utils/Utils";
 import AttributeProperties from "./AttributeProperties";
 
@@ -74,14 +74,13 @@ const AuditTableDetails = ({ componentProps, row }: any) => {
                   ? parseDetailsObject.typeName
                   : updateName(name, {})}
                 {!isEmpty(entity) ? (
-                  <Grid
-                    container
-                    marginTop={0}
-                    spacing={2}
-                    className="properties-container"
+                  <Stack
+                    direction={"row"}
+                    gap={"1rem"}
+                    flexWrap="wrap"
+                    className="audit-attributes properties-container"
                   >
-                    <Grid item md={6}>
-                      {" "}
+                    <div className="audit-attributes-item">
                       <AttributeProperties
                         entity={parseDetailsObject}
                         referredEntities={referredEntities}
@@ -90,10 +89,9 @@ const AuditTableDetails = ({ componentProps, row }: any) => {
                         entityobj={entity}
                         propertiesName="Technical"
                       />
-                    </Grid>
+                    </div>
                     {!isEmpty(relationshipAttributes) && (
-                      <Grid item md={6}>
-                        {" "}
+                      <div className="audit-attributes-item">
                         <AttributeProperties
                           entity={parseDetailsObject}
                           referredEntities={referredEntities}
@@ -102,11 +100,10 @@ const AuditTableDetails = ({ componentProps, row }: any) => {
                           entityobj={entity}
                           propertiesName="Relationship"
                         />
-                      </Grid>
+                      </div>
                     )}
                     {!isEmpty(customAttr) && (
-                      <Grid item md={12}>
-                        {" "}
+                      <div className="audit-attributes-item">
                         <AttributeProperties
                           entity={parseDetailsObject}
                           referredEntities={referredEntities}
@@ -115,9 +112,9 @@ const AuditTableDetails = ({ componentProps, row }: any) => {
                           entityobj={entity}
                           propertiesName="User-defined"
                         />
-                      </Grid>
+                      </div>
                     )}
-                  </Grid>
+                  </Stack>
                 ) : (
                   <h4 data-cy="noData">
                     <i>No details to show!</i>
