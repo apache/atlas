@@ -571,7 +571,7 @@ public class AtlasGraphUtilsV2 {
                    janusGraph.tx().commit();
                 } catch (BackendException be) {
                     janusGraph.tx().rollback();
-                    LOG.error("findByTypeAndUniquePropertyName: failed to delete corrupted vertex {} ", vertex.getIdForDisplay(), be);
+                    LOG.warn("findByTypeAndUniquePropertyName: failed to delete corrupted vertex {} ", vertex.getIdForDisplay(), be);
                     // let it work as it was working earlier
                     return vertex;
                 }
