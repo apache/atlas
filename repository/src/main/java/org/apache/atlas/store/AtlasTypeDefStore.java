@@ -35,6 +35,8 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 public interface AtlasTypeDefStore {
     void init() throws AtlasBaseException;
 
+    void initWithoutLock() throws AtlasBaseException;
+
     /* EnumDef operations */
 
     AtlasEnumDef getEnumDefByName(String name) throws AtlasBaseException;
