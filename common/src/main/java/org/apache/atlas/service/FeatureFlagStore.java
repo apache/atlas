@@ -145,18 +145,28 @@ public class FeatureFlagStore {
     }
 
     public static String getFlag(String key){
-        if (!isValidFlag(key)) {
-            LOG.warn("Invalid feature flag requested: '{}'. Only predefined flags are allowed", key);
-            return null;
+        try {
+            if (!isValidFlag(key)) {
+                LOG.warn("Invalid feature flag requested: '{}'. Only predefined flags are allowed", key);
+                return null;
+            }
+
+            FeatureFlagStore instance = getInstance();
+            if (instance == null) {
+                LOG.warn("FeatureFlagStore not initialized, cannot get flag: {}", key);
+                return getDefaultValue(key);
+            }
+
+            return instance.getFlagInternal(key);
+        } catch (Exception e) {
+            LOG.error("Error getting feature flag '{}'", key, e);
+            return getDefaultValue(key); // Always return something
         }
-        
-        FeatureFlagStore instance = getInstance();
-        if (instance == null) {
-            LOG.warn("FeatureFlagStore not initialized, cannot get flag: {}", key);
-            return null;
-        }
-        
-        return instance.getFlagInternal(key);
+    }
+
+    private static String getDefaultValue(String key) {
+        FeatureFlag flag = FeatureFlag.fromKey(key);
+        return flag != null ? String.valueOf(flag.getDefaultValue()) : "false";
     }
 
     private static boolean isValidFlag(String key) {
@@ -164,7 +174,7 @@ public class FeatureFlagStore {
     }
 
 
-    private String getFlagInternal(String key) {
+    String getFlagInternal(String key) {
         if (!initialized) {
             LOG.warn("FeatureFlagStore not fully initialized yet, attempting to get flag: {}", key);
             throw new IllegalStateException("FeatureFlagStore not initialized");
@@ -196,6 +206,13 @@ public class FeatureFlagStore {
             LOG.debug("Using fallback cache value for key: {}", key);
             return value;
         }
+
+        FeatureFlag flag = FeatureFlag.fromKey(key);
+        if (flag != null) {
+            String defaultValue = String.valueOf(flag.getDefaultValue());
+            LOG.debug("Using default value for flag '{}': {}", key, defaultValue);
+            return defaultValue;
+        }
         
         LOG.warn("No value found for flag '{}' in any cache or Redis", key);
         return null;
@@ -204,11 +221,10 @@ public class FeatureFlagStore {
     private String fetchFromRedisAndCache(String namespacedKey, String key) {
         try {
             String value = redisService.getValue(namespacedKey);
-            updateBothCaches(namespacedKey, value != null ? value : "");
+            updateBothCaches(namespacedKey, value != null ? value : getDefaultValue(key));
             return value;
-            
         } catch (Exception e) {
-            LOG.debug("Failed to fetch flag '{}' from Redis", key, e);
+            LOG.error("Failed to fetch flag '{}' from Redis", key, e);
             return null;
         }
     }
@@ -232,7 +248,7 @@ public class FeatureFlagStore {
         instance.setFlagInternal(key, value);
     }
 
-    private synchronized void setFlagInternal(String key, String value) {
+    synchronized void setFlagInternal(String key, String value) {
         if (StringUtils.isEmpty(key) || StringUtils.isEmpty(value)) {
             return;
         }
@@ -263,7 +279,7 @@ public class FeatureFlagStore {
         instance.deleteFlagInternal(key);
     }
 
-    private synchronized void deleteFlagInternal(String key) {
+    synchronized void deleteFlagInternal(String key) {
         if (StringUtils.isEmpty(key)) {
             return;
         }

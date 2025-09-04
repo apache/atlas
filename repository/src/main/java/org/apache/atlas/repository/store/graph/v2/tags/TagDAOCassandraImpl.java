@@ -333,25 +333,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         }
     }
 
-    @Override
-    public List<Tag> getAllDirectTagsForVertex(String vertexId) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getAllDirectTagsForVertex");
-        try {
-            int bucket = calculateBucket(vertexId);
-            BoundStatement bound = findDirectTagsForAssetStmt.bind(bucket, vertexId);
-            ResultSet rs = executeWithRetry(bound);
-            List<Tag> tags = resultSetToTags(vertexId, rs);
-            if (tags.isEmpty()) {
-                LOG.warn("No active direct tags found for vertexId={}, bucket={}", vertexId, bucket);
-            }
-            return tags;
-        } catch (Exception e) {
-            LOG.error("Error fetching direct tags for vertexId={}", vertexId, e);
-            throw new AtlasBaseException("Error fetching direct tags", e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-    }
 
     @Override
     public List<AtlasClassification> getAllClassificationsForVertex(String vertexId) throws AtlasBaseException {

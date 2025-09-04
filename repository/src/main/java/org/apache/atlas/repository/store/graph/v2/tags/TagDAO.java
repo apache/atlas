@@ -12,8 +12,6 @@ public interface TagDAO {
 
     List<AtlasClassification> getAllDirectClassificationsForVertex(String vertexId) throws AtlasBaseException;
 
-    List<Tag> getAllDirectTagsForVertex(String vertexId) throws AtlasBaseException;
-
     List<AtlasClassification> getAllClassificationsForVertex(String vertexId) throws AtlasBaseException;
     List<Tag> getAllTagsByVertexId(String vertexId) throws AtlasBaseException;
 

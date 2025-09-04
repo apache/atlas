@@ -2,6 +2,7 @@ package org.apache.atlas.service;
 
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasException;
+import org.apache.commons.configuration.Configuration;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -14,7 +15,7 @@ public class FeatureFlagConfig {
     private final long redisRetryDelayMs;
     
     public FeatureFlagConfig() throws AtlasException {
-        ApplicationProperties props = (ApplicationProperties) ApplicationProperties.get();
+        Configuration props = ApplicationProperties.get();
         
         this.primaryCacheTtlMinutes = props.getInt("atlas.feature.flag.cache.primary.ttl.minutes", 1);
         this.primaryCacheMaxSize = props.getLong("atlas.feature.flag.cache.primary.max.size", 1000L);
