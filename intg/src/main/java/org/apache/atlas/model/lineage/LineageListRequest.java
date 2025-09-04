@@ -28,6 +28,7 @@ public class LineageListRequest {
     private Boolean                         immediateNeighbours=false;
 
     public static final String LINEAGE_TYPE_PRODUCT_ASSET_LINEAGE = "ProductAssetLineage";
+    public static final String LINEAGE_TYPE_DATASET_PROCESS_LINEAGE = "DatasetProcessLineage";
 
     public Boolean getImmediateNeighbours() {
         return immediateNeighbours;
@@ -37,7 +38,7 @@ public class LineageListRequest {
         this.immediateNeighbours = immediateNeighbours;
     }
 
-    private String lineageType = LINEAGE_TYPE_PRODUCT_ASSET_LINEAGE;
+    private String lineageType = LINEAGE_TYPE_DATASET_PROCESS_LINEAGE;
 
     public enum LineageDirection {INPUT, OUTPUT}
 
