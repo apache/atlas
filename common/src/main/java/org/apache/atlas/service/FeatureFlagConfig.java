@@ -18,7 +18,7 @@ public class FeatureFlagConfig {
     public FeatureFlagConfig() throws AtlasException {
         Configuration props = ApplicationProperties.get();
         
-        this.primaryCacheTtlMinutes = props.getInt("atlas.feature.flag.cache.primary.ttl.minutes", 1);
+        this.primaryCacheTtlMinutes = props.getInt("atlas.feature.flag.cache.primary.ttl.minutes", 60);
         this.primaryCacheMaxSize = props.getLong("atlas.feature.flag.cache.primary.max.size", 1000L);
         this.fallbackCacheMaxSize = props.getLong("atlas.feature.flag.cache.fallback.max.size", 1000L);
         this.redisRetryAttempts = props.getInt("atlas.feature.flag.redis.retry.attempts", 5);
