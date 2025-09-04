@@ -35,7 +35,7 @@
                 <outputDirectory>/conf</outputDirectory>
                 <includes>
                     <include>atlas-trino-extractor-logback.xml</include>
-                    <include>atlas-application.properties</include>
+                    <include>atlas-trino-extractor.properties</include>
                 </includes>
                 <fileMode>0755</fileMode>
                 <directoryMode>0755</directoryMode>

@@ -74,7 +74,7 @@ then
 fi
 
 JAVA_PROPERTIES="$ATLAS_OPTS -Datlas.log.dir=$ATLAS_LOG_DIR -Datlas.log.file=atlas-trino-extractor.log
--Dlogback.configurationFile=atlas-trino-extractor-logback.xml -Djdk.httpclient.HttpClient.log=requests"
+-Dlogback.configurationFile=atlas-trino-extractor-logback.xml -Datlas.properties=atlas-trino-extractor.properties -Djdk.httpclient.HttpClient.log=requests"
 
 IMPORT_ARGS=()
 JVM_ARGS=
