@@ -72,6 +72,7 @@ public class AtlasGraphUtilsV2 {
     public static final String ENTITYTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".entitytype";
     public static final String RELATIONSHIPTYPE_EDGE_LABEL = PROPERTY_PREFIX + ".relationshipType";
     public static final String VERTEX_TYPE = "typeSystem";
+    private static final String COMPOSITE_INDEX_QN_TYPE = "__u_qualifiedName__typeName";
 
     private static boolean USE_INDEX_QUERY_TO_FIND_ENTITY_BY_UNIQUE_ATTRIBUTES = false;
     private static boolean USE_UNIQUE_INDEX_PROPERTY_TO_FIND_ENTITY = true;
@@ -530,7 +531,7 @@ public class AtlasGraphUtilsV2 {
 
             if (attrName != null && attrValue != null) {
                 query.has(attrName, attrValue);
-                if (attrName.equals(UNIQUE_QUALIFIED_NAME)){
+                if (UNIQUE_QUALIFIED_NAME.equals(attrName)){
                     uniqueQualifiedName =  (String) attrValue;
                 }
             }
@@ -564,7 +565,7 @@ public class AtlasGraphUtilsV2 {
                             (Long) vertex.getId(),
                             indexProperties,
                             janusGraph,
-                            "__u_qualifiedName__typeName"
+                            COMPOSITE_INDEX_QN_TYPE
                     );
 
                     // explore the repercussion as other methods that use this method use @GraphTransaction
