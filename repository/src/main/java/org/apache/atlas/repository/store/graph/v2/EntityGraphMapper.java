@@ -2301,11 +2301,10 @@ public class EntityGraphMapper {
 
             Object deleteEntry =  getEdgeUsingRelationship(arrCtx, context, false);
 
-            // throw error if relation does not exist but requested to remove
+            // avoid throwing error if relation does not exist but requested to remove
             if (deleteEntry == null) {
-                AtlasVertex attributeVertex = context.getDiscoveryContext().getResolvedEntityVertex(getGuid(arrCtx.getValue()));
-                throw new AtlasBaseException(AtlasErrorCode.RELATIONSHIP_DOES_NOT_EXIST, attribute.getRelationshipName(),
-                        AtlasGraphUtilsV2.getIdFromVertex(attributeVertex), AtlasGraphUtilsV2.getIdFromVertex(ctx.getReferringVertex()));
+                LOG.warn("Relation does not exist for attribute {} for entity {}", attribute.getName(),
+                        ctx.getReferringVertex());
             }
 
             entityRelationsDeleted.add(deleteEntry);
