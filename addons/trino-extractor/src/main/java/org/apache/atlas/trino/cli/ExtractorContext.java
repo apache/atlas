@@ -23,12 +23,17 @@ import org.apache.atlas.trino.client.AtlasClientHelper;
 import org.apache.atlas.trino.client.TrinoClientHelper;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.configuration.Configuration;
+import org.apache.commons.lang.StringUtils;
 
 import java.io.IOException;
 
 public class ExtractorContext {
     static final String TRINO_NAMESPACE_CONF         = "atlas.trino.namespace";
     static final String DEFAULT_TRINO_NAMESPACE      = "cm";
+    static final String TRINO_CATALOG_CONF           = "atlas.trino.extractor.catalog";
+    static final String TRINO_SCHEMA_CONF            = "atlas.trino.extractor.schema";
+    static final String TRINO_TABLE_CONF             = "atlas.trino.extractor.table";
+    static final String TRINO_SCHEDULE_CONF          = "atlas.trino.extractor.schedule";
     static final String OPTION_CATALOG_SHORT         = "c";
     static final String OPTION_CATALOG_LONG          = "catalog";
     static final String OPTION_SCHEMA_SHORT          = "s";
@@ -54,10 +59,22 @@ public class ExtractorContext {
         this.atlasClientHelper = createAtlasClientHelper();
         this.trinoClientHelper = createTrinoClientHelper();
         this.namespace         = atlasConf.getString(TRINO_NAMESPACE_CONF, DEFAULT_TRINO_NAMESPACE);
-        this.catalog           = cmd.getOptionValue(OPTION_CATALOG_SHORT);
-        this.schema            = cmd.getOptionValue(OPTION_SCHEMA_SHORT);
-        this.table             = cmd.getOptionValue(OPTION_TABLE_SHORT);
-        this.cronExpression    = cmd.getOptionValue(OPTION_CRON_EXPRESSION_SHORT);
+
+        String cmdCatalog      = cmd.getOptionValue(OPTION_CATALOG_SHORT);
+        String cmdSchema       = cmd.getOptionValue(OPTION_SCHEMA_SHORT);
+        String cmdTable        = cmd.getOptionValue(OPTION_TABLE_SHORT);
+        String cmdSchedule     = cmd.getOptionValue(OPTION_CRON_EXPRESSION_SHORT);
+        this.cronExpression    = StringUtils.isNotEmpty(cmdSchedule) ? cmdSchedule : atlasConf.getString(TRINO_SCHEDULE_CONF);
+
+        if (StringUtils.isEmpty(cmdCatalog)) {
+            this.catalog = atlasConf.getString(TRINO_CATALOG_CONF);
+            this.schema  = atlasConf.getString(TRINO_SCHEMA_CONF);
+            this.table   = atlasConf.getString(TRINO_TABLE_CONF);
+        } else {
+            this.catalog = cmdCatalog;
+            this.schema  = cmdSchema;
+            this.table   = cmdTable;
+        }
     }
 
     public Configuration getAtlasConf() {

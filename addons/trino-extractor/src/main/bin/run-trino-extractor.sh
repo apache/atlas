@@ -45,7 +45,6 @@ if [ ! -e "${JAVA_BIN}" ] || [ ! -e "${JAR_BIN}" ]; then
   exit 1
 fi
 
-# Construct Atlas classpath using jars from hook/hive/atlas-hive-plugin-impl/ directory.
 for i in "${BASEDIR}/lib/"*.jar; do
   ATLASCPPATH="${ATLASCPPATH}:$i"
 done
@@ -75,7 +74,7 @@ then
 fi
 
 JAVA_PROPERTIES="$ATLAS_OPTS -Datlas.log.dir=$ATLAS_LOG_DIR -Datlas.log.file=atlas-trino-extractor.log
--Dlog4j.configuration=atlas-log4j.xml -Djdk.httpclient.HttpClient.log=requests -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006"
+-Dlogback.configurationFile=atlas-trino-extractor-logback.xml -Djdk.httpclient.HttpClient.log=requests"
 
 IMPORT_ARGS=()
 JVM_ARGS=

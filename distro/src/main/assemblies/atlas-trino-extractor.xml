@@ -34,7 +34,7 @@
                 <directory>../addons/trino-extractor/src/main/conf</directory>
                 <outputDirectory>/conf</outputDirectory>
                 <includes>
-                    <include>atlas-log4j.xml</include>
+                    <include>atlas-trino-extractor-logback.xml</include>
                     <include>atlas-application.properties</include>
                 </includes>
                 <fileMode>0755</fileMode>
