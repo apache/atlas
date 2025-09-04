@@ -3901,7 +3901,7 @@ public class EntityGraphMapper {
 
     public void addClassificationsV2(final EntityMutationContext context, String guid, List<AtlasClassification> classifications) throws AtlasBaseException {
         if (CollectionUtils.isNotEmpty(classifications)) {
-            MetricRecorder metric = RequestContext.get().startMetricRecord("addClassifications");
+            MetricRecorder metric = RequestContext.get().startMetricRecord("addClassificationsV2");
 
             final AtlasVertex                              entityVertex          = context.getVertex(guid);
             final AtlasEntityType                          entityType            = context.getType(guid);

@@ -13,6 +13,7 @@ public class FeatureFlagConfig {
     private final long fallbackCacheMaxSize;
     private final int redisRetryAttempts;
     private final long redisRetryDelayMs;
+    private final double redisRetryBackoffMultiplier;
     
     public FeatureFlagConfig() throws AtlasException {
         Configuration props = ApplicationProperties.get();
@@ -20,8 +21,9 @@ public class FeatureFlagConfig {
         this.primaryCacheTtlMinutes = props.getInt("atlas.feature.flag.cache.primary.ttl.minutes", 1);
         this.primaryCacheMaxSize = props.getLong("atlas.feature.flag.cache.primary.max.size", 1000L);
         this.fallbackCacheMaxSize = props.getLong("atlas.feature.flag.cache.fallback.max.size", 1000L);
-        this.redisRetryAttempts = props.getInt("atlas.feature.flag.redis.retry.attempts", 3);
+        this.redisRetryAttempts = props.getInt("atlas.feature.flag.redis.retry.attempts", 5);
         this.redisRetryDelayMs = props.getLong("atlas.feature.flag.redis.retry.delay.ms", 1000L);
+        this.redisRetryBackoffMultiplier = props.getDouble("atlas.feature.flag.redis.retry.backoff.multiplier", 2.0);
     }
     
     public int getPrimaryCacheTtlMinutes() {
@@ -42,5 +44,9 @@ public class FeatureFlagConfig {
     
     public long getRedisRetryDelayMs() {
         return redisRetryDelayMs;
+    }
+    
+    public double getRedisRetryBackoffMultiplier() {
+        return redisRetryBackoffMultiplier;
     }
 }

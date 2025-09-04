@@ -97,7 +97,7 @@ public class FeatureFlagStore {
             String namespacedKey = addFeatureFlagNamespace(flagKey);
             String value = loadFlagFromRedisWithRetry(namespacedKey, flagKey);
             
-            if (value != null && !value.isEmpty()) {
+            if (!StringUtils.isEmpty(value)) {
                 cacheStore.putInFallbackCache(namespacedKey, value);
                 LOG.info("Preloaded flag '{}' with Redis value: {}", flagKey, value);
             } else {
@@ -121,10 +121,13 @@ public class FeatureFlagStore {
                     throw new RuntimeException("Failed to load flag " + flagKey + " after " + attempt + " attempts", e);
                 }
                 
-                LOG.warn("Redis operation failed for flag '{}' (attempt {}/{}), retrying...", flagKey, attempt, config.getRedisRetryAttempts(), e);
+                // Calculate exponential backoff delay
+                long backoffDelay = calculateBackoffDelay(attempt);
+                LOG.warn("Redis operation failed for flag '{}' (attempt {}/{}), retrying in {}ms...", 
+                        flagKey, attempt, config.getRedisRetryAttempts(), backoffDelay, e);
                 
                 try {
-                    Thread.sleep(config.getRedisRetryDelayMs());
+                    Thread.sleep(backoffDelay);
                 } catch (InterruptedException ie) {
                     Thread.currentThread().interrupt();
                     throw new RuntimeException("Interrupted while retrying flag " + flagKey, ie);
@@ -134,10 +137,18 @@ public class FeatureFlagStore {
         
         return null; // This line should never be reached
     }
+    
+    private long calculateBackoffDelay(int attempt) {
+        double exponentialFactor = Math.pow(config.getRedisRetryBackoffMultiplier(), attempt - 1);
+        long backoffDelay = Math.round(config.getRedisRetryDelayMs() * exponentialFactor);
+        
+        // Cap the maximum delay to prevent extremely long waits (e.g., 30 seconds max)
+        long maxDelayMs = 30000L;
+        return Math.min(backoffDelay, maxDelayMs);
+    }
 
     public static boolean isTagV2Enabled() {
-        return evaluate(FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey(), "true") || 
-               StringUtils.isNotEmpty(getFlag(FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey()));
+        return !evaluate(FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey(), "false"); // Default value is false, if the flag is present or has any other value it's treated as enabled
     }
 
     public static boolean evaluate(String key, String expectedValue) {
@@ -206,13 +217,6 @@ public class FeatureFlagStore {
             LOG.debug("Using fallback cache value for key: {}", key);
             return value;
         }
-
-        FeatureFlag flag = FeatureFlag.fromKey(key);
-        if (flag != null) {
-            String defaultValue = String.valueOf(flag.getDefaultValue());
-            LOG.debug("Using default value for flag '{}': {}", key, defaultValue);
-            return defaultValue;
-        }
         
         LOG.warn("No value found for flag '{}' in any cache or Redis", key);
         return null;
@@ -221,7 +225,8 @@ public class FeatureFlagStore {
     private String fetchFromRedisAndCache(String namespacedKey, String key) {
         try {
             String value = redisService.getValue(namespacedKey);
-            updateBothCaches(namespacedKey, value != null ? value : getDefaultValue(key));
+            if (value != null)
+                updateBothCaches(namespacedKey, value);
             return value;
         } catch (Exception e) {
             LOG.error("Failed to fetch flag '{}' from Redis", key, e);
