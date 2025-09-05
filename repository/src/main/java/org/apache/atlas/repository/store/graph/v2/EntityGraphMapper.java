@@ -3883,7 +3883,7 @@ public class EntityGraphMapper {
                 } else {
                     List<AtlasEntity> propagatedEntities = updateClassificationText(classification, vertices);
 
-                    entityChangeNotifier.onClassificationsAddedToEntitiesV2(vertices, Collections.singletonList(classification), false, RequestContext.get());
+                    entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntities, Collections.singletonList(classification), false);
                 }
             }
 
@@ -4320,9 +4320,7 @@ public class EntityGraphMapper {
                 propagatedEntitiesGuids.addAll(chunkedPropagatedEntitiesGuids);
                 offset += CHUNK_SIZE;
                 transactionInterceptHelper.intercept();
-                //Convert entitiesPropagatedTo to Set
-                Set<AtlasVertex> entitiesPropagatedToSet = new HashSet<>(entitiesPropagatedTo);
-                entityChangeNotifier.onClassificationsAddedToEntitiesV2(entitiesPropagatedToSet, Collections.singletonList(classification), false, RequestContext.get());
+                entityChangeNotifier.onClassificationsAddedToEntities(propagatedEntitiesChunked, Collections.singletonList(classification), false);
             } while (offset < impactedVerticesSize);
         } catch (AtlasBaseException exception) {
             LOG.error("Error occurred while adding classification propagation for classification with propagation id {}", classificationVertex.getIdForDisplay());
