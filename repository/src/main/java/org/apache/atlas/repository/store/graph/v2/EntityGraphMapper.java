@@ -3479,7 +3479,7 @@ public class EntityGraphMapper {
                     List<AtlasEdge> additionalElements = new ArrayList<>();
 
                     for (AtlasEdge edge : tobeDeletedEntries) {
-                        if (edge ==null || getStatus(edge) == DELETED ) {
+                        if (edge == null || getStatus(edge) == DELETED) {
                             continue;
                         }
 
