@@ -17,8 +17,8 @@ public class TaskMetricsService {
     private final MeterRegistry meterRegistry;
 
     // Gauges
-    private final AtomicInteger tasksInProgress;
-    private final AtomicInteger taskQueueSize;
+    private final AtomicInteger tasksInProgress = new AtomicInteger(0);
+    private final AtomicInteger taskQueueSize = new AtomicInteger(0);
 
     @Inject
     public TaskMetricsService() {
@@ -30,13 +30,11 @@ public class TaskMetricsService {
         this.meterRegistry = meterRegistry;
         
         // Initialize gauges
-        this.tasksInProgress = new AtomicInteger(0);
         Gauge.builder("atlas.classification.tasks.in_progress", tasksInProgress, AtomicInteger::get)
                 .description("Current number of classification tasks in progress")
                 .tag("component", "classification")
                 .register(meterRegistry);
 
-        this.taskQueueSize = new AtomicInteger(0);
         Gauge.builder("atlas.classification.tasks.queue.size", taskQueueSize, AtomicInteger::get)
                 .description("Current size of the classification task queue")
                 .tag("component", "classification")

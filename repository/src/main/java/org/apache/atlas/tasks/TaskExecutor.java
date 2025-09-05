@@ -52,14 +52,15 @@ public class TaskExecutor {
     private final boolean isActiveActiveHAEnabled;
     private final String zkRoot;
     private final MetricsRegistry metricRegistry;
+    private final TaskMetricsService taskMetricsService;
 
     private TaskQueueWatcher watcher;
     private Thread watcherThread;
     private RedisService redisService;
-    private TaskMetricsService taskMetricsService;
 
     public TaskExecutor(TaskRegistry registry, Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
-                        ICuratorFactory curatorFactory, RedisService redisService, final String zkRoot, boolean isActiveActiveHAEnabled, MetricsRegistry metricsRegistry) {
+                        ICuratorFactory curatorFactory, RedisService redisService, final String zkRoot, boolean isActiveActiveHAEnabled, 
+                        MetricsRegistry metricsRegistry, TaskMetricsService taskMetricsService) {
         this.taskExecutorService = Executors.newSingleThreadExecutor(new ThreadFactoryBuilder()
                                                                     .setDaemon(true)
                                                                     .setNameFormat(TASK_NAME_FORMAT + Thread.currentThread().getName())
@@ -77,8 +78,8 @@ public class TaskExecutor {
     }
 
     public Thread startWatcherThread() {
-
-        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, curatorFactory, redisService, zkRoot, isActiveActiveHAEnabled, metricRegistry, taskMetricsService);
+        watcher = new TaskQueueWatcher(taskExecutorService, registry, taskTypeFactoryMap, statistics, 
+                                     curatorFactory, redisService, zkRoot, isActiveActiveHAEnabled, metricRegistry, taskMetricsService);
         watcherThread = new Thread(watcher);
         watcherThread.start();
         return watcherThread;
