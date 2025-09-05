@@ -46,7 +46,7 @@
 
         <dependency>
             <groupId>org.apache.atlas</groupId>
-            <artifactId>atlas-server-api</artifactId>
+            <artifactId>atlas-common</artifactId>
         </dependency>
 
         <dependency>
