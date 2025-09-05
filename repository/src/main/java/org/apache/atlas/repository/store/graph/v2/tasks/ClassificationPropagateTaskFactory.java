@@ -17,7 +17,7 @@
  */
 package org.apache.atlas.repository.store.graph.v2.tasks;
 
-import org.apache.atlas.metrics.TaskMetricsService;
+import org.apache.atlas.repository.metrics.TaskMetricsService;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;

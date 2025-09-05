@@ -191,7 +191,6 @@ jobs:
         context: .
         file: ./Dockerfile
         push: true
-        no-cache: true
         tags: |
           ${{ steps.login-ecr.outputs.registry }}/atlanhq/${{ github.event.repository.name }}:${{ steps.semver_tag.outputs.new_tag }}-${{ steps.get_branch.outputs.branch }}
           ${{ steps.login-ecr.outputs.registry }}/atlanhq/${{ github.event.repository.name }}:${{ steps.get_branch.outputs.branch }}-${{ steps.semver_tag.outputs.new_tag }}
