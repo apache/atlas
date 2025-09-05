@@ -55,6 +55,11 @@
         </dependency>
 
         <dependency>
+            <artifactId>apache-atlas</artifactId>
+            <groupId>org.apache.atlas</groupId>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.tinkerpop</groupId>
             <artifactId>gremlin-util</artifactId>
             <version>${tinkerpop.version}</version>
