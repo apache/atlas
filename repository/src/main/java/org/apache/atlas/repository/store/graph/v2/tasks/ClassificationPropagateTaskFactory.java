@@ -17,13 +17,13 @@
  */
 package org.apache.atlas.repository.store.graph.v2.tasks;
 
+import org.apache.atlas.metrics.TaskMetricsService;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.store.graph.AtlasRelationshipStore;
 import org.apache.atlas.repository.store.graph.v1.DeleteHandlerDelegate;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphMapper;
 import org.apache.atlas.tasks.TaskFactory;
-import org.apache.atlas.tasks.TaskManagement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -64,13 +64,15 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
     private final EntityGraphMapper      entityGraphMapper;
     private final DeleteHandlerDelegate  deleteDelegate;
     private final AtlasRelationshipStore relationshipStore;
+    private final TaskMetricsService taskMetricsService;
 
     @Inject
-    public ClassificationPropagateTaskFactory(AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore) {
+    public ClassificationPropagateTaskFactory(AtlasGraph graph, EntityGraphMapper entityGraphMapper, DeleteHandlerDelegate deleteDelegate, AtlasRelationshipStore relationshipStore, TaskMetricsService taskMetricsService) {
         this.graph             = graph;
         this.entityGraphMapper = entityGraphMapper;
         this.deleteDelegate    = deleteDelegate;
         this.relationshipStore = relationshipStore;
+        this.taskMetricsService = taskMetricsService;
     }
 
     public org.apache.atlas.tasks.AbstractTask create(AtlasTask task) {
@@ -79,23 +81,22 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
 
         switch (taskType) {
             case CLASSIFICATION_PROPAGATION_ADD:
-                return new ClassificationPropagationTasks.Add(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+                return new ClassificationPropagationTasks.Add(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
 
             case CLASSIFICATION_PROPAGATION_TEXT_UPDATE:
-                return new ClassificationPropagationTasks.UpdateText(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+                return new ClassificationPropagationTasks.UpdateText(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
 
             case CLASSIFICATION_PROPAGATION_DELETE:
-                return new ClassificationPropagationTasks.Delete(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+                return new ClassificationPropagationTasks.Delete(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
 
             case CLASSIFICATION_REFRESH_PROPAGATION:
-                return new ClassificationPropagationTasks.RefreshPropagation(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+                return new ClassificationPropagationTasks.RefreshPropagation(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
 
             case CLASSIFICATION_PROPAGATION_RELATIONSHIP_UPDATE:
-                return new ClassificationPropagationTasks.UpdateRelationship(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
+                return new ClassificationPropagationTasks.UpdateRelationship(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
 
-                case CLEANUP_CLASSIFICATION_PROPAGATION:
-                return new ClassificationPropagationTasks.CleanUpClassificationPropagation(task, graph, entityGraphMapper, deleteDelegate, relationshipStore);
-
+            case CLEANUP_CLASSIFICATION_PROPAGATION:
+            return new ClassificationPropagationTasks.CleanUpClassificationPropagation(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
 
             default:
                 LOG.warn("Type: {} - {} not found!. The task will be ignored.", taskType, taskGuid);

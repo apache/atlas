@@ -33,6 +33,7 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
+import org.apache.atlas.metrics.TaskMetricsService;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -65,17 +66,21 @@ public abstract class ClassificationTask extends AbstractTask {
     protected final EntityGraphMapper      entityGraphMapper;
     protected final DeleteHandlerDelegate  deleteDelegate;
     protected final AtlasRelationshipStore relationshipStore;
+    protected final TaskMetricsService taskMetricsService;
+
 
     public ClassificationTask(AtlasTask task,
                               AtlasGraph graph,
                               EntityGraphMapper entityGraphMapper,
                               DeleteHandlerDelegate deleteDelegate,
-                              AtlasRelationshipStore relationshipStore) {
+                              AtlasRelationshipStore relationshipStore,
+                              TaskMetricsService taskMetricsService) {
         super(task);
         this.graph             = graph;
         this.entityGraphMapper = entityGraphMapper;
         this.deleteDelegate    = deleteDelegate;
         this.relationshipStore = relationshipStore;
+        this.taskMetricsService = taskMetricsService;
     }
 
     @Override
@@ -83,10 +88,14 @@ public abstract class ClassificationTask extends AbstractTask {
         String threadName = Thread.currentThread().getName();
         Map<String, Object> params = getTaskDef().getParameters();
         TaskContext context = new TaskContext();
+        long startTime = System.currentTimeMillis();
+        String taskType = getTaskType();
+        String version = org.apache.atlas.service.FeatureFlagStore.isTagV2Enabled() ? "v2" : "v1";
+        String tenant = System.getenv("DOMAIN_NAME");
 
         if (MapUtils.isEmpty(params)) {
             LOG.warn("Task: {}: Unable to process task: Parameters is not readable!", getTaskGuid());
-
+            taskMetricsService.recordTaskError(taskType, version, tenant, "MISSING_PARAMS");
             return FAILED;
         }
 
@@ -94,34 +103,44 @@ public abstract class ClassificationTask extends AbstractTask {
 
         if (StringUtils.isEmpty(userName)) {
             LOG.warn("Task: {}: Unable to process task as user name is empty!", getTaskGuid());
-
+            taskMetricsService.recordTaskError(taskType, version, tenant, "MISSING_USER");
             return FAILED;
         }
 
         RequestContext.get().setUser(userName, null);
 
-
         try {
+            // Record task start
+            taskMetricsService.recordTaskStart(taskType, version, tenant);
+
             // Set up MDC context first
             MDC.put("task_id", getTaskGuid());
-            MDC.put("task_type", getTaskType());
+            MDC.put("task_type", taskType);
             MDC.put("tag_name", getTaskDef().getTagTypeName());
             MDC.put("entity_guid", getTaskDef().getEntityGuid());
-            MDC.put("tag_version", org.apache.atlas.service.FeatureFlagStore.isTagV2Enabled() ? "v2" : "v1");
+            MDC.put("tag_version", version);
             MDC.put("thread_name", threadName);
             MDC.put("thread_id", String.valueOf(Thread.currentThread().getId()));
             MDC.put("status", "in_progress");
             MDC.put("assets_affected", "0");
 
-            // Now log with MDC context
             LOG.info("Starting classification task execution");
             setStatus(IN_PROGRESS);
             run(params, context);
-            setStatus(AtlasTask.Status.COMPLETE);  // This will commit the graph
-
+            setStatus(AtlasTask.Status.COMPLETE);
             int assetsAffected = context.getAssetsAffected();
             MDC.put("assets_affected", String.valueOf(assetsAffected));
             MDC.put("status", "success");
+
+            // Record successful completion
+            taskMetricsService.recordTaskEnd(
+                taskType, 
+                version,
+                tenant,
+                System.currentTimeMillis() - startTime,
+                assetsAffected,
+                true
+            );
 
             return AtlasTask.Status.COMPLETE;
         } catch (AtlasBaseException e) {
@@ -129,15 +148,38 @@ public abstract class ClassificationTask extends AbstractTask {
             MDC.put("status", "failed");
             MDC.put("error", e.getMessage());
             LOG.error("Classification task failed", e);
-            setStatus(AtlasTask.Status.FAILED);  // This will commit the graph
+            setStatus(AtlasTask.Status.FAILED);
+
+            // Record failure
+            taskMetricsService.recordTaskEnd(
+                taskType,
+                version,
+                tenant,
+                System.currentTimeMillis() - startTime,
+                0,
+                false
+            );
+            taskMetricsService.recordTaskError(taskType, version, tenant, e.getClass().getSimpleName());
+
             throw e;
         } catch (Throwable t) {
-            // Catch any unexpected errors to ensure MDC cleanup
             MDC.put("assets_affected", "0");
             MDC.put("status", "failed");
             MDC.put("error", t.getMessage());
             LOG.error("Unexpected error in classification task", t);
-            setStatus(AtlasTask.Status.FAILED);  // This will commit the graph
+            setStatus(AtlasTask.Status.FAILED);
+
+            // Record failure
+            taskMetricsService.recordTaskEnd(
+                taskType,
+                version,
+                tenant,
+                System.currentTimeMillis() - startTime,
+                0,
+                false
+            );
+            taskMetricsService.recordTaskError(taskType, version, tenant, t.getClass().getSimpleName());
+
             throw new AtlasBaseException(t);
         } finally {
             // failsafe invocation to make sure endTime is set
