@@ -24,7 +24,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.service.redis.RedisService;
-import org.apache.atlas.metrics.TaskMetricsService;
+import org.apache.atlas.repository.metrics.TaskMetricsService;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
