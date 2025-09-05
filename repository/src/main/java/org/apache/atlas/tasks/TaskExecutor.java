@@ -20,7 +20,7 @@ package org.apache.atlas.tasks;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.apache.atlas.ICuratorFactory;
 import org.apache.atlas.RequestContext;
-import org.apache.atlas.metrics.TaskMetricsService;
+import org.apache.atlas.repository.metrics.TaskMetricsService;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.service.metrics.MetricsRegistry;
