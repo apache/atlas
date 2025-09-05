@@ -69,7 +69,8 @@ define(["require", "backbone"], function(require) {
         BUSINESS_METADATA: "Business Metadata",
         PURGE: "Purge Entities",
         IMPORT: "Import Entities",
-        EXPORT: "Export Entities"
+        EXPORT: "Export Entities",
+        AUTO_PURGE : "Auto Purged Entities"
     }
 
     Enums.entityStateReadOnly = {
