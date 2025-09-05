@@ -1,0 +1,185 @@
+{
+  "entityDefs": [
+    {
+      "name":         "trino_instance",
+      "superTypes":   [ "DataSet" ],
+      "serviceType":  "trino",
+      "typeVersion":  "1.0",
+      "attributeDefs": [
+        { "name": "hostname", "typeName": "string", "isOptional": true, "cardinality": "SINGLE", "isUnique": false, "isIndexable": false },
+        { "name": "port",     "typeName": "int",    "isOptional": true, "cardinality": "SINGLE", "isUnique": false, "isIndexable": false }
+      ]
+    },
+    {
+      "name":           "trino_catalog",
+      "superTypes":     [ "Asset" ],
+      "serviceType":    "trino",
+      "typeVersion":    "1.0",
+      "attributeDefs":  [
+        { "name": "connectorType", "typeName": "string", "cardinality": "SINGLE", "isUnique": false, "isIndexable": false },
+        { "name": "connectionUrl", "typeName": "string", "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true }
+      ]
+    },
+    {
+      "name":         "trino_schema",
+      "superTypes":   [ "Asset" ],
+      "serviceType":  "trino",
+      "typeVersion":  "1.0",
+      "attributeDefs": [
+        { "name": "parameters", "typeName": "map<string,string>", "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true }
+      ]
+    },
+    {
+      "name":         "trino_table",
+      "superTypes":   [ "DataSet" ],
+      "serviceType":  "trino",
+      "typeVersion":  "1.0",
+      "attributeDefs": [
+        { "name": "comment",    "typeName": "string",             "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true },
+        { "name": "parameters", "typeName": "map<string,string>", "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true },
+        { "name": "table_type", "typeName": "string",             "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true }
+      ]
+    },
+    {
+      "name":         "trino_column",
+      "superTypes":   [ "DataSet" ],
+      "serviceType":  "trino",
+      "typeVersion":  "1.0",
+      "attributeDefs": [
+        { "name": "data_type",        "typeName": "string",  "cardinality": "SINGLE", "isUnique": false, "isIndexable": true,  "isOptional": true },
+        { "name": "ordinal_position", "typeName": "int",     "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true },
+        { "name": "column_default",   "typeName": "string",  "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true },
+        { "name": "comment",          "typeName": "string",  "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true },
+        { "name": "is_nullable",      "typeName": "boolean", "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true },
+        { "name": "isPrimaryKey",     "typeName": "boolean", "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true }
+      ]
+    },
+    {
+      "name":         "trino_column_lineage",
+      "superTypes":   [ "Process" ],
+      "serviceType":  "trino",
+      "typeVersion":  "1.0",
+      "attributeDefs": [
+        { "name": "expression", "typeName": "string", "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "isOptional": true }
+      ]
+    },
+    {
+      "name":         "trino_process",
+      "superTypes":   [ "Process" ],
+      "serviceType":  "trino",
+      "typeVersion":  "1.0",
+      "attributeDefs": [
+        { "name": "queryId",         "typeName": "string", "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "searchWeight": 5 },
+        { "name": "queryCreateTime", "typeName": "long",   "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "searchWeight": 5 },
+        { "name": "queryEndTime",    "typeName": "long",   "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "searchWeight": 5 },
+        { "name": "queryText",       "typeName": "string", "cardinality": "SINGLE", "isUnique": false, "isIndexable": false, "searchWeight": 5 }
+      ]
+    },
+    {
+      "name":           "trino_schema_ddl",
+      "superTypes":     [ "ddl" ],
+      "serviceType":    "trino",
+      "typeVersion":    "1.0",
+      "attributeDefs":  [ ]
+    },
+    {
+      "name":           "trino_table_ddl",
+      "superTypes":     [ "ddl" ],
+      "serviceType":    "trino",
+      "typeVersion":    "1.0",
+      "attributeDefs":  [ ]
+    }
+  ],
+  "relationshipDefs": [
+    {
+      "name":                 "trino_instance_catalog",
+      "serviceType":          "trino",
+      "typeVersion":          "1.0",
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags":        "NONE",
+      "endDef1": { "type": "trino_catalog",  "name": "instance", "isContainer": false, "cardinality": "SINGLE", "isLegacyAttribute": false },
+      "endDef2": { "type": "trino_instance", "name": "catalogs", "isContainer": true,  "cardinality": "SET" }
+    },
+    {
+      "name":                 "trino_schema_catalog",
+      "serviceType":          "trino",
+      "typeVersion":          "1.0",
+      "relationshipCategory": "AGGREGATION",
+      "propagateTags":        "NONE",
+      "endDef1": { "type": "trino_schema",  "name": "catalog", "isContainer": false, "cardinality": "SINGLE", "isLegacyAttribute": false },
+      "endDef2": { "type": "trino_catalog", "name": "schemas", "isContainer": true,  "cardinality": "SET" }
+    },
+    {
+      "name":                 "trino_table_schema",
+      "serviceType":          "trino",
+      "typeVersion":          "1.0",
+      "relationshipCategory": "AGGREGATION",
+      "propagateTags":        "NONE",
+      "endDef1": { "type": "trino_table",  "name": "trinoschema", "isContainer": false, "cardinality": "SINGLE", "isLegacyAttribute": false },
+      "endDef2": { "type": "trino_schema", "name": "tables",      "isContainer": true,  "cardinality": "SET" }
+    },
+    {
+      "name":                 "trino_table_columns",
+      "serviceType":          "trino",
+      "typeVersion":          "1.0",
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags":        "NONE",
+      "endDef1": { "type": "trino_table",  "name": "columns", "isContainer": true,  "cardinality": "SET",    "isLegacyAttribute": false },
+      "endDef2": { "type": "trino_column", "name": "table",   "isContainer": false, "cardinality": "SINGLE", "isLegacyAttribute": false }
+    },
+    {
+      "name":                 "trino_table_ddl_queries",
+      "serviceType":          "trino",
+      "typeVersion":          "1.0",
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags":        "NONE",
+      "endDef1": { "type": "trino_table",     "name": "ddlQueries", "isContainer": true,  "cardinality": "SET"    },
+      "endDef2": { "type": "trino_table_ddl", "name": "table",      "isContainer": false, "cardinality": "SINGLE" }
+    },
+    {
+      "name":                 "trino_schema_ddl_queries",
+      "serviceType":          "trino",
+      "typeVersion":          "1.0",
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags":        "NONE",
+      "endDef1": { "type": "trino_schema",     "name": "ddlQueries", "isContainer": true,  "cardinality": "SET"    },
+      "endDef2": { "type": "trino_schema_ddl", "name": "db",         "isContainer": false, "cardinality": "SINGLE" }
+    },
+    {
+      "name":                 "trino_process_column_lineage",
+      "serviceType":          "trino",
+      "typeVersion":          "1.0",
+      "relationshipCategory": "COMPOSITION",
+      "propagateTags":        "NONE",
+      "endDef1": { "type": "trino_column_lineage", "name": "query",          "isContainer": false, "cardinality": "SINGLE" },
+      "endDef2": { "type": "trino_process",        "name": "columnLineages", "isContainer": true,  "cardinality": "SET"    }
+    },
+    {
+      "name":                 "trino_schema_hive_db",
+      "serviceType":          "trino",
+      "typeVersion":          "1.0",
+      "relationshipCategory": "ASSOCIATION",
+      "propagateTags":        "BOTH",
+      "endDef1": { "type": "hive_db",      "name": "trino_schema",  "cardinality": "SET"    },
+      "endDef2": { "type": "trino_schema", "name": "hive_db",       "cardinality": "SINGLE" }
+    },
+    {
+      "name":                 "trino_table_hive_table",
+      "serviceType":          "trino",
+      "typeVersion":          "1.0",
+      "relationshipCategory": "ASSOCIATION",
+      "propagateTags":        "BOTH",
+      "endDef1": { "type": "hive_table",  "name": "trino_table", "cardinality": "SET"    },
+      "endDef2": { "type": "trino_table", "name": "hive_table",  "cardinality": "SINGLE" }
+    },
+    {
+      "name":                 "trino_column_hive_column",
+      "serviceType":          "trino",
+      "typeVersion":          "1.0",
+      "relationshipCategory": "ASSOCIATION",
+      "propagateTags":        "BOTH",
+      "endDef1": { "type": "hive_column",  "name": "trino_column", "cardinality": "SET"    },
+      "endDef2": { "type": "trino_column", "name": "hive_column",  "cardinality": "SINGLE" }
+    }
+  ]
+}

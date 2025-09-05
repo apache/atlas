@@ -52,6 +52,7 @@
         <module>addons/sqoop-bridge-shim</module>
         <module>addons/storm-bridge</module>
         <module>addons/storm-bridge-shim</module>
+        <module>addons/trino-extractor</module>
         <module>atlas-examples</module>
         <module>authorization</module>
         <module>build-tools</module>
