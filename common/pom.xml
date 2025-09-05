@@ -190,12 +190,6 @@
             <artifactId>netty-transport-native-unix-common</artifactId>
             <version>${netty4.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.github.ben-manes.caffeine</groupId>
-            <artifactId>caffeine</artifactId>
-            <version>3.1.8</version>
-            <scope>compile</scope>
-        </dependency>
     </dependencies>
 
     <build>

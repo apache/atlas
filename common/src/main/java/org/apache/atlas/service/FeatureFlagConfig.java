@@ -9,8 +9,6 @@ import org.springframework.stereotype.Component;
 public class FeatureFlagConfig {
     
     private final int primaryCacheTtlMinutes;
-    private final long primaryCacheMaxSize;
-    private final long fallbackCacheMaxSize;
     private final int redisRetryAttempts;
     private final long redisRetryDelayMs;
     private final double redisRetryBackoffMultiplier;
@@ -19,8 +17,6 @@ public class FeatureFlagConfig {
         Configuration props = ApplicationProperties.get();
         
         this.primaryCacheTtlMinutes = props.getInt("atlas.feature.flag.cache.primary.ttl.minutes", 30);
-        this.primaryCacheMaxSize = props.getLong("atlas.feature.flag.cache.primary.max.size", 1000L);
-        this.fallbackCacheMaxSize = props.getLong("atlas.feature.flag.cache.fallback.max.size", 1000L);
         this.redisRetryAttempts = props.getInt("atlas.feature.flag.redis.retry.attempts", 5);
         this.redisRetryDelayMs = props.getLong("atlas.feature.flag.redis.retry.delay.ms", 1000L);
         this.redisRetryBackoffMultiplier = props.getDouble("atlas.feature.flag.redis.retry.backoff.multiplier", 2.0);
@@ -28,14 +24,6 @@ public class FeatureFlagConfig {
     
     public int getPrimaryCacheTtlMinutes() {
         return primaryCacheTtlMinutes;
-    }
-    
-    public long getPrimaryCacheMaxSize() {
-        return primaryCacheMaxSize;
-    }
-    
-    public long getFallbackCacheMaxSize() {
-        return fallbackCacheMaxSize;
     }
 
     public int getRedisRetryAttempts() {
