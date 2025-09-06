@@ -11,8 +11,8 @@ import javax.annotation.PostConstruct;
 import javax.inject.Inject;
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
 
@@ -24,11 +24,10 @@ public class FeatureFlagStore {
     private static final String FF_NAMESPACE = "ff:";
     private static final List<String> KNOWN_FLAGS = List.of(FeatureFlag.getAllKeys());
     
-    // Thundering herd prevention: per-key semaphores
+    // Thundering herd prevention: result sharing pattern
     private static final int LOCK_TIMEOUT_SECONDS = 10;
-    private final ConcurrentHashMap<String, Semaphore> keyLocks = new ConcurrentHashMap<>();
-    private final ConcurrentHashMap<String, Long> lastAccessTime = new ConcurrentHashMap<>();
-    private static final long CLEANUP_THRESHOLD_MS = 300000; // 5 minutes
+
+    private final ConcurrentHashMap<String, CompletableFuture<String>> inFlightRedisFetches = new ConcurrentHashMap<>();
 
     private final RedisService redisService;
     private final FeatureFlagConfig config;
@@ -55,7 +54,6 @@ public class FeatureFlagStore {
         try {
             validateDependencies();
             preloadAllFlags();
-            startCleanupTask();
             initialized = true;
             
             long duration = System.currentTimeMillis() - startTime;
@@ -194,66 +192,78 @@ public class FeatureFlagStore {
         return FeatureFlag.isValidFlag(key);
     }
 
-
     String getFlagInternal(String key) {
         if (!initialized) {
             LOG.warn("FeatureFlagStore not fully initialized yet, attempting to get flag: {}", key);
             throw new IllegalStateException("FeatureFlagStore not initialized");
         }
-        
+
         if (redisService == null) {
             LOG.error("RedisService is null - this should never happen after proper initialization");
             throw new IllegalStateException("RedisService is not available");
         }
-        
+
         if (StringUtils.isEmpty(key)) {
             return "";
         }
-        
+
         String namespacedKey = addFeatureFlagNamespace(key);
-        
-        // First check: primary cache
+
+        // 1. First check: primary cache
         String value = cacheStore.getFromPrimaryCache(namespacedKey);
         if (value != null) {
             return value;
         }
-        
-        // Second check: try to acquire lock and fetch from Redis
-        if (acquireKeyLock(key)) {
-            try {
-                // Double-check primary cache after acquiring lock
-                // Another thread might have updated it while we were waiting
-                value = cacheStore.getFromPrimaryCache(namespacedKey);
-                if (value != null) {
-                    LOG.debug("Primary cache hit after acquiring lock for key: {}", key);
-                    return value;
+
+        // 2. Second check: see if another thread is already fetching this key
+        CompletableFuture<String> future = inFlightRedisFetches.get(key);
+
+        if (future == null) {
+            // This thread is the first; it will do the fetching
+            CompletableFuture<String> newFuture = new CompletableFuture<>();
+
+            // Atomically put the new future into the map.
+            // If another thread beats us, `putIfAbsent` will return its future.
+            future = inFlightRedisFetches.putIfAbsent(key, newFuture);
+
+            if (future == null) { // We successfully put our new future in the map; we are the leader.
+                future = newFuture; // Use the future we created
+                try {
+                    LOG.debug("Fetching from Redis for key: {}", key);
+                    String redisValue = fetchFromRedisAndCache(namespacedKey, key);
+
+                    // Complete the future successfully with the result
+                    future.complete(redisValue);
+
+                } catch (Exception e) {
+                    // Complete the future exceptionally to notify other waiting threads of the failure
+                    LOG.error("Exception while fetching flag '{}' for the first time.", key, e);
+                    future.completeExceptionally(e);
+                } finally {
+                    // CRUCIAL: Clean up the map so subsequent requests re-trigger a fetch
+                    inFlightRedisFetches.remove(key, future);
                 }
-                
-                // Fetch from Redis and update cache
-                value = fetchFromRedisAndCache(namespacedKey, key);
-                if (value != null) {
-                    return value;
-                }
-            } finally {
-                releaseKeyLock(key);
-            }
-        } else {
-            // Lock acquisition failed (timeout), try primary cache again
-            // Another thread might have completed the Redis fetch
-            value = cacheStore.getFromPrimaryCache(namespacedKey);
-            if (value != null) {
-                LOG.debug("Primary cache hit after lock timeout for key: {}", key);
-                return value;
             }
         }
-        
-        // Third check: fallback cache
+
+        // 3. Wait for the result from the leader thread (or this thread if it was the leader)
+        try {
+            value = future.get(LOCK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+        } catch (Exception e) {
+            LOG.warn("Failed to get feature flag '{}' from in-flight future (timeout or exception)", key, e);
+        }
+
+        if (value != null) {
+            return value;
+        }
+
+        // 4. Final check: fallback cache
         value = cacheStore.getFromFallbackCache(namespacedKey);
         if (value != null) {
             LOG.debug("Using fallback cache value for key: {}", key);
             return value;
         }
-        
+
         LOG.warn("No value found for flag '{}' in any cache or Redis", key);
         return null;
     }
@@ -344,117 +354,8 @@ public class FeatureFlagStore {
         return FF_NAMESPACE + key;
     }
 
-    /**
-     * Acquires a semaphore for the given key to prevent thundering herd.
-     * Only one thread per key can proceed to Redis at a time.
-     * 
-     * @param key the feature flag key
-     * @return true if lock was acquired, false if timeout occurred
-     */
-    private boolean acquireKeyLock(String key) {
-        try {
-            Semaphore semaphore = keyLocks.computeIfAbsent(key, k -> new Semaphore(1));
-            boolean acquired = semaphore.tryAcquire(LOCK_TIMEOUT_SECONDS, TimeUnit.SECONDS);
-            
-            if (acquired) {
-                lastAccessTime.put(key, System.currentTimeMillis());
-                LOG.debug("Acquired lock for key: {}", key);
-            } else {
-                LOG.warn("Failed to acquire lock for key: {} within {} seconds", key, LOCK_TIMEOUT_SECONDS);
-            }
-            
-            return acquired;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            LOG.warn("Interrupted while acquiring lock for key: {}", key);
-            return false;
-        }
-    }
-
-    /**
-     * Releases the semaphore for the given key.
-     * 
-     * @param key the feature flag key
-     */
-    private void releaseKeyLock(String key) {
-        Semaphore semaphore = keyLocks.get(key);
-        if (semaphore != null) {
-            semaphore.release();
-            LOG.debug("Released lock for key: {}", key);
-        }
-    }
-
-    /**
-     * Cleans up unused semaphores to prevent memory leaks.
-     * Removes semaphores that haven't been accessed for a while.
-     */
-    private void cleanupInactiveLocks() {
-        long currentTime = System.currentTimeMillis();
-        int removedCount = 0;
-        
-        keyLocks.entrySet().removeIf(entry -> {
-            String key = entry.getKey();
-            Long lastAccess = lastAccessTime.get(key);
-            
-            if (lastAccess == null || (currentTime - lastAccess) > CLEANUP_THRESHOLD_MS) {
-                LOG.debug("Cleaning up inactive lock for key: {}", key);
-                lastAccessTime.remove(key);
-                return true;
-            }
-            return false;
-        });
-        
-        if (removedCount > 0) {
-            LOG.debug("Cleaned up {} inactive locks", removedCount);
-        }
-    }
-
-    /**
-     * Starts a background cleanup task to remove unused semaphores.
-     * Runs every 5 minutes to prevent memory leaks.
-     */
-    private void startCleanupTask() {
-        Thread cleanupThread = new Thread(() -> {
-            while (!Thread.currentThread().isInterrupted()) {
-                try {
-                    Thread.sleep(CLEANUP_THRESHOLD_MS);
-                    cleanupInactiveLocks();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    LOG.info("Cleanup task interrupted, shutting down");
-                    break;
-                } catch (Exception e) {
-                    LOG.warn("Error during cleanup task", e);
-                }
-            }
-        }, "FeatureFlagStore-Cleanup");
-        
-        cleanupThread.setDaemon(true);
-        cleanupThread.start();
-        LOG.info("Started cleanup task for inactive locks");
-    }
-
     public boolean isInitialized() {
         return initialized;
-    }
-
-    /**
-     * Gets statistics about the lock usage for monitoring purposes.
-     * 
-     * @return a string containing lock statistics
-     */
-    public String getLockStatistics() {
-        int totalLocks = keyLocks.size();
-        int activeLocks = 0;
-        
-        for (Semaphore semaphore : keyLocks.values()) {
-            if (semaphore.availablePermits() == 0) {
-                activeLocks++;
-            }
-        }
-        
-        return String.format("FeatureFlagStore Lock Stats - Total locks: %d, Active locks: %d, Available locks: %d", 
-                           totalLocks, activeLocks, totalLocks - activeLocks);
     }
 
 }
