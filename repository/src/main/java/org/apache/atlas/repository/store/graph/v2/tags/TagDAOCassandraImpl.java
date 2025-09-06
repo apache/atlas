@@ -229,7 +229,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                         ") WITH compaction = {'class': 'SizeTieredCompactionStrategy'};",
                 KEYSPACE, PROPAGATED_TAGS_TABLE_NAME);
         executeWithRetry(SimpleStatement.builder(createPropagatedTagsTable).setConsistencyLevel(DefaultConsistencyLevel.ALL).build());
-        LOG.info("Ensured table {}.{} exists with LeveledCompactionStrategy and hard deletes", KEYSPACE, PROPAGATED_TAGS_TABLE_NAME);
+        LOG.info("Ensured table {}.{} exists with SizeTieredCompactionStrategy and hard deletes", KEYSPACE, PROPAGATED_TAGS_TABLE_NAME);
     }
 
     @Override

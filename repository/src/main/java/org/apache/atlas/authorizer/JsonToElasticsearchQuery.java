@@ -37,7 +37,7 @@ public class JsonToElasticsearchQuery {
         } else if (condition.equals(POLICY_FILTER_CRITERIA_OR)) {
             return mapper.createObjectNode()
                     .set("bool", mapper.createObjectNode()
-                    .set("should", mapper.createArrayNode()));
+                            .set("should", mapper.createArrayNode()));
         } else {
             throw new IllegalArgumentException("Unsupported condition: " + condition);
         }
@@ -62,6 +62,7 @@ public class JsonToElasticsearchQuery {
                 String operator = crit.get("operator").asText();
                 String attributeName = crit.get("attributeName").asText();
                 JsonNode attributeValueNode = crit.get("attributeValue");
+
                 List<String> relatedAttributes = EntityAuthorizer.getRelatedAttributes(attributeName);
 
                 ArrayNode queryArray = ((ArrayNode) query.get("bool").get(getConditionClause(condition)));
