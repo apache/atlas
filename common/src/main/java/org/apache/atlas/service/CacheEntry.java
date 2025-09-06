@@ -1,36 +1,38 @@
 package org.apache.atlas.service;
 
 /**
- * A simple wrapper for cache entries that includes the value and creation timestamp.
- * Used for TTL-based expiration in the custom cache implementation.
+ * A simple wrapper for cache entries that includes the value and its expiration timestamp.
+ * Used for TTL-based expiration with jitter in the custom cache implementation.
  */
 class CacheEntry<V> {
     private final V value;
-    private final long creationTime;
-    
-    public CacheEntry(V value) {
+    private final long expirationTime; // CHANGED: Store expiration time directly
+
+    /**
+     * Creates a new cache entry.
+     *
+     * @param value          The value to be stored.
+     * @param expirationTime The pre-calculated timestamp (in milliseconds) when this entry should expire.
+     * A value of Long.MAX_VALUE means it never expires.
+     */
+    public CacheEntry(V value, long expirationTime) {
         this.value = value;
-        this.creationTime = System.currentTimeMillis();
+        this.expirationTime = expirationTime;
     }
-    
+
     public V getValue() {
         return value;
     }
-    
-    public long getCreationTime() {
-        return creationTime;
-    }
-    
+
     /**
-     * Check if this cache entry has expired based on the given TTL.
-     * 
-     * @param ttlMs TTL in milliseconds. If <= 0, entry never expires.
-     * @return true if the entry has expired, false otherwise
+     * Check if this cache entry has expired.
+     * * @return true if the entry has expired, false otherwise
      */
-    public boolean isExpired(long ttlMs) {
-        if (ttlMs <= 0) {
-            return false; // No expiration
+    public boolean isExpired() {
+        // No expiration for entries with max value timestamp
+        if (expirationTime == Long.MAX_VALUE) {
+            return false;
         }
-        return (System.currentTimeMillis() - creationTime) > ttlMs;
+        return System.currentTimeMillis() > expirationTime;
     }
 }

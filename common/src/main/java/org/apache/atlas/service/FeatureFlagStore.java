@@ -26,6 +26,7 @@ public class FeatureFlagStore {
     
     // Thundering herd prevention: result sharing pattern
     private static final int LOCK_TIMEOUT_SECONDS = 10;
+    private static final long INIT_RETRY_DELAY_MS = 20000L; // 2 seconds
 
     private final ConcurrentHashMap<String, CompletableFuture<String>> inFlightRedisFetches = new ConcurrentHashMap<>();
 
@@ -47,73 +48,69 @@ public class FeatureFlagStore {
     }
 
     @PostConstruct
-    public void initialize() {
+    public void initialize() throws InterruptedException {
         LOG.info("Starting FeatureFlagStore initialization...");
         long startTime = System.currentTimeMillis();
-        
-        try {
-            validateDependencies();
-            preloadAllFlags();
-            initialized = true;
-            
-            long duration = System.currentTimeMillis() - startTime;
-            LOG.info("FeatureFlagStore initialization completed successfully in {}ms", duration);
-            
-        } catch (Exception e) {
-            long duration = System.currentTimeMillis() - startTime;
-            LOG.error("FeatureFlagStore initialization FAILED after {}ms", duration, e);
-            throw new RuntimeException("Failed to initialize FeatureFlagStore - cannot start application", e);
+
+        // A single, consolidated retry loop for the entire initialization process. Doesn't let Atlas start until Redis FF store is set up correctly.
+        while (true) {
+            try {
+                validateDependencies();
+                preloadAllFlags();
+                initialized = true;
+
+                long duration = System.currentTimeMillis() - startTime;
+                LOG.info("FeatureFlagStore initialization completed successfully in {}ms", duration);
+                break; // Success! Exit the loop.
+
+            } catch (Exception e) {
+                // Catches any failure from validation or preloading and retries the whole process.
+                long duration = System.currentTimeMillis() - startTime;
+                LOG.warn("FeatureFlagStore initialization failed after {}ms, retrying in {} seconds... Error: {}",
+                        duration, INIT_RETRY_DELAY_MS / 1000, e.getMessage());
+                Thread.sleep(INIT_RETRY_DELAY_MS);
+            }
         }
     }
 
     private void validateDependencies() {
         LOG.info("Validating FeatureFlagStore dependencies...");
-        
-        // Validate RedisService is operational
         try {
             // Test Redis connectivity with a simple operation
             String testKey = "ff:_health_check";
             redisService.putValue(testKey, "test");
             String testValue = redisService.getValue(testKey);
             redisService.removeValue(testKey);
-            
+
             if (!"test".equals(testValue)) {
                 throw new RuntimeException("Redis connectivity test failed - value mismatch");
             }
-            
+
             LOG.info("Redis connectivity validated successfully");
-            
         } catch (Exception e) {
-            LOG.error("Redis connectivity validation failed", e);
-            throw new RuntimeException("RedisService is not operational - cannot initialize FeatureFlagStore", e);
+            // Re-throw the exception to be caught by the central loop in initialize()
+            throw new RuntimeException("Redis dependency validation failed", e);
         }
-        
-        // Validate required configuration
-        if (config.getRedisRetryAttempts() <= 0) {
-            throw new RuntimeException("Invalid configuration: redisRetryAttempts must be > 0");
-        }
-        
-        LOG.info("All dependencies validated successfully");
     }
 
     private void preloadAllFlags() {
         LOG.info("Preloading all known feature flags from Redis...");
-        
         for (String flagKey : KNOWN_FLAGS) {
-            
             FeatureFlag flag = FeatureFlag.fromKey(flagKey);
             String namespacedKey = addFeatureFlagNamespace(flagKey);
+            // loadFlagFromRedisWithRetry will throw an exception on failure, which is caught by initialize()
             String value = loadFlagFromRedisWithRetry(namespacedKey, flagKey);
-            
+
             if (!StringUtils.isEmpty(value)) {
                 cacheStore.putInFallbackCache(namespacedKey, value);
-                LOG.info("Preloaded flag '{}' with Redis value: {}", flagKey, value);
+                LOG.debug("Preloaded flag '{}' with Redis value: {}", flagKey, value);
             } else {
                 String defaultValue = String.valueOf(flag.getDefaultValue());
                 cacheStore.putInFallbackCache(namespacedKey, defaultValue);
-                LOG.info("Preloaded flag '{}' with default value: {} (not found in Redis)", flagKey, defaultValue);
+                LOG.debug("Preloaded flag '{}' with default value: {} (not found in Redis)", flagKey, defaultValue);
             }
         }
+        LOG.info("All feature flags preloaded.");
     }
 
     private String loadFlagFromRedisWithRetry(String namespacedKey, String flagKey) {
