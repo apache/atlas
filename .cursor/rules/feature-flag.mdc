@@ -13,8 +13,8 @@ alwaysApply: false
 - Feature flag keys should be descriptive and follow SCREAMING_SNAKE_CASE convention
 
 ### Dual Cache Architecture
-- Primary cache: Time-bound Caffeine cache (configurable TTL, typically 5 minutes)
-- Fallback cache: Permanent Caffeine cache storing last known Redis values
+- Primary cache: Time-bound cache (configurable TTL with jitter, typically 30 minutes)
+- Fallback cache: Permanent cache storing last known Redis values
 - NEVER fallback to default values during runtime - use cached values instead
 - Cache operations must be atomic to prevent dirty writes
 

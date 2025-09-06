@@ -2,6 +2,9 @@ package org.apache.atlas.service;
 
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.commons.lang.StringUtils;
+import org.springframework.beans.BeansException;
+import org.springframework.context.ApplicationContext;
+import org.springframework.context.ApplicationContextAware;
 import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import org.slf4j.Logger;
@@ -18,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 @DependsOn("redisServiceImpl")
-public class FeatureFlagStore {
+public class FeatureFlagStore implements ApplicationContextAware {
     private static final Logger LOG = LoggerFactory.getLogger(FeatureFlagStore.class);
 
     private static final String FF_NAMESPACE = "ff:";
@@ -33,7 +36,8 @@ public class FeatureFlagStore {
     private final RedisService redisService;
     private final FeatureFlagConfig config;
     private final FeatureFlagCacheStore cacheStore;
-    
+    private static ApplicationContext context;
+
     private volatile boolean initialized = false;
 
     @Inject
@@ -45,6 +49,19 @@ public class FeatureFlagStore {
         
         LOG.info("FeatureFlagStore dependencies injected successfully - RedisService: {}", 
                 redisService.getClass().getSimpleName());
+    }
+
+    private static FeatureFlagStore getStore() {
+        try {
+            if (context == null) {
+                LOG.error("ApplicationContext not initialized yet");
+                return null;
+            }
+            return context.getBean(FeatureFlagStore.class);
+        } catch (Exception e) {
+            LOG.error("Failed to get FeatureFlagStore from Spring context", e);
+            return null;
+        }
     }
 
     @PostConstruct
@@ -344,7 +361,7 @@ public class FeatureFlagStore {
     }
 
     private static FeatureFlagStore getInstance() {
-        return ApplicationContextProvider.getBean(FeatureFlagStore.class);
+        return getStore();
     }
 
     private static String addFeatureFlagNamespace(String key) {
@@ -353,6 +370,11 @@ public class FeatureFlagStore {
 
     public boolean isInitialized() {
         return initialized;
+    }
+
+    @Override
+    public void setApplicationContext(ApplicationContext applicationContext) throws BeansException {
+        context = applicationContext;
     }
 
 }
