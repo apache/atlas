@@ -102,6 +102,9 @@ public class RequestContext {
     private boolean     includeClassifications = true;
     private boolean     includeRelationshipAttributes;
 
+    private String     lineageInputLabel = "";
+    private String     lineageOutputLabel = "";
+
     private boolean     includeClassificationNames = false;
     private boolean     skipProcessEdgeRestoration = false;
     private String      currentTypePatchAction = "";
@@ -245,6 +248,22 @@ public class RequestContext {
 
     public void setIncludeRelationshipAttributes(boolean includeRelationshipAttributes) {
         this.includeRelationshipAttributes = includeRelationshipAttributes;
+    }
+
+    public String getLineageInputLabel() {
+        return lineageInputLabel;
+    }
+
+    public void setLineageInputLabel(String lineageInputLabel) {
+        this.lineageInputLabel = lineageInputLabel;
+    }
+
+    public String getLineageOutputLabel() {
+        return lineageOutputLabel;
+    }
+
+    public void setLineageOutputLabel(String lineageOutputLabel) {
+        this.lineageOutputLabel = lineageOutputLabel;
     }
 
     public Map<String, List<Object>> getRemovedElementsMap() {
