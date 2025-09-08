@@ -569,7 +569,7 @@ public class AtlasGraphUtilsV2 {
         }
 
         // definitely a corrupted vertex
-        if (vertex.getPropertyKeys().isEmpty() && !uniqueQualifiedName.isEmpty()) {
+        if (vertex.getPropertyKeys().isEmpty() && StringUtils.isNotEmpty(uniqueQualifiedName)) {
             try (MDCScope corruptedVertexDetails = new MDCScope(Map.of("id", vertex.getIdForDisplay(), ATTRIBUTE_NAME_TYPENAME, typeName, QUALIFIED_NAME, uniqueQualifiedName))) {
                 LOG.warn("findByTypeAndUniquePropertyName: vertex is corrupted {}::{}::{} ", vertex.getIdForDisplay(), typeName, uniqueQualifiedName);
             }
