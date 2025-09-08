@@ -37,6 +37,9 @@ const glossaryImportUrl = () => {
 };
 
 const glossaryTypeUrl = (glossaryType: string, guid: string) => {
+  if (glossaryType == "glossary") {
+    return `${glossaryUrl()}/${guid}`;
+  }
   return `${glossaryUrl()}/${glossaryType}/${guid}`;
 };
 
@@ -90,5 +93,5 @@ export {
   assignTermtoEntitiesUrl,
   assignTermtoCategoryUrl,
   assignGlossaryTypeUrl,
-  removeTermorCatgeoryUrl,
+  removeTermorCatgeoryUrl
 };
