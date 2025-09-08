@@ -305,3 +305,25 @@ export const generateObjectForSaveSearchApi = (options) => {
     return obj;
   }
 };
+
+export const getTypeName = (
+  multiValueSelect: boolean,
+  enumType: string,
+  rest: any
+) => {
+  if (multiValueSelect) {
+    switch (rest.typeName) {
+      case "enumeration":
+        return `array<${enumType}>`;
+      default:
+        return `array<${rest.typeName}>`;
+    }
+  } else {
+    switch (rest.typeName) {
+      case "enumeration":
+        return enumType;
+      default:
+        return rest.typeName;
+    }
+  }
+};

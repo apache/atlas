@@ -154,13 +154,23 @@ const BusinessMetadataAttributeForm = ({
         await updateEnum(data);
         toast.dismiss(toastId.current);
         toastId.current = toast.success(
-          `Enumeration ${enumType} updated
-                 successfully`
+          `Enumeration ${enumType} updated successfully`
         );
       } else {
         toast.dismiss(toastId.current);
         toastId.current = toast.success("No updated values");
       }
+      fields?.forEach((fieldItem: any, idx: number) => {
+        const fieldEnumType =
+          attributeDefsWatch &&
+          attributeDefsWatch(`attributeDefs.${idx}.enumType`);
+        if (fieldEnumType === enumType) {
+          attributeDefsSetValue(
+            `attributeDefs.${idx}.enumValues`,
+            elementValues
+          );
+        }
+      });
       handleCloseEnumModal();
       reset({ enumType: "", enumValues: [] });
       dispatchState(fetchEnumData());
@@ -170,6 +180,7 @@ const BusinessMetadataAttributeForm = ({
     }
   };
   const handleCloseEnumModal = () => {
+    reset({ enumType: "", enumValues: [] });
     setEnumModal(false);
   };
 
@@ -258,7 +269,13 @@ const BusinessMetadataAttributeForm = ({
               data-cy={`attributeDefs.${index}.name`}
               key={`attributeDefs.${index}.name`}
               defaultValue={field?.name}
-              render={({ field: { value, onChange } }) => (
+              rules={{
+                required: true
+              }}
+              render={({
+                field: { value, onChange },
+                fieldState: { error }
+              }) => (
                 <Grid
                   container
                   columnSpacing={{ xs: 1, sm: 2, md: 2 }}
@@ -281,6 +298,7 @@ const BusinessMetadataAttributeForm = ({
                       }}
                       onChange={onChange}
                       margin="none"
+                      error={!!error}
                       fullWidth
                       variant="outlined"
                       size="small"
@@ -297,6 +315,9 @@ const BusinessMetadataAttributeForm = ({
               data-cy={`attributeDefs.${index}.typeName`}
               key={`attributeDefs.${index}.typeName`}
               defaultValue={field?.typeName}
+              rules={{
+                required: true
+              }}
               render={({ field: { value, onChange } }) => (
                 <>
                   <Grid
@@ -547,7 +568,13 @@ const BusinessMetadataAttributeForm = ({
                   data-cy={`attributeDefs.${index}.enumType`}
                   key={`attributeDefs.${index}.enumType`}
                   defaultValue={field?.enumType}
-                  render={({ field: { value, onChange } }) => (
+                  rules={{
+                    required: true
+                  }}
+                  render={({
+                    field: { value, onChange },
+                    fieldState: { error }
+                  }) => (
                     <>
                       <Grid
                         container
@@ -571,7 +598,7 @@ const BusinessMetadataAttributeForm = ({
                               }}
                               size="small"
                               id="search-by-type"
-                              value={value || []}
+                              value={value || null}
                               clearIcon={null}
                               onChange={(_event, newValue) => {
                                 onChange(newValue);
@@ -596,9 +623,6 @@ const BusinessMetadataAttributeForm = ({
                                 }
                               }}
                               filterSelectedOptions
-                              isOptionEqualToValue={(option, value) =>
-                                option === value
-                              }
                               options={
                                 !isEmpty(enumTypes)
                                   ? enumTypes.map((option: any) => option)
@@ -608,11 +632,11 @@ const BusinessMetadataAttributeForm = ({
                               renderInput={(params) => (
                                 <TextField
                                   {...params}
+                                  error={!!error}
                                   fullWidth
                                   disabled={
                                     isEmpty(editbmAttribute) ? false : true
                                   }
-                                  // label="Select type"
                                   InputLabelProps={{
                                     style: {
                                       top: "unset",
@@ -663,9 +687,6 @@ const BusinessMetadataAttributeForm = ({
                 data-cy={`attributeDefs.${index}.enumValues`}
                 key={`attributeDefs.${index}.enumValues` as const}
                 defaultValue={field?.enumValues}
-                rules={{
-                  required: true
-                }}
                 render={({ field }) => {
                   return (
                     <>
@@ -681,11 +702,15 @@ const BusinessMetadataAttributeForm = ({
                         <Grid item md={7}>
                           <Autocomplete
                             size="small"
+                            className="enum-value-selector"
                             readOnly
                             disableClearable={true}
                             multiple={true}
                             value={watched?.[index]?.enumValues || []}
                             getOptionLabel={(option) => option.value}
+                            isOptionEqualToValue={(option, value) =>
+                              option.value === value.value
+                            }
                             data-cy="enumValueSelector"
                             options={
                               !isEmpty(enumTypeOptions)
