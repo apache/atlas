@@ -32,7 +32,6 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
-import org.apache.atlas.repository.graphdb.janus.AtlasJanusGraph;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasStructType;
@@ -45,18 +44,29 @@ import org.apache.atlas.utils.AtlasPerfMetrics.MetricRecorder;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.collections.MapUtils;
 import org.apache.commons.configuration.Configuration;
-import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.StringUtils;
-import org.janusgraph.core.JanusGraph;
-import org.janusgraph.diskstorage.BackendException;
-import org.janusgraph.graphdb.database.util.StaleIndexRecordUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
 
-import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.Constants.ATLAS_GLOSSARY_ENTITY_TYPE;
+import static org.apache.atlas.repository.Constants.ATTRIBUTE_NAME_TYPENAME;
+import static org.apache.atlas.repository.Constants.CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.ENTITY_TYPE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.GLOSSARY_TERMS_EDGE_LABEL;
+import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_DEFAULT;
+import static org.apache.atlas.repository.Constants.INDEX_SEARCH_VERTEX_PREFIX_PROPERTY;
+import static org.apache.atlas.repository.Constants.NAME;
+import static org.apache.atlas.repository.Constants.PROPAGATED_CLASSIFICATION_NAMES_KEY;
+import static org.apache.atlas.repository.Constants.QUALIFIED_NAME;
+import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.SUPER_TYPES_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPENAME_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.TYPE_NAME_PROPERTY_KEY;
+import static org.apache.atlas.repository.Constants.UNIQUE_QUALIFIED_NAME;
 import static org.apache.atlas.repository.graph.AtlasGraphProvider.getGraphInstance;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.ASC;
 import static org.apache.atlas.repository.graphdb.AtlasGraphQuery.SortOrder.DESC;
@@ -523,7 +533,7 @@ public class AtlasGraphUtilsV2 {
         MetricRecorder  metric          = RequestContext.get().startMetricRecord(metricName);
         String          typePropertyKey = isSuperType ? SUPER_TYPES_PROPERTY_KEY : ENTITY_TYPE_PROPERTY_KEY;
         AtlasGraphQuery query           = graph.query().has(typePropertyKey, typeName);
-        String uniqueQualifiedName= "";
+        String uniqueQualifiedName = "";
 
         for (Map.Entry<String, Object> entry : attributeValues.entrySet()) {
             String attrName  = entry.getKey();
@@ -546,43 +556,20 @@ public class AtlasGraphUtilsV2 {
         // vertex is discoverable via index
         // this will prevent corrupted vertices to get processed further
         // vertex can't be repaired if all the core properties are not present
-
         if (vertex != null) {
-            if ((vertex.getProperty(GUID_PROPERTY_KEY, String.class) != null &&
+            if ((vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class) != null &&
                     vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class) != null &&
                     vertex.getProperty(UNIQUE_QUALIFIED_NAME, String.class) != null)) {
                 return vertex;
             } else if (vertex.getPropertyKeys().isEmpty() && !uniqueQualifiedName.isEmpty()) {
                 // definitely a corrupted vertex
-                LOG.warn("findByTypeAndUniquePropertyName: vertex {} is corrupted - deleting it", vertex.getIdForDisplay());
-
-                Map<String, Object> indexProperties = new HashMap<>();
-                indexProperties.put(Constants.UNIQUE_QUALIFIED_NAME, uniqueQualifiedName);
-                indexProperties.put(Constants.TYPE_NAME_PROPERTY_KEY, typeName);
-                JanusGraph janusGraph = ((AtlasJanusGraph) graph).getGraph().tx().begin();
-                try {
-                    StaleIndexRecordUtil.forceRemoveVertexFromGraphIndex(
-                            (Long) vertex.getId(),
-                            indexProperties,
-                            janusGraph,
-                            COMPOSITE_INDEX_QN_TYPE
-                    );
-
-                    // explore the repercussion as other methods that use this method use @GraphTransaction
-                    janusGraph.tx().commit();
-                } catch (BackendException be) {
-                    janusGraph.tx().rollback();
-                    LOG.warn("findByTypeAndUniquePropertyName: failed to delete corrupted vertex {} ", vertex.getIdForDisplay(), be);
-                    // let it work as it was working earlier
-                    return vertex;
-                }
-            } else {
-                // if it can be repaired in future
-                return vertex;
+                MDC.put("id", vertex.getIdForDisplay());
+                MDC.put(QUALIFIED_NAME, uniqueQualifiedName);
+                MDC.put(ATTRIBUTE_NAME_TYPENAME, typeName);
+                LOG.warn("findByTypeAndUniquePropertyName: vertex {}::{}::{} is corrupted", vertex.getIdForDisplay(), typeName, uniqueQualifiedName);
             }
         }
-
-        return null;
+        return vertex;
     }
 
     public static AtlasVertex glossaryFindByTypeAndPropertyName(AtlasEntityType entityType, String name) {
