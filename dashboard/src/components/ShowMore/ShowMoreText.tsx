@@ -33,66 +33,35 @@ const ShowMoreText = ({
   less: string;
   isHtml?: boolean;
 }) => {
-  const [showMore, setShowMore] = useState<boolean>(
-    value.length > maxLength ? true : false
-  );
+  const [isTruncated, setIsTruncated] = useState(true);
 
   if (isEmpty(value)) return <>NA</>;
 
-  const truncatedValue = value.substring(0, maxLength);
+  const shouldTruncate = value.length > maxLength && isTruncated;
+  const displayValue = shouldTruncate
+    ? value.substring(0, maxLength) + "..."
+    : value;
 
   return (
     <>
-      {showMore && value.length > maxLength ? (
-        <>
-          {isHtml ? (
-            <div
-              className="long-descriptions"
-              dangerouslySetInnerHTML={{ __html: truncatedValue }}
-            />
-          ) : (
-            <>{truncatedValue}</>
-          )}
-          ...{" "}
-          <MuiLink
-            underline="hover"
-            style={{ cursor: "pointer" }}
-            onClick={(event) => {
-              event.preventDefault();
-              setShowMore(false);
-            }}
-            sx={{ display: "inline-block" }}
-          >
-            <Typography fontSize="14px" fontWeight={500}>
-              {more}
-            </Typography>
-          </MuiLink>
-        </>
+      {isHtml ? (
+        <div
+          className="long-descriptions"
+          dangerouslySetInnerHTML={{ __html: displayValue }}
+        />
       ) : (
-        <>
-          {isHtml ? (
-            <div
-              className="long-descriptions"
-              dangerouslySetInnerHTML={{ __html: value }}
-            />
-          ) : (
-            <>{value}</>
-          )}
-          {value.length > maxLength && (
-            <MuiLink
-              underline="hover"
-              style={{ cursor: "pointer" }}
-              onClick={() => {
-                setShowMore(true);
-              }}
-              sx={{ display: "inline-block" }}
-            >
-              <Typography fontSize="14px" fontWeight={500}>
-                {less}
-              </Typography>
-            </MuiLink>
-          )}
-        </>
+        displayValue
+      )}
+      {value.length > maxLength && (
+        <MuiLink
+          underline="hover"
+          onClick={() => setIsTruncated((prev) => !prev)}
+          className="show-more-less-link"
+        >
+          <Typography fontSize="14px" fontWeight={500}>
+            {shouldTruncate ? ` ${more}` : ` ${less}`}
+          </Typography>
+        </MuiLink>
       )}
     </>
   );
