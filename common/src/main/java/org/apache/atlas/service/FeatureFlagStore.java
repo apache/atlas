@@ -170,7 +170,7 @@ public class FeatureFlagStore implements ApplicationContextAware {
     }
 
     public static boolean isTagV2Enabled() {
-        return !evaluate(FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey(), "false"); // Default value is false, if the flag is present or has any other value it's treated as enabled
+        return !evaluate(FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey(), "false"); // Default value is false, if the flag is present or has value true it's treated as enabled
     }
 
     public static boolean evaluate(String key, String expectedValue) {
@@ -181,17 +181,21 @@ public class FeatureFlagStore implements ApplicationContextAware {
         try {
             if (!isValidFlag(key)) {
                 LOG.warn("Invalid feature flag requested: '{}'. Only predefined flags are allowed", key);
-                return null;
+                throw new IllegalStateException("Invalid feature flag requested: " + key);
             }
 
             FeatureFlagStore instance = getInstance();
             if (instance == null) {
                 LOG.warn("FeatureFlagStore not initialized, cannot get flag: {}", key);
+                if (FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey().equals(key))
+                    throw new RuntimeException("FeatureFlagStore not initialized, cannot get critical Tags flag: " + key);
                 return getDefaultValue(key);
             }
 
             return instance.getFlagInternal(key);
         } catch (Exception e) {
+            if (FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey().equals(key))
+                throw e;
             LOG.error("Error getting feature flag '{}'", key, e);
             return getDefaultValue(key); // Always return something
         }
@@ -218,7 +222,8 @@ public class FeatureFlagStore implements ApplicationContextAware {
         }
 
         if (StringUtils.isEmpty(key)) {
-            return "";
+            LOG.error("Invalid key: cannot be null or empty");
+            throw new IllegalStateException("Null or empty redis key");
         }
 
         String namespacedKey = addFeatureFlagNamespace(key);
