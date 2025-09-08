@@ -4414,4 +4414,59 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         
         System.out.println("\\n🚀 UI Contains optimization ready for production!");
     }
+
+    public void testWildcardCaseInsensitiveNotConsolidated() throws Exception {
+        String input = "{\n" +
+                "    \"query\": {\n" +
+                "        \"bool\": {\n" +
+                "            \"should\": [\n" +
+                "                {\n" +
+                "                    \"wildcard\": {\n" +
+                "                        \"name.keyword\": {\n" +
+                "                            \"value\": \"*cust*\",\n" +
+                "                            \"case_insensitive\": true\n" +
+                "                        }\n" +
+                "                    }\n" +
+                "                },\n" +
+                "                {\n" +
+                "                    \"wildcard\": {\n" +
+                "                        \"displayName.keyword\": {\n" +
+                "                            \"value\": \"*cust*\",\n" +
+                "                            \"case_insensitive\": true\n" +
+                "                        }\n" +
+                "                    }\n" +
+                "                }\n" +
+                "            ]\n" +
+                "        }\n" +
+                "    }\n" +
+                "}";
+
+        JsonNode query = objectMapper.readTree(input);
+        ElasticsearchDslOptimizer.OptimizationResult result = optimizer.optimizeQuery(input);
+        JsonNode optimized = objectMapper.readTree(result.getOptimizedQuery());
+
+        // Verify that wildcards were not consolidated
+        JsonNode shouldClause = optimized.path("query").path("bool").path("should");
+        assertTrue("Should clause should exist", shouldClause.isArray());
+        assertEquals("Should have same number of wildcards", 2, shouldClause.size());
+
+        // Verify both wildcards are preserved with case_insensitive flag
+        for (JsonNode clause : shouldClause) {
+            assertTrue("Should be wildcard query", clause.has("wildcard"));
+            JsonNode wildcardNode = clause.get("wildcard");
+            JsonNode fieldValue = wildcardNode.fields().next().getValue();
+            assertTrue("Should have case_insensitive flag", fieldValue.has("case_insensitive"));
+            assertTrue("Case insensitive should be true", fieldValue.get("case_insensitive").asBoolean());
+            assertEquals("Pattern should be preserved", "*cust*", fieldValue.get("value").asText());
+        }
+
+        // Verify no regexp queries were created
+        int regexpCount = 0;
+        for (JsonNode clause : shouldClause) {
+            if (clause.has("regexp")) {
+                regexpCount++;
+            }
+        }
+        assertEquals("Should not have any regexp queries", 0, regexpCount);
+    }
 } 

@@ -18,7 +18,6 @@ import org.junit.jupiter.api.*;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Instant;
-import java.util.stream.Collectors;
 import java.util.*;
 
 import static org.apache.atlas.repository.store.graph.v2.tags.CassandraTagConfig.*;
