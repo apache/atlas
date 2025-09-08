@@ -44,48 +44,8 @@ public class JsonToElasticsearchQuery {
         }
     }
 
-    public static JsonNode convertJsonToQuery(JsonNode data) {
-        AtlasPerfMetrics.MetricRecorder convertJsonToQueryMetrics = RequestContext.get().startMetricRecord("convertJsonToQuery");
-        String condition = data.get("condition").asText();
-        JsonNode criterion = data.get("criterion");
-
-        JsonNode query = convertConditionToQuery(condition);
-
-        for (JsonNode crit : criterion) {
-            if (crit.has("condition")) {
-                JsonNode nestedQuery = convertJsonToQuery(crit);
-                if (condition.equals("AND")) {
-                    ((ArrayNode) query.get("bool").get("filter")).add(nestedQuery);
-                } else {
-                    ((ArrayNode) query.get("bool").get("should")).add(nestedQuery);
-                }
-            } else {
-                String operator = crit.get("operator").asText();
-                String attributeName = crit.get("attributeName").asText();
-                JsonNode attributeValueNode = crit.get("attributeValue");
-                
-                List<String> relatedAttributes = EntityAuthorizer.getRelatedAttributes(attributeName);
-
-                ArrayNode queryArray = ((ArrayNode) query.get("bool").get(getConditionClause(condition)));
-                JsonNode attributeQuery;
-                if (relatedAttributes.size() > 1) { // handle attributes with multiple related attributes
-                    String relatedAttrCondition = POLICY_FILTER_CRITERIA_NEGATIVE_OPS.contains(operator)
-                            ? POLICY_FILTER_CRITERIA_AND
-                            : POLICY_FILTER_CRITERIA_OR;
-                    attributeQuery = convertConditionToQuery(relatedAttrCondition);
-                    for (String relatedAttribute : relatedAttributes) {
-                        JsonNode relatedAttributeQuery = createAttributeQuery(operator, relatedAttribute, attributeValueNode);
-                        ((ArrayNode) attributeQuery.get("bool").get(getConditionClause(relatedAttrCondition))).add(relatedAttributeQuery);
-                    }
-                } else {
-                    attributeQuery = createAttributeQuery(operator, attributeName, attributeValueNode);
-                }
-
-                if (attributeQuery != null) queryArray.add(attributeQuery);
-            }
-        }
-        RequestContext.get().endMetricRecord(convertJsonToQueryMetrics);
-        return query;
+    private static String getConditionClause(String condition) {
+        return POLICY_FILTER_CRITERIA_AND.equals(condition) ? "filter" : "should";
     }
 
     private static JsonNode createAttributeQuery(String operator, String attributeName, JsonNode attributeValueNode) {
@@ -154,14 +114,94 @@ public class JsonToElasticsearchQuery {
         return queryNode;
     }
 
+    private static ObjectNode createSpanNearQuery(JsonNode value) {
+        // Add span_near query for key-value pair
+        ArrayNode clausesArray = mapper.createArrayNode();
+
+        // Create span_term for left side of the tag
+        ObjectNode tagClause = mapper.createObjectNode();
+        ObjectNode tagSpanTerm = mapper.createObjectNode();
+        tagSpanTerm.put("__classificationsText.text", "tagAttachmentValue");
+        tagClause.set("span_term", tagSpanTerm);
+        clausesArray.add(tagClause);
+
+        // Create span_term for value
+        if (StringUtils.isNotEmpty(value.asText())) {
+            ObjectNode keyClause = mapper.createObjectNode();
+            ObjectNode keySpanTerm = mapper.createObjectNode();
+            keySpanTerm.put("__classificationsText.text", value.asText());
+            keyClause.set("span_term", keySpanTerm);
+            clausesArray.add(keyClause);
+        }
+
+        // Create span_term for right side of the tag
+        ObjectNode valueClause = mapper.createObjectNode();
+        ObjectNode valueSpanTerm = mapper.createObjectNode();
+        valueSpanTerm.put("__classificationsText.text", "tagAttachmentKey");
+        valueClause.set("span_term", valueSpanTerm);
+        clausesArray.add(valueClause);
+
+        // Skipping clause for key to keep the DSL consistent with the FE query
+
+        ObjectNode spanNearNode = mapper.createObjectNode();
+        spanNearNode.set("clauses", clausesArray);
+        spanNearNode.put("in_order", true);
+        spanNearNode.put("slop", 0);
+
+        ObjectNode spanNearQuery = mapper.createObjectNode();
+        spanNearQuery.set("span_near", spanNearNode);
+
+        return spanNearQuery;
+    }
+
+    public static JsonNode convertJsonToQuery(JsonNode data) {
+        AtlasPerfMetrics.MetricRecorder convertJsonToQueryMetrics = RequestContext.get().startMetricRecord("convertJsonToQuery");
+        String condition = data.get("condition").asText();
+        JsonNode criterion = data.get("criterion");
+
+        JsonNode query = convertConditionToQuery(condition);
+
+        for (JsonNode crit : criterion) {
+            if (crit.has("condition")) {
+                JsonNode nestedQuery = convertJsonToQuery(crit);
+                if (condition.equals("AND")) {
+                    ((ArrayNode) query.get("bool").get("filter")).add(nestedQuery);
+                } else {
+                    ((ArrayNode) query.get("bool").get("should")).add(nestedQuery);
+                }
+            } else {
+                String operator = crit.get("operator").asText();
+                String attributeName = crit.get("attributeName").asText();
+                JsonNode attributeValueNode = crit.get("attributeValue");
+                
+                List<String> relatedAttributes = EntityAuthorizer.getRelatedAttributes(attributeName);
+
+                ArrayNode queryArray = ((ArrayNode) query.get("bool").get(getConditionClause(condition)));
+                JsonNode attributeQuery;
+                if (relatedAttributes.size() > 1) { // handle attributes with multiple related attributes
+                    String relatedAttrCondition = POLICY_FILTER_CRITERIA_NEGATIVE_OPS.contains(operator)
+                            ? POLICY_FILTER_CRITERIA_AND
+                            : POLICY_FILTER_CRITERIA_OR;
+                    attributeQuery = convertConditionToQuery(relatedAttrCondition);
+                    for (String relatedAttribute : relatedAttributes) {
+                        JsonNode relatedAttributeQuery = createAttributeQuery(operator, relatedAttribute, attributeValueNode);
+                        ((ArrayNode) attributeQuery.get("bool").get(getConditionClause(relatedAttrCondition))).add(relatedAttributeQuery);
+                    }
+                } else {
+                    attributeQuery = createAttributeQuery(operator, attributeName, attributeValueNode);
+                }
+
+                if (attributeQuery != null) queryArray.add(attributeQuery);
+            }
+        }
+        RequestContext.get().endMetricRecord(convertJsonToQueryMetrics);
+        return query;
+    }
+
     // Repeating some code for tag key-value pairs query creation to avoid complexity in the main query creation logic
     // This method can potentially be merged with createAttributeQuery if needed
     public static JsonNode createQueryWithOperatorForTag(String operator, String attributeName, JsonNode attributeValueNode) {
         ObjectNode queryNode = mapper.createObjectNode();
-        
-        if (!isTagKeyValueFormat(attributeValueNode)) {
-            return null;
-        }
 
         switch (operator) {
             case POLICY_FILTER_CRITERIA_EQUALS:
@@ -287,12 +327,12 @@ public class JsonToElasticsearchQuery {
             return queryNode;
         }
 
-        String tag = tagKeyValueNode.get("name").asText();
+        String tagTypeName = tagKeyValueNode.get("name").asText();
 
         ArrayNode filterArray = queryNode.putObject("bool").putArray("filter");
         // Add term query for tag name match
         ObjectNode tagTermQuery = mapper.createObjectNode();
-        tagTermQuery.putObject("term").put(attributeName, tag);
+        tagTermQuery.putObject("term").put(attributeName, tagTypeName);
         filterArray.add(tagTermQuery);
 
         ArrayNode tagKeyValues = (ArrayNode) tagKeyValueNode.get("tagValues");
@@ -320,46 +360,6 @@ public class JsonToElasticsearchQuery {
         return queryNode;
     }
 
-    private static ObjectNode createSpanNearQuery(JsonNode value) {
-        // Add span_near query for key-value pair
-        ArrayNode clausesArray = mapper.createArrayNode();
-
-        // Create span_term for left side of the tag
-        ObjectNode tagClause = mapper.createObjectNode();
-        ObjectNode tagSpanTerm = mapper.createObjectNode();
-        tagSpanTerm.put("__classificationsText.text", "tagAttachmentValue");
-        tagClause.set("span_term", tagSpanTerm);
-        clausesArray.add(tagClause);
-
-        // Create span_term for value
-        if (StringUtils.isNotEmpty(value.asText())) {
-            ObjectNode keyClause = mapper.createObjectNode();
-            ObjectNode keySpanTerm = mapper.createObjectNode();
-            keySpanTerm.put("__classificationsText.text", value.asText());
-            keyClause.set("span_term", keySpanTerm);
-            clausesArray.add(keyClause);
-        }
-
-        // Create span_term for right side of the tag
-        ObjectNode valueClause = mapper.createObjectNode();
-        ObjectNode valueSpanTerm = mapper.createObjectNode();
-        valueSpanTerm.put("__classificationsText.text", "tagAttachmentKey");
-        valueClause.set("span_term", valueSpanTerm);
-        clausesArray.add(valueClause);
-
-        // Skipping clause for key to keep the DSL consistent with the FE query
-
-        ObjectNode spanNearNode = mapper.createObjectNode();
-        spanNearNode.set("clauses", clausesArray);
-        spanNearNode.put("in_order", true);
-        spanNearNode.put("slop", 0);
-
-        ObjectNode spanNearQuery = mapper.createObjectNode();
-        spanNearQuery.set("span_near", spanNearNode);
-        
-        return spanNearQuery;
-    }
-
     public static JsonNode parseFilterJSON(String policyFilterCriteria, String rootKey) {
         JsonNode filterCriteriaNode = null;
         if (!StringUtils.isEmpty(policyFilterCriteria)) {
@@ -376,7 +376,4 @@ public class JsonToElasticsearchQuery {
         return null;
     }
 
-    private static String getConditionClause(String condition) {
-        return POLICY_FILTER_CRITERIA_AND.equals(condition) ? "filter" : "should";
-    }
 }
