@@ -253,3 +253,8 @@ td:has(.searchTableName) {
   gap: 0.5rem;
   cursor: pointer;
 }
+
+.expand-row-table td:not(:first-child),
+.expand-row-table th:not(:first-child) {
+  width: 100% !important;
+}
