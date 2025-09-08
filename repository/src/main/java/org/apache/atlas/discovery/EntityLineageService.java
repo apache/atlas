@@ -818,8 +818,8 @@ public class EntityLineageService implements AtlasLineageService {
         List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(inVertex, IN, lineageInputLabel, atlasLineageOnDemandContext);
         if (!filteredEdges.isEmpty()) {
             inLineageInfo.setHasDownstream(true);
+            inLineageInfo.setTotalOutputRelationsCount(filteredEdges.size());
         }
-        inLineageInfo.setTotalOutputRelationsCount(filteredEdges.size());
     }
 
     private void setHasUpstream(AtlasLineageOnDemandContext atlasLineageOnDemandContext, AtlasVertex outVertex, LineageInfoOnDemand outLineageInfo) {
@@ -827,8 +827,8 @@ public class EntityLineageService implements AtlasLineageService {
         List<AtlasEdge> filteredEdges = getFilteredAtlasEdges(outVertex, IN, lineageOutputLabel, atlasLineageOnDemandContext);
         if (!filteredEdges.isEmpty()) {
             outLineageInfo.setHasUpstream(true);
+            outLineageInfo.setTotalInputRelationsCount(filteredEdges.size());
         }
-        outLineageInfo.setTotalInputRelationsCount(filteredEdges.size());
     }
 
     private List<AtlasEdge> getFilteredAtlasEdges(AtlasVertex outVertex, AtlasEdgeDirection direction, String processEdgeLabel, AtlasLineageOnDemandContext atlasLineageOnDemandContext) {
