@@ -32,6 +32,7 @@ import org.apache.atlas.model.typedef.AtlasEnumDef;
 import org.apache.atlas.repository.Constants;
 import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.*;
+import org.apache.atlas.repository.store.graph.v2.utils.MDCScope;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasEnumType;
 import org.apache.atlas.type.AtlasStructType;
@@ -557,16 +558,15 @@ public class AtlasGraphUtilsV2 {
         // this will prevent corrupted vertices to get processed further
         // vertex can't be repaired if all the core properties are not present
         if (vertex != null) {
-            if ((vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class) != null &&
+            if (vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class) != null &&
                     vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class) != null &&
-                    vertex.getProperty(UNIQUE_QUALIFIED_NAME, String.class) != null)) {
+                    vertex.getProperty(UNIQUE_QUALIFIED_NAME, String.class) != null) {
                 return vertex;
             } else if (vertex.getPropertyKeys().isEmpty() && !uniqueQualifiedName.isEmpty()) {
                 // definitely a corrupted vertex
-                MDC.put("id", vertex.getIdForDisplay());
-                MDC.put(QUALIFIED_NAME, uniqueQualifiedName);
-                MDC.put(ATTRIBUTE_NAME_TYPENAME, typeName);
-                LOG.warn("findByTypeAndUniquePropertyName: vertex {}::{}::{} is corrupted", vertex.getIdForDisplay(), typeName, uniqueQualifiedName);
+                try (MDCScope corruptedVertexDetails = new MDCScope(Map.of("id", vertex.getIdForDisplay(), ATTRIBUTE_NAME_TYPENAME, typeName, QUALIFIED_NAME, uniqueQualifiedName))) {
+                    LOG.warn("findByTypeAndUniquePropertyName: vertex is corrupted {}::{}::{} ", vertex.getIdForDisplay(), typeName, uniqueQualifiedName);
+                }
             }
         }
         return vertex;
