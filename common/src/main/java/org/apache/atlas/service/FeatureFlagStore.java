@@ -119,7 +119,7 @@ public class FeatureFlagStore implements ApplicationContextAware {
             String value = loadFlagFromRedisWithRetry(namespacedKey, flagKey);
 
             if (!StringUtils.isEmpty(value)) {
-                cacheStore.putInFallbackCache(namespacedKey, value);
+                cacheStore.putInBothCaches(namespacedKey, value);
                 LOG.debug("Preloaded flag '{}' with Redis value: {}", flagKey, value);
             } else {
                 String defaultValue = String.valueOf(flag.getDefaultValue());
