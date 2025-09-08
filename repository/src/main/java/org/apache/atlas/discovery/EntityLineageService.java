@@ -532,11 +532,11 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasVertex baseVertex = AtlasGraphUtilsV2.findByGuid(this.graph, baseGuid);
         EntityValidationResult entityValidationResult = validateAndGetEntityTypeMap(baseGuid);
 
-        boolean isNotConnecterVertex =  entityValidationResult.CheckIfConnectorVertex(lineageType);
+        boolean isNotConnectorVertex =  entityValidationResult.CheckIfConnectorVertex(lineageType);
         // Get the neighbors for the current node
         enqueueNeighbours(baseVertex, entityValidationResult, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
         int currentDepth = 0;
-        int currentLevel = isNotConnecterVertex? 0: 1;
+        int currentLevel = isNotConnectorVertex? 0: 1;
 
         if(lineageListContext.getImmediateNeighbours()){
             // Add the current node and its neighbors to the result
@@ -547,7 +547,7 @@ public class EntityLineageService implements AtlasLineageService {
             currentDepth++;
 
             // update level at every alternate depth
-            if ((isNotConnecterVertex && currentDepth % 2 != 0) || (!isNotConnecterVertex && currentDepth % 2 == 0))
+            if ((isNotConnectorVertex && currentDepth % 2 != 0) || (!isNotConnectorVertex && currentDepth % 2 == 0))
                 currentLevel++;
 
             int entitiesInCurrentDepth = traversalQueue.size();
