@@ -118,11 +118,11 @@ if (!initialized) {
 ### Caching Strategy
 - Read path: Primary cache → Redis → Fallback cache → null
 - Write path: Redis + Both caches (atomic)
-- Cache invalidation: Remove from both caches simultaneously
-- No cache stampeding - single writer per flag
+- Cache invalidation: Remove from both caches simultaneously. Only current k8s pod updates both caches in real-time. Other pods will have wait for cache expiration
+- No cache stampeding - single writer per flag per Atlas pod
 
 ### Startup Reliability
-- Fail-fast: Application won't start with broken feature flags
+- Fail-fast: Application won't start with broken feature flags store initialization.
 - Comprehensive testing: Redis connectivity + configuration validation
 - Clear error messages: Operators can quickly identify and fix issues
 - Timeout protection: Prevent infinite startup hangs

@@ -81,34 +81,4 @@ public class SimpleCache<K, V> {
         cache.remove(key);
     }
 
-    /**
-     * Removes all values from the cache.
-     */
-    public void invalidateAll() {
-        cache.clear();
-    }
-
-    /**
-     * Gets the estimated size of the cache.
-     * @return the number of entries in the cache
-     */
-    public long estimatedSize() {
-        return cache.size();
-    }
-
-    /**
-     * Checks if the cache has TTL-based expiration enabled.
-     * @return true if TTL is enabled, false otherwise
-     */
-    public boolean hasTtl() {
-        return hasTtl;
-    }
-
-    /**
-     * Gets the base TTL value in milliseconds.
-     * @return the TTL in milliseconds, or 0 if TTL is disabled
-     */
-    public long getTtlMs() {
-        return ttlMs;
-    }
 }
