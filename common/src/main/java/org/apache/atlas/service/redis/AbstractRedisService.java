@@ -239,7 +239,7 @@ public abstract class AbstractRedisService implements RedisService {
         waitTimeInMS = atlasConfig.getLong(ATLAS_REDIS_LOCK_WAIT_TIME_MS, DEFAULT_REDIS_WAIT_TIME_MS);
         leaseTimeInMS = atlasConfig.getLong(ATLAS_REDIS_LEASE_TIME_MS, DEFAULT_REDIS_LEASE_TIME_MS);
         watchdogTimeoutInMS = atlasConfig.getLong(ATLAS_REDIS_LOCK_WATCHDOG_TIMEOUT_MS, DEFAULT_REDIS_LOCK_WATCHDOG_TIMEOUT_MS);
-        checkSentinelsList = atlasConfig.getBoolean(CHECK_SENTINELS_LIST, false);
+        checkSentinelsList = atlasConfig.getBoolean(CHECK_SENTINELS_LIST, true);
         Config redisConfig = new Config();
         redisConfig.setLockWatchdogTimeout(watchdogTimeoutInMS);
         return redisConfig;

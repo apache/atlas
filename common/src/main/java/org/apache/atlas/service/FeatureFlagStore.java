@@ -123,7 +123,7 @@ public class FeatureFlagStore implements ApplicationContextAware {
                 LOG.debug("Preloaded flag '{}' with Redis value: {}", flagKey, value);
             } else {
                 String defaultValue = String.valueOf(flag.getDefaultValue());
-                cacheStore.putInFallbackCache(namespacedKey, defaultValue);
+                cacheStore.putInBothCaches(namespacedKey, defaultValue);
                 LOG.debug("Preloaded flag '{}' with default value: {} (not found in Redis)", flagKey, defaultValue);
             }
         }
@@ -187,8 +187,6 @@ public class FeatureFlagStore implements ApplicationContextAware {
             FeatureFlagStore instance = getInstance();
             if (instance == null) {
                 LOG.warn("FeatureFlagStore not initialized, cannot get flag: {}", key);
-                if (FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey().equals(key))
-                    throw new RuntimeException("FeatureFlagStore not initialized, cannot get critical Tags flag: " + key);
                 return getDefaultValue(key);
             }
 
@@ -202,6 +200,8 @@ public class FeatureFlagStore implements ApplicationContextAware {
     }
 
     private static String getDefaultValue(String key) {
+        if (FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey().equals(key))
+            throw new RuntimeException("Cannot return default value for critical Tags FF: " + key);
         FeatureFlag flag = FeatureFlag.fromKey(key);
         return flag != null ? String.valueOf(flag.getDefaultValue()) : "false";
     }
@@ -289,7 +289,7 @@ public class FeatureFlagStore implements ApplicationContextAware {
 
     private String fetchFromRedisAndCache(String namespacedKey, String key) {
         try {
-            String value = redisService.getValue(namespacedKey);
+            String value = loadFlagFromRedisWithRetry(namespacedKey, key);
             if (value != null)
                 updateBothCaches(namespacedKey, value);
             return value;

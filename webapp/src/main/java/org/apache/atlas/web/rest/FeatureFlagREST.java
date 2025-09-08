@@ -95,21 +95,15 @@ public class FeatureFlagREST {
             String[] allKeys = FeatureFlag.getAllKeys();
             
             for (String key : allKeys) {
-                try {
-                    FeatureFlag flag = FeatureFlag.fromKey(key);
-                    String currentValue = FeatureFlagStore.getFlag(key);
-                    
-                    FeatureFlagInfo flagInfo = new FeatureFlagInfo();
-                    flagInfo.setKey(key);
-                    flagInfo.setCurrentValue(currentValue);
-                    flagInfo.setDefaultValue(String.valueOf(flag.getDefaultValue()));
+                FeatureFlag flag = FeatureFlag.fromKey(key);
+                String currentValue = FeatureFlagStore.getFlag(key);
 
-                    flagList.add(flagInfo);
-                    
-                } catch (Exception e) {
-                    LOG.warn("Failed to get feature flag: {}", key, e);
-                    // Continue with other flags instead of failing completely
-                }
+                FeatureFlagInfo flagInfo = new FeatureFlagInfo();
+                flagInfo.setKey(key);
+                flagInfo.setCurrentValue(currentValue);
+                flagInfo.setDefaultValue(String.valueOf(flag.getDefaultValue()));
+
+                flagList.add(flagInfo);
             }
 
             response.setFeatureFlags(flagList);
