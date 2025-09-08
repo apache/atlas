@@ -59,6 +59,7 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.TimeUnit;
 
 import static org.apache.atlas.AtlasErrorCode.APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED;
+import static org.apache.atlas.AtlasErrorCode.ATTRIBUTE_DELETION_NOT_SUPPORTED;
 import static org.apache.atlas.repository.graphdb.janus.AtlasElasticsearchQuery.CLIENT_ORIGIN_PRODUCT;
 import static org.apache.atlas.web.filters.AuditFilter.X_ATLAN_CLIENT_ORIGIN;
 
@@ -468,9 +469,8 @@ public class TypesREST {
             RequestContext.get().setAllowDuplicateDisplayName(allowDuplicateDisplayName);
             typesDef.getBusinessMetadataDefs().forEach(AtlasBusinessMetadataDef::setRandomNameForEntityAndAttributeDefs);
             typesDef.getClassificationDefs().forEach(AtlasClassificationDef::setRandomNameForEntityAndAttributeDefs);
-            AtlasTypesDef atlasTypesDef = typeDefStore.createTypesDef(typesDef);
             String clientOrigin = servletRequest.getHeader(X_ATLAN_CLIENT_ORIGIN);
-            refreshAllHostCache(RequestContext.get().getTraceId(), clientOrigin);
+            AtlasTypesDef atlasTypesDef = createTypeDefsWithRetry(typesDef, clientOrigin);
             return atlasTypesDef;
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.createAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
@@ -579,9 +579,8 @@ public class TypesREST {
                                                                AtlasTypeUtil.toDebugString(typesDef) + ")");
             }
             lock = attemptAcquiringLockV2();
-            typeDefStore.deleteTypesDef(typesDef);
             String clientOrigin = servletRequest.getHeader(X_ATLAN_CLIENT_ORIGIN);
-            refreshAllHostCache(RequestContext.get().getTraceId(), clientOrigin);
+            deleteTypeDefsWithRetry(typesDef, clientOrigin);
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.deleteAtlasTypeDefs:: " + atlasBaseException.getMessage(), atlasBaseException);
             throw atlasBaseException;
@@ -616,8 +615,7 @@ public class TypesREST {
                 perf = AtlasPerfTracer.getPerfTracer(PERF_LOG, "TypesREST.deleteAtlasTypeByName(" + typeName + ")");
             }
             lock = attemptAcquiringLockV2();
-            typeDefStore.deleteTypeByName(typeName);
-            typeCacheRefresher.refreshAllHostCache();
+            deleteTypeByNameWithRetry(typeName);
         } catch (AtlasBaseException atlasBaseException) {
             LOG.error("TypesREST.deleteAtlasTypeByName:: " + atlasBaseException.getMessage(), atlasBaseException);
             throw atlasBaseException;
@@ -786,6 +784,45 @@ public class TypesREST {
         this.redisService.releaseDistributedLock(typeDefLock);
     }
 
+    public AtlasTypesDef createTypeDefsWithRetry(AtlasTypesDef typesDef, String clientOrigin) throws AtlasBaseException {
+        AtlasBaseException lastException = null;
+
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                // Perform the creation
+                AtlasTypesDef result = typeDefStore.createTypesDef(typesDef);
+                refreshAllHostCache(RequestContext.get().getTraceId(), clientOrigin);
+                LOG.info("Successfully created typedefs on attempt {}", attempt);
+                return result;
+
+            } catch (AtlasBaseException e) {
+                lastException = e;
+
+                if (attempt == MAX_RETRIES) {
+                    LOG.error("Failed to create typedefs after {} attempts", MAX_RETRIES, e);
+                    throw e;
+                }
+
+                if (isRetryable(e)) {
+                    LOG.warn("Creation attempt {} failed with retryable error, retrying in {}ms",
+                            attempt, RETRY_DELAY_MS, e);
+                    try {
+                        Thread.sleep(RETRY_DELAY_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        LOG.warn("Creation retry interrupted, failing operation");
+                        throw e;
+                    }
+                } else {
+                    LOG.error("Non-retryable error occurred during creation", e);
+                    throw e;
+                }
+            }
+        }
+
+        throw lastException; // Should never reach here, but for completeness
+    }
+
     public AtlasTypesDef updateTypeDefsWithRetry(AtlasTypesDef typesDef, String clientOrigin) throws AtlasBaseException {
         AtlasBaseException lastException = null;
 
@@ -825,7 +862,86 @@ public class TypesREST {
         throw lastException; // Should never reach here, but for completeness
     }
 
+    public void deleteTypeDefsWithRetry(AtlasTypesDef typesDef, String clientOrigin) throws AtlasBaseException {
+        AtlasBaseException lastException = null;
+
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                // Perform the deletion
+                typeDefStore.deleteTypesDef(typesDef);
+                refreshAllHostCache(RequestContext.get().getTraceId(), clientOrigin);
+                LOG.info("Successfully deleted typedefs on attempt {}", attempt);
+                return;
+
+            } catch (AtlasBaseException e) {
+                lastException = e;
+
+                if (attempt == MAX_RETRIES) {
+                    LOG.error("Failed to delete typedefs after {} attempts", MAX_RETRIES, e);
+                    throw e;
+                }
+
+                if (isRetryable(e)) {
+                    LOG.warn("Deletion attempt {} failed with retryable error, retrying in {}ms",
+                            attempt, RETRY_DELAY_MS, e);
+                    try {
+                        Thread.sleep(RETRY_DELAY_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        LOG.warn("Deletion retry interrupted, failing operation");
+                        throw e;
+                    }
+                } else {
+                    LOG.error("Non-retryable error occurred during deletion", e);
+                    throw e;
+                }
+            }
+        }
+
+        throw lastException; // Should never reach here, but for completeness
+    }
+
+    public void deleteTypeByNameWithRetry(String typeName) throws AtlasBaseException {
+        AtlasBaseException lastException = null;
+
+        for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+            try {
+                // Perform the deletion
+                typeDefStore.deleteTypeByName(typeName);
+                typeCacheRefresher.refreshAllHostCache();
+                LOG.info("Successfully deleted typedef '{}' on attempt {}", typeName, attempt);
+                return;
+
+            } catch (AtlasBaseException e) {
+                lastException = e;
+
+                if (attempt == MAX_RETRIES) {
+                    LOG.error("Failed to delete typedef '{}' after {} attempts", typeName, MAX_RETRIES, e);
+                    throw e;
+                }
+
+                if (isRetryable(e)) {
+                    LOG.warn("Deletion attempt {} for '{}' failed with retryable error, retrying in {}ms",
+                            attempt, typeName, RETRY_DELAY_MS, e);
+                    try {
+                        Thread.sleep(RETRY_DELAY_MS);
+                    } catch (InterruptedException ie) {
+                        Thread.currentThread().interrupt();
+                        LOG.warn("Deletion retry interrupted, failing operation");
+                        throw e;
+                    }
+                } else {
+                    LOG.error("Non-retryable error occurred during deletion of '{}'", typeName, e);
+                    throw e;
+                }
+            }
+        }
+
+        throw lastException; // Should never reach here, but for completeness
+    }
+
     private boolean isRetryable(AtlasBaseException e) {
-        return APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED.equals(e.getAtlasErrorCode());
+        return APPLICABLE_ENTITY_TYPES_DELETION_NOT_SUPPORTED.equals(e.getAtlasErrorCode()) ||
+               ATTRIBUTE_DELETION_NOT_SUPPORTED.equals(e.getAtlasErrorCode());
     }
 }
