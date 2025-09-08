@@ -104,44 +104,16 @@ public class JsonToElasticsearchQuery {
         return queryNode;
     }
 
-    private static ObjectNode createSpanNearQuery(JsonNode value) {
-        // Add span_near query for key-value pair
-        ArrayNode clausesArray = mapper.createArrayNode();
+    private static ObjectNode createMatchPhraseQuery(JsonNode value) {
+        // using match_phrase query for key-value pair as it's relatively better performant 
+        // than span_near or span_within which is used in Frontend DSL generation for filters and preview
+        String phrase = String.format("tagAttachmentValue %s tagAttachmentKey", value.asText());
 
-        // Create span_term for left side of the tag
-        ObjectNode tagClause = mapper.createObjectNode();
-        ObjectNode tagSpanTerm = mapper.createObjectNode();
-        tagSpanTerm.put("__classificationsText.text", "tagAttachmentValue");
-        tagClause.set("span_term", tagSpanTerm);
-        clausesArray.add(tagClause);
+        ObjectNode matchPhraseQuery = mapper.createObjectNode();
+        matchPhraseQuery.putObject("match_phrase")
+            .put("__classificationsText.text", phrase);
 
-        // Create span_term for value
-        if (StringUtils.isNotEmpty(value.asText())) {
-            ObjectNode keyClause = mapper.createObjectNode();
-            ObjectNode keySpanTerm = mapper.createObjectNode();
-            keySpanTerm.put("__classificationsText.text", value.asText());
-            keyClause.set("span_term", keySpanTerm);
-            clausesArray.add(keyClause);
-        }
-
-        // Create span_term for right side of the tag
-        ObjectNode valueClause = mapper.createObjectNode();
-        ObjectNode valueSpanTerm = mapper.createObjectNode();
-        valueSpanTerm.put("__classificationsText.text", "tagAttachmentKey");
-        valueClause.set("span_term", valueSpanTerm);
-        clausesArray.add(valueClause);
-
-        // Skipping clause for key to keep the DSL consistent with the FE query
-
-        ObjectNode spanNearNode = mapper.createObjectNode();
-        spanNearNode.set("clauses", clausesArray);
-        spanNearNode.put("in_order", true);
-        spanNearNode.put("slop", 0);
-
-        ObjectNode spanNearQuery = mapper.createObjectNode();
-        spanNearQuery.set("span_near", spanNearNode);
-
-        return spanNearQuery;
+        return matchPhraseQuery;
     }
 
     public static JsonNode convertJsonToQuery(JsonNode data) {
@@ -250,14 +222,8 @@ public class JsonToElasticsearchQuery {
                         "term": {"__traitNames": "tag"}
                     },
                     {
-                        "span_near": {
-                            "clauses": [
-                                {"span_term": {"__classificationsText.text": "tagAttachmentValue"}},
-                                {"span_term": {"__classificationsText.text": "value1"}},
-                                {"span_term": {"__classificationsText.text": "tagAttachmentKey"}}
-                            ],
-                            "in_order": true,
-                            "slop": 0
+                        "match_phrase": {
+                            "__classificationsText.text": "tagAttachmentValue value1 tagAttachmentKey"
                         }
                     }
                 ]
@@ -275,25 +241,13 @@ public class JsonToElasticsearchQuery {
                         "bool": {
                             "should": [
                                 {
-                                    "span_near": {
-                                        "clauses": [
-                                            {"span_term": {"__classificationsText.text": "tagAttachmentValue"}},
-                                            {"span_term": {"__classificationsText.text": "value1"}},
-                                            {"span_term": {"__classificationsText.text": "tagAttachmentKey"}}
-                                        ],
-                                        "in_order": true,
-                                        "slop": 0
+                                    "match_phrase": {
+                                        "__classificationsText.text": "tagAttachmentValue value1 tagAttachmentKey"
                                     }
                                 },
                                 {
-                                    "span_near": {
-                                        "clauses": [
-                                            {"span_term": {"__classificationsText.text": "tagAttachmentValue"}},
-                                            {"span_term": {"__classificationsText.text": "value2"}},
-                                            {"span_term": {"__classificationsText.text": "tagAttachmentKey"}}
-                                        ],
-                                        "in_order": true,
-                                        "slop": 0
+                                    "match_phrase": {
+                                        "__classificationsText.text": "tagAttachmentValue value2 tagAttachmentKey"
                                     }
                                 }
                             ]
@@ -333,14 +287,14 @@ public class JsonToElasticsearchQuery {
             filterArray.add(boolQuery);
         }
 
-        // add span_near clauses
+        // add match_phrase clauses
         for (JsonNode tagKeyValue : tagKeyValues) {
             String key = tagKeyValue.get("key") == null ? null : tagKeyValue.get("key").asText();
             JsonNode value = tagKeyValue.get("consolidatedValue");
             if (value == null) {
                 continue;
             }
-            valuesQuery.add(createSpanNearQuery(value));
+            valuesQuery.add(createMatchPhraseQuery(value));
         }
         
         return queryNode;
