@@ -11,6 +11,7 @@ import static org.apache.atlas.service.metrics.MetricUtils.getMeterRegistry;
 
 @Service
 public class TaskMetricsService {
+    private static final String METRIC_COMPONENT = "atlas_classification";
     private final Map<String, Counter> taskCounters = new ConcurrentHashMap<>();
     private final Map<String, Timer> taskTimers = new ConcurrentHashMap<>();
     private final Map<String, DistributionSummary> assetsSummaries = new ConcurrentHashMap<>();
@@ -30,12 +31,12 @@ public class TaskMetricsService {
         this.meterRegistry = meterRegistry;
         
         // Initialize gauges
-        Gauge.builder("atlas.classification.tasks.in_progress", tasksInProgress, AtomicInteger::get)
+        Gauge.builder(METRIC_COMPONENT + "_tasks_in_progress", tasksInProgress, AtomicInteger::get)
                 .description("Current number of classification tasks in progress")
                 .tag("component", "classification")
                 .register(meterRegistry);
 
-        Gauge.builder("atlas.classification.tasks.queue.size", taskQueueSize, AtomicInteger::get)
+        Gauge.builder(METRIC_COMPONENT + "_tasks_queue_size", taskQueueSize, AtomicInteger::get)
                 .description("Current size of the classification task queue")
                 .tag("component", "classification")
                 .register(meterRegistry);
@@ -54,7 +55,7 @@ public class TaskMetricsService {
         return taskCounters.computeIfAbsent(key, k -> {
             Tags tags = Tags.of("type", taskType, "version", version, "tenant", tenant)
                           .and(Tags.of(additionalTags));
-            return Counter.builder("atlas.classification." + metricName)
+            return Counter.builder(METRIC_COMPONENT + "_" + metricName)
                     .description("Classification task metric: " + metricName)
                     .tags(tags)
                     .register(meterRegistry);
@@ -64,21 +65,30 @@ public class TaskMetricsService {
     private Timer getOrCreateTaskTimer(String taskType, String version, String tenant, String status) {
         String key = getMetricKey("duration", taskType, version, tenant, status);
         return taskTimers.computeIfAbsent(key, k -> {
-            return Timer.builder("atlas.classification.task.duration")
+            return Timer.builder(METRIC_COMPONENT + "_task_duration_seconds")
                     .description("Classification task execution duration")
                     .tags("type", taskType, "version", version, "tenant", tenant, "status", status)
-                    .publishPercentiles(0.5, 0.95, 0.99)
+                    .publishPercentiles(0.5, 0.75, 0.95, 0.99) // Added 75th percentile
                     .publishPercentileHistogram()
                     .serviceLevelObjectives(
-                        Duration.ofMillis(100),
-                        Duration.ofMillis(500),
-                        Duration.ofSeconds(1),
-                        Duration.ofSeconds(5),
-                        Duration.ofSeconds(10),
-                        Duration.ofSeconds(30),
-                        Duration.ofMinutes(1),
-                        Duration.ofMinutes(5)
+                        // Short tasks
+                        Duration.ofSeconds(1),      // 1s
+                        Duration.ofSeconds(10),     // 10s
+                        Duration.ofSeconds(30),     // 30s
+                        // Medium tasks
+                        Duration.ofMinutes(1),      // 1m
+                        Duration.ofMinutes(5),      // 5m
+                        Duration.ofMinutes(15),     // 15m
+                        Duration.ofMinutes(30),     // 30m
+                        // Long tasks
+                        Duration.ofHours(1),        // 1h
+                        Duration.ofHours(2),        // 2h
+                        Duration.ofHours(4),        // 4h
+                        Duration.ofHours(8),        // 8h
+                        Duration.ofHours(12)        // 12h
                     )
+                    .minimumExpectedValue(Duration.ofSeconds(1))
+                    .maximumExpectedValue(Duration.ofHours(24))
                     .register(meterRegistry);
         });
     }
@@ -86,18 +96,36 @@ public class TaskMetricsService {
     private DistributionSummary getOrCreateAssetsSummary(String taskType, String version, String tenant) {
         String key = getMetricKey("assets_per_task", taskType, version, tenant);
         return assetsSummaries.computeIfAbsent(key, k -> {
-            return DistributionSummary.builder("atlas.classification.assets.per.task")
+            return DistributionSummary.builder(METRIC_COMPONENT + "_assets_per_task")
                     .description("Number of assets affected per task")
                     .tags("type", taskType, "version", version, "tenant", tenant)
-                    .publishPercentiles(0.5, 0.95, 0.99)
+                    .publishPercentiles(0.5, 0.75, 0.95, 0.99) // Added 75th percentile
+                    .publishPercentileHistogram()
+                    .baseUnit("assets")
+                    .scale(1.0)
+                    .serviceLevelObjectives(
+                        // Small tasks
+                        10.0,        // 10 assets
+                        100.0,       // 100 assets
+                        1000.0,      // 1K assets
+                        // Medium tasks
+                        10000.0,     // 10K assets
+                        50000.0,     // 50K assets
+                        100000.0,    // 100K assets
+                        // Large tasks
+                        500000.0,    // 500K assets
+                        1000000.0,   // 1M assets
+                        5000000.0,   // 5M assets
+                        10000000.0   // 10M assets
+                    )
                     .minimumExpectedValue(1.0)
-                    .maximumExpectedValue(1_000_000.0)
+                    .maximumExpectedValue(20000000.0) // 20M assets max
                     .register(meterRegistry);
         });
     }
 
     public void recordTaskStart(String taskType, String version, String tenant) {
-        getOrCreateTaskCounter("tasks.total", taskType, version, tenant).increment();
+        getOrCreateTaskCounter("tasks_total", taskType, version, tenant).increment();
         tasksInProgress.incrementAndGet();
     }
 
@@ -110,7 +138,7 @@ public class TaskMetricsService {
             .record(java.time.Duration.ofMillis(durationMs));
 
         // Record assets affected
-        getOrCreateTaskCounter("assets.affected.total", taskType, version, tenant, "status", status)
+        getOrCreateTaskCounter("assets_affected_total", taskType, version, tenant, "status", status)
             .increment(assetsAffected);
 
         // Record assets per task distribution
@@ -118,12 +146,12 @@ public class TaskMetricsService {
             .record(assetsAffected);
 
         // Record task status
-        getOrCreateTaskCounter("tasks.status", taskType, version, tenant, "status", status)
+        getOrCreateTaskCounter("tasks_status", taskType, version, tenant, "status", status)
             .increment();
     }
 
     public void recordTaskError(String taskType, String version, String tenant, String errorType) {
-        getOrCreateTaskCounter("tasks.errors.total", taskType, version, tenant, "error", errorType)
+        getOrCreateTaskCounter("tasks_errors_total", taskType, version, tenant, "error", errorType)
             .increment();
     }
 
