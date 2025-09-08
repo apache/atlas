@@ -553,22 +553,28 @@ public class AtlasGraphUtilsV2 {
 
         RequestContext.get().endMetricRecord(metric);
 
+        return logIfVertexIndexIsCorrupt(vertex, typeName, uniqueQualifiedName);
+    }
 
-        // vertex is discoverable via index
-        // this will prevent corrupted vertices to get processed further
-        // vertex can't be repaired if all the core properties are not present
-        if (vertex != null) {
-            if (vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class) != null &&
-                    vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class) != null &&
-                    vertex.getProperty(UNIQUE_QUALIFIED_NAME, String.class) != null) {
-                return vertex;
-            } else if (vertex.getPropertyKeys().isEmpty() && !uniqueQualifiedName.isEmpty()) {
-                // definitely a corrupted vertex
-                try (MDCScope corruptedVertexDetails = new MDCScope(Map.of("id", vertex.getIdForDisplay(), ATTRIBUTE_NAME_TYPENAME, typeName, QUALIFIED_NAME, uniqueQualifiedName))) {
-                    LOG.warn("findByTypeAndUniquePropertyName: vertex is corrupted {}::{}::{} ", vertex.getIdForDisplay(), typeName, uniqueQualifiedName);
-                }
+    private static AtlasVertex logIfVertexIndexIsCorrupt(AtlasVertex vertex, String typeName, String uniqueQualifiedName) {
+        if (vertex == null) {
+            return vertex;
+        }
+
+        if (vertex.getProperty(Constants.GUID_PROPERTY_KEY, String.class) != null &&
+                vertex.getProperty(TYPE_NAME_PROPERTY_KEY, String.class) != null &&
+                vertex.getProperty(UNIQUE_QUALIFIED_NAME, String.class) != null) {
+            return vertex;
+
+        }
+
+        // definitely a corrupted vertex
+        if (vertex.getPropertyKeys().isEmpty() && !uniqueQualifiedName.isEmpty()) {
+            try (MDCScope corruptedVertexDetails = new MDCScope(Map.of("id", vertex.getIdForDisplay(), ATTRIBUTE_NAME_TYPENAME, typeName, QUALIFIED_NAME, uniqueQualifiedName))) {
+                LOG.warn("findByTypeAndUniquePropertyName: vertex is corrupted {}::{}::{} ", vertex.getIdForDisplay(), typeName, uniqueQualifiedName);
             }
         }
+
         return vertex;
     }
 
