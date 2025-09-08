@@ -532,7 +532,7 @@ public class EntityLineageService implements AtlasLineageService {
         AtlasVertex baseVertex = AtlasGraphUtilsV2.findByGuid(this.graph, baseGuid);
         EntityValidationResult entityValidationResult = validateAndGetEntityTypeMap(baseGuid);
 
-        boolean isNotConnectorVertex =  entityValidationResult.CheckIfConnectorVertex(lineageType);
+        boolean isNotConnectorVertex = !entityValidationResult.CheckIfConnectorVertex(lineageType);
         // Get the neighbors for the current node
         enqueueNeighbours(baseVertex, entityValidationResult, lineageListContext, traversalQueue, visitedVertices, skippedVertices, lineageParentsForEntityMap, lineageChildrenForEntityMap);
         int currentDepth = 0;
