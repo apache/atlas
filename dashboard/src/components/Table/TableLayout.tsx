@@ -129,7 +129,7 @@ const Row = ({
     <>
       <TableRow hover key={row.id} onClick={handleRow}>
         {showRowSelection && (
-          <TableCell padding="checkbox" sx={{ width: "2%" }}>
+          <TableCell width="48">
             <IndeterminateCheckbox
               {...{
                 checked: row.getIsSelected(),
@@ -141,7 +141,7 @@ const Row = ({
           </TableCell>
         )}
         {expandRow && (
-          <TableCell padding="checkbox">
+          <TableCell width="48">
             <IconButton
               aria-label="expand row"
               size="small"
@@ -315,7 +315,10 @@ const DragAlongCell = ({
     <TableCell
       onClick={() => onClickRow?.(cell, row)}
       key={cell.id}
-      sx={{ padding: "8px", fontSize: "14px !important" }}
+      sx={{
+        padding: "8px",
+        fontSize: "14px !important"
+      }}
       className="text-[#2E353A] text-base font-graphik table-body-cell"
       style={style}
       ref={setNodeRef}
@@ -597,7 +600,11 @@ const TableLayout: FC<TableProps> = ({
               onDragEnd={handleDragEnd}
               sensors={sensors}
             >
-              <MuiTable size="small" className="table">
+              <MuiTable
+                size="small"
+                className="table expand-row-table"
+                sx={{ tableLayout: "fixed", width: "100%" }}
+              >
                 {!isFetching && (
                   <TableHead>
                     {getHeaderGroups().map((headerGroup) => (
@@ -607,7 +614,7 @@ const TableLayout: FC<TableProps> = ({
                         className="table-header-row"
                       >
                         {showRowSelection && (
-                          <TableCell padding="checkbox">
+                          <TableCell width="48">
                             <IndeterminateCheckbox
                               {...{
                                 checked: getIsAllRowsSelected(),
@@ -617,9 +624,7 @@ const TableLayout: FC<TableProps> = ({
                             />
                           </TableCell>
                         )}
-                        {expandRow && (
-                          <TableCell sx={{ width: "2%" }} padding="checkbox" />
-                        )}
+                        {expandRow && <TableCell width="48" />}
                         <SortableContext
                           items={columnOrder}
                           strategy={horizontalListSortingStrategy}
