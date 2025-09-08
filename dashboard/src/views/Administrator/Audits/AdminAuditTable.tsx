@@ -52,14 +52,15 @@ const AdminAuditTable = () => {
   const fetchAuditResult = useCallback(
     async ({ pagination }: { pagination?: any }) => {
       const { pageSize, pageIndex } = pagination || {};
-      if (pageIndex > 1) {
-        searchParams.set("pageOffset", `${pageSize * pageIndex}`);
-      }
+      // Derive strictly from table state to avoid URL race conditions
+      const limit = pageSize || 25;
+      const offset = (pageIndex || 0) * limit;
+
       let params: any = {
         auditFilters: !isEmpty(queryApiObj) ? queryApiObj : null,
-        limit: pageSize,
+        limit: limit,
         sortOrder: "DESCENDING",
-        offset: pageIndex * pageSize,
+        offset: offset,
         sortBy: "startTime"
       };
 

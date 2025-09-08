@@ -365,6 +365,9 @@ const ClassificationsTab: React.FC<EntityDetailTabProps> = ({
               showPagination={true}
               showRowSelection={false}
               tableFilters={false}
+              showGoToPage={true}
+              setUpdateTable={setUpdateTable}
+              isClientSidePagination={true}
             />
           </Stack>
         </Grid>
