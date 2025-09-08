@@ -21,6 +21,7 @@ package org.apache.atlas.repository;
 import org.apache.atlas.ApplicationProperties;
 import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasException;
+import org.apache.atlas.service.FeatureFlag;
 import org.apache.atlas.service.FeatureFlagStore;
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.lang3.StringUtils;
@@ -38,6 +39,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.apache.atlas.service.FeatureFlag.USE_TEMP_ES_INDEX;
 import static org.apache.atlas.type.AtlasStructType.AtlasAttribute.encodePropertyKey;
 import static org.apache.atlas.type.AtlasStructType.UNIQUE_ATTRIBUTE_SHADE_PROPERTY_PREFIX;
 
@@ -559,7 +561,7 @@ public final class Constants {
         String indexSuffix  = null;
         if(AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean()) {
             try {
-                if (FeatureFlagStore.evaluate("use_temp_es_index", "true")) {
+                if (FeatureFlagStore.evaluate( USE_TEMP_ES_INDEX.getKey(), "true")) {
                     indexSuffix = "_temp";
                 }
             } catch (Exception e) {

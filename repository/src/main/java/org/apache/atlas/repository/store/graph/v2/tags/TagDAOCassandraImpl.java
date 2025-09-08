@@ -201,7 +201,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         executeWithRetry(SimpleStatement.builder(createKeyspaceQuery).setConsistencyLevel(DefaultConsistencyLevel.ALL).build());
         LOG.info("Ensured keyspace {} exists", KEYSPACE);
 
-        // Create 'tags_by_id' table with STCS (good for general writes)
         String createEffectiveTagsTable = String.format(
                 "CREATE TABLE IF NOT EXISTS %s.%s (" +
                         "id text, " +
@@ -219,8 +218,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         executeWithRetry(SimpleStatement.builder(createEffectiveTagsTable).setConsistencyLevel(DefaultConsistencyLevel.ALL).build());
         LOG.info("Ensured table {}.{} exists with SizeTieredCompactionStrategy", KEYSPACE, EFFECTIVE_TAGS_TABLE_NAME);
 
-
-        // Create 'propagated_tags_by_source' table with LCS and hard deletes for optimal read performance
         String createPropagatedTagsTable = String.format(
                 "CREATE TABLE IF NOT EXISTS %s.%s (" +
                         "source_id text, " +
@@ -229,10 +226,10 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                         "asset_metadata text, " +
                         "updated_at timestamp, " +
                         "PRIMARY KEY ((source_id, tag_type_name), propagated_asset_id)" +
-                        ") WITH compaction = {'class': 'LeveledCompactionStrategy'};",
+                        ") WITH compaction = {'class': 'SizeTieredCompactionStrategy'};",
                 KEYSPACE, PROPAGATED_TAGS_TABLE_NAME);
         executeWithRetry(SimpleStatement.builder(createPropagatedTagsTable).setConsistencyLevel(DefaultConsistencyLevel.ALL).build());
-        LOG.info("Ensured table {}.{} exists with LeveledCompactionStrategy and hard deletes", KEYSPACE, PROPAGATED_TAGS_TABLE_NAME);
+        LOG.info("Ensured table {}.{} exists with SizeTieredCompactionStrategy and hard deletes", KEYSPACE, PROPAGATED_TAGS_TABLE_NAME);
     }
 
     @Override
@@ -333,25 +330,6 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
         }
     }
 
-    @Override
-    public List<Tag> getAllDirectTagsForVertex(String vertexId) throws AtlasBaseException {
-        AtlasPerfMetrics.MetricRecorder recorder = RequestContext.get().startMetricRecord("getAllDirectTagsForVertex");
-        try {
-            int bucket = calculateBucket(vertexId);
-            BoundStatement bound = findDirectTagsForAssetStmt.bind(bucket, vertexId);
-            ResultSet rs = executeWithRetry(bound);
-            List<Tag> tags = resultSetToTags(vertexId, rs);
-            if (tags.isEmpty()) {
-                LOG.warn("No active direct tags found for vertexId={}, bucket={}", vertexId, bucket);
-            }
-            return tags;
-        } catch (Exception e) {
-            LOG.error("Error fetching direct tags for vertexId={}", vertexId, e);
-            throw new AtlasBaseException("Error fetching direct tags", e);
-        } finally {
-            RequestContext.get().endMetricRecord(recorder);
-        }
-    }
 
     @Override
     public List<AtlasClassification> getAllClassificationsForVertex(String vertexId) throws AtlasBaseException {

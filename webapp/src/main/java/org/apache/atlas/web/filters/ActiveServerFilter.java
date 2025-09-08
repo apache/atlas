@@ -46,6 +46,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLEncoder;
 import java.util.HashMap;
 
+import static org.apache.atlas.service.FeatureFlag.DISABLE_WRITE_FLAG;
+
 /**
  * A servlet {@link Filter} that redirects web requests from a passive Atlas server instance to an active one.
  *
@@ -61,7 +63,6 @@ public class ActiveServerFilter implements Filter {
     private static final String MIGRATION_STATUS_STATIC_PAGE = "migration-status.html";
     private static final String[] WHITELISTED_APIS_SIGNATURE = {"search", "lineage", "auditSearch", "accessors"
         , "evaluator", "featureFlag"};
-    private static final String DISABLE_WRITE_FLAG = "disable_writes";
 
     private final ActiveInstanceState activeInstanceState;
     private ServiceState serviceState;
@@ -91,7 +92,7 @@ public class ActiveServerFilter implements Filter {
                          FilterChain filterChain) throws IOException, ServletException {
         // If maintenance mode is enabled, return a 503
         if (AtlasConfiguration.ATLAS_MAINTENANCE_MODE.getBoolean()) {
-            if (FeatureFlagStore.evaluate(DISABLE_WRITE_FLAG, "true")) {
+            if (FeatureFlagStore.evaluate(DISABLE_WRITE_FLAG.getKey(), "true")) {
                 // Block all the POST, PUT, DELETE operations
                 HttpServletRequest request = (HttpServletRequest) servletRequest;
                 HttpServletResponse response = (HttpServletResponse) servletResponse;
