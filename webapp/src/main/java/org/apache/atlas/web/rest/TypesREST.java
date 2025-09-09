@@ -908,7 +908,7 @@ public class TypesREST {
             try {
                 // Perform the deletion
                 typeDefStore.deleteTypeByName(typeName);
-                typeCacheRefresher.refreshAllHostCache();
+                refreshAllHostCache(RequestContext.get().getTraceId(), null);
                 LOG.info("Successfully deleted typedef '{}' on attempt {}", typeName, attempt);
                 return;
 
