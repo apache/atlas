@@ -831,6 +831,7 @@ public class TypesREST {
 
     public AtlasTypesDef updateTypeDefsWithRetry(AtlasTypesDef typesDef, String clientOrigin) throws AtlasBaseException {
         AtlasBaseException lastException = null;
+        boolean originalPatchingState = RequestContext.get().isInTypePatching();
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
@@ -866,6 +867,9 @@ public class TypesREST {
                     LOG.error("Non-retryable error occurred", e);
                     throw e;
                 }
+            } finally {
+                // Always restore original patching state
+                RequestContext.get().setInTypePatching(originalPatchingState);
             }
         }
 
