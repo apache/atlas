@@ -25,6 +25,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.ha.HAConfiguration;
 import org.apache.atlas.listener.ActiveStateChangeHandler;
 import org.apache.atlas.model.tasks.AtlasTask;
+import org.apache.atlas.repository.metrics.TaskMetricsService;
 import org.apache.atlas.service.Service;
 import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.service.redis.RedisService;
@@ -55,6 +56,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     private final Map<String, TaskFactory>  taskTypeFactoryMap;
     private final ICuratorFactory curatorFactory;
     private final RedisService redisService;
+    private final TaskMetricsService taskMetricsService;
     private Thread watcherThread = null;
 
     public enum DeleteType {
@@ -63,7 +65,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
     }
 
     @Inject
-    public TaskManagement(Configuration configuration, TaskRegistry taskRegistry, ICuratorFactory curatorFactory, RedisService redisService, MetricsRegistry metricsRegistry) {
+    public TaskManagement(Configuration configuration, TaskRegistry taskRegistry, ICuratorFactory curatorFactory, RedisService redisService, MetricsRegistry metricsRegistry, TaskMetricsService taskMetricsService) {
         this.configuration      = configuration;
         this.registry           = taskRegistry;
         this.redisService       = redisService;
@@ -71,10 +73,11 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         this.taskTypeFactoryMap = new HashMap<>();
         this.curatorFactory = curatorFactory;
         this.metricRegistry = metricsRegistry;
+        this.taskMetricsService = taskMetricsService;
     }
 
     @VisibleForTesting
-    TaskManagement(Configuration configuration, TaskRegistry taskRegistry, TaskFactory taskFactory, ICuratorFactory curatorFactory, RedisService redisService) {
+    TaskManagement(Configuration configuration, TaskRegistry taskRegistry, TaskFactory taskFactory, ICuratorFactory curatorFactory, RedisService redisService, TaskMetricsService taskMetricsService) {
         this.configuration      = configuration;
         this.registry           = taskRegistry;
         this.metricRegistry = null;
@@ -82,6 +85,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         this.statistics         = new Statistics();
         this.taskTypeFactoryMap = new HashMap<>();
         this.curatorFactory = curatorFactory;
+        this.taskMetricsService = taskMetricsService;
 
         createTaskTypeFactoryMap(taskTypeFactoryMap, taskFactory);
     }
@@ -260,7 +264,7 @@ public class TaskManagement implements Service, ActiveStateChangeHandler {
         if (this.taskExecutor == null) {
             final boolean isActiveActiveHAEnabled = HAConfiguration.isActiveActiveHAEnabled(configuration);
             final String zkRoot = HAConfiguration.getZookeeperProperties(configuration).getZkRoot();
-            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics, curatorFactory, redisService, zkRoot,isActiveActiveHAEnabled, metricRegistry);
+            this.taskExecutor = new TaskExecutor(registry, taskTypeFactoryMap, statistics, curatorFactory, redisService, zkRoot,isActiveActiveHAEnabled, metricRegistry, taskMetricsService);
         }
 
         if (watcherThread == null) {

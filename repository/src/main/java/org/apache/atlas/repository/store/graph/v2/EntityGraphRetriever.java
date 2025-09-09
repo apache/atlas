@@ -84,7 +84,6 @@ import org.apache.tinkerpop.gremlin.structure.*;
 import org.janusgraph.core.Cardinality;
 import org.janusgraph.graphdb.relations.CacheVertexProperty;
 import org.javatuples.Pair;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -1123,7 +1122,6 @@ public class EntityGraphRetriever {
         return ret;
     }
 
-    @NotNull
     private static Map<String, List<?>> getStringArrayListMap(Map<Object, Object> properties) {
         Map<String, List<?>> vertexProperties = new HashMap<>();
         for (Map.Entry<Object, Object> entry : properties.entrySet()) {
