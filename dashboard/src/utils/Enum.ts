@@ -473,3 +473,21 @@ export const defaultType = [
   "array<long>",
   "array<date>"
 ];
+
+export const optionsVal = [
+  "25",
+  "50",
+  "100",
+  "150",
+  "200",
+  "250",
+  "300",
+  "350",
+  "400",
+  "450",
+  "500"
+];
+
+export const pageSizeOptions = optionsVal.map((x: string) => ({
+  label: x
+}));
