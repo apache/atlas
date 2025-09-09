@@ -80,6 +80,7 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
             if (edge == null) {
                 LOG.warn("Edge is null. Nothing to delete");
+                return;
             }
 
             boolean isRelationshipEdge = isRelationshipEdge(edge);
