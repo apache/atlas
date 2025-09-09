@@ -53,6 +53,7 @@ import ErrorPage from "@views/ErrorPage";
 import AppRoutes from "@views/AppRoutes";
 import ErrorBoundaryWithNavigate from "../../ErrorBoundary";
 import useHistory from "@utils/history.js";
+import SkeletonLoader from "@components/SkeletonLoader";
 
 const Header = lazy(() => import("@views/Layout/Header"));
 
@@ -288,12 +289,14 @@ const SideBarBody = (props: {
             >
               <Suspense
                 fallback={
-                  <Stack className="tree-item-loader-box">
-                    <CircularProgress
-                      size="small"
-                      className="tree-item-loader"
-                    />
-                  </Stack>
+                  <SkeletonLoader
+                    animation="pulse"
+                    variant="text"
+                    width={330}
+                    count={5}
+                  />
+                  // <Stack className="tree-item-loader-box">
+                  // </Stack>
                 }
               >
                 <EntitiesTree
@@ -310,12 +313,14 @@ const SideBarBody = (props: {
             >
               <Suspense
                 fallback={
-                  <Stack className="tree-item-loader-box">
-                    <CircularProgress
-                      size="small"
-                      className="tree-item-loader"
-                    />
-                  </Stack>
+                  <SkeletonLoader
+                    animation="pulse"
+                    variant="text"
+                    width={330}
+                    count={5}
+                  />
+                  // <Stack className="tree-item-loader-box">
+                  // </Stack>
                 }
               >
                 <ClassificationTree
@@ -332,12 +337,14 @@ const SideBarBody = (props: {
             >
               <Suspense
                 fallback={
-                  <Stack className="tree-item-loader-box">
-                    <CircularProgress
-                      size="small"
-                      className="tree-item-loader"
-                    />
-                  </Stack>
+                  <SkeletonLoader
+                    animation="pulse"
+                    variant="text"
+                    width={330}
+                    count={5}
+                  />
+                  // <Stack className="tree-item-loader-box">
+                  // </Stack>
                 }
               >
                 <BusinessMetadataTree
@@ -353,12 +360,14 @@ const SideBarBody = (props: {
             >
               <Suspense
                 fallback={
-                  <Stack className="tree-item-loader-box">
-                    <CircularProgress
-                      size="small"
-                      className="tree-item-loader"
-                    />
-                  </Stack>
+                  <SkeletonLoader
+                    animation="pulse"
+                    variant="text"
+                    width={330}
+                    count={5}
+                  />
+                  // <Stack className="tree-item-loader-box">
+                  // </Stack>
                 }
               >
                 <GlossaryTree sideBarOpen={open} searchTerm={searchTerm} />
@@ -371,12 +380,14 @@ const SideBarBody = (props: {
               >
                 <Suspense
                   fallback={
-                    <Stack className="tree-item-loader-box">
-                      <CircularProgress
-                        size="small"
-                        className="tree-item-loader"
-                      />
-                    </Stack>
+                    <SkeletonLoader
+                      animation="pulse"
+                      variant="text"
+                      width={330}
+                      count={5}
+                    />
+                    // <Stack className="tree-item-loader-box">
+                    // </Stack>
                   }
                 >
                   <RelationshipsTree
@@ -393,12 +404,14 @@ const SideBarBody = (props: {
             >
               <Suspense
                 fallback={
-                  <Stack className="tree-item-loader-box">
-                    <CircularProgress
-                      size="small"
-                      className="tree-item-loader"
-                    />
-                  </Stack>
+                  <SkeletonLoader
+                    animation="pulse"
+                    variant="text"
+                    width={330}
+                    count={5}
+                  />
+                  // <Stack className="tree-item-loader-box">
+                  // </Stack>
                 }
               >
                 <CustomFiltersTree sideBarOpen={open} searchTerm={searchTerm} />
@@ -484,9 +497,21 @@ const SideBarBody = (props: {
                       position: "relative",
                     }}
                   >
-                    <CircularProgress
-                      disableShrink
-                      color="success"
+                    <SkeletonLoader
+                      animation="pulse"
+                      variant="text"
+                      height={50}
+                      width={'80%'}
+                      count={1}
+                      sx={{
+                        position: "absolute",
+                        left: "50%",
+                        top: "50%",
+                        transform: "translate(-50%, -50%)",
+                      }}
+                    />
+                    {/* <CircularProgress
+                      color="primary"
                       sx={{
                         display: "inline-block",
                         position: "absolute",
@@ -494,7 +519,7 @@ const SideBarBody = (props: {
                         top: "50%",
                         transform: "translate(-50%, -50%)",
                       }}
-                    />
+                    /> */}
                   </div>
                 }
               >

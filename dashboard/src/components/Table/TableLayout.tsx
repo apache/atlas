@@ -43,7 +43,6 @@ import {
 } from "@tanstack/react-table";
 import { FC, useEffect, useMemo, useState } from "react";
 import TableFilter from "./TableFilters";
-import TablePagination from "./TablePagination";
 import ArrowUpwardOutlinedIcon from "@mui/icons-material/ArrowUpwardOutlined";
 import ArrowDownwardOutlinedIcon from "@mui/icons-material/ArrowDownwardOutlined";
 import SwapVertOutlinedIcon from "@mui/icons-material/SwapVertOutlined";
@@ -75,6 +74,7 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import TableRowsLoader from "./TableLoader";
 import AddTag from "@views/Classification/AddTag";
 import FilterQuery from "@components/FilterQuery";
+import TablePagination from "./TablePagination";
 
 interface IndeterminateCheckboxProps extends Omit<CheckboxProps, "ref"> {
   indeterminate?: boolean;
@@ -129,7 +129,7 @@ const Row = ({
     <>
       <TableRow hover key={row.id} onClick={handleRow}>
         {showRowSelection && (
-          <TableCell padding="checkbox" sx={{ width: "2%" }}>
+          <TableCell width="48">
             <IndeterminateCheckbox
               {...{
                 checked: row.getIsSelected(),
@@ -141,7 +141,7 @@ const Row = ({
           </TableCell>
         )}
         {expandRow && (
-          <TableCell padding="checkbox">
+          <TableCell width="48">
             <IconButton
               aria-label="expand row"
               size="small"
@@ -315,7 +315,10 @@ const DragAlongCell = ({
     <TableCell
       onClick={() => onClickRow?.(cell, row)}
       key={cell.id}
-      sx={{ padding: "8px", fontSize: "14px !important" }}
+      sx={{
+        padding: "8px",
+        fontSize: "14px !important"
+      }}
       className="text-[#2E353A] text-base font-graphik table-body-cell"
       style={style}
       ref={setNodeRef}
@@ -332,6 +335,7 @@ const TableLayout: FC<TableProps> = ({
   isFetching,
   defaultColumnVisibility,
   pageCount,
+  totalCount,
   onClickRow,
   emptyText,
   defaultColumnParams,
@@ -352,18 +356,23 @@ const TableLayout: FC<TableProps> = ({
   showPagination,
   setUpdateTable,
   isfilterQuery,
-  isClientSidePagination
+  isClientSidePagination,
+  isEmptyData,
+  setIsEmptyData,
+  showGoToPage
 }) => {
   let defaultHideColumns = { ...defaultColumnVisibility };
   const location = useLocation();
   const memoizedData = useMemo(() => data, [data]);
   const memoizedColumns = useMemo(() => columns, [columns]);
   const [searchParams] = useSearchParams();
-
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 25
   });
+
+  const [goToPageVal, setGoToPageVal] = useState<any>("");
+
   const [rowSelection, setRowSelection] = useState({});
   const [sorting, setSorting] = useState<SortingState>(
     !isEmpty(defaultSortCol) ? defaultSortCol : []
@@ -384,16 +393,11 @@ const TableLayout: FC<TableProps> = ({
   const {
     getHeaderGroups,
     getRowModel,
-    firstPage,
-    getCanPreviousPage,
-    previousPage,
-    nextPage,
-    getCanNextPage,
-    lastPage,
     setPageIndex,
     getPageCount,
+    nextPage,
+    previousPage,
     setPageSize,
-    getRowCount,
     resetSorting,
     resetRowSelection,
     getIsAllRowsSelected,
@@ -414,7 +418,9 @@ const TableLayout: FC<TableProps> = ({
     onSortingChange: setSorting,
     onColumnOrderChange: setColumnOrder,
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: isClientSidePagination
+      ? getPaginationRowModel()
+      : undefined,
     onPaginationChange: setPagination,
     state: {
       columnVisibility: columnVisibilityParams
@@ -432,14 +438,17 @@ const TableLayout: FC<TableProps> = ({
   });
 
   useEffect(() => {
-    if (!isEmpty(fetchData)) {
-      fetchData({ pagination, sorting });
+    if (typeof fetchData === "function") {
+      fetchData({
+        pagination,
+        sorting
+      });
     }
   }, [
     fetchData,
     pagination.pageIndex,
     pagination.pageSize,
-    !clientSideSorting && sorting
+    clientSideSorting ? null : sorting
   ]);
 
   function handleDragEnd(event: DragEndEvent) {
@@ -459,30 +468,14 @@ const TableLayout: FC<TableProps> = ({
     useSensor(KeyboardSensor, {})
   );
 
+  const [, setSearchParams] = useSearchParams();
+
   useEffect(() => {
     resetSorting(true);
     resetRowSelection(true);
     setRowSelection({});
     setSorting(!isEmpty(defaultSortCol) ? defaultSortCol : []);
-    // setColumnVisibility(defaultHideColumns);
-  }, [typeParam]);
-
-  // if (fetchData != undefined) {
-
-  // }
-
-  let currentPageOffset = searchParams.get("pageOffset") || 0;
-  let isFirstPage = currentPageOffset == 0;
-
-  // const filteredParams = Array.from(searchParams.entries())
-  //   .filter(([key]) => ["type", "tag", "term"].includes(key))
-  //   .map(([key, value]) => ({
-  //     keyName:
-  //       key === "tag"
-  //         ? "Classification"
-  //         : key.charAt(0).toUpperCase() + key.slice(1),
-  //     value
-  //   }));
+  }, [typeParam, defaultSortCol, setSearchParams]);
 
   const handleCloseTagModal = () => {
     setTagModal(false);
@@ -597,7 +590,11 @@ const TableLayout: FC<TableProps> = ({
               onDragEnd={handleDragEnd}
               sensors={sensors}
             >
-              <MuiTable size="small" className="table">
+              <MuiTable
+                size="small"
+                className="table expand-row-table"
+                sx={{ tableLayout: "fixed", width: "100%" }}
+              >
                 {!isFetching && (
                   <TableHead>
                     {getHeaderGroups().map((headerGroup) => (
@@ -607,7 +604,7 @@ const TableLayout: FC<TableProps> = ({
                         className="table-header-row"
                       >
                         {showRowSelection && (
-                          <TableCell padding="checkbox">
+                          <TableCell width="48">
                             <IndeterminateCheckbox
                               {...{
                                 checked: getIsAllRowsSelected(),
@@ -617,9 +614,7 @@ const TableLayout: FC<TableProps> = ({
                             />
                           </TableCell>
                         )}
-                        {expandRow && (
-                          <TableCell sx={{ width: "2%" }} padding="checkbox" />
-                        )}
+                        {expandRow && <TableCell width="48" />}
                         <SortableContext
                           items={columnOrder}
                           strategy={horizontalListSortingStrategy}
@@ -669,31 +664,27 @@ const TableLayout: FC<TableProps> = ({
               </MuiTable>
             </DndContext>
           </TableContainer>
-          {/* {noDataFound && (
-            <Stack my={2} textAlign="center">
-              {emptyText}
-            </Stack>
-          )} */}
 
-          {showPagination && (
+          {showPagination && !isFetching && (
             <TablePagination
-              firstPage={firstPage}
-              getCanPreviousPage={getCanPreviousPage}
-              previousPage={previousPage}
-              nextPage={nextPage}
-              getCanNextPage={getCanNextPage}
-              lastPage={lastPage}
+              isServerSide={!isClientSidePagination}
               getPageCount={getPageCount}
               setPageIndex={setPageIndex}
               setPageSize={setPageSize}
+              nextPage={nextPage}
+              previousPage={previousPage}
               getRowModel={getRowModel}
-              getRowCount={getRowCount}
               pagination={pagination}
-              memoizedData={memoizedData}
-              isFirstPage={isFirstPage}
               setRowSelection={setRowSelection}
-              isClientSidePagination={isClientSidePagination}
+              memoizedData={memoizedData}
+              isFirstPage={pagination.pageIndex === 0}
               setPagination={setPagination}
+              goToPageVal={goToPageVal}
+              setGoToPageVal={setGoToPageVal}
+              isEmptyData={isEmptyData}
+              setIsEmptyData={setIsEmptyData}
+              showGoToPage={showGoToPage}
+              totalCount={totalCount}
             />
           )}
         </Paper>

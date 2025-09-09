@@ -108,7 +108,7 @@ const ClassificationStats = ({ handleClose }: any) => {
                 <TableCell align="right">
                   <Typography fontWeight="600">
                     {" "}
-                    Count
+                    Associated Entities
                     <span className="count">{`(${numberFormatWithComma(
                       tagsCount
                     )})`}</span>

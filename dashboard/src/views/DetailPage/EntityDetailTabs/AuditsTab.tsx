@@ -49,16 +49,16 @@ const AuditsTab = ({
       sorting: [{ id: string; desc: boolean }];
     }) => {
       const { pageSize, pageIndex } = pagination || {};
-      if (pageIndex > 1) {
-        searchParams.set("pageOffset", `${pageSize * pageIndex}`);
-      }
+      const limitParam = searchParams.get("pageLimit");
+      const offsetParam = searchParams.get("pageOffset");
+      const limit = !isEmpty(limitParam) ? Number(limitParam) : pageSize;
+      const offset = !isEmpty(offsetParam)
+        ? Number(offsetParam)
+        : pageIndex * pageSize;
       let params: any = {
         sortOrder: sorting[0]?.desc == false ? "asc" : "desc",
-        offset:
-          searchParams.get("pageOffset") != null
-            ? Number(searchParams.get("pageOffset"))
-            : pageIndex * pageSize,
-        count: pageSize,
+        offset: offset,
+        limit: limit,
         sortBy: sorting[0]?.id || "timestamp"
       };
 

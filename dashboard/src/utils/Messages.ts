@@ -15,6 +15,12 @@
  * limitations under the License.
  */
 
-export const Messages = {
-  defaultErrorMessage: "Something went wrong"
+const Messages = {
+  defaultErrorMessage: "Something went wrong",
+  search: {
+    noRecordForPage: "No record found at ",
+    onSamePage: "You are on the same page!"
+  }
 };
+
+export default Messages;

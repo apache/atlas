@@ -15,7 +15,7 @@
  * limitations under the License.
  */
 
-import * as React from "react";
+import { useState, useRef, useEffect } from "react";
 import {
   Autocomplete,
   FormControl,
@@ -26,16 +26,21 @@ import {
   Paper,
   Stack,
   TextField,
-  Typography,
-  createFilterOptions,
-  styled
+  Typography
 } from "@mui/material";
-
 import { useTheme } from "@emotion/react";
 import { KeyboardArrowLeft, KeyboardArrowRight } from "@mui/icons-material";
 import { LightTooltip } from "../muiComponents";
 import { useLocation, useNavigate } from "react-router-dom";
 import { isEmpty } from "../../utils/Utils";
+import Messages from "@utils/Messages";
+import { toast } from "react-toastify";
+import { GetNumberSuffix } from "@components/commonComponents";
+import { pageSizeOptions } from "@utils/Enum";
+import { createFilterOptions } from "@mui/material/Autocomplete";
+import { styled } from "@mui/material/styles";
+
+const filter = createFilterOptions<any>();
 
 export const StyledPagination = styled(Pagination)`
   display: flex;
@@ -44,46 +49,31 @@ export const StyledPagination = styled(Pagination)`
 `;
 
 interface PaginationProps {
-  firstPage?: any;
-  getCanPreviousPage?: any;
-  previousPage?: any;
-  nextPage?: any;
-  getCanNextPage?: any;
-  lastPage?: any;
-  getPageCount?: any;
-  setPageIndex?: any;
-  setPageSize?: any;
-  getRowModel?: any;
-  getRowCount?: any;
-  pagination?: any;
-  setRowSelection?: any;
-  memoizedData?: any;
-  isFirstPage?: any;
-  isClientSidePagination?: any;
-  setPagination?: any;
-}
-interface FilmOptionType {
-  inputValue?: string;
-  label: string;
+  isServerSide?: boolean;
+  getPageCount?: () => number;
+  previousPage?: () => void;
+  nextPage?: () => void;
+  setPageIndex?: (index: number) => void;
+  setPageSize?: (size: number) => void;
+  getRowModel?: () => any;
+  pagination: { pageIndex: number; pageSize: number };
+  setRowSelection?: (selection: any) => void;
+  memoizedData: any[];
+  isFirstPage?: boolean;
+  setPagination?: (pagination: any) => void;
+  goToPageVal?: string;
+  setGoToPageVal?: React.Dispatch<React.SetStateAction<string>>;
+  isEmptyData?: boolean;
+  setIsEmptyData?: any;
+  showGoToPage?: boolean;
+  totalCount?: number;
 }
 
-const optionsVal = [
-  { label: "25" },
-  { label: "50" },
-  { label: "100" },
-  { label: "150" },
-  { label: "200" },
-  { label: "250" },
-  { label: "300" },
-  { label: "350" },
-  { label: "400" },
-  { label: "450" },
-  { label: "500" }
-];
-const filter = createFilterOptions<FilmOptionType>();
-
-const options: readonly FilmOptionType[] = optionsVal;
 const TablePagination: React.FC<PaginationProps> = ({
+  isServerSide = false,
+  getPageCount,
+  previousPage,
+  nextPage,
   setPageIndex,
   setPageSize,
   getRowModel,
@@ -91,45 +81,268 @@ const TablePagination: React.FC<PaginationProps> = ({
   setRowSelection,
   memoizedData,
   isFirstPage,
-  setPagination
+  setPagination,
+  goToPageVal,
+  setGoToPageVal,
+  isEmptyData,
+  setIsEmptyData,
+  showGoToPage = false,
+  totalCount
 }) => {
   const theme: any = useTheme();
   const location = useLocation();
   const navigate = useNavigate();
-  const searchParams: any = new URLSearchParams(location.search);
-  const [inputVal, setInputVal] = React.useState<any>("");
-  const [value, setValue] = React.useState<any>(
-    searchParams.get("pageLimit") != null
-      ? searchParams.get("pageLimit")
-      : options[0].label
+  const searchParams = new URLSearchParams(location.search);
+  const { pageIndex, pageSize } = pagination;
+
+  const [value, setValue] = useState<any>({
+    label:
+      searchParams.get("pageLimit") ??
+      pageSize.toString() ??
+      pageSizeOptions[0].label
+  });
+  const [limit, setLimit] = useState<number>(
+    searchParams.get("pageLimit")
+      ? Number(searchParams.get("pageLimit"))
+      : pageSize
   );
-  const { pageSize, pageIndex } = pagination;
-  const handleChange = (newValue: any) => {
-    setPageSize(newValue.label);
-    setRowSelection({});
-    searchParams.delete("pageOffset");
-    searchParams.set("pageLimit", newValue.label);
-    navigate({ search: searchParams.toString() });
+
+  const [pageFrom, setPageFrom] = useState<number>(
+    isServerSide && searchParams.get("pageOffset")
+      ? Number(searchParams.get("pageOffset")) + 1
+      : isServerSide
+      ? 1
+      : pageIndex * pageSize + 1
+  );
+  const [pageTo, setPageTo] = useState<number>(
+    isServerSide && searchParams.get("pageOffset")
+      ? Number(searchParams.get("pageOffset")) + Number(limit)
+      : isServerSide
+      ? Number(limit)
+      : Math.min((pageIndex + 1) * pageSize, getRowModel?.().rows.length || 0)
+  );
+  const [offset, setOffset] = useState<number>(
+    isServerSide && searchParams.get("pageOffset")
+      ? Number(searchParams.get("pageOffset"))
+      : pageIndex * pageSize
+  );
+  const [activePage, setActivePage] = useState<number>(
+    isServerSide ? Math.floor(offset / Number(limit)) + 1 : pageIndex + 1
+  );
+
+  const [pendingGoToPageVal, setPendingGoToPageVal] = useState<string>("");
+  const [goToPageTrigger, setGoToPageTrigger] = useState<string>("");
+  const toastId = useRef<any>(null);
+
+  useEffect(() => {
+    if (isServerSide) {
+      setValue({ label: searchParams.get("pageLimit") ?? limit.toString() });
+      setLimit(Number(searchParams.get("pageLimit") ?? limit));
+      setOffset(Number(searchParams.get("pageOffset") ?? pageIndex * pageSize));
+      setPageFrom(
+        Number(searchParams.get("pageOffset") ?? pageIndex * pageSize) + 1
+      );
+      setPageTo(
+        Number(searchParams.get("pageOffset") ?? pageIndex * pageSize) +
+          Number(limit)
+      );
+    }
+  }, [isServerSide, location.search, limit, pageIndex, pageSize]);
+
+  // Do not force offset to 0 based solely on isFirstPage; rely on URL (pageOffset)
+
+  useEffect(() => {
+    if (isServerSide) {
+      const sp = new URLSearchParams(location.search);
+      const effLimit = Number(sp.get("pageLimit") ?? limit);
+      const effOffset = Number(sp.get("pageOffset") ?? 0);
+      setActivePage(Math.floor(effOffset / effLimit) + 1);
+    } else {
+      setActivePage(pageIndex + 1);
+    }
+  }, [isServerSide, location.search, limit, pageIndex]);
+
+  const handlePageSizeChange = (newValue: any) => {
+    const newPageSize: any = Number(newValue.label);
+    setValue({ label: newValue.label });
+    if (isServerSide) {
+      setLimit(newPageSize);
+      setPageFrom(1);
+      setPageTo(newPageSize);
+      setActivePage(1);
+      setOffset(0);
+      searchParams.delete("pageOffset");
+      searchParams.set("pageLimit", newPageSize);
+      navigate({ search: searchParams.toString() });
+      setRowSelection?.({});
+      setPagination?.((prev: any) => ({ ...prev, pageIndex: 0, pageSize: newPageSize }));
+      // Clear Go-to state on page size change
+      setGoToPageVal?.("");
+      setPendingGoToPageVal("");
+      setGoToPageTrigger("");
+    } else {
+      setPageSize?.(newPageSize);
+      setPageIndex?.(0);
+      setLimit(newPageSize);
+      setPageFrom(1);
+      setPageTo(Math.min(newPageSize, getRowModel?.().rows.length || 0));
+      // Clear Go-to state on page size change
+      setGoToPageVal?.("");
+      setPendingGoToPageVal("");
+      setGoToPageTrigger("");
+    }
   };
 
-  const [_searchState, setSearchState] = React.useState(
-    Object.fromEntries(searchParams)
-  );
+  const handleGoToPage = () => {
+    const goToPage = parseInt(goToPageVal || pendingGoToPageVal);
+    if (isNaN(goToPage) || goToPage < 1) return;
 
-  React.useEffect(() => {
-    setSearchState(Object.fromEntries(searchParams));
-  }, [location.search]);
+    if (isServerSide) {
+      // Guard based on approximate total count if available: pages are 1..ceil(totalCount/limit)
+      if (typeof totalCount === "number" && totalCount >= 0) {
+        const maxPage = Math.max(1, Math.ceil(totalCount / Number(limit || 1)));
+        if (goToPage > maxPage) {
+          toast.dismiss(toastId.current);
+          toastId.current = toast.info(
+            <>
+              {Messages.search.noRecordForPage}
+              <b>
+                <GetNumberSuffix number={goToPage} sup={true} />
+              </b>{" "}
+              page
+            </>
+          );
+          setGoToPageVal?.("");
+          setPendingGoToPageVal("");
+          return;
+        }
+      }
+      const newOffset = (goToPage - 1) * limit;
+      if (newOffset === offset) {
+        toast.dismiss(toastId.current);
+        toastId.current = toast.info(`${Messages.search.onSamePage}`);
+        setGoToPageVal?.("");
+        setPendingGoToPageVal("");
+        return;
+      }
+      setOffset(newOffset);
+      setPageFrom(newOffset + 1);
+      setPageTo(newOffset + limit);
+      setActivePage(goToPage);
+      setPageIndex?.(goToPage - 1);
+      setRowSelection?.({});
+      searchParams.set("pageOffset", newOffset.toString());
+      navigate({ search: searchParams.toString() });
+      setGoToPageVal?.("");
+      setPendingGoToPageVal("");
+    } else {
+      if (goToPage > (getPageCount?.() || Infinity)) {
+        toast.dismiss(toastId.current);
+        toastId.current = toast.info(
+          <>
+            {Messages.search.noRecordForPage} page "<strong>{goToPage}</strong>"
+          </>
+        );
+        setGoToPageVal?.("");
+        setPendingGoToPageVal("");
+        setGoToPageTrigger("");
+        return;
+      }
+      if (goToPage - 1 === pageIndex) {
+        toast.dismiss(toastId.current);
+        toastId.current = toast.info(`${Messages.search.onSamePage}`);
+        setGoToPageVal?.("");
+        setPendingGoToPageVal("");
+        setGoToPageTrigger("");
+        return;
+      }
+      setPageIndex?.(goToPage - 1);
+      setPageFrom((goToPage - 1) * pageSize + 1);
+      setPageTo(
+        Math.min(goToPage * pageSize, getRowModel?.().rows.length || 0)
+      );
+      setGoToPageVal?.("");
+      setPendingGoToPageVal("");
+      setGoToPageTrigger("");
+    }
+  };
 
-  let limit =
-    parseInt(
-      searchParams.get("pageLimit") !== undefined &&
-        searchParams.get("pageLimit") !== null
-        ? searchParams.get("pageLimit")
-        : pageSize || "0",
-      10
-    ) || 0;
-  let pageFrom = isFirstPage ? 1 : pageSize * pageIndex + 1;
-  let pageTo = isFirstPage ? Number(limit) : pageSize * (Number(pageIndex) + 1);
+  useEffect(() => {
+    if ((goToPageVal || goToPageTrigger || isEmptyData) && setPageIndex) {
+      handleGoToPage();
+      if (typeof setIsEmptyData === "function") {
+        setIsEmptyData(false);
+      }
+      setGoToPageTrigger("");
+    }
+  }, [goToPageVal, goToPageTrigger, isEmptyData]);
+
+  const handlePreviousPage = () => {
+    if (isServerSide) {
+      const prevOffset = offset - limit;
+      const safePrevOffset = prevOffset < 0 ? 0 : prevOffset;
+      setOffset(safePrevOffset);
+      setPageFrom(safePrevOffset + 1);
+      setPageTo(safePrevOffset + limit);
+      setPagination?.((prev: any) => ({
+        ...prev,
+        pageIndex: prev.pageIndex - 1
+      }));
+      setRowSelection?.({});
+      // Always reflect new offset in URL (including 0) so fetch effect triggers correctly
+      searchParams.set("pageOffset", safePrevOffset.toString());
+      navigate({ search: searchParams.toString() });
+    } else {
+      previousPage?.();
+      setPageFrom(pageIndex * pageSize + 1);
+      setPageTo(
+        Math.min(pageIndex * pageSize, getRowModel?.().rows.length || 0)
+      );
+    }
+    setGoToPageVal?.("");
+  };
+
+  const handleNextPage = () => {
+    if (isServerSide) {
+      const nextOffset = offset + limit;
+      setOffset(nextOffset);
+      setPageFrom(nextOffset + 1);
+      setPageTo(nextOffset + limit);
+      setPagination?.((prev: any) => ({
+        ...prev,
+        pageIndex: prev.pageIndex + 1
+      }));
+      setRowSelection?.({});
+      searchParams.set("pageOffset", nextOffset.toString());
+      navigate({ search: searchParams.toString() });
+    } else {
+      nextPage?.();
+      setPageFrom((pageIndex + 1) * pageSize + 1);
+      setPageTo(
+        Math.min((pageIndex + 2) * pageSize, getRowModel?.().rows.length || 0)
+      );
+    }
+    setGoToPageVal?.("");
+  };
+
+  // In server-side mode, rely on computed offset to decide first page
+  const isPreviousDisabled = isServerSide ? offset === 0 : pageIndex === 0;
+  // In server-side mode, disable Next when fewer than limit rows returned (last page)
+  const isNextDisabled = isServerSide
+    ? (typeof totalCount === "number" && totalCount >= 0
+        ? offset + limit >= totalCount
+        : memoizedData.length < limit)
+    : pageIndex + 1 >= (getPageCount?.() || Infinity);
+
+  const totalRows = getRowModel?.().rows.length || 0;
+  const displayFrom = isServerSide
+    ? pageFrom
+    : totalRows === 0
+    ? 0
+    : pageIndex * pageSize + 1;
+  const displayTo = isServerSide
+    ? pageTo
+    : Math.min((pageIndex + 1) * pageSize, totalRows);
 
   return (
     <Stack
@@ -143,10 +356,11 @@ const TablePagination: React.FC<PaginationProps> = ({
     >
       <div>
         <span className="text-grey">
-          Showing <u>{getRowModel()?.rows?.length.toLocaleString()} records</u>{" "}
-          From {pageFrom} - {pageTo}
+          Showing <u>{totalRows.toLocaleString()} records</u> From {displayFrom}{" "}
+          - {displayTo}
         </span>
       </div>
+
       <div className="table-pagination-filters">
         <Stack
           className="table-pagination-filters-box"
@@ -157,7 +371,7 @@ const TablePagination: React.FC<PaginationProps> = ({
           <Typography
             className="text-grey"
             whiteSpace="nowrap"
-            fontWeight="600"
+            fontWeight="400"
             lineHeight="32px"
           >
             Page Limit :
@@ -167,163 +381,122 @@ const TablePagination: React.FC<PaginationProps> = ({
               value={value}
               className="pagination-page-limit"
               disableClearable
-              onChange={(_event: any, newValue) => {
+              onChange={(_, newValue: any) => {
                 if (typeof newValue === "string") {
-                  setValue({
-                    label: newValue
-                  });
-                  handleChange({ label: newValue });
-                } else if (newValue && newValue.inputValue) {
-                  setValue({
-                    label: newValue.inputValue
-                  });
-                  handleChange({ label: newValue.inputValue });
+                  handlePageSizeChange({ label: newValue });
+                } else if (newValue?.inputValue) {
+                  handlePageSizeChange({ label: newValue.inputValue });
                 } else if (newValue) {
-                  setValue(newValue);
-                  handleChange(newValue);
-                } else {
-                  const fallbackValue = { label: inputVal || "" };
-                  setValue(fallbackValue);
-                  handleChange(fallbackValue);
+                  handlePageSizeChange(newValue);
                 }
-                setPagination((prev: { pageIndex: number }) => ({
-                  ...prev,
-                  pageIndex: 0
-                }));
               }}
               filterOptions={(options, params) => {
                 const filtered = filter(options, params);
-
                 const { inputValue } = params;
-
                 const isExisting = options.some(
                   (option) => inputValue === option.label
                 );
-                if (inputValue !== "" && !isExisting) {
-                  filtered.push({
-                    inputValue,
-                    label: `${inputValue}`
-                  });
+                if (inputValue !== "" && setPageSize && !isExisting) {
+                  filtered.push({ inputValue, label: `${inputValue}` });
                 }
-
                 return filtered;
               }}
-              defaultValue={
-                searchParams.get("pageLimit") != null &&
-                searchParams.get("pageLimit")
-              }
               selectOnFocus
               clearOnBlur
               handleHomeEndKeys
               id="Page Limit:"
-              options={options}
+              options={pageSizeOptions}
               size="small"
-              getOptionLabel={(option) => {
-                if (typeof option === "string") {
-                  return option;
-                }
-                if (option.inputValue) {
-                  return option.inputValue;
-                }
-                return option.label;
-              }}
+              getOptionLabel={(option) =>
+                typeof option === "string"
+                  ? option
+                  : option.inputValue || option.label
+              }
               renderOption={(props, option) => (
                 <MenuItem {...props} value={option.label}>
                   {option.label}
                 </MenuItem>
               )}
               sx={{
-                width: "78px"
+                width: "78px",
+                "& .MuiOutlinedInput-root.MuiInputBase-sizeSmall .MuiAutocomplete-input":
+                  {
+                    padding: "0 4px !important",
+                    height: "15px !important"
+                  }
               }}
               freeSolo
               renderInput={(params) => <TextField type="number" {...params} />}
             />
           </FormControl>
         </Stack>
-        {isFirstPage &&
-        (!memoizedData.length || memoizedData.length < pagination.pageSize) ? (
-          ""
-        ) : (
+
+        {(isServerSide
+          ? !isFirstPage || memoizedData.length >= limit
+          : memoizedData.length >= pageSize) && (
           <>
-            <Stack className="table-pagination-filters-box">
-              <Paper
-                component="form"
-                elevation={0}
-                className="table-pagination-gotopage-paper"
-              >
-                <InputBase
-                  placeholder="Go to page:"
-                  type="number"
-                  inputProps={{ "aria-label": "Go to page:" }}
-                  size="small"
-                  onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
-                    const page = e.target.value
-                      ? Number(e.target.value) - 1
-                      : 0;
-                    setInputVal(page);
-                  }}
-                  className="table-pagination-gotopage-input"
-                  defaultValue={inputVal}
-                />
-                <LightTooltip title="Goto Page">
-                  <IconButton
-                    type="button"
-                    size="small"
-                    className={`${
-                      !isEmpty(inputVal)
-                        ? "cursor-pointer"
-                        : "cursor-not-allowed"
-                    } table-pagination-gotopage-button`}
-                    aria-label="search"
-                    onClick={() => {
-                      if (!isEmpty(inputVal)) {
-                        if (inputVal >= 1) {
-                          setPageIndex(inputVal);
-                          searchParams.set(
-                            "pageOffset",
-                            pagination.pageSize * inputVal
-                          );
-                          navigate({ search: searchParams.toString() });
-                        } else {
-                          setPageIndex(0);
-                          searchParams.delete("pageOffset");
-                          navigate({ search: searchParams.toString() });
-                        }
-                        setInputVal("");
-                      } else {
-                        return;
-                      }
-                      setRowSelection({});
+            {showGoToPage && (
+              <Stack className="table-pagination-filters-box">
+                <Paper
+                  component="form"
+                  elevation={0}
+                  className="table-pagination-gotopage-paper"
+                  onSubmit={(e) => e.preventDefault()}
+                >
+                  <InputBase
+                    placeholder="Go to page:"
+                    type="number"
+                    inputProps={{
+                      "aria-label": "Go to page:",
+                      style: { width: "100%" }
                     }}
-                  >
-                    Go
-                  </IconButton>
-                </LightTooltip>
-              </Paper>
-            </Stack>
+                    size="small"
+                    onChange={(e) => {
+                      setPendingGoToPageVal(e.target.value);
+                    }}
+                    onKeyUp={(e) => {
+                      const goToPage = parseInt(e.currentTarget.value);
+                      const anyEvent: any = e as any;
+                      if ((anyEvent.key === "Enter" || anyEvent.keyCode === 13) && !isNaN(goToPage) && goToPage >= 1) {
+                        setGoToPageVal?.(e.currentTarget.value);
+                        setGoToPageTrigger(e.currentTarget.value);
+                      }
+                    }}
+                    className="table-pagination-gotopage-input"
+                    value={pendingGoToPageVal}
+                  />
+                  <LightTooltip title="Goto Page">
+                    <IconButton
+                      type="button"
+                      size="small"
+                      className={`${
+                        !isEmpty(pendingGoToPageVal)
+                          ? "cursor-pointer"
+                          : "cursor-not-allowed"
+                      } table-pagination-gotopage-button`}
+                      aria-label="search"
+                      onClick={() => {
+                        if (!isEmpty(pendingGoToPageVal)) {
+                          setGoToPageTrigger(pendingGoToPageVal);
+                          handleGoToPage();
+                        }
+                      }}
+                      disabled={isEmpty(pendingGoToPageVal)}
+                    >
+                      Go
+                    </IconButton>
+                  </LightTooltip>
+                </Paper>
+              </Stack>
+            )}
 
             <Stack flexDirection="row" alignItems="center">
               <LightTooltip title="Previous">
                 <IconButton
                   size="small"
-                  className="pagination-previous-btn"
-                  onClick={() => {
-                    setPagination((prev: { pageIndex: number }) => ({
-                      ...prev,
-                      pageIndex: prev.pageIndex - 1
-                    }));
-                    setRowSelection({});
-                    if (isFirstPage) {
-                      searchParams.delete("pageOffset");
-                    } else {
-                      searchParams.set(
-                        "pageOffset",
-                        `${pagination.pageSize * (pagination.pageIndex - 1)}`
-                      );
-                      navigate({ search: searchParams.toString() });
-                    }
-                  }}
-                  disabled={isFirstPage}
+                  className="pagination-page-change-btn"
+                  onClick={handlePreviousPage}
+                  disabled={isPreviousDisabled}
                   aria-label="previous page"
                 >
                   {theme.direction === "rtl" ? (
@@ -333,30 +506,19 @@ const TablePagination: React.FC<PaginationProps> = ({
                   )}
                 </IconButton>
               </LightTooltip>
-              <LightTooltip title={`Page ${Math.round(pageTo / limit)}`}>
+
+              <LightTooltip title={`Page ${activePage}`}>
                 <IconButton size="small" className="table-pagination-page">
-                  {Math.round(pageIndex + 1)}
+                  {activePage}
                 </IconButton>
               </LightTooltip>
 
               <LightTooltip title="Next">
                 <IconButton
                   size="small"
-                  className="pagination-next-btn"
-                  onClick={() => {
-                    setPagination((prev: { pageIndex: number }) => ({
-                      ...prev,
-                      pageIndex: prev.pageIndex + 1
-                    }));
-                    setRowSelection({});
-
-                    searchParams.set(
-                      "pageOffset",
-                      `${pagination.pageSize * (pagination.pageIndex + 1)}`
-                    );
-                    navigate({ search: searchParams.toString() });
-                  }}
-                  disabled={memoizedData.length < limit}
+                  className="pagination-page-change-btn"
+                  onClick={handleNextPage}
+                  disabled={isNextDisabled}
                   aria-label="next page"
                 >
                   {theme.direction === "rtl" ? (
