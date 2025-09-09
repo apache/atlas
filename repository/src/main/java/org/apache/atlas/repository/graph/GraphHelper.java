@@ -1061,7 +1061,10 @@ public final class GraphHelper {
             if (vertex != null) {
                 List<AtlasClassification> allTags = TagDAOCassandraImpl.getInstance().getAllClassificationsForVertex(vertex.getIdForDisplay());
 
-                ret = allTags.stream().filter(x -> x.getPropagate()).toList();
+                ret = allTags.stream()
+                        .filter(Objects::nonNull)
+                        .filter(x -> x.getPropagate() != null && x.getPropagate())
+                        .toList();
             }
         }
 

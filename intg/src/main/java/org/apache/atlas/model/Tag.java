@@ -13,6 +13,7 @@ import java.util.Map;
 
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.NONE;
 import static com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility.PUBLIC_ONLY;
+import static org.apache.atlas.AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT;
 
 @JsonAutoDetect(getterVisibility=PUBLIC_ONLY, setterVisibility=PUBLIC_ONLY, fieldVisibility=NONE)
 @JsonSerialize(include=JsonSerialize.Inclusion.NON_NULL)
@@ -151,6 +152,9 @@ public class Tag {
         }
         if (classification.getRemovePropagationsOnEntityDelete() == null) {
             classification.setRemovePropagationsOnEntityDelete(true);
+        }
+        if (classification.getPropagate() == null) {
+            classification.setPropagate(CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean());
         }
         return classification;
     }
