@@ -604,7 +604,11 @@ const BarTreeView: FC<{
     searchParams.delete("entityFilters");
     searchParams.delete("tagFilters");
     searchParams.delete("relationshipFilters");
-    searchParams.delete("pageOffset");
+    // Always reset pagination defaults on tree navigation
+    if (treeName !== "CustomFilters") {
+      searchParams.set("pageLimit", "25");
+      searchParams.set("pageOffset", "0");
+    }
   };
 
   const setGlossarySearchParams = (

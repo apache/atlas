@@ -43,7 +43,6 @@ import {
 } from "@tanstack/react-table";
 import { FC, useEffect, useMemo, useState } from "react";
 import TableFilter from "./TableFilters";
-import TablePagination from "./TablePagination";
 import ArrowUpwardOutlinedIcon from "@mui/icons-material/ArrowUpwardOutlined";
 import ArrowDownwardOutlinedIcon from "@mui/icons-material/ArrowDownwardOutlined";
 import SwapVertOutlinedIcon from "@mui/icons-material/SwapVertOutlined";
@@ -75,6 +74,7 @@ import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import TableRowsLoader from "./TableLoader";
 import AddTag from "@views/Classification/AddTag";
 import FilterQuery from "@components/FilterQuery";
+import TablePagination from "./TablePagination";
 
 interface IndeterminateCheckboxProps extends Omit<CheckboxProps, "ref"> {
   indeterminate?: boolean;
@@ -335,6 +335,7 @@ const TableLayout: FC<TableProps> = ({
   isFetching,
   defaultColumnVisibility,
   pageCount,
+  totalCount,
   onClickRow,
   emptyText,
   defaultColumnParams,
@@ -355,18 +356,23 @@ const TableLayout: FC<TableProps> = ({
   showPagination,
   setUpdateTable,
   isfilterQuery,
-  isClientSidePagination
+  isClientSidePagination,
+  isEmptyData,
+  setIsEmptyData,
+  showGoToPage
 }) => {
   let defaultHideColumns = { ...defaultColumnVisibility };
   const location = useLocation();
   const memoizedData = useMemo(() => data, [data]);
   const memoizedColumns = useMemo(() => columns, [columns]);
   const [searchParams] = useSearchParams();
-
   const [pagination, setPagination] = useState<PaginationState>({
     pageIndex: 0,
     pageSize: 25
   });
+
+  const [goToPageVal, setGoToPageVal] = useState<any>("");
+
   const [rowSelection, setRowSelection] = useState({});
   const [sorting, setSorting] = useState<SortingState>(
     !isEmpty(defaultSortCol) ? defaultSortCol : []
@@ -387,16 +393,11 @@ const TableLayout: FC<TableProps> = ({
   const {
     getHeaderGroups,
     getRowModel,
-    firstPage,
-    getCanPreviousPage,
-    previousPage,
-    nextPage,
-    getCanNextPage,
-    lastPage,
     setPageIndex,
     getPageCount,
+    nextPage,
+    previousPage,
     setPageSize,
-    getRowCount,
     resetSorting,
     resetRowSelection,
     getIsAllRowsSelected,
@@ -417,7 +418,9 @@ const TableLayout: FC<TableProps> = ({
     onSortingChange: setSorting,
     onColumnOrderChange: setColumnOrder,
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    getPaginationRowModel: isClientSidePagination
+      ? getPaginationRowModel()
+      : undefined,
     onPaginationChange: setPagination,
     state: {
       columnVisibility: columnVisibilityParams
@@ -435,14 +438,17 @@ const TableLayout: FC<TableProps> = ({
   });
 
   useEffect(() => {
-    if (!isEmpty(fetchData)) {
-      fetchData({ pagination, sorting });
+    if (typeof fetchData === "function") {
+      fetchData({
+        pagination,
+        sorting
+      });
     }
   }, [
     fetchData,
     pagination.pageIndex,
     pagination.pageSize,
-    !clientSideSorting && sorting
+    clientSideSorting ? null : sorting
   ]);
 
   function handleDragEnd(event: DragEndEvent) {
@@ -462,30 +468,14 @@ const TableLayout: FC<TableProps> = ({
     useSensor(KeyboardSensor, {})
   );
 
+  const [, setSearchParams] = useSearchParams();
+
   useEffect(() => {
     resetSorting(true);
     resetRowSelection(true);
     setRowSelection({});
     setSorting(!isEmpty(defaultSortCol) ? defaultSortCol : []);
-    // setColumnVisibility(defaultHideColumns);
-  }, [typeParam]);
-
-  // if (fetchData != undefined) {
-
-  // }
-
-  let currentPageOffset = searchParams.get("pageOffset") || 0;
-  let isFirstPage = currentPageOffset == 0;
-
-  // const filteredParams = Array.from(searchParams.entries())
-  //   .filter(([key]) => ["type", "tag", "term"].includes(key))
-  //   .map(([key, value]) => ({
-  //     keyName:
-  //       key === "tag"
-  //         ? "Classification"
-  //         : key.charAt(0).toUpperCase() + key.slice(1),
-  //     value
-  //   }));
+  }, [typeParam, defaultSortCol, setSearchParams]);
 
   const handleCloseTagModal = () => {
     setTagModal(false);
@@ -674,31 +664,27 @@ const TableLayout: FC<TableProps> = ({
               </MuiTable>
             </DndContext>
           </TableContainer>
-          {/* {noDataFound && (
-            <Stack my={2} textAlign="center">
-              {emptyText}
-            </Stack>
-          )} */}
 
           {showPagination && !isFetching && (
             <TablePagination
-              firstPage={firstPage}
-              getCanPreviousPage={getCanPreviousPage}
-              previousPage={previousPage}
-              nextPage={nextPage}
-              getCanNextPage={getCanNextPage}
-              lastPage={lastPage}
+              isServerSide={!isClientSidePagination}
               getPageCount={getPageCount}
               setPageIndex={setPageIndex}
               setPageSize={setPageSize}
+              nextPage={nextPage}
+              previousPage={previousPage}
               getRowModel={getRowModel}
-              getRowCount={getRowCount}
               pagination={pagination}
-              memoizedData={memoizedData}
-              isFirstPage={isFirstPage}
               setRowSelection={setRowSelection}
-              isClientSidePagination={isClientSidePagination}
+              memoizedData={memoizedData}
+              isFirstPage={pagination.pageIndex === 0}
               setPagination={setPagination}
+              goToPageVal={goToPageVal}
+              setGoToPageVal={setGoToPageVal}
+              isEmptyData={isEmptyData}
+              setIsEmptyData={setIsEmptyData}
+              showGoToPage={showGoToPage}
+              totalCount={totalCount}
             />
           )}
         </Paper>
