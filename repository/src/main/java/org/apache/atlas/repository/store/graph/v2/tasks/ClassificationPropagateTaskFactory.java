@@ -96,7 +96,7 @@ public class ClassificationPropagateTaskFactory implements TaskFactory {
                 return new ClassificationPropagationTasks.UpdateRelationship(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
 
             case CLEANUP_CLASSIFICATION_PROPAGATION:
-            return new ClassificationPropagationTasks.CleanUpClassificationPropagation(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
+                return new ClassificationPropagationTasks.CleanUpClassificationPropagation(task, graph, entityGraphMapper, deleteDelegate, relationshipStore, taskMetricsService);
 
             default:
                 LOG.warn("Type: {} - {} not found!. The task will be ignored.", taskType, taskGuid);
