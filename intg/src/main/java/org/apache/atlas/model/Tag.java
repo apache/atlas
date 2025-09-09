@@ -152,6 +152,9 @@ public class Tag {
         if (classification.getRemovePropagationsOnEntityDelete() == null) {
             classification.setRemovePropagationsOnEntityDelete(true);
         }
+        if (classification.getPropagate() == null) {
+            classification.setPropagate(false);
+        }
         return classification;
     }
 

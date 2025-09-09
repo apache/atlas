@@ -718,6 +718,9 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
             if (classification.getRemovePropagationsOnEntityDelete() == null) {
                 classification.setRemovePropagationsOnEntityDelete(true);
             }
+            if (classification.getPropagate() == null) {
+                classification.setPropagate(false);
+            }
             return classification;
         } catch (JsonProcessingException e) {
             throw new AtlasBaseException("Unable to map to AtlasClassification", e);
