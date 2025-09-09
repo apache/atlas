@@ -789,6 +789,9 @@ public class TypesREST {
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
+                // Enable patching for cache conflicts (Atlas might confuse CREATE with UPDATE)
+                RequestContext.get().setInTypePatching(true);
+                
                 // Perform the creation
                 AtlasTypesDef result = typeDefStore.createTypesDef(typesDef);
                 refreshAllHostCache(RequestContext.get().getTraceId(), clientOrigin);
@@ -817,6 +820,9 @@ public class TypesREST {
                     LOG.error("Non-retryable error occurred during creation", e);
                     throw e;
                 }
+            } finally {
+                // Reset type patching mode
+                RequestContext.get().setInTypePatching(false);
             }
         }
 
@@ -828,7 +834,11 @@ public class TypesREST {
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
             try {
-                // Perform the update
+                // Enable patching for retries to handle cache sync conflicts
+                if (attempt > 1) {
+                    RequestContext.get().setInTypePatching(true);
+                }
+                
                 AtlasTypesDef result = typeDefStore.updateTypesDef(typesDef);
                 refreshAllHostCache(RequestContext.get().getTraceId(), clientOrigin);
                 LOG.info("Successfully updated typedefs on attempt {}", attempt);
