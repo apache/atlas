@@ -784,7 +784,7 @@ public class TypesREST {
         this.redisService.releaseDistributedLock(typeDefLock);
     }
 
-    public AtlasTypesDef createTypeDefsWithRetry(AtlasTypesDef typesDef, String clientOrigin) throws AtlasBaseException {
+    private AtlasTypesDef createTypeDefsWithRetry(AtlasTypesDef typesDef, String clientOrigin) throws AtlasBaseException {
         AtlasBaseException lastException = null;
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -829,7 +829,7 @@ public class TypesREST {
         throw lastException; // Should never reach here, but for completeness
     }
 
-    public AtlasTypesDef updateTypeDefsWithRetry(AtlasTypesDef typesDef, String clientOrigin) throws AtlasBaseException {
+    private AtlasTypesDef updateTypeDefsWithRetry(AtlasTypesDef typesDef, String clientOrigin) throws AtlasBaseException {
         AtlasBaseException lastException = null;
         boolean originalPatchingState = RequestContext.get().isInTypePatching();
 
@@ -876,7 +876,7 @@ public class TypesREST {
         throw lastException; // Should never reach here, but for completeness
     }
 
-    public void deleteTypeDefsWithRetry(AtlasTypesDef typesDef, String clientOrigin) throws AtlasBaseException {
+    private void deleteTypeDefsWithRetry(AtlasTypesDef typesDef, String clientOrigin) throws AtlasBaseException {
         AtlasBaseException lastException = null;
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
@@ -915,7 +915,7 @@ public class TypesREST {
         throw lastException; // Should never reach here, but for completeness
     }
 
-    public void deleteTypeByNameWithRetry(String typeName) throws AtlasBaseException {
+    private void deleteTypeByNameWithRetry(String typeName) throws AtlasBaseException {
         AtlasBaseException lastException = null;
 
         for (int attempt = 1; attempt <= MAX_RETRIES; attempt++) {
