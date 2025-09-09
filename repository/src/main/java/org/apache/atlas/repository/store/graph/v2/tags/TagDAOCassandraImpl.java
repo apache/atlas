@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import static org.apache.atlas.AtlasConfiguration.CLASSIFICATION_PROPAGATION_DEFAULT;
 import static org.apache.atlas.repository.store.graph.v2.tags.CassandraTagConfig.*;
 
 /**
@@ -719,7 +720,7 @@ public class TagDAOCassandraImpl implements TagDAO, AutoCloseable {
                 classification.setRemovePropagationsOnEntityDelete(true);
             }
             if (classification.getPropagate() == null) {
-                classification.setPropagate(false);
+                classification.setPropagate(CLASSIFICATION_PROPAGATION_DEFAULT.getBoolean());
             }
             return classification;
         } catch (JsonProcessingException e) {
