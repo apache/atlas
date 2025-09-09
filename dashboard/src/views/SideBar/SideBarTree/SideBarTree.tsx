@@ -75,6 +75,8 @@ import AddUpdateGlossaryForm from "@views/Glossary/AddUpdateGlossaryForm";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import { AntSwitch } from "@utils/Muiutils";
 import { IconButton } from "@components/muiComponents";
+import SkeletonLoader from "@components/SkeletonLoader";
+import { color } from "d3";
 
 type CustomContentRootProps = HTMLAttributes<HTMLDivElement> & {
   selectedNodeType?: any;
@@ -602,7 +604,11 @@ const BarTreeView: FC<{
     searchParams.delete("entityFilters");
     searchParams.delete("tagFilters");
     searchParams.delete("relationshipFilters");
-    searchParams.delete("pageOffset");
+    // Always reset pagination defaults on tree navigation
+    if (treeName !== "CustomFilters") {
+      searchParams.set("pageLimit", "25");
+      searchParams.set("pageOffset", "0");
+    }
   };
 
   const setGlossarySearchParams = (
@@ -1143,13 +1149,7 @@ const BarTreeView: FC<{
             }}
           >
             {loader ? (
-              <Stack className="tree-item-loader-box">
-                <CircularProgress
-                  disableShrink
-                  size="small"
-                  className="tree-item-loader"
-                />
-              </Stack>
+              <SkeletonLoader animation="pulse" variant="text" width={300} count={5}/>
             ) : (
               filteredData.map((node: TreeNode) => renderTreeItem(node))
             )}

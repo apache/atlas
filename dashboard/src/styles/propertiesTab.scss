@@ -59,3 +59,22 @@
   width: 100% !important;
   word-break: break-all;
 }
+
+.audit-attributes:has(.audit-attributes-item:nth-child(1):last-child)
+  .audit-attributes-item {
+  flex: 0 0 100%;
+}
+
+.audit-attributes:has(.audit-attributes-item:nth-child(2):last-child)
+  .audit-attributes-item {
+  flex: 0 0 calc(50% - 0.5rem);
+}
+
+.audit-attributes:has(.audit-attributes-item:nth-child(3):last-child)
+  .audit-attributes-item:nth-child(-n + 2) {
+  flex: 0 0 calc(50% - 0.5rem);
+}
+.audit-attributes:has(.audit-attributes-item:nth-child(3):last-child)
+  .audit-attributes-item:nth-child(3) {
+  flex: 0 0 100%;
+}

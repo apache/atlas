@@ -170,7 +170,7 @@ const DetailPageAttribute = ({
             {" "}
             {shortDescription != undefined && (
               <>
-                <Stack gap="0.5rem">
+                <Stack gap="0.5rem" direction="row">
                   <Typography
                     flexBasis="12%"
                     fontWeight="600"
@@ -247,17 +247,15 @@ const DetailPageAttribute = ({
                   paddingRight: "1rem"
                 }}
               >
-                <Stack gap={1} right="0" top="0" justifyContent="flex-end">
+                <div>
                   {alignment == "formatted" ? (
-                    <div style={{ wordBreak: "break-all" }}>
-                      <ShowMoreText
-                        value={sanitizeHtmlContent(description)}
-                        maxLength={160}
-                        more={"show more"}
-                        less={"show less"}
-                        isHtml={true}
-                      />
-                    </div>
+                    <ShowMoreText
+                      value={sanitizeHtmlContent(description)}
+                      maxLength={160}
+                      more={"show more"}
+                      less={"show less"}
+                      isHtml={true}
+                    />
                   ) : (
                     <div style={{ wordBreak: "break-all" }}>
                       <ShowMoreText
@@ -268,7 +266,7 @@ const DetailPageAttribute = ({
                       />
                     </div>
                   )}
-                </Stack>
+                </div>
               </div>
             </Stack>
             {!isEmpty(gtypeParams) &&

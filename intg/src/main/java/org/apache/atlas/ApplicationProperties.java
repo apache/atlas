@@ -44,6 +44,7 @@ public final class ApplicationProperties extends PropertiesConfiguration {
     private static final Logger LOG = LoggerFactory.getLogger(ApplicationProperties.class);
 
     public static final String       ATLAS_CONFIGURATION_DIRECTORY_PROPERTY = "atlas.conf";
+    public static final String       ATLAS_PROPERTIES_FILENAME_SYSTEM_CONF  = "atlas.properties";
     public static final String       APPLICATION_PROPERTIES           = "atlas-application.properties";
     public static final String       GRAPHDB_BACKEND_CONF             = "atlas.graphdb.backend";
     public static final String       STORAGE_BACKEND_CONF             = "atlas.graph.storage.backend";
@@ -104,7 +105,8 @@ public final class ApplicationProperties extends PropertiesConfiguration {
                 me = instance;
 
                 if (me == null) {
-                    set(get(APPLICATION_PROPERTIES));
+                    String propertyFilename = System.getProperty(ATLAS_PROPERTIES_FILENAME_SYSTEM_CONF, APPLICATION_PROPERTIES);
+                    set(get(propertyFilename));
 
                     me = instance;
                 }

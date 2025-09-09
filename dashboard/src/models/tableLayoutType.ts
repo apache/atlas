@@ -26,6 +26,7 @@ export interface TableProps {
   skeletonHeight?: number;
   headerComponent?: JSX.Element;
   pageCount?: number;
+  totalCount?: number;
   defaultColumnVisibility?: any;
   page?: (page: number) => void;
   onClickRow?: (cell: Cell<any, unknown>, row: Row<any>) => void;
@@ -52,4 +53,7 @@ export interface TableProps {
   setUpdateTable?: any;
   isfilterQuery?: any;
   isClientSidePagination?: boolean;
+  isEmptyData?: boolean;
+  setIsEmptyData?: React.Dispatch<React.SetStateAction<boolean>>;
+  showGoToPage?: boolean;
 }
