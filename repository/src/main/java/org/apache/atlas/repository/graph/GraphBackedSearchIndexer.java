@@ -43,6 +43,7 @@ import org.apache.atlas.repository.graphdb.AtlasGraph;
 import org.apache.atlas.repository.graphdb.AtlasGraphIndex;
 import org.apache.atlas.repository.graphdb.AtlasGraphManagement;
 import org.apache.atlas.repository.graphdb.AtlasPropertyKey;
+import org.apache.atlas.repository.graphdb.AtlasUniqueKeyHandler;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.type.AtlasArrayType;
 import org.apache.atlas.type.AtlasBusinessMetadataType;
@@ -163,13 +164,16 @@ import static org.apache.atlas.type.Constants.PENDING_TASKS_PROPERTY_KEY;
 public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChangeHandler, TypeDefChangeListener {
     private static final Logger LOG = LoggerFactory.getLogger(GraphBackedSearchIndexer.class);
 
-    private static final String         VERTEX_ID_IN_IMPORT_KEY = "__vIdInImport";
-    private static final String         EDGE_ID_IN_IMPORT_KEY   = "__eIdInImport";
-    private static final List<Class<?>> INDEX_EXCLUSION_CLASSES = new ArrayList<>(Arrays.asList(Boolean.class, BigDecimal.class, BigInteger.class));
+    private static final String         VERTEX_ID_IN_IMPORT_KEY  = "__vIdInImport";
+    private static final String         EDGE_ID_IN_IMPORT_KEY    = "__eIdInImport";
+    private static final List<Class<?>> INDEX_EXCLUSION_CLASSES  = new ArrayList<>(Arrays.asList(Boolean.class, BigDecimal.class, BigInteger.class));
+    private static final Set<String>    GLOBAL_UNIQUE_INDEX_KEYS = new HashSet<>();
+    private static final Set<String>    TYPE_UNIQUE_INDEX_KEYS   = new HashSet<>();
 
     // Added for type lookup when indexing the new typedefs
     private final AtlasTypeRegistry         typeRegistry;
     private final List<IndexChangeListener> indexChangeListeners = new ArrayList<>();
+    private       AtlasUniqueKeyHandler     uniqueKeyHandler;
 
     //allows injection of a dummy graph for testing
     private final IAtlasGraphProvider provider;
@@ -197,6 +201,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         }
 
         notifyInitializationStart();
+    }
+
+    public static boolean isGlobalUniqueIndexKey(String key) {
+        return GLOBAL_UNIQUE_INDEX_KEYS.contains(key);
+    }
+
+    public static boolean isTypeUniqueIndexKey(String key) {
+        return TYPE_UNIQUE_INDEX_KEYS.contains(key);
     }
 
     public static boolean isValidSearchWeight(int searchWeight) {
@@ -290,6 +302,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             recomputeIndexedKeys = true;
         }
 
+        populateUniqueIndexKeys();
         notifyChangeListeners(changedTypeDefs);
     }
 
@@ -311,6 +324,7 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
             //Commit indexes
             management.setIsSuccess(true);
 
+            populateUniqueIndexKeys();
             notifyInitializationCompletion(changedTypeDefs);
         } catch (Exception e) {
             LOG.error("Failed to update indexes for changed typedefs", e);
@@ -499,6 +513,8 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     private void initialize(AtlasGraph graph) throws RepositoryException, IndexException {
         try (AtlasGraphManagement management = graph.getManagementSystem()) {
             LOG.info("Creating indexes for graph.");
+
+            uniqueKeyHandler = graph.getUniqueKeyHandler();
 
             if (management.getGraphIndex(VERTEX_INDEX) == null) {
                 management.createVertexMixedIndex(VERTEX_INDEX, BACKING_INDEX, Collections.emptyList());
@@ -965,6 +981,16 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
     private void createVertexCompositeIndex(AtlasGraphManagement management, Class<?> propertyClass, AtlasPropertyKey propertyKey, boolean enforceUniqueness) {
         String propertyName = propertyKey.getName();
 
+        if (enforceUniqueness) {
+            GLOBAL_UNIQUE_INDEX_KEYS.add(propertyName);
+
+            if (uniqueKeyHandler != null) {
+                LOG.warn("ignoring uniqueness for composite index for property: {}", propertyName);
+
+                enforceUniqueness = false;
+            }
+        }
+
         LOG.debug("Creating composite index for property {} of type {}; isUnique={} ", propertyName, propertyClass.getName(), enforceUniqueness);
 
         AtlasGraphIndex existingIndex = management.getGraphIndex(propertyName);
@@ -1000,6 +1026,14 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
 
     private void createVertexCompositeIndexWithSystemProperty(AtlasGraphManagement management, Class<?> propertyClass, AtlasPropertyKey propertyKey, final String systemPropertyKey, AtlasCardinality cardinality, boolean isUnique) {
         LOG.debug("Creating composite index for property {} of type {} and {}", propertyKey.getName(), propertyClass.getName(), systemPropertyKey);
+
+        if (isUnique) {
+            if (uniqueKeyHandler != null) {
+                LOG.warn("ignoring uniqueness for composite index with system property: {} + {}", systemPropertyKey, propertyKey.getName());
+
+                isUnique = false;
+            }
+        }
 
         AtlasPropertyKey typePropertyKey = management.getPropertyKey(systemPropertyKey);
 
@@ -1121,6 +1155,25 @@ public class GraphBackedSearchIndexer implements SearchIndexer, ActiveStateChang
         String                relationshipLabel    = relationshipType.getRelationshipLabel();
 
         createEdgeLabelUsingLabelName(management, relationshipLabel);
+    }
+
+    private void populateUniqueIndexKeys() {
+        typeRegistry.getAllEntityTypes().forEach(this::populateUniqueIndexKeys);
+        typeRegistry.getAllClassificationTypes().forEach(this::populateUniqueIndexKeys);
+        typeRegistry.getAllStructTypes().forEach(this::populateUniqueIndexKeys);
+        typeRegistry.getAllRelationshipTypes().forEach(this::populateUniqueIndexKeys);
+        typeRegistry.getAllBusinessMetadataTypes().forEach(this::populateUniqueIndexKeys);
+
+        LOG.info("{} global unique index keys found", GLOBAL_UNIQUE_INDEX_KEYS.size());
+        LOG.info("{} type unique index keys found", TYPE_UNIQUE_INDEX_KEYS.size());
+    }
+
+    private void populateUniqueIndexKeys(AtlasStructType structType) {
+        if (structType.getUniqAttributes() != null) {
+            for (AtlasAttribute attribute : structType.getUniqAttributes().values()) {
+                TYPE_UNIQUE_INDEX_KEYS.add(attribute.getVertexUniquePropertyName());
+            }
+        }
     }
 
     public enum UniqueKind { NONE, GLOBAL_UNIQUE, PER_TYPE_UNIQUE }

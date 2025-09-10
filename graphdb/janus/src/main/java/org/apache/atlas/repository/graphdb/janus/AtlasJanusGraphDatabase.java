@@ -40,6 +40,7 @@ import org.janusgraph.diskstorage.StandardIndexProvider;
 import org.janusgraph.diskstorage.StandardStoreManager;
 import org.janusgraph.diskstorage.es.ElasticSearch7Index;
 import org.janusgraph.diskstorage.hbase.HBaseStoreManager;
+import org.janusgraph.diskstorage.rdbms.RdbmsStoreManager;
 import org.janusgraph.diskstorage.solr.Solr6Index;
 import org.janusgraph.graphdb.database.serialize.attribute.SerializableSerializer;
 import org.janusgraph.graphdb.tinkerpop.JanusGraphIoRegistry;
@@ -336,6 +337,31 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
         }
     }
 
+    private static void addRdbmsSupport() {
+        try {
+            Field field = StandardStoreManager.class.getDeclaredField("ALL_MANAGER_CLASSES");
+
+            field.setAccessible(true);
+
+            Field modifiersField = Field.class.getDeclaredField("modifiers");
+
+            modifiersField.setAccessible(true);
+            modifiersField.setInt(field, field.getModifiers() & ~Modifier.FINAL);
+
+            Map<String, String> customMap = new HashMap<>(StandardStoreManager.getAllManagerClasses());
+
+            customMap.put("rdbms", RdbmsStoreManager.class.getName());
+
+            ImmutableMap<String, String> immap = ImmutableMap.copyOf(customMap);
+
+            field.set(null, immap);
+
+            LOG.debug("Injected RDBMS support - {}", RdbmsStoreManager.class.getName());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
     private static void addSolr6Index() {
         try {
             Field field = StandardIndexProvider.class.getDeclaredField("ALL_MANAGER_CLASSES");
@@ -454,6 +480,7 @@ public class AtlasJanusGraphDatabase implements GraphDatabase<AtlasJanusVertex, 
 
     static {
         addHBase2Support();
+        addRdbmsSupport();
 
         addSolr6Index();
 
