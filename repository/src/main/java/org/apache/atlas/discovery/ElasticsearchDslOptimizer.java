@@ -1464,7 +1464,7 @@ public class ElasticsearchDslOptimizer {
                                 if (fieldNames.hasNext()) {
                                     String field = fieldNames.next();
                                     JsonNode fieldValue = wildcardNode.get(field);
-                                    String pattern = fieldValue.isObject() ? fieldValue.get("value").asText() : fieldValue.asText();
+                                    String pattern = fieldValue.isObject() && fieldValue.get("value") != null ? fieldValue.get("value").asText() : fieldValue.asText();
                                     
                                     // Skip consolidation if pattern has special characters
                                     if (hasSpecialCharacters(pattern)) {
@@ -1482,7 +1482,7 @@ public class ElasticsearchDslOptimizer {
                                     if (fieldNames.hasNext()) {
                                         String field = fieldNames.next();
                                         JsonNode fieldValue = wildcardNode.get(field);
-                                        String pattern = fieldValue.isObject() ? fieldValue.get("value").asText() : fieldValue.asText();
+                                        String pattern = fieldValue.isObject() && fieldValue.get("value") != null ? fieldValue.get("value").asText() : fieldValue.asText();
                                         
                                         // Skip consolidation if pattern has special characters
                                         if (hasSpecialCharacters(pattern)) {
@@ -1622,7 +1622,7 @@ public class ElasticsearchDslOptimizer {
                         return false;
                     }
                     
-                    String pattern = fieldValue.isObject() ? fieldValue.get("value").asText() : fieldValue.asText();
+                    String pattern = fieldValue.isObject() && fieldValue.get("value") != null ? fieldValue.get("value").asText() : fieldValue.asText();
                     patterns.add(pattern);
                 }
 
