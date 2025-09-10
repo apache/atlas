@@ -33,7 +33,6 @@ on:
       - interceptapis
       - mlh-965
       - mlh-498-use-spec-store-master
-      - mlh1131
 
 
 jobs:
