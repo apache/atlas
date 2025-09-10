@@ -15,7 +15,6 @@
  * limitations under the License.
  */
 
-import { useSearchParams } from "react-router-dom";
 import { getAuditData } from "@api/apiMethods/detailpageApiMethod";
 import { useCallback, useMemo, useRef, useState } from "react";
 import { toast } from "react-toastify";
@@ -38,7 +37,6 @@ import KeyboardArrowRightOutlinedIcon from "@mui/icons-material/KeyboardArrowRig
 import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDownOutlined";
 
 const AdminAuditTable = () => {
-  const [searchParams] = useSearchParams();
   const toastId: any = useRef(null);
   const [loader, setLoader] = useState<boolean>(true);
   const [auditData, setAuditData] = useState([]);

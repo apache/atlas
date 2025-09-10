@@ -38,7 +38,7 @@ import CssBaseline from "@mui/material/CssBaseline";
 import { IconButton } from "@components/muiComponents";
 import { useSelector } from "react-redux";
 import SearchIcon from "@mui/icons-material/Search";
-import { CircularProgress, InputBase, Paper, Stack } from "@mui/material";
+import { InputBase, Paper, Stack } from "@mui/material";
 import { TypeHeaderState } from "@models/treeStructureType.js";
 import { globalSessionData, PathAssociateWithModule } from "@utils/Enum";
 import KeyboardDoubleArrowLeftIcon from "@mui/icons-material/KeyboardDoubleArrowLeft";
