@@ -18,7 +18,6 @@
 import { getVersion } from "@api/apiMethods/headerApiMethods";
 import SkeletonLoader from "@components/SkeletonLoader";
 import {
-  CircularProgress,
   List,
   ListItem,
   ListItemText,
