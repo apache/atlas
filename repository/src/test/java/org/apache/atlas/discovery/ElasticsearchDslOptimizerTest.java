@@ -4469,4 +4469,87 @@ public class ElasticsearchDslOptimizerTest extends TestCase {
         }
         assertEquals("Should not have any regexp queries", 0, regexpCount);
     }
+
+    public void testWildcardWithSpecialCharacters() throws Exception {
+        String query = "{\n" +
+                "    \"bool\": {\n" +
+                "        \"must\": [\n" +
+                "            {\n" +
+                "                \"bool\": {\n" +
+                "                    \"must_not\": [\n" +
+                "                        {\n" +
+                "                            \"wildcard\": {\n" +
+                "                                \"description.keyword\": \"?*\"\n" +
+                "                            }\n" +
+                "                        }\n" +
+                "                    ]\n" +
+                "                }\n" +
+                "            },\n" +
+                "            {\n" +
+                "                \"bool\": {\n" +
+                "                    \"must_not\": [\n" +
+                "                        {\n" +
+                "                            \"wildcard\": {\n" +
+                "                                \"userDescription.keyword\": \"?*\"\n" +
+                "                            }\n" +
+                "                        }\n" +
+                "                    ]\n" +
+                "                }\n" +
+                "            }\n" +
+                "        ]\n" +
+                "    }\n" +
+                "}";
+
+        // Parse and optimize the query
+        JsonNode originalQuery = parseJson(query);
+        ElasticsearchDslOptimizer.OptimizationResult result = optimizer.optimizeQuery(query);
+        JsonNode optimizedQuery = parseJson(result.getOptimizedQuery());
+
+        // Verify that wildcards with special characters are not consolidated
+        int originalWildcardCount = countWildcardsInQuery(originalQuery);
+        int optimizedWildcardCount = countWildcardsInQuery(optimizedQuery);
+        assertEquals("Wildcards with special characters should not be consolidated", 
+                    originalWildcardCount, optimizedWildcardCount);
+
+
+        // Verify that the must_not context is preserved
+        JsonNode originalMust = originalQuery.get("bool").get("must");
+        JsonNode optimizedMust = optimizedQuery.get("bool").get("must");
+        assertEquals("Must array size should be preserved", 
+                    originalMust.size(), optimizedMust.size());
+
+        // Verify that wildcard patterns are unchanged
+        Set<String> originalPatterns = extractWildcardPatterns(originalQuery);
+        Set<String> optimizedPatterns = extractWildcardPatterns(optimizedQuery);
+        assertEquals("Wildcard patterns should remain unchanged", 
+                    originalPatterns, optimizedPatterns);
+    }
+
+    private Set<String> extractWildcardPatterns(JsonNode query) {
+        Set<String> patterns = new HashSet<>();
+        extractWildcardPatternsRecursive(query, patterns);
+        return patterns;
+    }
+
+    private void extractWildcardPatternsRecursive(JsonNode node, Set<String> patterns) {
+        if (node.isObject()) {
+            if (node.has("wildcard")) {
+                JsonNode wildcardNode = node.get("wildcard");
+                Iterator<String> fields = wildcardNode.fieldNames();
+                while (fields.hasNext()) {
+                    String field = fields.next();
+                    patterns.add(wildcardNode.get(field).asText());
+                }
+            }
+            // Recursively check all fields
+            Iterator<String> fields = node.fieldNames();
+            while (fields.hasNext()) {
+                extractWildcardPatternsRecursive(node.get(fields.next()), patterns);
+            }
+        } else if (node.isArray()) {
+            for (JsonNode item : node) {
+                extractWildcardPatternsRecursive(item, patterns);
+            }
+        }
+    }
 } 
