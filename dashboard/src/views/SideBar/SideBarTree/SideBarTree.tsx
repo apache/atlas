@@ -60,7 +60,6 @@ import {
 } from "react-router-dom";
 
 import Stack from "@mui/material/Stack";
-import CircularProgress from "@mui/material/CircularProgress";
 import { globalSearchFilterInitialQuery, isEmpty } from "@utils/Utils";
 import LaunchOutlinedIcon from "@mui/icons-material/LaunchOutlined";
 import { getGlossaryImportTmpl } from "@api/apiMethods/glossaryApiMethod";
@@ -76,7 +75,6 @@ import RefreshIcon from "@mui/icons-material/Refresh";
 import { AntSwitch } from "@utils/Muiutils";
 import { IconButton } from "@components/muiComponents";
 import SkeletonLoader from "@components/SkeletonLoader";
-import { color } from "d3";
 
 type CustomContentRootProps = HTMLAttributes<HTMLDivElement> & {
   selectedNodeType?: any;
