@@ -1415,14 +1415,36 @@ public class ElasticsearchDslOptimizer {
             return traverseAndOptimize(query.deepCopy(), this::consolidateWildcardsInNode);
         }
 
+        private boolean hasSpecialCharacters(String pattern) {
+            // Check for special character combinations that should prevent consolidation
+            if (pattern == null || pattern.isEmpty()) {
+                return false;
+            }
+            
+            // Check for special patterns like "?*" that have specific meaning
+            if (pattern.contains("?*") || pattern.contains("*?")) {
+                return true;
+            }
+            
+            // Check for multiple consecutive special characters
+            boolean lastWasSpecial = false;
+            for (char c : pattern.toCharArray()) {
+                boolean isSpecial = (c == '?' || c == '*');
+                if (isSpecial && lastWasSpecial) {
+                    return true;
+                }
+                lastWasSpecial = isSpecial;
+            }
+            
+            return false;
+        }
+
         private JsonNode consolidateWildcardsInNode(JsonNode node) {
             if (!node.isObject()) return node;
 
             ObjectNode objectNode = (ObjectNode) node;
 
             // Check bool clause types that allow wildcard consolidation
-            // must_not is safe for consolidation: NOT(A OR B) = NOT A AND NOT B (De Morgan's Law)
-            // must is NOT safe: changing (A AND B) to (A OR B) breaks semantics
             for (String clauseType : Arrays.asList("should", "filter", "must_not")) {
                 if (objectNode.has("bool") && objectNode.get("bool").has(clauseType)) {
                     JsonNode clauseNode = objectNode.get("bool").get(clauseType);
@@ -1430,28 +1452,44 @@ public class ElasticsearchDslOptimizer {
                     if (clauseNode.isArray()) {
                         ArrayNode clauseArray = (ArrayNode) clauseNode;
 
-                        // ENHANCED: Handle both direct wildcards AND nested bool wildcards
                         Map<String, List<JsonNode>> directWildcardsByField = new HashMap<>();
                         Map<String, List<JsonNode>> nestedWildcardsByField = new HashMap<>();
                         List<JsonNode> nonWildcards = new ArrayList<>();
 
                         for (JsonNode clause : clauseArray) {
                             if (clause.has("wildcard")) {
-                                // Direct wildcard in the array
+                                // Check for special characters before consolidation
                                 JsonNode wildcardNode = clause.get("wildcard");
                                 Iterator<String> fieldNames = wildcardNode.fieldNames();
                                 if (fieldNames.hasNext()) {
                                     String field = fieldNames.next();
+                                    JsonNode fieldValue = wildcardNode.get(field);
+                                    String pattern = fieldValue.isObject() && fieldValue.get("value") != null ? fieldValue.get("value").asText() : fieldValue.asText();
+                                    
+                                    // Skip consolidation if pattern has special characters
+                                    if (hasSpecialCharacters(pattern)) {
+                                        nonWildcards.add(clause);
+                                        continue;
+                                    }
+                                    
                                     directWildcardsByField.computeIfAbsent(field, k -> new ArrayList<>()).add(clause);
                                 }
                             } else if (clause.has("bool") && isSimpleWildcardWrapper(clause)) {
-                                // NESTED: Extract wildcards from simple bool wrappers
                                 JsonNode nestedWildcard = extractWildcardFromSimpleWrapper(clause);
                                 if (nestedWildcard != null) {
                                     JsonNode wildcardNode = nestedWildcard.get("wildcard");
                                     Iterator<String> fieldNames = wildcardNode.fieldNames();
                                     if (fieldNames.hasNext()) {
                                         String field = fieldNames.next();
+                                        JsonNode fieldValue = wildcardNode.get(field);
+                                        String pattern = fieldValue.isObject() && fieldValue.get("value") != null ? fieldValue.get("value").asText() : fieldValue.asText();
+                                        
+                                        // Skip consolidation if pattern has special characters
+                                        if (hasSpecialCharacters(pattern)) {
+                                            nonWildcards.add(clause);
+                                            continue;
+                                        }
+                                        
                                         nestedWildcardsByField.computeIfAbsent(field, k -> new ArrayList<>()).add(clause);
                                     }
                                 } else {
@@ -1584,7 +1622,7 @@ public class ElasticsearchDslOptimizer {
                         return false;
                     }
                     
-                    String pattern = fieldValue.isObject() ? fieldValue.get("value").asText() : fieldValue.asText();
+                    String pattern = fieldValue.isObject() && fieldValue.get("value") != null ? fieldValue.get("value").asText() : fieldValue.asText();
                     patterns.add(pattern);
                 }
 
