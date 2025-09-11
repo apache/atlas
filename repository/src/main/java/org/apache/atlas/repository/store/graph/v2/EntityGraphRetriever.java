@@ -18,7 +18,6 @@
 package org.apache.atlas.repository.store.graph.v2;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import org.apache.atlas.AtlasConfiguration;
 import org.apache.atlas.AtlasErrorCode;
 import org.apache.atlas.RequestContext;
 import org.apache.atlas.exception.AtlasBaseException;
@@ -164,7 +163,6 @@ public class EntityGraphRetriever {
     private static final String GLOSSARY_CATEGORY_HIERARCHY_EDGE_LABEL = "r:AtlasGlossaryCategoryHierarchyLink";
     private static final String GLOSSARY_CATEGORY_TYPE_NAME            = AtlasGlossaryCategory.class.getSimpleName();
     private static final String PARENT_GLOSSARY_CATEGORY_GUID          = "parentCategoryGuid";
-    private boolean             deferredActionEnabled                  = AtlasConfiguration.TASKS_USE_ENABLED.getBoolean();
 
     private static final TypeReference<List<TimeBoundary>> TIME_BOUNDARIES_LIST_TYPE = new TypeReference<List<TimeBoundary>>() {};
 
@@ -701,7 +699,7 @@ public class EntityGraphRetriever {
             Iterable<AtlasEdge> propagationEdges = entityVertex.getEdges(AtlasEdgeDirection.BOTH, tagPropagationEdges);
 
             for (AtlasEdge propagationEdge : propagationEdges) {
-                if (getEdgeStatus(propagationEdge) != ACTIVE && !deferredActionEnabled && !RequestContext.get().isImportInProgress()) {
+                if (getEdgeStatus(propagationEdge) != ACTIVE && !RequestContext.get().isImportInProgress()) {
                     continue;
                 }
 
