@@ -42,8 +42,7 @@ import static org.apache.atlas.model.instance.AtlasEntity.Status.DELETED;
 import static org.apache.atlas.repository.Constants.MODIFICATION_TIMESTAMP_PROPERTY_KEY;
 import static org.apache.atlas.repository.Constants.MODIFIED_BY_KEY;
 import static org.apache.atlas.repository.Constants.STATE_PROPERTY_KEY;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassifications;
-import static org.apache.atlas.repository.graph.GraphHelper.getPropagatableClassificationsV2;
+import static org.apache.atlas.repository.graph.GraphHelper.*;
 
 public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
 
@@ -78,8 +77,8 @@ public class SoftDeleteHandlerV1 extends DeleteHandlerV1 {
                 LOG.debug("==> SoftDeleteHandlerV1.deleteEdge({}, {})", GraphHelper.string(edge), force);
             }
 
-            if (edge == null) {
-                LOG.warn("Edge is null. Nothing to delete");
+            if (edge == null || getTypeName(edge) == null) {
+                LOG.warn("Edge is null or its typeName is empty. Nothing to delete");
                 return;
             }
 

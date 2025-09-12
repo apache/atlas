@@ -31,8 +31,7 @@ on:
       - tagscanarymerge
       - fixlabels
       - interceptapis
-      - mlh-965
-      - mlh-498-use-spec-store-master
+      - mlh-1163-master
 
 
 jobs:
