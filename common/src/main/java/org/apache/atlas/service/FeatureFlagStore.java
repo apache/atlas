@@ -1,5 +1,6 @@
 package org.apache.atlas.service;
 
+import org.apache.atlas.service.redis.NoRedisServiceImpl;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.BeansException;
@@ -105,6 +106,10 @@ public class FeatureFlagStore implements ApplicationContextAware {
     private void validateDependencies() {
         LOG.info("Validating FeatureFlagStore dependencies...");
         try {
+            if (redisService instanceof NoRedisServiceImpl) {
+                return;
+            }
+
             // Test Redis connectivity with a simple operation
             String testKey = "ff:_health_check";
             redisService.putValue(testKey, "test");
@@ -182,7 +187,7 @@ public class FeatureFlagStore implements ApplicationContextAware {
     }
 
     public static boolean isTagV2Enabled() {
-        return !evaluate(FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey(), "false"); // Default value is false, if the flag is present or has value true it's treated as enabled
+        return false;
     }
 
     public static boolean evaluate(String key, String expectedValue) {

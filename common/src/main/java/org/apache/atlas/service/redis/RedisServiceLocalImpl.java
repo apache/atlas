@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 
-@Component
+@Component("redisServiceImpl")
 @ConditionalOnAtlasProperty(property = "atlas.redis.service.impl")
 public class RedisServiceLocalImpl extends AbstractRedisService {
 
@@ -24,17 +24,17 @@ public class RedisServiceLocalImpl extends AbstractRedisService {
 
     @Override
     public String getValue(String key) {
-        return null;
+        return super.getValue(key);
     }
 
     @Override
     public String putValue(String key, String value, int timeout) {
-        return null;
+        return super.putValue(key, value, timeout);
     }
 
     @Override
     public void removeValue(String key) {
-
+        super.removeValue(key);
     }
 
     @Override

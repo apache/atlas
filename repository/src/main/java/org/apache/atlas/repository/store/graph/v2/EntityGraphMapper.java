@@ -358,6 +358,9 @@ public class EntityGraphMapper {
 
         if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore())) {
             restoreHandlerV1.restoreEntities(context.getEntitiesToRestore());
+            for (AtlasEntityHeader restoredEntity : reqContext.getRestoredEntities()) {
+                resp.addEntity(UPDATE, restoredEntity);
+            }
         }
 
         Collection<AtlasEntity> createdEntities = context.getCreatedEntities();

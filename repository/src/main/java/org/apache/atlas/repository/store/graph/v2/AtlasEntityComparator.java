@@ -245,6 +245,15 @@ public class AtlasEntityComparator {
             }
         }
 
+        AtlasEntity.Status newStatus  = updatedEntity.getStatus();
+        if (newStatus != null && newStatus.equals(AtlasEntity.Status.ACTIVE)) {
+            AtlasEntity.Status currStatus = AtlasEntity.Status.valueOf(storedVertex.getProperty("__state", String.class));
+            if (!newStatus.equals(currStatus)) {
+                sectionsWithDiff++;
+                diffEntity.setStatus(AtlasEntity.Status.ACTIVE);
+            }
+        }
+
         return new AtlasEntityDiffResult(diffEntity, sectionsWithDiff > 0, sectionsWithDiff == 1 && hasDiffInCustomAttributes, sectionsWithDiff == 1 && hasDiffInBusinessAttributes);
     }
 
