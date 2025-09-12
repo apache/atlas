@@ -187,7 +187,7 @@ public class FeatureFlagStore implements ApplicationContextAware {
     }
 
     public static boolean isTagV2Enabled() {
-        return false;
+        return !evaluate(FeatureFlag.ENABLE_JANUS_OPTIMISATION.getKey(), "false"); // Default value is false, if the flag is present or has value true it's treated as enabled
     }
 
     public static boolean evaluate(String key, String expectedValue) {
