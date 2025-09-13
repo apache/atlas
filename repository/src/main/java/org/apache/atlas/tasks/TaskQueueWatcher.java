@@ -24,6 +24,7 @@ import org.apache.atlas.RequestContext;
 import org.apache.atlas.model.tasks.AtlasTask;
 import org.apache.atlas.service.metrics.MetricsRegistry;
 import org.apache.atlas.service.redis.RedisService;
+import org.apache.atlas.repository.metrics.TaskMetricsService;
 import org.apache.commons.collections.CollectionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,6 +52,7 @@ public class TaskQueueWatcher implements Runnable {
     private final TaskManagement.Statistics statistics;
     private final ICuratorFactory curatorFactory;
     private final RedisService redisService;
+    private final TaskMetricsService taskMetricsService;
 
     private static long pollInterval = AtlasConfiguration.TASKS_REQUEUE_POLL_INTERVAL.getLong();
     private static final String TASK_LOCK = "/task-lock";
@@ -60,7 +62,8 @@ public class TaskQueueWatcher implements Runnable {
 
     public TaskQueueWatcher(ExecutorService executorService, TaskRegistry registry,
                             Map<String, TaskFactory> taskTypeFactoryMap, TaskManagement.Statistics statistics,
-                            ICuratorFactory curatorFactory, RedisService redisService, final String zkRoot, boolean isActiveActiveHAEnabled, MetricsRegistry metricsRegistry) {
+                            ICuratorFactory curatorFactory, RedisService redisService, final String zkRoot, boolean isActiveActiveHAEnabled, MetricsRegistry metricsRegistry,
+                            TaskMetricsService taskMetricsService) {
 
         this.registry = registry;
         this.executorService = executorService;
@@ -71,6 +74,7 @@ public class TaskQueueWatcher implements Runnable {
         this.zkRoot = zkRoot;
         this.isActiveActiveHAEnabled = isActiveActiveHAEnabled;
         this.metricRegistry = metricsRegistry;
+        this.taskMetricsService = taskMetricsService;
     }
 
     public void shutdown() {
@@ -106,6 +110,10 @@ public class TaskQueueWatcher implements Runnable {
                 LOG.info("TaskQueueWatcher: Acquired distributed lock: {}", ATLAS_TASK_LOCK);
                 lockAcquired = true;
                 List<AtlasTask> tasks = fetcher.getTasks();
+                
+                // Update queue size metric
+                taskMetricsService.updateQueueSize(tasks != null ? tasks.size() : 0);
+                
                 if (CollectionUtils.isNotEmpty(tasks)) {
                     final CountDownLatch latch = new CountDownLatch(tasks.size());
                     submitAll(tasks, latch);

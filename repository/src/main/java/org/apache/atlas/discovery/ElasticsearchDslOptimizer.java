@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,6 +58,42 @@ public class ElasticsearchDslOptimizer {
     private final List<OptimizationRule> optimizationRules;
     private final OptimizationMetrics metrics;
     private static final ElasticsearchDslOptimizer INSTANCE = new ElasticsearchDslOptimizer();
+
+    /**
+     * Checks if a wildcard pattern or field value has special characters or flags that should prevent consolidation
+     * @param pattern The pattern string to check
+     * @param fieldValue The JsonNode containing the field value (for checking flags)
+     * @return true if consolidation should be skipped
+     */
+    private static boolean hasSpecialCharacters(String pattern, JsonNode fieldValue) {
+        // Check for case-insensitive flag or other flags
+        if (fieldValue != null && fieldValue.isObject() && 
+            (fieldValue.has("case_insensitive") || fieldValue.has("flags"))) {
+            return true;
+        }
+
+        // Check for null or empty pattern
+        if (pattern == null || pattern.isEmpty()) {
+            return false;
+        }
+        
+        // Check for special patterns like "?*" that have specific meaning
+        if (pattern.contains("?*") || pattern.contains("*?")) {
+            return true;
+        }
+        
+        // Check for multiple consecutive special characters
+        boolean lastWasSpecial = false;
+        for (char c : pattern.toCharArray()) {
+            boolean isSpecial = (c == '?' || c == '*');
+            if (isSpecial && lastWasSpecial) {
+                return true;
+            }
+            lastWasSpecial = isSpecial;
+        }
+        
+        return false;
+    }
 
     public ElasticsearchDslOptimizer() {
         this.objectMapper = new ObjectMapper();
@@ -1421,8 +1458,6 @@ public class ElasticsearchDslOptimizer {
             ObjectNode objectNode = (ObjectNode) node;
 
             // Check bool clause types that allow wildcard consolidation
-            // must_not is safe for consolidation: NOT(A OR B) = NOT A AND NOT B (De Morgan's Law)
-            // must is NOT safe: changing (A AND B) to (A OR B) breaks semantics
             for (String clauseType : Arrays.asList("should", "filter", "must_not")) {
                 if (objectNode.has("bool") && objectNode.get("bool").has(clauseType)) {
                     JsonNode clauseNode = objectNode.get("bool").get(clauseType);
@@ -1430,28 +1465,44 @@ public class ElasticsearchDslOptimizer {
                     if (clauseNode.isArray()) {
                         ArrayNode clauseArray = (ArrayNode) clauseNode;
 
-                        // ENHANCED: Handle both direct wildcards AND nested bool wildcards
                         Map<String, List<JsonNode>> directWildcardsByField = new HashMap<>();
                         Map<String, List<JsonNode>> nestedWildcardsByField = new HashMap<>();
                         List<JsonNode> nonWildcards = new ArrayList<>();
 
                         for (JsonNode clause : clauseArray) {
                             if (clause.has("wildcard")) {
-                                // Direct wildcard in the array
+                                // Check for special characters before consolidation
                                 JsonNode wildcardNode = clause.get("wildcard");
                                 Iterator<String> fieldNames = wildcardNode.fieldNames();
                                 if (fieldNames.hasNext()) {
                                     String field = fieldNames.next();
+                                    JsonNode fieldValue = wildcardNode.get(field);
+                                    String pattern = fieldValue.isObject() && fieldValue.get("value") != null ? fieldValue.get("value").asText() : fieldValue.asText();
+                                    
+                                    // Skip consolidation if pattern has special characters
+                                    if (hasSpecialCharacters(pattern, fieldValue)) {
+                                        nonWildcards.add(clause);
+                                        continue;
+                                    }
+                                    
                                     directWildcardsByField.computeIfAbsent(field, k -> new ArrayList<>()).add(clause);
                                 }
                             } else if (clause.has("bool") && isSimpleWildcardWrapper(clause)) {
-                                // NESTED: Extract wildcards from simple bool wrappers
                                 JsonNode nestedWildcard = extractWildcardFromSimpleWrapper(clause);
                                 if (nestedWildcard != null) {
                                     JsonNode wildcardNode = nestedWildcard.get("wildcard");
                                     Iterator<String> fieldNames = wildcardNode.fieldNames();
                                     if (fieldNames.hasNext()) {
                                         String field = fieldNames.next();
+                                        JsonNode fieldValue = wildcardNode.get(field);
+                                        String pattern = fieldValue.isObject() && fieldValue.get("value") != null ? fieldValue.get("value").asText() : fieldValue.asText();
+                                        
+                                        // Skip consolidation if pattern has special characters
+                                        if (hasSpecialCharacters(pattern, fieldValue)) {
+                                            nonWildcards.add(clause);
+                                            continue;
+                                        }
+                                        
                                         nestedWildcardsByField.computeIfAbsent(field, k -> new ArrayList<>()).add(clause);
                                     }
                                 } else {
@@ -1578,13 +1629,12 @@ public class ElasticsearchDslOptimizer {
 
                     JsonNode fieldValue = wildcardNode.get(field);
                     
-                    // Skip optimization if case_insensitive flag is present
-                    if (fieldValue.isObject() && (fieldValue.has("case_insensitive") || fieldValue.has("flags"))) {
-                        // Return empty list to skip consolidation
+                    String pattern = fieldValue.isObject() && fieldValue.get("value") != null ? fieldValue.get("value").asText() : fieldValue.asText();
+                    
+                    // Skip consolidation if pattern has special characters or flags
+                    if (hasSpecialCharacters(pattern, fieldValue)) {
                         return false;
                     }
-                    
-                    String pattern = fieldValue.isObject() ? fieldValue.get("value").asText() : fieldValue.asText();
                     patterns.add(pattern);
                 }
 
@@ -2073,38 +2123,72 @@ public class ElasticsearchDslOptimizer {
                         List<JsonNode> wrappers = entry.getValue();
                         
                         if (wrappers.size() >= 2) {
-                            // Extract all patterns from the wrappers
+                            // Check for case-insensitive wildcards first
+                            for (JsonNode wrapper : wrappers) {
+                                JsonNode innerCondition = extractInnerConditionFromMustNotWrapper(wrapper);
+                                if (innerCondition != null && innerCondition.has("wildcard")) {
+                                    JsonNode wildcardNode = innerCondition.get("wildcard");
+                                    if (wildcardNode.has(field)) {
+                                        JsonNode fieldValue = wildcardNode.get(field);
+                                        String pattern = fieldValue.isObject() && fieldValue.get("value") != null ?
+                                            fieldValue.get("value").asText() : fieldValue.asText();
+
+                                        if (hasSpecialCharacters(pattern, fieldValue)) {
+                                            // Skip consolidation for special patterns or flags
+                                            newMustArray.add(wrapper);
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
+
+                            // Extract patterns from non-case-insensitive wildcards
                             List<String> patterns = new ArrayList<>();
                             for (JsonNode wrapper : wrappers) {
                                 JsonNode innerCondition = extractInnerConditionFromMustNotWrapper(wrapper);
+                                if (innerCondition != null && innerCondition.has("wildcard")) {
+                                    JsonNode wildcardNode = innerCondition.get("wildcard");
+                                    if (wildcardNode.has(field)) {
+                                        JsonNode fieldValue = wildcardNode.get(field);
+                                        String pattern = fieldValue.isObject() && fieldValue.get("value") != null ?
+                                            fieldValue.get("value").asText() : fieldValue.asText();
+
+                                        if (hasSpecialCharacters(pattern, fieldValue)) {
+                                            // Skip special patterns and flags
+                                            continue;
+                                        }
+                                    }
+                                }
                                 String pattern = extractPatternFromCondition(innerCondition);
                                 if (pattern != null) {
                                     patterns.add(pattern);
                                 }
                             }
                             
-                            // Create consolidated regexp with OR patterns  
-                            String consolidatedPattern = "(" + String.join("|", patterns) + ")";
-                            
-                            // Create new consolidated must_not wrapper
-                            ObjectNode consolidatedWrapper = objectMapper.createObjectNode();
-                            ObjectNode boolWrapper = objectMapper.createObjectNode();
-                            ArrayNode mustNotArray = objectMapper.createArrayNode();
-                            
-                            ObjectNode regexpQuery = objectMapper.createObjectNode();
-                            ObjectNode regexpContent = objectMapper.createObjectNode();
-                            regexpContent.put(field, consolidatedPattern);
-                            regexpQuery.set("regexp", regexpContent);
-                            mustNotArray.add(regexpQuery);
-                            
-                            boolWrapper.set("must_not", mustNotArray);
-                            consolidatedWrapper.set("bool", boolWrapper);
-                            
-                            newMustArray.add(consolidatedWrapper);
-                            hasConsolidation = true;
-                            
-                            log.debug("MustNotConsolidation: Consolidated {} must_not wrappers on field '{}' into single regexp", 
-                                     wrappers.size(), field);
+                            // Create consolidated regexp with OR patterns
+                            if (CollectionUtils.isNotEmpty(patterns)) {
+                                String consolidatedPattern = "(" + String.join("|", patterns) + ")";
+
+                                // Create new consolidated must_not wrapper
+                                ObjectNode consolidatedWrapper = objectMapper.createObjectNode();
+                                ObjectNode boolWrapper = objectMapper.createObjectNode();
+                                ArrayNode mustNotArray = objectMapper.createArrayNode();
+
+                                ObjectNode regexpQuery = objectMapper.createObjectNode();
+                                ObjectNode regexpContent = objectMapper.createObjectNode();
+                                regexpContent.put(field, consolidatedPattern);
+                                regexpQuery.set("regexp", regexpContent);
+                                mustNotArray.add(regexpQuery);
+
+                                boolWrapper.set("must_not", mustNotArray);
+                                consolidatedWrapper.set("bool", boolWrapper);
+
+                                newMustArray.add(consolidatedWrapper);
+                                hasConsolidation = true;
+
+                                log.debug("MustNotConsolidation: Consolidated {} must_not wrappers on field '{}' into single regexp",
+                                        wrappers.size(), field);
+                            }
                         } else {
                             // Keep single wrapper as-is
                             for (JsonNode wrapper : wrappers) {
