@@ -4,6 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile.atlas
       args:
+        - ATLAS_BACKEND=${ATLAS_BACKEND}
         - ATLAS_SERVER_JAVA_VERSION=${ATLAS_SERVER_JAVA_VERSION}
         - ATLAS_VERSION=${ATLAS_VERSION}
     image: atlas:latest
@@ -18,7 +19,7 @@ services:
     ports:
       - "21000:21000"
     depends_on:
-      atlas-hbase:
+      atlas-backend:
         condition: service_healthy
       atlas-kafka:
         condition: service_started
@@ -27,34 +28,31 @@ services:
       atlas-zk:
         condition: service_started
     environment:
+      - ATLAS_BACKEND
       - ATLAS_SERVER_JAVA_VERSION
       - ATLAS_VERSION
     command:
       - /home/atlas/scripts/atlas.sh
 
-  atlas-zk:
-    build:
-      context: .
-      dockerfile: Dockerfile.atlas-zk
-    image: atlas-zk
-    container_name: atlas-zk
-    hostname: atlas-zk.example.com
-    networks:
-      - atlas
-    ports:
-      - "2181:2181"
+  atlas-backend:
+    extends:
+      service: ${ATLAS_BACKEND}
+      file: docker-compose.atlas-backend.yml
+
+  atlas-kafka:
+    extends:
+      service: atlas-kafka
+      file: docker-compose.atlas-common.yml
 
   atlas-solr:
-    build:
-      context: .
-      dockerfile: Dockerfile.atlas-solr
-    image: atlas-solr
-    container_name: atlas-solr
-    hostname: atlas-solr.example.com
-    networks:
-      - atlas
-    ports:
-      - "8983:8983"
+    extends:
+      service: atlas-solr
+      file: docker-compose.atlas-common.yml
+
+  atlas-zk:
+    extends:
+      service: atlas-zk
+      file: docker-compose.atlas-common.yml
 
 networks:
   atlas:
