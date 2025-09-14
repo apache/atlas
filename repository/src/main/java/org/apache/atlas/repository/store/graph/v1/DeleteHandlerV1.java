@@ -36,6 +36,7 @@ import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasEdge;
 import org.apache.atlas.repository.graphdb.AtlasEdgeDirection;
 import org.apache.atlas.repository.graphdb.AtlasGraph;
+import org.apache.atlas.repository.graphdb.AtlasUniqueKeyHandler;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.store.graph.v2.AtlasGraphUtilsV2;
 import org.apache.atlas.repository.store.graph.v2.EntityGraphRetriever;
@@ -134,6 +135,7 @@ public abstract class DeleteHandlerV1 {
     private final boolean              shouldUpdateInverseReferences;
     private final boolean              softDelete;
     private final TaskManagement       taskManagement;
+    private final AtlasUniqueKeyHandler uniqueKeyHandler;
 
     public DeleteHandlerV1(AtlasGraph graph, AtlasTypeRegistry typeRegistry, boolean shouldUpdateInverseReference, boolean softDelete, TaskManagement taskManagement) {
         this.typeRegistry                  = typeRegistry;
@@ -142,6 +144,7 @@ public abstract class DeleteHandlerV1 {
         this.shouldUpdateInverseReferences = shouldUpdateInverseReference;
         this.softDelete                    = softDelete;
         this.taskManagement                = taskManagement;
+        this.uniqueKeyHandler              = graph.getUniqueKeyHandler();
     }
 
     /**
@@ -654,6 +657,10 @@ public abstract class DeleteHandlerV1 {
 
         removeFromPropagatedClassificationNames(entityVertex, classificationName);
 
+        if (uniqueKeyHandler != null) {
+            uniqueKeyHandler.removeUniqueKeysForEdgeId(edge.getId());
+        }
+
         deleteEdge(edge, true);
 
         updateModificationMetadata(entityVertex);
@@ -842,6 +849,10 @@ public abstract class DeleteHandlerV1 {
                     RequestContext.get().getDeleteType() == DeleteType.HARD ? PURGED.name() : DELETED.name());
         }
 
+        if (uniqueKeyHandler != null) {
+            uniqueKeyHandler.removeUniqueKeysForEdgeId(edge.getId());
+        }
+
         deleteEdge(edge, force);
     }
 
@@ -939,6 +950,10 @@ public abstract class DeleteHandlerV1 {
                         break;
                 }
             }
+        }
+
+        if (uniqueKeyHandler != null) {
+            uniqueKeyHandler.removeUniqueKeysForVertexId(instanceVertex.getId());
         }
 
         deleteVertex(instanceVertex, force);

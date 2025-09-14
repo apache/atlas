@@ -42,17 +42,24 @@ Docker files in this folder create docker images and run them to build Apache At
    export COMPOSE_DOCKER_CLI_BUILD=1
    ~~~
 
-6. Build and deploy Apache Atlas in containers using docker-compose
+6. Build and deploy Apache Atlas in containers using docker compose
 
-   6.1. Ensure that the `${HOME}/.m2` directory exists and Execute following command to build Apache Atlas:
+   6.1. Build atlas-base image with the following command:
+        docker compose -f docker-compose.atlas-base.yml build
+
+   6.2. Ensure that the `${HOME}/.m2` directory exists and execute following command to build Apache Atlas:
         mkdir -p ${HOME}/.m2
-        docker-compose -f docker-compose.atlas-base.yml -f docker-compose.atlas-build.yml up
+        docker compose -f docker-compose.atlas-build.yml up
 
    Time taken to complete the build might vary (upto an hour), depending on status of ${HOME}/.m2 directory cache.
 
-   6.2. Execute following command to install and start Atlas and dependent services (Solr, HBase, Kafka) in containers:
+   6.3. To install and start Atlas using Postgres as backend store, execute following commands:
+        export ATLAS_BACKEND=postgres
+        docker compose -f docker-compose.atlas.yml up -d --wait
 
-        docker-compose -f docker-compose.atlas-base.yml -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml -f docker-compose.atlas-hbase.yml -f docker-compose.atlas-kafka.yml -f docker-compose.atlas-hive.yml up -d
+   6.4. To install and start Atlas using HBase as backend store, execute following commands:
+        export ATLAS_BACKEND=hbase
+        docker compose -f docker-compose.atlas.yml -f docker-compose.atlas-hadoop.yml up -d --wait
 
    Apache Atlas will be installed at /opt/atlas/, and logs are at /var/logs/atlas directory.
 
