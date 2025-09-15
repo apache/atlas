@@ -26,6 +26,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.*;
 import org.apache.atlas.repository.graph.TypeCacheRefresher;
+import org.apache.atlas.repository.store.bootstrap.AtlasTypeDefStoreInitializer;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.store.AtlasTypeDefStore;
@@ -46,8 +47,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
-import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
@@ -113,7 +112,7 @@ public class TypesREST {
     @Timed
     public AtlasBaseTypeDef getTypeDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
-
+        typeCacheRefresher.refreshCacheIfNeeded(redisService);
         AtlasBaseTypeDef ret = typeDefStore.getByName(name);
 
         return ret;
@@ -131,7 +130,7 @@ public class TypesREST {
     @Timed
     public AtlasBaseTypeDef getTypeDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
-
+        typeCacheRefresher.refreshCacheIfNeeded(redisService);
         AtlasBaseTypeDef ret = typeDefStore.getByGuid(guid);
 
         return ret;
@@ -149,7 +148,7 @@ public class TypesREST {
     @Timed
     public List<AtlasTypeDefHeader> getTypeDefHeaders(@Context HttpServletRequest httpServletRequest) throws AtlasBaseException {
         SearchFilter searchFilter = getSearchFilter(httpServletRequest);
-
+        typeCacheRefresher.refreshCacheIfNeeded(redisService);
         AtlasTypesDef searchTypesDef = typeDefStore.searchTypesDef(searchFilter);
 
         return AtlasTypeUtil.toTypeDefHeader(searchTypesDef);
@@ -185,7 +184,6 @@ public class TypesREST {
     @Timed
     public AtlasEnumDef getEnumDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
-
         AtlasEnumDef ret = typeDefStore.getEnumDefByName(name);
 
         return ret;
@@ -204,7 +202,6 @@ public class TypesREST {
     @Timed
     public AtlasEnumDef getEnumDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
-
         AtlasEnumDef ret = typeDefStore.getEnumDefByGuid(guid);
 
         return ret;
@@ -224,7 +221,6 @@ public class TypesREST {
     @Timed
     public AtlasStructDef getStructDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
-
         AtlasStructDef ret = typeDefStore.getStructDefByName(name);
 
         return ret;
@@ -243,7 +239,6 @@ public class TypesREST {
     @Timed
     public AtlasStructDef getStructDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
-
         AtlasStructDef ret = typeDefStore.getStructDefByGuid(guid);
 
         return ret;
@@ -262,7 +257,7 @@ public class TypesREST {
     @Timed
     public AtlasClassificationDef getClassificationDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
-
+        typeCacheRefresher.refreshCacheIfNeeded(redisService);
         AtlasClassificationDef ret = typeDefStore.getClassificationDefByName(name);
 
         return ret;
@@ -281,7 +276,7 @@ public class TypesREST {
     @Timed
     public AtlasClassificationDef getClassificationDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
-
+        typeCacheRefresher.refreshCacheIfNeeded(redisService);
         AtlasClassificationDef ret = typeDefStore.getClassificationDefByGuid(guid);
 
         return ret;
@@ -300,7 +295,6 @@ public class TypesREST {
     @Timed
     public AtlasEntityDef getEntityDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
-
         AtlasEntityDef ret = typeDefStore.getEntityDefByName(name);
 
         return ret;
@@ -319,7 +313,6 @@ public class TypesREST {
     @Timed
     public AtlasEntityDef getEntityDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
-
         AtlasEntityDef ret = typeDefStore.getEntityDefByGuid(guid);
 
         return ret;
@@ -337,7 +330,6 @@ public class TypesREST {
     @Timed
     public AtlasRelationshipDef getRelationshipDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
-
         AtlasRelationshipDef ret = typeDefStore.getRelationshipDefByName(name);
 
         return ret;
@@ -356,7 +348,6 @@ public class TypesREST {
     @Timed
     public AtlasRelationshipDef getRelationshipDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
-
         AtlasRelationshipDef ret = typeDefStore.getRelationshipDefByGuid(guid);
 
         return ret;
@@ -375,7 +366,7 @@ public class TypesREST {
     @Timed
     public AtlasBusinessMetadataDef getBusinessMetadataDefByGuid(@PathParam("guid") String guid) throws AtlasBaseException {
         Servlets.validateQueryParamLength("guid", guid);
-
+        typeCacheRefresher.refreshCacheIfNeeded(redisService);
         AtlasBusinessMetadataDef ret = typeDefStore.getBusinessMetadataDefByGuid(guid);
 
         return ret;
@@ -398,22 +389,6 @@ public class TypesREST {
         AtlasBusinessMetadataDef ret = typeDefStore.getBusinessMetadataDefByName(name);
 
         return ret;
-    }
-
-    private void attemptAcquiringLock() throws AtlasBaseException {
-        final String traceId = RequestContext.get().getTraceId();
-        try {
-            if (!redisService.acquireDistributedLock(typeDefLock)) {
-                LOG.info("Lock is already acquired. Returning now :: traceId {}", traceId);
-                throw new AtlasBaseException(AtlasErrorCode.FAILED_TO_OBTAIN_TYPE_UPDATE_LOCK);
-            }
-            LOG.info("successfully acquired lock :: traceId {}", traceId);
-        } catch (AtlasBaseException e) {
-            throw e;
-        } catch (Exception e) {
-            LOG.error("Error while acquiring lock on type-defs :: traceId " + traceId + " ." + e.getMessage(), e);
-            throw new AtlasBaseException("Error while acquiring a lock on type-defs");
-        }
     }
 
     private Lock attemptAcquiringLockV2() throws AtlasBaseException {
@@ -480,7 +455,10 @@ public class TypesREST {
         }
         finally {
             if (lock != null) {
-                redisService.putValue(TYPEDEF_CACHE_LATEST_VERSION, String.valueOf(Long.parseLong(redisService.getValue(TYPEDEF_CACHE_LATEST_VERSION, "0")) + 1));
+                long latestVersion = Long.parseLong(redisService.getValue(TYPEDEF_CACHE_LATEST_VERSION, "1")) + 1;
+                String latestVersionStr = String.valueOf(latestVersion);
+                redisService.putValue(TYPEDEF_CACHE_LATEST_VERSION, latestVersionStr);
+                AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(latestVersion);
                 redisService.releaseDistributedLockV2(lock, typeDefLock);
             }
             AtlasPerfTracer.log(perf);
@@ -547,7 +525,10 @@ public class TypesREST {
             throw new AtlasBaseException("Error while updating a type definition");
         } finally {
             if (lock != null) {
-                redisService.putValue(TYPEDEF_CACHE_LATEST_VERSION, String.valueOf(Long.parseLong(redisService.getValue(TYPEDEF_CACHE_LATEST_VERSION, "0")) + 1));
+                long latestVersion = Long.parseLong(redisService.getValue(TYPEDEF_CACHE_LATEST_VERSION, "1")) + 1;
+                String latestVersionStr = String.valueOf(latestVersion);
+                redisService.putValue(TYPEDEF_CACHE_LATEST_VERSION, latestVersionStr);
+                AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(latestVersion);
                 redisService.releaseDistributedLockV2(lock, typeDefLock);
             }
             RequestContext.clear();
@@ -588,7 +569,10 @@ public class TypesREST {
             throw new AtlasBaseException("Error while deleting a type definition");
         } finally {
             if (lock != null) {
-                redisService.putValue(TYPEDEF_CACHE_LATEST_VERSION, String.valueOf(Long.parseLong(redisService.getValue(TYPEDEF_CACHE_LATEST_VERSION, "0")) + 1));
+                long latestVersion = Long.parseLong(redisService.getValue(TYPEDEF_CACHE_LATEST_VERSION, "1")) + 1;
+                String latestVersionStr = String.valueOf(latestVersion);
+                redisService.putValue(TYPEDEF_CACHE_LATEST_VERSION, latestVersionStr);
+                AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(latestVersion);
                 redisService.releaseDistributedLockV2(lock, typeDefLock);
             }
             AtlasPerfTracer.log(perf);
@@ -624,7 +608,10 @@ public class TypesREST {
             throw new AtlasBaseException("Error while deleting a type definition");
         } finally {
             if (lock != null) {
-                redisService.putValue(TYPEDEF_CACHE_LATEST_VERSION, String.valueOf(Long.parseLong(redisService.getValue(TYPEDEF_CACHE_LATEST_VERSION, "0")) + 1));
+                long latestVersion = Long.parseLong(redisService.getValue(TYPEDEF_CACHE_LATEST_VERSION, "1")) + 1;
+                String latestVersionStr = String.valueOf(latestVersion);
+                redisService.putValue(TYPEDEF_CACHE_LATEST_VERSION, latestVersionStr);
+                AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(latestVersion);
                 redisService.releaseDistributedLockV2(lock, typeDefLock);
             }
             AtlasPerfTracer.log(perf);

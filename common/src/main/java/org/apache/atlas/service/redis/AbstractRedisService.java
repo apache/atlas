@@ -195,7 +195,7 @@ public abstract class AbstractRedisService implements RedisService {
     @Override
     public String getValue(String key, String defaultValue) {
         try {
-            String value = (String) redisCacheClient.getBucket(convertToNamespace(key)).get();
+            String value = getValue(key);
             if (StringUtils.isEmpty(value)) {
                 return defaultValue;
             } else {

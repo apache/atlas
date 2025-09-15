@@ -416,8 +416,8 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
         return CURRENT_TYPEDEF_INTERNAL_VERSION;
     }
 
-    public static void incrCurrentTypedefInternalVersion() {
-        CURRENT_TYPEDEF_INTERNAL_VERSION++;
+    public static void setCurrentTypedefInternalVersion(long version) {
+        CURRENT_TYPEDEF_INTERNAL_VERSION = version;
     }
 
     private static boolean updateTypeAttributes(AtlasStructDef oldStructDef, AtlasStructDef newStructDef, boolean checkTypeVersion) {
