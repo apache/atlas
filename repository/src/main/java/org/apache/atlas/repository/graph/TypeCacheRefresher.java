@@ -30,7 +30,7 @@ public class TypeCacheRefresher {
     public void refreshCacheIfNeeded(RedisService redisService) throws AtlasBaseException {
         if (isCacheRefreshNeeded(redisService)) {
             LOG.info("Refreshing type-def cache as the version is different from latest");
-            typeDefStore.initWithoutLock();
+            typeDefStore.reloadCustomTypeDefs();
             AtlasTypeDefStoreInitializer.incrCurrentTypedefInternalVersion();
         }
     }

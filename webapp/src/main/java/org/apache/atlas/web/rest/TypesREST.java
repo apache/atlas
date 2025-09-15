@@ -166,7 +166,7 @@ public class TypesREST {
     @Timed
     public AtlasTypesDef getAllTypeDefs(@Context HttpServletRequest httpServletRequest) throws AtlasBaseException {
         SearchFilter searchFilter = getSearchFilter(httpServletRequest);
-
+        typeCacheRefresher.refreshCacheIfNeeded(redisService);
         AtlasTypesDef typesDef = typeDefStore.searchTypesDef(searchFilter);
 
         return typesDef;

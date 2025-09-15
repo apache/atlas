@@ -91,7 +91,7 @@ public class TypeCacheRefreshREST {
             LOG.info("Found desired size of fieldKeys in iteration {} :: traceId {}", counter, traceId);
         }
         //Reload in-memory cache of type-registry
-        typeDefStore.initWithoutLock();
+        typeDefStore.reloadCustomTypeDefs();
 
         LOG.info("Size of field keys after refresh = {}", provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size());
         LOG.info("Completed type-def cache refresh :: traceId {}", traceId);
