@@ -333,12 +333,12 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
     }
 
     protected boolean hasChildObjects(AtlasVertex domainVertex) throws AtlasBaseException {
-        Iterator<AtlasVertex> childDomains = getActiveChildrenVertices(domainVertex, DOMAIN_PARENT_EDGE_LABEL);
+        Iterator<AtlasVertex> childDomains = getActiveChildrenVertices(domainVertex, DOMAIN_PARENT_EDGE_LABEL,1);
         if (childDomains.hasNext()) {
             return true;
         }
 
-        Iterator<AtlasVertex> products = getActiveChildrenVertices(domainVertex, DATA_PRODUCT_EDGE_LABEL);
+        Iterator<AtlasVertex> products = getActiveChildrenVertices(domainVertex, DATA_PRODUCT_EDGE_LABEL,1);
         return products.hasNext();
     }
 
