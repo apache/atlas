@@ -72,12 +72,12 @@ public class TypeCacheRefreshREST {
         int currentSize = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
         LOG.info("Size of field keys before refresh = {} :: traceId {}", currentSize,traceId);
 
-        long totalWaitTimeInMillis = 15 * 1000;//15 seconds
+        long totalWaitTimeInMillis = 5 * 1000;//5 seconds
         long sleepTimeInMillis = 500;
-        long totalIterationsAllowed = Math.floorDiv(totalWaitTimeInMillis, sleepTimeInMillis);
+        long totalIterationsAllowed = 5;
         int counter = 0;
 
-        while (currentSize != expectedFieldKeys && counter++ < totalIterationsAllowed) {
+        while (currentSize < expectedFieldKeys && counter++ < totalIterationsAllowed) {
             currentSize = provider.get().getManagementSystem().getGraphIndex(VERTEX_INDEX).getFieldKeys().size();
             LOG.info("field keys size found = {} at iteration {} :: traceId {}", currentSize, counter, traceId);
             Thread.sleep(sleepTimeInMillis);
