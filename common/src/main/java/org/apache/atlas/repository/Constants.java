@@ -538,6 +538,8 @@ public final class Constants {
         add(STAKEHOLDER_TITLE_ENTITY_TYPE);
     }};
 
+    public static final String TYPEDEF_CACHE_LATEST_VERSION = "typdef.cache.version";
+
     private Constants() {
     }
 

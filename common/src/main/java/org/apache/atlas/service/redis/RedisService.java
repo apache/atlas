@@ -16,6 +16,8 @@ public interface RedisService {
 
   String getValue(String key);
 
+  String getValue(String key, String defaultValue);
+
   String putValue(String key, String value);
 
   String putValue(String key, String value, int timeout);

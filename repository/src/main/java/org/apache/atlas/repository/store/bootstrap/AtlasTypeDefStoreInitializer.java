@@ -50,6 +50,7 @@ import org.apache.atlas.repository.patches.AddMandatoryAttributesPatch;
 import org.apache.atlas.repository.patches.SuperTypesUpdatePatch;
 import org.apache.atlas.repository.patches.AtlasPatchManager;
 import org.apache.atlas.repository.patches.AtlasPatchRegistry;
+import org.apache.atlas.service.redis.RedisService;
 import org.apache.atlas.store.AtlasTypeDefStore;
 import org.apache.atlas.type.AtlasEntityType;
 import org.apache.atlas.type.AtlasStructType.AtlasAttribute;
@@ -101,15 +102,18 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     private final Configuration     conf;
     private final AtlasGraph        graph;
     private final AtlasPatchManager patchManager;
+    private final RedisService redisService;
+    private static long CURRENT_TYPEDEF_INTERNAL_VERSION;
 
     @Inject
     public AtlasTypeDefStoreInitializer(AtlasTypeDefStore typeDefStore, AtlasTypeRegistry typeRegistry,
-                                        AtlasGraph graph, Configuration conf, AtlasPatchManager patchManager) throws AtlasBaseException {
+                                        AtlasGraph graph, Configuration conf, AtlasPatchManager patchManager, RedisService redisService) throws AtlasBaseException {
         this.typeDefStore  = typeDefStore;
         this.typeRegistry  = typeRegistry;
         this.conf          = conf;
         this.graph         = graph;
         this.patchManager  = patchManager;
+        this.redisService = redisService;
     }
 
     @PostConstruct
@@ -118,6 +122,7 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
 
         if (!HAConfiguration.isHAEnabled(conf)) {
             startInternal();
+            CURRENT_TYPEDEF_INTERNAL_VERSION = Long.parseLong(redisService.getValue(Constants.TYPEDEF_CACHE_LATEST_VERSION, "1"));
         } else {
             LOG.info("AtlasTypeDefStoreInitializer.init(): deferring type loading until instance activation");
         }
@@ -405,6 +410,10 @@ public class AtlasTypeDefStoreInitializer implements ActiveStateChangeHandler {
     @Override
     public int getHandlerOrder() {
         return HandlerOrder.TYPEDEF_STORE_INITIALIZER.getOrder();
+    }
+
+    public static long getCurrentTypedefInternalVersion() {
+        return CURRENT_TYPEDEF_INTERNAL_VERSION;
     }
 
     private static boolean updateTypeAttributes(AtlasStructDef oldStructDef, AtlasStructDef newStructDef, boolean checkTypeVersion) {

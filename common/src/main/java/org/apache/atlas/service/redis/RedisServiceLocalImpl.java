@@ -28,6 +28,11 @@ public class RedisServiceLocalImpl extends AbstractRedisService {
     }
 
     @Override
+    public String getValue(String key, String defaultValue) {
+        return null;
+    }
+
+    @Override
     public String putValue(String key, String value, int timeout) {
         return null;
     }
