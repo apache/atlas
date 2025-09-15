@@ -21,19 +21,19 @@ public class TypeCacheRefresher {
         this.typeDefStore = typeDefStore;
     }
 
-    public boolean isCacheRefreshNeeded(RedisService redisService) {
-        long currentRedisVersion = Long.parseLong(redisService.getValue(Constants.TYPEDEF_CACHE_LATEST_VERSION, "1"));
-        LOG.debug("Current Redis typedef version: {}, Latest typedef version: {}", currentRedisVersion, AtlasTypeDefStoreInitializer.getCurrentTypedefInternalVersion());
-        return AtlasTypeDefStoreInitializer.getCurrentTypedefInternalVersion() != currentRedisVersion;
-    }
-
     public void refreshCacheIfNeeded(RedisService redisService) throws AtlasBaseException {
         if (isCacheRefreshNeeded(redisService)) {
-            long currentRedisVersion = Long.parseLong(redisService.getValue(Constants.TYPEDEF_CACHE_LATEST_VERSION, "1"));
             LOG.info("Refreshing type-def cache as the version is different from latest");
             typeDefStore.reloadCustomTypeDefs();
+            long currentRedisVersion = Long.parseLong(redisService.getValue(Constants.TYPEDEF_CACHE_LATEST_VERSION, "1"));
             AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(currentRedisVersion);
         }
+    }
+
+    private boolean isCacheRefreshNeeded(RedisService redisService) {
+        long currentRedisVersion = Long.parseLong(redisService.getValue(Constants.TYPEDEF_CACHE_LATEST_VERSION, "1"));
+        LOG.info("Current Redis typedef version: {}, Latest typedef version: {}", currentRedisVersion, AtlasTypeDefStoreInitializer.getCurrentTypedefInternalVersion());
+        return AtlasTypeDefStoreInitializer.getCurrentTypedefInternalVersion() < currentRedisVersion;
     }
 
 }
