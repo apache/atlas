@@ -124,16 +124,18 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
     @Override
     public void initWithoutLock() throws AtlasBaseException {
-        // need even better approach than this
-        AtlasTypesDef typesDef = new AtlasTypesDef(getEnumDefStore(typeRegistry).getAll(),
-                getStructDefStore(typeRegistry).getAll(),
-                getClassificationDefStore(typeRegistry).getAll(),
-                getEntityDefStore(typeRegistry).getAll(),
-                getRelationshipDefStore(typeRegistry).getAll(),
-                getBusinessMetadataDefStore(typeRegistry).getAll());
+        LOG.info("==> AtlasTypeDefGraphStore.initWithoutLock()");
+        AtlasTransientTypeRegistry ttr           = null;
+        boolean                    commitUpdates = false;
 
-        rectifyTypeErrorsIfAny(typesDef);
-        typeRegistry.addTypes(typesDef);
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate(5);
+            List<AtlasBusinessMetadataDef> typesDefs = getBusinessMetadataDefStore(ttr).getAll();
+            ttr.updateTypes(typesDefs);
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
+            LOG.info("<== AtlasTypeDefGraphStore.initWithoutLock()");
+        }
     }
 
     @Override
