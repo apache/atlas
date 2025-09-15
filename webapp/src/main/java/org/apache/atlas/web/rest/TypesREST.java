@@ -25,7 +25,6 @@ import org.apache.atlas.annotation.Timed;
 import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.SearchFilter;
 import org.apache.atlas.model.typedef.*;
-import org.apache.atlas.repository.RepositoryException;
 import org.apache.atlas.repository.graph.TypeCacheRefresher;
 import org.apache.atlas.repository.util.FilterUtil;
 import org.apache.atlas.service.redis.RedisService;
@@ -395,7 +394,7 @@ public class TypesREST {
     @Timed
     public AtlasBusinessMetadataDef getBusinessMetadataDefByName(@PathParam("name") String name) throws AtlasBaseException {
         Servlets.validateQueryParamLength("name", name);
-
+        typeCacheRefresher.refreshCacheIfNeeded(redisService);
         AtlasBusinessMetadataDef ret = typeDefStore.getBusinessMetadataDefByName(name);
 
         return ret;
