@@ -538,7 +538,9 @@ public final class Constants {
         add(STAKEHOLDER_TITLE_ENTITY_TYPE);
     }};
 
-    public static final String TYPEDEF_CACHE_LATEST_VERSION = "typdef.cache.version";
+    public static final String TYPEDEF_ENUM_CACHE_LATEST_VERSION = "typdef.enum.cache.version";
+    public static final String TYPEDEF_BUSINESS_METADATA_CACHE_LATEST_VERSION = "typdef.bm.cache.version";
+    public static final String TYPEDEF_CLASSIFICATION_METADATA_CACHE_LATEST_VERSION = "typdef.cls.cache.version";
 
     private Constants() {
     }

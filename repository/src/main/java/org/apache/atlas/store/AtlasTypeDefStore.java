@@ -35,7 +35,11 @@ import org.apache.atlas.model.typedef.AtlasTypesDef;
 public interface AtlasTypeDefStore {
     void init() throws AtlasBaseException;
 
-    void reloadCustomTypeDefs() throws AtlasBaseException;
+    void reloadEnumTypeDefs() throws AtlasBaseException;
+
+    void reloadBusinessMetadataTypeDefs() throws AtlasBaseException;
+
+    void reloadClassificationMetadataTypeDefs() throws AtlasBaseException;
 
     /* EnumDef operations */
 
@@ -112,7 +116,7 @@ public interface AtlasTypeDefStore {
 
     AtlasBaseTypeDef getByGuid(String guid) throws AtlasBaseException;
 
-    void deleteTypeByName(String typeName) throws AtlasBaseException;
+    AtlasBaseTypeDef deleteTypeByName(String typeName) throws AtlasBaseException;
 
     void notifyLoadCompletion();
 }

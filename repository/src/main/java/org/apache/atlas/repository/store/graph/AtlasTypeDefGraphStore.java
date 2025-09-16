@@ -123,22 +123,50 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     }
 
     @Override
-    public void reloadCustomTypeDefs() throws AtlasBaseException {
-        LOG.info("==> AtlasTypeDefGraphStore.initWithoutLock()");
+    public void reloadEnumTypeDefs() throws AtlasBaseException {
+        LOG.info("==> AtlasTypeDefGraphStore.reloadEnumTypeDefs()");
+        AtlasTransientTypeRegistry ttr           = null;
+        boolean                    commitUpdates = false;
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate(5);
+            List<AtlasEnumDef> enumDefs = getEnumDefStore(ttr).getAll();
+            ttr.updateTypes(enumDefs);
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
+            LOG.info("<== AtlasTypeDefGraphStore.reloadEnumTypeDefs()");
+        }
+    }
+
+    @Override
+    public void reloadBusinessMetadataTypeDefs() throws AtlasBaseException {
+        LOG.info("==> AtlasTypeDefGraphStore.reloadBusinessMetadataTypeDefs()");
         AtlasTransientTypeRegistry ttr           = null;
         boolean                    commitUpdates = false;
 
         try {
             ttr = typeRegistry.lockTypeRegistryForUpdate(5);
             List<AtlasBusinessMetadataDef> businessMetadataDefs = getBusinessMetadataDefStore(ttr).getAll();
-            List<AtlasClassificationDef> classificationDefs = getClassificationDefStore(ttr).getAll();
-            List<AtlasEnumDef> enumDefs = getEnumDefStore(ttr).getAll();
             ttr.updateTypes(businessMetadataDefs);
-            ttr.updateTypes(classificationDefs);
-            ttr.updateTypes(enumDefs);
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
-            LOG.info("<== AtlasTypeDefGraphStore.initWithoutLock()");
+            LOG.info("<== AtlasTypeDefGraphStore.reloadBusinessMetadataTypeDefs()");
+        }
+    }
+
+    @Override
+    public void reloadClassificationMetadataTypeDefs() throws AtlasBaseException {
+        LOG.info("==> AtlasTypeDefGraphStore.reloadClassificationMetadataTypeDefs()");
+        AtlasTransientTypeRegistry ttr           = null;
+        boolean                    commitUpdates = false;
+
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate(5);
+            List<AtlasClassificationDef> classificationDefs = getClassificationDefStore(ttr).getAll();
+            ttr.updateTypes(classificationDefs);
+        } finally {
+            typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
+            LOG.info("<== AtlasTypeDefGraphStore.reloadClassificationMetadataTypeDefs()");
         }
     }
 
@@ -719,7 +747,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
 
     @Override
     @GraphTransaction
-    public void deleteTypeByName(String typeName) throws AtlasBaseException {
+    public AtlasBaseTypeDef deleteTypeByName(String typeName) throws AtlasBaseException {
         AtlasType atlasType = typeRegistry.getType(typeName);
         if (atlasType == null) {
             throw new AtlasBaseException(AtlasErrorCode.INVALID_PARAMETERS.TYPE_NAME_NOT_FOUND, typeName);
@@ -743,6 +771,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
         }
 
         deleteTypesDef(typesDef);
+        return baseTypeDef;
     }
 
     @Override
