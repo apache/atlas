@@ -132,8 +132,10 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             ttr = typeRegistry.lockTypeRegistryForUpdate(5);
             List<AtlasBusinessMetadataDef> businessMetadataDefs = getBusinessMetadataDefStore(ttr).getAll();
             List<AtlasClassificationDef> classificationDefs = getClassificationDefStore(ttr).getAll();
+            List<AtlasEnumDef> enumDefs = getEnumDefStore(ttr).getAll();
             ttr.updateTypes(businessMetadataDefs);
             ttr.updateTypes(classificationDefs);
+            ttr.updateTypes(enumDefs);
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
             LOG.info("<== AtlasTypeDefGraphStore.initWithoutLock()");
@@ -747,46 +749,51 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
     public AtlasTypesDef searchTypesDef(SearchFilter searchFilter) throws AtlasBaseException {
         final AtlasTypesDef typesDef = new AtlasTypesDef();
         Predicate searchPredicates = FilterUtil.getPredicateFromSearchFilter(searchFilter);
-
-        for(AtlasEnumType enumType : typeRegistry.getAllEnumTypes()) {
-            if (searchPredicates.evaluate(enumType)) {
-                typesDef.getEnumDefs().add(enumType.getEnumDef());
+        AtlasTransientTypeRegistry ttr = null;
+        try {
+            ttr = typeRegistry.lockTypeRegistryForUpdate(5);
+            for (AtlasEnumType enumType : ttr.getAllEnumTypes()) {
+                if (searchPredicates.evaluate(enumType)) {
+                    typesDef.getEnumDefs().add(enumType.getEnumDef());
+                }
             }
-        }
 
-        for(AtlasStructType structType : typeRegistry.getAllStructTypes()) {
-            if (searchPredicates.evaluate(structType)) {
-                typesDef.getStructDefs().add(structType.getStructDef());
+            for (AtlasStructType structType : ttr.getAllStructTypes()) {
+                if (searchPredicates.evaluate(structType)) {
+                    typesDef.getStructDefs().add(structType.getStructDef());
+                }
             }
-        }
 
-        for(AtlasClassificationType classificationType : typeRegistry.getAllClassificationTypes()) {
-            if (searchPredicates.evaluate(classificationType)) {
-                typesDef.getClassificationDefs().add(classificationType.getClassificationDef());
+            for (AtlasClassificationType classificationType : ttr.getAllClassificationTypes()) {
+                if (searchPredicates.evaluate(classificationType)) {
+                    typesDef.getClassificationDefs().add(classificationType.getClassificationDef());
+                }
             }
-        }
 
-        for(AtlasEntityType entityType : typeRegistry.getAllEntityTypes()) {
-            if (searchPredicates.evaluate(entityType)) {
-                typesDef.getEntityDefs().add(entityType.getEntityDef());
+            for (AtlasEntityType entityType : ttr.getAllEntityTypes()) {
+                if (searchPredicates.evaluate(entityType)) {
+                    typesDef.getEntityDefs().add(entityType.getEntityDef());
+                }
             }
-        }
 
-        for(AtlasRelationshipType relationshipType : typeRegistry.getAllRelationshipTypes()) {
-            if (searchPredicates.evaluate(relationshipType)) {
-                typesDef.getRelationshipDefs().add(relationshipType.getRelationshipDef());
+            for (AtlasRelationshipType relationshipType : ttr.getAllRelationshipTypes()) {
+                if (searchPredicates.evaluate(relationshipType)) {
+                    typesDef.getRelationshipDefs().add(relationshipType.getRelationshipDef());
+                }
             }
-        }
 
-        for(AtlasBusinessMetadataType businessMetadataType : typeRegistry.getAllBusinessMetadataTypes()) {
-            if (searchPredicates.evaluate(businessMetadataType)) {
-                typesDef.getBusinessMetadataDefs().add(businessMetadataType.getBusinessMetadataDef());
+            for (AtlasBusinessMetadataType businessMetadataType : ttr.getAllBusinessMetadataTypes()) {
+                if (searchPredicates.evaluate(businessMetadataType)) {
+                    typesDef.getBusinessMetadataDefs().add(businessMetadataType.getBusinessMetadataDef());
+                }
             }
+
+            AtlasAuthorizationUtils.filterTypesDef(new AtlasTypesDefFilterRequest(typesDef));
+
+            return typesDef;
+        } finally {
+                typeRegistry.releaseTypeRegistryForUpdate(ttr, false);
         }
-
-        AtlasAuthorizationUtils.filterTypesDef(new AtlasTypesDefFilterRequest(typesDef));
-
-        return typesDef;
     }
 
     @Override
