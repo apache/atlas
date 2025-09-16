@@ -22,12 +22,13 @@ public class TypeCacheRefresher {
     }
 
     public void refreshCacheIfNeeded(RedisService redisService) throws AtlasBaseException {
-        if (isCacheRefreshNeeded(redisService)) {
+        typeDefStore.reloadCustomTypeDefs();
+        /*if (isCacheRefreshNeeded(redisService)) {
             LOG.info("Refreshing type-def cache as the version is different from latest");
             typeDefStore.reloadCustomTypeDefs();
             long currentRedisVersion = Long.parseLong(redisService.getValue(Constants.TYPEDEF_CACHE_LATEST_VERSION, "1"));
             AtlasTypeDefStoreInitializer.setCurrentTypedefInternalVersion(currentRedisVersion);
-        }
+        }*/
     }
 
     private boolean isCacheRefreshNeeded(RedisService redisService) {
