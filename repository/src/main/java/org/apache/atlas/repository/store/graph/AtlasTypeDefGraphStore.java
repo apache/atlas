@@ -132,6 +132,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             ttr = typeRegistry.lockTypeRegistryForUpdate(5);
             List<AtlasEnumDef> enumDefs = getEnumDefStore(ttr).getAll();
             ttr.updateTypes(enumDefs);
+            commitUpdates = true;
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
             LOG.info("<== AtlasTypeDefGraphStore.reloadEnumTypeDefs()");
@@ -148,6 +149,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             ttr = typeRegistry.lockTypeRegistryForUpdate(5);
             List<AtlasBusinessMetadataDef> businessMetadataDefs = getBusinessMetadataDefStore(ttr).getAll();
             ttr.updateTypes(businessMetadataDefs);
+            commitUpdates = true;
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
             LOG.info("<== AtlasTypeDefGraphStore.reloadBusinessMetadataTypeDefs()");
@@ -164,6 +166,7 @@ public abstract class AtlasTypeDefGraphStore implements AtlasTypeDefStore {
             ttr = typeRegistry.lockTypeRegistryForUpdate(5);
             List<AtlasClassificationDef> classificationDefs = getClassificationDefStore(ttr).getAll();
             ttr.updateTypes(classificationDefs);
+            commitUpdates = true;
         } finally {
             typeRegistry.releaseTypeRegistryForUpdate(ttr, commitUpdates);
             LOG.info("<== AtlasTypeDefGraphStore.reloadClassificationMetadataTypeDefs()");
