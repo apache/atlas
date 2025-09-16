@@ -692,19 +692,9 @@ public class AdminResource {
         AtlasAuthorizationUtils.verifyAccess(new AtlasAdminAccessRequest(AtlasPrivilege.ADMIN_IMPORT), "asyncImportData");
 
         AtlasAsyncImportRequest asyncImportRequest;
-        boolean                 releaseExportImportLockOnCompletion = false;
-
         try {
-            AtlasImportRequest request                 = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
-            boolean            preventMultipleRequests = request != null && request.getOptions() != null && !request.getOptions().containsKey(AtlasImportRequest.OPTION_KEY_REPLICATED_FROM);
-
-            if (preventMultipleRequests) {
-                acquireExportImportLock("import");
-
-                releaseExportImportLockOnCompletion = true;
-            }
-
-            asyncImportRequest = importService.run(request, inputStream, Servlets.getUserName(httpServletRequest), Servlets.getHostName(httpServletRequest), AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
+            AtlasImportRequest request  = AtlasType.fromJson(jsonData, AtlasImportRequest.class);
+            asyncImportRequest          = importService.run(request, inputStream, Servlets.getUserName(httpServletRequest), Servlets.getHostName(httpServletRequest), AtlasAuthorizationUtils.getRequestIpAddress(httpServletRequest));
         } catch (AtlasBaseException excp) {
             if (excp.getAtlasErrorCode().equals(AtlasErrorCode.IMPORT_ATTEMPTING_EMPTY_ZIP)) {
                 LOG.info(excp.getMessage());
@@ -720,10 +710,6 @@ public class AdminResource {
 
             throw new AtlasBaseException(excp);
         } finally {
-            if (releaseExportImportLockOnCompletion) {
-                releaseExportImportLock();
-            }
-
             LOG.debug("<== AdminResource.importAsync(binary)");
         }
 

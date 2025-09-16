@@ -30,6 +30,7 @@ import org.apache.atlas.notification.NotificationException;
 import org.apache.atlas.notification.NotificationInterface;
 import org.apache.atlas.repository.impexp.AsyncImportService;
 import org.apache.atlas.repository.store.graph.v2.asyncimport.ImportTaskListener;
+import org.janusgraph.diskstorage.locking.PermanentLockingException;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
 import org.mockito.Mockito;
@@ -448,6 +449,60 @@ public class AsyncImportTaskExecutorTest {
         AtlasBaseException exception = expectThrows(AtlasBaseException.class, () -> asyncImportTaskExecutor.registerRequest(mockResult, "import-id", 10, Collections.emptyList()));
 
         assertEquals(exception.getAtlasErrorCode(), AtlasErrorCode.IMPORT_REGISTRATION_FAILED);
+    }
+
+    @Test
+    public void testWithRetrySucceedsAfterLockingConflict() throws Exception {
+        AtlasImportResult result = mock(AtlasImportResult.class);
+        AtlasAsyncImportRequest newRequest = new AtlasAsyncImportRequest(result);
+
+        // First call fails with a PermanentLockingException, second succeeds
+        doThrow(new RuntimeException(new PermanentLockingException("lock conflict")))
+                .doNothing()
+                .when(importService).saveImportRequest(any(AtlasAsyncImportRequest.class));
+
+        when(importService.fetchImportRequestByImportId("import-id")).thenReturn(null);
+
+        AtlasAsyncImportRequest response =
+                asyncImportTaskExecutor.registerRequest(result, "import-id", 5, Collections.emptyList());
+
+        assertNotNull(response);
+        verify(importService, times(2)).saveImportRequest(any(AtlasAsyncImportRequest.class));
+    }
+
+    @Test
+    public void testWithRetryFailsAfterMaxLockingConflicts() throws Exception {
+        AtlasImportResult result = mock(AtlasImportResult.class);
+
+        // Always fail with PermanentLockingException
+        doThrow(new RuntimeException(new PermanentLockingException("lock conflict")))
+                .when(importService).saveImportRequest(any(AtlasAsyncImportRequest.class));
+
+        when(importService.fetchImportRequestByImportId("import-id")).thenReturn(null);
+
+        AtlasBaseException ex = expectThrows(
+                AtlasBaseException.class,
+                () -> asyncImportTaskExecutor.registerRequest(result, "import-id", 5, Collections.emptyList()));
+
+        assertEquals(ex.getAtlasErrorCode(), AtlasErrorCode.IMPORT_REGISTRATION_FAILED);
+        verify(importService, times(3)).saveImportRequest(any(AtlasAsyncImportRequest.class));
+    }
+
+    @Test
+    public void testWithRetryFailsOnNonLockingException() throws Exception {
+        AtlasImportResult result = mock(AtlasImportResult.class);
+
+        // Fail with a different exception
+        doThrow(new RuntimeException("Unexpected error"))
+                .when(importService).saveImportRequest(any(AtlasAsyncImportRequest.class));
+
+        when(importService.fetchImportRequestByImportId("import-id")).thenReturn(null);
+
+        AtlasBaseException ex = expectThrows(
+                AtlasBaseException.class,
+                () -> asyncImportTaskExecutor.registerRequest(result, "import-id", 5, Collections.emptyList()));
+
+        assertEquals(ex.getAtlasErrorCode(), AtlasErrorCode.IMPORT_REGISTRATION_FAILED);
     }
 
     @Test
