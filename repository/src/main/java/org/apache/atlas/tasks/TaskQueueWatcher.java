@@ -35,7 +35,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 public class TaskQueueWatcher implements Runnable {
     private static final Logger LOG = LoggerFactory.getLogger(TaskQueueWatcher.class);
