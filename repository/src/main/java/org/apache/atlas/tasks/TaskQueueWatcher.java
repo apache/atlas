@@ -30,10 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.annotation.PreDestroy;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -132,7 +129,6 @@ public class TaskQueueWatcher implements Runnable {
                 if (lockAcquired) {
                     redisService.releaseDistributedLock(ATLAS_TASK_LOCK);
                     LOG.info("TaskQueueWatcher: Released Task Lock in finally");
-                    lockAcquired = false;
                 }
             }
             try{
@@ -154,22 +150,76 @@ public class TaskQueueWatcher implements Runnable {
         }
     }
 
+
     private void submitAll(List<AtlasTask> tasks, CountDownLatch latch) {
-        if (CollectionUtils.isNotEmpty(tasks)) {
+        if (CollectionUtils.isEmpty(tasks)) {
+            LOG.info("TasksFetcher: No task to queue");
+            return;
+        }
 
-            for (AtlasTask task : tasks) {
-                if (task != null) {
-                    TASK_LOG.log(task);
-                }
-
-                this.executorService.submit(new TaskExecutor.TaskConsumer(task, this.registry, this.taskTypeFactoryMap, this.statistics, latch));
+        int submittedCount = 0;
+        
+        for (AtlasTask task : tasks) {
+            if (task == null) {
+                continue;
             }
 
-            LOG.info("TasksFetcher: Submitted {} tasks to the queue", tasks.size());
-        } else {
-            LOG.info("TasksFetcher: No task to queue");
+            String taskGuid = task.getGuid();
+            boolean taskSubmitted = false;
+            
+            // Keep trying until the task is submitted
+            while (!taskSubmitted) {
+                if (isMemoryTooHigh()) {
+                    LOG.warn("High memory usage detected ({}%), pausing task submission for task: {}", 
+                        getMemoryUsagePercent() * 100, taskGuid);
+                    
+                    try {
+                        // Wait for memory to be freed
+                        Thread.sleep(AtlasConfiguration.TASK_HIGH_MEMORY_PAUSE_MS.getLong());
+                        
+                        // Suggest GC if memory is still high after initial wait
+                        if (isMemoryTooHigh()) {
+                            LOG.info("Memory still high after pause, suggesting garbage collection");
+                            System.gc();
+                            Thread.sleep(1000); // Give GC time to work
+                        }
+                    } catch (InterruptedException e) {
+                        LOG.warn("Sleep interrupted while waiting for memory to free", e);
+                        Thread.currentThread().interrupt();
+                        return; // Exit if interrupted
+                    }
+                } else {
+                    // Memory is okay, submit the task
+                    TASK_LOG.log(task);
+                    this.executorService.submit(new TaskExecutor.TaskConsumer(task, 
+                        this.registry, this.taskTypeFactoryMap, this.statistics, latch));
+                    
+                    taskSubmitted = true;
+                    submittedCount++;
+                    LOG.debug("Successfully submitted task: {}", taskGuid);
+                }
+            }
+        }
+
+        if (submittedCount > 0) {
+            LOG.info("TasksFetcher: Submitted {} tasks to the queue", submittedCount);
         }
     }
+
+    private boolean isMemoryTooHigh() {
+        return getMemoryUsagePercent() > (AtlasConfiguration.TASK_MEMORY_THRESHOLD_PERCENT.getInt() / 100.0);
+    }
+
+    private double getMemoryUsagePercent() {
+        Runtime runtime = Runtime.getRuntime();
+        long maxMemory = runtime.maxMemory();
+        long totalMemory = runtime.totalMemory();
+        long freeMemory = runtime.freeMemory();
+        long usedMemory = totalMemory - freeMemory;
+        
+        return (double) usedMemory / maxMemory;
+    }
+
 
     static class TasksFetcher {
         private TaskRegistry registry;
