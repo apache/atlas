@@ -49,6 +49,7 @@ import org.slf4j.LoggerFactory;
 import java.util.*;
 
 import static org.apache.atlas.repository.Constants.*;
+import static org.apache.atlas.repository.graph.GraphHelper.getActiveChildrenVertices;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.PreProcessorUtils.*;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.accesscontrol.StakeholderPreProcessor.ATTR_DOMAIN_QUALIFIED_NAME;
 import static org.apache.atlas.repository.store.graph.v2.preprocessor.datamesh.StakeholderTitlePreProcessor.ATTR_DOMAIN_QUALIFIED_NAMES;
@@ -329,6 +330,16 @@ public abstract class AbstractDomainPreProcessor implements PreProcessor {
         } finally {
             RequestContext.get().endMetricRecord(metricRecorder);
         }
+    }
+
+    protected boolean hasChildObjects(AtlasVertex domainVertex) throws AtlasBaseException {
+        Iterator<AtlasVertex> childDomains = getActiveChildrenVertices(domainVertex, DOMAIN_PARENT_EDGE_LABEL,1);
+        if (childDomains.hasNext()) {
+            return true;
+        }
+
+        Iterator<AtlasVertex> products = getActiveChildrenVertices(domainVertex, DATA_PRODUCT_EDGE_LABEL,1);
+        return products.hasNext();
     }
 
     protected static Boolean hasLinkedAssets(Map<String, Object> dsl, Set<String> attributes, EntityDiscoveryService discovery) throws AtlasBaseException {
