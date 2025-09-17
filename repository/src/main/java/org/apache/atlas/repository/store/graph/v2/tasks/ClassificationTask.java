@@ -130,7 +130,7 @@ public abstract class ClassificationTask extends AbstractTask {
         if (obj != null) {
             LOG.debug("Task: {}: Setting import progress set to: {}", getTaskGuid(), obj);
             RequestContext.get().setImportInProgress((Boolean) obj);
-        }else {
+        } else {
             RequestContext.get().setImportInProgress(DEFAULT_IMPORT_IN_PROGRESS);
         }
 
