@@ -23,6 +23,7 @@ import org.apache.atlas.exception.AtlasBaseException;
 import org.apache.atlas.model.TypeCategory;
 import org.apache.atlas.model.instance.AtlasClassification;
 import org.apache.atlas.model.instance.AtlasEntity;
+import org.apache.atlas.repository.graph.GraphHelper;
 import org.apache.atlas.repository.graphdb.AtlasVertex;
 import org.apache.atlas.repository.util.AtlasEntityUtils;
 import org.apache.atlas.service.FeatureFlagStore;
@@ -242,6 +243,15 @@ public class AtlasEntityComparator {
                 if (findOnlyFirstDiff && sectionsWithDiff > 1) {
                     return new AtlasEntityDiffResult(diffEntity, true, false, false);
                 }
+            }
+        }
+
+        AtlasEntity.Status newStatus  = updatedEntity.getStatus();
+        if (newStatus != null && newStatus.equals(AtlasEntity.Status.ACTIVE)) {
+            String currStatus = GraphHelper.getStateAsString(storedVertex);
+            if (currStatus != null && !currStatus.equals(newStatus.name())) {
+                sectionsWithDiff++;
+                diffEntity.setStatus(AtlasEntity.Status.ACTIVE);
             }
         }
 

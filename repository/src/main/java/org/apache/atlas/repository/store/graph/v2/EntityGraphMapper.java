@@ -358,6 +358,9 @@ public class EntityGraphMapper {
 
         if (CollectionUtils.isNotEmpty(context.getEntitiesToRestore())) {
             restoreHandlerV1.restoreEntities(context.getEntitiesToRestore());
+            for (AtlasEntityHeader restoredEntity : reqContext.getRestoredEntities()) {
+                resp.addEntity(UPDATE, restoredEntity);
+            }
         }
 
         Collection<AtlasEntity> createdEntities = context.getCreatedEntities();
@@ -592,12 +595,6 @@ public class EntityGraphMapper {
 
         for (AtlasEntityHeader entity : req.getUpdatedEntities()) {
             resp.addEntity(updateType, entity);
-        }
-
-        if (req.getRestoredEntities() != null && req.getRestoredEntities().size() > 0) {
-            for (AtlasEntityHeader entity : req.getRestoredEntities()) {
-                resp.addEntity(UPDATE, entity);
-            }
         }
 
         RequestContext.get().endMetricRecord(metric);
