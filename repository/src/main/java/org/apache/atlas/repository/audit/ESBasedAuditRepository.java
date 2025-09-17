@@ -190,7 +190,7 @@ public class ESBasedAuditRepository extends AbstractStorageBasedAuditRepository 
 
                     String responseBody = EntityUtils.toString(response.getEntity());
 
-                    if (statusCode >= 500 && statusCode < 600) {
+                    if ((statusCode >= 500 && statusCode < 600) || statusCode==429) {
                         LOG.warn("Failed to push entity audits to ES due to server error ({}). Retrying... ({}/{}) Response: {}",
                                 statusCode, retryCount + 1, maxRetries, responseBody);
                     } else {
